@@ -422,6 +422,9 @@ describe('the domain package', () => {
         'leaked',
         'probesOf',
         'PROBE_WORDS',
+        // R8: relationship types, and the ends one permits.
+        'endsRefused',
+        'relationshipTypeDefinitionSchema',
         // What a definition is checked against before it is written (definitions.md, W5.1).
         'assignmentConflicts',
         'brokenDefaults',

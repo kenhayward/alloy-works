@@ -151,6 +151,9 @@ const WIRE_CODES = {
   'profile.invalid': 'profile_invalid',
   'rows.invalid': 'rows_invalid',
   'cohort.complete': 'cohort_complete',
+  'relationship.refused': 'relationship_refused',
+  'relationship.cardinality': 'relationship_cardinality',
+  'relationship.cycle': 'relationship_cycle',
 } as const satisfies Record<string, string>;
 
 export type DottedCode = keyof typeof WIRE_CODES;

@@ -153,6 +153,9 @@ const SESSIONS = 'apps/service/src/sessions.ts';
 const AUDIT_LOG = 'apps/service/src/audit-log.ts';
 const LATER = null;
 
+/** A relationship acted on: its type and itself, both by identifier (the R8 plan, R8-E). */
+const Related = z.strictObject({ type: z.uuid(), relationship: z.uuid() });
+
 export const auditKindSpecs = {
   // The subject is the principal; the session is named in detail. A session also ends by the expiry
   // sweep (apps/worker/src/sweep.ts) and by a route closed (packages/db/src/sign-in.ts).
@@ -521,9 +524,10 @@ export const auditKindSpecs = {
     'packages/db/src/template-move.ts',
   ),
   'binding.revised': kind(['DAT-058', 'LIF-069'], Revised, 'apps/service/src/data/revisions.ts'),
-  'relationship.made': kind(['LIF-070', 'REL-011'], empty, LATER),
-  'relationship.changed': kind(['LIF-070', 'REL-033'], empty, LATER),
-  'relationship.removed': kind(['LIF-070', 'REL-011'], empty, LATER),
+  // On the relationship's from end, naming its type and itself (the R8 plan, R8-E).
+  'relationship.made': kind(['LIF-070', 'REL-011'], Related, 'packages/db/src/relationships.ts'),
+  'relationship.changed': kind(['LIF-070', 'REL-033'], Related, 'packages/db/src/relationships.ts'),
+  'relationship.removed': kind(['LIF-070', 'REL-011'], Related, 'packages/db/src/relationships.ts'),
   'generation.run': kind(['LIF-071'], empty, LATER),
   'generation.accepted': kind(['LIF-071', 'GEN-024', 'LOC-041'], empty, LATER),
   'generation.discarded': kind(['LIF-071'], empty, LATER),

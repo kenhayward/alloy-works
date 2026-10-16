@@ -1148,6 +1148,18 @@ describe('routes that check a permission', () => {
       },
     }),
     getCohort: () => ({ url: `/v1/cohorts/${MISSING}`, status: 404 }),
+    makeRelationship: () => ({
+      url: '/v1/relationships',
+      status: 404,
+      payload: { type: MISSING, from: { artifact: MISSING }, to: { artifact: MISSING } },
+    }),
+    getRelationship: () => ({ url: `/v1/relationships/${MISSING}`, status: 404 }),
+    changeRelationship: () => ({
+      url: `/v1/relationships/${MISSING}`,
+      status: 404,
+      payload: { values: {} },
+    }),
+    removeRelationship: () => ({ url: `/v1/relationships/${MISSING}`, status: 404 }),
     rerunCohort: () => ({ url: `/v1/cohorts/${MISSING}/rerun`, status: 404, payload: {} }),
     cancelJob: () => ({ url: `/v1/jobs/${MISSING}/cancel`, status: 404 }),
     downloadJob: () => ({ url: `/v1/jobs/${MISSING}/download`, status: 404 }),

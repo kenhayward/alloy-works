@@ -38,6 +38,7 @@ import {
   type TenantDatabase,
   requestAuditExport,
   submitImpactReport,
+  makeRelationship,
 } from '@alloy-works/db';
 import {
   freshDatabase,
@@ -261,6 +262,9 @@ const OTHER_TENANT_IDS: Readonly<
   getJob: async (tenant, db) => ({ id: await jobIn(tenant, db) }),
   submitCohort: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   getCohort: async (tenant, db) => ({ id: await cohortIn(tenant, db) }),
+  getRelationship: async (tenant, db) => ({ id: await relationshipIn(tenant, db) }),
+  changeRelationship: async (tenant, db) => ({ id: await relationshipIn(tenant, db) }),
+  removeRelationship: async (tenant, db) => ({ id: await relationshipIn(tenant, db) }),
   rerunCohort: async (tenant, db) => ({ id: await cohortIn(tenant, db) }),
   cancelJob: async (tenant, db) => ({ id: await jobIn(tenant, db) }),
   downloadJob: async (tenant, db) => ({ id: await jobIn(tenant, db) }),
@@ -479,6 +483,10 @@ const VALID_INPUT: Readonly<
     },
   },
   rerunCohort: { payload: {} },
+  makeRelationship: {
+    payload: { type: SESSION, from: { artifact: SESSION }, to: { artifact: SESSION } },
+  },
+  changeRelationship: { payload: { values: {} } },
   previewPlacement: { query: `from=${SESSION}&section=x` },
   listChangesSince: { query: `since=2000-01-01T00:00:00Z&space=${SESSION}` },
   releaseLock: { query: `session=${SESSION}&openedFrom=${SESSION}` },
@@ -1051,6 +1059,48 @@ const jobIn = async (tenant: Tenant, db: TenantDatabase) => {
       .returning('id')
       .executeTakeFirstOrThrow();
     return (await submitImpactReport(trx, { by: by.id, subject, depth: 1 })).id;
+  });
+};
+
+/** A relationship in environment B between two of its documents, of a type of its own (the R8 plan). */
+const relationshipIn = async (tenant: Tenant, db: TenantDatabase) => {
+  const [from, to] = [await documentIdIn(tenant, db), await documentIdIn(tenant, db)];
+  return db.withTenant(tenant, async (trx) => {
+    const by = await trx
+      .insertInto('principal')
+      .values({
+        issuer: 'https://idp.example',
+        subject: `ivy-${randomUUID()}`,
+        email: null,
+        display_name: null,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    const type = await createDefinition(trx, {
+      kind: 'relationshipType',
+      definition: {
+        schemaVersion: 1,
+        name: `Probe ${randomUUID()}`,
+        inverseName: 'Probed by',
+        directed: true,
+        from: { kinds: ['document'], cardinality: 'many', permission: 'read' },
+        to: { kinds: ['document'], cardinality: 'many', permission: 'read' },
+        selfReference: false,
+        acyclic: false,
+        informational: true,
+        schemas: [],
+      },
+      author: by.id,
+    });
+    if (type.answer !== 'created') throw new Error(`refused: ${type.answer}`);
+    const made = await makeRelationship(trx, {
+      by: by.id,
+      type: type.definition.id,
+      from: { artifact: from },
+      to: { artifact: to },
+    });
+    if (made.answer !== 'made') throw new Error(`refused: ${made.answer}`);
+    return made.relationship.id;
   });
 };
 

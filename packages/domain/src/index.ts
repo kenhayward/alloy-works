@@ -79,3 +79,11 @@ export * from './review/index.js';
 // Workflow: a kind's states and transitions, validated, the seed, and the definition deciding a move
 // (docs/design/workflow.md).
 export * from './workflow/index.js';
+// Relationships (the R8 plan): declared types, and the ends a type permits.
+export {
+  endsRefused,
+  relationshipTypeDefinitionSchema,
+  type EndRefusal,
+  type RelationshipEnd,
+  type RelationshipTypeDefinition,
+} from './relationships/type.js';

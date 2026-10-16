@@ -114,6 +114,11 @@ export const documentationGroups = [
         description: 'What a change to an artifact reaches, and what an artifact uses.',
       },
       {
+        name: 'Relationships',
+        description:
+          'Declared relationships between artifacts, each of a type a definition declares, read from both ends.',
+      },
+      {
         name: 'Cohorts',
         description:
           'Documents made in bulk from one template, one for each row of parameters, found again as a set.',
@@ -340,6 +345,12 @@ const operationTags = {
   Impact: ['getArtifactImpact', 'getArtifactReferences', 'submitImpactReport'],
   Jobs: ['getJob', 'cancelJob', 'downloadJob'],
   Cohorts: ['submitCohort', 'getCohort', 'rerunCohort'],
+  Relationships: [
+    'makeRelationship',
+    'getRelationship',
+    'changeRelationship',
+    'removeRelationship',
+  ],
   Settings: ['getEditingSettings', 'setEditingSettings', 'getDataSettings', 'setDataSettings'],
   'Legal holds': ['placeHold', 'releaseHold', 'listHolds'],
   'Deletion and retention': ['listDeleted', 'getRetention', 'setRetention'],
@@ -511,6 +522,14 @@ const descriptions: Readonly<Record<string, string>> = {
     'Deletes a component: it leaves every listing, search and reference and answers 410 by its id, and nothing is removed. Refused while anything depends on it, every reason listed as the deletion view lists them. Needs retire on the component. Audited.',
   submitImpactReport:
     'Asks for the complete report of what a change to an artifact reaches, to the depth asked, from 1 to 10, as a job: answered at once with the job, accepted, to follow with getJob. The report has no cap: it is bounded by its depth, and walks as the caller, so nothing they may not read is in it or walked past. Retried with the same Idempotency-Key, it answers the same job. Needs read on the artifact.',
+  makeRelationship:
+    "Relates two artifacts by a relationship type, each end pinned to a version or floating at its latest, with the values its type's fields take. Refused where the type does not permit an end's kind, an artifact related to itself, a deprecated type, an end already holding the one relationship of the type it may, or, for an acyclic type, a cycle. Needs read on both ends and the permission the type declares at each. Audited.",
+  getRelationship:
+    'Reads a relationship: its type, its two ends and the versions they pin, and its values. Anybody who may read both ends reads it.',
+  changeRelationship:
+    'Changes a relationship: an end re-targeted or re-pinned, or its values given whole, each checked as making it is. Needs read on both ends and the permission the type declares at each. Audited.',
+  removeRelationship:
+    'Removes a relationship and records the removal, answering it as it was. Needs read on both ends and the permission the type declares at each.',
   submitCohort:
     "Makes a document in this space for each row of parameters, from one template, as a job: answered at once with the cohort, every row pending, and its job, to follow with getJob. The template and what it names are resolved now, once, and every row is made from that, rerun or not. Rows are given inline, at most 1,000, or taken from a query result's version the caller may read, a parameter for each column. Each document takes the title given, {name} standing for the row's value of that parameter. Each row is made in a transaction of its own: one that is refused leaves nothing and is reported, and the rest are made. Needs create in the space.",
   getCohort:

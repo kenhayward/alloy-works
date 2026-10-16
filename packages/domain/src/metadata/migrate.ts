@@ -9,10 +9,15 @@ import {
   conditionAxisDefinitionSchema,
   type ConditionAxisDefinition,
 } from '../reuse/conditions.js';
+import {
+  relationshipTypeDefinitionSchema,
+  type RelationshipTypeDefinition,
+} from '../relationships/type.js';
 
 /**
  * The definition kinds, each an artifact kind versioned by the one mechanism (ADR-0024): a variable
- * the fourth (REU-018; the R5 plan, R5-A), a condition axis the fifth (REU-020; the R6 plan, R6-A).
+ * the fourth (REU-018; the R5 plan, R5-A), a condition axis the fifth (REU-020; the R6 plan, R6-A), a
+ * relationship type the sixth (REL-001; the R8 plan, R8-A).
  */
 export const definitionKinds = [
   'field',
@@ -20,6 +25,7 @@ export const definitionKinds = [
   'componentType',
   'variable',
   'conditionAxis',
+  'relationshipType',
 ] as const;
 
 export type DefinitionKind = (typeof definitionKinds)[number];
@@ -30,6 +36,7 @@ export type DefinitionOf = {
   componentType: ComponentTypeDefinition;
   variable: VariableDefinition;
   conditionAxis: ConditionAxisDefinition;
+  relationshipType: RelationshipTypeDefinition;
 };
 
 /**
@@ -54,6 +61,11 @@ const chains: Record<DefinitionKind, MigrationChain> = {
     current: DEFINITION_SCHEMA_VERSION,
     migrations: {},
   },
+  relationshipType: {
+    subject: 'relationship type definition',
+    current: DEFINITION_SCHEMA_VERSION,
+    migrations: {},
+  },
 };
 
 const parsers: { [K in DefinitionKind]: (value: unknown) => DefinitionOf[K] } = {
@@ -62,6 +74,7 @@ const parsers: { [K in DefinitionKind]: (value: unknown) => DefinitionOf[K] } = 
   componentType: (value) => componentTypeDefinitionSchema.parse(value),
   variable: (value) => variableDefinitionSchema.parse(value),
   conditionAxis: (value) => conditionAxisDefinitionSchema.parse(value),
+  relationshipType: (value) => relationshipTypeDefinitionSchema.parse(value),
 };
 
 /** A stored definition at the current definition schema version. A projection, never a rewrite. */

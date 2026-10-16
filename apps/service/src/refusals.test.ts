@@ -211,6 +211,10 @@ describe('the rule behind a refusal', () => {
       // The R7 plan's (R7-B, R7-F): rows that cannot be made, and a cohort with none failed.
       'rows.invalid',
       'cohort.complete',
+      // The R8 plan's (R8-D): what a relationship's type does not permit.
+      'relationship.refused',
+      'relationship.cardinality',
+      'relationship.cycle',
     ];
     expect([...ruled.map(([dotted]) => dotted), ...unruled].sort()).toEqual(
       [...DOTTED_CODES].sort(),

@@ -423,3 +423,10 @@ export {
   SubmitCohortBody,
   cohortRoutes,
 } from './cohorts.js';
+export {
+  ChangeRelationshipBody,
+  MakeRelationshipBody,
+  RelationshipParams,
+  RelationshipView,
+  relationshipRoutes,
+} from './relationships.js';

@@ -2,6 +2,7 @@ import {
   componentTypeDefinitionSchema,
   variableDefinitionSchema,
   conditionAxisDefinitionSchema,
+  relationshipTypeDefinitionSchema,
   componentTypeOf,
   definitionKinds,
   fieldDefinitionSchema,
@@ -162,6 +163,7 @@ const definitionSchemas = {
   componentType: componentTypeDefinitionSchema,
   variable: variableDefinitionSchema,
   conditionAxis: conditionAxisDefinitionSchema,
+  relationshipType: relationshipTypeDefinitionSchema,
 } as const;
 
 /**
