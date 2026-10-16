@@ -1,4 +1,5 @@
 import { personView } from './person-view.js';
+import { internalHeld } from './internal-held.js';
 import { labelFor } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
@@ -114,7 +115,7 @@ async function outsideOf(
   thread: string,
   recipients: readonly string[],
 ): Promise<ReadonlySet<string>> {
-  if (recipients.length === 0) return new Set();
+  if (recipients.length === 0 || !(await internalHeld(trx))) return new Set();
   const internal = await trx
     .selectFrom('thread_internal')
     .select('thread_id')
@@ -208,7 +209,7 @@ export async function listInbox(
         .select('kind')
         .where('id', '=', recipient)
         .executeTakeFirst()
-    )?.kind === 'external';
+    )?.kind === 'external' && (await internalHeld(trx));
   const keptFromOutside = sql<boolean>`n.thread_id is not null and exists (
     select 1 from thread_internal i where i.thread_id = n.thread_id)`;
   let query = trx

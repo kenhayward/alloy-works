@@ -930,6 +930,7 @@ describe('routes that check a permission', () => {
       payload: { parts: [{ text: 'Hm' }] },
     }),
     resolveThread: () => ({ url: `/v1/threads/${reportThread}/resolution`, status: 404 }),
+    markThreadInternal: () => ({ url: `/v1/threads/${reportThread}/internal`, status: 404 }),
     getPublicationBindings: () => ({
       url: `/v1/publications/${reportPublication}/bindings`,
       status: 404,

@@ -198,6 +198,7 @@ const OTHER_TENANT_IDS: Readonly<
   addComment: async (tenant, db) => ({ id: await threadIn(tenant, db) }),
   editComment: async (tenant, db) => ({ id: await threadIn(tenant, db), comment: SESSION }),
   resolveThread: async (tenant, db) => ({ id: await threadIn(tenant, db) }),
+  markThreadInternal: async (tenant, db) => ({ id: await threadIn(tenant, db) }),
   makeSuggestion: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   listComponentSuggestions: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   listDocumentSuggestions: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),

@@ -134,6 +134,7 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   addComment: writes('comment.added'),
   editComment: writes('comment.edited'),
   resolveThread: writes('thread.resolved'),
+  markThreadInternal: writes('thread.made_internal'),
   makeSuggestion: writes('suggestion.made'),
   listComponentSuggestions: read,
   listDocumentSuggestions: read,

@@ -71,6 +71,7 @@ describe('the audit kinds', () => {
       'comment.added',
       'comment.edited',
       'thread.resolved',
+      'thread.made_internal',
       'suggestion.made',
       'suggestion.accepted',
       'suggestion.rejected',

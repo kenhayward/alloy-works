@@ -12,6 +12,7 @@ import {
 import { personView, type PersonView } from './person-view.js';
 import { sql } from 'kysely';
 import { tell } from './inbox.js';
+import { internalHeld } from './internal-held.js';
 import { AUDIT_LOG_KEPT, labelled, labels, recordEvent } from './audit.js';
 import { indexMessage, indexThreadStarted, reindexMessage } from './search-threads.js';
 import type { TenantTransaction } from './tables.js';
@@ -386,12 +387,18 @@ export async function markThreadInternal(
   return 'marked';
 }
 
+/** Whether thread `t` is internal, as a column; false where the schema holds no marks. */
+const internalOf = (held: boolean) =>
+  held
+    ? sql<boolean>`exists (select 1 from thread_internal i where i.thread_id = t.id)`
+    : sql<boolean>`false`;
+
 /** The internal threads among these (COL-038; R13-D): what a principal from outside is never shown. */
 export async function internalThreads(
   trx: TenantTransaction,
   threads: readonly string[],
 ): Promise<ReadonlySet<string>> {
-  if (threads.length === 0) return new Set();
+  if (threads.length === 0 || !(await internalHeld(trx))) return new Set();
   const rows = await trx
     .selectFrom('thread_internal')
     .select('thread_id')
@@ -458,9 +465,8 @@ export async function readThread(
     .innerJoin('principal as c', 'c.id', 't.created_by')
     .leftJoin('thread_resolution as r', 'r.thread_id', 't.id')
     .leftJoin('principal as rp', 'rp.id', 'r.resolved_by')
-    .leftJoin('thread_internal as i', 'i.thread_id', 't.id')
     .select([
-      'i.thread_id as internal_id',
+      internalOf(await internalHeld(trx)).as('internal'),
       't.id',
       't.on_id',
       't.on_kind',
@@ -520,7 +526,7 @@ export async function readThread(
     anchor: row.anchor as ThreadAnchor,
     madeAgainst: row.made_against,
     createdBy: personView(row.created_by, row.created_name, row.created_kind),
-    internal: row.internal_id !== null,
+    internal: row.internal,
     createdAt: row.created_at,
     resolution:
       row.resolved_by === null
@@ -552,11 +558,11 @@ export async function listThreads(
   },
 ): Promise<ThreadSummary[]> {
   if (input.on.length === 0) return [];
+  const held = await internalHeld(trx);
   let query = trx
     .selectFrom('thread as t')
     .innerJoin('principal as c', 'c.id', 't.created_by')
     .leftJoin('thread_resolution as r', 'r.thread_id', 't.id')
-    .leftJoin('thread_internal as i', 'i.thread_id', 't.id')
     .innerJoin(
       (eb) =>
         eb
@@ -581,12 +587,12 @@ export async function listThreads(
       'c.kind',
       't.created_at',
       'r.resolved_at',
-      'i.thread_id as internal_id',
+      internalOf(held).as('internal'),
       'm.comments',
       'm.last_at',
     ])
     .where('t.on_id', 'in', [...input.on]);
-  if (input.hideInternal === true) query = query.where('i.thread_id', 'is', null);
+  if (input.hideInternal === true) query = query.where(sql<boolean>`not ${internalOf(held)}`);
   if (input.state === 'open') query = query.where('r.thread_id', 'is', null);
   if (input.state === 'resolved') query = query.where('r.thread_id', 'is not', null);
   if (input.author !== undefined) query = query.where('t.created_by', '=', input.author);
@@ -606,7 +612,7 @@ export async function listThreads(
     anchor: row.anchor as ThreadAnchor,
     madeAgainst: row.made_against,
     createdBy: personView(row.created_by, row.display_name, row.kind),
-    internal: row.internal_id !== null,
+    internal: row.internal,
     createdAt: row.created_at,
     resolvedAt: row.resolved_at,
     comments: Number(row.comments),
