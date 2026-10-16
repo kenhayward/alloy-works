@@ -221,6 +221,9 @@ export const publishFailureCodes = [
   // bind, from R5 (REU-017): a variable naming no declared key, or resolving to nothing its type prints,
   // naming the node, the block and in `detail` the key. Never printed as its name, never blank.
   'variable_unresolved',
+  // compose, from R6 (REU-053): content conditioned on an axis the profile does not name, where the
+  // document has not accepted exclusion by unset, naming the node, the block and in `detail` the axis.
+  'axis_unset',
 ] as const;
 
 export type PublishFailureCode = (typeof publishFailureCodes)[number];

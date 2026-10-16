@@ -205,6 +205,23 @@ describe('the outline a document version holds', () => {
     ).toThrow();
   });
 
+  it('REU-022 holds the profile a document declares, and its acceptance of exclusion by unset, in its content and its digest', () => {
+    const profiled = parseOutlineDocument({
+      ...empty,
+      profile: { values: { audience: ['regulator'] }, excludeUnset: true },
+    });
+    expect(profiled.profile).toEqual({ values: { audience: ['regulator'] }, excludeUnset: true });
+    expect(canonicaliseOutline(profiled)).toContain(
+      `"profile":${canonicalJson({ excludeUnset: true, values: { audience: ['regulator'] } })}`,
+    );
+    expect(canonicaliseOutline(profiled)).not.toBe(canonicaliseOutline(parseOutlineDocument(empty)));
+    expect(canonicaliseOutline(parseOutlineDocument(empty))).not.toContain('profile');
+    // A value no axis could hold, or an acceptance spelled other than true, is refused.
+    for (const profile of [{ values: { audience: [] } }, { values: {}, excludeUnset: false }]) {
+      expect(() => parseOutlineDocument({ ...empty, profile })).toThrow();
+    }
+  });
+
   it('canonicalises two identical outlines to one string where their marks were built in two orders', () => {
     const marks = [
       { type: 'emphasis', id: 'm2' },

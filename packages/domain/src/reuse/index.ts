@@ -1,3 +1,11 @@
+export {
+  applyConditions,
+  conditionAxisDefinitionSchema,
+  profileSchema,
+  type ConditionAxisDefinition,
+  type Profile,
+  type UnsetAxis,
+} from './conditions.js';
 export { referencesIn, type IndexedReference } from './references.js';
 export {
   printTitleVariables,

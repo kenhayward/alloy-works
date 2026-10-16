@@ -433,8 +433,8 @@ export interface DocumentTemplateTable {
 export interface DefinitionNameTable {
   artifact_id: ColumnType<string, string, never>;
   kind: ColumnType<
-    'field' | 'metadataSchema' | 'componentType' | 'variable',
-    'field' | 'metadataSchema' | 'componentType' | 'variable',
+    'field' | 'metadataSchema' | 'componentType' | 'variable' | 'conditionAxis',
+    'field' | 'metadataSchema' | 'componentType' | 'variable' | 'conditionAxis',
     never
   >;
   name_key: ColumnType<string, string, string>;

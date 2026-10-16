@@ -414,6 +414,10 @@ describe('the domain package', () => {
         'printVariables',
         'resolveVariable',
         'variableDefinitionSchema',
+        // R6: condition axes, profiles, and content as a profile selects it.
+        'applyConditions',
+        'conditionAxisDefinitionSchema',
+        'profileSchema',
         // What a definition is checked against before it is written (definitions.md, W5.1).
         'assignmentConflicts',
         'brokenDefaults',

@@ -10,6 +10,8 @@ import {
   nameKey,
   variableDefinitionSchema,
   type VariableDefinition,
+  conditionAxisDefinitionSchema,
+  type ConditionAxisDefinition,
   readDefinition,
   schemaConflicts,
   templateDefinitionSchema,
@@ -52,7 +54,7 @@ export interface DefinitionSummary {
   readonly id: string;
   readonly kind: DefinitionKind;
   readonly name: string;
-  /** A variable's key, which text names it by (the R5 plan, R5b); absent for every other kind. */
+  /** A variable's or an axis's key, which text names it by (R5b, R6-A); absent for every other kind. */
   readonly key?: string;
   readonly version: { readonly id: string; readonly revision: number; readonly version: number };
 }
@@ -91,6 +93,7 @@ const parsers = {
   metadataSchema: metadataSchemaDefinitionSchema,
   componentType: componentTypeDefinitionSchema,
   variable: variableDefinitionSchema,
+  conditionAxis: conditionAxisDefinitionSchema,
 } as const;
 
 /** Every definition of a kind at its latest version, read as stored definitions are. */
@@ -204,7 +207,9 @@ export async function listDefinitions(
       id: row.id,
       kind: row.kind,
       name: row.name,
-      ...(row.kind === 'variable' && row.key !== null ? { key: row.key } : {}),
+      ...((row.kind === 'variable' || row.kind === 'conditionAxis') && row.key !== null
+        ? { key: row.key }
+        : {}),
       version: { id: row.version_id, revision: row.revision_no, version: row.version_no },
     })),
     next,
@@ -343,34 +348,14 @@ async function refusal(
     if (field !== undefined && (await readDefinitionLatest(trx, field))?.kind !== 'field') {
       return { answer: 'definition.unresolved', missing: [field], requires: [] };
     }
-    // Its key is fixed once made: every variable node in text names it by that key.
-    if (self !== undefined) {
-      const held = (await readDefinitionLatest(trx, self))?.definition as
-        VariableDefinition | undefined;
-      if (held !== undefined && held.key !== variable.key) {
-        return {
-          answer: 'definition.invalid',
-          failures: [
-            {
-              code: 'metadata.fixed',
-              field: self,
-              rule: 'fixed',
-              schemas: [],
-              detail: `A variable keeps its key, ${held.key}`,
-            },
-          ],
-        };
-      }
-    }
-    const keyed = (await latestOfKind(trx, 'variable')).find(
-      (each) => each.definition.key === variable.key && each.id !== self,
-    );
-    if (keyed) {
-      return {
-        answer: 'definition.name_taken',
-        holder: { id: keyed.id, name: keyed.definition.name },
-      };
-    }
+    const refused = await keyRefused(trx, 'variable', variable.key, self);
+    if (refused) return refused;
+  }
+  if (kind === 'conditionAxis') {
+    // As a variable's (the R6 plan, R6-A): every condition mark in text names it by its key.
+    const axis = candidate as ConditionAxisDefinition;
+    const refused = await keyRefused(trx, 'conditionAxis', axis.key, self);
+    if (refused) return refused;
   }
   const holder = await nameHolder(trx, kind, candidate.name, self);
   if (holder) return { answer: 'definition.name_taken', holder };
@@ -464,6 +449,51 @@ export async function recordDefinitionVersion(
     case 'artifact.missing':
       return { answer: 'definition.missing' };
   }
+}
+
+/**
+ * A keyed definition's key refused: changed from the one it was made with, which content names it
+ * by (#644's review; the R6 plan, R6-A), or another of its kind's.
+ */
+async function keyRefused(
+  trx: TenantTransaction,
+  kind: 'variable' | 'conditionAxis',
+  key: string,
+  self: string | undefined,
+): Promise<DefinitionAnswer | undefined> {
+  if (self !== undefined) {
+    const held = (await readDefinitionLatest(trx, self))?.definition as
+      | { readonly key: string }
+      | undefined;
+    if (held !== undefined && held.key !== key) {
+      return {
+        answer: 'definition.invalid',
+        failures: [
+          {
+            code: 'metadata.fixed',
+            field: self,
+            rule: 'fixed',
+            schemas: [],
+            detail: `${kind === 'variable' ? 'A variable' : 'An axis'} keeps its key, ${held.key}`,
+          },
+        ],
+      };
+    }
+  }
+  const keyed = (await latestOfKind(trx, kind)).find(
+    (each) => each.definition.key === key && each.id !== self,
+  );
+  return keyed
+    ? { answer: 'definition.name_taken', holder: { id: keyed.id, name: keyed.definition.name } }
+    : undefined;
+}
+
+/** The environment's condition axes by key, each at its latest version (REU-020; R6-A). */
+export async function axesByKey(
+  trx: TenantTransaction,
+): Promise<Map<string, ConditionAxisDefinition>> {
+  const stored = await latestOfKind(trx, 'conditionAxis');
+  return new Map(stored.map((each) => [each.definition.key, each.definition]));
 }
 
 /**
