@@ -864,6 +864,7 @@ describe('the citations in the committed model', () => {
     // 963 (2026-10-11): CP2's comparison routes.
     // 959 (2026-10-11): CP1's comparison in the domain.
     // 954 (2026-10-11): BL4's baseline page and its links.
+    // 1535 (2026-10-16): R12b's conditions on blocks in the editor - REU-021 and REU-026.
     // 1534 (2026-10-16): R12a's conditions in the outline - REU-021 and REU-026.
     // 1532 (2026-10-16): R11c's baseline profile and gate, and the final review - VER-020, LIF-065, STR-036.
     // 1527 (2026-10-16): R11b's conditions on numbered blocks, through the publish, the editor and paste.
@@ -923,7 +924,7 @@ describe('the citations in the committed model', () => {
     // 875 (2026-10-11): TG3's widths, its final review among them.
     // 866 (2026-10-11): TG2's groups on the page and transposition.
     // 851 (2026-10-11): TG1's groups, in the domain, the worker and Word.
-    expect(model.citations).toHaveLength(1534);
+    expect(model.citations).toHaveLength(1535);
   });
 
   it('cites no identifier the corpus does not hold', () => {

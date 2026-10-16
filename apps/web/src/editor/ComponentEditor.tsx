@@ -46,6 +46,8 @@ import {
   removeCondition,
   setCondition,
   setConditionAxes,
+  conditionOnBlock,
+  type ConditionChoice,
   type ConditionHeld,
   textWhereAt,
   replaceFigureImage,
@@ -733,6 +735,8 @@ export function ComponentEditor({
   const [conditioning, setConditioning] = useState<{
     readonly view: EditorView;
     readonly held: readonly ConditionHeld[];
+    /** Whether it goes on a block, which is offered no alternative (the R12 plan). */
+    readonly onBlock: boolean;
   } | null>(null);
   const conditionsBack = useRef<EditorView | null>(null);
   // The paste report's, which comes and goes too: it is there from a paste with something to say
@@ -1080,7 +1084,11 @@ export function ComponentEditor({
 
   /** Opens the Condition dialog over `editing`, as the palette opens (the R6 plan, R6-H). */
   const openConditions = (editing: EditorView): boolean => {
-    setConditioning({ view: editing, held: conditionsOver(editing.state) });
+    setConditioning({
+      view: editing,
+      held: conditionsOver(editing.state),
+      onBlock: conditionOnBlock(editing.state),
+    });
     return true;
   };
   const closeConditions = () => {
@@ -3159,9 +3167,13 @@ export function ComponentEditor({
             client={client}
             held={conditioning.held}
             onSet={(choice) => conditionWith(setCondition(choice, newBlockIdentifier), 'set')}
-            onAlternative={(choice) =>
-              conditionWith(addAlternative(choice, newBlockIdentifier), 'added')
-            }
+            // Text alone is copied beside itself; a block takes its conditions whole (the R12 plan).
+            {...(conditioning.onBlock
+              ? {}
+              : {
+                  onAlternative: (choice: ConditionChoice) =>
+                    conditionWith(addAlternative(choice, newBlockIdentifier), 'added'),
+                })}
             onRemove={(axis) => conditionWith(removeCondition(axis), 'removed')}
             onCancel={closeConditions}
           />,

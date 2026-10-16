@@ -31,7 +31,7 @@ import { imagesUnmarked, marksPastImages } from './images.js';
 import { commandKeymap, spansOf } from './marks.js';
 import type { BindingContext } from './bindings.js';
 import { bindingContextOf, bindingDecorations, bindingsPlugin } from './bindingView.js';
-import { conditionAxesPlugin } from './conditions.js';
+import { conditionAxesPlugin, conditionedBlocksPlugin } from './conditions.js';
 import { boundTableFocusDecorations, boundTableFocusPlugin } from './boundTableFocus.js';
 import type { ReferenceContext } from './referenceText.js';
 import { referenceContextOf, referenceDecorations, referencesPlugin } from './referenceView.js';
@@ -577,6 +577,8 @@ export function createEditorState(options: EditorStateOptions): EditorState {
       bindingsPlugin(options.bindingContext ?? null),
       // The environment's declared axes, which a paste keeps conditions on (the R6 plan, R6-H).
       conditionAxesPlugin(options.conditionAxes ?? []),
+      // A block its conditions keep for some readers, drawn as such (REU-026; the R12 plan).
+      conditionedBlocksPlugin(),
       // Which column the Bound table panel has the focus on (ADR-0051), held outside the history.
       boundTableFocusPlugin(),
       // The page's check of the theme the surface is set in, and the marks it makes (ET-I, STY-070).

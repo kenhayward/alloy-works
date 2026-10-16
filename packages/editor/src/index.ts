@@ -144,6 +144,7 @@ export {
   addAlternative,
   conditionable,
   conditionAxesOf,
+  conditionOnBlock,
   conditionsOver,
   removeCondition,
   setCondition,
