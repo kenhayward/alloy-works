@@ -17655,8 +17655,12 @@
           "howItIsMet": "Content conditioned on an axis the profile does not name fails the publish `axis_unset`, naming node, block and axis, unless the document's profile records `excludeUnset` (R6-E)"
         },
         {
+          "id": "REU-028",
+          "howItIsMet": "Conditions are applied before contributions are counted: a table, a bound table, a figure or a block equation carries `conditions` as an outline node does (R11-B), and one they take out is removed before numbering, so it consumes no number"
+        },
+        {
           "id": "STR-020",
-          "howItIsMet": "`selectOutline` takes out a section or a reference the profile does not select, with its subtree, before anything reads an occurrence; what it and a text condition take out is never counted, so it takes no number (the R11 plan, R11-C). A numbered block's own condition is R11b's"
+          "howItIsMet": "`selectOutline` takes out a section or a reference the profile does not select, with its subtree, before anything reads an occurrence; what it and a text condition take out is never counted, so it takes no number (the R11 plan, R11-C), as is a table, a bound table, a figure or a block equation its own conditions take out (R11-B)"
         },
         {
           "id": "STR-030",
@@ -27099,13 +27103,13 @@
     {
       "id": "CNT-049",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 4250,
+      "line": 4280,
       "kind": "title"
     },
     {
       "id": "CNT-081",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 4066,
+      "line": 4096,
       "kind": "title"
     },
     {
@@ -27123,13 +27127,13 @@
     {
       "id": "PUB-004",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7142,
+      "line": 7172,
       "kind": "title"
     },
     {
       "id": "PUB-005",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 6851,
+      "line": 6881,
       "kind": "title"
     },
     {
@@ -27159,25 +27163,31 @@
     {
       "id": "PUB-089",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7163,
+      "line": 7193,
       "kind": "title"
     },
     {
       "id": "PUB-103",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 6134,
+      "line": 6164,
       "kind": "title"
     },
     {
       "id": "REU-016",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7234,
+      "line": 7264,
       "kind": "title"
     },
     {
       "id": "REU-019",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7177,
+      "line": 7207,
+      "kind": "title"
+    },
+    {
+      "id": "REU-028",
+      "file": "packages/domain/src/publishing/assemble.test.ts",
+      "line": 3392,
       "kind": "title"
     },
     {
@@ -27195,7 +27205,7 @@
     {
       "id": "REU-038",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7234,
+      "line": 7264,
       "kind": "title"
     },
     {
@@ -27225,13 +27235,13 @@
     {
       "id": "STR-028",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 4042,
+      "line": 4072,
       "kind": "title"
     },
     {
       "id": "STR-029",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3766,
+      "line": 3796,
       "kind": "title"
     },
     {
@@ -27243,25 +27253,25 @@
     {
       "id": "STR-031",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 4149,
+      "line": 4179,
       "kind": "title"
     },
     {
       "id": "STR-032",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3660,
+      "line": 3690,
       "kind": "title"
     },
     {
       "id": "STR-056",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3689,
+      "line": 3719,
       "kind": "title"
     },
     {
       "id": "STR-062",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3712,
+      "line": 3742,
       "kind": "title"
     },
     {
@@ -27273,19 +27283,19 @@
     {
       "id": "STY-015",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 5341,
+      "line": 5371,
       "kind": "title"
     },
     {
       "id": "STY-016",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 5341,
+      "line": 5371,
       "kind": "title"
     },
     {
       "id": "STY-017",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 5365,
+      "line": 5395,
       "kind": "title"
     },
     {
@@ -27303,7 +27313,7 @@
     {
       "id": "TAB-053",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7068,
+      "line": 7098,
       "kind": "title"
     },
     {
@@ -27526,6 +27536,18 @@
       "id": "REL-047",
       "file": "packages/domain/src/relationships/type.test.ts",
       "line": 20,
+      "kind": "title"
+    },
+    {
+      "id": "REU-021",
+      "file": "packages/domain/src/reuse/block-conditions.test.ts",
+      "line": 51,
+      "kind": "title"
+    },
+    {
+      "id": "REU-024",
+      "file": "packages/domain/src/reuse/block-conditions.test.ts",
+      "line": 70,
       "kind": "title"
     },
     {
@@ -28413,19 +28435,19 @@
     {
       "id": "DAT-047",
       "file": "packages/editor/src/boundTables.test.ts",
-      "line": 298,
+      "line": 300,
       "kind": "title"
     },
     {
       "id": "DAT-115",
       "file": "packages/editor/src/boundTables.test.ts",
-      "line": 483,
+      "line": 485,
       "kind": "title"
     },
     {
       "id": "TAB-008",
       "file": "packages/editor/src/boundTables.test.ts",
-      "line": 401,
+      "line": 403,
       "kind": "title"
     },
     {
@@ -28443,7 +28465,7 @@
     {
       "id": "CNT-025",
       "file": "packages/editor/src/equations.test.ts",
-      "line": 455,
+      "line": 456,
       "kind": "title"
     },
     {
@@ -28503,7 +28525,7 @@
     {
       "id": "CNT-014",
       "file": "packages/editor/src/mapping.test.ts",
-      "line": 1224,
+      "line": 1238,
       "kind": "title"
     },
     {
@@ -28539,7 +28561,7 @@
     {
       "id": "REU-021",
       "file": "packages/editor/src/mapping.test.ts",
-      "line": 1307,
+      "line": 1321,
       "kind": "title"
     },
     {

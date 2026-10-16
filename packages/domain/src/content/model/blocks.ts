@@ -12,6 +12,7 @@ import {
   tableBindingSchema,
 } from './inline.js';
 import { artifactIdentifierSchema } from './identifier.js';
+import { conditionsSchema, type Conditions } from './marks.js';
 
 const identified = { id: z.string().min(1) };
 
@@ -39,6 +40,7 @@ export type BlockNode =
       note?: z.infer<typeof inlineNodeSchema>[] | undefined;
       numbered?: false | undefined;
       wide?: WideStrategy | undefined;
+      conditions?: Conditions | undefined;
       rows: { cells: { content: BlockNode[]; colspan: number; rowspan: number }[] }[];
     }
   | {
@@ -50,6 +52,7 @@ export type BlockNode =
       caption: z.infer<typeof inlineNodeSchema>[];
       alternative: z.infer<typeof alternativeSchema>;
       numbered?: false | undefined;
+      conditions?: Conditions | undefined;
     }
   | BoundTableNode
   | { type: 'preformatted'; id: string; text: string; language?: string | undefined }
@@ -59,7 +62,14 @@ export type BlockNode =
       content: BlockNode[];
       attribution?: z.infer<typeof inlineNodeSchema>[] | undefined;
     }
-  | { type: 'equation'; id: string; mathml: string; latex?: string | undefined; numbered: boolean };
+  | {
+      type: 'equation';
+      id: string;
+      mathml: string;
+      latex?: string | undefined;
+      numbered: boolean;
+      conditions?: Conditions | undefined;
+    };
 
 export const blockNodeSchema: z.ZodType<BlockNode> = z.lazy(() =>
   z.discriminatedUnion('type', [
@@ -158,6 +168,13 @@ export type WideStrategy = (typeof WIDE_STRATEGIES)[number];
 
 const wide = z.enum(WIDE_STRATEGIES).optional();
 
+/**
+ * **What a profile must select for a numbered block to be published** (REU-021; the R11 plan, R11-B):
+ * a table's, a bound table's, a figure's and a block equation's, as an outline node's are. Optional,
+ * and so additive at schema 1 as `wide` was; a paragraph's conditions are its text's marks.
+ */
+const whole = conditionsSchema.optional();
+
 export const tableNodeSchema = z.strictObject({
   type: z.literal('table'),
   ...identified,
@@ -177,6 +194,7 @@ export const tableNodeSchema = z.strictObject({
   note: z.array(inlineNodeSchema).optional(),
   numbered: unnumbered,
   wide,
+  conditions: whole,
   // The grid - rows covering one number of columns, no two cells covering one place - is a rule of
   // the walk, which can see the whole table (`checkTable` in document.ts).
   rows: z
@@ -261,6 +279,7 @@ export type BoundTableNode = {
   note?: z.infer<typeof inlineNodeSchema>[] | undefined;
   notes?: z.infer<typeof footnoteNodeSchema>[] | undefined;
   wide?: WideStrategy | undefined;
+  conditions?: Conditions | undefined;
 };
 
 /** The most notes a bound table holds (the TB3 plan, TB3-A). */
@@ -287,6 +306,7 @@ export const boundTableNodeSchema = z.strictObject({
   // Anchored `keyed` or `column`, and only those (TB3-A), which the walk holds.
   notes: z.array(footnoteNodeSchema).min(1).max(BOUND_TABLE_NOTES_MAX).optional(),
   wide,
+  conditions: whole,
 });
 
 export const figureNodeSchema = z.strictObject({
@@ -305,6 +325,7 @@ export const figureNodeSchema = z.strictObject({
   caption: z.array(inlineNodeSchema),
   alternative: alternativeSchema,
   numbered: unnumbered,
+  conditions: whole,
 });
 
 export const preformattedNodeSchema = z.strictObject({
@@ -328,6 +349,7 @@ export const blockEquationNodeSchema = z.strictObject({
   ...equationContentSchema,
   /** CNT-047: numbered or explicitly unnumbered. There is no third state. */
   numbered: z.boolean(),
+  conditions: whole,
 });
 
 /**

@@ -763,6 +763,38 @@ describe('the re-identify stage', () => {
     ]);
   });
 
+  it("drops a numbered block's condition whose axis the space lacks, keeping one it has (the R11 plan, R11-B)", () => {
+    const equation = (id: string, conditions: unknown[]) => ({
+      type: 'equation',
+      id,
+      mathml: '<math><mi>x</mi></math>',
+      numbered: true,
+      conditions,
+    });
+    const { outcome, entries } = run(
+      {
+        schemaVersion: 1,
+        content: [
+          equation('e1', [
+            { axis: 'jurisdiction', values: ['uk'] },
+            { axis: 'audience', values: ['vets'] },
+          ]),
+          equation('e2', [{ axis: 'jurisdiction', values: ['uk'] }]),
+        ],
+      },
+      receiver({ conditionAxes: ['audience'] }),
+    );
+    expect(outcome.ok && outcome.value.content).toEqual([
+      { ...equation('n3', [{ axis: 'audience', values: ['vets'] }]) },
+      { type: 'equation', id: 'n4', mathml: '<math><mi>x</mi></math>', numbered: true },
+    ]);
+    expect(entries).toEqual([
+      { stage: 'reidentify', action: 'discarded', subject: 'condition', detail: 'jurisdiction' },
+      { stage: 'reidentify', action: 'discarded', subject: 'condition', detail: 'jurisdiction' },
+      { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 2 },
+    ]);
+  });
+
   it('refuses when the allocator keeps returning identifiers already used', () => {
     const { outcome, entries } = run(
       { schemaVersion: 1, content: [paragraph('b', [text('x')])] },

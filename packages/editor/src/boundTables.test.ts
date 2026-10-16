@@ -174,6 +174,8 @@ describe('a bound table mapped to the editor and back (TB2-C)', () => {
       boundTable({ note: [text('Only a note.')] }),
       // Set on landscape pages where too wide (TB3-G), kept as stored.
       boundTable({ wide: 'rotate' }),
+      // Conditioned as a whole (the R11 plan, R11-B), kept as stored.
+      boundTable({ conditions: [{ axis: 'audience', values: ['regulator'] }] }),
       // Transposed by a header column (TG2), kept as stored.
       boundTable({ transpose: { header: 'site' } }),
       // Grouped, a level marking its subtotals, kept as stored (the TG1 final review).

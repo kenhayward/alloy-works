@@ -334,6 +334,7 @@ function nodeOf(block: BlockNode): Node {
           keyColumns: block.keyColumns ?? null,
           numbered: block.numbered !== false,
           wide: block.wide ?? null,
+          conditions: block.conditions ?? null,
         },
         [
           editorSchema.node('tableCaption', null, block.caption.flatMap(toRun)),
@@ -366,6 +367,7 @@ function nodeOf(block: BlockNode): Node {
           imageStyle: block.imageStyle,
           alternative: block.alternative,
           numbered: block.numbered !== false,
+          conditions: block.conditions ?? null,
         },
         [editorSchema.node('figureCaption', null, block.caption.flatMap(toRun))],
       );
@@ -386,6 +388,7 @@ function nodeOf(block: BlockNode): Node {
           groups: block.groups ?? null,
           transpose: block.transpose ?? null,
           wide: block.wide ?? null,
+          conditions: block.conditions ?? null,
         },
         [
           editorSchema.node('tableCaption', null, block.caption.flatMap(toRun)),
@@ -409,6 +412,7 @@ function nodeOf(block: BlockNode): Node {
         mathml: block.mathml,
         latex: block.latex ?? null,
         numbered: block.numbered,
+        conditions: block.conditions ?? null,
       });
     default:
       // Unreachable: `toEditor` refuses a block with no node before it builds anything, and this is
@@ -732,6 +736,8 @@ function storedBlock(node: Node, at: string): unknown {
         ...(node.attrs.numbered === false ? { numbered: false } : {}),
         // As stored (TB3-G): absent is null here, and the style's when published.
         ...(node.attrs.wide === null ? {} : { wide: node.attrs.wide as string }),
+        // As stored (R11-B): null is none.
+        ...(node.attrs.conditions === null ? {} : { conditions: node.attrs.conditions as object }),
         rows,
       };
     }
@@ -748,6 +754,8 @@ function storedBlock(node: Node, at: string): unknown {
         caption: runsOf(node.child(0), id),
         alternative: node.attrs.alternative as object,
         ...(node.attrs.numbered === false ? { numbered: false } : {}),
+        // As stored (R11-B): null is none.
+        ...(node.attrs.conditions === null ? {} : { conditions: node.attrs.conditions as object }),
       };
     }
     case 'boundTable': {
@@ -779,6 +787,8 @@ function storedBlock(node: Node, at: string): unknown {
         ...(notes.length === 0 ? {} : { notes }),
         ...member('boundTableSource', 'source'),
         ...(node.attrs.wide === null ? {} : { wide: node.attrs.wide as string }),
+        // As stored (R11-B): null is none.
+        ...(node.attrs.conditions === null ? {} : { conditions: node.attrs.conditions as object }),
       };
     }
     case 'equationBlock': {
@@ -789,6 +799,8 @@ function storedBlock(node: Node, at: string): unknown {
         mathml: node.attrs.mathml as string,
         ...(node.attrs.latex === null ? {} : { latex: node.attrs.latex }),
         numbered: node.attrs.numbered as boolean,
+        // As stored (R11-B): null is none.
+        ...(node.attrs.conditions === null ? {} : { conditions: node.attrs.conditions as object }),
       };
     }
     default:

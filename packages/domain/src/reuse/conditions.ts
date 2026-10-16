@@ -58,6 +58,20 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const isCondition = (mark: unknown): mark is ConditionMark =>
   isRecord(mark) && mark['type'] === 'condition';
 
+/** Every text run's words a value holds, at any depth, joined by a space: what the scan looks for. */
+function wordsOf(value: unknown): string {
+  const found: string[] = [];
+  const walk = (each: unknown) => {
+    if (Array.isArray(each)) each.forEach(walk);
+    else if (isRecord(each)) {
+      if (each['type'] === 'text' && typeof each['value'] === 'string') found.push(each['value']);
+      else Object.values(each).forEach(walk);
+    }
+  };
+  walk(value);
+  return found.join(' ').trim();
+}
+
 const isRun = (
   value: unknown,
 ): value is { type: 'text'; value: string; marks: readonly unknown[] } =>
@@ -107,6 +121,24 @@ export function applyConditions(
       };
       const kept: unknown[] = [];
       for (const member of value) {
+        // A numbered block's own conditions (R11-B): selected as a mark's are, else taken out whole.
+        if (isRecord(member) && Array.isArray(member['conditions'])) {
+          const id = member['id'] as string;
+          const asked = member['conditions'] as readonly { axis: string; values: string[] }[];
+          const answers = asked.map((each) => selects({ type: 'condition', ...each }, id));
+          if (answers.every(Boolean)) {
+            close();
+            const { conditions: dropped, ...rest } = member;
+            void dropped;
+            kept.push(walk(rest, block));
+          } else {
+            close();
+            removed.push(id);
+            const words = wordsOf(member);
+            if (words !== '') excluded.push(words);
+          }
+          continue;
+        }
         if (isRun(member) && member.marks.some(isCondition)) {
           // Each asked, so every unset axis on the run is reported, not the first alone (REU-053).
           const answers = member.marks.filter(isCondition).map((mark) => selects(mark, block));

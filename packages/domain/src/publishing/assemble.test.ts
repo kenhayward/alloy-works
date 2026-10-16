@@ -3389,6 +3389,36 @@ describe('cross-references, published (cross-references 2)', () => {
       expect(accepted.ok).toBe(true);
     });
 
+    it('REU-028 STR-020 numbers only the tables the profile keeps: a table its own conditions take out takes no number, and a reference to it fails', () => {
+      const blocks = [
+        table('t1', [text('Inspections')], { conditions: regulator }),
+        table('t2', [text('Totals')]),
+        paragraph('b1', xref('x1', toBlock('t2'), 'number')),
+      ];
+      const as = (audience: string) =>
+        assemble({
+          ...inIntro(...blocks),
+          profile: { values: { audience: [audience] }, excludeUnset: false },
+        });
+      expect(publishedOf(as('regulator')).references.map((each) => each.text)).toEqual([
+        'Table 1.2',
+      ]);
+      expect(publishedOf(as('internal')).references.map((each) => each.text)).toEqual([
+        'Table 1.1',
+      ]);
+      expect(publishedOf(as('internal')).anchors).not.toContain(B('calib', 't1'));
+      expect(
+        failuresOf(
+          assemble({
+            ...inIntro(table('t1', [text('Inspections')], { conditions: regulator }), {
+              ...paragraph('b1', xref('x1', toBlock('t1'), 'number')),
+            }),
+            profile: { values: { audience: ['internal'] }, excludeUnset: false },
+          }),
+        ),
+      ).toEqual([failed('cross_reference_excluded', 'x1', 'block t1')]);
+    });
+
     it('gives the scan the title and the words of what a node condition takes out', () => {
       const assembled = assemble(report('internal'));
       if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
