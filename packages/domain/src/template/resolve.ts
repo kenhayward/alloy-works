@@ -6,7 +6,27 @@ import {
 } from '../metadata/resolve.js';
 import type { MetadataSchemaDefinition } from '../metadata/schema.js';
 
-import type { TemplateDefinition } from './definition.js';
+import type { TemplateComponent, TemplateDefinition } from './definition.js';
+
+/**
+ * What the service found of a required component for its creator (the R9 plan, R9-C): the version its
+ * mode chooses and the query definitions that version's bindings name; or a pin to a version not its
+ * own, or no approved revision to follow. A component the creator may not read, or that is no
+ * component, has no entry at all.
+ */
+export type FoundComponent =
+  | {
+      readonly state: 'found';
+      readonly version: string;
+      readonly bindings: readonly string[];
+    }
+  | { readonly state: 'foreign' | 'unapproved' };
+
+/** A required component as resolved: the version it is placed at, and its declared mode and place. */
+export interface ResolvedComponent extends TemplateComponent {
+  readonly mode: NonNullable<TemplateComponent['mode']>;
+  readonly version: string;
+}
 
 /**
  * What the service found for a template's references (templates.md, "Resolving a template"): the kind
@@ -17,12 +37,23 @@ export interface TemplateReferences {
   readonly kinds: ReadonlyMap<string, string>;
   readonly schemas: readonly MetadataSchemaDefinition[];
   readonly fields: readonly FieldDefinition[];
+  /** Each required component the creator may read, by its identifier (R9-C). */
+  readonly components?: ReadonlyMap<string, FoundComponent>;
+  /** The query definitions the creator may read, among those the components' bindings name. */
+  readonly definitions?: ReadonlySet<string>;
 }
 
 /** A reference that does not resolve, by what it is (TPL-004). */
 export type UnresolvedReference =
   | { readonly reference: 'theme' | 'layout' | 'schema' | 'field'; readonly id: string }
   | { readonly reference: 'requires'; readonly id: string; readonly field: string }
+  | {
+      readonly reference: 'component';
+      readonly id: string;
+      readonly key: string;
+      readonly why: 'missing' | 'foreign' | 'unapproved';
+    }
+  | { readonly reference: 'query'; readonly id: string; readonly key: string }
   | {
       readonly reference: 'conflict';
       readonly id: string;
@@ -40,6 +71,10 @@ export type ResolvedTemplate =
       /** The fields that apply to a document made from it, and to each of its sections (TPL-054). */
       readonly document: readonly EffectiveField[];
       readonly section: readonly EffectiveField[];
+      /** Each required component, in the definition's order (TPL-014). */
+      readonly components: readonly ResolvedComponent[];
+      /** The query definitions their bindings name, each once: the template's query set (TPL-070). */
+      readonly querySet: readonly string[];
     }
   | { readonly ok: false; readonly unresolved: readonly UnresolvedReference[] };
 
@@ -81,6 +116,32 @@ export function resolveTemplate(
       if (!grouped.has(field)) unresolved.push({ reference: 'requires', id: schema.id, field });
     }
   }
+  // Each required component, at the version its mode chooses, and the definitions its bindings name
+  // (TPL-070; ADR-0062): every one must be there for the creator to read.
+  const components: ResolvedComponent[] = [];
+  const querySet: string[] = [];
+  for (const each of definition.components ?? []) {
+    const component = found.components?.get(each.component);
+    if (component === undefined || component.state !== 'found') {
+      unresolved.push({
+        reference: 'component',
+        id: each.component,
+        key: each.key,
+        why: component === undefined ? 'missing' : component.state,
+      });
+      continue;
+    }
+    components.push({
+      ...each,
+      mode: each.mode ?? { kind: 'approved' },
+      version: component.version,
+    });
+    for (const query of component.bindings) {
+      if (!found.definitions?.has(query)) {
+        unresolved.push({ reference: 'query', id: query, key: each.key });
+      } else if (!querySet.includes(query)) querySet.push(query);
+    }
+  }
   if (unresolved.length > 0) return { ok: false, unresolved };
 
   const at = (level: 'document' | 'section'): EffectiveField[] | UnresolvedReference => {
@@ -110,5 +171,7 @@ export function resolveTemplate(
     changes: definition.changes,
     document: document as EffectiveField[],
     section: section as EffectiveField[],
+    components,
+    querySet,
   };
 }

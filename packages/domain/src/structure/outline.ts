@@ -88,6 +88,8 @@ export type ReferenceNode = {
   readonly values: Record<string, unknown>;
   /** Local overrides, this document's alone (REU-011, REU-012; the R4 plan, R4-A). */
   readonly overrides?: readonly Override[] | undefined;
+  /** The key of the template's required component it was placed for (TPL-014; the R9 plan, R9-B). */
+  readonly origin?: string | undefined;
   readonly children: readonly OutlineNode[];
 };
 
@@ -179,6 +181,12 @@ export const referenceNodeSchema = z.strictObject({
   mode: referenceModeSchema,
   // Additive at schema 1 (the R4 plan, R4-A): every reference stored before has none.
   overrides: overridesSchema.optional(),
+  // Additive, as `overrides` is (the R9 plan, R9-B): the key of the template's required component it
+  // was placed for, which no reference stored before holds.
+  origin: z
+    .string()
+    .regex(/^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/)
+    .optional(),
   children: z.array(outlineNodeSchema),
 });
 
@@ -561,6 +569,8 @@ function canonicaliseOutlineNode(node: OutlineNode): string {
           ['matter', canonicalJson(node.matter)],
           ['mode', canonicalJson(node.mode)],
           ['numbered', canonicalJson(node.numbered)],
+          // Only where one is held: an outline stored before R9 digests as it did.
+          ...(node.origin === undefined ? [] : ([['origin', canonicalJson(node.origin)]] as const)),
           // Only where there are some, marks as a set: an outline stored before R4 digests as it did.
           ...(node.overrides === undefined
             ? []

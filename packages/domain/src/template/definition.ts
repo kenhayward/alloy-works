@@ -5,6 +5,7 @@ import { checkPermitted } from '../data/definition.js';
 import { assignmentSchema } from '../metadata/component-type.js';
 import {
   outlineMatterSchema,
+  referenceModeSchema,
   sectionTitleSchema,
   type OutlineMatter,
 } from '../structure/outline.js';
@@ -75,6 +76,23 @@ export type TemplateAssignment = z.infer<typeof templateAssignmentSchema>;
 
 const artifact = z.uuid();
 
+/** The most components a template may require (the R9 plan, R9-A). */
+export const MAX_TEMPLATE_COMPONENTS = 50;
+
+/**
+ * A component every document from the template includes (TPL-014; R9-A): its key, one namespace with
+ * the starting sections', the component, the reference mode it is placed with, following approved
+ * revisions unless declared (ADR-0062), and its place (TPL-049): the start or end of a starting
+ * section, or of the outline's body at its top level where `section` is null.
+ */
+export const templateComponentSchema = z.strictObject({
+  key,
+  component: artifact,
+  mode: referenceModeSchema.optional(),
+  place: z.strictObject({ section: key.nullable(), at: z.enum(['start', 'end']) }),
+});
+export type TemplateComponent = z.infer<typeof templateComponentSchema>;
+
 /**
  * A template's payload (templates.md; TPL-059, TPL-053): exactly one theme and one layout by
  * reference, any number of schema assignments by reference, the starting outline it owns, and what
@@ -100,6 +118,8 @@ export const templateDefinitionSchema = z
     changes: z.strictObject({ add: z.boolean(), remove: z.boolean(), reorder: z.boolean() }),
     // Additive at schema 1: absent reads as none (templates.md, "Declared on the template").
     parameters: z.array(templateParameterSchema).max(MAX_TEMPLATE_PARAMETERS).optional(),
+    // Additive at schema 1, as `parameters` is: absent reads as none (the R9 plan, R9-A).
+    components: z.array(templateComponentSchema).max(MAX_TEMPLATE_COMPONENTS).optional(),
   })
   .superRefine((template, context) => {
     const keys = new Set<string>();
@@ -135,6 +155,27 @@ export const templateDefinitionSchema = z
       });
     };
     walk(template.outline.sections, ['outline', 'sections']);
+
+    // A required component's key is one no section or other component holds, and it is placed in a
+    // starting section the template declares, or at the top level (TPL-014, TPL-049).
+    const sectionKeys = new Set(keys);
+    (template.components ?? []).forEach((each, index) => {
+      if (keys.has(each.key)) {
+        context.addIssue({
+          code: 'custom',
+          path: ['components', index, 'key'],
+          message: `The key ${each.key} names more than one starting section or component`,
+        });
+      }
+      keys.add(each.key);
+      if (each.place.section !== null && !sectionKeys.has(each.place.section)) {
+        context.addIssue({
+          code: 'custom',
+          path: ['components', index, 'place', 'section'],
+          message: `The component ${each.key} is placed in ${each.place.section}, which is no starting section`,
+        });
+      }
+    });
 
     // A parameter named once, and its permitted values or range in its type, by the query
     // definition's own rule (TE-N, TP1-A).

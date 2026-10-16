@@ -445,13 +445,14 @@ export function applyOutlineOperation(
 ): OutlineApplied {
   const refused = forbidden(outline, operation, rules.changes);
   if (refused) return refused;
-  // TPL-029: a section the template requires goes only with a reason, whatever carries it.
+  // TPL-029, TPL-044: a section or a component the template requires goes only with a reason,
+  // whatever carries it.
   if (operation.operation === 'remove' && (rules.required?.length ?? 0) > 0) {
     const node = findNode(outline.nodes, operation.node);
     let required = false;
     if (node !== undefined) {
       walkOutline([node], (member) => {
-        if (member.type === 'section' && member.origin !== undefined) {
+        if (member.origin !== undefined) {
           if (rules.required!.includes(member.origin)) required = true;
         }
       });
