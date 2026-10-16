@@ -144,6 +144,12 @@
   text-underline-offset: 0.2em;
 }
 
+/* A block its own conditions keep for some readers (the R12 plan): the text's tint, as a bar. */
+.aw-text .aw-conditional {
+  border-inline-start: 3px dashed var(--accent);
+  background: var(--accent-weak);
+}
+
 /*
  * Lists, in the three kinds the schema renders (packages/editor/src/schema.ts). The markers below
  * are the ones the publication template pins - disc, circle and square, which Typst CYCLES, so a

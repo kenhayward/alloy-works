@@ -1421,6 +1421,73 @@ describe('the symbol palette (W14.7)', () => {
     expect(drawn?.getAttribute('title')).toBe('Only where audience is regulator');
   });
 
+  it('REU-026 sets a selected equation conditions from the Condition dialog, offering no alternative, and draws it as conditional', async () => {
+    const AUDIENCE = '00000000-0000-4000-8000-0000000000b1';
+    const version = { id: '00000000-0000-4000-8000-0000000000b2', number: '0.1' };
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () =>
+          json(
+            200,
+            opened({
+              content: blocksOf(para('b1', 'Before.'), {
+                type: 'equation',
+                id: 'e1',
+                mathml: '<math xmlns="http://www.w3.org/1998/Math/MathML"><mi>x</mi></math>',
+                numbered: true,
+                conditions: [{ axis: 'audience', values: ['internal'] }],
+              }),
+            }),
+          ),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'GET /v1/definitions': () =>
+          json(200, {
+            items: [
+              { id: AUDIENCE, kind: 'conditionAxis', name: 'Audience', key: 'audience', version },
+            ],
+            next: null,
+          }),
+        [`GET /v1/definitions/${AUDIENCE}`]: () =>
+          json(200, {
+            id: AUDIENCE,
+            kind: 'conditionAxis',
+            version,
+            definition: {
+              name: 'Audience',
+              key: 'audience',
+              values: [
+                { key: 'regulator', label: 'Regulator' },
+                { key: 'internal', label: 'Internal' },
+              ],
+            },
+          }),
+        ...everySave,
+      },
+      quick,
+      true,
+    );
+    const view = await surface();
+    let at = -1;
+    view.state.doc.descendants((node, pos) => {
+      if (node.type.name === 'equationBlock') at = pos;
+    });
+    view.dispatch(view.state.tr.setSelection(NodeSelection.create(view.state.doc, at)));
+    await userEvent.click(screen.getByRole('button', { name: 'Condition' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Condition' });
+    await within(dialog).findByRole('button', { name: 'Remove condition' });
+    // A block is not copied beside itself: no alternative is offered for one.
+    expect(within(dialog).queryByRole('button', { name: 'Add alternative' })).toBeNull();
+    await userEvent.click(within(dialog).getByRole('checkbox', { name: 'Regulator' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Set condition' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(fromEditor(view.state.doc).content[1]).toMatchObject({
+      conditions: [{ axis: 'audience', values: ['internal', 'regulator'] }],
+    });
+    expect(view.dom.querySelector('.aw-conditional')?.getAttribute('title')).toBe(
+      'Only where audience is internal or regulator',
+    );
+  });
+
   it('dims what the typeface at the cursor lacks, pointing to an equation, and inserts only what it has', async () => {
     const { surface } = openWith(
       blocksOf(para('b1', 'Angle  is small.'), {

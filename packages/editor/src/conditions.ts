@@ -1,5 +1,6 @@
-import type { Mark } from 'prosemirror-model';
+import type { Mark, Node } from 'prosemirror-model';
 import {
+  NodeSelection,
   Plugin,
   PluginKey,
   TextSelection,
@@ -7,7 +8,7 @@ import {
   type EditorState,
   type Transaction,
 } from 'prosemirror-state';
-import type { EditorView } from 'prosemirror-view';
+import { Decoration, DecorationSet, type EditorView } from 'prosemirror-view';
 
 import { editorSchema } from './schema.js';
 
@@ -48,8 +49,53 @@ export const conditionable = (state: EditorState): boolean => {
   return textAlone;
 };
 
-/** Every condition over the selected text, once each, in the order they were set. */
+/** The nodes whose own `conditions` a numbered block's are (the R11 plan, R11-B). */
+const CONDITIONED = new Set(['tableFigure', 'boundTable', 'figure', 'equationBlock']);
+
+type Held = readonly { readonly axis: string; readonly values: readonly string[] }[];
+
+/**
+ * **The block a condition is set on** (REU-021; the R12 plan): the table, bound table, figure or
+ * block equation selected whole, or the one an empty cursor stands in. None where text is selected,
+ * which takes a mark as it always did.
+ */
+function blockTarget(state: EditorState): { readonly pos: number; readonly node: Node } | null {
+  const { selection } = state;
+  if (selection instanceof NodeSelection) {
+    return CONDITIONED.has(selection.node.type.name)
+      ? { pos: selection.from, node: selection.node }
+      : null;
+  }
+  if (!selection.empty) return null;
+  const { $from } = selection;
+  for (let depth = $from.depth; depth > 0; depth -= 1) {
+    const node = $from.node(depth);
+    if (CONDITIONED.has(node.type.name)) return { pos: $from.before(depth), node };
+  }
+  return null;
+}
+
+/** Whether a condition set now would go on a block rather than on text: no alternative is offered. */
+export const conditionOnBlock = (state: EditorState): boolean =>
+  !conditionable(state) && blockTarget(state) !== null;
+
+/** A block's conditions written back whole, none as null, as the mapping stores them. */
+function setBlockConditions(state: EditorState, next: Held): Transaction {
+  const target = blockTarget(state)!;
+  return state.tr.setNodeMarkup(target.pos, undefined, {
+    ...target.node.attrs,
+    conditions:
+      next.length === 0 ? null : next.map((each) => ({ ...each, values: [...each.values] })),
+  });
+}
+
+const heldOn = (node: Node): Held => (node.attrs.conditions as Held | null) ?? [];
+
+/** Every condition over the selected text, or on the block, once each, in the order they were set. */
 export function conditionsOver(state: EditorState): ConditionHeld[] {
+  if (conditionOnBlock(state)) {
+    return heldOn(blockTarget(state)!.node).map((each) => ({ id: each.axis, ...each }));
+  }
   const found = new Map<string, ConditionHeld>();
   const { from, to } = state.selection;
   state.doc.nodesBetween(from, to, (node) => {
@@ -87,7 +133,16 @@ function clearAxis(tr: Transaction, from: number, to: number, axis: string): voi
  */
 export function setCondition(choice: ConditionChoice, newIdentifier: () => string): Command {
   return (state, dispatch) => {
-    if (!conditionable(state) || choice.values.length === 0) return false;
+    if (choice.values.length === 0) return false;
+    // On a block, its conditions whole: any on this axis replaced, others kept (the R12 plan).
+    if (conditionOnBlock(state)) {
+      if (dispatch) {
+        const held = heldOn(blockTarget(state)!.node).filter((each) => each.axis !== choice.axis);
+        dispatch(setBlockConditions(state, [...held, choice]));
+      }
+      return true;
+    }
+    if (!conditionable(state)) return false;
     if (dispatch) {
       const { from, to } = state.selection;
       const tr = state.tr;
@@ -110,6 +165,13 @@ export function setCondition(choice: ConditionChoice, newIdentifier: () => strin
 /** Takes every condition on one axis off the selection. */
 export function removeCondition(axis: string): Command {
   return (state, dispatch) => {
+    if (conditionOnBlock(state)) {
+      if (dispatch) {
+        const held = heldOn(blockTarget(state)!.node).filter((each) => each.axis !== axis);
+        dispatch(setBlockConditions(state, held));
+      }
+      return true;
+    }
     if (!conditionable(state)) return false;
     if (dispatch) {
       const { from, to } = state.selection;
@@ -182,4 +244,50 @@ export function setConditionAxes(view: EditorView, axes: readonly string[]): voi
 }
 
 /** **Condition** as a registry command: whether one could be set. What it is, the dialog chooses. */
-export const canPlaceCondition: Command = (state) => conditionable(state);
+export const canPlaceCondition: Command = (state) =>
+  conditionable(state) || blockTarget(state) !== null;
+
+/** What a block's conditions keep it for, in the words a condition mark's title uses. */
+const saidOf = (held: Held) =>
+  held.map((each) => `Only where ${each.axis} is ${each.values.join(' or ')}`).join('; ');
+
+/**
+ * **A conditional block, drawn** (REU-026; the R12 plan): each block carrying conditions marked
+ * `aw-conditional`, with what it depends on said, as a condition mark's text is.
+ */
+export function conditionedBlocks(state: EditorState): DecorationSet {
+  const drawn: Decoration[] = [];
+  state.doc.descendants((node, pos) => {
+    if (CONDITIONED.has(node.type.name) && heldOn(node).length > 0) {
+      drawn.push(
+        Decoration.node(pos, pos + node.nodeSize, {
+          class: 'aw-conditional',
+          title: saidOf(heldOn(node)),
+        }),
+      );
+    }
+    return true;
+  });
+  return DecorationSet.create(state.doc, drawn);
+}
+
+const conditionedKey = new PluginKey<DecorationSet | null>('conditionedBlocks');
+
+/**
+ * Draws every conditional block (the R12 plan), found again only when the document changes, and
+ * nothing at all where none is conditional.
+ */
+export function conditionedBlocksPlugin(): Plugin {
+  const found = (state: EditorState) => {
+    const set = conditionedBlocks(state);
+    return set.find().length === 0 ? null : set;
+  };
+  return new Plugin<DecorationSet | null>({
+    key: conditionedKey,
+    state: {
+      init: (_config, state) => found(state),
+      apply: (tr, held, _old, state) => (tr.docChanged ? found(state) : held),
+    },
+    props: { decorations: (state) => conditionedKey.getState(state) ?? null },
+  });
+}
