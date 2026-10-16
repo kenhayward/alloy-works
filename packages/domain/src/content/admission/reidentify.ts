@@ -277,6 +277,23 @@ function reidentifyBlock(value: unknown, state: State): unknown[] {
   const blocks = (member: unknown) => mapArray(member, (child) => reidentifyBlock(child, state));
   const inlines = (member: unknown) => mapArray(member, (child) => reidentifyInline(child, state));
 
+  // A numbered block's conditions (the R11 plan, R11-B): each whose axis the space lacks is dropped
+  // and reported, as a condition mark is; none left is no member.
+  if (Array.isArray(block.conditions)) {
+    const kept = block.conditions.filter((condition: unknown) => {
+      const axis = asRecord(condition)?.axis;
+      if (typeof axis === 'string' && state.axes.has(axis)) return true;
+      state.report.add(
+        'reidentify',
+        'discarded',
+        'condition',
+        typeof axis === 'string' ? { detail: axis } : {},
+      );
+      return false;
+    });
+    if (kept.length > 0) out.conditions = kept;
+    else delete out.conditions;
+  }
   if (block.type === 'paragraph') out.content = inlines(block.content);
   if (block.type === 'blockquote') {
     out.content = blocks(block.content);

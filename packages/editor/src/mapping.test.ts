@@ -1070,8 +1070,22 @@ describe('an equation through the mapping (equations 1)', () => {
     expect(held).toEqual([
       { type: 'equation', mathml: SQUARED, latex: null },
       { type: 'equation', mathml: SQUARED, latex: 'x^2' },
-      { type: 'equationBlock', id: 'e1', mathml: SQUARED, latex: null, numbered: false },
-      { type: 'equationBlock', id: 'e2', mathml: SQUARED, latex: 'x^2', numbered: true },
+      {
+        type: 'equationBlock',
+        id: 'e1',
+        mathml: SQUARED,
+        latex: null,
+        numbered: false,
+        conditions: null,
+      },
+      {
+        type: 'equationBlock',
+        id: 'e2',
+        mathml: SQUARED,
+        latex: 'x^2',
+        numbered: true,
+        conditions: null,
+      },
     ]);
     const back = fromEditor(doc).content;
     const [first] = back as [Extract<BlockNode, { type: 'paragraph' }>];
@@ -1337,5 +1351,56 @@ describe('conditions through the mapping (the R6 plan, R6-H)', () => {
       'data-values': 'regulator internal',
       title: 'Only where audience is regulator or internal',
     });
+  });
+});
+
+describe('a numbered block with conditions (the R11 plan, R11-B)', () => {
+  it('REU-021 keeps the conditions of a table, a figure and a block equation through an edit and a save', () => {
+    const conditions = [{ axis: 'audience', values: ['regulator', 'auditor'] }];
+    const caption = [{ type: 'text', value: 'Inspections', marks: [] }];
+    const stored = parseContentDocument({
+      ...root,
+      schemaVersion: 1,
+      content: [
+        {
+          type: 'table',
+          id: 't1',
+          style: 'table',
+          caption,
+          headerRows: 0,
+          headerColumns: 0,
+          conditions,
+          rows: [{ cells: [{ content: [paragraph('c1', 'Twelve')], colspan: 1, rowspan: 1 }] }],
+        },
+        {
+          type: 'figure',
+          id: 'f1',
+          asset: '00000000-0000-4000-8000-0000000000f1',
+          imageStyle: 'default',
+          caption,
+          alternative: { kind: 'own', text: 'A plan of the site' },
+          conditions,
+        },
+        {
+          type: 'equation',
+          id: 'e1',
+          mathml: '<math xmlns="http://www.w3.org/1998/Math/MathML"><mi>x</mi></math>',
+          numbered: true,
+          conditions,
+        },
+        paragraph('p1', 'After'),
+      ],
+    });
+    expect(fromEditor(openedDoc(stored))).toEqual(stored);
+    // And none stays none.
+    const plain = parseContentDocument({
+      ...stored,
+      content: stored.content.map((block) => {
+        const { conditions: dropped, ...rest } = block as BlockNode & { conditions?: unknown };
+        void dropped;
+        return rest;
+      }),
+    });
+    expect(fromEditor(openedDoc(plain))).toEqual(plain);
   });
 });

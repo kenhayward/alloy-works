@@ -77,6 +77,7 @@ describe('an equation in the editor schema (equations 1)', () => {
       mathml: SQUARED,
       latex: null,
       numbered: false,
+      conditions: null,
     });
     expect(() => type.create({ numbered: true })).toThrow(/mathml/);
   });

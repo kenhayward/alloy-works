@@ -377,6 +377,8 @@ export const editorSchema = new Schema({
         // STR-071: false where the author marked the table unnumbered, which the stored model spells
         // `numbered: false` and a numbered one by the member's absence (W14's W-H).
         numbered: { default: true },
+        // What a profile must select for it to be published, as stored, null where none (R11-B).
+        conditions: { default: null },
         // How it is set where too wide (TB3-G), as stored, null where absent: the Table panel sets it
         // in TB3.3.
         wide: { default: null },
@@ -410,6 +412,8 @@ export const editorSchema = new Schema({
         id: { default: null },
         style: { default: 'table' },
         numbered: { default: true },
+        // What a profile must select for it to be published, as stored, null where none (R11-B).
+        conditions: { default: null },
         binding: {},
         columns: {},
         headerColumn: { default: false },
@@ -556,6 +560,8 @@ export const editorSchema = new Schema({
         alternative: { default: { kind: 'decorative' } },
         // STR-071: false where the author marked the figure unnumbered, as a table's is.
         numbered: { default: true },
+        // What a profile must select for it to be published, as stored, null where none (R11-B).
+        conditions: { default: null },
       },
       toDOM: (node) => {
         const alt = altOf(node.attrs.alternative as { kind: string; text?: string });
@@ -824,6 +830,8 @@ export const editorSchema = new Schema({
         mathml: {},
         latex: { default: null },
         numbered: { default: false },
+        // What a profile must select for it to be published, as stored, null where none (R11-B).
+        conditions: { default: null },
       },
       toDOM: (node) => [
         'div',
