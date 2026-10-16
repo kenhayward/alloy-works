@@ -22656,6 +22656,11 @@
                                   "string",
                                   "null"
                                 ]
+                              },
+                              "external": {
+                                "description": "True where the person is from outside the organisation; absent otherwise",
+                                "type": "boolean",
+                                "const": true
                               }
                             },
                             "required": [
@@ -36176,6 +36181,11 @@
                                   "string",
                                   "null"
                                 ]
+                              },
+                              "external": {
+                                "description": "True where the person is from outside the organisation; absent otherwise",
+                                "type": "boolean",
+                                "const": true
                               }
                             },
                             "required": [
@@ -36269,6 +36279,11 @@
                                           "string",
                                           "null"
                                         ]
+                                      },
+                                      "external": {
+                                        "description": "True where the person is from outside the organisation; absent otherwise",
+                                        "type": "boolean",
+                                        "const": true
                                       }
                                     },
                                     "required": [
@@ -36710,6 +36725,11 @@
                             "string",
                             "null"
                           ]
+                        },
+                        "external": {
+                          "description": "True where the person is from outside the organisation; absent otherwise",
+                          "type": "boolean",
+                          "const": true
                         }
                       },
                       "required": [
@@ -36803,6 +36823,11 @@
                                     "string",
                                     "null"
                                   ]
+                                },
+                                "external": {
+                                  "description": "True where the person is from outside the organisation; absent otherwise",
+                                  "type": "boolean",
+                                  "const": true
                                 }
                               },
                               "required": [
@@ -37380,6 +37405,11 @@
                                   "string",
                                   "null"
                                 ]
+                              },
+                              "external": {
+                                "description": "True where the person is from outside the organisation; absent otherwise",
+                                "type": "boolean",
+                                "const": true
                               }
                             },
                             "required": [
@@ -37874,6 +37904,11 @@
                             "string",
                             "null"
                           ]
+                        },
+                        "external": {
+                          "description": "True where the person is from outside the organisation; absent otherwise",
+                          "type": "boolean",
+                          "const": true
                         }
                       },
                       "required": [
@@ -37910,6 +37945,11 @@
                                     "string",
                                     "null"
                                   ]
+                                },
+                                "external": {
+                                  "description": "True where the person is from outside the organisation; absent otherwise",
+                                  "type": "boolean",
+                                  "const": true
                                 }
                               },
                               "required": [
@@ -37968,6 +38008,11 @@
                                   "string",
                                   "null"
                                 ]
+                              },
+                              "external": {
+                                "description": "True where the person is from outside the organisation; absent otherwise",
+                                "type": "boolean",
+                                "const": true
                               }
                             },
                             "required": [
@@ -137706,6 +137751,11 @@
                                   "string",
                                   "null"
                                 ]
+                              },
+                              "external": {
+                                "description": "True where the person is from outside the organisation; absent otherwise",
+                                "type": "boolean",
+                                "const": true
                               }
                             },
                             "required": [
@@ -137742,6 +137792,11 @@
                                           "string",
                                           "null"
                                         ]
+                                      },
+                                      "external": {
+                                        "description": "True where the person is from outside the organisation; absent otherwise",
+                                        "type": "boolean",
+                                        "const": true
                                       }
                                     },
                                     "required": [
@@ -137789,6 +137844,11 @@
                                         "string",
                                         "null"
                                       ]
+                                    },
+                                    "external": {
+                                      "description": "True where the person is from outside the organisation; absent otherwise",
+                                      "type": "boolean",
+                                      "const": true
                                     }
                                   },
                                   "required": [
@@ -138295,6 +138355,11 @@
                             "string",
                             "null"
                           ]
+                        },
+                        "external": {
+                          "description": "True where the person is from outside the organisation; absent otherwise",
+                          "type": "boolean",
+                          "const": true
                         }
                       },
                       "required": [
@@ -138331,6 +138396,11 @@
                                     "string",
                                     "null"
                                   ]
+                                },
+                                "external": {
+                                  "description": "True where the person is from outside the organisation; absent otherwise",
+                                  "type": "boolean",
+                                  "const": true
                                 }
                               },
                               "required": [
@@ -138378,6 +138448,11 @@
                                   "string",
                                   "null"
                                 ]
+                              },
+                              "external": {
+                                "description": "True where the person is from outside the organisation; absent otherwise",
+                                "type": "boolean",
+                                "const": true
                               }
                             },
                             "required": [
@@ -138905,6 +138980,11 @@
                                   "string",
                                   "null"
                                 ]
+                              },
+                              "external": {
+                                "description": "True where the person is from outside the organisation; absent otherwise",
+                                "type": "boolean",
+                                "const": true
                               }
                             },
                             "required": [
@@ -138998,6 +139078,11 @@
                                           "string",
                                           "null"
                                         ]
+                                      },
+                                      "external": {
+                                        "description": "True where the person is from outside the organisation; absent otherwise",
+                                        "type": "boolean",
+                                        "const": true
                                       }
                                     },
                                     "required": [
@@ -141104,6 +141189,11 @@
                                   "string",
                                   "null"
                                 ]
+                              },
+                              "external": {
+                                "description": "True where the person is from outside the organisation; absent otherwise",
+                                "type": "boolean",
+                                "const": true
                               }
                             },
                             "required": [
@@ -141604,6 +141694,11 @@
                             "string",
                             "null"
                           ]
+                        },
+                        "external": {
+                          "description": "True where the person is from outside the organisation; absent otherwise",
+                          "type": "boolean",
+                          "const": true
                         }
                       },
                       "required": [
@@ -141640,6 +141735,11 @@
                                     "string",
                                     "null"
                                   ]
+                                },
+                                "external": {
+                                  "description": "True where the person is from outside the organisation; absent otherwise",
+                                  "type": "boolean",
+                                  "const": true
                                 }
                               },
                               "required": [
@@ -141698,6 +141798,11 @@
                                   "string",
                                   "null"
                                 ]
+                              },
+                              "external": {
+                                "description": "True where the person is from outside the organisation; absent otherwise",
+                                "type": "boolean",
+                                "const": true
                               }
                             },
                             "required": [
@@ -152660,6 +152765,11 @@
                                       "string",
                                       "null"
                                     ]
+                                  },
+                                  "external": {
+                                    "description": "From outside the organisation (IAM-045)",
+                                    "type": "boolean",
+                                    "const": true
                                   }
                                 },
                                 "required": [
@@ -156877,6 +156987,11 @@
                           },
                           "name": {
                             "type": "string"
+                          },
+                          "external": {
+                            "description": "From outside the organisation (IAM-045)",
+                            "type": "boolean",
+                            "const": true
                           }
                         },
                         "required": [
@@ -175009,6 +175124,11 @@
                             "string",
                             "null"
                           ]
+                        },
+                        "external": {
+                          "description": "True where the person is from outside the organisation; absent otherwise",
+                          "type": "boolean",
+                          "const": true
                         }
                       },
                       "required": [
@@ -175045,6 +175165,11 @@
                                     "string",
                                     "null"
                                   ]
+                                },
+                                "external": {
+                                  "description": "True where the person is from outside the organisation; absent otherwise",
+                                  "type": "boolean",
+                                  "const": true
                                 }
                               },
                               "required": [
@@ -175092,6 +175217,11 @@
                                   "string",
                                   "null"
                                 ]
+                              },
+                              "external": {
+                                "description": "True where the person is from outside the organisation; absent otherwise",
+                                "type": "boolean",
+                                "const": true
                               }
                             },
                             "required": [
@@ -175543,6 +175673,11 @@
                             "string",
                             "null"
                           ]
+                        },
+                        "external": {
+                          "description": "True where the person is from outside the organisation; absent otherwise",
+                          "type": "boolean",
+                          "const": true
                         }
                       },
                       "required": [
@@ -175579,6 +175714,11 @@
                                     "string",
                                     "null"
                                   ]
+                                },
+                                "external": {
+                                  "description": "True where the person is from outside the organisation; absent otherwise",
+                                  "type": "boolean",
+                                  "const": true
                                 }
                               },
                               "required": [
@@ -175626,6 +175766,11 @@
                                   "string",
                                   "null"
                                 ]
+                              },
+                              "external": {
+                                "description": "True where the person is from outside the organisation; absent otherwise",
+                                "type": "boolean",
+                                "const": true
                               }
                             },
                             "required": [
@@ -176113,6 +176258,11 @@
                             "string",
                             "null"
                           ]
+                        },
+                        "external": {
+                          "description": "True where the person is from outside the organisation; absent otherwise",
+                          "type": "boolean",
+                          "const": true
                         }
                       },
                       "required": [
@@ -176149,6 +176299,11 @@
                                     "string",
                                     "null"
                                   ]
+                                },
+                                "external": {
+                                  "description": "True where the person is from outside the organisation; absent otherwise",
+                                  "type": "boolean",
+                                  "const": true
                                 }
                               },
                               "required": [
@@ -176196,6 +176351,11 @@
                                   "string",
                                   "null"
                                 ]
+                              },
+                              "external": {
+                                "description": "True where the person is from outside the organisation; absent otherwise",
+                                "type": "boolean",
+                                "const": true
                               }
                             },
                             "required": [
@@ -176697,6 +176857,11 @@
                             "string",
                             "null"
                           ]
+                        },
+                        "external": {
+                          "description": "True where the person is from outside the organisation; absent otherwise",
+                          "type": "boolean",
+                          "const": true
                         }
                       },
                       "required": [
@@ -176733,6 +176898,11 @@
                                     "string",
                                     "null"
                                   ]
+                                },
+                                "external": {
+                                  "description": "True where the person is from outside the organisation; absent otherwise",
+                                  "type": "boolean",
+                                  "const": true
                                 }
                               },
                               "required": [
@@ -176780,6 +176950,11 @@
                                   "string",
                                   "null"
                                 ]
+                              },
+                              "external": {
+                                "description": "True where the person is from outside the organisation; absent otherwise",
+                                "type": "boolean",
+                                "const": true
                               }
                             },
                             "required": [
@@ -177281,6 +177456,11 @@
                             "string",
                             "null"
                           ]
+                        },
+                        "external": {
+                          "description": "True where the person is from outside the organisation; absent otherwise",
+                          "type": "boolean",
+                          "const": true
                         }
                       },
                       "required": [
@@ -177317,6 +177497,11 @@
                                     "string",
                                     "null"
                                   ]
+                                },
+                                "external": {
+                                  "description": "True where the person is from outside the organisation; absent otherwise",
+                                  "type": "boolean",
+                                  "const": true
                                 }
                               },
                               "required": [
@@ -177364,6 +177549,11 @@
                                   "string",
                                   "null"
                                 ]
+                              },
+                              "external": {
+                                "description": "True where the person is from outside the organisation; absent otherwise",
+                                "type": "boolean",
+                                "const": true
                               }
                             },
                             "required": [
@@ -196472,6 +196662,11 @@
                             "string",
                             "null"
                           ]
+                        },
+                        "external": {
+                          "description": "True where the person is from outside the organisation; absent otherwise",
+                          "type": "boolean",
+                          "const": true
                         }
                       },
                       "required": [
@@ -196565,6 +196760,11 @@
                                     "string",
                                     "null"
                                   ]
+                                },
+                                "external": {
+                                  "description": "True where the person is from outside the organisation; absent otherwise",
+                                  "type": "boolean",
+                                  "const": true
                                 }
                               },
                               "required": [
@@ -196977,6 +197177,11 @@
                             "string",
                             "null"
                           ]
+                        },
+                        "external": {
+                          "description": "True where the person is from outside the organisation; absent otherwise",
+                          "type": "boolean",
+                          "const": true
                         }
                       },
                       "required": [
@@ -197070,6 +197275,11 @@
                                     "string",
                                     "null"
                                   ]
+                                },
+                                "external": {
+                                  "description": "True where the person is from outside the organisation; absent otherwise",
+                                  "type": "boolean",
+                                  "const": true
                                 }
                               },
                               "required": [
@@ -197765,6 +197975,11 @@
                             "string",
                             "null"
                           ]
+                        },
+                        "external": {
+                          "description": "True where the person is from outside the organisation; absent otherwise",
+                          "type": "boolean",
+                          "const": true
                         }
                       },
                       "required": [
@@ -197858,6 +198073,11 @@
                                     "string",
                                     "null"
                                   ]
+                                },
+                                "external": {
+                                  "description": "True where the person is from outside the organisation; absent otherwise",
+                                  "type": "boolean",
+                                  "const": true
                                 }
                               },
                               "required": [
@@ -198416,6 +198636,11 @@
                             "string",
                             "null"
                           ]
+                        },
+                        "external": {
+                          "description": "True where the person is from outside the organisation; absent otherwise",
+                          "type": "boolean",
+                          "const": true
                         }
                       },
                       "required": [
@@ -198509,6 +198734,11 @@
                                     "string",
                                     "null"
                                   ]
+                                },
+                                "external": {
+                                  "description": "True where the person is from outside the organisation; absent otherwise",
+                                  "type": "boolean",
+                                  "const": true
                                 }
                               },
                               "required": [
@@ -199076,6 +199306,11 @@
                                   "string",
                                   "null"
                                 ]
+                              },
+                              "external": {
+                                "description": "True where the person is from outside the organisation; absent otherwise",
+                                "type": "boolean",
+                                "const": true
                               }
                             },
                             "required": [
@@ -201617,6 +201852,11 @@
                             "string",
                             "null"
                           ]
+                        },
+                        "external": {
+                          "description": "True where the person is from outside the organisation; absent otherwise",
+                          "type": "boolean",
+                          "const": true
                         }
                       },
                       "required": [
@@ -201653,6 +201893,11 @@
                                     "string",
                                     "null"
                                   ]
+                                },
+                                "external": {
+                                  "description": "True where the person is from outside the organisation; absent otherwise",
+                                  "type": "boolean",
+                                  "const": true
                                 }
                               },
                               "required": [
@@ -201711,6 +201956,11 @@
                                   "string",
                                   "null"
                                 ]
+                              },
+                              "external": {
+                                "description": "True where the person is from outside the organisation; absent otherwise",
+                                "type": "boolean",
+                                "const": true
                               }
                             },
                             "required": [
@@ -202156,6 +202406,11 @@
                             "string",
                             "null"
                           ]
+                        },
+                        "external": {
+                          "description": "True where the person is from outside the organisation; absent otherwise",
+                          "type": "boolean",
+                          "const": true
                         }
                       },
                       "required": [
@@ -202192,6 +202447,11 @@
                                     "string",
                                     "null"
                                   ]
+                                },
+                                "external": {
+                                  "description": "True where the person is from outside the organisation; absent otherwise",
+                                  "type": "boolean",
+                                  "const": true
                                 }
                               },
                               "required": [
@@ -202250,6 +202510,11 @@
                                   "string",
                                   "null"
                                 ]
+                              },
+                              "external": {
+                                "description": "True where the person is from outside the organisation; absent otherwise",
+                                "type": "boolean",
+                                "const": true
                               }
                             },
                             "required": [
@@ -202802,6 +203067,11 @@
                             "string",
                             "null"
                           ]
+                        },
+                        "external": {
+                          "description": "True where the person is from outside the organisation; absent otherwise",
+                          "type": "boolean",
+                          "const": true
                         }
                       },
                       "required": [
@@ -202838,6 +203108,11 @@
                                     "string",
                                     "null"
                                   ]
+                                },
+                                "external": {
+                                  "description": "True where the person is from outside the organisation; absent otherwise",
+                                  "type": "boolean",
+                                  "const": true
                                 }
                               },
                               "required": [
@@ -202896,6 +203171,11 @@
                                   "string",
                                   "null"
                                 ]
+                              },
+                              "external": {
+                                "description": "True where the person is from outside the organisation; absent otherwise",
+                                "type": "boolean",
+                                "const": true
                               }
                             },
                             "required": [
@@ -203401,6 +203681,11 @@
                             "string",
                             "null"
                           ]
+                        },
+                        "external": {
+                          "description": "True where the person is from outside the organisation; absent otherwise",
+                          "type": "boolean",
+                          "const": true
                         }
                       },
                       "required": [
@@ -203437,6 +203722,11 @@
                                     "string",
                                     "null"
                                   ]
+                                },
+                                "external": {
+                                  "description": "True where the person is from outside the organisation; absent otherwise",
+                                  "type": "boolean",
+                                  "const": true
                                 }
                               },
                               "required": [
@@ -203495,6 +203785,11 @@
                                   "string",
                                   "null"
                                 ]
+                              },
+                              "external": {
+                                "description": "True where the person is from outside the organisation; absent otherwise",
+                                "type": "boolean",
+                                "const": true
                               }
                             },
                             "required": [

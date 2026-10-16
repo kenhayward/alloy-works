@@ -41,9 +41,15 @@ import { refused } from './wire-codes.js';
 
 const PAGE = 50;
 
-const person = (who: { readonly id: string; readonly name: string | null }) => ({
+/** A person as the view names them, from outside the organisation said so (IAM-045; R13-A). */
+const person = (who: {
+  readonly id: string;
+  readonly name: string | null;
+  readonly external?: true;
+}) => ({
   id: who.id,
   name: who.name,
+  ...(who.external ? { external: true as const } : {}),
 });
 
 const threadView = (thread: StoredThread): ThreadView => ({

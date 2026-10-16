@@ -9,6 +9,7 @@ import {
   type CommentParts,
   type ThreadAnchor,
 } from '@alloy-works/domain';
+import { personView, type PersonView } from './person-view.js';
 import { sql } from 'kysely';
 import { tell } from './inbox.js';
 import { AUDIT_LOG_KEPT, labelled, labels, recordEvent } from './audit.js';
@@ -19,7 +20,7 @@ import { lockArtifact, readVersion } from './versions.js';
 /** A comment as a thread holds it: who, when, and every text it has had, the latest last. */
 export interface StoredComment {
   readonly id: string;
-  readonly author: { readonly id: string; readonly name: string | null };
+  readonly author: PersonView;
   readonly createdAt: Date;
   readonly texts: readonly { readonly parts: CommentParts; readonly writtenAt: Date }[];
 }
@@ -31,10 +32,10 @@ export interface StoredThread {
   readonly onKind: 'component' | 'document';
   readonly anchor: ThreadAnchor;
   readonly madeAgainst: string;
-  readonly createdBy: { readonly id: string; readonly name: string | null };
+  readonly createdBy: PersonView;
   readonly createdAt: Date;
   readonly resolution: {
-    readonly by: { readonly id: string; readonly name: string | null };
+    readonly by: PersonView;
     readonly at: Date;
   } | null;
   readonly comments: readonly StoredComment[];
@@ -47,7 +48,7 @@ export interface ThreadSummary {
   readonly onKind: 'component' | 'document';
   readonly anchor: ThreadAnchor;
   readonly madeAgainst: string;
-  readonly createdBy: { readonly id: string; readonly name: string | null };
+  readonly createdBy: PersonView;
   readonly createdAt: Date;
   readonly resolvedAt: Date | null;
   readonly comments: number;
@@ -405,9 +406,11 @@ export async function readThread(
       't.made_against',
       't.created_by',
       'c.display_name as created_name',
+      'c.kind as created_kind',
       't.created_at',
       'r.resolved_by',
       'rp.display_name as resolved_name',
+      'rp.kind as resolved_kind',
       'r.resolved_at',
     ])
     .where('t.id', '=', thread)
@@ -417,7 +420,15 @@ export async function readThread(
     .selectFrom('thread_comment as m')
     .innerJoin('principal as p', 'p.id', 'm.author')
     .innerJoin('thread_comment_text as x', 'x.comment_id', 'm.id')
-    .select(['m.id', 'm.author', 'p.display_name', 'm.created_at', 'x.parts', 'x.written_at'])
+    .select([
+      'm.id',
+      'm.author',
+      'p.display_name',
+      'p.kind',
+      'm.created_at',
+      'x.parts',
+      'x.written_at',
+    ])
     .where('m.thread_id', '=', thread)
     .orderBy('m.created_at')
     .orderBy('m.id')
@@ -432,7 +443,7 @@ export async function readThread(
     if (!comment) {
       comment = {
         id: each.id,
-        author: { id: each.author, name: each.display_name },
+        author: personView(each.author, each.display_name, each.kind),
         createdAt: each.created_at,
         texts: [],
       };
@@ -446,12 +457,15 @@ export async function readThread(
     onKind: row.on_kind,
     anchor: row.anchor as ThreadAnchor,
     madeAgainst: row.made_against,
-    createdBy: { id: row.created_by, name: row.created_name },
+    createdBy: personView(row.created_by, row.created_name, row.created_kind),
     createdAt: row.created_at,
     resolution:
       row.resolved_by === null
         ? null
-        : { by: { id: row.resolved_by, name: row.resolved_name }, at: row.resolved_at! },
+        : {
+            by: personView(row.resolved_by, row.resolved_name, row.resolved_kind),
+            at: row.resolved_at!,
+          },
     comments: [...byId.values()],
   };
 }
@@ -498,6 +512,7 @@ export async function listThreads(
       't.made_against',
       't.created_by',
       'c.display_name',
+      'c.kind',
       't.created_at',
       'r.resolved_at',
       'm.comments',
@@ -522,7 +537,7 @@ export async function listThreads(
     onKind: row.on_kind,
     anchor: row.anchor as ThreadAnchor,
     madeAgainst: row.made_against,
-    createdBy: { id: row.created_by, name: row.display_name },
+    createdBy: personView(row.created_by, row.display_name, row.kind),
     createdAt: row.created_at,
     resolvedAt: row.resolved_at,
     comments: Number(row.comments),

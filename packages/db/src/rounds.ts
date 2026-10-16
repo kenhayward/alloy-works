@@ -97,7 +97,7 @@ async function recordRoundEvent(
 /**
  * **Opens a round** (COL-028; RR-A, RR-B): on the document's latest version, or on a baseline of it,
  * which its reviewers read (COL-031); its scope's nodes each in that version's outline; its reviewers
- * people, not services or external principals (COL-059 is T4's). Whether the opener may and each
+ * people, from inside the tenant or outside it (COL-059; the R13 plan, R13-B), never services. Whether the opener may and each
  * reviewer may review is the caller's to have decided. Each reviewer is told (RR-H).
  */
 export async function openRound(
@@ -152,7 +152,9 @@ export async function openRound(
             .selectFrom('principal')
             .select('id')
             .where('id', 'in', reviewers)
-            .where('kind', '=', 'user')
+            // A person from outside on the same terms as one inside (COL-059; the R13 plan, R13-B);
+            // never a service, which reviews nothing.
+            .where('kind', 'in', ['user', 'external'])
             // Not one invited who has not yet accepted: withdrawing that invitation removes them
             // (the RR final review, 1).
             .where((eb) =>

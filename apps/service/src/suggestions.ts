@@ -36,9 +36,15 @@ const PAGE = 50;
 /** The most pending suggestions one bulk act takes (SG-H). */
 const BULK_MAX = 200;
 
-const person = (who: { readonly id: string; readonly name: string | null }) => ({
+/** A person as the view names them, from outside the organisation said so (IAM-045; R13-A). */
+const person = (who: {
+  readonly id: string;
+  readonly name: string | null;
+  readonly external?: true;
+}) => ({
   id: who.id,
   name: who.name,
+  ...(who.external ? { external: true as const } : {}),
 });
 
 /** A suggestion as a list shows it, a pending one's stale places computed now (SG-D). */

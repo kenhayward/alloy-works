@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { DocumentParams } from './documents.js';
-import { ErrorBody, LowercaseUuid } from './schemas.js';
+import { PersonView, ErrorBody, LowercaseUuid } from './schemas.js';
 
-const Person = z.object({ id: LowercaseUuid, name: z.string().nullable() });
+const Person = PersonView;
 
 export const RoundParams = z.object({ id: LowercaseUuid });
 export type RoundParams = z.infer<typeof RoundParams>;

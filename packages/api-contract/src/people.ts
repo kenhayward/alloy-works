@@ -4,7 +4,13 @@ import type { RouteContract } from './contract.js';
 import { ErrorBody } from './schemas.js';
 
 export const PeopleList = z.object({
-  items: z.array(z.object({ id: z.string(), name: z.string() })),
+  items: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      external: z.literal(true).optional().describe('From outside the organisation (IAM-045)'),
+    }),
+  ),
   next: nextCursor,
 });
 export const PeopleQuery = z.object(pageQuery);

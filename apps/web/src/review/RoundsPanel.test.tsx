@@ -119,4 +119,36 @@ describe('the Rounds panel in Review (the RR plan, Task 4)', () => {
       }),
     );
   });
+
+  it('IAM-045 COL-059 says a reviewer from outside the organisation is so, on the round and when naming one', async () => {
+    const outside = round('not_started', {
+      reviewers: [
+        {
+          person: { id: GRACE, name: 'Grace', external: true },
+          state: 'not_started',
+          mayReview: true,
+          threads: 0,
+          suggestions: 0,
+        },
+      ],
+    });
+    const { client } = service(outside);
+    render(
+      <RoundsPanel
+        client={client}
+        document={DOCUMENT}
+        principalId={ADA}
+        mayOpen
+        people={[{ id: GRACE, name: 'Grace', external: true }]}
+        sections={[]}
+      />,
+    );
+    const reviewers = await screen.findByRole('list', { name: 'Reviewers of First review' });
+    expect(within(reviewers).getByText('Outside')).toBeInTheDocument();
+    expect(reviewers).toHaveTextContent(/Grace\s*Outside, from outside the organisation/);
+    await userEvent.click(screen.getByRole('button', { name: 'Open a round' }));
+    expect(
+      await screen.findByRole('checkbox', { name: 'Grace, from outside the organisation' }),
+    ).toBeInTheDocument();
+  });
 });

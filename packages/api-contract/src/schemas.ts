@@ -163,3 +163,16 @@ export const StreamQuery = z
     message: 'A document or a component, not both',
   });
 export type StreamQuery = z.infer<typeof StreamQuery>;
+
+/**
+ * **A person, as every view names one** (IAM-045; the R13 plan, R13-A): `external` is true alone, and
+ * only where they are from outside the organisation; absent for everybody inside it.
+ */
+export const PersonView = z.object({
+  id: LowercaseUuid,
+  name: z.string().nullable(),
+  external: z
+    .literal(true)
+    .optional()
+    .describe('True where the person is from outside the organisation; absent otherwise'),
+});

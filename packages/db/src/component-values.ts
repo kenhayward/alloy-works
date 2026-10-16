@@ -91,7 +91,7 @@ export async function unstorableValues(
 export async function listPeople(
   trx: TenantTransaction,
   request: ListingRequest<SortOf<'people'>> = { limit: 100 },
-): Promise<Listed<{ readonly id: string; readonly name: string }>> {
+): Promise<Listed<{ readonly id: string; readonly name: string; readonly external?: true }>> {
   const limit = checkedLimit(request.limit);
   const { types, order } = listingSorts.people.joined;
   if (!isListingRequest(request, types)) {
@@ -100,7 +100,7 @@ export async function listPeople(
   const snapshot = await snapshotFor(trx, request.snapshot);
   const inner = trx
     .selectFrom('principal as p')
-    .select(['p.id', 'p.display_name', 'p.email'])
+    .select(['p.id', 'p.display_name', 'p.email', 'p.kind'])
     .select(sortColumns([sql`p.created_at`]))
     .where('p.subject', 'is not', null)
     // An erased person is nobody to pick (the ER plan, ER-D).
@@ -109,9 +109,15 @@ export async function listPeople(
     id: string;
     display_name: string | null;
     email: string | null;
+    kind: string;
   }>(trx, inner, types, request.order ?? order, limit, request.after);
   return {
-    items: rows.map((row) => ({ id: row.id, name: row.display_name ?? row.email ?? 'Unnamed' })),
+    // From outside the tenant, said so (IAM-045; the R13 plan, R13-A).
+    items: rows.map((row) => ({
+      id: row.id,
+      name: row.display_name ?? row.email ?? 'Unnamed',
+      ...(row.kind === 'external' ? { external: true as const } : {}),
+    })),
     next,
     snapshot,
   };

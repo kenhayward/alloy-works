@@ -164,4 +164,24 @@ describe('a thread at its own address', () => {
     ).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Open the component' })).toBeNull();
   });
+
+  it('IAM-045 says a comment written from outside the organisation is so', async () => {
+    Element.prototype.scrollIntoView = vi.fn();
+    const grace = { id: GRACE, name: 'Grace', external: true };
+    render(
+      <ThreadPage
+        client={client(
+          json(200, {
+            ...thread,
+            comments: [thread.comments[0], { ...thread.comments[1], author: grace }],
+          }),
+        )}
+        on={{ kind: 'component', id: COMPONENT }}
+        thread={THREAD}
+        comment={null}
+      />,
+    );
+    const said = (await screen.findByText('Outside')).closest('p');
+    expect(said).toHaveTextContent(/^Grace\s*Outside, from outside the organisation, /);
+  });
 });

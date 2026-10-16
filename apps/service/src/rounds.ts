@@ -6,6 +6,7 @@ import type {
   RoundView,
 } from '@alloy-works/api-contract';
 import {
+  personView,
   actOnRound,
   closeRound,
   loadFacts,
@@ -88,12 +89,13 @@ async function viewOf(
     (
       await trx
         .selectFrom('principal')
-        .select(['id', 'display_name'])
+        .select(['id', 'display_name', 'kind'])
         .where('id', 'in', people)
         .execute()
-    ).map((row) => [row.id, row.display_name]),
+    ).map((row) => [row.id, row] as const),
   );
-  const who = (id: string) => ({ id, name: names.get(id) ?? null });
+  const who = (id: string) =>
+    personView(id, names.get(id)?.display_name ?? null, names.get(id)?.kind ?? null);
   // What the reviewers' feedback is counted on (RR-D; the RR final review, 5): the document and each
   // component the round covers, at the version it opened on, that the reader may read now.
   const covered = await coveredNodes(trx, round.document, round.madeAgainst, round.scope);

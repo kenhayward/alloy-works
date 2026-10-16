@@ -1,4 +1,5 @@
 import type { createApiClient } from '@alloy-works/api-client';
+import { Outside } from '../parts/Outside.js';
 import type { ThreadAnchor } from '@alloy-works/domain';
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from 'react';
 
@@ -10,6 +11,8 @@ type Part = { readonly text: string } | { readonly mention: string };
 interface Person {
   readonly id: string;
   readonly name: string | null;
+  /** From outside the organisation (IAM-045). */
+  readonly external?: true | undefined;
 }
 
 /** A thread as the document's list answers it (COL-018). */
@@ -538,7 +541,9 @@ export function ThreadsPanel({
                   </button>
                   <span className={styles['note']}>{placeOf(thread)}</span>
                   <span className={styles['note']}>
-                    {`${thread.startedBy.name ?? 'Somebody'}, ${when.format(new Date(thread.startedAt))}; ${thread.comments} ${thread.comments === 1 ? 'comment' : 'comments'}`}
+                    {thread.startedBy.name ?? 'Somebody'}
+                    <Outside person={thread.startedBy} />
+                    {`, ${when.format(new Date(thread.startedAt))}; ${thread.comments} ${thread.comments === 1 ? 'comment' : 'comments'}`}
                   </span>
                   {thread.resolvedAt !== null && <span className={styles['state']}>Resolved</span>}
                   {thread.orphaned && (
