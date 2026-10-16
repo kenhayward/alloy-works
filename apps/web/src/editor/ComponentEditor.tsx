@@ -45,6 +45,7 @@ import {
   conditionsOver,
   removeCondition,
   setCondition,
+  setConditionAxes,
   type ConditionHeld,
   textWhereAt,
   replaceFigureImage,
@@ -141,7 +142,7 @@ import { ReferenceDialog } from './ReferenceDialog.js';
 import { ValueDialog, type DocumentOffer } from './ValueDialog.js';
 import { SymbolPalette } from './SymbolPalette.js';
 import { VariableDialog } from './VariableDialog.js';
-import { ConditionDialog } from './ConditionDialog.js';
+import { ConditionDialog, declaredAxisKeys } from './ConditionDialog.js';
 import { SaveIndicator } from './SaveIndicator.js';
 import { uploadImage } from './upload.js';
 import { heldSentence } from './held.js';
@@ -1149,6 +1150,21 @@ export function ComponentEditor({
   // And the context every fresh state starts from, as the references' is.
   const bindingContextRef = useRef(shownBindings);
   bindingContextRef.current = shownBindings;
+  // The environment's declared axes, which a paste keeps conditions on (the R6 plan, R6-H): read once,
+  // none until then, so a paste before they arrive drops a condition and says so.
+  const [axisKeys, setAxisKeys] = useState<readonly string[]>([]);
+  const axisKeysRef = useRef(axisKeys);
+  axisKeysRef.current = axisKeys;
+  useEffect(() => {
+    let live = true;
+    declaredAxisKeys(client).then(
+      (keys) => live && setAxisKeys(keys),
+      () => undefined,
+    );
+    return () => {
+      live = false;
+    };
+  }, [client]);
   // The session the component's last `GET` named, whose sequence it answered (final review of W11.3,
   // D3): a page that goes on under that id goes on above it.
   const askedSession = useRef<string | null>(null);
@@ -1285,6 +1301,7 @@ export function ComponentEditor({
         },
         referenceContext: referenceContextRef.current,
         bindingContext: bindingContextRef.current,
+        conditionAxes: axisKeysRef.current,
         ...(selection ? { selection } : {}),
       });
     let base = opened.doc;
@@ -1729,6 +1746,11 @@ export function ComponentEditor({
       setBindingContext(surface, shownBindings);
     }
   }, [surface, shownBindings]);
+
+  useEffect(() => {
+    if (surface === null || surface.isDestroyed || axisKeys.length === 0) return;
+    setConditionAxes(surface, axisKeys);
+  }, [surface, axisKeys]);
 
   // On its own page, the titles of the definitions its bindings name, each asked once (B1-K).
   const namedDefinitions = useMemo(() => {

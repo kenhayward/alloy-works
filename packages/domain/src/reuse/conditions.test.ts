@@ -110,6 +110,15 @@ describe('applying conditions (the R6 plan, R6-C)', () => {
     expect(applied.unset).toEqual([{ axis: 'status', block: 'p1' }]);
   });
 
+  it('reads only the axes the profile names, never a member every object inherits', () => {
+    const applied = applyConditions(
+      doc(paragraph('p1', run('Kept. '), run('Odd.', ['constructor', ['x']]))),
+      regulator,
+    );
+    expect(textOf(applied.content)).toEqual(['Kept. ']);
+    expect(applied.unset).toEqual([{ axis: 'constructor', block: 'p1' }]);
+  });
+
   it('removes a paragraph its conditions empty, keeping one that was empty to begin with', () => {
     const applied = applyConditions(
       doc(

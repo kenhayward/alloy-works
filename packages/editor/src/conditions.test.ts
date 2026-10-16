@@ -99,6 +99,28 @@ describe('conditions in the editor (the R6 plan, R6-H)', () => {
     expect(from).toBe(19);
   });
 
+  it('places nothing over a selection holding what carries no mark, which would be published to every reader', () => {
+    const opened = toEditor({
+      ...stored,
+      content: [
+        {
+          type: 'paragraph',
+          id: 'p1',
+          style: 'body',
+          content: [
+            { type: 'text', value: 'Review by ', marks: [] },
+            { type: 'variable', name: 'review_date' },
+            { type: 'text', value: ' at the latest.', marks: [] },
+          ],
+        },
+      ],
+    });
+    if (!opened.editable) throw new Error('not editable');
+    const state = createEditorState({ doc: opened.doc, newIdentifier: mint });
+    const across = state.apply(state.tr.setSelection(TextSelection.create(state.doc, 3, 16)));
+    expect(setCondition({ axis: 'audience', values: ['regulator'] }, mint)(across)).toBe(false);
+  });
+
   it('places nothing over an empty selection', () => {
     const empty = selected();
     const caret = empty.apply(empty.tr.setSelection(TextSelection.create(empty.doc, 3)));

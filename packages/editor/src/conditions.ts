@@ -1,5 +1,13 @@
 import type { Mark } from 'prosemirror-model';
-import { TextSelection, type Command, type EditorState, type Transaction } from 'prosemirror-state';
+import {
+  Plugin,
+  PluginKey,
+  TextSelection,
+  type Command,
+  type EditorState,
+  type Transaction,
+} from 'prosemirror-state';
+import type { EditorView } from 'prosemirror-view';
 
 import { editorSchema } from './schema.js';
 
@@ -16,16 +24,28 @@ export interface ConditionHeld extends ConditionChoice {
   readonly id: string;
 }
 
-/** Whether a condition could be set over the selection: text selected, in text that takes marks. */
+/**
+ * Whether a condition could be set over the selection: text selected, in text that takes marks, and
+ * text alone. A footnote, a reference, a value, a variable, an image or an equation carries no mark,
+ * so a condition over one would leave it published to every reader: it is not offered.
+ */
 export const conditionable = (state: EditorState): boolean => {
   const { selection } = state;
-  return (
-    selection instanceof TextSelection &&
-    !selection.empty &&
-    selection.$from.parent.inlineContent &&
-    selection.$from.parent.type.allowsMarkType(conditionType) &&
-    selection.$to.parent.type.allowsMarkType(conditionType)
-  );
+  if (
+    !(selection instanceof TextSelection) ||
+    selection.empty ||
+    !selection.$from.parent.inlineContent ||
+    !selection.$from.parent.type.allowsMarkType(conditionType) ||
+    !selection.$to.parent.type.allowsMarkType(conditionType)
+  ) {
+    return false;
+  }
+  let textAlone = true;
+  state.doc.nodesBetween(selection.from, selection.to, (node) => {
+    if (node.isInline && !node.isText) textAlone = false;
+    return textAlone;
+  });
+  return textAlone;
 };
 
 /** Every condition over the selected text, once each, in the order they were set. */
@@ -129,6 +149,36 @@ export function addAlternative(choice: ConditionChoice, newIdentifier: () => str
     }
     return true;
   };
+}
+
+/** Where a surface's state keeps the axes its environment declares, by key (the R6 plan, R6-H). */
+const conditionAxesKey = new PluginKey<readonly string[]>('conditionAxes');
+
+/**
+ * The environment's declared axes, held as the host tells them: what a paste keeps a condition on,
+ * dropping one on an axis nothing declares (`admit`).
+ */
+export function conditionAxesPlugin(initial: readonly string[] = []): Plugin {
+  return new Plugin<readonly string[]>({
+    key: conditionAxesKey,
+    state: {
+      init: () => initial,
+      apply: (tr, held) => (tr.getMeta(conditionAxesKey) as readonly string[] | undefined) ?? held,
+    },
+  });
+}
+
+/** The axes a surface's state holds, or none. */
+export const conditionAxesOf = (state: EditorState): readonly string[] =>
+  conditionAxesKey.getState(state) ?? [];
+
+/** The state with these axes held, outside the history. */
+export const setConditionAxesIn = (state: EditorState, axes: readonly string[]): EditorState =>
+  state.apply(state.tr.setMeta(conditionAxesKey, axes).setMeta('addToHistory', false));
+
+/** Tells a surface the axes its environment declares, once they are read. */
+export function setConditionAxes(view: EditorView, axes: readonly string[]): void {
+  view.dispatch(view.state.tr.setMeta(conditionAxesKey, axes).setMeta('addToHistory', false));
 }
 
 /** **Condition** as a registry command: whether one could be set. What it is, the dialog chooses. */

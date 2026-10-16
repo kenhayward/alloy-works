@@ -12,6 +12,7 @@ import { TextSelection, type EditorState, type Transaction } from 'prosemirror-s
 
 import { KEEPS_IDENTIFIERS } from './identity.js';
 import { fromEditor, toEditor } from './mapping.js';
+import { conditionAxesOf } from './conditions.js';
 import { editorSchema } from './schema.js';
 
 /**
@@ -134,7 +135,12 @@ export function pasteInto(
 ): PasteOutcome {
   if (!reading.ok) return { ok: false, report: reading.report };
   const document = fromEditor(state.doc);
-  const admitted = admit(reading.input, { document, conditionAxes: [], newIdentifier });
+  // Conditions kept on the axes the environment declares, and dropped, said, on any other (R6-H).
+  const admitted = admit(reading.input, {
+    document,
+    conditionAxes: [...conditionAxesOf(state)],
+    newIdentifier,
+  });
   if (!admitted.ok) return { ok: false, report: admitted.report };
 
   const opened = toEditor({ ...document, content: [...admitted.content] });

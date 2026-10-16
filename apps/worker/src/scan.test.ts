@@ -35,6 +35,17 @@ describe("an output's scan for excluded text (the R6 plan, R6-G)", () => {
     ).toEqual(['staff are told at', 'are told at the']);
   });
 
+  it('reads Word text through its entities, so a passage holding a quotation mark or an ampersand is found', async () => {
+    const marked = probesOf(['Press the "red" button & wait.'], 'Readings were taken.');
+    expect(
+      await leakedFrom(
+        marked,
+        'docx',
+        docxSaying('Press the &quot;red&quot; button &amp; wait.', 'Sites'),
+      ),
+    ).toEqual(['press the red button', 'the red button wait']);
+  });
+
   it('REU-048 finds an excluded passage in a Word document, in its body and in its properties', async () => {
     expect(await leakedFrom(probes, 'docx', docxSaying('Readings were taken.', 'Sites'))).toEqual(
       [],

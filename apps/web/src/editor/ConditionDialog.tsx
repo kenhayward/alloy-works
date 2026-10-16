@@ -24,6 +24,22 @@ export const AXES_UNREAD = 'The condition axes could not be read.';
 export const ALTERNATIVE_SAID =
   'To word this differently for other readers, add an alternative: a copy kept for the other values, to rewrite.';
 
+/** The keys of every declared axis, from the listing alone: what a paste keeps conditions on. */
+export async function declaredAxisKeys(client: Client): Promise<string[]> {
+  const keys: string[] = [];
+  let cursor: string | null = null;
+  do {
+    const query: { cursor?: string } = cursor === null ? {} : { cursor };
+    const { data } = await client.GET('/v1/definitions', { params: { query } });
+    if (!data) return keys;
+    for (const each of data.items) {
+      if (each.kind === 'conditionAxis' && each.key !== undefined) keys.push(each.key);
+    }
+    cursor = data.next;
+  } while (cursor !== null);
+  return keys;
+}
+
 /** Every declared axis with its values, by name. */
 export async function declaredAxes(client: Client): Promise<OfferedAxis[]> {
   const keyed: { id: string; key: string; name: string }[] = [];

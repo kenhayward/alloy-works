@@ -143,9 +143,11 @@ export { insertVariable, variablePlaceable, variableSelected } from './variables
 export {
   addAlternative,
   conditionable,
+  conditionAxesOf,
   conditionsOver,
   removeCondition,
   setCondition,
+  setConditionAxes,
   type ConditionChoice,
   type ConditionHeld,
 } from './conditions.js';
