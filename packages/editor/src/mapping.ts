@@ -145,7 +145,11 @@ function marksWithNoType(
     }
     const types = new Set<string>();
     for (const mark of inline.marks) {
-      if (!(mark.type in editorSchema.marks) || types.has(mark.type)) {
+      // Conditions alone may stand two over one run (REU-021): their type excludes nothing.
+      if (
+        !(mark.type in editorSchema.marks) ||
+        (types.has(mark.type) && mark.type !== 'condition')
+      ) {
         found.add(`mark:${mark.type}`);
       }
       types.add(mark.type);

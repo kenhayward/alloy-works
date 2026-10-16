@@ -26,6 +26,7 @@ import {
   type OutlineOperation,
   type TemplateParameter,
   type ThreadAnchor,
+  type StoredProfile,
 } from '@alloy-works/domain';
 import { TEXT_CLASS } from '@alloy-works/editor';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -46,7 +47,13 @@ import { PlaceHoldButton } from '../lifecycle/Hold.js';
 import { everyPage } from '../paging.js';
 import { Chip } from '../parts/Chip.js';
 import { PanelTabs } from '../parts/PanelTabs.js';
-import { PreviewButton, PreviewPane, PreviewSaid, usePreview } from '../publishing/Preview.js';
+import {
+  PreviewButton,
+  PreviewPane,
+  PreviewSaid,
+  profileOnTheWire,
+  usePreview,
+} from '../publishing/Preview.js';
 import { FOLLOW_MS, Publishing } from '../publishing/Publishing.js';
 import { DocumentVersions } from './DocumentVersions.js';
 import { Icon } from '../editor/Icon.js';
@@ -106,6 +113,7 @@ import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
 import { HeldFields, type SaveAnswer } from '../metadata/HeldFields.js';
 import { documentOffer, ParametersPanel, type ParametersSaved } from './ParametersPanel.js';
+import { ProfilePanel, type ProfileSaved } from './ProfilePanel.js';
 import type { ParameterValue } from './ParameterInput.js';
 import { byName } from '../metadata/people.js';
 import { UnheldFaces, useReachableDesk, ZoomControl } from '../theme/Canvas.js';
@@ -1486,6 +1494,61 @@ export function DocumentPage({
     [client, id, opened, show],
   );
 
+  /** The document's profile, whole, as its next version (REU-022; the R6 plan, R6-B), as parameters are. */
+  const saveProfile = useCallback(
+    async (next: StoredProfile | null): Promise<ProfileSaved> => {
+      if (pending.current || opened === null) return 'unsent';
+      const before = latest.current ?? opened;
+      pending.current = true;
+      setBusy(true);
+      try {
+        const { data, error, response } = await client.PUT('/v1/documents/{id}/profile', {
+          params: { path: { id } },
+          body: {
+            openedFrom: before.version.id,
+            profile: next === null ? null : profileOnTheWire(next),
+          },
+        });
+        const after = documentIn(data);
+        if (after !== undefined && after !== 'unreadable') {
+          show(after);
+          setNotice(null);
+          return 'saved';
+        }
+        if (response.status === 409) {
+          const refusal: unknown = error;
+          const current = documentIn(isRecord(refusal) ? refusal.current : undefined);
+          if (current !== undefined && current !== 'unreadable') show(current);
+          else setAttempt((count) => count + 1);
+          setNotice(SOMEBODY_ELSE);
+          return 'refused';
+        }
+        if (response.status === 401) {
+          setSignedOuts((count) => count + 1);
+          setNotice('You are signed out. Sign in again to change this document.');
+          return 'refused';
+        }
+        if (response.status === 400 || response.status === 403 || response.status === 404) {
+          setNotice(
+            isRecord(error) && typeof error.message === 'string'
+              ? error.message
+              : 'The profile could not be saved.',
+          );
+          return 'refused';
+        }
+        setNotice('The profile was not saved. Try again.');
+        return 'unsent';
+      } catch {
+        setNotice('The profile was not saved. Try again.');
+        return 'unsent';
+      } finally {
+        pending.current = false;
+        setBusy(false);
+      }
+    },
+    [client, id, opened, show],
+  );
+
   const apply = useCallback(
     async (operation: OutlineOperation, undoing: boolean): Promise<Answered> => {
       if (pending.current || opened === null) return 'unsent';
@@ -2360,6 +2423,14 @@ export function DocumentPage({
                         onSave={saveValues}
                       />
                     )}
+                    {/* Who it is for: its values on each condition axis, and a preview under any (R6-H). */}
+                    <ProfilePanel
+                      client={client}
+                      profile={(document.outline as { profile?: StoredProfile }).profile}
+                      readOnly={!document.mayEdit || !authoring}
+                      onSave={saveProfile}
+                      onPreview={(profile) => void preview.ask(profile)}
+                    />
                     {/* What the document was made with, beside its fields (the TP1 plan, TP1-I). */}
                     {(document.templated || holdsValues) && (
                       <ParametersPanel

@@ -41,6 +41,11 @@ import {
   insertReference,
   insertSymbol,
   insertVariable,
+  addAlternative,
+  conditionsOver,
+  removeCondition,
+  setCondition,
+  type ConditionHeld,
   textWhereAt,
   replaceFigureImage,
   replaceImageAsset,
@@ -136,6 +141,7 @@ import { ReferenceDialog } from './ReferenceDialog.js';
 import { ValueDialog, type DocumentOffer } from './ValueDialog.js';
 import { SymbolPalette } from './SymbolPalette.js';
 import { VariableDialog } from './VariableDialog.js';
+import { ConditionDialog } from './ConditionDialog.js';
 import { SaveIndicator } from './SaveIndicator.js';
 import { uploadImage } from './upload.js';
 import { heldSentence } from './held.js';
@@ -720,6 +726,13 @@ export function ComponentEditor({
   // The Variable dialog, as the palette is: open over the view it was asked from (the R5 plan, R5b).
   const [variabling, setVariabling] = useState<EditorView | null>(null);
   const variablesBack = useRef<EditorView | null>(null);
+  // The Condition dialog, open over the view it was asked from with the conditions its selection
+  // carries (the R6 plan, R6-H), or closed.
+  const [conditioning, setConditioning] = useState<{
+    readonly view: EditorView;
+    readonly held: readonly ConditionHeld[];
+  } | null>(null);
+  const conditionsBack = useRef<EditorView | null>(null);
   // The paste report's, which comes and goes too: it is there from a paste with something to say
   // until it is closed or the next paste replaces it.
   const pasteRegion = useRef<HTMLElement | null>(null);
@@ -1044,6 +1057,41 @@ export function ComponentEditor({
     if (back !== null && !back.isDestroyed) back.focus();
   }, [variabling]);
 
+  /** Runs a condition's command where the dialog was asked from, as the palette inserts (R6-H). */
+  const conditionWith = (
+    command: ReturnType<typeof setCondition>,
+    done: 'set' | 'added' | 'removed',
+  ) => {
+    const now = controls.current?.view().phase;
+    const into = conditioning?.view;
+    const ran =
+      into !== undefined &&
+      shown.mayEdit &&
+      now !== undefined &&
+      isEditablePhase(now) &&
+      !into.isDestroyed &&
+      command(into.state, into.dispatch.bind(into));
+    if (!ran) setNotice('The condition could not be changed where the cursor is.');
+    else if (done === 'added') setNotice('Alternative added. Write the wording for those readers.');
+    closeConditions();
+  };
+
+  /** Opens the Condition dialog over `editing`, as the palette opens (the R6 plan, R6-H). */
+  const openConditions = (editing: EditorView): boolean => {
+    setConditioning({ view: editing, held: conditionsOver(editing.state) });
+    return true;
+  };
+  const closeConditions = () => {
+    conditionsBack.current = conditioning?.view ?? null;
+    setConditioning(null);
+  };
+  useEffect(() => {
+    if (conditioning !== null) return;
+    const back = conditionsBack.current;
+    conditionsBack.current = null;
+    if (back !== null && !back.isDestroyed) back.focus();
+  }, [conditioning]);
+
   // Held in refs, not the effect's own dependency list (fix round 1, finding 5): a parent that does
   // not memoise its callback, or recreates its timing object, must not tear the session down and
   // rebuild the surface from the original content on every render. Read fresh at the moment the effect
@@ -1084,6 +1132,8 @@ export function ComponentEditor({
   openSymbolsRef.current = openSymbols;
   const openVariablesRef = useRef(openVariables);
   openVariablesRef.current = openVariables;
+  const openConditionsRef = useRef(openConditions);
+  openConditionsRef.current = openConditions;
   // The page's latest context, which every fresh state starts from: a state rebuilt after a version is
   // cut or a claim refused would otherwise start with none, and every reference would lose its label.
   const referenceContextRef = useRef(referenceContext);
@@ -1225,6 +1275,8 @@ export function ComponentEditor({
           if (name === 'value') return openValueRef.current(into);
           // **Variable** too (the R5 plan, R5b).
           if (name === 'variable') return openVariablesRef.current(into);
+          // **Condition** too (the R6 plan, R6-H).
+          if (name === 'condition') return openConditionsRef.current(into);
           const command = EDITOR_COMMANDS.find(
             (each) => each.kind === 'mark' && each.mark === name,
           );
@@ -2052,6 +2104,7 @@ export function ComponentEditor({
     equating !== null ||
     symbolizing !== null ||
     variabling !== null ||
+    conditioning !== null ||
     valuing !== null ||
     formatting;
   const placeTables = (panels: ReactNode) => {
@@ -2486,7 +2539,8 @@ export function ComponentEditor({
               (action === 'equation' && openEquation(view)) ||
               (action === 'symbol' && openSymbols(view)) ||
               (action === 'value' && openValue(view)) ||
-              (action === 'variable' && openVariables(view)))
+              (action === 'variable' && openVariables(view)) ||
+              (action === 'condition' && openConditions(view)))
           }
         />
         {/* The toolbar's second line (ADR-0053): there whenever the text is open, so nothing
@@ -3065,6 +3119,21 @@ export function ComponentEditor({
               closeVariables();
             }}
             onCancel={closeVariables}
+          />,
+          document.body,
+        )}
+      {conditioning !== null &&
+        // Beside the article, as the palette is.
+        createPortal(
+          <ConditionDialog
+            client={client}
+            held={conditioning.held}
+            onSet={(choice) => conditionWith(setCondition(choice, newBlockIdentifier), 'set')}
+            onAlternative={(choice) =>
+              conditionWith(addAlternative(choice, newBlockIdentifier), 'added')
+            }
+            onRemove={(axis) => conditionWith(removeCondition(axis), 'removed')}
+            onCancel={closeConditions}
           />,
           document.body,
         )}

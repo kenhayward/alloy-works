@@ -1366,6 +1366,61 @@ describe('the symbol palette (W14.7)', () => {
     await waitFor(() => expect(view.hasFocus()).toBe(true));
   });
 
+  it('REU-026 marks selected text with a condition from the Condition dialog, and draws what it depends on', async () => {
+    const AUDIENCE = '00000000-0000-4000-8000-0000000000b1';
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () =>
+          json(200, opened({ content: blocksOf(para('b1', 'Tell the regulator.')) })),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'GET /v1/definitions': () =>
+          json(200, {
+            items: [
+              {
+                id: AUDIENCE,
+                kind: 'conditionAxis',
+                name: 'Audience',
+                key: 'audience',
+                version: { id: '00000000-0000-4000-8000-0000000000b2', number: '0.1' },
+              },
+            ],
+            next: null,
+          }),
+        [`GET /v1/definitions/${AUDIENCE}`]: () =>
+          json(200, {
+            id: AUDIENCE,
+            kind: 'conditionAxis',
+            version: { id: '00000000-0000-4000-8000-0000000000b2', number: '0.1' },
+            definition: {
+              name: 'Audience',
+              key: 'audience',
+              values: [
+                { key: 'regulator', label: 'Regulator' },
+                { key: 'internal', label: 'Internal' },
+              ],
+            },
+          }),
+        ...everySave,
+      },
+      quick,
+      true,
+    );
+    const view = await surface();
+    selectText(view, 1 + 5, 1 + 18);
+    await userEvent.click(screen.getByRole('button', { name: 'Condition' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Condition' });
+    await userEvent.click(await within(dialog).findByRole('checkbox', { name: 'Regulator' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Set condition' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    const [first] = fromEditor(view.state.doc).content as unknown as [{ content: unknown[] }];
+    expect(first.content[1]).toMatchObject({
+      value: 'the regulator',
+      marks: [{ type: 'condition', axis: 'audience', values: ['regulator'] }],
+    });
+    const drawn = view.dom.querySelector('.aw-condition');
+    expect(drawn?.getAttribute('title')).toBe('Only where audience is regulator');
+  });
+
   it('dims what the typeface at the cursor lacks, pointing to an equation, and inserts only what it has', async () => {
     const { surface } = openWith(
       blocksOf(para('b1', 'Angle  is small.'), {

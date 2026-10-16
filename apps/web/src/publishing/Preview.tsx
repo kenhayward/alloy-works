@@ -1,4 +1,5 @@
 import type { createApiClient } from '@alloy-works/api-client';
+import type { StoredProfile } from '@alloy-works/domain';
 import { useId, useRef, useState, type RefObject } from 'react';
 
 import { Icon } from '../editor/Icon.js';
@@ -15,6 +16,12 @@ type Client = ReturnType<typeof createApiClient>;
  * (publishing.md, "Kept an hour, then swept"; PV-F), so it was made an hour before it expires.
  */
 export const PREVIEW_KEPT_MS = 60 * 60 * 1000;
+
+/** A profile as the routes take it: its acceptance present only where it is given (R6-B). */
+export const profileOnTheWire = (profile: StoredProfile) => ({
+  values: profile.values,
+  ...(profile.excludeUnset === true ? { excludeUnset: true as const } : {}),
+});
 
 /** A done preview's links and when it goes, as the request answers them while it lasts. */
 interface Links {
@@ -97,7 +104,8 @@ export function followInFrame(url: string): void {
 export interface Previewing {
   readonly asking: Asking;
   readonly pane: Pane | null;
-  readonly ask: () => Promise<void>;
+  /** Asks for a preview, under the document's profile or the one given (REU-025; R6-H). */
+  readonly ask: (profile?: StoredProfile) => Promise<void>;
   readonly close: () => void;
   readonly download: () => Promise<void>;
   /** **Preview**, which the focus goes back to when the pane closes. */
@@ -146,14 +154,17 @@ export function usePreview({
   const shown = useRef<string | null>(null);
   const button = useRef<HTMLButtonElement | null>(null);
 
-  const ask = async () => {
+  const ask = async (profile?: StoredProfile) => {
     if (version === null) return;
     const asked = { version: version.number, title };
     setAsking({ state: 'working' });
     try {
       const { data, error, response } = await client.POST('/v1/documents/{id}/previews', {
         params: { path: { id: document } },
-        body: { version: version.id },
+        body: {
+          version: version.id,
+          ...(profile === undefined ? {} : { profile: profileOnTheWire(profile) }),
+        },
       });
       if (!mounted.current) return;
       if (!isRecord(data) || typeof data.id !== 'string') {

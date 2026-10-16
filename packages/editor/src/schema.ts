@@ -42,6 +42,8 @@ function markSpec(
   options: {
     readonly attrs?: Record<string, { default?: null }>;
     readonly inclusive?: false;
+    /** `''` where marks of the type may overlap one another, as conditions do (REU-021). */
+    readonly excludes?: '';
     readonly toAttributes?: (attrs: Attrs) => Record<string, string>;
     /** The mark's own attributes, or `false` where one it cannot do without is missing. */
     readonly fromElement?: (node: HTMLElement) => Attrs | false;
@@ -61,6 +63,7 @@ function markSpec(
   return {
     attrs: { id: {}, ...options.attrs },
     ...(options.inclusive === false ? { inclusive: false } : {}),
+    ...(options.excludes === undefined ? {} : { excludes: options.excludes }),
     parseDOM: [rule],
     toDOM: render(tag, options.toAttributes),
   };
@@ -854,6 +857,28 @@ export const editorSchema = new Schema({
       },
     }),
     quotedPhrase: markSpec('q'),
+    // A condition (CNT-032; the R6 plan, R6-H): the axis and the values a profile must take for the
+    // text to be published. Several may cover one run, ranges overlapping (REU-021), so it excludes
+    // nothing, its own type included. Drawn with what it depends on said (REU-026).
+    condition: markSpec('span', {
+      selector: 'span.aw-condition',
+      attrs: { axis: {}, values: {} },
+      excludes: '',
+      toAttributes: (attrs) => {
+        const values = Array.isArray(attrs.values) ? (attrs.values as string[]) : [];
+        return {
+          class: 'aw-condition',
+          'data-axis': attrs.axis as string,
+          'data-values': values.join(' '),
+          title: `Only where ${attrs.axis as string} is ${values.join(' or ')}`,
+        };
+      },
+      fromElement: (node) => {
+        const axis = node.getAttribute('data-axis');
+        const values = node.getAttribute('data-values')?.split(' ').filter(Boolean) ?? [];
+        return axis === null || axis === '' || values.length === 0 ? false : { axis, values };
+      },
+    }),
     // Not inclusive: typing at the end of a link or a language run makes ordinary text, because the
     // author who reaches the end of a link is almost never still writing it (CNT-126, CNT-140).
     hyperlink: markSpec('a', {

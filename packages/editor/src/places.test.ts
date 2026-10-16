@@ -156,7 +156,14 @@ describe('where a paragraph stands', () => {
   it('marks each mark with its own class, for the theme to style it by', () => {
     for (const name of Object.keys(editorSchema.marks)) {
       const type = editorSchema.marks[name]!;
-      const mark = type.create({ id: 'm1', term: 't', href: 'https://example.test', tag: 'fr' });
+      const mark = type.create({
+        id: 'm1',
+        term: 't',
+        href: 'https://example.test',
+        tag: 'fr',
+        axis: 'audience',
+        values: ['regulator'],
+      });
       const [, attrs] = type.spec.toDOM!(mark, true) as unknown as [string, Record<string, string>];
       expect(attrs.class?.split(' '), name).toContain(`aw-mark-${name}`);
     }

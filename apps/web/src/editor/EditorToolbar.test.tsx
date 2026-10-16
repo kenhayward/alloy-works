@@ -87,6 +87,7 @@ const LABELS = [
   'Reference',
   'Value',
   'Variable',
+  'Condition',
   'Equation',
   'Symbols',
 ];
@@ -700,6 +701,8 @@ describe('the marks an author applies directly', () => {
     // A closed list, so a mark added later is read against this statement before the test passes.
     for (const command of EDITOR_COMMANDS) expect(command.label).not.toMatch(appearance);
     expect(Object.keys(editorSchema.marks).sort()).toEqual([
+      // A condition says who text is for, not how it looks (the R6 plan, R6-H).
+      'condition',
       'definedTerm',
       'emphasis',
       'hyperlink',

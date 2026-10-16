@@ -16599,6 +16599,18 @@
           "howItIsMet": "After a pause in changes the renderer sends the whole content and values as an iteration; there is no save action for drafts"
         },
         {
+          "id": "REU-021",
+          "howItIsMet": "The editor holds the `condition` mark, which excludes nothing, so several stand over one run and ranges overlap; **Condition** (Ctrl or Cmd, Alt and O) sets one over the selection from the declared axes and their values, replacing one on the same axis and keeping one on another ([the R6 plan](../plans/2026-10-16-r6-conditions-and-profiles.md), R6-H)"
+        },
+        {
+          "id": "REU-026",
+          "howItIsMet": "Conditional text is drawn tinted and underlined dashed, wherever the component's text is shown, with what it depends on as its title: _Only where audience is regulator_ (R6-H)"
+        },
+        {
+          "id": "REU-047",
+          "howItIsMet": "Where the selection is already conditioned on an axis, the Condition dialog says how to word it differently for other readers and offers **Add alternative**: a copy beside it, kept for the axis's other values, selected to rewrite (R6-H)"
+        },
+        {
           "id": "CNT-067",
           "howItIsMet": "The renderer reports a change saved only when its iteration is acknowledged, and reopening after a closed tab, a crash or a lost connection says when the author last saved work no version holds and offers **Recover**, which lists it and every other retained iteration of theirs to restore"
         },
@@ -17601,6 +17613,10 @@
         {
           "id": "REU-048",
           "howItIsMet": "Before any output is stored, each one's text and metadata (a PDF's pages, information and XMP; every XML part of a Word document) are searched for each four words of a passage its conditions took out that the kept text does not hold; a match fails the publish `condition_leaked`, naming the format, and nothing is stored (the R6 plan, R6-G). A passage shorter than four words is not searched for"
+        },
+        {
+          "id": "REU-025",
+          "howItIsMet": "The document page's **Profile** offers a preview of the text under any profile chosen there, saved or not: a preview request may name a profile in place of the document's (R6-F, R6-H)"
         },
         {
           "id": "PUB-089",
@@ -21951,6 +21967,12 @@
       "kind": "title"
     },
     {
+      "id": "REU-026",
+      "file": "apps/web/src/editor/ComponentEditor.insertions.test.tsx",
+      "line": 1369,
+      "kind": "title"
+    },
+    {
       "id": "STR-071",
       "file": "apps/web/src/editor/ComponentEditor.insertions.test.tsx",
       "line": 350,
@@ -21993,15 +22015,27 @@
       "kind": "title"
     },
     {
+      "id": "REU-021",
+      "file": "apps/web/src/editor/ConditionDialog.test.tsx",
+      "line": 49,
+      "kind": "title"
+    },
+    {
+      "id": "REU-047",
+      "file": "apps/web/src/editor/ConditionDialog.test.tsx",
+      "line": 68,
+      "kind": "title"
+    },
+    {
       "id": "CNT-077",
       "file": "apps/web/src/editor/EditorToolbar.test.tsx",
-      "line": 217,
+      "line": 218,
       "kind": "title"
     },
     {
       "id": "CNT-164",
       "file": "apps/web/src/editor/EditorToolbar.test.tsx",
-      "line": 662,
+      "line": 663,
       "kind": "title"
     },
     {
@@ -22962,6 +22996,18 @@
       "id": "REU-054",
       "file": "apps/web/src/structure/PlaceSection.test.tsx",
       "line": 108,
+      "kind": "title"
+    },
+    {
+      "id": "REU-022",
+      "file": "apps/web/src/structure/ProfilePanel.test.tsx",
+      "line": 44,
+      "kind": "title"
+    },
+    {
+      "id": "REU-025",
+      "file": "apps/web/src/structure/ProfilePanel.test.tsx",
+      "line": 65,
       "kind": "title"
     },
     {
@@ -27639,6 +27685,18 @@
       "kind": "title"
     },
     {
+      "id": "REU-021",
+      "file": "packages/editor/src/conditions.test.ts",
+      "line": 53,
+      "kind": "title"
+    },
+    {
+      "id": "REU-047",
+      "file": "packages/editor/src/conditions.test.ts",
+      "line": 75,
+      "kind": "title"
+    },
+    {
       "id": "CNT-025",
       "file": "packages/editor/src/equations.test.ts",
       "line": 455,
@@ -27735,21 +27793,27 @@
       "kind": "title"
     },
     {
+      "id": "REU-021",
+      "file": "packages/editor/src/mapping.test.ts",
+      "line": 1307,
+      "kind": "title"
+    },
+    {
       "id": "CNT-004",
       "file": "packages/editor/src/marks.test.ts",
-      "line": 198,
+      "line": 199,
       "kind": "title"
     },
     {
       "id": "CNT-077",
       "file": "packages/editor/src/marks.test.ts",
-      "line": 637,
+      "line": 638,
       "kind": "title"
     },
     {
       "id": "CNT-127",
       "file": "packages/editor/src/marks.test.ts",
-      "line": 316,
+      "line": 317,
       "kind": "title"
     },
     {
