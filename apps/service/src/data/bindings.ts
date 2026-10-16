@@ -7,6 +7,7 @@ import type {
   CheckBindingsView,
   ComponentBindingParams,
   ConfirmBindingBody,
+  CreateDocumentBody,
   DatasetNameBody,
   DatasetParams,
   DocumentBindingParams,
@@ -18,6 +19,7 @@ import type {
   ResolveBindingsBody,
   ReviseBindingBody,
   ResolveBindingsView,
+  SpaceParams,
   TakeOutcomeView,
 } from '@alloy-works/api-contract';
 import { SESSION_COOKIE, type ProvenanceView } from '@alloy-works/api-contract';
@@ -26,6 +28,7 @@ import {
   assetHolding,
   bindingQuestion,
   componentsBinding,
+  createFromResolution,
   dataPolicy,
   datasetName,
   documentParameterDeclarations,
@@ -38,6 +41,7 @@ import {
   latestRevisions,
   lockBindings,
   lockDatasetQuestions,
+  newNodeIdentifier,
   nameDataset,
   pendingImages,
   pendingResult,
@@ -53,6 +57,8 @@ import {
   refusePending,
   publishedBindings,
   resolutionsOf,
+  resolvedFrom,
+  resolveForDocument,
   resolveOccurrences,
   revisionsNamed,
   revisionsStanding,
@@ -60,6 +66,7 @@ import {
   takeDigest,
   takesOf,
   uploadForDatasetImage,
+  type CreateDocumentAnswer,
   type HeldResolution,
   type PendingAct,
   type StoredPending,
@@ -136,7 +143,9 @@ import {
 } from '../access.js';
 import { contextOf, isRefusal, recordRefusalIn } from '../audit.js';
 import { Accepted, AfterCommit, Revalidated } from '../after-commit.js';
+import { createdView } from '../documents.js';
 import { AppError, storageUnavailable } from '../errors.js';
+import { IDEMPOTENCY_KEY } from '../idempotency.js';
 import { hashToken } from '../sessions.js';
 import { bearerSecret, isBearer } from '../tokens.js';
 import { refused } from '../wire-codes.js';
@@ -3458,4 +3467,215 @@ export async function documentsOnConnection(
 ) {
   const uses = await documentsResolving(trx, principalId, { connection });
   return { readable: uses.readable.map((each) => ({ ...each })), others: uses.others };
+}
+
+/** Thrown to roll back the savepoint a creation is prepared in, once what it runs is decided. */
+const PREPARED = Symbol('prepared');
+
+/**
+ * A document made from a template whose required components hold bindings (the R9 plan, R9-E;
+ * TPL-063, TPL-065, TPL-024): **queries first, the document second**. In a savepoint of the deciding
+ * transaction the document is made, with an identifier and node identifiers chosen here, its bindings
+ * found and each prepared as a resolve prepares one - everything a run needs decided as the creator -
+ * then the savepoint is rolled back, so nothing is written. Once that commits, every question runs
+ * through the connector, outside any transaction; any that fails refuses the creation, `creation_failed`,
+ * naming each, and nothing is made. Then, in one transaction that decides again, the document is made
+ * with the same identifiers, `create` in the space decided again, and every result recorded as its
+ * binding's resolution; one holding images the space does not hold yet refuses it, since only a
+ * followed resolve admits them. Undefined where the template runs no query: made as any document is.
+ */
+export async function creationAct(
+  db: TenantDatabase,
+  tenant: Tenant,
+  objects: ObjectStores | undefined,
+  request: FastifyRequest,
+  { trx, principalId, facts }: Authorised,
+  through: () => RunsThrough,
+): Promise<AfterCommit<Awaited<ReturnType<typeof createdView>>> | undefined> {
+  const { space } = request.params as SpaceParams;
+  const body = request.body as CreateDocumentBody;
+  if (body.template === undefined) return undefined;
+  const resolution = await resolveForDocument(trx, principalId, body.template);
+  // Refused as the plain path refuses it, which reads it again.
+  if (resolution.answer !== 'resolved') return undefined;
+  const resolved = resolvedFrom(resolution.resolution);
+  if (!resolved.ok || resolved.querySet.length === 0) return undefined;
+  if (!objects) throw storageUnavailable();
+  // Its queries run after the request is decided, where no key's answer can be kept (after-commit.ts).
+  if (request.headers[IDEMPOTENCY_KEY] !== undefined) {
+    throw new AppError(
+      400,
+      'invalid_request',
+      "A document whose template's components run queries is made without an idempotency key.",
+    );
+  }
+  const running = through();
+  const caller = callerOf(request);
+  const artifactId = randomUUID();
+  const ids: string[] = [];
+  const input = {
+    spaceId: space,
+    title: body.title.trim(),
+    language: body.language,
+    direction: body.direction,
+    author: principalId,
+    ...(body.parameters === undefined ? {} : { parameters: body.parameters }),
+  };
+  const prepared: Prepared[] = [];
+  let refusal: CreateDocumentAnswer | undefined;
+  try {
+    await inSavepoint(trx, async () => {
+      const made = await createFromResolution(
+        trx,
+        {
+          ...input,
+          identity: {
+            artifactId,
+            newIdentifier: () => {
+              const id = newNodeIdentifier();
+              ids.push(id);
+              return id;
+            },
+          },
+        },
+        resolution.resolution,
+      );
+      if (made.answer !== 'created') {
+        refusal = made;
+        throw PREPARED;
+      }
+      for (const each of (await bindingsPlaced(trx, artifactId, principalId)) ?? []) {
+        const ready = await prepare(trx, caller, artifactId, each, running);
+        // One's own view is held only past DAT-091's warning (D7-H), before anything runs.
+        if (ready.acting.kind === 'asserted' && body.sharesOwnView !== true) {
+          throw acknowledgementRequired({
+            definition: ready.definition.id,
+            binding: each.binding.id,
+            node: each.node,
+            document: artifactId,
+          });
+        }
+        prepared.push(ready);
+      }
+      throw PREPARED;
+    });
+  } catch (error) {
+    if (error !== PREPARED) throw error;
+  }
+  // Refused as the plain path refuses it: `createdView` throws for anything not made.
+  if (refusal !== undefined) await createdView(trx, principalId, facts, space, refusal);
+  const questions = [...new Map(prepared.map((each) => [each.question, each])).values()];
+  const failedAs = (each: Prepared, failure: FailureIn | AppError) =>
+    bindingFailure(
+      failure,
+      {
+        definition: each.definition.id,
+        binding: each.placed.binding.id,
+        node: each.placed.node,
+        document: artifactId,
+      },
+      false,
+      each.draft.fetch.kind === 'builder',
+    );
+  const failedCreation = (failures: ReturnType<typeof failedAs>[]) =>
+    refused(
+      409,
+      'creation.failed',
+      `A query a required component holds failed, so the document was not made: ${failures
+        .map((each) => each.message)
+        .join(' ')}`,
+      { failures },
+    );
+  return new AfterCommit(() =>
+    running.whileHeld(async (signal) => {
+      let opened: Awaited<ReturnType<ObjectStores['forTenant']>> | undefined;
+      const store = async () =>
+        (opened ??= await db.withTenant(tenant, (open) => objects.forTenant(open, tenant)));
+      const takes = takesByQuestion(prepared);
+      const outcomes = await inTurn(questions, AT_ONCE, (each) =>
+        runOnce(tenant, each, takes.get(each.question)!, running, store, signal),
+      );
+      if (signal.aborted) throw signal.reason;
+      const ran = new Map(questions.map((each, at) => [each.question, outcomes[at]!]));
+      // Nothing is made where a query failed (TPL-024): each failure named.
+      const failures = prepared.flatMap((each) => {
+        const outcome = ran.get(each.question)!;
+        return outcome.ok ? [] : [failedAs(each, outcome.failure)];
+      });
+      if (failures.length > 0) throw failedCreation(failures);
+      return db.withTenant(
+        tenant,
+        async (record) => {
+          // `create` in the space, decided again: it may have ended while the source answered.
+          try {
+            await authoriseAt(record, caller, 'create', { kind: 'space', id: space });
+          } catch (error) {
+            if (error instanceof AppError) throw accessChanged();
+            throw error;
+          }
+          let at = 0;
+          const made = await createFromResolution(
+            record,
+            { ...input, identity: { artifactId, newIdentifier: () => ids[at++]! } },
+            resolution.resolution,
+          );
+          if (made.answer !== 'created')
+            return createdView(record, principalId, facts, space, made);
+          await decideAgain(record, request, { id: artifactId, permission: 'read' }, prepared);
+          await lockDatasetQuestions(record, recordable(prepared, ran));
+          const admitted = await admitAll(record, store, principalId, recordedRuns(prepared, ran));
+          const versions = new Map<string, Awaited<ReturnType<typeof recordDatasetVersion>>>();
+          const refusedNow: ReturnType<typeof failedAs>[] = [];
+          for (const each of prepared) {
+            const outcome = ran.get(each.question)! as Extract<Ran, { ok: true }>;
+            const { node, binding } = each.placed;
+            const admission = admitted.get(each.question)!;
+            if ('failure' in admission) {
+              refusedNow.push(failedAs(each, admission.failure));
+              continue;
+            }
+            if (!admission.held) {
+              // Images the space does not hold yet are admitted only as a resolve's are, followed by
+              // whoever asked (D8-E), which a creation has no way to be: refused, nothing made.
+              refusedNow.push(
+                failedAs(
+                  each,
+                  new AppError(
+                    409,
+                    'images_pending',
+                    `The result of the binding ${binding.id} holds images this space does not hold yet, which a document being made cannot take in.`,
+                  ),
+                ),
+              );
+              continue;
+            }
+            let recorded = versions.get(each.question);
+            if (!recorded) {
+              recorded = await recordDatasetVersion(record, {
+                provenance: admission.provenance,
+                author: principalId,
+                images: admission.hashes,
+              });
+              versions.set(each.question, recorded);
+            }
+            await recordTaken(record, recorded.version.id, each, outcome);
+            await recordLoggedResolution(record, {
+              document: artifactId,
+              node,
+              binding: binding.id,
+              digest: each.placed.digest,
+              version: recorded.version.id,
+              replaces: null,
+              act: 'resolve',
+              by: principalId,
+            });
+          }
+          // Refused here, the transaction rolls back and nothing is made (TPL-024).
+          if (refusedNow.length > 0) throw failedCreation(refusedNow);
+          return createdView(record, principalId, facts, space, made);
+        },
+        contextOf(request),
+      );
+    }),
+  );
 }

@@ -108,6 +108,11 @@ export type NewArtifact = Authorship &
     | {
         readonly substance: Extract<VersionSubstance, { kind: SpacedSubstanceKind }>;
         readonly spaceId: string;
+        /**
+         * Its identifier, where one was chosen before it is written: a document made again, beside its
+         * queries' results, as it was prepared (the R9 plan, R9-E). Otherwise the database's.
+         */
+        readonly artifactId?: string;
       }
     | {
         readonly substance: Exclude<VersionSubstance, { kind: SpacedSubstanceKind }>;
@@ -423,7 +428,13 @@ export async function createArtifact(
     .insertInto('artifact')
     .values(
       spacedSubstanceKinds.includes(substance.kind)
-        ? { kind: substance.kind, space_id: 'spaceId' in input ? input.spaceId : null }
+        ? {
+            ...('artifactId' in input && input.artifactId !== undefined
+              ? { id: input.artifactId }
+              : {}),
+            kind: substance.kind,
+            space_id: 'spaceId' in input ? input.spaceId : null,
+          }
         : {
             id: (substance.content as { readonly id: string }).id,
             kind: substance.kind,

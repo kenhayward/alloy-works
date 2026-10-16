@@ -3,6 +3,15 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.180.0 - 2026-10-16 (PR #656)
+
+Reuse's ninth slice: required components and bindings at creation (the R9 plan).
+
+### Added
+
+- **Required components, through the API.** A template may name components every document made from it includes, each at the start or end of a starting section or of the outline, following approved revisions, the latest or a pinned version. Making a document places them, and refuses where one, or a query its values come from, is not there for you to read. A required component is removed only with a reason, kept on the document, and a publish fails where one is missing with none.
+- **Bound values at creation.** Making a document from a template whose required components hold values from queries runs those queries first, then makes the document holding their results. If one fails, nothing is made and the request names it. A required component removed in the page asks why, as a required section does. Documents made in bulk cannot use such a template yet.
+
 ## 0.179.0 - 2026-10-16 (PR #653)
 
 Reuse's eighth slice: relationships and the graph (the R8 plan).

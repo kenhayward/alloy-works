@@ -3,7 +3,7 @@ import type { EffectiveField } from '../metadata/resolve.js';
 import type { MetadataValues } from '../metadata/values.js';
 import type { OutlineDocument, OutlineNode } from '../structure/outline.js';
 
-import { missingSections, type MissingSection } from './conformance.js';
+import { missingComponents, missingSections, type MissingSection } from './conformance.js';
 import type { TemplateDefinition } from './definition.js';
 
 /** A template version as a move reads it: its definition, and the fields it applies now (TE-K). */
@@ -35,6 +35,8 @@ export interface MoveReport {
   }[];
   /** Each section the newer version requires that the document lacks, to add or waive (WF6-E). */
   readonly missing: readonly MissingSection[];
+  /** Each component the newer version requires that the document lacks (TPL-044; the R9 final review). */
+  readonly components: readonly { readonly key: string; readonly component: string }[];
 }
 
 export interface MovePlan {
@@ -119,6 +121,7 @@ export function planTemplateMove(input: {
       ],
       notCarried,
       missing: missingSections(to.definition, outline, input.waived),
+      components: missingComponents(to.definition, outline, input.waived),
     },
     values: documentCarried.values,
     outline,

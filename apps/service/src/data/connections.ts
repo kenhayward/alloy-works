@@ -78,7 +78,13 @@ import { cursorFor, pageAsked } from '../listing.js';
 import type { SessionPrincipal } from '../sessions.js';
 import { refused } from '../wire-codes.js';
 import { actingOn, runIdentity } from './acting.js';
-import { checkAct, documentsOnConnection, resolveAct, type RunsThrough } from './bindings.js';
+import {
+  checkAct,
+  creationAct,
+  documentsOnConnection,
+  resolveAct,
+  type RunsThrough,
+} from './bindings.js';
 import { createConnectorClient, type Answered } from './connector.js';
 import { failureView, failureViewFor, type FailureIn } from './failure-words.js';
 import { fetchRefused, mayRunFetch, maySqlWith, requireSqlPermitted } from './sql-access.js';
@@ -1016,5 +1022,10 @@ export function connectionHandlers(
       connected();
       return checkAct(db, tenantOf(request), objects, request, authorised, through);
     },
+
+    // A document whose template's required components run queries is made after they run (the R9
+    // plan, R9-E): not a route of its own, handed to `createDocument`.
+    boundCreation: (request: FastifyRequest, authorised: Authorised) =>
+      creationAct(db, tenantOf(request), objects, request, authorised, () => runsThrough(request)),
   };
 }

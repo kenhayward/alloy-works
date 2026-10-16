@@ -1131,6 +1131,15 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   Relate it to an artifact found by search, or remove one; each act is checked as its type says and
   audited. Impact walks relationships too, apart from references. Exporting types with the
   environment's configuration, acting on many at once and the MCP surface are not there yet.
+- **Required components.** A template made through the API (`components` in its definition) may
+  name components every document from it includes, each at the start or end of a starting section
+  or of the outline, following approved revisions, the latest or a pinned version. Making a document
+  places them and runs the queries their values come from first: it holds their results from the
+  start, or, where one fails, nothing is made and the request names it. A component, or a query, you
+  may not read refuses the request. Removing a required component asks why, and the reason is kept
+  on the document; a publish fails where one is missing with none. A cohort cannot be made from such
+  a template yet, nor can the layout place a component as document-level matter, nor can one be
+  made where a query's result holds images its space has not admitted.
 - **What a transition requires.** In Administration > Workflows, a transition can require no
   unresolved suggestions and no open threads, and a document's also every binding resolved, no
   required section missing, no value revised by hand outstanding and every component it assembles at

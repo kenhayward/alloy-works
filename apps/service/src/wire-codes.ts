@@ -49,6 +49,8 @@ const WIRE_CODES = {
   'values.unresolved': 'values_unresolved',
   'section.required': 'section_required',
   'component.required': 'component_required',
+  'creation.failed': 'creation_failed',
+  'cohort.bound': 'cohort_bound',
   'metadata.invalid': 'metadata_invalid',
   'definition.unresolved': 'definition_unresolved',
   'definition.invalid': 'definition_invalid',
@@ -188,6 +190,7 @@ const RULES: Partial<Record<DottedCode, string>> = {
   // A publication's door, for a document made from a template (templates.md, TE-H).
   'section.required': 'TPL-013',
   'component.required': 'TPL-044',
+  'creation.failed': 'TPL-024',
   'metadata.invalid': 'TPL-055',
   // A definition checked against what uses it before it is written (definitions.md, DE-E).
   'definition.name_taken': 'MET-031',

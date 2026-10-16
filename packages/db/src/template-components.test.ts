@@ -11,6 +11,7 @@ import {
 } from '@alloy-works/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
+import { submitCohort } from './cohorts.js';
 import { createConnection } from './connections.js';
 import { createComponent } from './creation.js';
 import { createDocument, editOutline, resolveForDocument } from './documents.js';
@@ -398,5 +399,32 @@ describe('a template requiring components (the R9 plan, R9-A to R9-D)', () => {
       answer: 'component.required',
       components: [{ key: 'notice', component: notice.artifactId }],
     });
+  });
+
+  it('refuses a cohort of a template whose required components run queries, which bulk generation cannot run yet', async () => {
+    const statement = await component(general, 'Bound statement', depths);
+    const made = await template([
+      {
+        key: 'statement',
+        component: statement.artifactId,
+        mode: { kind: 'latest' },
+        place: { section: 'method', at: 'start' },
+      },
+    ]);
+    if (made.answer !== 'created') throw new Error(made.answer);
+    expect(
+      await as((trx) =>
+        submitCohort(trx, {
+          by: ada,
+          spaceId: general,
+          template: made.template.id,
+          title: 'Site {site}',
+          language: 'en-GB',
+          direction: 'ltr',
+          rows: [{}],
+          source: { rows: 1 },
+        }),
+      ),
+    ).toEqual({ answer: 'cohort.bound', queries: [depths] });
   });
 });

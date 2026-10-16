@@ -1,5 +1,9 @@
 import { crc32, deflateSync } from 'node:zlib';
 import {
+  DEFAULT_LAYOUT_ID,
+  DEFAULT_THEME_ID,
+  findRole,
+  grant,
   pendingResult,
   readPendingResult,
   readQueryDefinition,
@@ -18,6 +22,7 @@ import {
 import {
   canonicalResultBytes,
   readImageHeader,
+  TEMPLATE_SCHEMA_VERSION,
   type CanonicalValue,
   type RunAnswer,
 } from '@alloy-works/domain';
@@ -791,6 +796,65 @@ describe("a result's images, admitted before it is kept (the D8 plan, D8-D and D
       results: [{ node, binding: 'b1', failure: { code: 'connector_error' } }],
     });
     expect(await resolutionsOf(document.id)).toBe(0);
+  });
+
+  it('TPL-024 makes no document whose required component takes images its space does not hold yet, since nothing would admit them', async () => {
+    await h.tenantDb.withTenant(h.tenant, async (trx) =>
+      grant(trx, {
+        roleId: (await findRole(trx, 'Designer'))!.id,
+        subject: { principal: h.ids.ada! },
+        level: { kind: 'space', id: h.general },
+        effect: 'allow',
+        grantedBy: h.ids.ada!,
+      }),
+    );
+    const { component } = await placed();
+    const made = await h.call('ada', 'POST', `/v1/spaces/${h.general}/templates`, {
+      definition: {
+        schemaVersion: TEMPLATE_SCHEMA_VERSION,
+        name: 'Imaged site report',
+        theme: DEFAULT_THEME_ID,
+        layout: DEFAULT_LAYOUT_ID,
+        schemas: [],
+        outline: { sections: [] },
+        changes: { add: true, remove: true, reorder: true },
+        components: [
+          {
+            key: 'site',
+            component: component.id,
+            mode: { kind: 'latest' },
+            place: { section: null, at: 'start' },
+          },
+        ],
+      },
+    });
+    expect(made.statusCode, made.body).toBe(200);
+    h.connector.run = ranWithImages([[String(site), 'North', png(31)]]);
+    const documents = () =>
+      h.tenantDb.withTenant(h.tenant, async (trx) =>
+        Number(
+          (
+            await trx
+              .selectFrom('artifact')
+              .select((eb) => eb.fn.countAll().as('n'))
+              .where('kind', '=', 'document')
+              .executeTakeFirstOrThrow()
+          ).n,
+        ),
+      );
+    const before = await documents();
+    const refused = await h.call('ada', 'POST', `/v1/spaces/${h.general}/documents`, {
+      title: 'Imaged site',
+      language: 'en-GB',
+      direction: 'ltr',
+      template: made.json<{ id: string }>().id,
+    });
+    expect(refused.statusCode, refused.body).toBe(409);
+    expect(refused.json()).toMatchObject({
+      code: 'creation_failed',
+      failures: [expect.objectContaining({ code: 'images_pending', binding: 'b1' })],
+    });
+    expect(await documents()).toBe(before);
   });
 
   describe('a bound image in the bindings view (the B6 plan, task 3)', () => {

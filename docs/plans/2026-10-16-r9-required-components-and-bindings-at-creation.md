@@ -48,3 +48,7 @@ where one is missing.
 - Web: the outline's required-component mark and reason.
 - Tests: a document made with each binding held; a failing query leaving no document; parameters
   reaching `{ document }` arguments at creation; a cohort refused; the browser walks; the close.
+
+## Built
+
+R9a in #655, R9b with the close (0.180.0) in #656. A bound creation is prepared in a savepoint it rolls back, its queries run after the deciding transaction commits, and it is made with the same identifiers beside its results. Creation refuses an idempotency key there (R9-E). The final review found a result holding images the space did not hold leaving pending results nobody would finish (now refused, `images_pending`), `create` in the space not decided again after the queries ran (now decided), and a move to a version requiring a new component reporting nothing (now reported); all fixed, each with a test. Left: TPL-049's layout-placed half, a cohort of a bound template (`cohort_bound`), and a way to place a component a move newly requires.

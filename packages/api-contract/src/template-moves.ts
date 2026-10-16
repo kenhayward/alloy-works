@@ -37,6 +37,9 @@ export const TemplateMoveReport = z.object({
     .describe(
       'Each section the newer version requires that the document lacks, to add or remove with a reason',
     ),
+  components: z
+    .array(z.object({ key: z.string(), component: z.string() }))
+    .describe('Each component the newer version requires that the document lacks, by its key'),
 });
 export type TemplateMoveReport = z.infer<typeof TemplateMoveReport>;
 

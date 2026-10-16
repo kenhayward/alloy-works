@@ -19132,6 +19132,18 @@
         {
           "id": "TPL-070",
           "howItIsMet": "A template's query set is the definitions its required components' bindings name at the versions resolution chooses, computed, never declared (ADR-0062); making a document refuses `template_unresolved` where a component or one of those definitions is not there for the creator to read"
+        },
+        {
+          "id": "TPL-063",
+          "howItIsMet": "Making a document from a template whose required components hold bindings resolves each, as the creator, before the document is made, and records each result as that binding's resolution in the transaction that makes it ([Required components](#required-components))"
+        },
+        {
+          "id": "TPL-065",
+          "howItIsMet": "Each such binding's query runs when the document is made and its result is stored as a dataset version, as a resolve stores one; the binding's mode is the binding's, and the template has no setting for it"
+        },
+        {
+          "id": "TPL-024",
+          "howItIsMet": "Making a document writes everything in one transaction; one whose required components run queries makes nothing until they have run, and nothing where one fails, `creation_failed`; a cohort's row is made in a savepoint of its own (R7-E)"
         }
       ]
     },
@@ -20331,6 +20343,24 @@
       "kind": "title"
     },
     {
+      "id": "TPL-024",
+      "file": "apps/service/src/creation-bindings.test.ts",
+      "line": 110,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-063",
+      "file": "apps/service/src/creation-bindings.test.ts",
+      "line": 90,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-065",
+      "file": "apps/service/src/creation-bindings.test.ts",
+      "line": 90,
+      "kind": "title"
+    },
+    {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
       "line": 1365,
@@ -20345,19 +20375,25 @@
     {
       "id": "DAT-096",
       "file": "apps/service/src/dataset-images.test.ts",
-      "line": 191,
+      "line": 196,
       "kind": "title"
     },
     {
       "id": "DAT-097",
       "file": "apps/service/src/dataset-images.test.ts",
-      "line": 869,
+      "line": 933,
       "kind": "title"
     },
     {
       "id": "IAM-013",
       "file": "apps/service/src/dataset-images.test.ts",
-      "line": 614,
+      "line": 619,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-024",
+      "file": "apps/service/src/dataset-images.test.ts",
+      "line": 801,
       "kind": "title"
     },
     {
@@ -23129,25 +23165,31 @@
     {
       "id": "TPL-028",
       "file": "apps/web/src/structure/DocumentPage.template.test.tsx",
-      "line": 49,
+      "line": 50,
       "kind": "title"
     },
     {
       "id": "TPL-029",
       "file": "apps/web/src/structure/DocumentPage.template.test.tsx",
-      "line": 64,
+      "line": 65,
       "kind": "title"
     },
     {
       "id": "TPL-033",
       "file": "apps/web/src/structure/DocumentPage.template.test.tsx",
-      "line": 98,
+      "line": 124,
       "kind": "title"
     },
     {
       "id": "TPL-034",
       "file": "apps/web/src/structure/DocumentPage.template.test.tsx",
-      "line": 98,
+      "line": 124,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-044",
+      "file": "apps/web/src/structure/DocumentPage.template.test.tsx",
+      "line": 85,
       "kind": "title"
     },
     {
@@ -25487,19 +25529,19 @@
     {
       "id": "TPL-014",
       "file": "packages/db/src/template-components.test.ts",
-      "line": 244,
+      "line": 245,
       "kind": "title"
     },
     {
       "id": "TPL-044",
       "file": "packages/db/src/template-components.test.ts",
-      "line": 336,
+      "line": 337,
       "kind": "title"
     },
     {
       "id": "TPL-070",
       "file": "packages/db/src/template-components.test.ts",
-      "line": 244,
+      "line": 245,
       "kind": "title"
     },
     {
@@ -27768,6 +27810,12 @@
       "id": "TPL-034",
       "file": "packages/domain/src/template/move.test.ts",
       "line": 74,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-044",
+      "file": "packages/domain/src/template/move.test.ts",
+      "line": 136,
       "kind": "title"
     },
     {
