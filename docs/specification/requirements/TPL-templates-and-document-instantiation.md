@@ -38,20 +38,22 @@ designer named as a user in §5 had no area serving them.
 
 ## 3. Templates
 
-| ID          | Requirement                                                                                                                                                                                                     | Tranche | Status                |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------------------- |
-| **TPL-001** | A template must be a named, versioned artifact belonging to a space                                                                                                                                             | T1      | Specified             |
-| **TPL-002** | A template must bind exactly one of each definition: metadata schema, structure outline, query set, presentation theme, publishing layout, prompt library                                                       | T1      | Superseded by TPL-052 |
-| **TPL-003** | A template must **own** its metadata schema and its structure outline, and must **reference** the other four                                                                                                    | T1      | Superseded by TPL-053 |
-| **TPL-052** | A template must bind exactly one structure outline, query set, presentation theme, publishing layout and prompt library, and zero or more metadata schemas (**MET-005**)                                        | T1      | Superseded by TPL-059 |
-| **TPL-059** | A template must bind exactly one structure outline, presentation theme and publishing layout, and zero or more metadata schemas (**MET-005**)                                                                   | T1      | Specified             |
-| **TPL-060** | A template must bind exactly one query set                                                                                                                                                                      | T4      | Specified             |
-| **TPL-061** | A template must bind exactly one prompt library                                                                                                                                                                 | T5      | Specified             |
-| **TPL-053** | A template must **own** its structure outline, and must **reference** every other definition it binds, its metadata schemas included                                                                            | T1      | Specified             |
-| **TPL-004** | A template must not be usable to create a document while any definition it references does not resolve                                                                                                          | T1      | Specified             |
-| **TPL-005** | A template must be testable by creating a throwaway document from it, without that document entering the space                                                                                                  | T7      | Specified             |
-| **TPL-006** | Templates must be permissioned separately from the documents made from them, because designing one and writing one are different jobs                                                                           | T1      | Specified             |
-| **TPL-046** | Where a template needs no prompt library or no query set, it must bind a declared empty default rather than nothing, so that TPL-060 and TPL-061 hold and TPL-004 always has something to resolve (**TPL-Q01**) | T4      | Specified             |
+| ID          | Requirement                                                                                                                                                                                                            | Tranche | Status                |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------------------- |
+| **TPL-001** | A template must be a named, versioned artifact belonging to a space                                                                                                                                                    | T1      | Specified             |
+| **TPL-002** | A template must bind exactly one of each definition: metadata schema, structure outline, query set, presentation theme, publishing layout, prompt library                                                              | T1      | Superseded by TPL-052 |
+| **TPL-003** | A template must **own** its metadata schema and its structure outline, and must **reference** the other four                                                                                                           | T1      | Superseded by TPL-053 |
+| **TPL-052** | A template must bind exactly one structure outline, query set, presentation theme, publishing layout and prompt library, and zero or more metadata schemas (**MET-005**)                                               | T1      | Superseded by TPL-059 |
+| **TPL-059** | A template must bind exactly one structure outline, presentation theme and publishing layout, and zero or more metadata schemas (**MET-005**)                                                                          | T1      | Specified             |
+| **TPL-060** | A template must bind exactly one query set                                                                                                                                                                             | T4      | Superseded by TPL-070 |
+| **TPL-070** | A template's query set must be the query definitions its required components' bindings name (TPL-014), computed when it is resolved rather than declared, and must resolve before a document is made from it (TPL-004) | T4      | Specified             |
+| **TPL-061** | A template must bind exactly one prompt library                                                                                                                                                                        | T5      | Specified             |
+| **TPL-053** | A template must **own** its structure outline, and must **reference** every other definition it binds, its metadata schemas included                                                                                   | T1      | Specified             |
+| **TPL-004** | A template must not be usable to create a document while any definition it references does not resolve                                                                                                                 | T1      | Specified             |
+| **TPL-005** | A template must be testable by creating a throwaway document from it, without that document entering the space                                                                                                         | T7      | Specified             |
+| **TPL-006** | Templates must be permissioned separately from the documents made from them, because designing one and writing one are different jobs                                                                                  | T1      | Specified             |
+| **TPL-046** | Where a template needs no prompt library or no query set, it must bind a declared empty default rather than nothing, so that TPL-060 and TPL-061 hold and TPL-004 always has something to resolve (**TPL-Q01**)        | T4      | Superseded by TPL-071 |
+| **TPL-071** | Where a template needs no prompt library, it must bind a declared empty default rather than nothing, so that TPL-061 holds and TPL-004 always has something to resolve                                                 | T5      | Specified             |
 
 **TPL-004 is cheap here and expensive anywhere else.** A template whose theme was deleted or whose
 query set moved is discovered either when somebody tries to create a document, or at publish time a
@@ -429,3 +431,20 @@ whole keeps its identifier.
 | Counts       | Before                                     | After                                      |
 | ------------ | ------------------------------------------ | ------------------------------------------ |
 | Requirements | 69, of which 16 superseded and 1 withdrawn | 69, of which 16 superseded and 1 withdrawn |
+
+### A template's query set is computed (ADR-0062), 2026-10-16
+
+Not a review. Designing TPL-014 found that a template's only queries are its required components'
+bindings, each naming its own definition, so a declared set would be a second list that drifts. Ken
+chose a computed set, recorded by [ADR-0062](../../decisions/0062-a-templates-query-set-is-computed.md),
+and answered TPL-Q04: the template declares each required component's reference mode.
+
+| What was found                                                           | Change                                                                                       |
+| ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| A template's queries are its required components' bindings               | **TPL-060 superseded by TPL-070**: the query set is computed from them and must resolve      |
+| A computed query set needs no empty default; a prompt library still does | **TPL-046 superseded by TPL-071**, its prompt-library half, T5                               |
+| TPL-Q04 asked whether a required component floats or pins                | Answered: the template declares its mode, following approved revisions by default (ADR-0062) |
+
+| Counts       | Before                                     | After                                      |
+| ------------ | ------------------------------------------ | ------------------------------------------ |
+| Requirements | 69, of which 16 superseded and 1 withdrawn | 71, of which 18 superseded and 1 withdrawn |

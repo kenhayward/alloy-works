@@ -105,8 +105,27 @@ export const TemplateRefusal = ErrorBody.extend({
   unresolved: z
     .array(
       z.object({
-        reference: z.enum(['theme', 'layout', 'schema', 'field', 'requires', 'conflict']),
+        reference: z.enum([
+          'theme',
+          'layout',
+          'schema',
+          'field',
+          'requires',
+          'conflict',
+          'component',
+          'query',
+        ]),
         id: z.string(),
+        key: z
+          .string()
+          .optional()
+          .describe('component and query: the key of the required component it concerns'),
+        why: z
+          .enum(['missing', 'foreign', 'unapproved'])
+          .optional()
+          .describe(
+            'component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow',
+          ),
         field: z.string().optional(),
         level: z.enum(['document', 'section']).optional(),
         schemas: z.array(z.string()).optional(),

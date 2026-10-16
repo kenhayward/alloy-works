@@ -1,6 +1,7 @@
 import {
   bindingDigestInput,
   bindingsIn,
+  missingComponents,
   missingSections,
   parseProvenance,
   parseAssetVersion,
@@ -534,6 +535,11 @@ export type PublicationRequestAnswer =
    * each by its starting title, in the template's order.
    */
   | { readonly answer: 'section.required'; readonly sections: readonly MissingSection[] }
+  /** A component its template requires is gone and no reason was given (TPL-044). */
+  | {
+      readonly answer: 'component.required';
+      readonly components: readonly { readonly key: string; readonly component: string }[];
+    }
   /**
    * The document's values, or a section's, do not satisfy its template's fields (TPL-055): every
    * failure, each with the node it belongs to, `null` for the document's own.
@@ -824,6 +830,13 @@ export async function resolvePublishable(
       new Set((await waivedKeys(trx, input.documentId)).keys()),
     );
     if (sections.length > 0) return { answer: 'section.required', sections };
+    // And each component it requires, the same way (TPL-044; the R9 plan, R9-D).
+    const components = missingComponents(
+      rules.definition,
+      read.outline,
+      new Set((await waivedKeys(trx, input.documentId)).keys()),
+    );
+    if (components.length > 0) return { answer: 'component.required', components };
     if (!rules.resolved.ok) {
       return { answer: 'template.unresolved', unresolved: rules.resolved.unresolved };
     }

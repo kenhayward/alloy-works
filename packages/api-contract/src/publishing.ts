@@ -63,6 +63,12 @@ export const PublicationRefusal = ErrorBody.extend({
     .describe(
       "section_required: each section the document's template requires that none of its sections came from",
     ),
+  components: z
+    .array(z.object({ key: z.string() }))
+    .optional()
+    .describe(
+      "component_required: each component the document's template requires, by its key, that no reference came from and no reason waived",
+    ),
   failures: z
     .array(
       z.object({
@@ -423,7 +429,7 @@ export const publishingRoutes = {
       },
       400: {
         description:
-          "`format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language; `page_reference_without_pdf`: the document cites a page and the PDF was not asked for; `section_required`: a section its template requires is missing; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a value a component it places holds has no result in this document, never resolved or changed since it was; `profile_invalid`: the profile names an axis or a value the environment does not declare",
+          "`format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language; `page_reference_without_pdf`: the document cites a page and the PDF was not asked for; `section_required`: a section its template requires is missing; `component_required`: a component it requires is missing with no reason given; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a value a component it places holds has no result in this document, never resolved or changed since it was; `profile_invalid`: the profile names an axis or a value the environment does not declare",
         schema: PublicationRefusal,
       },
       401: unauthenticated,
@@ -460,7 +466,7 @@ export const publishingRoutes = {
       },
       400: {
         description:
-          "`format_unsupported`: the layout makes no PDF; `layout_language`: the document is not in its layout's language; `section_required`: a section its template requires is missing; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a value a component it places holds has no result in this document, never resolved or changed since it was; `profile_invalid`: the profile names an axis or a value the environment does not declare",
+          "`format_unsupported`: the layout makes no PDF; `layout_language`: the document is not in its layout's language; `section_required`: a section its template requires is missing; `component_required`: a component it requires is missing with no reason given; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a value a component it places holds has no result in this document, never resolved or changed since it was; `profile_invalid`: the profile names an axis or a value the environment does not declare",
         schema: PublicationRefusal,
       },
       401: unauthenticated,

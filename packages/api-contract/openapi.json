@@ -21483,6 +21483,21 @@
                         ]
                       }
                     },
+                    "components": {
+                      "description": "component_required: each component the document's template requires, by its key, that no reference came from and no reason waived",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key"
+                        ]
+                      }
+                    },
                     "failures": {
                       "description": "metadata_invalid: each value that does not satisfy the document's template, in MET-022's shape, with the node it belongs to, null for the document's own",
                       "type": "array",
@@ -59718,7 +59733,7 @@
             }
           },
           "400": {
-            "description": "`name_invalid`: the name cannot be stored; `baseline_unresolved`: a place does not resolve as the caller reads it, each in `places`; and a publish's refusals: `layout_language`, `section_required`, `metadata_invalid`, `values_unresolved`, `binding_unresolved`",
+            "description": "`name_invalid`: the name cannot be stored; `baseline_unresolved`: a place does not resolve as the caller reads it, each in `places`; and a publish's refusals: `layout_language`, `section_required`, `component_required`, `metadata_invalid`, `values_unresolved`, `binding_unresolved`",
             "content": {
               "application/json": {
                 "schema": {
@@ -59799,6 +59814,21 @@
                         "required": [
                           "key",
                           "title"
+                        ]
+                      }
+                    },
+                    "components": {
+                      "description": "component_required: each component the document's template requires, by its key, that no reference came from and no reason waived",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key"
                         ]
                       }
                     },
@@ -60255,6 +60285,21 @@
                         "required": [
                           "key",
                           "title"
+                        ]
+                      }
+                    },
+                    "components": {
+                      "description": "component_required: each component the document's template requires, by its key, that no reference came from and no reason waived",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key"
                         ]
                       }
                     },
@@ -122026,11 +122071,26 @@
                               "schema",
                               "field",
                               "requires",
-                              "conflict"
+                              "conflict",
+                              "component",
+                              "query"
                             ]
                           },
                           "id": {
                             "type": "string"
+                          },
+                          "key": {
+                            "description": "component and query: the key of the required component it concerns",
+                            "type": "string"
+                          },
+                          "why": {
+                            "description": "component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow",
+                            "type": "string",
+                            "enum": [
+                              "missing",
+                              "foreign",
+                              "unapproved"
+                            ]
                           },
                           "field": {
                             "type": "string"
@@ -123114,11 +123174,26 @@
                               "schema",
                               "field",
                               "requires",
-                              "conflict"
+                              "conflict",
+                              "component",
+                              "query"
                             ]
                           },
                           "id": {
                             "type": "string"
+                          },
+                          "key": {
+                            "description": "component and query: the key of the required component it concerns",
+                            "type": "string"
+                          },
+                          "why": {
+                            "description": "component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow",
+                            "type": "string",
+                            "enum": [
+                              "missing",
+                              "foreign",
+                              "unapproved"
+                            ]
                           },
                           "field": {
                             "type": "string"
@@ -125779,11 +125854,26 @@
                               "schema",
                               "field",
                               "requires",
-                              "conflict"
+                              "conflict",
+                              "component",
+                              "query"
                             ]
                           },
                           "id": {
                             "type": "string"
+                          },
+                          "key": {
+                            "description": "component and query: the key of the required component it concerns",
+                            "type": "string"
+                          },
+                          "why": {
+                            "description": "component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow",
+                            "type": "string",
+                            "enum": [
+                              "missing",
+                              "foreign",
+                              "unapproved"
+                            ]
                           },
                           "field": {
                             "type": "string"
@@ -126867,11 +126957,26 @@
                               "schema",
                               "field",
                               "requires",
-                              "conflict"
+                              "conflict",
+                              "component",
+                              "query"
                             ]
                           },
                           "id": {
                             "type": "string"
+                          },
+                          "key": {
+                            "description": "component and query: the key of the required component it concerns",
+                            "type": "string"
+                          },
+                          "why": {
+                            "description": "component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow",
+                            "type": "string",
+                            "enum": [
+                              "missing",
+                              "foreign",
+                              "unapproved"
+                            ]
                           },
                           "field": {
                             "type": "string"
@@ -130196,11 +130301,26 @@
                               "schema",
                               "field",
                               "requires",
-                              "conflict"
+                              "conflict",
+                              "component",
+                              "query"
                             ]
                           },
                           "id": {
                             "type": "string"
+                          },
+                          "key": {
+                            "description": "component and query: the key of the required component it concerns",
+                            "type": "string"
+                          },
+                          "why": {
+                            "description": "component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow",
+                            "type": "string",
+                            "enum": [
+                              "missing",
+                              "foreign",
+                              "unapproved"
+                            ]
                           },
                           "field": {
                             "type": "string"
@@ -131284,11 +131404,26 @@
                               "schema",
                               "field",
                               "requires",
-                              "conflict"
+                              "conflict",
+                              "component",
+                              "query"
                             ]
                           },
                           "id": {
                             "type": "string"
+                          },
+                          "key": {
+                            "description": "component and query: the key of the required component it concerns",
+                            "type": "string"
+                          },
+                          "why": {
+                            "description": "component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow",
+                            "type": "string",
+                            "enum": [
+                              "missing",
+                              "foreign",
+                              "unapproved"
+                            ]
                           },
                           "field": {
                             "type": "string"
@@ -132095,7 +132230,7 @@
             }
           },
           "400": {
-            "description": "`format_unsupported`: the layout makes no PDF; `layout_language`: the document is not in its layout's language; `section_required`: a section its template requires is missing; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a value a component it places holds has no result in this document, never resolved or changed since it was; `profile_invalid`: the profile names an axis or a value the environment does not declare",
+            "description": "`format_unsupported`: the layout makes no PDF; `layout_language`: the document is not in its layout's language; `section_required`: a section its template requires is missing; `component_required`: a component it requires is missing with no reason given; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a value a component it places holds has no result in this document, never resolved or changed since it was; `profile_invalid`: the profile names an axis or a value the environment does not declare",
             "content": {
               "application/json": {
                 "schema": {
@@ -132176,6 +132311,21 @@
                         "required": [
                           "key",
                           "title"
+                        ]
+                      }
+                    },
+                    "components": {
+                      "description": "component_required: each component the document's template requires, by its key, that no reference came from and no reason waived",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key"
                         ]
                       }
                     },
@@ -132493,6 +132643,21 @@
                         "required": [
                           "key",
                           "title"
+                        ]
+                      }
+                    },
+                    "components": {
+                      "description": "component_required: each component the document's template requires, by its key, that no reference came from and no reason waived",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key"
                         ]
                       }
                     },
@@ -134537,11 +134702,26 @@
                               "schema",
                               "field",
                               "requires",
-                              "conflict"
+                              "conflict",
+                              "component",
+                              "query"
                             ]
                           },
                           "id": {
                             "type": "string"
+                          },
+                          "key": {
+                            "description": "component and query: the key of the required component it concerns",
+                            "type": "string"
+                          },
+                          "why": {
+                            "description": "component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow",
+                            "type": "string",
+                            "enum": [
+                              "missing",
+                              "foreign",
+                              "unapproved"
+                            ]
                           },
                           "field": {
                             "type": "string"
@@ -135625,11 +135805,26 @@
                               "schema",
                               "field",
                               "requires",
-                              "conflict"
+                              "conflict",
+                              "component",
+                              "query"
                             ]
                           },
                           "id": {
                             "type": "string"
+                          },
+                          "key": {
+                            "description": "component and query: the key of the required component it concerns",
+                            "type": "string"
+                          },
+                          "why": {
+                            "description": "component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow",
+                            "type": "string",
+                            "enum": [
+                              "missing",
+                              "foreign",
+                              "unapproved"
+                            ]
                           },
                           "field": {
                             "type": "string"
@@ -136645,7 +136840,7 @@
             }
           },
           "400": {
-            "description": "`format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language; `page_reference_without_pdf`: the document cites a page and the PDF was not asked for; `section_required`: a section its template requires is missing; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a value a component it places holds has no result in this document, never resolved or changed since it was; `profile_invalid`: the profile names an axis or a value the environment does not declare",
+            "description": "`format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language; `page_reference_without_pdf`: the document cites a page and the PDF was not asked for; `section_required`: a section its template requires is missing; `component_required`: a component it requires is missing with no reason given; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a value a component it places holds has no result in this document, never resolved or changed since it was; `profile_invalid`: the profile names an axis or a value the environment does not declare",
             "content": {
               "application/json": {
                 "schema": {
@@ -136726,6 +136921,21 @@
                         "required": [
                           "key",
                           "title"
+                        ]
+                      }
+                    },
+                    "components": {
+                      "description": "component_required: each component the document's template requires, by its key, that no reference came from and no reason waived",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key"
                         ]
                       }
                     },
@@ -137043,6 +137253,21 @@
                         "required": [
                           "key",
                           "title"
+                        ]
+                      }
+                    },
+                    "components": {
+                      "description": "component_required: each component the document's template requires, by its key, that no reference came from and no reason waived",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key"
                         ]
                       }
                     },
@@ -144677,11 +144902,26 @@
                               "schema",
                               "field",
                               "requires",
-                              "conflict"
+                              "conflict",
+                              "component",
+                              "query"
                             ]
                           },
                           "id": {
                             "type": "string"
+                          },
+                          "key": {
+                            "description": "component and query: the key of the required component it concerns",
+                            "type": "string"
+                          },
+                          "why": {
+                            "description": "component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow",
+                            "type": "string",
+                            "enum": [
+                              "missing",
+                              "foreign",
+                              "unapproved"
+                            ]
                           },
                           "field": {
                             "type": "string"
@@ -145765,11 +146005,26 @@
                               "schema",
                               "field",
                               "requires",
-                              "conflict"
+                              "conflict",
+                              "component",
+                              "query"
                             ]
                           },
                           "id": {
                             "type": "string"
+                          },
+                          "key": {
+                            "description": "component and query: the key of the required component it concerns",
+                            "type": "string"
+                          },
+                          "why": {
+                            "description": "component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow",
+                            "type": "string",
+                            "enum": [
+                              "missing",
+                              "foreign",
+                              "unapproved"
+                            ]
                           },
                           "field": {
                             "type": "string"
@@ -188281,11 +188536,26 @@
                               "schema",
                               "field",
                               "requires",
-                              "conflict"
+                              "conflict",
+                              "component",
+                              "query"
                             ]
                           },
                           "id": {
                             "type": "string"
+                          },
+                          "key": {
+                            "description": "component and query: the key of the required component it concerns",
+                            "type": "string"
+                          },
+                          "why": {
+                            "description": "component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow",
+                            "type": "string",
+                            "enum": [
+                              "missing",
+                              "foreign",
+                              "unapproved"
+                            ]
                           },
                           "field": {
                             "type": "string"
@@ -194692,6 +194962,106 @@
                           ],
                           "additionalProperties": false
                         }
+                      },
+                      "components": {
+                        "maxItems": 50,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "key": {
+                              "type": "string",
+                              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+                            },
+                            "component": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "mode": {
+                              "oneOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "const": "pinned"
+                                    },
+                                    "version": {
+                                      "type": "string",
+                                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "version"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "const": "latest"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "const": "approved"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              ]
+                            },
+                            "place": {
+                              "type": "object",
+                              "properties": {
+                                "section": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "at": {
+                                  "type": "string",
+                                  "enum": [
+                                    "start",
+                                    "end"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "section",
+                                "at"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": [
+                            "key",
+                            "component",
+                            "place"
+                          ],
+                          "additionalProperties": false
+                        }
                       }
                     },
                     "required": [
@@ -194885,11 +195255,26 @@
                               "schema",
                               "field",
                               "requires",
-                              "conflict"
+                              "conflict",
+                              "component",
+                              "query"
                             ]
                           },
                           "id": {
                             "type": "string"
+                          },
+                          "key": {
+                            "description": "component and query: the key of the required component it concerns",
+                            "type": "string"
+                          },
+                          "why": {
+                            "description": "component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow",
+                            "type": "string",
+                            "enum": [
+                              "missing",
+                              "foreign",
+                              "unapproved"
+                            ]
                           },
                           "field": {
                             "type": "string"
@@ -199654,6 +200039,106 @@
                           ],
                           "additionalProperties": false
                         }
+                      },
+                      "components": {
+                        "maxItems": 50,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "key": {
+                              "type": "string",
+                              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+                            },
+                            "component": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "mode": {
+                              "oneOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "const": "pinned"
+                                    },
+                                    "version": {
+                                      "type": "string",
+                                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "version"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "const": "latest"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "const": "approved"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              ]
+                            },
+                            "place": {
+                              "type": "object",
+                              "properties": {
+                                "section": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "at": {
+                                  "type": "string",
+                                  "enum": [
+                                    "start",
+                                    "end"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "section",
+                                "at"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": [
+                            "key",
+                            "component",
+                            "place"
+                          ],
+                          "additionalProperties": false
+                        }
                       }
                     },
                     "required": [
@@ -199849,11 +200334,26 @@
                               "schema",
                               "field",
                               "requires",
-                              "conflict"
+                              "conflict",
+                              "component",
+                              "query"
                             ]
                           },
                           "id": {
                             "type": "string"
+                          },
+                          "key": {
+                            "description": "component and query: the key of the required component it concerns",
+                            "type": "string"
+                          },
+                          "why": {
+                            "description": "component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow",
+                            "type": "string",
+                            "enum": [
+                              "missing",
+                              "foreign",
+                              "unapproved"
+                            ]
                           },
                           "field": {
                             "type": "string"
@@ -200181,11 +200681,26 @@
                               "schema",
                               "field",
                               "requires",
-                              "conflict"
+                              "conflict",
+                              "component",
+                              "query"
                             ]
                           },
                           "id": {
                             "type": "string"
+                          },
+                          "key": {
+                            "description": "component and query: the key of the required component it concerns",
+                            "type": "string"
+                          },
+                          "why": {
+                            "description": "component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow",
+                            "type": "string",
+                            "enum": [
+                              "missing",
+                              "foreign",
+                              "unapproved"
+                            ]
                           },
                           "field": {
                             "type": "string"

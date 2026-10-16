@@ -53,9 +53,30 @@ export function missingSections(
   return missing;
 }
 
-/** Every required starting section's key, at any depth (TPL-013, TPL-029). */
+/**
+ * TPL-044's check (the R9 plan, R9-D): every component the template requires must be the `origin` of
+ * some reference of the outline, unless removed with a stated reason.
+ */
+export function missingComponents(
+  definition: TemplateDefinition,
+  outline: OutlineDocument,
+  waived: ReadonlySet<string> = new Set(),
+): { readonly key: string; readonly component: string }[] {
+  const origins = new Set<string>();
+  walkOutline(outline.nodes, (node) => {
+    if (node.type === 'reference' && node.origin !== undefined) origins.add(node.origin);
+  });
+  return (definition.components ?? [])
+    .filter((each) => !origins.has(each.key) && !waived.has(each.key))
+    .map((each) => ({ key: each.key, component: each.component }));
+}
+
+/**
+ * Every required starting section's key, at any depth, and every required component's (TPL-013,
+ * TPL-029, TPL-044): each removed only with a reason.
+ */
 export function requiredKeys(definition: TemplateDefinition): string[] {
-  const keys: string[] = [];
+  const keys: string[] = (definition.components ?? []).map((each) => each.key);
   const walk = (sections: readonly StartingSection[]) => {
     for (const each of sections) {
       if (each.required) keys.push(each.key);
