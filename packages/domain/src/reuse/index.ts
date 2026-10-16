@@ -2,6 +2,7 @@ export {
   applyConditions,
   conditionAxisDefinitionSchema,
   profileSchema,
+  selected as conditionsSelect,
   selectOutline,
   unsetAxes,
   storedProfileSchema,

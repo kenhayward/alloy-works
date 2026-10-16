@@ -1115,7 +1115,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   through the API may name another profile, and the publication records it. Through the outline, a
   section or a placed component can carry conditions too, and so can a table, a figure or a block
   equation through the API: what a profile leaves out takes no number, is in no contents or list, and
-  a cross-reference to it fails by name. Neither is set from the page yet. A baseline publishes under
+  a cross-reference to it fails by name. A section's or a component's are set from the outline: **Set condition** in its details, its row saying what it is kept for and whether this document's profile leaves it out. A block's are not set from the page yet. A baseline publishes under
   the profile in force when it was taken, and a workflow transition can require every axis the
   document depends on to be set.
 - **Bulk generation.** Templates offers **Generate** on each template: a document for each row of a
