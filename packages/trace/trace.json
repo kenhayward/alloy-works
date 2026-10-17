@@ -22759,7 +22759,7 @@
     {
       "id": "LIF-043",
       "file": "apps/web/src/lifecycle/Scope.test.tsx",
-      "line": 160,
+      "line": 199,
       "kind": "title"
     },
     {
@@ -25723,19 +25723,19 @@
     {
       "id": "LIF-042",
       "file": "packages/db/src/scopes.test.ts",
-      "line": 167,
+      "line": 168,
       "kind": "title"
     },
     {
       "id": "LIF-043",
       "file": "packages/db/src/scopes.test.ts",
-      "line": 288,
+      "line": 289,
       "kind": "title"
     },
     {
       "id": "LIF-047",
       "file": "packages/db/src/scopes.test.ts",
-      "line": 245,
+      "line": 246,
       "kind": "title"
     },
     {

@@ -11,6 +11,7 @@ import { bootstrapCluster } from './bootstrap.js';
 import { createComponent } from './creation.js';
 import { createDefinition } from './definitions.js';
 import { grant } from './grants.js';
+import { addToGroup, createGroup, deleteGroup } from './groups.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import { resolveOccurrences } from './publishing.js';
@@ -333,5 +334,36 @@ describe('revisions effective by scope (the R15 plan, R15-A to R15-D)', () => {
       revision: null,
       why: 'none',
     });
+  });
+
+  it('LIF-047 lets a member of a group named accept, and keeps the group from being deleted while a scope names it', async () => {
+    const made = await component('Check the seal');
+    const group = await as(async (trx) => {
+      const created = await createGroup(trx, `Reviewers ${randomUUID().slice(0, 8)}`);
+      if (!('group' in created)) throw new Error('no group');
+      await addToGroup(trx, created.group.id, grace);
+      return created.group.id;
+    });
+    await scope(made, [{ axis: 'market', value: 'eu', party: { kind: 'group', id: group } }]);
+    expect(await as((trx) => deleteGroup(trx, group))).toEqual({ refused: 'group.in_scope' });
+    await approve(made);
+    expect(
+      await service.withTenant(
+        tenant,
+        (trx) =>
+          acceptRevision(trx, {
+            artifactId: made.artifactId,
+            kind: 'component',
+            revision: 1,
+            axis: 'market',
+            value: 'eu',
+            by: grace,
+          }),
+        { actorKind: 'person', actor: grace },
+      ),
+    ).toEqual({ answer: 'accepted' });
+    // Its scope cleared, the revision still names it: still not deleted.
+    await scope(made, []);
+    expect(await as((trx) => deleteGroup(trx, group))).toEqual({ refused: 'group.in_scope' });
   });
 });

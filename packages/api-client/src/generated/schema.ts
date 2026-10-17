@@ -50742,6 +50742,26 @@ export interface operations {
                     };
                 };
             };
+            /** @description group_in_scope: a scope names the group to accept a revision, now or in a revision designated */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {

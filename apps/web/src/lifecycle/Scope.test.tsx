@@ -157,6 +157,45 @@ describe('scopes in a header (the R15 plan, R15-B, R15-E)', () => {
     });
   });
 
+  it('LIF-047 keeps a group named to accept as it was, saved unchanged', async () => {
+    const { client, asked } = service();
+    const REVIEWERS = '33333333-3333-4333-8333-333333333333';
+    render(
+      <ScopeButton
+        client={client}
+        kind="component"
+        id={PRINTER}
+        title="Install the printer"
+        scope={{
+          scope: [
+            {
+              axis: 'market',
+              value: 'eu',
+              party: { kind: 'group', id: REVIEWERS, name: 'Reviewers' },
+            },
+          ],
+          pending: [],
+        }}
+        onSaved={() => undefined}
+      />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Effective for' }));
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Effective for: Install the printer',
+    });
+    const market = await within(dialog).findByRole('group', { name: 'Market' });
+    expect(
+      within(market).getByRole('combobox', { name: 'Accepted in Europe by' }),
+    ).toHaveDisplayValue('Group: Reviewers');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    await waitFor(() =>
+      expect(asked.at(-1)).toMatchObject({
+        method: 'PUT',
+        body: { scope: [{ axis: 'market', value: 'eu', party: { kind: 'group', id: REVIEWERS } }] },
+      }),
+    );
+  });
+
   it('LIF-043 answers, for a scope and a day anybody may ask, the one revision effective there then', async () => {
     const { client, asked } = service();
     render(

@@ -8,6 +8,7 @@ import {
   type ExternalRefusal,
 } from './grants.js';
 import { checkedPage, isPageCursor, paged, type Page, type PageRequest } from './paging.js';
+import { scopesStored } from './scopes.js';
 import type { TenantTransaction } from './tables.js';
 
 /**
@@ -427,7 +428,8 @@ export async function setGroupMembers(
   return { set: true };
 }
 
-export type DeletionAnswer = { readonly deleted: string } | { readonly refused: 'group.missing' };
+export type DeletionAnswer =
+  { readonly deleted: string } | { readonly refused: 'group.missing' | 'group.in_scope' };
 
 /**
  * Deletes a group, of either source, with its memberships and every grant it holds, which go by their
@@ -446,6 +448,18 @@ export async function deleteGroup(
     .forUpdate()
     .executeTakeFirst();
   if (!group) return { refused: 'group.missing' };
+  // A group a scope names must accept there (LIF-047; the R15 plan, R15-E): an artifact's scope now,
+  // or a revision's, keeps it.
+  if (await scopesStored(trx)) {
+    const { rows } = await sql<{ named: boolean }>`
+      select exists (select 1 from revision_scope where party_group = ${groupId}::uuid)
+          or exists (
+               select 1 from (select distinct on (artifact_id) scope from artifact_scope
+                               order by artifact_id, id desc) latest
+                where latest.scope @> ${JSON.stringify([{ party: { kind: 'group', id: groupId } }])}::jsonb)
+             as named`.execute(trx);
+    if (rows[0]?.named === true) return { refused: 'group.in_scope' };
+  }
   // One event for each row the cascade removes, then the group's own, all before the delete
   // (the AU1 plan, AU1-H).
   await recordGrantsRevoked(trx, { group: groupId });

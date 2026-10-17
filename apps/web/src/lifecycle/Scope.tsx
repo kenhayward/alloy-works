@@ -171,15 +171,23 @@ function ScopeDialog({
   const headingId = useId();
   const [axes, setAxes] = useState<readonly OfferedAxis[] | 'unread' | null>(null);
   const [people, setPeople] = useState<readonly { id: string; name: string }[]>([]);
-  // Each value ticked, by `axis:value`, with the person who accepts it there, or none.
+  // Each value ticked, by `axis:value`, with who accepts it there as `<kind>:<id>`, or none.
   const [chosen, setChosen] = useState<ReadonlyMap<string, string>>(
     new Map(
       scope.scope.map((each) => [
         `${each.axis}:${each.value}`,
-        each.party?.kind === 'principal' ? each.party.id : '',
+        each.party === null ? '' : `${each.party.kind}:${each.party.id}`,
       ]),
     ),
   );
+  // A group a scope already names stays offered, so saving keeps it (the final review).
+  const groups = [
+    ...new Map(
+      scope.scope.flatMap((each) =>
+        each.party?.kind === 'group' ? [[each.party.id, each.party.name] as const] : [],
+      ),
+    ),
+  ];
   const [said, setSaid] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -222,7 +230,13 @@ function ScopeDialog({
         return {
           axis: key.slice(0, colon),
           value: key.slice(colon + 1),
-          party: person === '' ? null : { kind: 'principal' as const, id: person },
+          party:
+            person === ''
+              ? null
+              : {
+                  kind: person.startsWith('group:') ? ('group' as const) : ('principal' as const),
+                  id: person.slice(person.indexOf(':') + 1),
+                },
         };
       }),
     };
@@ -275,8 +289,13 @@ function ScopeDialog({
                           onChange={(event) => accepter(key, event.target.value)}
                         >
                           <option value="">Nobody, effective as approved</option>
+                          {groups.map(([group, name]) => (
+                            <option key={group} value={`group:${group}`}>
+                              {`Group: ${name ?? 'unnamed'}`}
+                            </option>
+                          ))}
                           {people.map((each) => (
-                            <option key={each.id} value={each.id}>
+                            <option key={each.id} value={`principal:${each.id}`}>
                               {each.name}
                             </option>
                           ))}

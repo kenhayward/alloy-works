@@ -3,6 +3,16 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.186.0 - 2026-10-17 (PR #690)
+
+Reuse's fifteenth slice: revisions effective by scope (the R15 plan).
+
+### Added
+
+- **Revisions effective by scope.** A revision can be made effective for a market or a site while another stays effective elsewhere, each document reading the one effective under its profile, and a scope can wait on a named person's or group's acceptance.
+- **Effective for, from the header.** A component's or document's header offers **Effective for**, the markets or sites its next revision is effective for, each with who accepts it there; a revision waiting on acceptance is said so, with **Accept** for whoever must accept it.
+- **What was effective.** A component's or document's header offers **What was effective**: choose a market or a site and a moment, and it says which revision applied there then.
+
 ## 0.185.0 - 2026-10-17 (PR #685)
 
 Reuse's fourteenth slice: search and listings (the R14 plan).
