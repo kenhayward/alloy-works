@@ -23,6 +23,7 @@ import {
   takeLock,
   holding,
   isHolderRefusal,
+  headVersion,
   latestVersion,
   discardUnsaved,
   listIterations,
@@ -359,6 +360,7 @@ export function editingHandlers() {
         openedFrom: body.openedFrom,
         content,
         ...(body.values === undefined ? {} : { values: body.values }),
+        ...(body.line === undefined ? {} : { line: body.line }),
       });
       if (answer.answer !== 'accepted') throw refuse(answer);
       return { sequence: answer.sequence, lock: lockView(answer.lock, principalId) };
@@ -427,6 +429,7 @@ export function editingHandlers() {
         session: body.session,
         openedFrom: body.openedFrom,
         ...(body.note === undefined ? {} : { note: body.note }),
+        ...(body.line === undefined ? {} : { line: body.line }),
       });
       if (answer.answer === 'recorded') {
         return { outcome: 'cut', version: versionView(answer.version) };
@@ -448,10 +451,11 @@ export function editingHandlers() {
         principal: principalId,
         session: query.session,
         openedFrom: query.openedFrom,
+        ...(query.line === undefined ? {} : { line: query.line }),
       });
       if (answer.answer !== 'released') throw refuse(answer);
       if (answer.version) return { outcome: 'cut', version: versionView(answer.version) };
-      const current = await latestVersion(trx, id);
+      const current = await headVersion(trx, id, query.line);
       if (!current) throw notFound();
       return { outcome: 'unchanged', version: versionView(current) };
     },

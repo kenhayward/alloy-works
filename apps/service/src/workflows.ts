@@ -176,8 +176,10 @@ export async function workflowView(
   id: string,
   facts: AccessFacts,
   principalId: string,
+  /** A line's standing (R16-C); the main line's where absent. */
+  line?: string,
 ): Promise<TransitionAnswer> {
-  const standing = await workflowStanding(trx, id);
+  const standing = await workflowStanding(trx, id, line);
   if (!standing) throw new Error(`${id} has no workflow state`);
   return standingAnswer(standing, facts, await isArchived(trx, id), principalId);
 }
@@ -202,6 +204,7 @@ export function workflowHandlers() {
         from: body.from,
         reason: body.reason,
         by: principalId,
+        ...(body.line === undefined ? {} : { line: body.line }),
         may: (permission) => decide(permission, facts).allowed,
       });
       switch (answer.answer) {
@@ -273,6 +276,7 @@ export function workflowHandlers() {
         by: principalId,
         publish: body.publish,
         may: (permission) => decide(permission, facts).allowed,
+        ...(body.line === undefined ? {} : { line: body.line }),
       });
       switch (answer.answer) {
         case 'conditions.unmet':

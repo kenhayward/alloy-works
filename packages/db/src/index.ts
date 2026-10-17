@@ -507,7 +507,9 @@ export {
 } from './dates.js';
 export {
   diverge,
+  headVersion,
   lineHead,
+  lineNumbers,
   linesStored,
   readLine,
   readLines,

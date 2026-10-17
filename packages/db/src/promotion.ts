@@ -15,7 +15,8 @@ import {
   type HolderRefusal,
 } from './editing.js';
 import type { TenantTransaction } from './tables.js';
-import { latestVersion, recordVersion, type StoredVersion } from './versions.js';
+import { recordVersion, type StoredVersion } from './versions.js';
+import { headVersion } from './lines.js';
 
 export interface Cut extends EditingSession {
   /** The version the session opened from, which must still be the latest. */
@@ -52,7 +53,7 @@ export async function cutVersion(trx: TenantTransaction, input: Cut): Promise<Cu
   await serialise(trx, input.artifactId);
   const lock = await holding(trx, input);
   if (isRefusal(lock)) return lock;
-  const current = await latestVersion(trx, input.artifactId);
+  const current = await headVersion(trx, input.artifactId, input.line);
   if (!current) return { answer: 'artifact.missing' };
   if (current.id !== input.openedFrom) return { answer: 'version.precondition', current };
 
@@ -82,6 +83,7 @@ export async function cutVersion(trx: TenantTransaction, input: Cut): Promise<Cu
     openedFrom: input.openedFrom,
     author: input.principal,
     ...(input.note === undefined ? {} : { note: input.note }),
+    ...(input.line === undefined ? {} : { line: input.line }),
     substance: {
       kind: 'component',
       content: parseContentDocument(iteration.content),

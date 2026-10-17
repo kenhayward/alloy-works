@@ -28969,6 +28969,23 @@
             }
           },
           {
+            "name": "line",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "A divergent line to open it on, at its head (LIF-044); its main line where absent",
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
             "name": "X-Request-Id",
             "in": "header",
             "required": false,
@@ -29472,6 +29489,85 @@
                       ],
                       "description": "The scope a revision approved from now is effective for, and what waits on acceptance"
                     },
+                    "line": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "The divergent line the version shown is on (LIF-046); null for the main line"
+                    },
+                    "lines": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "divergedFrom": {
+                            "type": "object",
+                            "properties": {
+                              "revision": {
+                                "type": "integer",
+                                "exclusiveMinimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "version": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              }
+                            },
+                            "required": [
+                              "revision",
+                              "version"
+                            ],
+                            "description": "The designated revision it diverged from"
+                          },
+                          "at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                            "description": "When it diverged"
+                          },
+                          "closed": {
+                            "type": "boolean",
+                            "description": "Whether it was brought back, and takes no more versions"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "divergedFrom",
+                          "at",
+                          "closed"
+                        ]
+                      },
+                      "description": "Its divergent lines (LIF-044, LIF-046): none where it has not diverged"
+                    },
                     "onHold": {
                       "type": "boolean",
                       "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
@@ -29738,6 +29834,8 @@
                     "revision",
                     "dates",
                     "scope",
+                    "line",
+                    "lines",
                     "onHold",
                     "mayHold",
                     "lock",
@@ -29792,6 +29890,11 @@
                     "scope": [],
                     "pending": []
                   },
+                  "line": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "name": "example"
+                  },
+                  "lines": [],
                   "onHold": false,
                   "mayHold": false,
                   "lock": {
@@ -30734,6 +30837,12 @@
                   "publish": {
                     "description": "Where the gate permits a publication and this approval passes it, request one of the gate's baseline; needs publish",
                     "type": "boolean"
+                  },
+                  "line": {
+                    "description": "A component's divergent line whose gate it is (LIF-044); its main line where absent",
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                   }
                 },
                 "required": [
@@ -35200,6 +35309,18 @@
                       "type": "string"
                     },
                     "additionalProperties": {}
+                  },
+                  "line": {
+                    "description": "A component's divergent line to act on (LIF-044); its main line where absent",
+                    "type": "string",
+                    "allOf": [
+                      {
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      {
+                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                      }
+                    ]
                   }
                 },
                 "required": [
@@ -36553,6 +36674,23 @@
             "in": "query",
             "required": true,
             "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "line",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "A component's divergent line edited (LIF-044); its main line where absent",
               "type": "string",
               "allOf": [
                 {
@@ -41187,6 +41325,12 @@
                     "description": "Why, recorded with the move; required where the transition says so",
                     "type": "string",
                     "maxLength": 2000
+                  },
+                  "line": {
+                    "description": "A component's divergent line to move (LIF-044); its main line where absent",
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                   }
                 },
                 "required": [
@@ -43581,6 +43725,18 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 500
+                  },
+                  "line": {
+                    "description": "A component's divergent line to act on (LIF-044); its main line where absent",
+                    "type": "string",
+                    "allOf": [
+                      {
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      {
+                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                      }
+                    ]
                   }
                 },
                 "required": [
@@ -61584,6 +61740,12 @@
                   "publish": {
                     "description": "Where the gate permits a publication and this approval passes it, request one of the gate's baseline; needs publish",
                     "type": "boolean"
+                  },
+                  "line": {
+                    "description": "A component's divergent line whose gate it is (LIF-044); its main line where absent",
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                   }
                 },
                 "required": [
@@ -147926,6 +148088,12 @@
                     "description": "Why, recorded with the move; required where the transition says so",
                     "type": "string",
                     "maxLength": 2000
+                  },
+                  "line": {
+                    "description": "A component's divergent line to move (LIF-044); its main line where absent",
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                   }
                 },
                 "required": [
@@ -171247,6 +171415,12 @@
                   "publish": {
                     "description": "Where the gate permits a publication and this approval passes it, request one of the gate's baseline; needs publish",
                     "type": "boolean"
+                  },
+                  "line": {
+                    "description": "A component's divergent line whose gate it is (LIF-044); its main line where absent",
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                   }
                 },
                 "required": [
@@ -171897,6 +172071,12 @@
                     "description": "Why, recorded with the move; required where the transition says so",
                     "type": "string",
                     "maxLength": 2000
+                  },
+                  "line": {
+                    "description": "A component's divergent line to move (LIF-044); its main line where absent",
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                   }
                 },
                 "required": [
@@ -192026,6 +192206,85 @@
                       ],
                       "description": "The scope a revision approved from now is effective for, and what waits on acceptance"
                     },
+                    "line": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "The divergent line the version shown is on (LIF-046); null for the main line"
+                    },
+                    "lines": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "divergedFrom": {
+                            "type": "object",
+                            "properties": {
+                              "revision": {
+                                "type": "integer",
+                                "exclusiveMinimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "version": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              }
+                            },
+                            "required": [
+                              "revision",
+                              "version"
+                            ],
+                            "description": "The designated revision it diverged from"
+                          },
+                          "at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                            "description": "When it diverged"
+                          },
+                          "closed": {
+                            "type": "boolean",
+                            "description": "Whether it was brought back, and takes no more versions"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "divergedFrom",
+                          "at",
+                          "closed"
+                        ]
+                      },
+                      "description": "Its divergent lines (LIF-044, LIF-046): none where it has not diverged"
+                    },
                     "onHold": {
                       "type": "boolean",
                       "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
@@ -192292,6 +192551,8 @@
                     "revision",
                     "dates",
                     "scope",
+                    "line",
+                    "lines",
                     "onHold",
                     "mayHold",
                     "lock",
@@ -192346,6 +192607,11 @@
                     "scope": [],
                     "pending": []
                   },
+                  "line": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "name": "example"
+                  },
+                  "lines": [],
                   "onHold": false,
                   "mayHold": false,
                   "lock": {

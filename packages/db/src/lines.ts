@@ -3,7 +3,7 @@ import { sql } from 'kysely';
 import { artifactPlace, recordEvent } from './audit.js';
 import { isDeleted } from './deletion.js';
 import type { TenantTransaction } from './tables.js';
-import { lockArtifact } from './versions.js';
+import { latestVersion, lockArtifact, readVersion, type StoredVersion } from './versions.js';
 import { newestDefinition, workflowStored } from './workflow.js';
 
 /**
@@ -194,4 +194,49 @@ export async function diverge(
     place.labels,
   );
   return { answer: 'diverged', line };
+}
+
+/**
+ * The version a write on an artifact's line, or its main line, is made against: a line's head, or the
+ * main line's latest. Undefined where it holds no such line, or the line is closed (R16-G).
+ */
+export async function headVersion(
+  trx: TenantTransaction,
+  artifactId: string,
+  line?: string,
+): Promise<StoredVersion | undefined> {
+  if (line === undefined) return latestVersion(trx, artifactId);
+  const begun = await readLine(trx, artifactId, line);
+  if (!begun || begun.closed) return undefined;
+  return readVersion(trx, await lineHead(trx, begun));
+}
+
+/**
+ * How each of these versions on a line is shown (LIF-046; ADR-0063): its line's name, the revision it
+ * counts from - the line's newest designated at or before it, else the one it diverged from - and its
+ * own version, `US 2.3`. A main-line version is not in the answer: it is shown as `revision.version`.
+ */
+export async function lineNumbers(
+  trx: TenantTransaction,
+  versionIds: readonly string[],
+): Promise<Map<string, { readonly line: { readonly id: string; readonly name: string }; readonly number: string }>> {
+  const ids = [...new Set(versionIds.filter((id) => UUID.test(id)))];
+  if (ids.length === 0 || !(await linesStored(trx))) return new Map();
+  const { rows } = await sql<{ id: string; line_id: string; name: string; version_no: number; base: number }>`
+    select v.id, v.line_id, l.name, v.version_no,
+           coalesce(
+             (select max(d.revision_no) from revision_designation d
+                join artifact_version dv on dv.id = d.version_id
+               where dv.line_id = v.line_id and dv.version_no <= v.version_no),
+             (select d.revision_no from revision_designation d where d.version_id = l.diverged_from)
+           ) as base
+      from artifact_version v
+      join artifact_line l on l.id = v.line_id
+     where v.id = any(${ids}::uuid[])`.execute(trx);
+  return new Map(
+    rows.map((row) => [
+      row.id,
+      { line: { id: row.line_id, name: row.name }, number: `${row.name} ${row.base}.${row.version_no}` },
+    ]),
+  );
 }

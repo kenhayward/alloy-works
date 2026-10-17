@@ -8,6 +8,7 @@ import {
   WorkflowRevisionView,
   DatesView,
   ScopeView,
+  LineView,
   WorkflowStandingView,
   WorkflowStateView,
 } from './workflows.js';
@@ -24,6 +25,9 @@ export type ComponentParams = z.infer<typeof ComponentParams>;
 export const ComponentQuery = z.object({
   session: LowercaseUuid.optional().describe(
     "The editing session whose latest accepted sequence to answer, the caller's own",
+  ),
+  line: LowercaseUuid.optional().describe(
+    'A divergent line to open it on, at its head (LIF-044); its main line where absent',
   ),
 });
 export type ComponentQuery = z.infer<typeof ComponentQuery>;
@@ -280,6 +284,11 @@ export const ComponentView = z.object({
   revision: WorkflowRevisionView,
   dates: DatesView,
   scope: ScopeView,
+  line: z
+    .object({ id: z.uuid(), name: z.string() })
+    .nullable()
+    .describe('The divergent line the version shown is on (LIF-046); null for the main line'),
+  lines: z.array(LineView).describe('Its divergent lines (LIF-044, LIF-046): none where it has not diverged'),
   onHold: z
     .boolean()
     .describe(

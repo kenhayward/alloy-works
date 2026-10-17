@@ -534,7 +534,7 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
     expect((await effective('?scope=Market')).statusCode).toBe(400);
   });
 
-  it('LIF-044 begins a divergent line from a designated revision, by whoever may edit, each name once', async () => {
+  it('LIF-044 LIF-046 begins a divergent line from a designated revision, by whoever may edit, each name once, and opens and moves it apart, saying which line is read', async () => {
     const created = await made('components', 'Diverging dose');
     expect(
       (await move('components', created.id, 'ada', { transition: 'submit', from: 'draft' }))
@@ -569,6 +569,33 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
     const listed = await call('GET', `/v1/components/${created.id}/lines`, 'ivy');
     expect(listed.statusCode, listed.body).toBe(200);
     expect(listed.json()).toEqual({ lines: [begun.json()] });
+
+    // Opened on its line, the view says which line it is on and its own state, and names every line.
+    const lineId = begun.json<{ id: string }>().id;
+    const onLine = await call('GET', `/v1/components/${created.id}?line=${lineId}`, 'ivy');
+    expect(onLine.statusCode, onLine.body).toBe(200);
+    expect(onLine.json()).toMatchObject({
+      line: { id: lineId, name: 'US' },
+      lines: [begun.json()],
+      version: { id: created.version.id },
+      state: { key: 'draft' },
+    });
+    expect((await component(created.id, 'ivy')) as unknown).toMatchObject({
+      line: null,
+      state: { key: 'approved' },
+    });
+    expect(
+      (await call('GET', `/v1/components/${created.id}?line=${created.version.id}`, 'ivy'))
+        .statusCode,
+    ).toBe(404);
+    // Its moves are its own.
+    const submitted = await move('components', created.id, 'ada', {
+      transition: 'submit',
+      from: 'draft',
+      line: lineId,
+    } as never);
+    expect(submitted.statusCode, submitted.body).toBe(200);
+    expect((await component(created.id, 'ivy')).state.key).toBe('approved');
   });
 
   it('LIF-015 LIF-016 LIF-018 sets dates on edit, refuses an owner who may not read it, and shows past review in the view, the list and every document placing it', async () => {
