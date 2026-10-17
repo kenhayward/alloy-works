@@ -152,6 +152,8 @@ export async function listRoles(
   const rows = await trx
     .selectFrom('role')
     .select(['id', 'name', 'permissions'])
+    // The shared reader is granted only as a share (the R17 plan, R17-B): no grant can name it.
+    .where(sql<boolean>`coalesce((to_jsonb(role) ->> 'fixed')::boolean, false)`, '=', false)
     .$if(page.after !== undefined, (query) => query.where('id', '>', page.after!))
     .orderBy('id')
     .limit(page.limit + 1)

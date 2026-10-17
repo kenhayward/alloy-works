@@ -211,7 +211,8 @@ describe('migration 0046, over an environment made before it', () => {
       ...counts,
       artifact: counts.artifact! + 1,
       artifact_version: counts.artifact_version! + 8,
-      role: counts.role! + 2,
+      // And 0114's shared reader (the R17 plan, R17-B).
+      role: counts.role! + 3,
     });
 
     fresh = await createTenant(db.adminUrl, db.migratorUrl, {

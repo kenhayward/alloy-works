@@ -73,8 +73,13 @@ describe('the access tables', () => {
   it('starts every tenant with the eleven starter roles and one space, General', async () => {
     for (const tenant of [production, development]) {
       const roles = await service.withTenant(tenant, (trx) =>
-        trx.selectFrom('role').select(['name', 'permissions']).execute(),
+        trx.selectFrom('role').select(['name', 'permissions']).where('fixed', '=', false).execute(),
       );
+      // And the shared reader, fixed, which a share alone grants (the R17 plan, R17-B).
+      const fixed = await service.withTenant(tenant, (trx) =>
+        trx.selectFrom('role').select(['name', 'permissions']).where('fixed', '=', true).execute(),
+      );
+      expect(fixed).toEqual([{ name: 'Shared reader', permissions: ['read'] }]);
       expect(byName(roles)).toEqual(
         byName(starterRoles.map((role) => ({ name: role.name, permissions: role.permissions }))),
       );
