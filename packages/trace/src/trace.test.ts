@@ -940,8 +940,8 @@ describe('the citations in the committed model', () => {
     // 1603 (2026-10-17): R17a's publication shares.
     // 1610 (2026-10-17): R17b's shares on the page, and the final review's.
     // 1618 (2026-10-17): R18's query limits and cost, its page and the final review's.
-    // 1621 (2026-10-17): R19's relationships finished.
-    expect(model.citations).toHaveLength(1621);
+    // 1620 (2026-10-17): R19's relationships finished.
+    expect(model.citations).toHaveLength(1620);
   });
 
   it('cites no identifier the corpus does not hold', () => {

@@ -24,3 +24,12 @@ before it is made.
 - The far end read by inverse name, cited.
 - `readImpact` in the reach question, and the gate's approve asking it first.
 - Tests per place; the final review; the close (0.190.0).
+
+## Built
+
+R19 with the close (0.190.0) #699. Departures: REL-052 stays unclaimed, as R19-A said. The final review
+found a failed where-used read hiding what is related, a slow impact walk leaving Save version silent,
+the document a component is open in listed as related to it, and Approve and publish asked as Approve;
+all fixed - the question waits three seconds for the walk at most. Left: a stored type naming another
+kind cannot be renamed until its kinds are; the related list names each artifact without a link; a
+reference's reach past the documents placing it is not listed.
