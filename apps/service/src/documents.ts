@@ -241,7 +241,7 @@ async function documentView(
     mayHold: viewer.mayHold,
     ...(await workflowView(viewer.trx, document.id, viewer.facts, viewer.principalId)),
     ...(await datesView(viewer.trx, document.id)),
-    ...(await scopeView(viewer.trx, document.id)),
+    ...(await scopeView(viewer.trx, document.id, viewer.principalId)),
     mayPublish: viewer.mayPublish,
     mayComment: viewer.mayComment,
     mayReview: viewer.mayReview,

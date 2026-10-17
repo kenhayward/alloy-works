@@ -46,6 +46,7 @@ decisions, WF-A to WF-K, are the detail. Gates, approvals and revisions are
 | **LIF-059** | The workflow's `review.lapse`: shown alone, a move to a state by nobody, or an escalation to a person, acted on once per day passed                                                                                                                                                                                  |
 | **LIF-060** | A future effective date fixed to the revision approved, served only from that instant, its taking effect `revision.effective` by the system                                                                                                                                                                          |
 | **LIF-042** | A revision effective for condition axis values, fixed from the artifact's scope as a gate designates it, while another is effective elsewhere; `latestRevisionsOf` serves each scope the newest scoped to it, else the newest unscoped ([Scopes](#scopes))                                                           |
+| **LIF-047** | A scope value may name a person or group; the revision waits there, shown as pending in the view and the header with the revision before still served, until that party alone accepts it, audited `revision.accepted` ([Scopes](#scopes))                                                                            |
 
 VER-012 to VER-015 are [storage-and-versioning.md](storage-and-versioning.md)'s, built below. LIF-040
 was superseded by LIF-077, claimed below: a reference floating at latest takes a draft by its author's
@@ -281,4 +282,9 @@ so a baseline pins what that profile served. A document with no profile reads th
 **Acceptance** (R15-E): `POST /v1/{components|documents}/{id}/acceptance` names a revision, an axis and a
 value; only the person, or a member of the group, named there accepts, on read, once
 (`revision_acceptance`), audited `revision.accepted`. Until then the revision is pending in that scope
-and the one before stays effective there.
+and the one before stays effective there. The view's `scope.pending` names, for each value, its newest
+revision where that waits, with `mayAccept` for the caller.
+
+**On the page** (R15b): **Effective for** beside **Dates**, to whoever may edit it, ticks axis values
+and the person who accepts each; the header says **Effective for** them, and each revision waiting,
+with **Accept** to its party alone.

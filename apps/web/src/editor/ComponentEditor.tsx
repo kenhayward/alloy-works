@@ -1,5 +1,6 @@
 import type { ComponentView, createApiClient } from '@alloy-works/api-client';
 import { DatesButton, DatesChips, datesIn, type Dates } from '../lifecycle/Dates.js';
+import { ScopeButton, ScopeChips, scopeIn, type ScopeNow } from '../lifecycle/Scope.js';
 import type { ContentDocument } from '@alloy-works/domain';
 import {
   bindingDigestInput,
@@ -596,6 +597,8 @@ export function ComponentEditor({
   const [standingNow, setStandingNow] = useState<Standing | null>(null);
   // Its dates as last saved here, over the view's (WF5-A).
   const [datesNow, setDatesNow] = useState<Dates | null>(null);
+  // Its scope as last saved or accepted here (R15-B), over the view's.
+  const [scopeNow, setScopeNow] = useState<ScopeNow | null>(null);
   // Asked before a version reaching other documents is saved (REU-008; the R1 plan, R1-D).
   const [reach, setReach] = useState<{ uses: Uses; act: string; go: () => void } | null>(null);
   // One question at a time: a second press while the uses are read asks nothing more. Where they
@@ -2400,6 +2403,23 @@ export function ComponentEditor({
                 title={header.title}
                 dates={(datesNow ?? datesIn(shown))!}
                 onSaved={setDatesNow}
+              />
+            )}
+            <ScopeChips
+              client={client}
+              kind="component"
+              id={componentId}
+              scope={scopeNow ?? scopeIn(shown)}
+              onAccepted={setScopeNow}
+            />
+            {shown.mayEdit === true && !archived && (scopeNow ?? scopeIn(shown)) && (
+              <ScopeButton
+                client={client}
+                kind="component"
+                id={componentId}
+                title={header.title}
+                scope={(scopeNow ?? scopeIn(shown))!}
+                onSaved={setScopeNow}
               />
             )}
             <UsedInButton

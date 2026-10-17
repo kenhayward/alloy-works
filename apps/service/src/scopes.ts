@@ -8,8 +8,10 @@ import type {
 import {
   acceptRevision,
   loadFactsFor,
+  pendingAcceptances,
   readScopes,
   setScope,
+  type PendingAcceptance,
   type TenantTransaction,
 } from '@alloy-works/db';
 import { decide, scopeSchema, type Scope } from '@alloy-works/domain';
@@ -23,12 +25,20 @@ import { refused } from './wire-codes.js';
  * whoever reads it.
  */
 
-/** Each party's name: a person's display name, a group's name. */
-async function viewOf(trx: TenantTransaction, scope: Scope): Promise<ScopeView> {
-  const principals = scope.flatMap((each) =>
-    each.party?.kind === 'principal' ? [each.party.id] : [],
-  );
-  const groups = scope.flatMap((each) => (each.party?.kind === 'group' ? [each.party.id] : []));
+type Party = { readonly kind: 'principal' | 'group'; readonly id: string };
+
+/** Each party's name: a person's display name, a group's name; and what waits on acceptance. */
+async function viewOf(
+  trx: TenantTransaction,
+  scope: Scope,
+  waiting: readonly PendingAcceptance[],
+): Promise<ScopeView> {
+  const parties: Party[] = [
+    ...scope.flatMap((each) => (each.party === null ? [] : [each.party])),
+    ...waiting.map((each) => each.party),
+  ];
+  const principals = parties.flatMap((each) => (each.kind === 'principal' ? [each.id] : []));
+  const groups = parties.flatMap((each) => (each.kind === 'group' ? [each.id] : []));
   const people = new Map(
     principals.length === 0
       ? []
@@ -51,27 +61,34 @@ async function viewOf(trx: TenantTransaction, scope: Scope): Promise<ScopeView> 
             .execute()
         ).map((row) => [row.id, row.name]),
   );
+  const nameOf = (party: Party) =>
+    (party.kind === 'principal' ? people.get(party.id) : named.get(party.id)) ?? null;
   return {
     scope: scope.map((each) => ({
       axis: each.axis,
       value: each.value,
-      party:
-        each.party === null
-          ? null
-          : {
-              ...each.party,
-              name:
-                (each.party.kind === 'principal'
-                  ? people.get(each.party.id)
-                  : named.get(each.party.id)) ?? null,
-            },
+      party: each.party === null ? null : { ...each.party, name: nameOf(each.party) },
+    })),
+    pending: waiting.map((each) => ({
+      ...each,
+      party: { ...each.party, name: nameOf(each.party) },
     })),
   };
 }
 
-/** A component's or document's scope, for its view. */
-export async function scopeView(trx: TenantTransaction, id: string): Promise<{ scope: ScopeView }> {
-  return { scope: await viewOf(trx, (await readScopes(trx, [id])).get(id)?.scope ?? []) };
+/** A component's or document's scope, and what waits on acceptance, for its view as `by` reads it. */
+export async function scopeView(
+  trx: TenantTransaction,
+  id: string,
+  by: string,
+): Promise<{ scope: ScopeView }> {
+  return {
+    scope: await viewOf(
+      trx,
+      (await readScopes(trx, [id])).get(id)?.scope ?? [],
+      await pendingAcceptances(trx, id, by),
+    ),
+  };
 }
 
 /** Whether a party is somebody, or a group, who may read the artifact (R15-E). */
@@ -130,7 +147,7 @@ export function scopeHandlers() {
           );
         case 'set':
         case 'unchanged':
-          return (await scopeView(trx, id)).scope;
+          return (await scopeView(trx, id, principalId)).scope;
       }
     };
   const accepting =

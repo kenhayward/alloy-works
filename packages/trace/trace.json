@@ -19725,6 +19725,10 @@
         {
           "id": "LIF-042",
           "howItIsMet": "A revision effective for condition axis values, fixed from the artifact's scope as a gate designates it, while another is effective elsewhere; `latestRevisionsOf` serves each scope the newest scoped to it, else the newest unscoped ([Scopes](#scopes))"
+        },
+        {
+          "id": "LIF-047",
+          "howItIsMet": "A scope value may name a person or group; the revision waits there, shown as pending in the view and the header with the revision before still served, until that party alone accepts it, audited `revision.accepted` ([Scopes](#scopes))"
         }
       ]
     }
@@ -21773,13 +21777,13 @@
     {
       "id": "LIF-004",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 592,
+      "line": 607,
       "kind": "rule"
     },
     {
       "id": "LIF-004",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 555,
+      "line": 570,
       "kind": "title"
     },
     {
@@ -21803,23 +21807,29 @@
     {
       "id": "LIF-015",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 502,
+      "line": 517,
       "kind": "title"
     },
     {
       "id": "LIF-016",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 502,
+      "line": 517,
       "kind": "title"
     },
     {
       "id": "LIF-018",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 502,
+      "line": 517,
       "kind": "title"
     },
     {
       "id": "LIF-042",
+      "file": "apps/service/src/workflow-routes.test.ts",
+      "line": 424,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-047",
       "file": "apps/service/src/workflow-routes.test.ts",
       "line": 424,
       "kind": "title"
@@ -22728,6 +22738,18 @@
       "id": "LIF-018",
       "file": "apps/web/src/lifecycle/Dates.test.tsx",
       "line": 22,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-042",
+      "file": "apps/web/src/lifecycle/Scope.test.tsx",
+      "line": 116,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-047",
+      "file": "apps/web/src/lifecycle/Scope.test.tsx",
+      "line": 78,
       "kind": "title"
     },
     {
@@ -25686,6 +25708,12 @@
       "id": "LIF-042",
       "file": "packages/db/src/scopes.test.ts",
       "line": 167,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-047",
+      "file": "packages/db/src/scopes.test.ts",
+      "line": 245,
       "kind": "title"
     },
     {
@@ -28674,6 +28702,12 @@
       "id": "LIF-042",
       "file": "packages/domain/src/workflow/scope.test.ts",
       "line": 14,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-047",
+      "file": "packages/domain/src/workflow/scope.test.ts",
+      "line": 37,
       "kind": "title"
     },
     {

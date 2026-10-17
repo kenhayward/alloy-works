@@ -34,7 +34,7 @@ describe('which revision is effective in a scope (the R15 plan, R15-C)', () => {
     expect(effectiveRevision([revision(1, [{ axis: 'market', value: 'eu' }])], us)).toBeNull();
   });
 
-  it('keeps the revision before effective in a scope where the newer one waits on acceptance', () => {
+  it('LIF-047 keeps the revision before effective in a scope where the newer one waits on acceptance', () => {
     const revisions = [
       revision(1),
       revision(2, [{ axis: 'market', value: 'us' }]),

@@ -1,6 +1,7 @@
 import type { FieldView } from '@alloy-works/api-client';
 import { TemplateLine, templateIn, type TemplateInfo } from './TemplateLine.js';
 import { DatesButton, DatesChips, datesIn, type Dates } from '../lifecycle/Dates.js';
+import { ScopeButton, ScopeChips, scopeIn, type ScopeNow } from '../lifecycle/Scope.js';
 import type { createApiClient, paths } from '@alloy-works/api-client';
 import {
   conditions,
@@ -164,6 +165,8 @@ interface Opened {
   readonly onHold: boolean;
   /** Its effective and review-by dates (WF5-H); null from a view before them. */
   readonly dates: Dates | null;
+  /** Its scope and what waits on acceptance (R15-B); null from a view before R15. */
+  readonly scope: ScopeNow | null;
   /** Whether the reader may place a legal hold: an environment administrator. */
   readonly mayHold: boolean;
   /**
@@ -277,6 +280,7 @@ function documentIn(data: unknown): Read {
     standing: standingIn(data) ?? null,
     onHold: onHold === true,
     dates: datesIn(data) ?? null,
+    scope: scopeIn(data) ?? null,
     mayHold: mayHold === true,
     scheme: scheme?.success ? scheme.data : null,
     words: relativeWords,
@@ -2160,6 +2164,16 @@ export function DocumentPage({
             {document.standing && <StateLozenge state={document.standing.state} />}
             <RevisionChip revision={document.standing?.revision} />
             <DatesChips dates={document.dates ?? undefined} />
+            <ScopeChips
+              client={client}
+              kind="document"
+              id={document.id}
+              scope={document.scope ?? undefined}
+              onAccepted={(scope) => {
+                if (latest.current?.id === document.id) show({ ...latest.current, scope });
+                setNotice('Accepted. It takes effect there.');
+              }}
+            />
             {document.archived && <Chip>Archived</Chip>}
             {document.onHold && <Chip>On hold</Chip>}
             {/* Access to the document, offered to whoever may administer it (access.md, GP-E), and
@@ -2194,6 +2208,21 @@ export function DocumentPage({
                   onSaved={(dates) => {
                     if (latest.current?.id === document.id) show({ ...latest.current, dates });
                     setNotice('Its dates are saved.');
+                  }}
+                />
+              )}
+              {/* What a revision approved from now is effective for (the R15 plan, R15-B). */}
+              {document.mayEdit && !document.archived && document.scope && (
+                <ScopeButton
+                  client={client}
+                  kind="document"
+                  id={document.id}
+                  title={document.outline.title}
+                  scope={document.scope}
+                  className={styles['toggle']}
+                  onSaved={(scope) => {
+                    if (latest.current?.id === document.id) show({ ...latest.current, scope });
+                    setNotice('Its scope is saved.');
                   }}
                 />
               )}

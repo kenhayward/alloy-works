@@ -257,3 +257,60 @@ export async function acceptRevision(
   );
   return { answer: 'accepted' };
 }
+
+/** A scope value whose newest revision waits on its party's acceptance (LIF-047; R15-E). */
+export interface PendingAcceptance {
+  readonly revision: number;
+  readonly axis: string;
+  readonly value: string;
+  readonly party: { readonly kind: 'principal' | 'group'; readonly id: string };
+  /** Whether `by` is the person named, or a member of the group named. */
+  readonly mayAccept: boolean;
+}
+
+/**
+ * What waits on acceptance in an artifact's scopes (LIF-047; R15-E): for each value, its newest
+ * revision, where that names a party who has not accepted it; with whether `by` may accept it.
+ */
+export async function pendingAcceptances(
+  trx: TenantTransaction,
+  artifactId: string,
+  by: string,
+): Promise<PendingAcceptance[]> {
+  if (!(await scopesStored(trx))) return [];
+  const { rows } = await sql<{
+    revision: number;
+    axis: string;
+    value: string;
+    party_principal: string | null;
+    party_group: string | null;
+    may_accept: boolean;
+  }>`
+    select n.revision_no as revision, n.axis, n.value, n.party_principal, n.party_group,
+           (n.party_principal = ${by}::uuid
+             or exists (select 1 from group_member m
+                         where m.group_id = n.party_group and m.principal_id = ${by}::uuid))
+             as may_accept
+      from (
+        select distinct on (s.axis, s.value) s.version_id, s.axis, s.value, s.party_principal,
+               s.party_group, d.revision_no
+          from revision_scope s
+          join revision_designation d on d.version_id = s.version_id
+         where s.artifact_id = ${artifactId}::uuid
+         order by s.axis, s.value, d.revision_no desc
+      ) n
+     where (n.party_principal is not null or n.party_group is not null)
+       and not exists (select 1 from revision_acceptance a
+                        where a.version_id = n.version_id and a.axis = n.axis and a.value = n.value)
+     order by n.axis, n.value`.execute(trx);
+  return rows.map((row) => ({
+    revision: row.revision,
+    axis: row.axis,
+    value: row.value,
+    party:
+      row.party_principal !== null
+        ? { kind: 'principal' as const, id: row.party_principal }
+        : { kind: 'group' as const, id: row.party_group! },
+    mayAccept: row.may_accept === true,
+  }));
+}

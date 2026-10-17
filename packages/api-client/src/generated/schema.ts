@@ -11905,7 +11905,8 @@ export interface operations {
                      *         "effectiveFrom": "2026-01-01T00:00:00.000Z"
                      *       },
                      *       "scope": {
-                     *         "scope": []
+                     *         "scope": [],
+                     *         "pending": []
                      *       },
                      *       "onHold": false,
                      *       "mayHold": false,
@@ -12041,7 +12042,7 @@ export interface operations {
                             /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                             effectiveFrom: string | null;
                         };
-                        /** @description The scope a revision approved from now is effective for */
+                        /** @description The scope a revision approved from now is effective for, and what waits on acceptance */
                         scope: {
                             /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
                             scope: {
@@ -12055,6 +12056,21 @@ export interface operations {
                                     id: string;
                                     name: string | null;
                                 } | null;
+                            }[];
+                            /** @description Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted */
+                            pending: {
+                                revision: number;
+                                axis: string;
+                                value: string;
+                                party: {
+                                    /** @enum {string} */
+                                    kind: "principal" | "group";
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                };
+                                /** @description Whether the caller is the party, or one of the group */
+                                mayAccept: boolean;
                             }[];
                         };
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
@@ -15170,7 +15186,8 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "scope": []
+                     *       "scope": [],
+                     *       "pending": []
                      *     }
                      */
                     "application/json": {
@@ -15186,6 +15203,21 @@ export interface operations {
                                 id: string;
                                 name: string | null;
                             } | null;
+                        }[];
+                        /** @description Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted */
+                        pending: {
+                            revision: number;
+                            axis: string;
+                            value: string;
+                            party: {
+                                /** @enum {string} */
+                                kind: "principal" | "group";
+                                /** Format: uuid */
+                                id: string;
+                                name: string | null;
+                            };
+                            /** @description Whether the caller is the party, or one of the group */
+                            mayAccept: boolean;
                         }[];
                     };
                 };
@@ -22810,7 +22842,8 @@ export interface operations {
                      *         "effectiveFrom": "2026-01-01T00:00:00.000Z"
                      *       },
                      *       "scope": {
-                     *         "scope": []
+                     *         "scope": [],
+                     *         "pending": []
                      *       },
                      *       "onHold": false,
                      *       "mayHold": false,
@@ -23019,7 +23052,7 @@ export interface operations {
                             /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                             effectiveFrom: string | null;
                         };
-                        /** @description The scope a revision approved from now is effective for */
+                        /** @description The scope a revision approved from now is effective for, and what waits on acceptance */
                         scope: {
                             /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
                             scope: {
@@ -23033,6 +23066,21 @@ export interface operations {
                                     id: string;
                                     name: string | null;
                                 } | null;
+                            }[];
+                            /** @description Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted */
+                            pending: {
+                                revision: number;
+                                axis: string;
+                                value: string;
+                                party: {
+                                    /** @enum {string} */
+                                    kind: "principal" | "group";
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                };
+                                /** @description Whether the caller is the party, or one of the group */
+                                mayAccept: boolean;
                             }[];
                         };
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
@@ -39010,7 +39058,8 @@ export interface operations {
                      *         "effectiveFrom": "2026-01-01T00:00:00.000Z"
                      *       },
                      *       "scope": {
-                     *         "scope": []
+                     *         "scope": [],
+                     *         "pending": []
                      *       },
                      *       "onHold": false,
                      *       "mayHold": false,
@@ -39219,7 +39268,7 @@ export interface operations {
                             /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                             effectiveFrom: string | null;
                         };
-                        /** @description The scope a revision approved from now is effective for */
+                        /** @description The scope a revision approved from now is effective for, and what waits on acceptance */
                         scope: {
                             /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
                             scope: {
@@ -39233,6 +39282,21 @@ export interface operations {
                                     id: string;
                                     name: string | null;
                                 } | null;
+                            }[];
+                            /** @description Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted */
+                            pending: {
+                                revision: number;
+                                axis: string;
+                                value: string;
+                                party: {
+                                    /** @enum {string} */
+                                    kind: "principal" | "group";
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                };
+                                /** @description Whether the caller is the party, or one of the group */
+                                mayAccept: boolean;
                             }[];
                         };
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
@@ -39477,7 +39541,7 @@ export interface operations {
                                 /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                                 effectiveFrom: string | null;
                             };
-                            /** @description The scope a revision approved from now is effective for */
+                            /** @description The scope a revision approved from now is effective for, and what waits on acceptance */
                             scope: {
                                 /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
                                 scope: {
@@ -39491,6 +39555,21 @@ export interface operations {
                                         id: string;
                                         name: string | null;
                                     } | null;
+                                }[];
+                                /** @description Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted */
+                                pending: {
+                                    revision: number;
+                                    axis: string;
+                                    value: string;
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    };
+                                    /** @description Whether the caller is the party, or one of the group */
+                                    mayAccept: boolean;
                                 }[];
                             };
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
@@ -39838,7 +39917,7 @@ export interface operations {
                                 /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                                 effectiveFrom: string | null;
                             };
-                            /** @description The scope a revision approved from now is effective for */
+                            /** @description The scope a revision approved from now is effective for, and what waits on acceptance */
                             scope: {
                                 /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
                                 scope: {
@@ -39852,6 +39931,21 @@ export interface operations {
                                         id: string;
                                         name: string | null;
                                     } | null;
+                                }[];
+                                /** @description Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted */
+                                pending: {
+                                    revision: number;
+                                    axis: string;
+                                    value: string;
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    };
+                                    /** @description Whether the caller is the party, or one of the group */
+                                    mayAccept: boolean;
                                 }[];
                             };
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
@@ -40275,7 +40369,8 @@ export interface operations {
                      *         "effectiveFrom": "2026-01-01T00:00:00.000Z"
                      *       },
                      *       "scope": {
-                     *         "scope": []
+                     *         "scope": [],
+                     *         "pending": []
                      *       },
                      *       "onHold": false,
                      *       "mayHold": false,
@@ -40484,7 +40579,7 @@ export interface operations {
                             /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                             effectiveFrom: string | null;
                         };
-                        /** @description The scope a revision approved from now is effective for */
+                        /** @description The scope a revision approved from now is effective for, and what waits on acceptance */
                         scope: {
                             /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
                             scope: {
@@ -40498,6 +40593,21 @@ export interface operations {
                                     id: string;
                                     name: string | null;
                                 } | null;
+                            }[];
+                            /** @description Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted */
+                            pending: {
+                                revision: number;
+                                axis: string;
+                                value: string;
+                                party: {
+                                    /** @enum {string} */
+                                    kind: "principal" | "group";
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                };
+                                /** @description Whether the caller is the party, or one of the group */
+                                mayAccept: boolean;
                             }[];
                         };
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
@@ -40742,7 +40852,7 @@ export interface operations {
                                 /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                                 effectiveFrom: string | null;
                             };
-                            /** @description The scope a revision approved from now is effective for */
+                            /** @description The scope a revision approved from now is effective for, and what waits on acceptance */
                             scope: {
                                 /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
                                 scope: {
@@ -40756,6 +40866,21 @@ export interface operations {
                                         id: string;
                                         name: string | null;
                                     } | null;
+                                }[];
+                                /** @description Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted */
+                                pending: {
+                                    revision: number;
+                                    axis: string;
+                                    value: string;
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    };
+                                    /** @description Whether the caller is the party, or one of the group */
+                                    mayAccept: boolean;
                                 }[];
                             };
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
@@ -41103,7 +41228,7 @@ export interface operations {
                                 /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                                 effectiveFrom: string | null;
                             };
-                            /** @description The scope a revision approved from now is effective for */
+                            /** @description The scope a revision approved from now is effective for, and what waits on acceptance */
                             scope: {
                                 /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
                                 scope: {
@@ -41117,6 +41242,21 @@ export interface operations {
                                         id: string;
                                         name: string | null;
                                     } | null;
+                                }[];
+                                /** @description Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted */
+                                pending: {
+                                    revision: number;
+                                    axis: string;
+                                    value: string;
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    };
+                                    /** @description Whether the caller is the party, or one of the group */
+                                    mayAccept: boolean;
                                 }[];
                             };
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
@@ -41683,7 +41823,8 @@ export interface operations {
                      *         "effectiveFrom": "2026-01-01T00:00:00.000Z"
                      *       },
                      *       "scope": {
-                     *         "scope": []
+                     *         "scope": [],
+                     *         "pending": []
                      *       },
                      *       "onHold": false,
                      *       "mayHold": false,
@@ -41892,7 +42033,7 @@ export interface operations {
                             /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                             effectiveFrom: string | null;
                         };
-                        /** @description The scope a revision approved from now is effective for */
+                        /** @description The scope a revision approved from now is effective for, and what waits on acceptance */
                         scope: {
                             /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
                             scope: {
@@ -41906,6 +42047,21 @@ export interface operations {
                                     id: string;
                                     name: string | null;
                                 } | null;
+                            }[];
+                            /** @description Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted */
+                            pending: {
+                                revision: number;
+                                axis: string;
+                                value: string;
+                                party: {
+                                    /** @enum {string} */
+                                    kind: "principal" | "group";
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                };
+                                /** @description Whether the caller is the party, or one of the group */
+                                mayAccept: boolean;
                             }[];
                         };
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
@@ -42150,7 +42306,7 @@ export interface operations {
                                 /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                                 effectiveFrom: string | null;
                             };
-                            /** @description The scope a revision approved from now is effective for */
+                            /** @description The scope a revision approved from now is effective for, and what waits on acceptance */
                             scope: {
                                 /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
                                 scope: {
@@ -42164,6 +42320,21 @@ export interface operations {
                                         id: string;
                                         name: string | null;
                                     } | null;
+                                }[];
+                                /** @description Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted */
+                                pending: {
+                                    revision: number;
+                                    axis: string;
+                                    value: string;
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    };
+                                    /** @description Whether the caller is the party, or one of the group */
+                                    mayAccept: boolean;
                                 }[];
                             };
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
@@ -42511,7 +42682,7 @@ export interface operations {
                                 /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                                 effectiveFrom: string | null;
                             };
-                            /** @description The scope a revision approved from now is effective for */
+                            /** @description The scope a revision approved from now is effective for, and what waits on acceptance */
                             scope: {
                                 /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
                                 scope: {
@@ -42525,6 +42696,21 @@ export interface operations {
                                         id: string;
                                         name: string | null;
                                     } | null;
+                                }[];
+                                /** @description Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted */
+                                pending: {
+                                    revision: number;
+                                    axis: string;
+                                    value: string;
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    };
+                                    /** @description Whether the caller is the party, or one of the group */
+                                    mayAccept: boolean;
                                 }[];
                             };
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
@@ -43211,7 +43397,8 @@ export interface operations {
                      *         "effectiveFrom": "2026-01-01T00:00:00.000Z"
                      *       },
                      *       "scope": {
-                     *         "scope": []
+                     *         "scope": [],
+                     *         "pending": []
                      *       },
                      *       "onHold": false,
                      *       "mayHold": false,
@@ -43420,7 +43607,7 @@ export interface operations {
                             /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                             effectiveFrom: string | null;
                         };
-                        /** @description The scope a revision approved from now is effective for */
+                        /** @description The scope a revision approved from now is effective for, and what waits on acceptance */
                         scope: {
                             /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
                             scope: {
@@ -43434,6 +43621,21 @@ export interface operations {
                                     id: string;
                                     name: string | null;
                                 } | null;
+                            }[];
+                            /** @description Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted */
+                            pending: {
+                                revision: number;
+                                axis: string;
+                                value: string;
+                                party: {
+                                    /** @enum {string} */
+                                    kind: "principal" | "group";
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                };
+                                /** @description Whether the caller is the party, or one of the group */
+                                mayAccept: boolean;
                             }[];
                         };
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
@@ -43678,7 +43880,7 @@ export interface operations {
                                 /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                                 effectiveFrom: string | null;
                             };
-                            /** @description The scope a revision approved from now is effective for */
+                            /** @description The scope a revision approved from now is effective for, and what waits on acceptance */
                             scope: {
                                 /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
                                 scope: {
@@ -43692,6 +43894,21 @@ export interface operations {
                                         id: string;
                                         name: string | null;
                                     } | null;
+                                }[];
+                                /** @description Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted */
+                                pending: {
+                                    revision: number;
+                                    axis: string;
+                                    value: string;
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    };
+                                    /** @description Whether the caller is the party, or one of the group */
+                                    mayAccept: boolean;
                                 }[];
                             };
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
@@ -44039,7 +44256,7 @@ export interface operations {
                                 /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                                 effectiveFrom: string | null;
                             };
-                            /** @description The scope a revision approved from now is effective for */
+                            /** @description The scope a revision approved from now is effective for, and what waits on acceptance */
                             scope: {
                                 /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
                                 scope: {
@@ -44053,6 +44270,21 @@ export interface operations {
                                         id: string;
                                         name: string | null;
                                     } | null;
+                                }[];
+                                /** @description Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted */
+                                pending: {
+                                    revision: number;
+                                    axis: string;
+                                    value: string;
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    };
+                                    /** @description Whether the caller is the party, or one of the group */
+                                    mayAccept: boolean;
                                 }[];
                             };
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
@@ -45173,7 +45405,8 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "scope": []
+                     *       "scope": [],
+                     *       "pending": []
                      *     }
                      */
                     "application/json": {
@@ -45189,6 +45422,21 @@ export interface operations {
                                 id: string;
                                 name: string | null;
                             } | null;
+                        }[];
+                        /** @description Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted */
+                        pending: {
+                            revision: number;
+                            axis: string;
+                            value: string;
+                            party: {
+                                /** @enum {string} */
+                                kind: "principal" | "group";
+                                /** Format: uuid */
+                                id: string;
+                                name: string | null;
+                            };
+                            /** @description Whether the caller is the party, or one of the group */
+                            mayAccept: boolean;
                         }[];
                     };
                 };
@@ -47202,7 +47450,8 @@ export interface operations {
                      *         "effectiveFrom": "2026-01-01T00:00:00.000Z"
                      *       },
                      *       "scope": {
-                     *         "scope": []
+                     *         "scope": [],
+                     *         "pending": []
                      *       },
                      *       "onHold": false,
                      *       "mayHold": false,
@@ -47411,7 +47660,7 @@ export interface operations {
                             /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                             effectiveFrom: string | null;
                         };
-                        /** @description The scope a revision approved from now is effective for */
+                        /** @description The scope a revision approved from now is effective for, and what waits on acceptance */
                         scope: {
                             /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
                             scope: {
@@ -47425,6 +47674,21 @@ export interface operations {
                                     id: string;
                                     name: string | null;
                                 } | null;
+                            }[];
+                            /** @description Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted */
+                            pending: {
+                                revision: number;
+                                axis: string;
+                                value: string;
+                                party: {
+                                    /** @enum {string} */
+                                    kind: "principal" | "group";
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                };
+                                /** @description Whether the caller is the party, or one of the group */
+                                mayAccept: boolean;
                             }[];
                         };
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
@@ -47669,7 +47933,7 @@ export interface operations {
                                 /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                                 effectiveFrom: string | null;
                             };
-                            /** @description The scope a revision approved from now is effective for */
+                            /** @description The scope a revision approved from now is effective for, and what waits on acceptance */
                             scope: {
                                 /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
                                 scope: {
@@ -47683,6 +47947,21 @@ export interface operations {
                                         id: string;
                                         name: string | null;
                                     } | null;
+                                }[];
+                                /** @description Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted */
+                                pending: {
+                                    revision: number;
+                                    axis: string;
+                                    value: string;
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    };
+                                    /** @description Whether the caller is the party, or one of the group */
+                                    mayAccept: boolean;
                                 }[];
                             };
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
@@ -48030,7 +48309,7 @@ export interface operations {
                                 /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                                 effectiveFrom: string | null;
                             };
-                            /** @description The scope a revision approved from now is effective for */
+                            /** @description The scope a revision approved from now is effective for, and what waits on acceptance */
                             scope: {
                                 /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
                                 scope: {
@@ -48044,6 +48323,21 @@ export interface operations {
                                         id: string;
                                         name: string | null;
                                     } | null;
+                                }[];
+                                /** @description Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted */
+                                pending: {
+                                    revision: number;
+                                    axis: string;
+                                    value: string;
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    };
+                                    /** @description Whether the caller is the party, or one of the group */
+                                    mayAccept: boolean;
                                 }[];
                             };
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
@@ -62830,7 +63124,8 @@ export interface operations {
                      *         "effectiveFrom": "2026-01-01T00:00:00.000Z"
                      *       },
                      *       "scope": {
-                     *         "scope": []
+                     *         "scope": [],
+                     *         "pending": []
                      *       },
                      *       "onHold": false,
                      *       "mayHold": false,
@@ -62966,7 +63261,7 @@ export interface operations {
                             /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                             effectiveFrom: string | null;
                         };
-                        /** @description The scope a revision approved from now is effective for */
+                        /** @description The scope a revision approved from now is effective for, and what waits on acceptance */
                         scope: {
                             /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
                             scope: {
@@ -62980,6 +63275,21 @@ export interface operations {
                                     id: string;
                                     name: string | null;
                                 } | null;
+                            }[];
+                            /** @description Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted */
+                            pending: {
+                                revision: number;
+                                axis: string;
+                                value: string;
+                                party: {
+                                    /** @enum {string} */
+                                    kind: "principal" | "group";
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                };
+                                /** @description Whether the caller is the party, or one of the group */
+                                mayAccept: boolean;
                             }[];
                         };
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
@@ -63992,7 +64302,8 @@ export interface operations {
                      *         "effectiveFrom": "2026-01-01T00:00:00.000Z"
                      *       },
                      *       "scope": {
-                     *         "scope": []
+                     *         "scope": [],
+                     *         "pending": []
                      *       },
                      *       "onHold": false,
                      *       "mayHold": false,
@@ -64202,7 +64513,7 @@ export interface operations {
                             /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                             effectiveFrom: string | null;
                         };
-                        /** @description The scope a revision approved from now is effective for */
+                        /** @description The scope a revision approved from now is effective for, and what waits on acceptance */
                         scope: {
                             /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
                             scope: {
@@ -64216,6 +64527,21 @@ export interface operations {
                                     id: string;
                                     name: string | null;
                                 } | null;
+                            }[];
+                            /** @description Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted */
+                            pending: {
+                                revision: number;
+                                axis: string;
+                                value: string;
+                                party: {
+                                    /** @enum {string} */
+                                    kind: "principal" | "group";
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                };
+                                /** @description Whether the caller is the party, or one of the group */
+                                mayAccept: boolean;
                             }[];
                         };
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */

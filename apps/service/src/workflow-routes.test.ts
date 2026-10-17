@@ -421,7 +421,7 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
     ]);
   });
 
-  it('LIF-042 sets the scope a next revision is effective for on edit, refuses an undeclared value or a party who may not read it, and shows it in the view', async () => {
+  it('LIF-042 LIF-047 sets the scope a next revision is effective for on edit, refuses an undeclared value or a party who may not read it, and shows it and what waits on acceptance in the view', async () => {
     await tenantDb.withTenant(tenant, async (trx) => {
       const axis = await createDefinition(trx, {
         kind: 'conditionAxis',
@@ -450,6 +450,7 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
           party: { kind: 'principal', id: ids.grace, name: expect.any(String) },
         },
       ],
+      pending: [],
     });
     expect((await scope('ivy', { scope: [] })).statusCode).toBe(403);
     const unknown = await scope('ada', {
@@ -490,6 +491,19 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
         axis: 'market',
         value,
       });
+    // Pending in the US, said to every reader, and offered to Grace alone to accept.
+    const pending = {
+      revision: 1,
+      axis: 'market',
+      value: 'us',
+      party: { kind: 'principal', id: ids.grace, name: expect.any(String) },
+    };
+    expect((await component(created.id, 'ivy')).scope.pending).toEqual([
+      { ...pending, mayAccept: false },
+    ]);
+    expect((await component(created.id, 'grace')).scope.pending).toEqual([
+      { ...pending, mayAccept: true },
+    ]);
     const notTheParty = await accept('ivy', 'us');
     expect(notTheParty.statusCode).toBe(403);
     expect(notTheParty.json()).toMatchObject({ code: 'acceptance_not_party' });
@@ -497,6 +511,7 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
     const accepted = await accept('grace', 'us');
     expect(accepted.statusCode, accepted.body).toBe(200);
     expect(accepted.json()).toEqual({ revision: 1, axis: 'market', value: 'us', accepted: true });
+    expect((await component(created.id, 'grace')).scope.pending).toEqual([]);
   });
 
   it('LIF-015 LIF-016 LIF-018 sets dates on edit, refuses an owner who may not read it, and shows past review in the view, the list and every document placing it', async () => {

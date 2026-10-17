@@ -29403,12 +29403,74 @@
                             ]
                           },
                           "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                        },
+                        "pending": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "revision": {
+                                "type": "integer",
+                                "exclusiveMinimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "axis": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "value": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "party": {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "principal",
+                                      "group"
+                                    ]
+                                  },
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "name": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "id",
+                                  "name"
+                                ]
+                              },
+                              "mayAccept": {
+                                "type": "boolean",
+                                "description": "Whether the caller is the party, or one of the group"
+                              }
+                            },
+                            "required": [
+                              "revision",
+                              "axis",
+                              "value",
+                              "party",
+                              "mayAccept"
+                            ]
+                          },
+                          "description": "Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted"
                         }
                       },
                       "required": [
-                        "scope"
+                        "scope",
+                        "pending"
                       ],
-                      "description": "The scope a revision approved from now is effective for"
+                      "description": "The scope a revision approved from now is effective for, and what waits on acceptance"
                     },
                     "onHold": {
                       "type": "boolean",
@@ -29727,7 +29789,8 @@
                     "effectiveFrom": "2026-01-01T00:00:00.000Z"
                   },
                   "scope": {
-                    "scope": []
+                    "scope": [],
+                    "pending": []
                   },
                   "onHold": false,
                   "mayHold": false,
@@ -37339,15 +37402,78 @@
                         ]
                       },
                       "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                    },
+                    "pending": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "revision": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "axis": {
+                            "type": "string",
+                            "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                          },
+                          "value": {
+                            "type": "string",
+                            "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                          },
+                          "party": {
+                            "type": "object",
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "principal",
+                                  "group"
+                                ]
+                              },
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "name": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "id",
+                              "name"
+                            ]
+                          },
+                          "mayAccept": {
+                            "type": "boolean",
+                            "description": "Whether the caller is the party, or one of the group"
+                          }
+                        },
+                        "required": [
+                          "revision",
+                          "axis",
+                          "value",
+                          "party",
+                          "mayAccept"
+                        ]
+                      },
+                      "description": "Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted"
                     }
                   },
                   "required": [
-                    "scope"
+                    "scope",
+                    "pending"
                   ],
-                  "description": "The scope a revision approved from now is effective for"
+                  "description": "The scope a revision approved from now is effective for, and what waits on acceptance"
                 },
                 "example": {
-                  "scope": []
+                  "scope": [],
+                  "pending": []
                 }
               }
             },
@@ -59281,12 +59407,74 @@
                             ]
                           },
                           "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                        },
+                        "pending": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "revision": {
+                                "type": "integer",
+                                "exclusiveMinimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "axis": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "value": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "party": {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "principal",
+                                      "group"
+                                    ]
+                                  },
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "name": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "id",
+                                  "name"
+                                ]
+                              },
+                              "mayAccept": {
+                                "type": "boolean",
+                                "description": "Whether the caller is the party, or one of the group"
+                              }
+                            },
+                            "required": [
+                              "revision",
+                              "axis",
+                              "value",
+                              "party",
+                              "mayAccept"
+                            ]
+                          },
+                          "description": "Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted"
                         }
                       },
                       "required": [
-                        "scope"
+                        "scope",
+                        "pending"
                       ],
-                      "description": "The scope a revision approved from now is effective for"
+                      "description": "The scope a revision approved from now is effective for, and what waits on acceptance"
                     },
                     "onHold": {
                       "type": "boolean",
@@ -59463,7 +59651,8 @@
                     "effectiveFrom": "2026-01-01T00:00:00.000Z"
                   },
                   "scope": {
-                    "scope": []
+                    "scope": [],
+                    "pending": []
                   },
                   "onHold": false,
                   "mayHold": false,
@@ -123182,12 +123371,74 @@
                             ]
                           },
                           "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                        },
+                        "pending": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "revision": {
+                                "type": "integer",
+                                "exclusiveMinimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "axis": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "value": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "party": {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "principal",
+                                      "group"
+                                    ]
+                                  },
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "name": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "id",
+                                  "name"
+                                ]
+                              },
+                              "mayAccept": {
+                                "type": "boolean",
+                                "description": "Whether the caller is the party, or one of the group"
+                              }
+                            },
+                            "required": [
+                              "revision",
+                              "axis",
+                              "value",
+                              "party",
+                              "mayAccept"
+                            ]
+                          },
+                          "description": "Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted"
                         }
                       },
                       "required": [
-                        "scope"
+                        "scope",
+                        "pending"
                       ],
-                      "description": "The scope a revision approved from now is effective for"
+                      "description": "The scope a revision approved from now is effective for, and what waits on acceptance"
                     },
                     "onHold": {
                       "type": "boolean",
@@ -123364,7 +123615,8 @@
                     "effectiveFrom": "2026-01-01T00:00:00.000Z"
                   },
                   "scope": {
-                    "scope": []
+                    "scope": [],
+                    "pending": []
                   },
                   "onHold": false,
                   "mayHold": false,
@@ -124171,12 +124423,74 @@
                                 ]
                               },
                               "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                            },
+                            "pending": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "revision": {
+                                    "type": "integer",
+                                    "exclusiveMinimum": 0,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "axis": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "value": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "party": {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "principal",
+                                          "group"
+                                        ]
+                                      },
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "name": {
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "id",
+                                      "name"
+                                    ]
+                                  },
+                                  "mayAccept": {
+                                    "type": "boolean",
+                                    "description": "Whether the caller is the party, or one of the group"
+                                  }
+                                },
+                                "required": [
+                                  "revision",
+                                  "axis",
+                                  "value",
+                                  "party",
+                                  "mayAccept"
+                                ]
+                              },
+                              "description": "Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted"
                             }
                           },
                           "required": [
-                            "scope"
+                            "scope",
+                            "pending"
                           ],
-                          "description": "The scope a revision approved from now is effective for"
+                          "description": "The scope a revision approved from now is effective for, and what waits on acceptance"
                         },
                         "onHold": {
                           "type": "boolean",
@@ -125342,12 +125656,74 @@
                                 ]
                               },
                               "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                            },
+                            "pending": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "revision": {
+                                    "type": "integer",
+                                    "exclusiveMinimum": 0,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "axis": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "value": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "party": {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "principal",
+                                          "group"
+                                        ]
+                                      },
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "name": {
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "id",
+                                      "name"
+                                    ]
+                                  },
+                                  "mayAccept": {
+                                    "type": "boolean",
+                                    "description": "Whether the caller is the party, or one of the group"
+                                  }
+                                },
+                                "required": [
+                                  "revision",
+                                  "axis",
+                                  "value",
+                                  "party",
+                                  "mayAccept"
+                                ]
+                              },
+                              "description": "Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted"
                             }
                           },
                           "required": [
-                            "scope"
+                            "scope",
+                            "pending"
                           ],
-                          "description": "The scope a revision approved from now is effective for"
+                          "description": "The scope a revision approved from now is effective for, and what waits on acceptance"
                         },
                         "onHold": {
                           "type": "boolean",
@@ -127184,12 +127560,74 @@
                             ]
                           },
                           "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                        },
+                        "pending": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "revision": {
+                                "type": "integer",
+                                "exclusiveMinimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "axis": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "value": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "party": {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "principal",
+                                      "group"
+                                    ]
+                                  },
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "name": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "id",
+                                  "name"
+                                ]
+                              },
+                              "mayAccept": {
+                                "type": "boolean",
+                                "description": "Whether the caller is the party, or one of the group"
+                              }
+                            },
+                            "required": [
+                              "revision",
+                              "axis",
+                              "value",
+                              "party",
+                              "mayAccept"
+                            ]
+                          },
+                          "description": "Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted"
                         }
                       },
                       "required": [
-                        "scope"
+                        "scope",
+                        "pending"
                       ],
-                      "description": "The scope a revision approved from now is effective for"
+                      "description": "The scope a revision approved from now is effective for, and what waits on acceptance"
                     },
                     "onHold": {
                       "type": "boolean",
@@ -127366,7 +127804,8 @@
                     "effectiveFrom": "2026-01-01T00:00:00.000Z"
                   },
                   "scope": {
-                    "scope": []
+                    "scope": [],
+                    "pending": []
                   },
                   "onHold": false,
                   "mayHold": false,
@@ -128173,12 +128612,74 @@
                                 ]
                               },
                               "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                            },
+                            "pending": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "revision": {
+                                    "type": "integer",
+                                    "exclusiveMinimum": 0,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "axis": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "value": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "party": {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "principal",
+                                          "group"
+                                        ]
+                                      },
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "name": {
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "id",
+                                      "name"
+                                    ]
+                                  },
+                                  "mayAccept": {
+                                    "type": "boolean",
+                                    "description": "Whether the caller is the party, or one of the group"
+                                  }
+                                },
+                                "required": [
+                                  "revision",
+                                  "axis",
+                                  "value",
+                                  "party",
+                                  "mayAccept"
+                                ]
+                              },
+                              "description": "Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted"
                             }
                           },
                           "required": [
-                            "scope"
+                            "scope",
+                            "pending"
                           ],
-                          "description": "The scope a revision approved from now is effective for"
+                          "description": "The scope a revision approved from now is effective for, and what waits on acceptance"
                         },
                         "onHold": {
                           "type": "boolean",
@@ -129344,12 +129845,74 @@
                                 ]
                               },
                               "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                            },
+                            "pending": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "revision": {
+                                    "type": "integer",
+                                    "exclusiveMinimum": 0,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "axis": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "value": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "party": {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "principal",
+                                          "group"
+                                        ]
+                                      },
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "name": {
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "id",
+                                      "name"
+                                    ]
+                                  },
+                                  "mayAccept": {
+                                    "type": "boolean",
+                                    "description": "Whether the caller is the party, or one of the group"
+                                  }
+                                },
+                                "required": [
+                                  "revision",
+                                  "axis",
+                                  "value",
+                                  "party",
+                                  "mayAccept"
+                                ]
+                              },
+                              "description": "Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted"
                             }
                           },
                           "required": [
-                            "scope"
+                            "scope",
+                            "pending"
                           ],
-                          "description": "The scope a revision approved from now is effective for"
+                          "description": "The scope a revision approved from now is effective for, and what waits on acceptance"
                         },
                         "onHold": {
                           "type": "boolean",
@@ -131838,12 +132401,74 @@
                             ]
                           },
                           "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                        },
+                        "pending": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "revision": {
+                                "type": "integer",
+                                "exclusiveMinimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "axis": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "value": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "party": {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "principal",
+                                      "group"
+                                    ]
+                                  },
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "name": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "id",
+                                  "name"
+                                ]
+                              },
+                              "mayAccept": {
+                                "type": "boolean",
+                                "description": "Whether the caller is the party, or one of the group"
+                              }
+                            },
+                            "required": [
+                              "revision",
+                              "axis",
+                              "value",
+                              "party",
+                              "mayAccept"
+                            ]
+                          },
+                          "description": "Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted"
                         }
                       },
                       "required": [
-                        "scope"
+                        "scope",
+                        "pending"
                       ],
-                      "description": "The scope a revision approved from now is effective for"
+                      "description": "The scope a revision approved from now is effective for, and what waits on acceptance"
                     },
                     "onHold": {
                       "type": "boolean",
@@ -132020,7 +132645,8 @@
                     "effectiveFrom": "2026-01-01T00:00:00.000Z"
                   },
                   "scope": {
-                    "scope": []
+                    "scope": [],
+                    "pending": []
                   },
                   "onHold": false,
                   "mayHold": false,
@@ -132827,12 +133453,74 @@
                                 ]
                               },
                               "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                            },
+                            "pending": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "revision": {
+                                    "type": "integer",
+                                    "exclusiveMinimum": 0,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "axis": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "value": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "party": {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "principal",
+                                          "group"
+                                        ]
+                                      },
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "name": {
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "id",
+                                      "name"
+                                    ]
+                                  },
+                                  "mayAccept": {
+                                    "type": "boolean",
+                                    "description": "Whether the caller is the party, or one of the group"
+                                  }
+                                },
+                                "required": [
+                                  "revision",
+                                  "axis",
+                                  "value",
+                                  "party",
+                                  "mayAccept"
+                                ]
+                              },
+                              "description": "Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted"
                             }
                           },
                           "required": [
-                            "scope"
+                            "scope",
+                            "pending"
                           ],
-                          "description": "The scope a revision approved from now is effective for"
+                          "description": "The scope a revision approved from now is effective for, and what waits on acceptance"
                         },
                         "onHold": {
                           "type": "boolean",
@@ -133998,12 +134686,74 @@
                                 ]
                               },
                               "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                            },
+                            "pending": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "revision": {
+                                    "type": "integer",
+                                    "exclusiveMinimum": 0,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "axis": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "value": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "party": {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "principal",
+                                          "group"
+                                        ]
+                                      },
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "name": {
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "id",
+                                      "name"
+                                    ]
+                                  },
+                                  "mayAccept": {
+                                    "type": "boolean",
+                                    "description": "Whether the caller is the party, or one of the group"
+                                  }
+                                },
+                                "required": [
+                                  "revision",
+                                  "axis",
+                                  "value",
+                                  "party",
+                                  "mayAccept"
+                                ]
+                              },
+                              "description": "Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted"
                             }
                           },
                           "required": [
-                            "scope"
+                            "scope",
+                            "pending"
                           ],
-                          "description": "The scope a revision approved from now is effective for"
+                          "description": "The scope a revision approved from now is effective for, and what waits on acceptance"
                         },
                         "onHold": {
                           "type": "boolean",
@@ -136461,12 +137211,74 @@
                             ]
                           },
                           "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                        },
+                        "pending": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "revision": {
+                                "type": "integer",
+                                "exclusiveMinimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "axis": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "value": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "party": {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "principal",
+                                      "group"
+                                    ]
+                                  },
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "name": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "id",
+                                  "name"
+                                ]
+                              },
+                              "mayAccept": {
+                                "type": "boolean",
+                                "description": "Whether the caller is the party, or one of the group"
+                              }
+                            },
+                            "required": [
+                              "revision",
+                              "axis",
+                              "value",
+                              "party",
+                              "mayAccept"
+                            ]
+                          },
+                          "description": "Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted"
                         }
                       },
                       "required": [
-                        "scope"
+                        "scope",
+                        "pending"
                       ],
-                      "description": "The scope a revision approved from now is effective for"
+                      "description": "The scope a revision approved from now is effective for, and what waits on acceptance"
                     },
                     "onHold": {
                       "type": "boolean",
@@ -136643,7 +137455,8 @@
                     "effectiveFrom": "2026-01-01T00:00:00.000Z"
                   },
                   "scope": {
-                    "scope": []
+                    "scope": [],
+                    "pending": []
                   },
                   "onHold": false,
                   "mayHold": false,
@@ -137450,12 +138263,74 @@
                                 ]
                               },
                               "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                            },
+                            "pending": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "revision": {
+                                    "type": "integer",
+                                    "exclusiveMinimum": 0,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "axis": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "value": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "party": {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "principal",
+                                          "group"
+                                        ]
+                                      },
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "name": {
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "id",
+                                      "name"
+                                    ]
+                                  },
+                                  "mayAccept": {
+                                    "type": "boolean",
+                                    "description": "Whether the caller is the party, or one of the group"
+                                  }
+                                },
+                                "required": [
+                                  "revision",
+                                  "axis",
+                                  "value",
+                                  "party",
+                                  "mayAccept"
+                                ]
+                              },
+                              "description": "Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted"
                             }
                           },
                           "required": [
-                            "scope"
+                            "scope",
+                            "pending"
                           ],
-                          "description": "The scope a revision approved from now is effective for"
+                          "description": "The scope a revision approved from now is effective for, and what waits on acceptance"
                         },
                         "onHold": {
                           "type": "boolean",
@@ -138621,12 +139496,74 @@
                                 ]
                               },
                               "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                            },
+                            "pending": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "revision": {
+                                    "type": "integer",
+                                    "exclusiveMinimum": 0,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "axis": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "value": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "party": {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "principal",
+                                          "group"
+                                        ]
+                                      },
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "name": {
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "id",
+                                      "name"
+                                    ]
+                                  },
+                                  "mayAccept": {
+                                    "type": "boolean",
+                                    "description": "Whether the caller is the party, or one of the group"
+                                  }
+                                },
+                                "required": [
+                                  "revision",
+                                  "axis",
+                                  "value",
+                                  "party",
+                                  "mayAccept"
+                                ]
+                              },
+                              "description": "Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted"
                             }
                           },
                           "required": [
-                            "scope"
+                            "scope",
+                            "pending"
                           ],
-                          "description": "The scope a revision approved from now is effective for"
+                          "description": "The scope a revision approved from now is effective for, and what waits on acceptance"
                         },
                         "onHold": {
                           "type": "boolean",
@@ -141826,15 +142763,78 @@
                         ]
                       },
                       "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                    },
+                    "pending": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "revision": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "axis": {
+                            "type": "string",
+                            "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                          },
+                          "value": {
+                            "type": "string",
+                            "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                          },
+                          "party": {
+                            "type": "object",
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "principal",
+                                  "group"
+                                ]
+                              },
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "name": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "id",
+                              "name"
+                            ]
+                          },
+                          "mayAccept": {
+                            "type": "boolean",
+                            "description": "Whether the caller is the party, or one of the group"
+                          }
+                        },
+                        "required": [
+                          "revision",
+                          "axis",
+                          "value",
+                          "party",
+                          "mayAccept"
+                        ]
+                      },
+                      "description": "Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted"
                     }
                   },
                   "required": [
-                    "scope"
+                    "scope",
+                    "pending"
                   ],
-                  "description": "The scope a revision approved from now is effective for"
+                  "description": "The scope a revision approved from now is effective for, and what waits on acceptance"
                 },
                 "example": {
-                  "scope": []
+                  "scope": [],
+                  "pending": []
                 }
               }
             },
@@ -147469,12 +148469,74 @@
                             ]
                           },
                           "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                        },
+                        "pending": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "revision": {
+                                "type": "integer",
+                                "exclusiveMinimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "axis": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "value": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "party": {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "principal",
+                                      "group"
+                                    ]
+                                  },
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "name": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "id",
+                                  "name"
+                                ]
+                              },
+                              "mayAccept": {
+                                "type": "boolean",
+                                "description": "Whether the caller is the party, or one of the group"
+                              }
+                            },
+                            "required": [
+                              "revision",
+                              "axis",
+                              "value",
+                              "party",
+                              "mayAccept"
+                            ]
+                          },
+                          "description": "Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted"
                         }
                       },
                       "required": [
-                        "scope"
+                        "scope",
+                        "pending"
                       ],
-                      "description": "The scope a revision approved from now is effective for"
+                      "description": "The scope a revision approved from now is effective for, and what waits on acceptance"
                     },
                     "onHold": {
                       "type": "boolean",
@@ -147651,7 +148713,8 @@
                     "effectiveFrom": "2026-01-01T00:00:00.000Z"
                   },
                   "scope": {
-                    "scope": []
+                    "scope": [],
+                    "pending": []
                   },
                   "onHold": false,
                   "mayHold": false,
@@ -148458,12 +149521,74 @@
                                 ]
                               },
                               "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                            },
+                            "pending": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "revision": {
+                                    "type": "integer",
+                                    "exclusiveMinimum": 0,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "axis": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "value": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "party": {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "principal",
+                                          "group"
+                                        ]
+                                      },
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "name": {
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "id",
+                                      "name"
+                                    ]
+                                  },
+                                  "mayAccept": {
+                                    "type": "boolean",
+                                    "description": "Whether the caller is the party, or one of the group"
+                                  }
+                                },
+                                "required": [
+                                  "revision",
+                                  "axis",
+                                  "value",
+                                  "party",
+                                  "mayAccept"
+                                ]
+                              },
+                              "description": "Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted"
                             }
                           },
                           "required": [
-                            "scope"
+                            "scope",
+                            "pending"
                           ],
-                          "description": "The scope a revision approved from now is effective for"
+                          "description": "The scope a revision approved from now is effective for, and what waits on acceptance"
                         },
                         "onHold": {
                           "type": "boolean",
@@ -149629,12 +150754,74 @@
                                 ]
                               },
                               "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                            },
+                            "pending": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "revision": {
+                                    "type": "integer",
+                                    "exclusiveMinimum": 0,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "axis": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "value": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "party": {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "principal",
+                                          "group"
+                                        ]
+                                      },
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "name": {
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "id",
+                                      "name"
+                                    ]
+                                  },
+                                  "mayAccept": {
+                                    "type": "boolean",
+                                    "description": "Whether the caller is the party, or one of the group"
+                                  }
+                                },
+                                "required": [
+                                  "revision",
+                                  "axis",
+                                  "value",
+                                  "party",
+                                  "mayAccept"
+                                ]
+                              },
+                              "description": "Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted"
                             }
                           },
                           "required": [
-                            "scope"
+                            "scope",
+                            "pending"
                           ],
-                          "description": "The scope a revision approved from now is effective for"
+                          "description": "The scope a revision approved from now is effective for, and what waits on acceptance"
                         },
                         "onHold": {
                           "type": "boolean",
@@ -189306,12 +190493,74 @@
                             ]
                           },
                           "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                        },
+                        "pending": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "revision": {
+                                "type": "integer",
+                                "exclusiveMinimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "axis": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "value": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "party": {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "principal",
+                                      "group"
+                                    ]
+                                  },
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "name": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "id",
+                                  "name"
+                                ]
+                              },
+                              "mayAccept": {
+                                "type": "boolean",
+                                "description": "Whether the caller is the party, or one of the group"
+                              }
+                            },
+                            "required": [
+                              "revision",
+                              "axis",
+                              "value",
+                              "party",
+                              "mayAccept"
+                            ]
+                          },
+                          "description": "Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted"
                         }
                       },
                       "required": [
-                        "scope"
+                        "scope",
+                        "pending"
                       ],
-                      "description": "The scope a revision approved from now is effective for"
+                      "description": "The scope a revision approved from now is effective for, and what waits on acceptance"
                     },
                     "onHold": {
                       "type": "boolean",
@@ -189630,7 +190879,8 @@
                     "effectiveFrom": "2026-01-01T00:00:00.000Z"
                   },
                   "scope": {
-                    "scope": []
+                    "scope": [],
+                    "pending": []
                   },
                   "onHold": false,
                   "mayHold": false,
@@ -193016,12 +194266,74 @@
                             ]
                           },
                           "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                        },
+                        "pending": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "revision": {
+                                "type": "integer",
+                                "exclusiveMinimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "axis": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "value": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "party": {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "principal",
+                                      "group"
+                                    ]
+                                  },
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "name": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "id",
+                                  "name"
+                                ]
+                              },
+                              "mayAccept": {
+                                "type": "boolean",
+                                "description": "Whether the caller is the party, or one of the group"
+                              }
+                            },
+                            "required": [
+                              "revision",
+                              "axis",
+                              "value",
+                              "party",
+                              "mayAccept"
+                            ]
+                          },
+                          "description": "Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted"
                         }
                       },
                       "required": [
-                        "scope"
+                        "scope",
+                        "pending"
                       ],
-                      "description": "The scope a revision approved from now is effective for"
+                      "description": "The scope a revision approved from now is effective for, and what waits on acceptance"
                     },
                     "onHold": {
                       "type": "boolean",
@@ -193218,7 +194530,8 @@
                     "effectiveFrom": "2026-01-01T00:00:00.000Z"
                   },
                   "scope": {
-                    "scope": []
+                    "scope": [],
+                    "pending": []
                   },
                   "onHold": false,
                   "mayHold": false,
