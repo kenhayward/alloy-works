@@ -135,7 +135,6 @@ export const FAMILY_WORDS: Readonly<Record<string, string>> = {
   dataset: 'Datasets',
   dates: 'Dates',
   scope: 'Scopes',
-  line: 'Lines',
   export: 'Exports',
   extension: 'Extensions',
   gate: 'Gates',
