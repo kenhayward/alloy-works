@@ -19,6 +19,8 @@ export interface NewGrant {
   readonly effect: 'allow' | 'deny';
   /** Omitted or null: none - which, for an external principal, takes the tenant's default. */
   readonly expiresAt?: Date | null;
+  /** Refuses an expiry already past, as a request to make one is (`grant.expiry_past`). */
+  readonly refusePast?: boolean;
   readonly grantedBy: string;
 }
 
@@ -159,8 +161,13 @@ export async function grant(trx: TenantTransaction, input: NewGrant): Promise<Gr
   }
 
   let expiresAt = input.expiresAt ?? null;
-  // A grant that ends before it is made confers nothing from the start (the R13 final review).
-  if (expiresAt !== null && expiresAt.getTime() <= (await accessPolicy(trx)).now.getTime()) {
+  // A grant that ends before it is made confers nothing from the start (the R13 final review): refused
+  // where somebody asks for one, which is the route's; one made already ended is a test's to make.
+  if (
+    input.refusePast === true &&
+    expiresAt !== null &&
+    expiresAt.getTime() <= (await accessPolicy(trx)).now.getTime()
+  ) {
     return { refused: 'grant.expiry_past' };
   }
   if (external) {

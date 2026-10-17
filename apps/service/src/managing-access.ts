@@ -159,7 +159,9 @@ export function managingAccessHandlers() {
         level: target,
         effect: body.effect,
         // As asked (IAM-049; the R13 plan, R13-E): held to the cap where it reaches outside.
-        ...(body.expiresAt === undefined ? {} : { expiresAt: new Date(body.expiresAt) }),
+        ...(body.expiresAt === undefined
+          ? {}
+          : { expiresAt: new Date(body.expiresAt), refusePast: true }),
         grantedBy: principalId,
       });
       if ('refused' in answer) throw refuse(answer.refused);
