@@ -1,4 +1,6 @@
 import type {
+  ExtensionBody,
+  ExternalAccessList,
   GrantBody,
   GrantList,
   GrantListQuery,
@@ -12,6 +14,8 @@ import type {
   RoleListQuery,
 } from '@alloy-works/api-contract';
 import {
+  extendGrant,
+  listExternalReach,
   grant,
   listGrants,
   countPrincipals,
@@ -45,7 +49,15 @@ export function grantView(listed: ListedGrant): GrantView {
 }
 
 /** What each refusal says, for a person managing access rather than for somebody reading the code. */
-const REFUSALS = new Map<GrantRefusal | 'grant.last_administrator', string>([
+const REFUSALS = new Map<
+  GrantRefusal | 'grant.last_administrator' | 'grant.not_external' | 'grant.not_later',
+  string
+>([
+  [
+    'grant.not_external',
+    'Only an allow to someone from outside the organisation is extended this way; grant anybody else a new role.',
+  ],
+  ['grant.not_later', 'An extension ends later than the grant it extends.'],
   [
     'grant.duplicate',
     'That role is already granted to that person or group here, with that effect.',
@@ -80,7 +92,9 @@ const REFUSALS = new Map<GrantRefusal | 'grant.last_administrator', string>([
 ]);
 
 /** A refusal where a grant is made or removed, as 409 with the wire's spelling of the store's answer. */
-function refuse(refusal: GrantRefusal | 'grant.last_administrator'): AppError {
+function refuse(
+  refusal: GrantRefusal | 'grant.last_administrator' | 'grant.not_external' | 'grant.not_later',
+): AppError {
   return refused(409, refusal, REFUSALS.get(refusal)!);
 }
 
@@ -143,6 +157,8 @@ export function managingAccessHandlers() {
         subject: body.subject,
         level: target,
         effect: body.effect,
+        // As asked (IAM-049; the R13 plan, R13-E): held to the cap where it reaches outside.
+        ...(body.expiresAt === undefined ? {} : { expiresAt: new Date(body.expiresAt) }),
         grantedBy: principalId,
       });
       if ('refused' in answer) throw refuse(answer.refused);
@@ -150,6 +166,48 @@ export function managingAccessHandlers() {
       if (!made) throw new Error('A grant made in this transaction was not there to read');
       return { grant: grantView(made) };
     },
+
+    /** A positive act by an administrator of where it stands (IAM-050; the R13 plan, R13-E). */
+    extendGrant: async (
+      request: FastifyRequest,
+      { trx, principalId }: Authorised,
+    ): Promise<GrantMade> => {
+      const { id } = request.params as GrantParams;
+      const body = request.body as ExtensionBody;
+      const answer = await extendGrant(trx, {
+        grant: id,
+        ...(body.expiresAt === undefined ? {} : { expiresAt: new Date(body.expiresAt) }),
+        by: principalId,
+      });
+      if ('refused' in answer) {
+        if (answer.refused === 'grant.missing') throw notFound();
+        throw refuse(answer.refused);
+      }
+      const made = await readGrant(trx, answer.granted.id);
+      if (!made) throw new Error('A grant made in this transaction was not there to read');
+      return { grant: grantView(made) };
+    },
+
+    /** Who from outside can reach what (IAM-051; the R13 plan, R13-F). */
+    listExternalAccess: async (
+      _request: FastifyRequest,
+      { trx }: Authorised,
+    ): Promise<ExternalAccessList> => ({
+      items: (await listExternalReach(trx)).map((each) => ({
+        principal: { ...each.principal },
+        grants: each.grants.map((grant) => ({
+          ...grant,
+          role: { ...grant.role },
+          expiresAt: grant.expiresAt?.toISOString() ?? null,
+          group: grant.group && { ...grant.group },
+        })),
+        reads: {
+          spaces: each.reads.spaces.map((space) => ({ ...space })),
+          included: [...each.reads.included],
+          excluded: [...each.reads.excluded],
+        },
+      })),
+    }),
 
     removeGrant: async (request: FastifyRequest, { trx }: Authorised): Promise<GrantRemoved> => {
       const { id } = request.params as GrantParams;

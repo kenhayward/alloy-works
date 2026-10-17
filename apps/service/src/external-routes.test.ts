@@ -201,6 +201,14 @@ describe('people from outside the organisation (the R13 plan)', () => {
           grantedBy: ids.ada!,
         });
       }
+      // Ada administers the environment, which managing access needs (the R13 plan, R13-E, R13-F).
+      await grant(trx, {
+        roleId: await role('Administrator'),
+        subject: { principal: ids.ada! },
+        level: { kind: 'tenant' },
+        effect: 'allow',
+        grantedBy: ids.ada!,
+      });
     });
   }, 120_000);
 
@@ -416,6 +424,103 @@ describe('people from outside the organisation (the R13 plan)', () => {
       expect(await found('ada', '&internal=false')).toEqual([shared]);
       expect(await found('alice')).toEqual([shared]);
       expect(await found('alice', '&internal=true')).toEqual([]);
+    });
+  });
+
+  describe('extending access from outside, and listing it (the R13 plan, R13-E, R13-F)', () => {
+    const DAY = 86_400_000;
+    const grantsAt = async (level: string) =>
+      (await call('GET', `/v1/grants?level=${level}`, 'ada')).json<{
+        items: {
+          id: string;
+          subject: { principal?: { id: string } };
+          expiresAt: string | null;
+          extends: string | null;
+        }[];
+      }>().items;
+    const aliceAt = async (level: string) =>
+      (await grantsAt(level)).find((each) => each.subject.principal?.id === ids.alice)!;
+
+    it('IAM-050 extends access from outside as an act of somebody inside, no further than the cap, audited with both expiries', async () => {
+      const before = await aliceAt(`space:${clinical}`);
+      expect(before.expiresAt).not.toBeNull();
+      const extend = (id: string, expiresAt: string, who = 'ada') =>
+        call('POST', `/v1/grants/${id}/extension`, who, { expiresAt });
+
+      // Past the tenant's cap, refused; no later than it stands, refused.
+      const past = await extend(before.id, new Date(Date.now() + 200 * DAY).toISOString());
+      expect(past.statusCode).toBe(409);
+      expect(past.json()).toMatchObject({ code: 'grant_external_past_cap' });
+      const sooner = await extend(before.id, new Date(Date.now() + DAY).toISOString());
+      expect(sooner.statusCode).toBe(409);
+      expect(sooner.json()).toMatchObject({ code: 'grant_not_later' });
+      // Somebody inside the organisation is not extended this way.
+      const grace = (await grantsAt(`space:${clinical}`)).find(
+        (each) => each.subject.principal?.id === ids.grace,
+      )!;
+      const inside = await extend(grace.id, new Date(Date.now() + 60 * DAY).toISOString());
+      expect(inside.statusCode).toBe(409);
+      expect(inside.json()).toMatchObject({ code: 'grant_not_external' });
+      // Nor by anybody who does not administer where it stands.
+      expect(
+        (await extend(before.id, new Date(Date.now() + 60 * DAY).toISOString(), 'grace'))
+          .statusCode,
+      ).toBe(404);
+
+      const until = new Date(Date.now() + 60 * DAY).toISOString();
+      const extended = await extend(before.id, until);
+      expect(extended.statusCode, extended.body).toBe(200);
+      const made = extended.json<{ grant: { id: string; expiresAt: string; extends: string } }>()
+        .grant;
+      expect(made.extends).toBe(before.id);
+      expect(new Date(made.expiresAt).toISOString()).toBe(until);
+      // The grant it extends is gone, in the same change.
+      expect((await grantsAt(`space:${clinical}`)).map((each) => each.id)).not.toContain(before.id);
+      const events = (
+        await call('GET', `/v1/audit?kind=access.granted&subject=${made.id}`, 'ada')
+      ).json<{ items: { detail: Record<string, unknown> }[] }>().items;
+      expect(events[0]!.detail).toMatchObject({
+        extends: before.id,
+        expiresAt: until,
+        extendedFrom: before.expiresAt,
+      });
+    });
+
+    it('IAM-049 takes the expiry a grant to somebody from outside is made with, within the cap', async () => {
+      const until = new Date(Date.now() + 10 * DAY).toISOString();
+      const roles = (await call('GET', `/v1/roles?level=space:${quality}`, 'ada')).json<{
+        items: { id: string; name: string }[];
+      }>().items;
+      const made = await call('POST', '/v1/grants', 'ada', {
+        role: roles.find((each) => each.name === 'Reader')!.id,
+        subject: { principal: ids.alice },
+        level: `space:${quality}`,
+        effect: 'allow',
+        expiresAt: until,
+      });
+      expect(made.statusCode, made.body).toBe(200);
+      expect(made.json<{ grant: { expiresAt: string } }>().grant.expiresAt).toBe(until);
+    });
+
+    it('IAM-051 lists everybody from outside, each grant reaching them with its level and expiry, and what they may read', async () => {
+      const listed = await call('GET', '/v1/access/external', 'ada');
+      expect(listed.statusCode, listed.body).toBe(200);
+      const items = listed.json<{
+        items: {
+          principal: { id: string; name: string | null };
+          grants: { level: string; expiresAt: string | null; role: { name: string } }[];
+          reads: { spaces: { id: string; name: string }[] };
+        }[];
+      }>().items;
+      expect(items.map((each) => each.principal.id)).toEqual([ids.alice]);
+      const alice = items[0]!;
+      expect(alice.grants.map((each) => [each.role.name, each.level])).toEqual(
+        expect.arrayContaining([['Reviewer', `space:${clinical}`]]),
+      );
+      expect(alice.grants.every((each) => each.expiresAt !== null)).toBe(true);
+      expect(alice.reads.spaces.map((each) => each.name)).toContain('Clinical');
+      // An administrator's report alone.
+      expect((await call('GET', '/v1/access/external', 'grace')).statusCode).toBe(403);
     });
   });
 });

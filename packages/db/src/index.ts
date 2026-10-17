@@ -287,7 +287,10 @@ export {
   type NewGrant,
   type RemovalAnswer,
   type StoredGrant,
+  extendGrant,
+  type ExtensionAnswer,
 } from './grants.js';
+export { listExternalReach, type ExternalGrant, type ExternalReach } from './external-access.js';
 export {
   listGrants,
   countPrincipals,

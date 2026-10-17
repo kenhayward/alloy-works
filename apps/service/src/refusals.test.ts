@@ -19,6 +19,8 @@ describe('the rule behind a refusal', () => {
       ['layout.language', 'layout_language', 'PUB-095'],
       ['grant.external_at_tenant', 'grant_external_at_tenant', 'IAM-071'],
       ['grant.external_past_cap', 'grant_external_past_cap', 'IAM-049'],
+      ['grant.not_external', 'grant_not_external', 'IAM-050'],
+      ['grant.not_later', 'grant_not_later', 'IAM-050'],
       ['template.unresolved', 'template_unresolved', 'TPL-004'],
       ['section.required', 'section_required', 'TPL-013'],
       ['component.required', 'component_required', 'TPL-044'],

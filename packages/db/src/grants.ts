@@ -214,6 +214,12 @@ export async function recordGrantEvent(
   trx: TenantTransaction,
   kind: 'access.granted' | 'access.revoked',
   stored: Pick<StoredGrant, 'id' | 'roleId' | 'subject' | 'level' | 'effect'>,
+  /** What an extension adds to what it says (IAM-050; the R13 plan, R13-E). */
+  extension?: {
+    readonly extends: string;
+    readonly expiresAt: Date;
+    readonly extendedFrom: Date | null;
+  },
 ): Promise<void> {
   const grantee = 'principal' in stored.subject ? stored.subject.principal : stored.subject.group;
   const role = await trx
@@ -249,6 +255,13 @@ export async function recordGrantEvent(
         effect: stored.effect,
         grantee,
         granteeKind: 'principal' in stored.subject ? 'principal' : 'group',
+        ...(extension === undefined
+          ? {}
+          : {
+              extends: extension.extends,
+              expiresAt: extension.expiresAt.toISOString(),
+              extendedFrom: extension.extendedFrom?.toISOString() ?? null,
+            }),
       },
     },
     labels(
@@ -394,4 +407,85 @@ export async function removeGrant(trx: TenantTransaction, id: string): Promise<R
   await recordGrantEvent(trx, 'access.revoked', removed);
   await trx.deleteFrom('access_grant').where('id', '=', id).execute();
   return { removed };
+}
+
+export type ExtensionAnswer =
+  | { readonly granted: StoredGrant & { readonly extends: string } }
+  | {
+      readonly refused:
+        'grant.missing' | 'grant.not_external' | 'grant.not_later' | 'grant.external_past_cap';
+    };
+
+/**
+ * **Extends access from outside** (IAM-050; access.md, "Extending external access"; the R13 plan,
+ * R13-E): a new grant naming the one it extends, which goes in the same change, to an expiry later than
+ * it held and no later than the tenant's cap from now - the default from now where none is named. A
+ * positive act by whoever administers where the grant stands, which is the caller's to decide first,
+ * and never by somebody from outside, whom the cap keeps from administering. Audited as the grant's
+ * events, the new one carrying both expiries.
+ */
+export async function extendGrant(
+  trx: TenantTransaction,
+  input: { readonly grant: string; readonly expiresAt?: Date; readonly by: string },
+): Promise<ExtensionAnswer> {
+  await lockAccessForChange(trx);
+  const row = await trx
+    .selectFrom('access_grant')
+    .select(GRANT_COLUMNS)
+    .where('id', '=', input.grant)
+    .executeTakeFirst();
+  if (!row) return { refused: 'grant.missing' };
+  const principal =
+    row.principal_id === null
+      ? undefined
+      : await trx
+          .selectFrom('principal')
+          .select('kind')
+          .where('id', '=', row.principal_id)
+          .executeTakeFirst();
+  if (row.effect !== 'allow' || principal?.kind !== 'external') {
+    return { refused: 'grant.not_external' };
+  }
+  const policy = await accessPolicy(trx);
+  const until =
+    input.expiresAt ?? new Date(policy.now.getTime() + policy.externalDefaultDays * DAY_MS);
+  if (until.getTime() > policy.now.getTime() + policy.externalCapDays * DAY_MS) {
+    return { refused: 'grant.external_past_cap' };
+  }
+  if (row.expires_at !== null && until.getTime() <= row.expires_at.getTime()) {
+    return { refused: 'grant.not_later' };
+  }
+  const old = storedOf(row);
+  await recordGrantEvent(trx, 'access.revoked', old);
+  await trx.deleteFrom('access_grant').where('id', '=', row.id).execute();
+  const made = await trx
+    .insertInto('access_grant')
+    .values({
+      role_id: row.role_id,
+      principal_id: row.principal_id,
+      group_id: null,
+      level: row.level,
+      space_id: row.space_id,
+      artifact_id: row.artifact_id,
+      effect: 'allow',
+      expires_at: until,
+      extends: row.id,
+      granted_by: input.by,
+    })
+    .returning(['id', 'expires_at', 'granted_at'])
+    .executeTakeFirstOrThrow();
+  const granted = {
+    ...old,
+    id: made.id,
+    expiresAt: made.expires_at,
+    grantedBy: input.by,
+    grantedAt: made.granted_at,
+    extends: row.id,
+  };
+  await recordGrantEvent(trx, 'access.granted', granted, {
+    extends: row.id,
+    expiresAt: until,
+    extendedFrom: row.expires_at,
+  });
+  return { granted };
 }

@@ -282,6 +282,7 @@ const OTHER_TENANT_IDS: Readonly<
   restoreDocumentVersion: async (tenant, db) => documentVersionIn(tenant, db),
   restoreVersion: async (tenant, db) => componentVersionIn(tenant, db),
   removeGrant: async (tenant, db) => ({ id: await grantIdIn(tenant, db) }),
+  extendGrant: async (tenant, db) => ({ id: await grantIdIn(tenant, db) }),
   createAssetUpload: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   putAssetUploadBytes: async (tenant, db) => ({ id: (await assetIn(tenant, db)).upload }),
   getAssetUpload: async (tenant, db) => ({ id: (await assetIn(tenant, db)).upload }),
@@ -535,6 +536,7 @@ const VALID_INPUT: Readonly<
   createSpace: { payload: { name: 'Elsewhere' } },
   updateSpace: { payload: { name: 'Elsewhere' } },
   setGroupMembers: { payload: { principals: [] } },
+  extendGrant: { payload: {} },
   createToken: { payload: { name: 'Elsewhere', scopes: [], expiresAt: IN_A_MONTH } },
   setEditingSettings: { payload: { iterationRetentionDays: 7 } },
   makeGrant: {

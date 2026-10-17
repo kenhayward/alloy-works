@@ -59,6 +59,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/access/external": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Everybody from outside the organisation, and everything each can reach
+         * @description Lists everybody from outside the organisation: each grant reaching them, directly or through a group, with its level and expiry, and what those grants let them read. The report an administrator runs to see who from outside can reach what.
+         */
+        get: operations["listExternalAccess"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/artifacts/{id}/impact": {
         parameters: {
             query?: never;
@@ -2154,6 +2174,26 @@ export interface paths {
          * @description Removes a grant unless it is needed to keep the environment administered.
          */
         delete: operations["removeGrant"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/grants/{id}/extension": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Extend access from outside the organisation, as a new grant replacing the old
+         * @description Extends a grant to somebody from outside the organisation: a new grant with a later expiry, no later than the tenant cap from now, which names and replaces the one it extends in the same change. A positive act by an administrator of where it stands, audited with both expiries; a grant to somebody inside the organisation is not extended this way.
+         */
+        post: operations["extendGrant"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -6589,6 +6629,134 @@ export interface operations {
             };
             /** @description No such target in this environment, or none the caller may read */
             404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listExternalAccess: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Everybody from outside */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": []
+                     *     }
+                     */
+                    "application/json": {
+                        items: {
+                            principal: {
+                                id: string;
+                                name: string | null;
+                                email: string | null;
+                            };
+                            /** @description Every grant reaching them, directly or through a group */
+                            grants: {
+                                id: string;
+                                role: {
+                                    id: string;
+                                    name: string;
+                                };
+                                /** @description `space:<id>` or `artifact:<id>` */
+                                level: string;
+                                /** @enum {string} */
+                                effect: "allow" | "deny";
+                                expiresAt: string | null;
+                                extends: string | null;
+                                /** @description The group it reaches them through, or null for one made to them */
+                                group: {
+                                    id: string;
+                                    name: string;
+                                } | null;
+                            }[];
+                            /** @description What those grants let them read, decided as every read is */
+                            reads: {
+                                spaces: {
+                                    id: string;
+                                    name: string;
+                                }[];
+                                /** @description Artifacts read by a grant on themselves */
+                                included: string[];
+                                /** @description Artifacts in those spaces a grant on themselves refuses */
+                                excluded: string[];
+                            };
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the level but may not administer it, or anything above it */
+            403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;
@@ -47839,6 +48007,11 @@ export interface operations {
                      * @enum {string}
                      */
                     effect: "allow" | "deny";
+                    /**
+                     * Format: date-time
+                     * @description When it stops conferring anything. For somebody from outside the organisation, no later than the tenant cap from now, and the tenant default when omitted (IAM-049)
+                     */
+                    expiresAt?: string;
                 };
             };
         };
@@ -48096,6 +48269,188 @@ export interface operations {
                 };
             };
             /** @description grant_last_administrator */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    extendGrant: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /** @example {} */
+                "application/json": {
+                    /**
+                     * Format: date-time
+                     * @description When the extended grant stops conferring anything: later than the grant it extends, and no later than the tenant cap from now. The tenant default from now when omitted
+                     */
+                    expiresAt?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Extended: the new grant, naming the one it replaced */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "grant": {
+                     *         "id": "example",
+                     *         "role": {
+                     *           "id": "example",
+                     *           "name": "example"
+                     *         },
+                     *         "subject": {
+                     *           "principal": {
+                     *             "id": "example",
+                     *             "name": "example",
+                     *             "email": "example"
+                     *           }
+                     *         },
+                     *         "level": "tenant",
+                     *         "effect": "allow",
+                     *         "expiresAt": "example",
+                     *         "extends": "example",
+                     *         "grantedBy": {
+                     *           "id": "example",
+                     *           "name": "example"
+                     *         },
+                     *         "grantedAt": "example"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        grant: {
+                            id: string;
+                            role: {
+                                id: string;
+                                name: string;
+                            };
+                            subject: {
+                                principal: {
+                                    id: string;
+                                    name: string | null;
+                                    email: string | null;
+                                };
+                            } | {
+                                group: {
+                                    id: string;
+                                    name: string;
+                                };
+                            };
+                            /** @description `tenant`, `space:<id>` or `artifact:<id>` */
+                            level: string;
+                            /** @enum {string} */
+                            effect: "allow" | "deny";
+                            /** @description When it stops conferring anything, or null for never */
+                            expiresAt: string | null;
+                            /** @description The grant this one replaced by extending it */
+                            extends: string | null;
+                            grantedBy: {
+                                id: string;
+                                name: string | null;
+                            };
+                            grantedAt: string;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such level or grant in this environment, or none the caller may see */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description grant_not_external, grant_not_later or grant_external_past_cap */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */

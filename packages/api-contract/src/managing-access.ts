@@ -43,8 +43,60 @@ export const GrantBody = z.strictObject({
     .describe('Who it is granted to: a principal, or a group and so each of its members'),
   level: Target.describe('Where it is granted'),
   effect: z.enum(['allow', 'deny']).describe('deny refuses everything the role holds, there'),
+  expiresAt: z.iso
+    .datetime()
+    .optional()
+    .describe(
+      'When it stops conferring anything. For somebody from outside the organisation, no later than the tenant cap from now, and the tenant default when omitted (IAM-049)',
+    ),
 });
 export type GrantBody = z.infer<typeof GrantBody>;
+
+/** What extending access from outside takes (IAM-050): the new expiry, or the tenant default. */
+export const ExtensionBody = z.strictObject({
+  expiresAt: z.iso
+    .datetime()
+    .optional()
+    .describe(
+      'When the extended grant stops conferring anything: later than the grant it extends, and no later than the tenant cap from now. The tenant default from now when omitted',
+    ),
+});
+export type ExtensionBody = z.infer<typeof ExtensionBody>;
+
+/** Everybody from outside, what reaches them and what they may read (IAM-051). */
+export const ExternalAccessList = z.object({
+  items: z.array(
+    z.object({
+      principal: Named.extend({ email: z.string().nullable() }),
+      grants: z
+        .array(
+          z.object({
+            id: z.string(),
+            role: z.object({ id: z.string(), name: z.string() }),
+            level: z.string().describe('`space:<id>` or `artifact:<id>`'),
+            effect: z.enum(['allow', 'deny']),
+            expiresAt: z.string().nullable(),
+            extends: z.string().nullable(),
+            group: z
+              .object({ id: z.string(), name: z.string() })
+              .nullable()
+              .describe('The group it reaches them through, or null for one made to them'),
+          }),
+        )
+        .describe('Every grant reaching them, directly or through a group'),
+      reads: z
+        .object({
+          spaces: z.array(z.object({ id: z.string(), name: z.string() })),
+          included: z.array(z.string()).describe('Artifacts read by a grant on themselves'),
+          excluded: z
+            .array(z.string())
+            .describe('Artifacts in those spaces a grant on themselves refuses'),
+        })
+        .describe('What those grants let them read, decided as every read is'),
+    }),
+  ),
+});
+export type ExternalAccessList = z.infer<typeof ExternalAccessList>;
 
 export const GrantParams = z.object({ id: LowercaseUuid });
 export type GrantParams = z.infer<typeof GrantParams>;
@@ -198,6 +250,46 @@ export const managingAccessRoutes = {
           'grant_duplicate, grant_allow_without_read, grant_administer_denied_at_tenant, grant_role_missing, grant_subject_missing, grant_subject_erased, grant_external_at_tenant, grant_external_capped or grant_external_past_cap',
         schema: ErrorBody,
       },
+    },
+  },
+  extendGrant: {
+    operationId: 'extendGrant',
+    method: 'POST',
+    path: '/v1/grants/{id}/extension',
+    summary: 'Extend access from outside the organisation, as a new grant replacing the old',
+    tenantScoped: true,
+    access: {
+      check: 'permission',
+      permission: 'administer',
+      target: { grant: 'id' },
+      changesAccess: true,
+    },
+    params: GrantParams,
+    body: ExtensionBody,
+    responses: {
+      200: {
+        description: 'Extended: the new grant, naming the one it replaced',
+        schema: GrantMade,
+      },
+      401: unauthenticated,
+      404: notFound,
+      409: {
+        description: 'grant_not_external, grant_not_later or grant_external_past_cap',
+        schema: ErrorBody,
+      },
+    },
+  },
+  listExternalAccess: {
+    operationId: 'listExternalAccess',
+    method: 'GET',
+    path: '/v1/access/external',
+    summary: 'Everybody from outside the organisation, and everything each can reach',
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'administer', target: { tenant: true } },
+    responses: {
+      200: { description: 'Everybody from outside', schema: ExternalAccessList },
+      401: unauthenticated,
+      403: forbidden,
     },
   },
   removeGrant: {
