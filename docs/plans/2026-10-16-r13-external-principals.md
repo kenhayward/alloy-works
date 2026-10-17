@@ -45,7 +45,7 @@ PUB-084).
 
 ## Built
 
-R13a #677, R13b #678, and R13c with the close (0.184.0) #PRNUM. Two departures from the decisions: an
+R13a #677, R13b #678, and R13c with the close (0.184.0) #679. Two departures from the decisions: an
 extension replaces the grant it extends in the same change, as access.md designs it (R13-E's text
 said the old one lapses, which `access_grant_once` refuses; the new one confers all it did, for
 longer); and a new thread is not internal by default where the artifact has a reader from outside
