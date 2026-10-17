@@ -790,6 +790,15 @@ describe('routes that check a permission', () => {
     listDocumentApprovals: () => ({ url: `/v1/documents/${MISSING}/approvals`, status: 404 }),
     readComponentEffective: () => ({ url: `/v1/components/${dosing}/effective`, status: 404 }),
     listComponentLines: () => ({ url: `/v1/components/${dosing}/lines`, status: 404 }),
+    compareComponentLine: () => ({
+      url: `/v1/components/${dosing}/lines/${MISSING}/comparison`,
+      status: 404,
+    }),
+    bringComponentLineBack: () => ({
+      url: `/v1/components/${dosing}/lines/${MISSING}/return`,
+      status: 404,
+      payload: { openedFrom: MISSING, lineHead: MISSING, carry: [] },
+    }),
     divergeComponent: () => ({
       url: `/v1/components/${dosing}/lines`,
       status: 404,

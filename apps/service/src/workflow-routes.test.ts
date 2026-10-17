@@ -14,6 +14,7 @@ import {
   bootstrapCluster,
   createDefinition,
   createSpace,
+  latestVersion,
   readVersion,
   recordVersion,
   substanceOf,
@@ -537,7 +538,7 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
     expect((await effective('?scope=Market')).statusCode).toBe(400);
   });
 
-  it('LIF-044 begins a divergent line from a designated revision, by whoever may edit, each name once, and opens and moves it apart, saying which line is read', async () => {
+  it('LIF-044 LIF-046 begins a divergent line from a designated revision, by whoever may edit, each name once, opens and moves it apart, and says it diverged wherever it appears', async () => {
     const created = await made('components', 'Diverging dose');
     expect(
       (await move('components', created.id, 'ada', { transition: 'submit', from: 'draft' }))
@@ -680,6 +681,103 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
       line: { id: lineId, name: 'US' },
     });
     expect(texts.versions.find((each) => each.id === usVersion)?.number).toBe('US 2.1');
+    // Diverged, it says so wherever it appears: on each reference, in the list, in search.
+    expect(texts.occurrences[0]).toMatchObject({ lines: ['US'] });
+    const inList = (await call('GET', '/v1/components?limit=100', 'ivy')).json<{
+      items: { id: string; lines?: string[] }[];
+    }>();
+    expect(inList.items.find((each) => each.id === created.id)?.lines).toEqual(['US']);
+    const found = (await call('GET', '/v1/search?q=diverging', 'ivy')).json<{
+      items: { artifactId: string; lines?: string[] }[];
+    }>();
+    expect(found.items.find((each) => each.artifactId === created.id)?.lines).toEqual(['US']);
+  });
+
+  it('LIF-045 compares a line with the main line, then brings it back block by block, by whoever may edit, and closes it', async () => {
+    const created = await made('components', 'Returning dose');
+    expect(
+      (await move('components', created.id, 'ada', { transition: 'submit', from: 'draft' }))
+        .statusCode,
+    ).toBe(200);
+    expect(
+      (
+        await approve('components', created.id, 'grace', {
+          transition: 'approve',
+          version: created.version.id,
+          decision: 'approved',
+        })
+      ).statusCode,
+    ).toBe(200);
+    const begun = await call('POST', `/v1/components/${created.id}/lines`, 'ada', {
+      revision: 1,
+      name: 'US',
+    });
+    const lineId = begun.json<{ id: string }>().id;
+    const worded = (value: string, line?: string) =>
+      tenantDb.withTenant(tenant, async (trx) => {
+        const base = (await readVersion(trx, created.version.id))!;
+        const substance = substanceOf(base);
+        if (substance.kind !== 'component') throw new Error('not a component');
+        const head = line === undefined ? (await latestVersion(trx, created.id))! : base;
+        const recorded = await recordVersion(trx, {
+          artifactId: created.id,
+          openedFrom: head.id,
+          author: ids.ada!,
+          ...(line === undefined ? {} : { line }),
+          substance: {
+            ...substance,
+            content: {
+              ...substance.content,
+              content: [
+                {
+                  type: 'paragraph',
+                  id: 'b1',
+                  style: 'body',
+                  content: [{ type: 'text', value, marks: [] }],
+                },
+              ],
+            },
+          },
+        });
+        if (recorded.answer !== 'recorded') throw new Error(recorded.answer);
+        return recorded.version.id;
+      });
+    const usHead = await worded('US wording', lineId);
+    const mainHead = await worded('Central wording');
+
+    const compared = await call(
+      'GET',
+      `/v1/components/${created.id}/lines/${lineId}/comparison`,
+      'ivy',
+    );
+    expect(compared.statusCode, compared.body).toBe(200);
+    expect(compared.json()).toMatchObject({
+      main: { id: mainHead },
+      line: { id: usHead, number: 'US 1.1' },
+      differences: [{ block: 'b1', change: 'changed' }],
+    });
+    const back = (who: string, body: object) =>
+      call('POST', `/v1/components/${created.id}/lines/${lineId}/return`, who, body);
+    expect(
+      (await back('ivy', { openedFrom: mainHead, lineHead: usHead, carry: ['b1'] })).statusCode,
+    ).toBe(403);
+    expect(
+      (await back('ada', { openedFrom: mainHead, lineHead: usHead, carry: ['zz'] })).json(),
+    ).toMatchObject({ code: 'carry_invalid' });
+    const brought = await back('ada', { openedFrom: mainHead, lineHead: usHead, carry: ['b1'] });
+    expect(brought.statusCode, brought.body).toBe(200);
+    expect(brought.json()).toMatchObject({
+      carried: [{ block: 'b1', change: 'changed' }],
+      left: [],
+    });
+    expect(
+      (await call('GET', `/v1/components/${created.id}/lines`, 'ivy')).json<{
+        lines: { closed: boolean }[];
+      }>().lines[0]?.closed,
+    ).toBe(true);
+    expect(
+      (await back('ada', { openedFrom: mainHead, lineHead: usHead, carry: [] })).json(),
+    ).toMatchObject({ code: 'line_closed' });
   });
 
   it('LIF-015 LIF-016 LIF-018 sets dates on edit, refuses an owner who may not read it, and shows past review in the view, the list and every document placing it', async () => {

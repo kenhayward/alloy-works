@@ -73,6 +73,7 @@ export const KIND_WORDS: Readonly<Record<AuditKind, string>> = {
   'dates.set': 'Dates set',
   'scope.set': 'Scope set',
   'line.diverged': 'Line begun',
+  'line.returned': 'Line brought back',
   'revision.accepted': 'Revision accepted',
   'section.waived': 'Required section removed',
   'review.lapsed': 'Review lapsed',

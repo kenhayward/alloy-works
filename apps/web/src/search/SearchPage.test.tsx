@@ -146,6 +146,20 @@ describe('the search page', () => {
     expect(await screen.findByRole('dialog', { name: 'Place in a document' })).toBeVisible();
   });
 
+  it('LIF-046 says a component found has diverged, naming its lines', async () => {
+    const { client } = service(() =>
+      json(200, {
+        ...results,
+        count: 1,
+        message: '1 result.',
+        items: [{ ...results.items[0], lines: ['US'] }],
+      }),
+    );
+    render(<SearchPage client={client} query="lever" onSearch={() => undefined} />);
+    const [found] = await screen.findAllByRole('article');
+    expect(within(found!).getByText('Diverged: US')).toBeInTheDocument();
+  });
+
   it('shows a thread found by a message, resolved, linked to the message', async () => {
     const THREAD = 'ffffffff-0000-4000-8000-000000000001';
     const COMMENT = 'ffffffff-0000-4000-8000-000000000002';

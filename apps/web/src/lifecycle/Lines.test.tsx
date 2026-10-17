@@ -3,7 +3,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
-import { LinesControl } from './Lines.js';
+import { BringBackButton, LinesControl } from './Lines.js';
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
@@ -26,6 +26,34 @@ function service() {
     const url = new URL(request.url);
     const body = request.method === 'GET' ? undefined : ((await request.json()) as unknown);
     asked.push({ method: request.method, path: url.pathname, body });
+    if (url.pathname === `/v1/components/${PRINTER}/lines/${US}/comparison`) {
+      const para = (value: string) => ({
+        type: 'paragraph',
+        id: 'b1',
+        style: 'body',
+        content: [{ type: 'text', value, marks: [] }],
+      });
+      return json(200, {
+        main: { id: 'eeeeeeee-0000-4000-8000-000000000001', number: '1.2' },
+        line: { id: 'ffffffff-0000-4000-8000-000000000001', number: 'US 1.1' },
+        differences: [
+          {
+            block: 'b1',
+            change: 'changed',
+            mainBlock: para('Central dose'),
+            lineBlock: para('US dose'),
+          },
+          { block: 'b2', change: 'main', mainBlock: para('Central only'), lineBlock: null },
+        ],
+      });
+    }
+    if (url.pathname === `/v1/components/${PRINTER}/lines/${US}/return`) {
+      return json(200, {
+        version: { id: 'eeeeeeee-0000-4000-8000-000000000002', number: '1.3' },
+        carried: [{ block: 'b1', change: 'changed' }],
+        left: [{ block: 'b2', change: 'main' }],
+      });
+    }
     if (url.pathname === `/v1/components/${PRINTER}/lines` && request.method === 'POST') {
       return json(200, line(EU, 'EU'));
     }
@@ -80,6 +108,35 @@ describe('lines in a header (the R16 plan, R16-E)', () => {
       method: 'POST',
       path: `/v1/components/${PRINTER}/lines`,
       body: { revision: 3, name: 'EU' },
+    });
+  });
+
+  it('LIF-045 compares the line with the main line first, then brings back the blocks chosen and returns to the main line', async () => {
+    const { client, asked } = service();
+    const go = vi.fn();
+    render(
+      <BringBackButton client={client} componentId={PRINTER} line={line(US, 'US')} onGo={go} />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Bring back' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Bring US back' });
+    // Each block that differs, both sides, the main line's kept unless the line's is taken.
+    const changed = await within(dialog).findByRole('group', { name: 'Changed on either line' });
+    expect(changed).toHaveTextContent('Main line: Central dose');
+    expect(changed).toHaveTextContent('US: US dose');
+    await userEvent.click(within(changed).getByRole('checkbox', { name: "Take US's" }));
+    expect(within(dialog).getByRole('group', { name: 'On the main line alone' })).toHaveTextContent(
+      'Main line: Central only',
+    );
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Bring back' }));
+    await waitFor(() => expect(go).toHaveBeenCalledWith(`#/components/${PRINTER}`));
+    expect(asked.at(-1)).toMatchObject({
+      method: 'POST',
+      path: `/v1/components/${PRINTER}/lines/${US}/return`,
+      body: {
+        openedFrom: 'eeeeeeee-0000-4000-8000-000000000001',
+        lineHead: 'ffffffff-0000-4000-8000-000000000001',
+        carry: ['b1'],
+      },
     });
   });
 });

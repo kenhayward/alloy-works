@@ -382,6 +382,8 @@ const operationTags = {
     'readDocumentEffective',
     'divergeComponent',
     'listComponentLines',
+    'compareComponentLine',
+    'bringComponentLineBack',
   ],
   'Audit log': ['listAuditEvents', 'requestAuditExport', 'getAuditExport', 'downloadAuditExport'],
 } as const;
@@ -742,6 +744,10 @@ const descriptions: Readonly<Record<string, string>> = {
     'Lists every approval and rejection of a component at its gates, newest first: the gate, the decision, who, when, the version decided and a rejection’s reason. Needs read on the component.',
   listDocumentApprovals:
     'Lists every approval and rejection of a document at its gates, newest first: the gate, the decision, who, when, the version decided and a rejection’s reason. Needs read on the document.',
+  compareComponentLine:
+    "Compares a component's open divergent line with its main line, block by block: each block that differs, whether changed, held by the line alone or by the main line alone, with both sides, and the two versions compared, which bringing it back names. Needs read on the component.",
+  bringComponentLineBack:
+    "Brings a component's divergent line back into its main line, needing edit, after a comparison: a new main-line version taking the line's side of each differing block carried and the main line's of every other, the main line's scope taking the line's values; the line is closed, and what was carried across and what was left behind are recorded. Refused where either line moved since the comparison. Audited.",
   listComponentLines:
     "Lists a component's divergent lines, in the order they were begun: each line's name, the revision it diverged from and when, and whether it was brought back. Needs read on the component.",
   divergeComponent:

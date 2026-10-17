@@ -1,5 +1,5 @@
 import type { createApiClient } from '@alloy-works/api-client';
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 
 import { refusal } from '../account/TokenTable.js';
 import { Modal } from '../layouts/Modal.js';
@@ -155,6 +155,181 @@ function BeginDialog({
           </button>
           <button type="submit" className="primary" disabled={busy}>
             Begin
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+/** A block's words, read defensively: every text run's value, in order. */
+function wordsIn(block: unknown): string {
+  if (Array.isArray(block)) return block.map(wordsIn).join('');
+  if (!isRecord(block)) return '';
+  if (block.type === 'text' && typeof block.value === 'string') return block.value;
+  return Object.entries(block)
+    .filter(([key]) => key !== 'id' && key !== 'type')
+    .map(([, value]) => wordsIn(value))
+    .join(' ')
+    .trim();
+}
+
+interface Compared {
+  readonly main: { readonly id: string; readonly number: string };
+  readonly line: { readonly id: string; readonly number: string };
+  readonly differences: readonly {
+    readonly block: string;
+    readonly change: 'changed' | 'line' | 'main';
+    readonly mainBlock: unknown;
+    readonly lineBlock: unknown;
+  }[];
+}
+
+/**
+ * **Bring back** (LIF-045; the R16 plan, R16-F), to whoever may edit, on an open line: the line and the
+ * main line compared first, block by block, each block that differs offered as the line's to take or
+ * the main line's to keep; then the line brought back, closed, and the main line opened.
+ */
+export function BringBackButton({
+  client,
+  componentId,
+  line,
+  onGo,
+  className,
+}: {
+  client: Client;
+  componentId: string;
+  line: LineNow;
+  onGo: (address: string) => void;
+  className?: string | undefined;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button type="button" className={className} onClick={() => setOpen(true)}>
+        Bring back
+      </button>
+      {open && (
+        <BringBackDialog
+          client={client}
+          componentId={componentId}
+          line={line}
+          onClose={() => setOpen(false)}
+          onBack={() => {
+            setOpen(false);
+            onGo(lineAddress(componentId, null));
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+function BringBackDialog({
+  client,
+  componentId,
+  line,
+  onClose,
+  onBack,
+}: {
+  client: Client;
+  componentId: string;
+  line: LineNow;
+  onClose: () => void;
+  onBack: () => void;
+}) {
+  const headingId = useId();
+  const [compared, setCompared] = useState<Compared | 'unread' | null>(null);
+  const [carry, setCarry] = useState<ReadonlySet<string>>(new Set());
+  const [said, setSaid] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let current = true;
+    void client
+      .GET('/v1/components/{id}/lines/{line}/comparison', {
+        params: { path: { id: componentId, line: line.id } },
+      })
+      .then(({ data }) => {
+        if (current) setCompared(data ? (data as Compared) : 'unread');
+      })
+      .catch(() => {
+        if (current) setCompared('unread');
+      });
+    return () => {
+      current = false;
+    };
+  }, [client, componentId, line.id]);
+
+  const toggle = (block: string) =>
+    setCarry((now) => {
+      const next = new Set(now);
+      if (next.has(block)) next.delete(block);
+      else next.add(block);
+      return next;
+    });
+
+  const bring = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (compared === null || compared === 'unread') return;
+    setBusy(true);
+    const { data, error } = await client
+      .POST('/v1/components/{id}/lines/{line}/return', {
+        params: { path: { id: componentId, line: line.id } },
+        body: { openedFrom: compared.main.id, lineHead: compared.line.id, carry: [...carry] },
+      })
+      .catch(() => ({ data: undefined, error: undefined }));
+    setBusy(false);
+    if (data) onBack();
+    else setSaid(refusal(error, 'It could not be brought back.'));
+  };
+
+  const legend = {
+    changed: 'Changed on either line',
+    line: `On ${line.name} alone`,
+    main: 'On the main line alone',
+  } as const;
+
+  return (
+    <Modal labelledBy={headingId} size="narrow" onClose={onClose}>
+      <form className={styles['form']} onSubmit={(event) => void bring(event)}>
+        <h2 id={headingId}>{`Bring ${line.name} back`}</h2>
+        <p className={styles['muted']}>
+          {`Each block that differs keeps the main line's unless ${line.name}'s is taken. The main line gets a new version, ${line.name} is closed, and what was carried and what was left behind are recorded.`}
+        </p>
+        {compared === null && <p role="status">Comparing the lines.</p>}
+        {compared === 'unread' && <p role="alert">The lines could not be compared.</p>}
+        {compared !== null && compared !== 'unread' && compared.differences.length === 0 && (
+          <p>The lines hold the same blocks: bringing it back closes it.</p>
+        )}
+        {compared !== null &&
+          compared !== 'unread' &&
+          compared.differences.map((each) => (
+            <fieldset key={each.block}>
+              <legend>{legend[each.change]}</legend>
+              {each.mainBlock !== null && <p>{`Main line: ${wordsIn(each.mainBlock)}`}</p>}
+              {each.lineBlock !== null && <p>{`${line.name}: ${wordsIn(each.lineBlock)}`}</p>}
+              <label className={styles['choice']}>
+                <input
+                  type="checkbox"
+                  checked={carry.has(each.block)}
+                  onChange={() => toggle(each.block)}
+                />
+                {`Take ${line.name}'s`}
+              </label>
+            </fieldset>
+          ))}
+        {said !== '' && <p role="alert">{said}</p>}
+        <div className={styles['buttons']}>
+          <button type="button" onClick={onClose}>
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="primary"
+            disabled={busy || compared === null || compared === 'unread'}
+          >
+            Bring back
           </button>
         </div>
       </form>

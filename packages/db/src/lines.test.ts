@@ -7,12 +7,12 @@ import { createComponent } from './creation.js';
 import { createDefinition } from './definitions.js';
 import { grant } from './grants.js';
 import { claimLock, saveIteration } from './editing.js';
-import { diverge, lineNumbers, readLines } from './lines.js';
+import { bringLineBack, compareLines, diverge, lineNumbers, readLines } from './lines.js';
 import { cutVersion, releaseLock } from './promotion.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import { findRole } from './roles.js';
-import { setScope } from './scopes.js';
+import { readScopes, setScope } from './scopes.js';
 import { createSpace } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
 import type { TenantDatabase } from './tenant-database.js';
@@ -325,5 +325,93 @@ describe('divergent lines (the R16 plan, R16-A to R16-D)', () => {
     expect((await as((trx) => workflowStanding(trx, first.artifactId)))?.state.key).toBe(
       'approved',
     );
+  });
+
+  it('LIF-045 brings a line back after comparing the two, block by block, recording what was carried and what was left, and closes it', async () => {
+    const first = await component('Rinse the drum');
+    await approve(first);
+    const begun = await as((trx) =>
+      diverge(trx, { artifactId: first.artifactId, revision: 1, name: 'US', by: ada }),
+    );
+    if (begun.answer !== 'diverged') throw new Error(begun.answer);
+    const us = await edit(first, 'US wording', begun.line.id);
+    await as((trx) =>
+      setScope(trx, {
+        artifactId: first.artifactId,
+        kind: 'component',
+        scope: [{ axis: 'market', value: 'us', party: null }],
+        by: ada,
+        line: begun.line.id,
+      }),
+    );
+    const main = await edit(first, 'Central wording');
+
+    const compared = await as((trx) => compareLines(trx, first.artifactId, begun.line.id));
+    expect(compared).toMatchObject({
+      main: main.id,
+      line: us.id,
+      differences: [{ block: 'b1', change: 'changed' }],
+    });
+    // A comparison since overtaken is refused, as a stale save is.
+    expect(
+      await as((trx) =>
+        bringLineBack(trx, {
+          artifactId: first.artifactId,
+          line: begun.line.id,
+          openedFrom: first.id,
+          lineHead: us.id,
+          carry: ['b1'],
+          by: ada,
+        }),
+      ),
+    ).toMatchObject({ answer: 'version.precondition' });
+    const back = await as((trx) =>
+      bringLineBack(trx, {
+        artifactId: first.artifactId,
+        line: begun.line.id,
+        openedFrom: main.id,
+        lineHead: us.id,
+        carry: ['b1'],
+        by: ada,
+      }),
+    );
+    if (back.answer !== 'returned') throw new Error(back.answer);
+    // The main line takes the line's wording, and its markets (R16-G); the line is closed.
+    const latest = (await as((trx) => latestVersion(trx, first.artifactId)))!;
+    expect(latest.id).toBe(back.version.id);
+    expect(JSON.stringify(latest.content)).toContain('US wording');
+    expect(
+      (await as((trx) => readScopes(trx, [first.artifactId]))).get(first.artifactId)?.scope,
+    ).toEqual([{ axis: 'market', value: 'us', party: null }]);
+    expect((await as((trx) => readLines(trx, first.artifactId)))[0]?.closed).toBe(true);
+    const recorded = await as(async (trx) => {
+      const { rows } = await sql<{ carried: unknown; left_behind: unknown }>`
+        select carried, left_behind from line_return where line_id = ${begun.line.id}`.execute(trx);
+      return rows[0];
+    });
+    expect(recorded).toEqual({ carried: [{ block: 'b1', change: 'changed' }], left_behind: [] });
+    const events = await as(async (trx) => {
+      const { rows } = await sql<{ detail: Record<string, unknown> }>`
+        select detail from audit_event where subject = ${first.artifactId} and kind = 'line.returned'`.execute(
+        trx,
+      );
+      return rows.map((row) => row.detail);
+    });
+    expect(events).toEqual([
+      { kind: 'component', line: begun.line.id, into: back.version.id, carried: 1, left: 0 },
+    ]);
+    // Closed, it takes no more versions, and is not brought back twice.
+    expect(
+      await as((trx) =>
+        bringLineBack(trx, {
+          artifactId: first.artifactId,
+          line: begun.line.id,
+          openedFrom: back.version.id,
+          lineHead: us.id,
+          carry: [],
+          by: ada,
+        }),
+      ),
+    ).toEqual({ answer: 'line.closed' });
   });
 });

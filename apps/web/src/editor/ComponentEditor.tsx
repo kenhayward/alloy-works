@@ -1,7 +1,7 @@
 import type { ComponentView, createApiClient } from '@alloy-works/api-client';
 import { DatesButton, DatesChips, datesIn, type Dates } from '../lifecycle/Dates.js';
 import { NO_SCOPE, ScopeButton, ScopeChips, scopeIn, type ScopeNow } from '../lifecycle/Scope.js';
-import { LinesControl, linesIn } from '../lifecycle/Lines.js';
+import { BringBackButton, LinesControl, linesIn } from '../lifecycle/Lines.js';
 import type { ContentDocument } from '@alloy-works/domain';
 import {
   bindingDigestInput,
@@ -2425,6 +2425,21 @@ export function ComponentEditor({
               }}
               className={styles['archive']}
             />
+            {/* Bringing an open line back, to whoever may edit it (LIF-045; R16-F). */}
+            {(() => {
+              const open = linesIn(shown).find((each) => each.id === line && !each.closed);
+              return open && shown.mayEdit === true && !archived ? (
+                <BringBackButton
+                  client={client}
+                  componentId={componentId}
+                  line={open}
+                  onGo={(address) => {
+                    window.location.hash = address;
+                  }}
+                  className={styles['archive']}
+                />
+              ) : null;
+            })()}
             <DatesChips dates={datesNow ?? datesIn(shown)} />
             {shown.mayEdit === true && !archived && (datesNow ?? datesIn(shown)) && (
               <DatesButton

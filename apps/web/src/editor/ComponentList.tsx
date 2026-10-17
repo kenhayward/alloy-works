@@ -331,6 +331,10 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
                       {item.state && <StateLozenge state={item.state} />}
                       {/* Past its review-by day (LIF-018; WF5-H). */}
                       {item.pastReview === true && <Chip tone="warn">Past review</Chip>}
+                      {/* Diverged, naming its lines (LIF-046; the R16 plan, R16-E). */}
+                      {(item.lines?.length ?? 0) > 0 && (
+                        <Chip>{`Diverged: ${item.lines!.join(', ')}`}</Chip>
+                      )}
                     </td>
                     <td className={styles['muted']}>
                       <time dateTime={item.changedAt}>{whenChanged(item.changedAt)}</time>

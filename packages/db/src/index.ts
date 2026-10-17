@@ -506,14 +506,19 @@ export {
   type SetDatesAnswer,
 } from './dates.js';
 export {
+  bringLineBack,
+  compareLines,
   diverge,
   headVersion,
   lineHead,
   lineNumbers,
+  openLinesOf,
   linesStored,
   readLine,
   readLines,
   type DivergeAnswer,
+  type LineComparison,
+  type ReturnAnswer,
   type Line,
 } from './lines.js';
 export {

@@ -61,6 +61,7 @@ import {
   previewPlacement,
   applyOutlineOverrides,
   lineNumbers,
+  openLinesOf,
 } from '@alloy-works/db';
 import type { AfterCommit } from './after-commit.js';
 import {
@@ -627,6 +628,8 @@ export function documentHandlers(
         decide('read', known).allowed ? [component] : [],
       );
       const locks = await readLocks(trx, readable);
+      // Each readable component's open lines, whichever is shown (LIF-046; R16-E).
+      const openLines = await openLinesOf(trx, readable);
       // How many suggestions wait on each (SG-M), of those the caller may read.
       const pending = await pendingCounts(trx, readable);
       // Each readable component's latest version: what a reference pinned below it is told is newer
@@ -764,6 +767,9 @@ export function documentHandlers(
           return {
             ...occurrence,
             ...(onLine === undefined ? {} : { line: onLine.line }),
+            ...(component !== undefined && openLines.has(component)
+              ? { lines: openLines.get(component)! }
+              : {}),
             ...newer,
             ...tracked,
             ...moved,

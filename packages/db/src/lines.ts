@@ -1,9 +1,23 @@
-import { initialState } from '@alloy-works/domain';
+import {
+  bringBack,
+  initialState,
+  lineDifferences,
+  parseContentDocument,
+  type BlockDifference,
+} from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { artifactPlace, recordEvent } from './audit.js';
 import { isDeleted } from './deletion.js';
 import type { TenantTransaction } from './tables.js';
-import { latestVersion, lockArtifact, readVersion, type StoredVersion } from './versions.js';
+import { readScopes, setScope } from './scopes.js';
+import {
+  latestVersion,
+  lockArtifact,
+  readVersion,
+  recordVersion,
+  substanceOf,
+  type StoredVersion,
+} from './versions.js';
 import { newestDefinition, workflowStored } from './workflow.js';
 
 /**
@@ -253,4 +267,174 @@ export async function lineNumbers(
       },
     ]),
   );
+}
+
+/** Two lines compared (LIF-045; R16-F): each head, and every block that differs between them. */
+export interface LineComparison {
+  readonly main: string;
+  readonly line: string;
+  readonly differences: readonly BlockDifference[];
+}
+
+/**
+ * A line compared with the main line (LIF-045; R16-F), which bringing it back must follow: the main
+ * line's latest and the line's head, and each block that differs. Undefined where the artifact holds no
+ * such open line.
+ */
+export async function compareLines(
+  trx: TenantTransaction,
+  artifactId: string,
+  lineId: string,
+): Promise<LineComparison | undefined> {
+  const line = await readLine(trx, artifactId, lineId);
+  if (!line || line.closed) return undefined;
+  const main = await latestVersion(trx, artifactId);
+  const head = await readVersion(trx, await lineHead(trx, line));
+  if (!main || !head) return undefined;
+  return {
+    main: main.id,
+    line: head.id,
+    differences: lineDifferences(
+      parseContentDocument(main.content),
+      parseContentDocument(head.content),
+    ),
+  };
+}
+
+export type ReturnAnswer =
+  | {
+      readonly answer: 'returned';
+      readonly version: StoredVersion;
+      readonly carried: readonly BlockDifference[];
+      readonly left: readonly BlockDifference[];
+    }
+  | { readonly answer: 'line.missing' | 'line.closed' | 'carry.invalid' }
+  | { readonly answer: 'version.precondition'; readonly current: StoredVersion };
+
+/**
+ * Brings a line back (LIF-045; R16-F, R16-G), under the component's lock, after the comparison the
+ * caller saw - `openedFrom` the main line's latest and `lineHead` the line's head then, else
+ * `version.precondition`: a new main-line version taking the line's side of each block in `carry`, a
+ * block that differs, and the main line's of every other; the main line's scope taking the line's
+ * values; the line closed, `line_return` recording each block carried and each left behind, audited
+ * `line.returned`. Nothing carried makes no version, and still closes it, everything left behind.
+ */
+export async function bringLineBack(
+  trx: TenantTransaction,
+  input: {
+    readonly artifactId: string;
+    readonly line: string;
+    readonly openedFrom: string;
+    readonly lineHead: string;
+    readonly carry: readonly string[];
+    readonly by: string;
+  },
+): Promise<ReturnAnswer> {
+  if (!UUID.test(input.artifactId)) return { answer: 'line.missing' };
+  await lockArtifact(trx, input.artifactId);
+  const line = await readLine(trx, input.artifactId, input.line);
+  if (!line) return { answer: 'line.missing' };
+  if (line.closed) return { answer: 'line.closed' };
+  const main = await latestVersion(trx, input.artifactId);
+  const head = await readVersion(trx, await lineHead(trx, line));
+  if (!main || !head) return { answer: 'line.missing' };
+  if (main.id !== input.openedFrom) return { answer: 'version.precondition', current: main };
+  if (head.id !== input.lineHead) return { answer: 'version.precondition', current: head };
+  const ours = parseContentDocument(main.content);
+  const theirs = parseContentDocument(head.content);
+  const differences = lineDifferences(ours, theirs);
+  const differing = new Set(differences.map((each) => each.block));
+  if (input.carry.some((block) => !differing.has(block))) return { answer: 'carry.invalid' };
+  const carrying = new Set(input.carry);
+  const carried = differences.filter((each) => carrying.has(each.block));
+  const left = differences.filter((each) => !carrying.has(each.block));
+
+  let version = main;
+  if (carried.length > 0) {
+    const substance = substanceOf(main);
+    if (substance.kind !== 'component') return { answer: 'line.missing' };
+    const recorded = await recordVersion(trx, {
+      artifactId: input.artifactId,
+      openedFrom: main.id,
+      author: input.by,
+      note: `Brought back from ${line.name}`,
+      substance: { ...substance, content: bringBack(ours, theirs, input.carry) },
+    });
+    if (recorded.answer === 'recorded') version = recorded.version;
+    else if (recorded.answer !== 'version.unchanged') return { answer: 'line.missing' };
+  }
+  // Its markets now the main line's, so bringing it back changes what they are served (R16-G).
+  const theirScope = (await readScopes(trx, [input.artifactId], line.id)).get(input.artifactId);
+  if (theirScope && theirScope.scope.length > 0) {
+    const ourScope = (await readScopes(trx, [input.artifactId])).get(input.artifactId)?.scope ?? [];
+    const held = new Set(ourScope.map((each) => `${each.axis}:${each.value}`));
+    await setScope(trx, {
+      artifactId: input.artifactId,
+      kind: 'component',
+      scope: [
+        ...ourScope,
+        ...theirScope.scope.filter((each) => !held.has(`${each.axis}:${each.value}`)),
+      ],
+      by: input.by,
+    });
+  }
+  await trx.insertInto('line_closed').values({ line_id: line.id, by: input.by }).execute();
+  await trx
+    .insertInto('line_return')
+    .values({
+      line_id: line.id,
+      from_version: head.id,
+      into_version: version.id,
+      carried: JSON.stringify(carried),
+      left_behind: JSON.stringify(left),
+    })
+    .execute();
+  const place = await artifactPlace(trx, input.artifactId);
+  await recordEvent(
+    trx,
+    {
+      kind: 'line.returned',
+      subject: { kind: 'component', id: input.artifactId, version: place.version },
+      space: place.space,
+      detail: {
+        kind: 'component',
+        line: line.id,
+        into: version.id,
+        carried: carried.length,
+        left: left.length,
+      },
+    },
+    place.labels,
+  );
+  return { answer: 'returned', version, carried, left };
+}
+
+/**
+ * The open lines of each of these artifacts, by name in the order they were begun (LIF-046; R16-E):
+ * what says, wherever it appears, that it has diverged. One with none is not in the answer.
+ */
+export async function openLinesOf(
+  trx: TenantTransaction,
+  artifactIds: readonly string[],
+): Promise<Map<string, string[]>> {
+  const ids = [...new Set(artifactIds.filter((id) => UUID.test(id)))];
+  if (ids.length === 0 || !(await linesStored(trx))) return new Map();
+  const rows = await trx
+    .selectFrom('artifact_line as l')
+    .select(['l.artifact_id', 'l.name'])
+    .where('l.artifact_id', 'in', ids)
+    .where(({ not, exists, selectFrom }) =>
+      not(
+        exists(
+          selectFrom('line_closed as c').select('c.line_id').whereRef('c.line_id', '=', 'l.id'),
+        ),
+      ),
+    )
+    .orderBy('l.artifact_id')
+    .orderBy('l.ordinal')
+    .execute();
+  const open = new Map<string, string[]>();
+  for (const row of rows)
+    open.set(row.artifact_id, [...(open.get(row.artifact_id) ?? []), row.name]);
+  return open;
 }

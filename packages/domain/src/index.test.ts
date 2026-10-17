@@ -727,6 +727,9 @@ describe('the domain package', () => {
         'scopeEntrySchema',
         'scopeSchema',
         'effectiveRevision',
+        // R16: two lines compared block by block, and one brought back.
+        'lineDifferences',
+        'bringBack',
       ].sort(),
     );
   });

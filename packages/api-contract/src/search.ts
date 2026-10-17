@@ -177,6 +177,12 @@ export const SearchResultView = z.object({
     .describe(
       "A component's or a document's workflow state now, a section's its document's; null for anything else",
     ),
+  lines: z
+    .array(z.string())
+    .optional()
+    .describe(
+      "A component's open divergent lines, by name (LIF-046); absent where it has not diverged",
+    ),
   section: z
     .object({
       document: z.object({ id: z.string(), title: z.string() }),
