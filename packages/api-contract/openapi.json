@@ -34232,6 +34232,23 @@
             }
           },
           {
+            "name": "line",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "A component's divergent line whose iterations to read (LIF-044); its main line's where absent",
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
             "name": "cursor",
             "in": "query",
             "required": false,
@@ -34772,6 +34789,23 @@
                 }
               ],
               "description": "The editing session asking, which must hold the lock on the component"
+            }
+          },
+          {
+            "name": "line",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "A component's divergent line whose iterations to read (LIF-044); its main line's where absent",
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
             }
           },
           {
@@ -37357,7 +37391,7 @@
             }
           },
           "409": {
-            "description": "version_precondition: either line moved since the comparison, which is to be read again; line_closed: it was brought back already",
+            "description": "version_precondition: either line moved since the comparison, which is to be read again; line_closed: it was brought back already; lock_held: somebody is editing it",
             "content": {
               "application/json": {
                 "schema": {

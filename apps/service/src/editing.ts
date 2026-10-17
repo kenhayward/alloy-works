@@ -375,7 +375,12 @@ export function editingHandlers() {
       const query = request.query as IterationListQuery;
       const asked = pageAsked('iterations', query);
       await mustHold(trx, id, principalId, query.session);
-      const page = await listIterations(trx, { artifactId: id, principalId, ...asked });
+      const page = await listIterations(trx, {
+        artifactId: id,
+        principalId,
+        ...(query.line === undefined ? {} : { line: query.line }),
+        ...asked,
+      });
       return {
         items: page.items.map(iterationView),
         next: cursorFor('iterations', asked.sort, asked.order, page.snapshot, page.next),
@@ -407,6 +412,7 @@ export function editingHandlers() {
         artifactId: params.id,
         principalId,
         iterationId: params.iteration,
+        ...(query.line === undefined ? {} : { line: query.line }),
       });
       if (!iteration) throw notFound();
       return {

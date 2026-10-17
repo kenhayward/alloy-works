@@ -421,6 +421,8 @@ export interface IterationTable {
   content: ColumnType<unknown, string, never>;
   metadata_values: ColumnType<Record<string, unknown>, string, never>;
   digest: ColumnType<string, string, never>;
+  /** The divergent line edited (0113; the R16 final review), none for the main line; absent before. */
+  line_id: ColumnType<string | null, string | undefined, never>;
 }
 
 /** The template, and its version, a document was made from (0029): written once, never changed. */

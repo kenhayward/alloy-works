@@ -14086,6 +14086,7 @@ export interface operations {
         parameters: {
             query: {
                 session: string & (unknown & unknown);
+                line?: string & (unknown & unknown);
                 cursor?: string;
                 limit?: string;
             };
@@ -14291,6 +14292,7 @@ export interface operations {
         parameters: {
             query: {
                 session: string & (unknown & unknown);
+                line?: string & (unknown & unknown);
             };
             header?: {
                 /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
@@ -15391,7 +15393,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description version_precondition: either line moved since the comparison, which is to be read again; line_closed: it was brought back already */
+            /** @description version_precondition: either line moved since the comparison, which is to be read again; line_closed: it was brought back already; lock_held: somebody is editing it */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */

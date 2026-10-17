@@ -77,6 +77,12 @@ export function lineHandlers() {
           throw notFound();
         case 'line.closed':
           throw refused(409, 'line.closed', 'It was brought back already.');
+        case 'lock.held':
+          throw refused(
+            409,
+            'lock.held',
+            'Somebody is editing it: bring the line back once they are done.',
+          );
         case 'carry.invalid':
           throw refused(400, 'carry.invalid', 'A block carried is not one that differs.');
         case 'version.precondition':

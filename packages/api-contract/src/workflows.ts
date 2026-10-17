@@ -741,7 +741,7 @@ export const workflowRoutes = {
       },
       409: {
         description:
-          'version_precondition: either line moved since the comparison, which is to be read again; line_closed: it was brought back already',
+          'version_precondition: either line moved since the comparison, which is to be read again; line_closed: it was brought back already; lock_held: somebody is editing it',
         schema: ErrorBody,
       },
     },

@@ -407,6 +407,8 @@ export async function saveIteration(
       session_id: input.session,
       sequence: input.sequence,
       opened_from: current.id,
+      // Named only on a line's, so a write to a schema before 0113 names no column it lacks.
+      ...(input.line === undefined ? {} : { line_id: input.line }),
       created_at: sql<Date>`clock_timestamp()`,
       content: JSON.stringify(content),
       metadata_values: JSON.stringify(values),

@@ -133,6 +133,12 @@ export async function rebuildHistory(trx: TenantTransaction, artifactId?: string
   const titled = await historyTitled(trx);
   const fielded = await historyFielded(trx);
   const stated = await historyStated(trx);
+  // The main line's state, a line's moves its own (the R16 final review): 0112's column, asked first.
+  const { rows: lined } = await sql<{ present: boolean }>`
+    select exists (select 1 from information_schema.columns
+                    where table_schema = current_schema() and table_name = 'workflow_transition'
+                      and column_name = 'line_id') as present`.execute(trx);
+  const mainLine = lined[0]?.present === true ? sql`and t.line_id is null` : sql``;
   await sql`delete from search_history h where ${which('h')}`.execute(trx);
   await sql`
     with places as (
@@ -162,7 +168,8 @@ export async function rebuildHistory(trx: TenantTransaction, artifactId?: string
              // Its artifact's state now, whichever version holds the place newest (WF-H).
              stated
                ? sql`, (select t.to_state from workflow_transition t
-                        where t.artifact_id = n.artifact_id order by t.id desc limit 1)`
+                        where t.artifact_id = n.artifact_id ${mainLine}
+                        order by t.id desc limit 1)`
                : sql``
            }
     from (select distinct on (artifact_id, node) * from places

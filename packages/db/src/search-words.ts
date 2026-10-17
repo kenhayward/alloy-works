@@ -13,6 +13,7 @@ import { sql, type RawBuilder, type SqlBool } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
 import { deletedAs, deletionStored, isDeleted } from './deletion.js';
 import { HISTORY_KINDS, historyFielded, historyStored, historyTitled } from './search-history.js';
+import { linesStored } from './lines.js';
 import { CONDITIONS_KEY, RELATIONS_KEY } from './search-relations.js';
 import { sectionMembers, type SectionMembers } from './search-sections.js';
 import { vectorStored } from './search-threads.js';
@@ -426,12 +427,14 @@ export async function searchWords(
   // Workflow states from 0095 (WF-H): on current rows and history; an earlier version's row reads its
   // artifact's state now, so a baseline filters on the current state.
   const stated = await workflowStored(trx);
+  // The main line's state, a line's moves its own (the R16 final review).
+  const mainLine = (await linesStored(trx)) ? sql`and t.line_id is null` : sql``;
   const stateOf = (table: string) =>
     !stated
       ? sql`null::text as workflow_state`
       : table === 'search_earlier' || table === 'x'
         ? sql`(select t.to_state from workflow_transition t
-               where t.artifact_id = ${sql.ref(`${table}.artifact_id`)}
+               where t.artifact_id = ${sql.ref(`${table}.artifact_id`)} ${mainLine}
                order by t.id desc limit 1) as workflow_state`
         : sql`workflow_state`;
   // A baseline is read as its document is (BL-H): one the reader may not read, or none, is not found.

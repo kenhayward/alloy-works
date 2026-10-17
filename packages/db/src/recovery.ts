@@ -12,7 +12,7 @@ import {
   type ListingRequest,
   type SortOf,
 } from './listing.js';
-import { iterationRetained } from './retention.js';
+import { iterationLinesStored, iterationRetained } from './retention.js';
 import type { TenantTransaction } from './tables.js';
 import { readVersion } from './versions.js';
 
@@ -44,18 +44,25 @@ export interface StoredIteration extends IterationSummary {
 export interface IterationOwner {
   readonly artifactId: string;
   readonly principalId: string;
+  /** The divergent line edited (R16-B), or absent for the main line: its iterations alone. */
+  readonly line?: string | undefined;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 /** The rows a caller may be answered: their own, of this component, that the sweep keeps. */
-function ownRetained(trx: TenantTransaction, owner: IterationOwner) {
-  return trx
-    .selectFrom('iteration as i')
-    .innerJoin('artifact_version as v', 'v.id', 'i.opened_from')
-    .where('i.artifact_id', '=', owner.artifactId)
-    .where('i.principal_id', '=', owner.principalId)
-    .where(iterationRetained('i'));
+function ownRetained(trx: TenantTransaction, owner: IterationOwner, lined: boolean) {
+  return (
+    trx
+      .selectFrom('iteration as i')
+      .innerJoin('artifact_version as v', 'v.id', 'i.opened_from')
+      .where('i.artifact_id', '=', owner.artifactId)
+      .where('i.principal_id', '=', owner.principalId)
+      // One line's, from 0113 (the R16 final review): the main line's never offered on a line.
+      .$if(lined && owner.line === undefined, (query) => query.where('i.line_id', 'is', null))
+      .$if(lined && owner.line !== undefined, (query) => query.where('i.line_id', '=', owner.line!))
+      .where(iterationRetained('i', lined))
+  );
 }
 
 interface SummaryRow {
@@ -92,7 +99,7 @@ export async function listIterations(
   }
   const snapshot = await snapshotFor(trx, request.snapshot);
   if (!UUID.test(request.artifactId)) return { items: [], next: null, snapshot };
-  const inner = ownRetained(trx, request)
+  const inner = ownRetained(trx, request, await iterationLinesStored(trx))
     .select([
       'i.id',
       'i.session_id',
@@ -123,7 +130,7 @@ export async function readIteration(
   request: IterationOwner & { readonly iterationId: string },
 ): Promise<StoredIteration | undefined> {
   if (!UUID.test(request.artifactId) || !UUID.test(request.iterationId)) return undefined;
-  const row = await ownRetained(trx, request)
+  const row = await ownRetained(trx, request, await iterationLinesStored(trx))
     .select([
       'i.id',
       'i.session_id',
@@ -163,7 +170,7 @@ export async function newestUncutIteration(
   owner: IterationOwner,
 ): Promise<Date | null> {
   if (!UUID.test(owner.artifactId)) return null;
-  const newest = await ownRetained(trx, owner)
+  const newest = await ownRetained(trx, owner, await iterationLinesStored(trx))
     .select(['i.created_at', 'i.digest', 'v.revision_no', 'v.version_no'])
     .orderBy('i.created_at', 'desc')
     .orderBy('i.id', 'desc')

@@ -415,7 +415,12 @@ export function componentHandlers(
       const lock = await readLock(trx, id);
       // The caller's own, and only its time (RC-F): what a closed tab left that was never made a
       // version, offered as Recover. What it holds is read only under the lock.
-      const unsaved = await newestUncutIteration(trx, { artifactId: id, principalId });
+      // The line's own unsaved work, never another's (the R16 final review).
+      const unsaved = await newestUncutIteration(trx, {
+        artifactId: id,
+        principalId,
+        ...(line === undefined ? {} : { line }),
+      });
       // The session a reload names, the caller's own: where its sequence stands, so the reload goes
       // on past what was saved rather than under it (component-editor.md, "Undo across a reload").
       const { session } = request.query as ComponentQuery;

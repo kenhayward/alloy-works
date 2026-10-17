@@ -6,7 +6,9 @@ import { bootstrapCluster } from './bootstrap.js';
 import { createComponent } from './creation.js';
 import { createDefinition } from './definitions.js';
 import { grant } from './grants.js';
-import { claimLock, saveIteration } from './editing.js';
+import { claimLock, ITERATION_RETENTION_DAYS, saveIteration } from './editing.js';
+import { newestUncutIteration } from './recovery.js';
+import { sweepIterations } from './retention.js';
 import { bringLineBack, compareLines, diverge, lineNumbers, readLines } from './lines.js';
 import { cutVersion, releaseLock } from './promotion.js';
 import { migrate } from './migrate.js';
@@ -21,6 +23,7 @@ import {
   TEST_PASSWORDS,
   type TestDatabase,
   testTenantDatabase,
+  queryAs,
 } from './testing/database.js';
 import {
   latestVersion,
@@ -30,7 +33,13 @@ import {
   substanceOf,
   type StoredVersion,
 } from './versions.js';
-import { latestRevision, latestRevisionsOf, moveArtifact, workflowStanding } from './workflow.js';
+import {
+  latestRevision,
+  latestRevisionsOf,
+  listWorkflows,
+  moveArtifact,
+  workflowStanding,
+} from './workflow.js';
 import { decideGate } from './workflow-gates.js';
 
 describe('divergent lines (the R16 plan, R16-A to R16-D)', () => {
@@ -413,5 +422,103 @@ describe('divergent lines (the R16 plan, R16-A to R16-D)', () => {
         }),
       ),
     ).toEqual({ answer: 'line.closed' });
+  });
+
+  it("keeps a line's unsaved work until the line's own next cut, and offers it on the line alone (the final review)", async () => {
+    const first = await component('Check the valve');
+    await approve(first);
+    const begun = await as((trx) =>
+      diverge(trx, { artifactId: first.artifactId, revision: 1, name: 'US', by: ada }),
+    );
+    if (begun.answer !== 'diverged') throw new Error(begun.answer);
+    // The main line moves on, long ago: its cut is no cut of the line's work.
+    const main = await edit(first, 'Central wording');
+    const session = { artifactId: first.artifactId, principal: ada, session: randomUUID() };
+    await as((trx) => claimLock(trx, session));
+    const saved = await as((trx) =>
+      saveIteration(trx, {
+        ...session,
+        line: begun.line.id,
+        sequence: 1,
+        openedFrom: first.id,
+        content: {
+          ...(substanceOf(first).content as object),
+          content: [
+            {
+              type: 'paragraph',
+              id: 'b1',
+              style: 'body',
+              content: [{ type: 'text', value: 'US draft', marks: [] }],
+            },
+          ],
+        } as never,
+      }),
+    );
+    expect(saved).toMatchObject({ answer: 'accepted' });
+    for (const [table, id] of [
+      ['artifact_version', main.id],
+      ['iteration', null],
+    ] as const) {
+      await queryAs(
+        db.adminUrl,
+        `update "${tenant.schema}".${table} set created_at = now() - make_interval(days => $1)
+          where ${id === null ? 'artifact_id = $2' : 'id = $2'}`,
+        [ITERATION_RETENTION_DAYS + 10, id ?? first.artifactId],
+      );
+    }
+    expect(await as((trx) => sweepIterations(trx))).toBe(0);
+    // Offered on its line, never on the main line.
+    expect(
+      await as((trx) =>
+        newestUncutIteration(trx, {
+          artifactId: first.artifactId,
+          principalId: ada,
+          line: begun.line.id,
+        }),
+      ),
+    ).not.toBeNull();
+    expect(
+      await as((trx) =>
+        newestUncutIteration(trx, { artifactId: first.artifactId, principalId: ada }),
+      ),
+    ).toBeNull();
+  });
+
+  it("refuses to bring a line back while anybody holds the component's lock, and counts a component in its main line's state (the final review)", async () => {
+    const first = await component('Drain the valve');
+    await approve(first);
+    const counted = (workflows: Awaited<ReturnType<typeof listWorkflows>>) =>
+      workflows.find((each) => each.definition.kind === 'component')!.counts;
+    // The line in draft, the main line approved: the counts are as they were before the line.
+    const before = counted(await as((trx) => listWorkflows(trx)));
+    const begun = await as((trx) =>
+      diverge(trx, { artifactId: first.artifactId, revision: 1, name: 'US', by: ada }),
+    );
+    if (begun.answer !== 'diverged') throw new Error(begun.answer);
+    const us = await edit(first, 'US wording', begun.line.id);
+    await as((trx) =>
+      claimLock(trx, { artifactId: first.artifactId, principal: grace, session: randomUUID() }),
+    );
+    expect(
+      await as((trx) =>
+        bringLineBack(trx, {
+          artifactId: first.artifactId,
+          line: begun.line.id,
+          openedFrom: first.id,
+          lineHead: us.id,
+          carry: ['b1'],
+          by: ada,
+        }),
+      ),
+    ).toEqual({ answer: 'lock.held' });
+    expect(before).toEqual(counted(await as((trx) => listWorkflows(trx))));
+    expect(
+      await as(async (trx) => {
+        const { rows } = await sql<{ to_state: string }>`
+          select to_state from workflow_transition where artifact_id = ${first.artifactId}
+            and line_id is null order by id desc limit 1`.execute(trx);
+        return rows[0]?.to_state;
+      }),
+    ).toBe('approved');
   });
 });

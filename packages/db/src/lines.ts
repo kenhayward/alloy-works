@@ -9,6 +9,7 @@ import { sql } from 'kysely';
 import { artifactPlace, recordEvent } from './audit.js';
 import { isDeleted } from './deletion.js';
 import type { TenantTransaction } from './tables.js';
+import { readLock } from './editing.js';
 import { readScopes, setScope } from './scopes.js';
 import {
   latestVersion,
@@ -308,7 +309,7 @@ export type ReturnAnswer =
       readonly carried: readonly BlockDifference[];
       readonly left: readonly BlockDifference[];
     }
-  | { readonly answer: 'line.missing' | 'line.closed' | 'carry.invalid' }
+  | { readonly answer: 'line.missing' | 'line.closed' | 'carry.invalid' | 'lock.held' }
   | { readonly answer: 'version.precondition'; readonly current: StoredVersion };
 
 /**
@@ -335,6 +336,8 @@ export async function bringLineBack(
   const line = await readLine(trx, input.artifactId, input.line);
   if (!line) return { answer: 'line.missing' };
   if (line.closed) return { answer: 'line.closed' };
+  // An open session is never cut under, on either line (the R16 final review), as a restore is not.
+  if (await readLock(trx, input.artifactId)) return { answer: 'lock.held' };
   const main = await latestVersion(trx, input.artifactId);
   const head = await readVersion(trx, await lineHead(trx, line));
   if (!main || !head) return { answer: 'line.missing' };

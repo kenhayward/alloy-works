@@ -84,14 +84,21 @@ export async function setEditingPolicy(
  * ago or more by the database's clock. The same condition as the trigger `iteration_swept_only`
  * (0037), which is the guard: this only finds what that lets go.
  */
-function pastItsWindow(alias: string): RawBuilder<boolean> {
+function pastItsWindow(alias: string, lined = false): RawBuilder<boolean> {
+  // From 0113, the next cut on the iteration's own line (the R16 final review): the main line's after a
+  // main-line iteration, the line's after a line's, whatever version it opened from.
+  const next = lined
+    ? sql`((${sql.ref(`${alias}.line_id`)} is null and later.line_id is null
+            and (later.revision_no, later.version_no) > (opened.revision_no, opened.version_no))
+        or (${sql.ref(`${alias}.line_id`)} is not null and later.line_id = ${sql.ref(`${alias}.line_id`)}
+            and (opened.line_id is null or later.version_no > opened.version_no)))`
+    : sql`(later.revision_no, later.version_no) > (opened.revision_no, opened.version_no)`;
   return sql<boolean>`exists (
     select from (
       select later.created_at
         from artifact_version opened
         join artifact_version later
-          on later.artifact_id = opened.artifact_id
-         and (later.revision_no, later.version_no) > (opened.revision_no, opened.version_no)
+          on later.artifact_id = opened.artifact_id and ${next}
        where opened.id = ${sql.ref(`${alias}.opened_from`)}
        order by later.revision_no, later.version_no
        limit 1
@@ -105,8 +112,23 @@ function pastItsWindow(alias: string): RawBuilder<boolean> {
  * Whether the iteration under `alias` is one the sweep keeps: what the Recovery listing shows (W11.2),
  * so it never offers a row the next sweep may already have taken.
  */
-export function iterationRetained(alias = 'iteration'): RawBuilder<boolean> {
-  return sql<boolean>`not ${pastItsWindow(alias)}`;
+export function iterationRetained(alias = 'iteration', lined = false): RawBuilder<boolean> {
+  return sql<boolean>`not ${pastItsWindow(alias, lined)}`;
+}
+
+const iterationLinesKnown = new WeakMap<TenantTransaction, boolean>();
+
+/** Whether this schema has 0113's iteration lines: migration tests run this code on older ones. */
+export async function iterationLinesStored(trx: TenantTransaction): Promise<boolean> {
+  const known = iterationLinesKnown.get(trx);
+  if (known !== undefined) return known;
+  const { rows } = await sql<{ present: boolean }>`
+    select exists (select 1 from information_schema.columns
+                    where table_schema = current_schema() and table_name = 'iteration'
+                      and column_name = 'line_id') as present`.execute(trx);
+  const present = rows[0]?.present === true;
+  iterationLinesKnown.set(trx, present);
+  return present;
 }
 
 /**
@@ -117,7 +139,7 @@ export function iterationRetained(alias = 'iteration'): RawBuilder<boolean> {
 export async function sweepIterations(trx: TenantTransaction): Promise<number> {
   const swept = await trx
     .deleteFrom('iteration')
-    .where(pastItsWindow('iteration'))
+    .where(pastItsWindow('iteration', await iterationLinesStored(trx)))
     .executeTakeFirst();
   return Number(swept.numDeletedRows);
 }
