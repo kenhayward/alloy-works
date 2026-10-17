@@ -88,10 +88,31 @@ describe("a publication's shares outside the organisation", () => {
     expect(until).toHaveAttribute('max', day(90));
     expect(until).toHaveAttribute('min', day(1));
     await userEvent.type(screen.getByLabelText('Their email address'), 'iris@example.net');
+    // The default is the environment's own: none is sent.
+    await userEvent.click(screen.getByRole('button', { name: 'Share' }));
+    await screen.findByText(/^Shared with iris@example.net\./);
+    expect(asked.filter((each) => each.method === 'POST')[0]!.body).toEqual({
+      email: 'iris@example.net',
+    });
+  });
+
+  it('PUB-058 sends the last day it offers within the cap, whatever the clocks do before it (the final review)', async () => {
+    const asked = open((method) =>
+      method === 'POST' ? json(200, { share: share(), invited: false }) : json(200, { shares: [] }),
+    );
+    await userEvent.click(await screen.findByRole('button', { name: 'Share outside' }));
+    const until = screen.getByLabelText('Until');
+    await userEvent.type(screen.getByLabelText('Their email address'), 'iris@example.net');
+    await userEvent.clear(until);
+    await userEvent.click(screen.getByRole('button', { name: 'Share' }));
+    // A day is required: nothing is sent without one.
+    expect(until).toBeInvalid();
+    expect(asked.some((each) => each.method === 'POST')).toBe(false);
+    await userEvent.type(until, until.getAttribute('max')!);
     await userEvent.click(screen.getByRole('button', { name: 'Share' }));
     await screen.findByText(/^Shared with iris@example.net\./);
     const sent = asked.find((each) => each.method === 'POST')!.body as { expiresAt: string };
-    expect(local(new Date(sent.expiresAt))).toBe(day(30));
+    expect(Date.parse(sent.expiresAt)).toBeLessThan(Date.now() + 90 * DAY);
   });
 
   it('PUB-058 revokes a share at once, asking first', async () => {
@@ -112,7 +133,7 @@ describe("a publication's shares outside the organisation", () => {
     ).toBeInTheDocument();
   });
 
-  it('PUB-060 says each access to whoever may share it, and says nothing to anybody else', async () => {
+  it('PUB-060 says each access to whoever may share it', async () => {
     open(() =>
       json(200, {
         shares: [

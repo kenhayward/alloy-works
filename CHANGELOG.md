@@ -3,6 +3,15 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.188.0 - 2026-10-17 (PR #697)
+
+Reuse's seventeenth slice: publication shares (the R17 plan).
+
+### Added
+
+- **Publication shares.** A publisher shares one publication with a named person from outside the organisation, who reads it once they sign in, until the share expires (30 days by default, 90 at most) or is revoked, which takes effect at once. Every access is recorded and listed with the share, and a publication says when a later one superseded it.
+- **Publication shares on the page.** A publication offers **Share outside** to whoever may publish its document, and lists each share with whether the person has signed in and how often they opened it, with **Revoke**. The person shared with signs in, with Google too where the environment offers it, comes back to the publication and sees it alone. A superseded publication says so, and Administration > Outside names the publication each share reaches.
+
 ## 0.187.0 - 2026-10-17 (PR #694)
 
 Reuse's sixteenth slice: divergent lines (the R16 plan).

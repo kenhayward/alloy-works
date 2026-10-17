@@ -34,6 +34,7 @@ import {
   openSecret,
   streamScope,
   SealedSecretRefused,
+  readsOnlyShares,
   syncProviderGroups,
   type SignInRoute,
   type Tenant,
@@ -817,13 +818,14 @@ export function buildApp(options: AppOptions): FastifyInstance {
 
     getMe: async (request) => {
       const principal = principalOf(request);
-      const { profile, kind } = await db.withTenant(tenantOf(request), async (trx) => ({
+      const { profile, kind, sharesOnly } = await db.withTenant(tenantOf(request), async (trx) => ({
         profile: await trx.selectFrom('profile').select('display_name').executeTakeFirstOrThrow(),
         kind: await trx
           .selectFrom('principal')
           .select('kind')
           .where('id', '=', principal.principalId)
           .executeTakeFirst(),
+        sharesOnly: await readsOnlyShares(trx, principal.principalId),
       }));
       return {
         id: principal.principalId,
@@ -831,6 +833,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
         email: principal.email,
         environment: profile.display_name,
         outside: kind?.kind === 'external',
+        sharesOnly,
       };
     },
 

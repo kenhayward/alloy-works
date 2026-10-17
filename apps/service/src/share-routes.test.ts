@@ -67,7 +67,7 @@ describe('sharing a publication outside the organisation (the R17 plan)', () => 
     ).json<{ id: string; version: { id: string } }>();
     return { id: made.id, version: made.version.id };
   };
-  const publish = async (of: { id: string; version: string }) => {
+  const publish = async (of: { id: string; version: string }, provenance = false) => {
     const asked = await call('grace', 'POST', `/v1/documents/${of.id}/publications`, {
       version: of.version,
       formats: ['pdf'],
@@ -77,6 +77,10 @@ describe('sharing a publication outside the organisation (the R17 plan)', () => 
     return tenantDb.withTenant(tenant, async (trx) => {
       const store = await stores.forTenant(trx, tenant);
       const stored = await store.put(Buffer.from(PDF), OUTPUT_CONTENT_TYPES.pdf);
+      // Where its values came from, naming who revised one: never shared outside.
+      const named = provenance
+        ? await store.put(Buffer.from('{"revisedBy":"Grace"}'), 'application/json')
+        : undefined;
       const id = await recordPublication(trx, {
         requestId,
         pipelineVersion: '2',
@@ -92,6 +96,17 @@ describe('sharing a publication outside the organisation (the R17 plan)', () => 
             sha256: stored.sha256,
             bytes: stored.size,
           },
+          ...(named
+            ? [
+                {
+                  format: 'provenance' as const,
+                  pipelineVersion: '16',
+                  key: named.key,
+                  sha256: named.sha256,
+                  bytes: named.size,
+                },
+              ]
+            : []),
         ],
       });
       if (!id) throw new Error('not recorded');
@@ -248,6 +263,32 @@ describe('sharing a publication outside the organisation (the R17 plan)', () => 
       effect: 'allow',
     });
     expect(refused.json()).toMatchObject({ code: 'grant_role_fixed' });
+  });
+
+  it("PUB-084 never gives somebody shared a publication its provenance.json, which names the organisation's people (the final review)", async () => {
+    const shared = await publish(await document('The provenanced manual'), true);
+    expect(
+      (
+        await call('grace', 'POST', `/v1/publications/${shared}/shares`, {
+          email: 'iris@example.net',
+        })
+      ).statusCode,
+    ).toBe(200);
+    cookies.iris ??= await signIn(app, HOST, 'iris', idp.issuer);
+    const opened = (await call('iris', 'GET', `/v1/publications/${shared}`)).json<{
+      outputs: { format: string }[];
+    }>();
+    expect(opened.outputs.map((each) => each.format)).toEqual(['pdf']);
+    expect(
+      (await call('iris', 'GET', `/v1/publications/${shared}/outputs/provenance`)).statusCode,
+    ).toBe(404);
+    // The organisation's own still have it.
+    const own = (await call('grace', 'GET', `/v1/publications/${shared}`)).json<{
+      outputs: { format: string }[];
+    }>();
+    expect(own.outputs.map((each) => each.format)).toEqual(['pdf', 'provenance']);
+    expect((await call('iris', 'GET', '/v1/me')).json()).toMatchObject({ sharesOnly: true });
+    expect((await call('grace', 'GET', '/v1/me')).json()).toMatchObject({ sharesOnly: false });
   });
 
   it('PUB-060 records every access and reports it to whoever may share it', async () => {

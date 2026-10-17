@@ -54010,7 +54010,8 @@ export interface operations {
                      *       "displayName": "example",
                      *       "email": "example",
                      *       "environment": "example",
-                     *       "outside": false
+                     *       "outside": false,
+                     *       "sharesOnly": false
                      *     }
                      */
                     "application/json": {
@@ -54022,6 +54023,8 @@ export interface operations {
                         environment: string;
                         /** @description Whether they are from outside the organisation, as somebody shared a publication is */
                         outside: boolean;
+                        /** @description Whether they are from outside and may read no space: shared publications alone, never what they came from */
+                        sharesOnly: boolean;
                     };
                 };
             };

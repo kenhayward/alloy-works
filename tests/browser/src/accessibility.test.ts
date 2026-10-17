@@ -240,7 +240,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
     await withPage(
       async (page) => {
         await page.goto(SERVICE);
-        const arrival = { shows: page.getByRole('link', { name: 'Sign in' }) };
+        const arrival = { shows: page.getByRole('link', { name: 'Sign in', exact: true }) };
         await arrive(arrival);
         await checkAxe(page, 'signed out', task.meta, arrival);
       },

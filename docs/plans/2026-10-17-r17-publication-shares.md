@@ -33,3 +33,19 @@ superseded publication says so.
 
 - **R17a**: 0114 (the fixed role, `role.fixed`, the audit kind's detail); `sharePublication`, `listShares`, `revokeShare` and their routes, each joining the route registries; the streamed output route, and no signed link to anybody from outside; `shared_accessed` emitted from the read and the output; `superseded` on the view; the outsider's walk of every session route. Tests: a share invites and grants that publication alone, refuses a member, a waiting invitation and past the cap; a revoked share reads nothing at once; each access audited and listed; a fixed role refused change and the grants route; superseded by profile and version, the newer id by readability; the walk.
 - **R17b**: the page's Shares panel and dialog, the accesses, the recipient's notice and output links, the document and baseline hidden from them, Outside naming the publication; sign-in by Google where permitted, returning to the publication. Browser walks. The final review; the close.
+
+## Built
+
+R17a #696, and R17b with the close (0.188.0) #697. Departures: the pre-flight review added R17-I (an
+outsider sees the share alone, held by a walk of every route a session opens), the refusal of a share
+reviving an administrator's invitation, the grants route refusing the fixed role, and supersession by
+profile; it also asked that a share be refused where no route admits outsiders, declined, since an
+organisation's provider may hold guests. R17b added `sharesOnly` and `outside` to `/v1/me`, the
+environment's ways in to `/v1/tenant`, and names what an artifact grant is on in the external-access
+listing. The final review found `provenance.json` naming people to a share-only reader, an invitation
+shortened by a later share and left behind by an extension, a share that had ended blocking another,
+the dialog's dates past the cap across a change of clocks, and the page showing a member's links before
+it knew the reader; all fixed. Left: a guest who signed in uninvited through the organisation's provider
+is a member, so is refused a share; the dialog holds the default and cap at 30 and 90 rather than the
+environment's own; a share's accesses are listed whole; a publisher can learn whether an address is a
+member's; PUB-081 waits for tenant closure.

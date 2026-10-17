@@ -101,9 +101,12 @@ export async function sharePublication(
   if (known.some((each) => each.kind !== 'external')) return { answer: 'share.member' };
   const role = await sharedReaderRole(trx);
   for (const each of known) {
-    if (!each.erased && (await holdsShare(trx, each.id, input.publication, role.id))) {
-      return { answer: 'share.duplicate' };
-    }
+    if (each.erased) continue;
+    const held = await heldShare(trx, each.id, input.publication, role.id);
+    if (held === undefined) continue;
+    // One that has ended gives way to the new one, audited as its removal (the final review).
+    if (!held.ended) return { answer: 'share.duplicate' };
+    await removeGrant(trx, held.id);
   }
   // Somebody from outside who proved this address at a sign-in; never one who merely shows it.
   const signedIn = known.find((each) => each.signed_in && each.email_verified && !each.erased);
@@ -180,21 +183,22 @@ async function holdsBeyondShares(
   return member !== undefined;
 }
 
-async function holdsShare(
+/** The principal's share of the publication, and whether it has ended. */
+async function heldShare(
   trx: TenantTransaction,
   principal: string,
   publication: string,
   role: string,
-): Promise<boolean> {
+): Promise<{ readonly id: string; readonly ended: boolean } | undefined> {
   const row = await trx
     .selectFrom('access_grant')
-    .select('id')
+    .select(['id', sql<boolean>`coalesce(expires_at <= now(), false)`.as('ended')])
     .where('principal_id', '=', principal)
     .where('artifact_id', '=', publication)
     .where('role_id', '=', role)
     .where('effect', '=', 'allow')
     .executeTakeFirst();
-  return row !== undefined;
+  return row;
 }
 
 /**

@@ -165,16 +165,27 @@ function ShareDialog({
       setSaid('Give the address of the person to share it with.');
       return;
     }
-    // The day chosen, at this time of day: 30 days from now unless changed, never past the cap.
     const [year, month, day] = until.split('-').map(Number);
-    const now = new Date();
-    const expiresAt = new Date(now);
-    expiresAt.setFullYear(year!, month! - 1, day!);
+    if (!year || !month || !day) {
+      setSaid('Choose the day the share ends.');
+      return;
+    }
+    // The default is the environment's own, so none is sent; another day is sent at this time of
+    // day, and never past the cap, whatever the clocks do before it (the final review).
+    const chosen = new Date();
+    chosen.setFullYear(year, month - 1, day);
+    const expiresAt =
+      until === inDays(DEFAULT_DAYS)
+        ? undefined
+        : new Date(Math.min(chosen.getTime(), Date.now() + CAP_DAYS * DAY - 60_000));
     setBusy(true);
     const { data, error } = await client
       .POST('/v1/publications/{id}/shares', {
         params: { path: { id: publication } },
-        body: { email: email.trim(), expiresAt: expiresAt.toISOString() },
+        body: {
+          email: email.trim(),
+          ...(expiresAt === undefined ? {} : { expiresAt: expiresAt.toISOString() }),
+        },
       })
       .catch(() => ({ data: undefined, error: undefined }));
     setBusy(false);
@@ -204,6 +215,7 @@ function ShareDialog({
           Until
           <input
             type="date"
+            required
             value={until}
             min={inDays(1)}
             max={inDays(CAP_DAYS)}

@@ -656,6 +656,7 @@ describe('a publication at its own address', () => {
     email: null,
     environment: 'Acme',
     outside: false,
+    sharesOnly: false,
   };
   const outsider = {
     id: 'o',
@@ -663,6 +664,7 @@ describe('a publication at its own address', () => {
     email: null,
     environment: 'Acme',
     outside: true,
+    sharesOnly: true,
   };
 
   it('PUB-059 tells a reader a later publication superseded it, with the newer one where they may read it', async () => {

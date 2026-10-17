@@ -246,7 +246,7 @@ under the epoch held for a change:
   the person shared with sees no document, baseline or trail to the publications, and sign-in returns
   to the publication (`?to=`, held to a page of the app, followed once signed in).
 - **Nothing else.** Somebody from outside who may read no space is answered no people, and no space or
-  owner in a listing's facets or a search; a publication's bindings are refused them. A walk of every
+  owner in a listing's facets or a search; a publication's bindings and its `provenance.json`, which name datasets and people, are refused them, and `/v1/me` says `sharesOnly`. A walk of every
   route a session opens holds this ([share-routes.test.ts](../../apps/service/src/share-routes.test.ts)).
 
 ## What this document does not own

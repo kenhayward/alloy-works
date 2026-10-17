@@ -179,9 +179,11 @@ const size = (bytes: number | null) =>
 export function PublicationPage({ client, id }: { readonly client: Client; readonly id: string }) {
   const [shown, setShown] = useState<Shown | 'missing' | 'failed' | null>(null);
   const [attempt, setAttempt] = useState(0);
-  // Whether the reader is from outside, shared this publication alone (the R17 plan): they are
-  // offered its files, never its document or its baseline. Read as a member until the answer says.
-  const [outside, setOutside] = useState(false);
+  // Whether the reader is from outside and shared this publication alone (the R17 plan): they are
+  // offered its files, never its document or its baseline. Unknown until the service says, and
+  // nothing a member alone is offered shows until then (the final review).
+  const [sharesOnly, setSharesOnly] = useState<boolean | null>(null);
+  const outside = sharesOnly !== false;
   // The name of the baseline it was made from, read once the publication names one.
   const [baselineName, setBaselineName] = useState<string | null>(null);
   const baseline = typeof shown === 'object' && shown !== null ? shown.baseline : null;
@@ -204,9 +206,11 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
     client
       .GET('/v1/me')
       .then(({ data }) => {
-        if (current) setOutside(isRecord(data) && data.outside === true);
+        if (current) setSharesOnly(isRecord(data) && data.sharesOnly === true);
       })
-      .catch(() => undefined);
+      .catch(() => {
+        if (current) setSharesOnly(false);
+      });
     return () => {
       current = false;
     };
@@ -331,7 +335,9 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
           What it was made from
         </h2>
         <p className={styles['notApproved']}>{DRAFT_NOTICE.text}</p>
-        {outside && <p>Shared with you to read and save. Your opening it is recorded.</p>}
+        {sharesOnly === true && (
+          <p>Shared with you to read and save. Your opening it is recorded.</p>
+        )}
         <p>
           Version {shown.version}, published by {shown.publisher ?? 'somebody'} on{' '}
           {new Date(shown.publishedAt).toLocaleString(undefined, {

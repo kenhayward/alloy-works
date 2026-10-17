@@ -511,5 +511,20 @@ export async function extendGrant(
     expiresAt: until,
     extendedFrom: row.expires_at,
   });
+  // A share extended to somebody yet to sign in takes their invitation with it (the R17 final review).
+  const share = await trx
+    .selectFrom('role')
+    .select(sql<boolean>`coalesce((to_jsonb(role) ->> 'fixed')::boolean, false)`.as('fixed'))
+    .where('id', '=', row.role_id)
+    .executeTakeFirst();
+  if (share?.fixed && row.principal_id !== null) {
+    await trx
+      .updateTable('invitation')
+      .set({ expires_at: sql<Date>`greatest(expires_at, ${until}::timestamptz)` })
+      .where('principal_id', '=', row.principal_id)
+      .where('accepted_at', 'is', null)
+      .where('expires_at', 'is not', null)
+      .execute();
+  }
   return { granted };
 }

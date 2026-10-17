@@ -17,6 +17,7 @@ import {
   listPublications,
   listReadablePublications,
   loadFacts,
+  readsOnlyShares,
   recordSharedAccess,
   supersession,
   publicationBindings,
@@ -441,6 +442,11 @@ export function publishingHandlers(
       if (!objects) throw storageUnavailable();
       const kept = await objects.forTenant(trx, tenantOf(request));
       const outside = facts.principal.kind === 'external';
+      // Shared this alone: no provenance.json, which names datasets and people (the final review).
+      const sharesOnly = outside && (await readsOnlyShares(trx, principalId));
+      const outputs = sharesOnly
+        ? publication.outputs.filter((each) => each.format !== 'provenance')
+        : publication.outputs;
       const served = (format: SharedOutputFormat) => `/v1/publications/${id}/outputs/${format}`;
       const store = {
         signedLink: (key: string, seconds: number, name?: string) => {
@@ -468,7 +474,7 @@ export function publishingHandlers(
         template: publication.template && { ...publication.template },
         pipeline: publication.pipelineVersion,
         outputs: await Promise.all(
-          publication.outputs.map(async (output) => {
+          outputs.map(async (output) => {
             const common = {
               bytes: output.bytes,
               sha256: output.sha256,
@@ -556,11 +562,13 @@ export function publishingHandlers(
      */
     getPublicationBindings: async (
       request: FastifyRequest,
-      { trx, facts }: Authorised,
+      { trx, facts, principalId }: Authorised,
     ): Promise<PublicationBindingList> => {
       const { id } = request.params as PublicationParams;
-      // Bindings name datasets and authors: never shared outside (the R17 plan, R17-I).
-      if (facts.principal.kind === 'external') throw notFound();
+      // Bindings name datasets and authors: never to somebody shared the publication alone (R17-I).
+      if (facts.principal.kind === 'external' && (await readsOnlyShares(trx, principalId))) {
+        throw notFound();
+      }
       if (!(await readPublication(trx, id))) throw notFound();
       const reads = definitionReader(trx, callerOf(request));
       const bindings: PublicationBindingList['bindings'] = [];

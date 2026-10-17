@@ -79,6 +79,11 @@ export const Me = z.object({
     .describe(
       'Whether they are from outside the organisation, as somebody shared a publication is',
     ),
+  sharesOnly: z
+    .boolean()
+    .describe(
+      'Whether they are from outside and may read no space: shared publications alone, never what they came from',
+    ),
 });
 export type Me = z.infer<typeof Me>;
 
