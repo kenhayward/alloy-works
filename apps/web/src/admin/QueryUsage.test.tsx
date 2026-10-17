@@ -71,7 +71,7 @@ describe("Administration's Query usage", () => {
       86_400_000;
     expect(Math.round(days)).toBe(30);
     const csv = screen.getByRole('link', { name: 'Download every run (CSV)' });
-    expect(csv.getAttribute('href')).toMatch(/^\/v1\/data\/usage\/runs\.csv\?from=.+&to=.+$/);
+    expect(csv.getAttribute('href')).toMatch(/^\/v1\/data\/usage\/runs\.csv\?from=[^&]+$/);
 
     // Another period asks again.
     await userEvent.selectOptions(screen.getByLabelText('Period'), '7');

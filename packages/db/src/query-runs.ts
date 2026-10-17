@@ -145,6 +145,9 @@ export async function queryUsage(
   };
 }
 
+/** The most runs one CSV holds: a period holding more is asked for in parts (the final review). */
+export const QUERY_RUNS_MOST = 100_000;
+
 /** Every run in a period, oldest first, for the CSV (R18-E); at most `limit`. */
 export async function queryRunsBetween(
   trx: TenantTransaction,
@@ -157,7 +160,7 @@ export async function queryRunsBetween(
     .where('at', '<', period.to)
     .orderBy('at')
     .orderBy('id')
-    .limit(period.limit ?? 100_000)
+    .limit(period.limit ?? QUERY_RUNS_MOST)
     .execute();
   return rows.map((row) => ({
     id: row.id,

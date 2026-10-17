@@ -939,8 +939,8 @@ describe('the citations in the committed model', () => {
     // 1592 (2026-10-17): R16c's bringing a line back, and diverged said wherever it appears.
     // 1603 (2026-10-17): R17a's publication shares.
     // 1610 (2026-10-17): R17b's shares on the page, and the final review's.
-    // 1615 (2026-10-17): R18a's query limits and cost.
-    expect(model.citations).toHaveLength(1615);
+    // 1618 (2026-10-17): R18's query limits and cost, its page and the final review's.
+    expect(model.citations).toHaveLength(1618);
   });
 
   it('cites no identifier the corpus does not hold', () => {
@@ -1045,6 +1045,7 @@ describe('scanning the repository for test files', () => {
     // 104, from 103 (2026-10-17): lifecycle/Scope.test.tsx, citing LIF-042 and LIF-047.
     // 105, from 104 (2026-10-17): lifecycle/Lines.test.tsx, citing LIF-044.
     // 106, from 105 (2026-10-17): publishing/Shares.test.tsx, citing PUB-057, PUB-058 and PUB-060.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(106);
+    // 107, from 106 (2026-10-17): admin/QueryUsage.test.tsx, citing DAT-053 and DAT-071.
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(107);
   });
 });

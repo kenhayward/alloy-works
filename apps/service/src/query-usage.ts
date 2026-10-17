@@ -1,5 +1,5 @@
 import type { QueryUsageQuery, QueryUsageView } from '@alloy-works/api-contract';
-import { queryRunsBetween, queryUsage, type UsageTotal } from '@alloy-works/db';
+import { QUERY_RUNS_MOST, queryRunsBetween, queryUsage, type UsageTotal } from '@alloy-works/db';
 import type { FastifyRequest } from 'fastify';
 import type { Authorised } from './access.js';
 import type { BinaryBody } from './assets.js';
@@ -52,7 +52,15 @@ export function queryUsageHandlers() {
 
     getQueryRunsCsv: async (request: FastifyRequest, { trx }: Authorised): Promise<BinaryBody> => {
       const period = periodOf(request.query as QueryUsageQuery);
-      const runs = await queryRunsBetween(trx, period);
+      // One past the most, so a period holding more is refused rather than cut short.
+      const runs = await queryRunsBetween(trx, { ...period, limit: QUERY_RUNS_MOST + 1 });
+      if (runs.length > QUERY_RUNS_MOST) {
+        throw new AppError(
+          400,
+          'invalid_request',
+          `That period holds more than ${QUERY_RUNS_MOST.toLocaleString('en-GB')} runs: choose a shorter one.`,
+        );
+      }
       const lines = [
         'at,act,outcome,failure,principal,connection,query_definition,document,duration_ms,rows,bytes',
         ...runs.map((run) =>

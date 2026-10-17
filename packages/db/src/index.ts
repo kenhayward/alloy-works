@@ -630,6 +630,7 @@ export {
 } from './queryDefinitions.js';
 export {
   giveQuerySlot,
+  QUERY_RUNS_MOST,
   queryRunsBetween,
   queryUsage,
   recordQueryRun,

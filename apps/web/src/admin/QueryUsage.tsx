@@ -155,7 +155,8 @@ export function QueryUsage({ client, mayChange }: { client: Client; mayChange: b
     }
   };
 
-  const csv = `/v1/data/usage/runs.csv?from=${encodeURIComponent(period.from)}&to=${encodeURIComponent(period.to)}`;
+  // From the period's start to now, whenever it is followed (the final review).
+  const csv = `/v1/data/usage/runs.csv?from=${encodeURIComponent(period.from)}`;
   return (
     <div className={styles['settings']}>
       {settings !== null && (

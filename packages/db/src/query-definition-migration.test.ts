@@ -250,6 +250,8 @@ describe('migration 0046, over an environment made before it', () => {
     expect(upgradedPrivileges.tables).toEqual([{ privilege_type: 'SELECT' }]);
     expect(upgradedPrivileges.columns).toEqual([
       { column_name: 'bytes', privilege_type: 'UPDATE' },
+      // 0115's runs at once (the R18 plan, R18-A).
+      { column_name: 'concurrent_runs', privilege_type: 'UPDATE' },
       { column_name: 'rows', privilege_type: 'UPDATE' },
       { column_name: 'seconds', privilege_type: 'UPDATE' },
     ]);

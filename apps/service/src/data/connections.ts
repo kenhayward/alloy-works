@@ -450,20 +450,36 @@ export function connectionHandlers(
         if (slot !== undefined || waited >= waitMs || signal.aborted) break;
         await new Promise((resolve) => setTimeout(resolve, Math.min(200, waitMs - waited)));
       }
-      const record = (
+      // The slot given back and the run recorded, apart: a record that fails costs the record, never
+      // the run's answer, and the slot is given back whatever (the final review). A run whose caller's
+      // authority ended records nothing (IAM-082), as its act does.
+      const record = async (
         run: Omit<QueryRun, 'act' | 'principal' | 'connection' | 'queryDefinition' | 'document'>,
-      ) =>
-        db.withTenant(tenant, async (trx) => {
-          if (slot !== undefined) await giveQuerySlot(trx, slot);
-          await recordQueryRun(trx, {
-            act,
-            principal,
-            connection: asked.connection.id,
-            queryDefinition,
-            document,
-            ...run,
-          });
-        });
+      ) => {
+        try {
+          if (slot !== undefined) {
+            const given = slot;
+            await db.withTenant(tenant, (trx) => giveQuerySlot(trx, given));
+          }
+        } catch (error) {
+          request.log.warn({ err: error }, 'a query slot was not given back; its lease frees it');
+        }
+        if (signal.aborted) return;
+        try {
+          await db.withTenant(tenant, (trx) =>
+            recordQueryRun(trx, {
+              act,
+              principal,
+              connection: asked.connection.id,
+              queryDefinition,
+              document,
+              ...run,
+            }),
+          );
+        } catch (error) {
+          request.log.warn({ err: error }, 'a query run was not recorded');
+        }
+      };
       if (slot === undefined) {
         await record({
           durationMs: Date.now() - waiting,
@@ -524,15 +540,7 @@ export function connectionHandlers(
   function answered<T>(
     answer: { readonly answer: T } | { readonly refused: { readonly code: DataFailureCode } },
   ): T {
-    if ('refused' in answer) {
-      const refusal = dataRefused(503, answer.refused.code);
-      // Retryable, and said when (the R18 plan, R18-C).
-      if (answer.refused.code !== 'query_throttled') throw refusal;
-      throw new AppError(refusal.status, refusal.code, refusal.message, refusal.rule, {
-        ...refusal.members,
-        retryAfter: runsAtOnce.waitMs / 1000,
-      });
-    }
+    if ('refused' in answer) throw dataRefused(503, answer.refused.code);
     return answer.answer;
   }
 
@@ -1120,11 +1128,13 @@ export function connectionHandlers(
     // commits, and recorded in a second that decides again (D3-H). `bindings.ts` holds the rest.
     resolveBindings: async (request: FastifyRequest, authorised: Authorised) => {
       const through = runsThrough(request, 'resolve', (request.params as DocumentParams).id);
+      connected();
       return resolveAct(db, tenantOf(request), objects, request, authorised, through);
     },
 
     checkBindings: async (request: FastifyRequest, authorised: Authorised) => {
       const through = runsThrough(request, 'check', (request.params as DocumentParams).id);
+      connected();
       return checkAct(db, tenantOf(request), objects, request, authorised, through);
     },
 

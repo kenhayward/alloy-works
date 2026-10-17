@@ -508,6 +508,7 @@ describe('a query definition', () => {
       rows: null,
       bytes: null,
       seconds: null,
+      concurrentRuns: null,
     });
     await service.withTenant(production, (trx) =>
       setDataPolicy(trx, { rows: 500, bytes: null, seconds: 10 }),
@@ -516,6 +517,7 @@ describe('a query definition', () => {
       rows: 500,
       bytes: null,
       seconds: 10,
+      concurrentRuns: null,
     });
     for (const bad of [0, limitCeilings.rows + 1, 1.5]) {
       await expect(
@@ -528,6 +530,7 @@ describe('a query definition', () => {
       rows: null,
       bytes: null,
       seconds: null,
+      concurrentRuns: null,
     });
   });
 });

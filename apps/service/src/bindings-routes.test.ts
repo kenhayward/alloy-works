@@ -187,6 +187,40 @@ describe('bindings and datasets through the service', () => {
     ).toBeGreaterThanOrEqual(recorded.length);
   });
 
+  it("DAT-071 fails a resolve's question past the environment's runs at once as query_throttled, retryable, and keeps no part of that question", async () => {
+    const definition = await h.definition(connection.id);
+    const { document, node } = await placed(
+      binding('b1', definition.id, { mode: 'pinned', parameters: { site: { literal: '1' } } }),
+      binding('b2', definition.id, { mode: 'pinned', parameters: { site: { literal: '2' } } }),
+    );
+    h.connector.mode = 'answer';
+    h.connector.run = ranOk([['1', 'North']]);
+    expect(
+      (await h.call('ada', 'PUT', '/v1/settings/data', { concurrentRuns: 1 })).statusCode,
+    ).toBe(200);
+    h.connector.runMs = 1_000;
+    try {
+      const answer = await resolve('ada', document.id, [
+        { node, binding: 'b1' },
+        { node, binding: 'b2' },
+      ]);
+      expect(answer.statusCode, answer.body).toBe(200);
+      const results = answer.json<{
+        results: { binding: string; held?: Json; failure?: Json }[];
+      }>().results;
+      const throttled = results.filter((each) => each.failure?.code === 'query_throttled');
+      expect(throttled).toHaveLength(1);
+      expect(throttled[0]!.failure).toMatchObject({ attribution: 'product', retryAfter: 5 });
+      // The throttled question holds nothing; the other resolved whole.
+      const state = await stateOf('ada', document.id, throttled[0]!.binding);
+      expect(state.held).toBeNull();
+      expect(results.filter((each) => each.held !== undefined)).toHaveLength(1);
+    } finally {
+      h.connector.runMs = undefined;
+      await h.call('ada', 'PUT', '/v1/settings/data', {});
+    }
+  });
+
   it('stores a result once, under its checksum, and refuses one whose bytes do not match it, recording nothing', async () => {
     const definition = await h.definition(connection.id);
     const { document, node } = await placed(binding('b1', definition.id));

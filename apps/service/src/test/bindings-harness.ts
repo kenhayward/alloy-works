@@ -255,6 +255,8 @@ export async function startHarness(options: HarnessOptions = {}): Promise<Harnes
         url: 'http://connector.test:8090',
         key: FAKE_CONNECTOR_KEY,
         fetch: connector.fetch,
+        // A run waits a moment for a slot, not the product's five seconds (the R18 plan, R18-C).
+        waitMs: 300,
       },
     });
   const app = appWith(

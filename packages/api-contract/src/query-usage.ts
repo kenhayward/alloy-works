@@ -78,7 +78,8 @@ export const queryUsageRoutes = {
         binary: { contentTypes: ['text/csv'] },
       },
       400: {
-        description: 'A period that ends before it starts, or longer than 13 months',
+        description:
+          'A period that ends before it starts, longer than 13 months, or holding more than 100,000 runs',
         schema: ErrorBody,
       },
       401: unauthenticated,

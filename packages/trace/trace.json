@@ -20343,19 +20343,19 @@
     {
       "id": "DAT-015",
       "file": "apps/service/src/bindings-routes.test.ts",
-      "line": 234,
+      "line": 268,
       "kind": "title"
     },
     {
       "id": "DAT-025",
       "file": "apps/service/src/bindings-routes.test.ts",
-      "line": 777,
+      "line": 811,
       "kind": "title"
     },
     {
       "id": "DAT-037",
       "file": "apps/service/src/bindings-routes.test.ts",
-      "line": 475,
+      "line": 509,
       "kind": "title"
     },
     {
@@ -20367,19 +20367,25 @@
     {
       "id": "DAT-066",
       "file": "apps/service/src/bindings-routes.test.ts",
-      "line": 725,
+      "line": 759,
       "kind": "title"
     },
     {
       "id": "DAT-070",
       "file": "apps/service/src/bindings-routes.test.ts",
-      "line": 356,
+      "line": 390,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-071",
+      "file": "apps/service/src/bindings-routes.test.ts",
+      "line": 190,
       "kind": "title"
     },
     {
       "id": "DAT-082",
       "file": "apps/service/src/bindings-routes.test.ts",
-      "line": 320,
+      "line": 354,
       "kind": "title"
     },
     {
@@ -20391,25 +20397,25 @@
     {
       "id": "DAT-084",
       "file": "apps/service/src/bindings-routes.test.ts",
-      "line": 278,
+      "line": 312,
       "kind": "title"
     },
     {
       "id": "DAT-086",
       "file": "apps/service/src/bindings-routes.test.ts",
-      "line": 921,
+      "line": 955,
       "kind": "title"
     },
     {
       "id": "DAT-090",
       "file": "apps/service/src/bindings-routes.test.ts",
-      "line": 637,
+      "line": 671,
       "kind": "title"
     },
     {
       "id": "DAT-093",
       "file": "apps/service/src/bindings-routes.test.ts",
-      "line": 434,
+      "line": 468,
       "kind": "title"
     },
     {
@@ -20661,7 +20667,7 @@
     {
       "id": "TPL-066",
       "file": "apps/service/src/document-arguments.test.ts",
-      "line": 197,
+      "line": 202,
       "kind": "title"
     },
     {
@@ -22065,13 +22071,13 @@
     {
       "id": "ADM-049",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1363,
+      "line": 1369,
       "kind": "title"
     },
     {
       "id": "LIF-022",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1505,
+      "line": 1511,
       "kind": "title"
     },
     {
@@ -22126,6 +22132,18 @@
       "id": "PUB-084",
       "file": "apps/web/src/admin/Outside.test.tsx",
       "line": 93,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-053",
+      "file": "apps/web/src/admin/QueryUsage.test.tsx",
+      "line": 54,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-071",
+      "file": "apps/web/src/admin/QueryUsage.test.tsx",
+      "line": 83,
       "kind": "title"
     },
     {
@@ -29307,13 +29325,13 @@
     {
       "id": "CNT-155",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 898,
+      "line": 908,
       "kind": "title"
     },
     {
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 531,
+      "line": 541,
       "kind": "title"
     },
     {

@@ -166,20 +166,25 @@ describe("a binding's document arguments, through the service", () => {
       ),
     );
     const ran: Json[] = [];
+    // Each document's two runs, in whichever order their slots were taken (the R18 plan).
+    const inOrder = (runs: Json[]) =>
+      runs.sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
     for (const document of made) {
       h.connector.run = ranOk([['1', 'Harbour']]);
       const asked = h.connector.asked.length;
       const answer = await resolve(document.id, document.nodes[0]!, 'b1', 'b2');
       expect(answer.statusCode, answer.body).toBe(200);
       ran.push(
-        ...h.connector.asked
-          .slice(asked)
-          .filter((each) => each.path === '/v1/run')
-          .map((each) => (each.body as { values: Json }).values),
+        ...inOrder(
+          h.connector.asked
+            .slice(asked)
+            .filter((each) => each.path === '/v1/run')
+            .map((each) => (each.body as { values: Json }).values),
+        ),
       );
     }
     // One component: each document ran its own site for b1, and the literal for b2.
-    expect(ran).toEqual([{ site: '7' }, { site: '3' }, { site: '8' }, { site: '3' }]);
+    expect(ran).toEqual([{ site: '3' }, { site: '7' }, { site: '3' }, { site: '8' }]);
     const held = await Promise.all(
       made.map(async (document) =>
         Promise.all(['b1', 'b2'].map(async (id) => (await stateOf(document.id, id)).held)),

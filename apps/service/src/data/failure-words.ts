@@ -1,5 +1,6 @@
 import {
   dataFailure,
+  runsAtOnce,
   type DataFailure,
   type DataFailureCode,
   type SourceRefusal,
@@ -186,6 +187,8 @@ export function failureView(failure: FailureIn | DataFailureCode, built = false)
   return {
     ...whole,
     ...(whole.source === undefined ? {} : { source: { ...whole.source } }),
+    // Retryable, and said when, wherever it is answered (the R18 plan, R18-C).
+    ...(whole.code === 'query_throttled' ? { retryAfter: runsAtOnce.waitMs / 1000 } : {}),
     message: failureMessage(whole, built),
   };
 }

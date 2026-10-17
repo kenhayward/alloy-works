@@ -25,3 +25,15 @@ One PR (R18), with the close: the page is small enough to ride with the limit it
 
 - **R18**: 0115 (`data_policy.concurrent_runs`, `query_slot`, `query_run`, their grants); `takeQuerySlot`, `giveQuerySlot`, `recordQueryRun`, `queryUsage`, the sweep; every run through one metered door in the service; the routes. Tests: the limit holds across acts and frees itself; a run past it waits then fails `query_throttled`; every run recorded and attributed; usage totals; the sweep.
   Administration > **Query usage**: the limit, the totals for a period and the CSV; the browser walk; the final review; the close (0.189.0).
+
+## Built
+
+R18 with the close (0.189.0) #698, one PR as planned. Departures: a sample of a draft names no query
+definition, so `query_run.query_definition_id` may be none; `retryAfter` rides on every
+`query_throttled`, a resolve's binding failure among them. The final review found an aborted run
+recorded as a failure and a throttle, a failed record able to replace a run's answer, a throttled
+binding without its retry, and a CSV cut short at 100,000 runs; all fixed - an aborted run records
+nothing, the slot is given back and the run recorded apart, and a period holding more is refused.
+Left: a creation's runs are attributed to the document it makes but no test shows it; the page saves
+the run limits as it read them, so a change made meanwhile elsewhere is put back; the CSV is built
+whole in memory.

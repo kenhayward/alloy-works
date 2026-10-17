@@ -134,6 +134,11 @@ export const DataFailureView = z.object({
     .describe(
       'The HTTP status an HTTP source refused with: `source_refused` alone, never its body',
     ),
+  retryAfter: z
+    .number()
+    .int()
+    .optional()
+    .describe('`query_throttled` alone: the seconds to wait before trying again (DAT-071)'),
 });
 export type DataFailureView = z.infer<typeof DataFailureView>;
 

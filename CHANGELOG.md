@@ -3,6 +3,14 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.189.0 - 2026-10-17 (PR #698)
+
+Reuse's eighteenth slice: query limits and cost (the R18 plan).
+
+### Added
+
+- **Query limits and cost.** No more of an environment's query runs are in flight at once than its limit, four unless an administrator lowers it in Administration > **Query usage**; one past it waits a moment, then fails as throttled and can be tried again, never with a partial result. Every run is recorded with what it cost, and **Query usage** shows the totals by query and by document over a period, with every run to download as CSV.
+
 ## 0.188.0 - 2026-10-17 (PR #697)
 
 Reuse's seventeenth slice: publication shares (the R17 plan).
