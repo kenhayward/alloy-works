@@ -18,7 +18,6 @@ import {
   isArchived,
   isHeld,
   latestSequence,
-  latestVersion,
   listPeople,
   listComponentTypes,
   listReadableComponents,

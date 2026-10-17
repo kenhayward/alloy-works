@@ -24,7 +24,6 @@ import {
   holding,
   isHolderRefusal,
   headVersion,
-  latestVersion,
   discardUnsaved,
   listIterations,
   newestUncutIteration,
