@@ -15,7 +15,7 @@ import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import { resolveOccurrences } from './publishing.js';
 import { findRole } from './roles.js';
-import { acceptRevision, readScopes, setScope } from './scopes.js';
+import { acceptRevision, effectiveAt, readScopes, setScope } from './scopes.js';
 import { createSpace } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
 import type { TenantDatabase } from './tenant-database.js';
@@ -283,5 +283,55 @@ describe('revisions effective by scope (the R15 plan, R15-A to R15-D)', () => {
     expect(events).toEqual([
       { kind: 'component', revision: 2, version: second.id, axis: 'market', value: 'us' },
     ]);
+  });
+
+  it('LIF-043 answers, for any scope and any instant, the one revision effective there then, and why', async () => {
+    const first = await component('Clean the nozzle');
+    await approve(first);
+    const beforeUs = new Date();
+    const second = await edit(first);
+    await scope(second, [{ axis: 'market', value: 'us', party: { kind: 'principal', id: grace } }]);
+    await approve(second);
+    const beforeAccepted = new Date();
+    await service.withTenant(
+      tenant,
+      (trx) =>
+        acceptRevision(trx, {
+          artifactId: first.artifactId,
+          kind: 'component',
+          revision: 2,
+          axis: 'market',
+          value: 'us',
+          by: grace,
+        }),
+      { actorKind: 'person', actor: grace },
+    );
+    const asked = (scopeOf: { axis: string; value: string } | null, at: Date) =>
+      as((trx) => effectiveAt(trx, first.artifactId, scopeOf, at));
+    const us = { axis: 'market', value: 'us' };
+    // Before the US revision, after it waits, and once accepted.
+    expect(await asked(us, beforeUs)).toMatchObject({ revision: { number: 1 }, why: 'unscoped' });
+    expect(await asked(us, beforeAccepted)).toMatchObject({
+      revision: { number: 1 },
+      why: 'unscoped',
+    });
+    expect(await asked(us, new Date())).toMatchObject({
+      revision: { number: 2, versionId: second.id },
+      why: 'scoped',
+    });
+    // Elsewhere, and with no scope asked: the newest unscoped.
+    expect(await asked({ axis: 'market', value: 'eu' }, new Date())).toMatchObject({
+      revision: { number: 1 },
+      why: 'unscoped',
+    });
+    expect(await asked(null, new Date())).toMatchObject({
+      revision: { number: 1 },
+      why: 'unscoped',
+    });
+    // Before anything was approved: none.
+    expect(await asked(us, new Date('2000-01-01T00:00:00Z'))).toEqual({
+      revision: null,
+      why: 'none',
+    });
   });
 });

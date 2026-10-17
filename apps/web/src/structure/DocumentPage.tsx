@@ -1,7 +1,13 @@
 import type { FieldView } from '@alloy-works/api-client';
 import { TemplateLine, templateIn, type TemplateInfo } from './TemplateLine.js';
 import { DatesButton, DatesChips, datesIn, type Dates } from '../lifecycle/Dates.js';
-import { ScopeButton, ScopeChips, scopeIn, type ScopeNow } from '../lifecycle/Scope.js';
+import {
+  EffectiveButton,
+  ScopeButton,
+  ScopeChips,
+  scopeIn,
+  type ScopeNow,
+} from '../lifecycle/Scope.js';
 import type { createApiClient, paths } from '@alloy-works/api-client';
 import {
   conditions,
@@ -2226,6 +2232,14 @@ export function DocumentPage({
                   }}
                 />
               )}
+              {/* What was effective where and when, to every reader (the R15 plan, R15-F). */}
+              <EffectiveButton
+                client={client}
+                kind="document"
+                id={document.id}
+                title={document.outline.title}
+                className={styles['toggle']}
+              />
               <RelationshipsButton
                 client={client}
                 id={document.id}

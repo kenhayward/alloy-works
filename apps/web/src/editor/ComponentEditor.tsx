@@ -1,6 +1,12 @@
 import type { ComponentView, createApiClient } from '@alloy-works/api-client';
 import { DatesButton, DatesChips, datesIn, type Dates } from '../lifecycle/Dates.js';
-import { ScopeButton, ScopeChips, scopeIn, type ScopeNow } from '../lifecycle/Scope.js';
+import {
+  EffectiveButton,
+  ScopeButton,
+  ScopeChips,
+  scopeIn,
+  type ScopeNow,
+} from '../lifecycle/Scope.js';
 import type { ContentDocument } from '@alloy-works/domain';
 import {
   bindingDigestInput,
@@ -2422,6 +2428,12 @@ export function ComponentEditor({
                 onSaved={setScopeNow}
               />
             )}
+            <EffectiveButton
+              client={client}
+              kind="component"
+              id={componentId}
+              title={header.title}
+            />
             <UsedInButton
               client={client}
               id={componentId}

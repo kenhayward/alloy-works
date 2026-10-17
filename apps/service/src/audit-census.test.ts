@@ -253,6 +253,8 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   acceptDocumentRevision: writes('revision.accepted'),
   listComponentApprovals: read,
   listDocumentApprovals: read,
+  readComponentEffective: read,
+  readDocumentEffective: read,
   transitionQueryDefinition: writes('workflow.transitioned'),
   decideQueryDefinitionGate: writes(
     'approval.given',

@@ -301,3 +301,166 @@ function ScopeDialog({
     </Modal>
   );
 }
+
+/** A local time from a `datetime-local` value, as an instant with the reader's offset (LIF-062). */
+const instantOf = (local: string) => {
+  const at = new Date(local);
+  const minutes = -at.getTimezoneOffset();
+  const sign = minutes < 0 ? '-' : '+';
+  const whole = Math.abs(minutes);
+  const offset = `${sign}${String(Math.floor(whole / 60)).padStart(2, '0')}:${String(whole % 60).padStart(2, '0')}`;
+  return `${local}:00${offset}`;
+};
+
+/** Now as a `datetime-local` value, in the reader's own zone. */
+const localNow = () => {
+  const now = new Date();
+  return new Date(now.getTime() - now.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+};
+
+/**
+ * **What was effective**, offered to every reader (LIF-043; R15-F): a scope and a moment asked, and
+ * the one revision effective there then said in words, so nobody needs engineering help to know what
+ * applied at a plant on a day.
+ */
+export function EffectiveButton({
+  client,
+  kind,
+  id,
+  title,
+  className,
+}: {
+  client: Client;
+  kind: 'component' | 'document';
+  id: string;
+  title: string;
+  className?: string | undefined;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button type="button" className={className} onClick={() => setOpen(true)}>
+        What was effective
+      </button>
+      {open && (
+        <EffectiveDialog
+          client={client}
+          kind={kind}
+          id={id}
+          title={title}
+          onClose={() => setOpen(false)}
+        />
+      )}
+    </>
+  );
+}
+
+function EffectiveDialog({
+  client,
+  kind,
+  id,
+  title,
+  onClose,
+}: {
+  client: Client;
+  kind: 'component' | 'document';
+  id: string;
+  title: string;
+  onClose: () => void;
+}) {
+  const headingId = useId();
+  const [axes, setAxes] = useState<readonly OfferedAxis[]>([]);
+  const [where, setWhere] = useState('');
+  const [when, setWhen] = useState(localNow());
+  const [answer, setAnswer] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let current = true;
+    void declaredAxes(client)
+      .then((read) => {
+        if (current) setAxes(read);
+      })
+      .catch(() => undefined);
+    return () => {
+      current = false;
+    };
+  }, [client]);
+
+  const named = (scope: string) => {
+    const [axisKey, valueKey] = scope.split(':');
+    const axis = axes.find((each) => each.key === axisKey);
+    const value = axis?.values.find((each) => each.key === valueKey);
+    return `${axis?.name ?? axisKey}: ${value?.label ?? valueKey}`;
+  };
+
+  const ask = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setBusy(true);
+    const query = {
+      ...(where === '' ? {} : { scope: where }),
+      ...(when === '' ? {} : { at: instantOf(when) }),
+    };
+    const options = { params: { path: { id }, query } };
+    const { data } = await (
+      kind === 'component'
+        ? client.GET('/v1/components/{id}/effective', options)
+        : client.GET('/v1/documents/{id}/effective', options)
+    ).catch(() => ({ data: undefined }));
+    setBusy(false);
+    if (!data) {
+      setAnswer('What was effective could not be read.');
+      return;
+    }
+    if (data.revision === null) {
+      setAnswer('Nothing was approved by then.');
+      return;
+    }
+    const revision = `Revision ${data.revision.number}`;
+    setAnswer(
+      data.why === 'scoped'
+        ? `${revision}, effective for ${named(where)} then.`
+        : where === ''
+          ? `${revision}, effective everywhere then.`
+          : `${revision}, effective everywhere then: none was effective for ${named(where)}.`,
+    );
+  };
+
+  return (
+    <Modal labelledBy={headingId} size="narrow" onClose={onClose}>
+      <form className={styles['form']} onSubmit={(event) => void ask(event)}>
+        <h2 id={headingId}>{`What was effective: ${title}`}</h2>
+        <label>
+          Where
+          <select value={where} onChange={(event) => setWhere(event.target.value)}>
+            <option value="">Everywhere</option>
+            {axes.flatMap((axis) =>
+              axis.values.map((value) => (
+                <option key={`${axis.key}:${value.key}`} value={`${axis.key}:${value.key}`}>
+                  {`${axis.name}: ${value.label}`}
+                </option>
+              )),
+            )}
+          </select>
+        </label>
+        <label>
+          When
+          <input
+            type="datetime-local"
+            value={when}
+            onChange={(event) => setWhen(event.target.value)}
+          />
+        </label>
+        <p role="status">{answer}</p>
+        <div className={styles['buttons']}>
+          <button type="button" onClick={onClose}>
+            Close
+          </button>
+          <button type="submit" className="primary" disabled={busy}>
+            Ask
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}

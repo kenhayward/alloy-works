@@ -484,10 +484,11 @@ describe('the regions of the view', () => {
     expect(view.dom).not.toHaveAttribute('contenteditable', 'true');
     expect(view.dom).toHaveAttribute('tabindex', '-1');
 
-    // The header's fields are disabled for a reader, but its buttons are not: Used in, which any
-    // reader may open (the R1 plan), is the first of them, so it is where the ring lands.
+    // The header's fields are disabled for a reader, but its buttons are not: What was effective,
+    // which any reader may ask (the R15 plan, R15-F), is the first of them, so it is where the ring
+    // lands.
     await userEvent.keyboard('{F6}');
-    expect(screen.getByRole('button', { name: 'Used in' })).toHaveFocus();
+    expect(screen.getByRole('button', { name: 'What was effective' })).toHaveFocus();
 
     await userEvent.keyboard('{F6}');
     expect(formatting).toHaveFocus();
