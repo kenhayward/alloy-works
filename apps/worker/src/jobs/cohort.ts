@@ -31,14 +31,19 @@ export function cohortJob(deps: {
       if (!started) return;
       const cohort = await deps.db.withTenant(tenant, (trx) => readCohort(trx, started.subject));
       if (!cohort) throw new Error(`The cohort ${started.subject} is gone`);
-      const rows = await deps.db.withTenant(tenant, (trx) => pendingRows(trx, cohort.id));
+      // A run that stopped at a failed row, as asked, and is tried again before Rerun: it makes none of
+      // the rows waiting after it (the final review).
+      const rows =
+        cohort.onFailure === 'stop' && cohort.stoppedAt !== null
+          ? []
+          : await deps.db.withTenant(tenant, (trx) => pendingRows(trx, cohort.id));
       const of = started.parameters.rows ?? rows.length;
       let made = 0;
       let failed = 0;
       let goOn = true;
       // Where the requester asked it to stop at a failed row, the rows after it wait (TPL-047).
-      let stoppedAt: number | null = null;
-      for (const row of rows) {
+      let stoppedAt: number | null = cohort.stoppedAt;
+      for (const [at, row] of rows.entries()) {
         const outcome = await deps.db.withTenant(tenant, (trx) => makeCohortRow(trx, cohort, row));
         if (outcome === 'made') made += 1;
         if (outcome === 'failed') failed += 1;
@@ -46,7 +51,8 @@ export function cohortJob(deps: {
           progressJob(trx, id, { done: made + failed, of, unit: 'row' }),
         );
         if (!goOn) break;
-        if (outcome === 'failed' && cohort.onFailure === 'stop') {
+        // Stopped only where a row waits after it: the last row failing ends the run all the same.
+        if (outcome === 'failed' && cohort.onFailure === 'stop' && at < rows.length - 1) {
           stoppedAt = row;
           break;
         }

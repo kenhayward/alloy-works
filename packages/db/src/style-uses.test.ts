@@ -17,7 +17,7 @@ import {
   testTenantDatabase,
 } from './testing/database.js';
 import { styleUses } from './uses.js';
-import { recordVersion, substanceOf } from './versions.js';
+import { readVersion, recordVersion, substanceOf } from './versions.js';
 
 const ISSUER = 'https://idp.example';
 const text = (value: string) => [{ type: 'text', value, marks: [] }];
@@ -155,5 +155,61 @@ describe('where a style is used (relationships.md, "Where used"; the R20 plan, R
     ]);
     expect((await uses(grace, 'paragraph', 'wide')).components).toEqual([]);
     expect(await uses(grace, 'table', 'unused')).toEqual({ components: [], unreadable: false });
+  });
+
+  it('REU-055 lists the components using an image style, a figure or an image in a run of text, and reads only their latest versions', async () => {
+    const inline = (imageStyle: string) => ({
+      type: 'paragraph',
+      id: `p${randomUUID().slice(0, 6)}`,
+      style: 'body',
+      content: [
+        { type: 'text', value: 'Press ', marks: [] },
+        {
+          type: 'image',
+          asset: randomUUID(),
+          imageStyle,
+          alternative: { kind: 'decorative' },
+        },
+      ],
+    });
+    const pressed = await holding(general, 'Press the button', [inline('icon')]);
+    expect(
+      (await as((trx) => styleUses(trx, grace, { kind: 'image', key: 'icon' }))).components.map(
+        (each) => each.id,
+      ),
+    ).toEqual([pressed]);
+    expect(
+      (await as((trx) => styleUses(trx, grace, { kind: 'paragraph', key: 'icon' }))).components,
+    ).toEqual([]);
+
+    // A style its latest version no longer names is not used, whatever an earlier one did.
+    const changed = await holding(general, 'Notice, once a caution', [paragraph('caution')]);
+    await as(async (trx) => {
+      const latest = await trx
+        .selectFrom('artifact_version')
+        .select('id')
+        .where('artifact_id', '=', changed)
+        .orderBy('revision_no', 'desc')
+        .orderBy('version_no', 'desc')
+        .executeTakeFirstOrThrow();
+      const substance = substanceOf((await readVersion(trx, latest.id))!);
+      if (substance.kind !== 'component') throw new Error('not a component');
+      const next = await recordVersion(trx, {
+        artifactId: changed,
+        openedFrom: latest.id,
+        author: ada,
+        substance: {
+          ...substance,
+          content: {
+            ...substance.content,
+            content: [paragraph('body')] as ContentDocument['content'],
+          },
+        },
+      });
+      if (next.answer !== 'recorded') throw new Error(next.answer);
+    });
+    expect(
+      (await as((trx) => styleUses(trx, ada, { kind: 'paragraph', key: 'caution' }))).components,
+    ).toEqual([]);
   });
 });

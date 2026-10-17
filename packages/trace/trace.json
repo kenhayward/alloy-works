@@ -16834,7 +16834,7 @@
         },
         {
           "id": "CNT-185",
-          "howItIsMet": "Excluding is the profile's (REU-021, R6-C): every run whose condition the profile does not select is excluded in one pass, so every fragment carrying one condition's identifier, in any run or block, goes together; a paragraph it empties goes with them (the R20 plan, R20-C)"
+          "howItIsMet": "Excluding is the profile's (REU-021, R6-C): every run whose condition the profile does not select is excluded in one pass, so every fragment carrying one condition, in any run or block, goes together in one profile pass; a paragraph it empties goes with them (the R20 plan, R20-C)"
         },
         {
           "id": "CNT-006",
@@ -18255,7 +18255,7 @@
         },
         {
           "id": "REU-055",
-          "howItIsMet": "\"Where is this used\" is the reference index read backwards, one hop, for components (`/v1/components/{id}/uses`), query definitions, assets and templates (`/impact?depth=1`, and each kind's own uses route); a style, named by its kind and key, reads the latest component versions naming it (`GET /v1/styles/uses`; the R20 plan, R20-A)"
+          "howItIsMet": "\"Where is this used\" is the reference index read backwards, one hop, for components (`/v1/components/{id}/uses`), query definitions, assets and templates (`/impact?depth=1`, and each kind's own uses route); a style, named by its kind and key, reads the latest component versions naming it (`GET /v1/styles/uses`; the R20 plan, R20-A) - a scan of the tenant's components at each ask, one style at a time, which a block-style index would replace at scale"
         },
         {
           "id": "REU-007",

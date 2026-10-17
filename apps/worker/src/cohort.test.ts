@@ -217,6 +217,17 @@ describe("a cohort's run, from the queue to the store", () => {
     expect(after).toMatchObject({ onFailure: 'stop', stoppedAt: null });
   }, 120_000);
 
+  it('TPL-047 says a run asked to stop did not, where its last row is the one that failed', async () => {
+    const { cohort, job } = await asked([{ site: '1' }, { site: 'two' }], 'stop');
+    expect(await work()).toBe('done');
+    expect((await as((trx) => readJob(trx, job.id, ada)))!.outcome).toMatchObject({
+      made: 1,
+      failed: 1,
+      stoppedAt: null,
+    });
+    expect((await as((trx) => readCohort(trx, cohort.id)))!.stoppedAt).toBeNull();
+  }, 120_000);
+
   it("makes four hundred documents well within the hour bulk generation's budget names", async () => {
     const rows = Array.from({ length: 400 }, (_, at) => ({ site: String(at + 1) }));
     const { job } = await asked(rows);

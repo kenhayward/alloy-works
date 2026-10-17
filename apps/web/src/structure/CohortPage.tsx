@@ -119,7 +119,7 @@ export function CohortPage({
         {waiting
           ? '. Still making the rest.'
           : stoppedAt !== null
-            ? `. Stopped at row ${stoppedAt}, as asked: the rows after it wait for Run the failed again.`
+            ? `. Stopped at row ${stoppedAt}: the rows after it wait for Run the failed again.`
             : '.'}
       </p>
       <table className={styles['table']}>

@@ -98,7 +98,7 @@ describe("a cohort's page (the R7 plan, R7-E to R7-G)", () => {
     render(<CohortPage client={client} id={COHORT} pollMs={10} />);
     expect(
       await screen.findByText(
-        '1 of 3 made, 1 failed. Stopped at row 2, as asked: the rows after it wait for Run the failed again.',
+        '1 of 3 made, 1 failed. Stopped at row 2: the rows after it wait for Run the failed again.',
       ),
     ).toBeInTheDocument();
     expect(screen.getByText('Waiting')).toBeInTheDocument();
