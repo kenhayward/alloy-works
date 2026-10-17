@@ -254,6 +254,8 @@ const OTHER_TENANT_IDS: Readonly<
   acceptDocumentRevision: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   listComponentApprovals: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   listDocumentApprovals: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  readComponentEffective: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
+  readDocumentEffective: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   archiveComponent: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   unarchiveComponent: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   archiveDocument: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),

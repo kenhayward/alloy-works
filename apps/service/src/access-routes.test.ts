@@ -788,6 +788,8 @@ describe('routes that check a permission', () => {
     listComponentVersions: () => ({ url: `/v1/components/${dosing}/versions`, status: 404 }),
     listComponentApprovals: () => ({ url: `/v1/components/${dosing}/approvals`, status: 404 }),
     listDocumentApprovals: () => ({ url: `/v1/documents/${MISSING}/approvals`, status: 404 }),
+    readComponentEffective: () => ({ url: `/v1/components/${dosing}/effective`, status: 404 }),
+    readDocumentEffective: () => ({ url: `/v1/documents/${MISSING}/effective`, status: 404 }),
     createDocument: () => ({
       url: `/v1/spaces/${clinical}/documents`,
       status: 404,

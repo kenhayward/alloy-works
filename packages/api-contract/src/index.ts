@@ -115,6 +115,8 @@ export {
   ScopeView,
   AcceptanceBody,
   AcceptanceView,
+  EffectiveQuery,
+  EffectiveView,
   WorkflowStandingView,
   WorkflowStateView,
   WorkflowsView,

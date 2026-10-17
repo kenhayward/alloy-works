@@ -32,3 +32,14 @@ wait on a named party's acceptance before it takes effect in their scope.
 - **R15a**: 0111 (`artifact_scope`, `revision_scope`, `revision_acceptance`, the audit kinds); set and read; fix at designation; `latestRevisionsOf` by profile and every caller given one; the acceptance route, since its audit kind needs a writer. Tests: each R15-C case; a reference in two documents of two markets served two revisions; pending serves the one before; only the party accepts.
 - **R15b**: the pending state in views; Effective for beside Dates; Accept for the party.
 - **R15c**: the effective route and its panel; the final review; the close.
+
+## Built
+
+R15a #687, R15b #688, and R15c with the close (0.186.0) #690. One departure: acceptance's route
+came in R15a, since its audit kind needs a writer, and R15b held the page. The final review found a
+group named to accept that could be deleted under a scope, failing the gate that fixes it, and the
+Effective for dialog dropping a group party on save; both fixed, a group a scope names now refused
+deletion (`group_in_scope`). Left: a party who loses read access after the scope is set leaves the
+revision waiting in that scope until a newer revision is designated there; the dialog offers people,
+and a group only where one is already named; the placement report and a template's required
+components, having no document's profile, judge the unscoped revisions alone. Divergent lines are R16.

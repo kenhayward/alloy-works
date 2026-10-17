@@ -378,6 +378,8 @@ const operationTags = {
     'setDocumentScope',
     'acceptComponentRevision',
     'acceptDocumentRevision',
+    'readComponentEffective',
+    'readDocumentEffective',
   ],
   'Audit log': ['listAuditEvents', 'requestAuditExport', 'getAuditExport', 'downloadAuditExport'],
 } as const;
@@ -738,6 +740,10 @@ const descriptions: Readonly<Record<string, string>> = {
     'Lists every approval and rejection of a component at its gates, newest first: the gate, the decision, who, when, the version decided and a rejection’s reason. Needs read on the component.',
   listDocumentApprovals:
     'Lists every approval and rejection of a document at its gates, newest first: the gate, the decision, who, when, the version decided and a rejection’s reason. Needs read on the document.',
+  readComponentEffective:
+    'Says which one revision of a component was effective in a scope, a condition axis value, at an instant, now where none is asked: the newest effective for that scope then, else the newest effective everywhere, as it stood then, and which of the two it is. Needs read on the component.',
+  readDocumentEffective:
+    'Says which one revision of a document was effective in a scope, a condition axis value, at an instant, now where none is asked: the newest effective for that scope then, else the newest effective everywhere, as it stood then, and which of the two it is. Needs read on the document.',
   acceptComponentRevision:
     "Accepts a component's revision in one scope, by the person, or a member of the group, its scope names there, who may read it. Until then the revision before stays effective in that scope; once, it takes effect there. Audited.",
   acceptDocumentRevision:

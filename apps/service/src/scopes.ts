@@ -1,12 +1,15 @@
 import type {
   AcceptanceBody,
   AcceptanceView,
+  EffectiveQuery,
+  EffectiveView,
   ScopeBody,
   ScopeView,
   TransitionParams,
 } from '@alloy-works/api-contract';
 import {
   acceptRevision,
+  effectiveAt,
   loadFactsFor,
   pendingAcceptances,
   readScopes,
@@ -171,7 +174,34 @@ export function scopeHandlers() {
           return { ...body, accepted: true };
       }
     };
+  // What was effective (LIF-043; R15-F), on read; no scope asks the unscoped.
+  const asking = async (request: FastifyRequest, { trx }: Authorised): Promise<EffectiveView> => {
+    const { id } = request.params as TransitionParams;
+    const query = request.query as EffectiveQuery;
+    const at = query.at === undefined ? new Date() : new Date(query.at);
+    const colon = query.scope?.indexOf(':') ?? -1;
+    const scope =
+      query.scope === undefined
+        ? null
+        : { axis: query.scope.slice(0, colon), value: query.scope.slice(colon + 1) };
+    const answer = await effectiveAt(trx, id, scope, at);
+    return {
+      scope,
+      at: at.toISOString(),
+      revision:
+        answer.revision === null
+          ? null
+          : {
+              number: answer.revision.number,
+              version: answer.revision.versionId,
+              at: answer.revision.at.toISOString(),
+            },
+      why: answer.why,
+    };
+  };
   return {
+    readComponentEffective: asking,
+    readDocumentEffective: asking,
     setComponentScope: setting('component'),
     setDocumentScope: setting('document'),
     acceptComponentRevision: accepting('component'),

@@ -31,6 +31,9 @@ export interface ScopeNow {
   }[];
 }
 
+/** No scope and nothing waiting: what a view before R15 is read as. */
+export const NO_SCOPE: ScopeNow = { scope: [], pending: [] };
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
 
@@ -118,6 +121,7 @@ export function ScopeButton({
   scope,
   onSaved,
   className,
+  mayEdit = true,
 }: {
   client: Client;
   kind: 'component' | 'document';
@@ -126,6 +130,8 @@ export function ScopeButton({
   scope: ScopeNow;
   onSaved: (scope: ScopeNow) => void;
   className?: string | undefined;
+  /** Whether the reader may set it: else the dialog asks what was effective alone. */
+  mayEdit?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -140,6 +146,7 @@ export function ScopeButton({
           id={id}
           title={title}
           scope={scope}
+          mayEdit={mayEdit}
           onClose={() => setOpen(false)}
           onSaved={(now) => {
             setOpen(false);
@@ -157,6 +164,7 @@ function ScopeDialog({
   id,
   title,
   scope,
+  mayEdit,
   onClose,
   onSaved,
 }: {
@@ -165,21 +173,30 @@ function ScopeDialog({
   id: string;
   title: string;
   scope: ScopeNow;
+  mayEdit: boolean;
   onClose: () => void;
   onSaved: (scope: ScopeNow) => void;
 }) {
   const headingId = useId();
   const [axes, setAxes] = useState<readonly OfferedAxis[] | 'unread' | null>(null);
   const [people, setPeople] = useState<readonly { id: string; name: string }[]>([]);
-  // Each value ticked, by `axis:value`, with the person who accepts it there, or none.
+  // Each value ticked, by `axis:value`, with who accepts it there as `<kind>:<id>`, or none.
   const [chosen, setChosen] = useState<ReadonlyMap<string, string>>(
     new Map(
       scope.scope.map((each) => [
         `${each.axis}:${each.value}`,
-        each.party?.kind === 'principal' ? each.party.id : '',
+        each.party === null ? '' : `${each.party.kind}:${each.party.id}`,
       ]),
     ),
   );
+  // A group a scope already names stays offered, so saving keeps it (the final review).
+  const groups = [
+    ...new Map(
+      scope.scope.flatMap((each) =>
+        each.party?.kind === 'group' ? [[each.party.id, each.party.name] as const] : [],
+      ),
+    ),
+  ];
   const [said, setSaid] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -222,7 +239,13 @@ function ScopeDialog({
         return {
           axis: key.slice(0, colon),
           value: key.slice(colon + 1),
-          party: person === '' ? null : { kind: 'principal' as const, id: person },
+          party:
+            person === ''
+              ? null
+              : {
+                  kind: person.startsWith('group:') ? ('group' as const) : ('principal' as const),
+                  id: person.slice(person.indexOf(':') + 1),
+                },
         };
       }),
     };
@@ -239,65 +262,206 @@ function ScopeDialog({
 
   return (
     <Modal labelledBy={headingId} size="narrow" onClose={onClose}>
-      <form className={styles['form']} onSubmit={(event) => void save(event)}>
-        <h2 id={headingId}>{`Effective for: ${title}`}</h2>
-        <p className={styles['muted']}>
-          A revision approved from now is effective for the values ticked, and the revision before
-          stays effective everywhere else. Tick none for everywhere.
-        </p>
-        {axes === null && <p role="status">Reading the condition axes.</p>}
-        {axes === 'unread' && <p role="alert">The condition axes could not be read.</p>}
-        {axes !== null && axes !== 'unread' && axes.length === 0 && (
-          <p>No condition axes are declared yet.</p>
-        )}
-        {axes !== null &&
-          axes !== 'unread' &&
-          axes.map((axis) => (
-            <fieldset key={axis.key}>
-              <legend>{axis.name}</legend>
-              {axis.values.map((value) => {
-                const key = `${axis.key}:${value.key}`;
-                return (
-                  <div key={key}>
-                    <label className={styles['choice']}>
-                      <input
-                        type="checkbox"
-                        checked={chosen.has(key)}
-                        onChange={() => toggle(key)}
-                      />
-                      {value.label}
-                    </label>
-                    {chosen.has(key) && (
-                      <label>
-                        {`Accepted in ${value.label} by`}
-                        <select
-                          value={chosen.get(key)}
-                          onChange={(event) => accepter(key, event.target.value)}
-                        >
-                          <option value="">Nobody, effective as approved</option>
-                          {people.map((each) => (
-                            <option key={each.id} value={each.id}>
-                              {each.name}
-                            </option>
-                          ))}
-                        </select>
+      <h2 id={headingId} className={styles['heading']}>{`Effective for: ${title}`}</h2>
+      {mayEdit && (
+        <form className={styles['form']} onSubmit={(event) => void save(event)}>
+          <p className={styles['muted']}>
+            A revision approved from now is effective for the values ticked, and the revision before
+            stays effective everywhere else. Tick none for everywhere.
+          </p>
+          {axes === null && <p role="status">Reading the condition axes.</p>}
+          {axes === 'unread' && <p role="alert">The condition axes could not be read.</p>}
+          {axes !== null && axes !== 'unread' && axes.length === 0 && (
+            <p>No condition axes are declared yet.</p>
+          )}
+          {axes !== null &&
+            axes !== 'unread' &&
+            axes.map((axis) => (
+              <fieldset key={axis.key}>
+                <legend>{axis.name}</legend>
+                {axis.values.map((value) => {
+                  const key = `${axis.key}:${value.key}`;
+                  return (
+                    <div key={key}>
+                      <label className={styles['choice']}>
+                        <input
+                          type="checkbox"
+                          checked={chosen.has(key)}
+                          onChange={() => toggle(key)}
+                        />
+                        {value.label}
                       </label>
-                    )}
-                  </div>
-                );
-              })}
-            </fieldset>
-          ))}
-        <p role="status">{said}</p>
+                      {chosen.has(key) && (
+                        <label>
+                          {`Accepted in ${value.label} by`}
+                          <select
+                            value={chosen.get(key)}
+                            onChange={(event) => accepter(key, event.target.value)}
+                          >
+                            <option value="">Nobody, effective as approved</option>
+                            {groups.map(([group, name]) => (
+                              <option key={group} value={`group:${group}`}>
+                                {`Group: ${name ?? 'unnamed'}`}
+                              </option>
+                            ))}
+                            {people.map((each) => (
+                              <option key={each.id} value={`principal:${each.id}`}>
+                                {each.name}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      )}
+                    </div>
+                  );
+                })}
+              </fieldset>
+            ))}
+          {said !== '' && <p role="alert">{said}</p>}
+          <div className={styles['buttons']}>
+            <button type="button" onClick={onClose}>
+              Cancel
+            </button>
+            <button type="submit" className="primary" disabled={busy}>
+              Save
+            </button>
+          </div>
+        </form>
+      )}
+      <EffectiveAsk client={client} kind={kind} id={id} />
+      {!mayEdit && (
         <div className={styles['buttons']}>
           <button type="button" onClick={onClose}>
-            Cancel
-          </button>
-          <button type="submit" className="primary" disabled={busy}>
-            Save
+            Close
           </button>
         </div>
-      </form>
+      )}
     </Modal>
+  );
+}
+
+/** A local time from a `datetime-local` value, as an instant with the reader's offset (LIF-062). */
+const instantOf = (local: string) => {
+  const at = new Date(local);
+  const minutes = -at.getTimezoneOffset();
+  const sign = minutes < 0 ? '-' : '+';
+  const whole = Math.abs(minutes);
+  const offset = `${sign}${String(Math.floor(whole / 60)).padStart(2, '0')}:${String(whole % 60).padStart(2, '0')}`;
+  return `${local}:00${offset}`;
+};
+
+/** Now as a `datetime-local` value, in the reader's own zone. */
+const localNow = () => {
+  const now = new Date();
+  return new Date(now.getTime() - now.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+};
+
+/**
+ * **What was effective** (LIF-043; R15-F), within Effective for, to every reader: a scope and a
+ * moment asked, and the one revision effective there then said in words, so nobody needs engineering
+ * help to know what applied at a plant on a day.
+ */
+function EffectiveAsk({
+  client,
+  kind,
+  id,
+}: {
+  client: Client;
+  kind: 'component' | 'document';
+  id: string;
+}) {
+  const headingId = useId();
+  const [axes, setAxes] = useState<readonly OfferedAxis[]>([]);
+  const [where, setWhere] = useState('');
+  const [when, setWhen] = useState(localNow());
+  const [answer, setAnswer] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let current = true;
+    void declaredAxes(client)
+      .then((read) => {
+        if (current) setAxes(read);
+      })
+      .catch(() => undefined);
+    return () => {
+      current = false;
+    };
+  }, [client]);
+
+  const named = (scope: string) => {
+    const [axisKey, valueKey] = scope.split(':');
+    const axis = axes.find((each) => each.key === axisKey);
+    const value = axis?.values.find((each) => each.key === valueKey);
+    return `${axis?.name ?? axisKey}: ${value?.label ?? valueKey}`;
+  };
+
+  const ask = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setBusy(true);
+    const query = {
+      ...(where === '' ? {} : { scope: where }),
+      ...(when === '' ? {} : { at: instantOf(when) }),
+    };
+    const options = { params: { path: { id }, query } };
+    const { data } = await (
+      kind === 'component'
+        ? client.GET('/v1/components/{id}/effective', options)
+        : client.GET('/v1/documents/{id}/effective', options)
+    ).catch(() => ({ data: undefined }));
+    setBusy(false);
+    if (!data) {
+      setAnswer('What was effective could not be read.');
+      return;
+    }
+    if (data.revision === null) {
+      setAnswer('Nothing was approved by then.');
+      return;
+    }
+    const revision = `Revision ${data.revision.number}`;
+    setAnswer(
+      data.why === 'scoped'
+        ? `${revision}, effective for ${named(where)} then.`
+        : where === ''
+          ? `${revision}, effective everywhere then.`
+          : `${revision}, effective everywhere then: none was effective for ${named(where)}.`,
+    );
+  };
+
+  return (
+    <form
+      className={styles['form']}
+      aria-labelledby={headingId}
+      onSubmit={(event) => void ask(event)}
+    >
+      <h3 id={headingId}>What was effective</h3>
+      <label>
+        Where
+        <select value={where} onChange={(event) => setWhere(event.target.value)}>
+          <option value="">Everywhere</option>
+          {axes.flatMap((axis) =>
+            axis.values.map((value) => (
+              <option key={`${axis.key}:${value.key}`} value={`${axis.key}:${value.key}`}>
+                {`${axis.name}: ${value.label}`}
+              </option>
+            )),
+          )}
+        </select>
+      </label>
+      <label>
+        When
+        <input
+          type="datetime-local"
+          value={when}
+          onChange={(event) => setWhen(event.target.value)}
+        />
+      </label>
+      <p role="status">{answer}</p>
+      <div className={styles['buttons']}>
+        <button type="submit" disabled={busy}>
+          Ask
+        </button>
+      </div>
+    </form>
   );
 }

@@ -1,6 +1,6 @@
 import type { ComponentView, createApiClient } from '@alloy-works/api-client';
 import { DatesButton, DatesChips, datesIn, type Dates } from '../lifecycle/Dates.js';
-import { ScopeButton, ScopeChips, scopeIn, type ScopeNow } from '../lifecycle/Scope.js';
+import { NO_SCOPE, ScopeButton, ScopeChips, scopeIn, type ScopeNow } from '../lifecycle/Scope.js';
 import type { ContentDocument } from '@alloy-works/domain';
 import {
   bindingDigestInput,
@@ -2403,6 +2403,7 @@ export function ComponentEditor({
                 title={header.title}
                 dates={(datesNow ?? datesIn(shown))!}
                 onSaved={setDatesNow}
+                className={styles['archive']}
               />
             )}
             <ScopeChips
@@ -2412,16 +2413,19 @@ export function ComponentEditor({
               scope={scopeNow ?? scopeIn(shown)}
               onAccepted={setScopeNow}
             />
-            {shown.mayEdit === true && !archived && (scopeNow ?? scopeIn(shown)) && (
-              <ScopeButton
-                client={client}
-                kind="component"
-                id={componentId}
-                title={header.title}
-                scope={(scopeNow ?? scopeIn(shown))!}
-                onSaved={setScopeNow}
-              />
-            )}
+            {/* Set where it may be, and asked what was effective by every reader (R15-B, R15-F). */}
+            <ScopeButton
+              mayEdit={
+                shown.mayEdit === true && !archived && (scopeNow ?? scopeIn(shown)) !== undefined
+              }
+              client={client}
+              kind="component"
+              id={componentId}
+              title={header.title}
+              scope={scopeNow ?? scopeIn(shown) ?? NO_SCOPE}
+              onSaved={setScopeNow}
+              className={styles['archive']}
+            />
             <UsedInButton
               client={client}
               id={componentId}
