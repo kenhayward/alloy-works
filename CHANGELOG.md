@@ -3,6 +3,19 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.191.0 - 2026-10-18 (PR #701)
+
+Reuse's twentieth slice: T4 tidy (the R20 plan).
+
+### Added
+
+- **Stop a bulk run at the first failure.** Generate offers **Stop at the first row that fails**: the run makes no more documents after a refused row, the rest wait, and **Run the failed again** makes them. Without it, a run carries on as before, and the cohort says which it did.
+- **Where a style is used.** Through the API, the components using a paragraph, table or image style, as already for components, assets, query definitions and templates.
+
+### Changed
+
+- **Four planned capabilities moved later.** Where-used across every kind of reference, a condition axis drawing on a vocabulary, and relationship types exported with the configuration and joining every kind now arrive with the reference libraries and configuration export they depend on.
+
 ## 0.190.0 - 2026-10-17 (PR #699)
 
 Reuse's nineteenth slice: relationships finished (the R19 plan).

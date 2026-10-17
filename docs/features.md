@@ -1164,10 +1164,14 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   CSV file, or of a list pasted from a spreadsheet, each titled from a pattern such as `Site report:
 {site}`. Through the API (`POST /v1/spaces/{space}/cohorts`) the rows may also come from a query
   result. Every row is made from the template as it stood when asked for, in a transaction of its own:
-  a row that is refused leaves nothing and says why. The cohort's page follows the rows, opens each
+  a row that is refused leaves nothing and says why, and the run carries on - or, where **Stop at the
+  first row that fails** is ticked, stops there, the rest waiting. The cohort's page follows the rows, says where a run stopped, opens each
   document, and runs the failed rows again, corrected, without touching the rest. Templates'
   **Cohorts** lists every cohort you may read, newest first or by title, filtered by whether its rows
   were all made, one failed, or some wait. Approving or publishing a cohort as one act is not there yet.
+- **Where a style is used.** Through the API (`GET /v1/styles/uses?kind=paragraph&key=warning`),
+  the components whose latest version uses a paragraph, table or image style, a paragraph style in a
+  table's cells among them; those you may not read are said to exist, never which.
 - **Relationships.** Declare a relationship type through the API (`POST /v1/definitions`, kind
   `relationshipType`): the kinds it relates at each end - components, documents, publications,
   assets, templates, query definitions and datasets, and no others - how many each may hold, whether it reads the

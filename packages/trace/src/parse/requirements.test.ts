@@ -203,7 +203,8 @@ describe('the real corpus', () => {
     // 1587 (2026-10-16): TPL-070 and TPL-071, superseding TPL-060 and TPL-046 (ADR-0062).
     // 1588 (2026-10-16): TPL-072, superseding TPL-064 (R10).
     // 1589 (2026-10-16): TPL-073, superseding TPL-049 (#660).
-    expect(total((document) => document.requirements)).toBe(1589);
+    // 1590 (2026-10-17): REU-055, superseding REU-006 (R20).
+    expect(total((document) => document.requirements)).toBe(1590);
     expect(total((document) => document.nonRequirements)).toBe(118);
     expect(total((document) => document.questions)).toBe(135);
   });

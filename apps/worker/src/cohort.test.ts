@@ -11,6 +11,7 @@ import {
   prepareDatabase,
   readCohort,
   readJob,
+  rerunCohort,
   submitCohort,
   type JobQueue,
   type Tenant,
@@ -131,7 +132,7 @@ describe("a cohort's run, from the queue to the store", () => {
     await db.drop();
   });
 
-  const asked = (rows: Record<string, unknown>[]) =>
+  const asked = (rows: Record<string, unknown>[], onFailure?: 'continue' | 'stop') =>
     as(async (trx) => {
       const answer = await submitCohort(trx, {
         by: ada,
@@ -142,6 +143,7 @@ describe("a cohort's run, from the queue to the store", () => {
         direction: 'ltr',
         rows,
         source: { rows: rows.length },
+        ...(onFailure === undefined ? {} : { onFailure }),
       });
       if (answer.answer !== 'submitted') throw new Error(answer.answer);
       return answer;
@@ -176,6 +178,56 @@ describe("a cohort's run, from the queue to the store", () => {
     expect(after.rows.filter((each) => each.document !== null)).toHaveLength(39);
   }, 120_000);
 
+  it('TPL-047 carries on past a failed row unless asked to stop, and says which it did', async () => {
+    const { cohort, job } = await asked([{ site: '1' }, { site: 'two' }, { site: '3' }]);
+    expect(await work()).toBe('done');
+    expect((await as((trx) => readJob(trx, job.id, ada)))!.outcome).toMatchObject({
+      made: 2,
+      failed: 1,
+      of: 3,
+      onFailure: 'continue',
+      stoppedAt: null,
+    });
+    expect((await as((trx) => readCohort(trx, cohort.id)))!).toMatchObject({
+      onFailure: 'continue',
+      stoppedAt: null,
+    });
+  }, 120_000);
+
+  it('TPL-047 stops at the first failed row where the requester asked, leaving the rest waiting, says so, and runs them again on Rerun', async () => {
+    const { cohort, job } = await asked([{ site: '1' }, { site: 'two' }, { site: '3' }], 'stop');
+    expect(await work()).toBe('done');
+    expect((await as((trx) => readJob(trx, job.id, ada)))!.outcome).toMatchObject({
+      made: 1,
+      failed: 1,
+      of: 3,
+      onFailure: 'stop',
+      stoppedAt: 2,
+    });
+    const stopped = (await as((trx) => readCohort(trx, cohort.id)))!;
+    expect(stopped.rows.map((each) => each.state)).toEqual(['made', 'failed', 'pending']);
+    expect(stopped).toMatchObject({ onFailure: 'stop', stoppedAt: 2 });
+
+    // Corrected and run again: the failed row and the one left waiting are made, under its own choice.
+    const again = await as((trx) => rerunCohort(trx, cohort.id, ada, { 2: { site: '2' } }));
+    if (again.answer !== 'submitted') throw new Error(again.answer);
+    expect(await work()).toBe('done');
+    const after = (await as((trx) => readCohort(trx, cohort.id)))!;
+    expect(after.rows.map((each) => each.state)).toEqual(['made', 'made', 'made']);
+    expect(after).toMatchObject({ onFailure: 'stop', stoppedAt: null });
+  }, 120_000);
+
+  it('TPL-047 says a run asked to stop did not, where its last row is the one that failed', async () => {
+    const { cohort, job } = await asked([{ site: '1' }, { site: 'two' }], 'stop');
+    expect(await work()).toBe('done');
+    expect((await as((trx) => readJob(trx, job.id, ada)))!.outcome).toMatchObject({
+      made: 1,
+      failed: 1,
+      stoppedAt: null,
+    });
+    expect((await as((trx) => readCohort(trx, cohort.id)))!.stoppedAt).toBeNull();
+  }, 120_000);
+
   it("makes four hundred documents well within the hour bulk generation's budget names", async () => {
     const rows = Array.from({ length: 400 }, (_, at) => ({ site: String(at + 1) }));
     const { job } = await asked(rows);
@@ -186,6 +238,8 @@ describe("a cohort's run, from the queue to the store", () => {
       made: 400,
       failed: 0,
       of: 400,
+      onFailure: 'continue',
+      stoppedAt: null,
     });
     // An hour is the budget; a tenth of it here leaves the margin production needs.
     expect(took).toBeLessThan(6 * 60 * 1000);

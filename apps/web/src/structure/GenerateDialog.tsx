@@ -35,6 +35,8 @@ export function GenerateDialog({ client, template, onGenerated, onCancel }: Gene
   const [text, setText] = useState('');
   const [title, setTitle] = useState<string | null>(null);
   const [language, setLanguage] = useState('en-GB');
+  // Carry on past a failed row unless the requester asks to stop there (TPL-047).
+  const [stop, setStop] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
   const [asking, setAsking] = useState(false);
   const read = text.trim() === '' ? null : rowsFrom(text);
@@ -58,6 +60,7 @@ export function GenerateDialog({ client, template, onGenerated, onCancel }: Gene
           language,
           direction: 'ltr',
           rows: read.rows.map((row) => ({ ...row })),
+          ...(stop ? { onFailure: 'stop' as const } : {}),
         },
       });
       if (data) {
@@ -149,6 +152,16 @@ export function GenerateDialog({ client, template, onGenerated, onCancel }: Gene
               value={language}
               onChange={(event) => setLanguage(event.target.value)}
             />
+          </div>
+          <div className={styles['field']}>
+            <label>
+              <input
+                type="checkbox"
+                checked={stop}
+                onChange={(event) => setStop(event.target.checked)}
+              />{' '}
+              Stop at the first row that fails
+            </label>
           </div>
           {refusal !== null && <p role="alert">{refusal}</p>}
           <div className={own['actions']}>

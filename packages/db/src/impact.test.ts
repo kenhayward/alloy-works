@@ -321,7 +321,7 @@ describe('the reference index and impact (relationships.md; the R2 plan, R2-A to
     expect(walked.reached.at(-1)!.id).toBe(report.artifactId);
   });
 
-  it('indexes a document made from a template by the template version it was made from', async () => {
+  it('REU-055 indexes a document made from a template by the template version it was made from, and so says where a template is used', async () => {
     const template = await as(async (trx) => {
       const answer = await createTemplate(trx, {
         spaceId: general,

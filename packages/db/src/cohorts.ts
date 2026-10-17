@@ -64,7 +64,14 @@ export interface StoredCohort {
   readonly requestedBy: string;
   readonly requestedAt: Date;
   readonly rows: readonly CohortRow[];
+  /** What its run does at a failed row (TPL-047; the R20 plan, R20-D). */
+  readonly onFailure: CohortOnFailure;
+  /** The failed row a run stopped at, the rows after it waiting; null where none did. */
+  readonly stoppedAt: number | null;
 }
+
+/** Carry on past a failed row, as every run has, or stop there (TPL-047). */
+export type CohortOnFailure = 'continue' | 'stop';
 
 export type CohortAnswer =
   | { readonly answer: 'submitted'; readonly cohort: StoredCohort; readonly job: StoredJob }
@@ -110,6 +117,8 @@ export async function submitCohort(
     readonly direction: 'ltr' | 'rtl';
     readonly rows: readonly Readonly<Record<string, unknown>>[];
     readonly source: CohortSource;
+    /** Carry on unless asked to stop (TPL-047). */
+    readonly onFailure?: CohortOnFailure;
   },
 ): Promise<CohortAnswer> {
   if (!UUID.test(input.spaceId)) return { answer: 'space.missing' };
@@ -140,10 +149,11 @@ export async function submitCohort(
   }
   const { rows: made } = await sql<{ id: string }>`
     insert into cohort (space_id, template_id, resolution, title, language, direction, source,
-                        requested_by)
+                        requested_by, on_failure)
     values (${input.spaceId}, ${resolved.resolution.template.id},
             ${JSON.stringify(resolved.resolution)}::jsonb, ${input.title}, ${input.language},
-            ${input.direction}, ${JSON.stringify(input.source)}::jsonb, ${input.by})
+            ${input.direction}, ${JSON.stringify(input.source)}::jsonb, ${input.by},
+            ${input.onFailure ?? 'continue'})
     returning id`.execute(trx);
   const cohort = made[0]!.id;
   await trx
@@ -184,6 +194,22 @@ export async function readCohortAs(
   };
 }
 
+/**
+ * Where a run that stops at a failed row stopped (TPL-047): its first failed row with rows after it
+ * still waiting, which only a stopped run leaves; null for one that carries on, or has none.
+ */
+function stoppedAt(
+  cohort: { readonly on_failure?: string },
+  rows: readonly { readonly row_no: number; readonly state: string }[],
+): number | null {
+  if (cohort.on_failure !== 'stop') return null;
+  const waiting = rows.filter((each) => each.state === 'pending').map((each) => each.row_no);
+  if (waiting.length === 0) return null;
+  const last = Math.max(...waiting);
+  const failed = rows.find((each) => each.state === 'failed' && each.row_no < last);
+  return failed?.row_no ?? null;
+}
+
 /** A cohort and its rows in order, or undefined where this environment holds none by that id. */
 export async function readCohort(
   trx: TenantTransaction,
@@ -218,6 +244,9 @@ export async function readCohort(
       failure: (each.failure ?? null) as CohortRowFailure | null,
       attempts: each.attempts,
     })),
+    // Read so a schema before 0116 answers carry on, as every run did then.
+    onFailure: (row as { on_failure?: string }).on_failure === 'stop' ? 'stop' : 'continue',
+    stoppedAt: stoppedAt(row as { on_failure?: string }, rows),
   };
 }
 

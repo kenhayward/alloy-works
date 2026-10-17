@@ -50,6 +50,18 @@ export const JobView = z.object({
         made: z.number().int().describe('The rows made into documents'),
         failed: z.number().int().describe('The rows that failed, each reported'),
         of: z.number().int().describe('The rows the run took'),
+        onFailure: z
+          .enum(['continue', 'stop'])
+          .optional()
+          .describe('What it did at a failed row, as the cohort asked (TPL-047)'),
+        stoppedAt: z
+          .number()
+          .int()
+          .nullable()
+          .optional()
+          .describe(
+            'The failed row it stopped at, the rows after it waiting; null where it did not stop',
+          ),
       }),
     ])
     .nullable()

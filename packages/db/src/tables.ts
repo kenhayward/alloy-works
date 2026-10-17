@@ -448,6 +448,8 @@ export interface CohortTable {
   source: ColumnType<unknown, string, never>;
   requested_by: ColumnType<string, string, never>;
   requested_at: ColumnType<Date, never, never>;
+  /** What its run does at a failed row (0116; TPL-047). */
+  on_failure: ColumnType<string, string | undefined, never>;
 }
 
 /** One row of a cohort (0107): its parameters fixed, its outcome written by the run (R7-E). */

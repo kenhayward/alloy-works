@@ -125,6 +125,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0113_line_returned',
       '0114_publication_shares',
       '0115_query_limits',
+      '0116_cohort_on_failure',
     ]);
 
     const read = async () =>

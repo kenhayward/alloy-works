@@ -43,6 +43,12 @@ export const SubmitCohortBody = z
     dataset: LowercaseUuid.optional().describe(
       "A query result's version whose rows are the rows: one parameter for each column, by its name",
     ),
+    onFailure: z
+      .enum(['continue', 'stop'])
+      .optional()
+      .describe(
+        'At a failed row: `continue`, the default, makes the rest; `stop` makes no more, the rows after it waiting for Rerun (TPL-047)',
+      ),
   })
   .refine((body) => (body.rows === undefined) !== (body.dataset === undefined), {
     message: 'Give the rows inline or name a query result, one or the other',
@@ -82,6 +88,16 @@ export const CohortView = z.object({
     .object({ rows: z.number().int().optional(), dataset: LowercaseUuid.optional() })
     .describe('Where its rows came from: how many were given inline, or the query result'),
   requestedAt: z.string(),
+  onFailure: z
+    .enum(['continue', 'stop'])
+    .describe('What its run does at a failed row, as it was asked for (TPL-047)'),
+  stoppedAt: z
+    .number()
+    .int()
+    .nullable()
+    .describe(
+      'The failed row its run stopped at, the rows after it waiting for Rerun; null where none did',
+    ),
   rows: z
     .array(
       z.object({

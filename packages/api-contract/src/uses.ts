@@ -61,10 +61,48 @@ export const ComponentUsesView = z.object({
 export type ComponentUsesView = z.infer<typeof ComponentUsesView>;
 
 export const ComponentUsesParams = z.object({ id: z.uuid() });
+
+/** A style by what it styles and its key (REU-055; the R20 plan, R20-A). */
+export const StyleUsesQuery = z.object({
+  kind: z.enum(['paragraph', 'table', 'image']).describe('What it styles'),
+  key: z
+    .string()
+    .min(1)
+    .max(100)
+    .regex(/^[A-Za-z0-9][A-Za-z0-9_-]*$/)
+    .describe('Its key, as a block names it'),
+});
+export type StyleUsesQuery = z.infer<typeof StyleUsesQuery>;
+
+export const StyleUsesView = z.object({
+  components: z
+    .array(z.object({ id: z.string(), title: z.string() }))
+    .describe('The components whose latest version uses it that the caller may read, by title'),
+  unreadable: z.boolean().describe('Whether one the caller may not read uses it too: never which'),
+});
+export type StyleUsesView = z.infer<typeof StyleUsesView>;
 export type ComponentUsesParams = z.infer<typeof ComponentUsesParams>;
 
 /** Where a component is used (relationships.md; the R1 plan, Task 1). */
 export const usesRoutes = {
+  getStyleUses: {
+    operationId: 'getStyleUses',
+    method: 'GET',
+    path: '/v1/styles/uses',
+    summary: 'Where a style is used: the components naming it',
+    tenantScoped: true,
+    access: { check: 'session' },
+    query: StyleUsesQuery,
+    responses: {
+      200: {
+        description:
+          'The components whose latest version uses the style - a paragraph style wherever a paragraph is, in a table cell too - those the caller may read named, and whether there are more',
+        schema: StyleUsesView,
+      },
+      400: { description: 'A kind or a key that is not one', schema: ErrorBody },
+      401: { description: 'No session, or not one this environment issued', schema: ErrorBody },
+    },
+  },
   getComponentUses: {
     operationId: 'getComponentUses',
     method: 'GET',

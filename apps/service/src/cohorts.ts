@@ -37,6 +37,8 @@ export function cohortView(cohort: StoredCohort): CohortView {
     title: cohort.title,
     source: { ...cohort.source },
     requestedAt: cohort.requestedAt.toISOString(),
+    onFailure: cohort.onFailure,
+    stoppedAt: cohort.stoppedAt,
     rows: cohort.rows.map((each) => ({
       row: each.row,
       parameters: { ...each.parameters },
@@ -124,6 +126,7 @@ export function cohortHandlers(
         direction: body.direction,
         rows,
         source: body.rows ? { rows: rows.length } : { dataset: body.dataset! },
+        ...(body.onFailure === undefined ? {} : { onFailure: body.onFailure }),
       });
       switch (answer.answer) {
         case 'submitted':

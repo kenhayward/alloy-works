@@ -10175,9 +10175,18 @@
       "area": "REU",
       "statement": "\"Where is this used\" must be a first-class query over components, assets, query definitions, styles, terms and templates",
       "tranche": "T4",
-      "status": "Specified",
+      "status": "Superseded by REU-055",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
       "line": 76
+    },
+    {
+      "id": "REU-055",
+      "area": "REU",
+      "statement": "\"Where is this used\" must be a first-class query over components, assets, query definitions, styles and templates; terms are REU-052's",
+      "tranche": "T4",
+      "status": "Specified",
+      "document": "REU-reuse-variants-and-conditional-profiling.md",
+      "line": 77
     },
     {
       "id": "REU-007",
@@ -10186,7 +10195,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 77
+      "line": 78
     },
     {
       "id": "REU-008",
@@ -10195,7 +10204,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 78
+      "line": 79
     },
     {
       "id": "REU-009",
@@ -10204,7 +10213,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 79
+      "line": 80
     },
     {
       "id": "REU-010",
@@ -10213,7 +10222,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 80
+      "line": 81
     },
     {
       "id": "REU-052",
@@ -10222,7 +10231,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 81
+      "line": 82
     },
     {
       "id": "REU-011",
@@ -10231,7 +10240,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 101
+      "line": 102
     },
     {
       "id": "REU-012",
@@ -10240,7 +10249,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 102
+      "line": 103
     },
     {
       "id": "REU-013",
@@ -10249,7 +10258,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 103
+      "line": 104
     },
     {
       "id": "REU-014",
@@ -10258,7 +10267,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 104
+      "line": 105
     },
     {
       "id": "REU-015",
@@ -10267,7 +10276,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 105
+      "line": 106
     },
     {
       "id": "REU-016",
@@ -10276,7 +10285,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 116
+      "line": 117
     },
     {
       "id": "REU-017",
@@ -10285,7 +10294,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 117
+      "line": 118
     },
     {
       "id": "REU-018",
@@ -10294,7 +10303,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 118
+      "line": 119
     },
     {
       "id": "REU-019",
@@ -10303,7 +10312,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 119
+      "line": 120
     },
     {
       "id": "REU-036",
@@ -10312,7 +10321,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 120
+      "line": 121
     },
     {
       "id": "REU-037",
@@ -10321,7 +10330,7 @@
       "tranche": "T4",
       "status": "Withdrawn",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 121
+      "line": 122
     },
     {
       "id": "REU-038",
@@ -10330,7 +10339,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 122
+      "line": 123
     },
     {
       "id": "REU-020",
@@ -10339,7 +10348,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 137
+      "line": 138
     },
     {
       "id": "REU-021",
@@ -10348,7 +10357,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 138
+      "line": 139
     },
     {
       "id": "REU-022",
@@ -10357,7 +10366,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 139
+      "line": 140
     },
     {
       "id": "REU-023",
@@ -10366,7 +10375,7 @@
       "tranche": "Constraint",
       "status": "Superseded by REU-048",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 140
+      "line": 141
     },
     {
       "id": "REU-024",
@@ -10375,7 +10384,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 141
+      "line": 142
     },
     {
       "id": "REU-025",
@@ -10384,7 +10393,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 142
+      "line": 143
     },
     {
       "id": "REU-026",
@@ -10393,7 +10402,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 143
+      "line": 144
     },
     {
       "id": "REU-027",
@@ -10402,7 +10411,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 144
+      "line": 145
     },
     {
       "id": "REU-053",
@@ -10411,7 +10420,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 145
+      "line": 146
     },
     {
       "id": "REU-048",
@@ -10420,7 +10429,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 146
+      "line": 147
     },
     {
       "id": "REU-047",
@@ -10429,7 +10438,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 147
+      "line": 148
     },
     {
       "id": "REU-028",
@@ -10438,7 +10447,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 174
+      "line": 175
     },
     {
       "id": "REU-029",
@@ -10447,7 +10456,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 175
+      "line": 176
     },
     {
       "id": "REU-030",
@@ -10456,7 +10465,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 176
+      "line": 177
     },
     {
       "id": "REU-039",
@@ -10465,7 +10474,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 177
+      "line": 178
     },
     {
       "id": "REU-040",
@@ -10474,7 +10483,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 178
+      "line": 179
     },
     {
       "id": "REU-031",
@@ -10483,7 +10492,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 198
+      "line": 199
     },
     {
       "id": "REU-032",
@@ -10492,7 +10501,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 199
+      "line": 200
     },
     {
       "id": "REU-033",
@@ -10501,7 +10510,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 200
+      "line": 201
     },
     {
       "id": "REU-034",
@@ -10510,7 +10519,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 201
+      "line": 202
     },
     {
       "id": "REU-035",
@@ -10519,7 +10528,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 202
+      "line": 203
     },
     {
       "id": "REU-051",
@@ -10528,7 +10537,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 203
+      "line": 204
     },
     {
       "id": "REU-041",
@@ -10537,7 +10546,7 @@
       "tranche": "Constraint",
       "status": "Superseded by REU-051",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 204
+      "line": 205
     },
     {
       "id": "REU-049",
@@ -10546,7 +10555,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 205
+      "line": 206
     },
     {
       "id": "SCH-001",
@@ -14829,31 +14838,31 @@
       "id": "REU-N01",
       "statement": "**No copying content to reuse it.** A reference resolves; it does not duplicate",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 223
+      "line": 224
     },
     {
       "id": "REU-N02",
       "statement": "**No overrides that live on the component.** An override belongs to one reference (REU-012)",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 224
+      "line": 225
     },
     {
       "id": "REU-N03",
       "statement": "**No inferred inclusion.** A condition axis a profile does not set excludes (REU-024)",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 225
+      "line": 226
     },
     {
       "id": "REU-N04",
       "statement": "**No conditional content in an output, hidden.** Excluded means absent, and every publication is scanned to prove it (REU-048, which superseded REU-023)",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 226
+      "line": 227
     },
     {
       "id": "REU-N05",
       "statement": "**No ambient input to resolution.** What a document resolves to is a function of its components, profile, parameters and overrides, and of nothing else - no clock, no execution order, no identity of whoever pressed the button (REU-039)",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 227
+      "line": 228
     },
     {
       "id": "SCH-N01",
@@ -15732,35 +15741,35 @@
       "question": "**Does the override mechanism actually hold (section 5)?** The spike's case 6 was never run, and it is the case where the discarded alternative is stronger",
       "settledBy": "Running case 6: one component in two documents where one needs a single word different",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 233
+      "line": 234
     },
     {
       "id": "REU-Q02",
       "question": "**May a condition apply to a whole component reference, as well as to content inside one?** \"Include this section only for the regulator\" is an obvious want",
       "settledBy": "Whether it is expressible as an outline-node condition in **STR** instead, which may be cleaner",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 234
+      "line": 235
     },
     {
       "id": "REU-Q03",
       "question": "**How many profiles does one document have in practice?** Two is easy; twelve makes preview, comparison and publication counts awkward",
       "settledBy": "Real customer profiles. It affects whether publishing per profile is a routine act or a batch job",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 235
+      "line": 236
     },
     {
       "id": "REU-Q04",
       "question": "**Can conditions nest or combine with logic?** \"UK and not draft\" is asked for the moment two axes exist",
       "settledBy": "Whether simple set membership survives a real house style. Boolean conditions are easy to add and very hard to review",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 236
+      "line": 237
     },
     {
       "id": "REU-Q05",
       "question": "**May a parameter set be declared per profile, so that variables rather than conditions carry per-profile wording?** REU-047 makes conditional alternatives the documented path; parameters would make it a table instead",
       "settledBy": "Real house wording differences. Conditions suit a sentence that differs; parameters suit a value that differs, and customers will have both",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
-      "line": 237
+      "line": 238
     },
     {
       "id": "SCH-Q01",
@@ -15963,6 +15972,10 @@
     {
       "document": "access.md",
       "owns": [
+        {
+          "id": "IAM-016",
+          "howItIsMet": "A reference to a component in another space is placed only where its author may read the component (`mayReference`), refused as one that is not there; a reader who may not read it is shown the reference withheld, nothing of it, and publishing refuses it by name (PUB-094; the R20 plan, R20-B)"
+        },
         {
           "id": "IAM-014",
           "howItIsMet": "A `space` is a row in a tenant's schema, so it belongs to that tenant by construction; a content artifact's `space_id` is not nullable, and grants at a space are the level below the tenant"
@@ -16821,7 +16834,7 @@
         },
         {
           "id": "CNT-185",
-          "howItIsMet": "Resolution acts on a mark id rather than a position, so every fragment of one annotation resolves in one operation"
+          "howItIsMet": "Excluding is the profile's (REU-021, R6-C): every run whose condition the profile does not select is excluded in one pass, so every fragment carrying one condition, in any run or block, goes together in one profile pass; a paragraph it empties goes with them (the R20 plan, R20-C)"
         },
         {
           "id": "CNT-006",
@@ -18241,8 +18254,8 @@
           "howItIsMet": "Each reference in where-used says whether it carries local overrides"
         },
         {
-          "id": "REU-006",
-          "howItIsMet": "\"Where is this used\" is the reference index read backwards, one hop"
+          "id": "REU-055",
+          "howItIsMet": "\"Where is this used\" is the reference index read backwards, one hop, for components (`/v1/components/{id}/uses`), query definitions, assets and templates (`/impact?depth=1`, and each kind's own uses route); a style, named by its kind and key, reads the latest component versions naming it (`GET /v1/styles/uses`; the R20 plan, R20-A) - a scan of the tenant's components at each ask, one style at a time, which a block-style index would replace at scale"
         },
         {
           "id": "REU-007",
@@ -19236,6 +19249,10 @@
           "howItIsMet": "Each row is made in a savepoint of its own transaction: a refusal leaves nothing of it and is kept as the row's failure with its code and words, and the run goes on; the job's JSON Lines report has a line for every row (R7-E)"
         },
         {
+          "id": "TPL-047",
+          "howItIsMet": "A cohort declares `onFailure` (0116): `continue`, the default, goes on past a failed row as REU-033 says; `stop` makes no more, the rows after it waiting, and Rerun runs them under the cohort's own choice; the job's outcome and the cohort's view say which it was and the row it stopped at (the R20 plan, R20-D)"
+        },
+        {
           "id": "TPL-039",
           "howItIsMet": "As REU-033: every row reported made or failed, and a failed row leaves no document (R7-E)"
         },
@@ -20201,13 +20218,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 447,
+      "line": 448,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 460,
+      "line": 461,
       "kind": "title"
     },
     {
@@ -20562,6 +20579,12 @@
       "id": "TPL-065",
       "file": "apps/service/src/creation-bindings.test.ts",
       "line": 90,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-016",
+      "file": "apps/service/src/cross-space-references.test.ts",
+      "line": 47,
       "kind": "title"
     },
     {
@@ -20921,13 +20944,19 @@
     {
       "id": "REL-017",
       "file": "apps/service/src/impact-routes.test.ts",
-      "line": 51,
+      "line": 83,
       "kind": "title"
     },
     {
       "id": "REL-020",
       "file": "apps/service/src/impact-routes.test.ts",
-      "line": 59,
+      "line": 91,
+      "kind": "title"
+    },
+    {
+      "id": "REU-055",
+      "file": "apps/service/src/impact-routes.test.ts",
+      "line": 51,
       "kind": "title"
     },
     {
@@ -23333,13 +23362,19 @@
     {
       "id": "REU-033",
       "file": "apps/web/src/structure/CohortPage.test.tsx",
-      "line": 60,
+      "line": 67,
       "kind": "title"
     },
     {
       "id": "REU-035",
       "file": "apps/web/src/structure/CohortPage.test.tsx",
-      "line": 84,
+      "line": 111,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-047",
+      "file": "apps/web/src/structure/CohortPage.test.tsx",
+      "line": 91,
       "kind": "title"
     },
     {
@@ -23817,6 +23852,12 @@
       "kind": "title"
     },
     {
+      "id": "TPL-047",
+      "file": "apps/web/src/structure/GenerateDialog.test.tsx",
+      "line": 61,
+      "kind": "title"
+    },
+    {
       "id": "TPL-026",
       "file": "apps/web/src/structure/NewDocument.parameters.test.tsx",
       "line": 173,
@@ -24143,7 +24184,13 @@
     {
       "id": "REU-033",
       "file": "apps/worker/src/cohort.test.ts",
-      "line": 150,
+      "line": 152,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-047",
+      "file": "apps/worker/src/cohort.test.ts",
+      "line": 181,
       "kind": "title"
     },
     {
@@ -25467,6 +25514,12 @@
       "kind": "title"
     },
     {
+      "id": "REU-055",
+      "file": "packages/db/src/impact.test.ts",
+      "line": 324,
+      "kind": "title"
+    },
+    {
       "id": "SCH-023",
       "file": "packages/db/src/impact.test.ts",
       "line": 369,
@@ -26172,6 +26225,12 @@
       "id": "MET-042",
       "file": "packages/db/src/starter-component-type.test.ts",
       "line": 59,
+      "kind": "title"
+    },
+    {
+      "id": "REU-055",
+      "file": "packages/db/src/style-uses.test.ts",
+      "line": 133,
       "kind": "title"
     },
     {
@@ -28173,6 +28232,12 @@
       "kind": "title"
     },
     {
+      "id": "CNT-185",
+      "file": "packages/domain/src/reuse/conditions.test.ts",
+      "line": 104,
+      "kind": "title"
+    },
+    {
       "id": "REU-020",
       "file": "packages/domain/src/reuse/conditions.test.ts",
       "line": 45,
@@ -28187,7 +28252,7 @@
     {
       "id": "REU-024",
       "file": "packages/domain/src/reuse/conditions.test.ts",
-      "line": 104,
+      "line": 124,
       "kind": "title"
     },
     {

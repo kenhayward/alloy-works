@@ -832,6 +832,9 @@ export {
   type ComponentUses,
   type UsingDocument,
   type UsingReference,
+  styleUses,
+  type StyleKind,
+  type StyleUses,
 } from './uses.js';
 export {
   impact,
@@ -881,6 +884,7 @@ export {
   type CohortAnswer,
   type CohortRow,
   type CohortRowFailure,
+  type CohortOnFailure,
   type CohortSource,
   type StoredCohort,
 } from './cohorts.js';

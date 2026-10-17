@@ -23,7 +23,14 @@ const row = (n: number, site: string, state: string, document: string | null = n
       : null,
   attempts: state === 'pending' ? 0 : 1,
 });
-const cohort = (rows: unknown[]) => ({
+const cohort = (
+  rows: unknown[],
+  stopped: { onFailure: string; stoppedAt: number | null } = {
+    onFailure: 'continue',
+    stoppedAt: null,
+  },
+) => ({
+  ...stopped,
   id: COHORT,
   space: '00000000-0000-4000-8000-0000000000f1',
   template: {
@@ -79,6 +86,26 @@ describe("a cohort's page (the R7 plan, R7-E to R7-G)", () => {
       `#/documents/${YORK}`,
     ]);
     expect(screen.getByText('A value it gives does not fit its parameter.')).toBeInTheDocument();
+  });
+
+  it('TPL-047 says a run that stops at a failed row stopped there, and waits for nothing more', async () => {
+    const { client, asked } = service([
+      cohort(
+        [row(1, 'Leeds', 'made', LEEDS), row(2, 'Bath', 'failed'), row(3, 'York', 'pending')],
+        { onFailure: 'stop', stoppedAt: 2 },
+      ),
+    ]);
+    render(<CohortPage client={client} id={COHORT} pollMs={10} />);
+    expect(
+      await screen.findByText(
+        '1 of 3 made, 1 failed. Stopped at row 2: the rows after it wait for Run the failed again.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Waiting')).toBeInTheDocument();
+    expect(screen.queryByText('Being made')).toBeNull();
+    // Stopped, it is read once: nothing more is being made.
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    expect(asked.filter((each) => each.method === 'GET')).toHaveLength(1);
   });
 
   it('REU-035 runs the failed rows again with their parameters corrected, and no other', async () => {

@@ -48,6 +48,38 @@ describe('impact and what an artifact uses', () => {
     });
   });
 
+  it('REU-055 answers where a query definition, a component and a style are used, each as a query of its own', async () => {
+    const connection = await h.connection('Meters');
+    const definition = await h.definition(connection.id);
+    const component = await h.component(h.general, 'Meter readings');
+    await h.place(component, binding('b1', definition.id));
+    const document = await h.documentReferencing([component.id]);
+
+    // A query definition: what its change reaches first, one hop.
+    const fromDefinition = await h.call(
+      'ada',
+      'GET',
+      `/v1/artifacts/${definition.id}/impact?depth=1`,
+    );
+    expect(
+      fromDefinition.json<{ reached: { id: string }[] }>().reached.map((each) => each.id),
+    ).toEqual([component.id]);
+    // A component: the documents placing it.
+    const fromComponent = await h.call('ada', 'GET', `/v1/components/${component.id}/uses`);
+    expect(
+      fromComponent.json<{ documents: { id: string }[] }>().documents.map((each) => each.id),
+    ).toEqual([document.id]);
+    // A style, by what it styles and its key: the paragraph its text sits in.
+    const fromStyle = await h.call('ada', 'GET', '/v1/styles/uses?kind=paragraph&key=body');
+    expect(fromStyle.statusCode, fromStyle.body).toBe(200);
+    expect(
+      fromStyle.json<{ components: { id: string }[] }>().components.map((each) => each.id),
+    ).toContain(component.id);
+    expect((await h.call('ada', 'GET', '/v1/styles/uses?kind=border&key=body')).statusCode).toBe(
+      400,
+    );
+  });
+
   it('REL-017 refuses a walk without a depth, or deeper than ten', async () => {
     const component = await h.component(h.general, 'Bounded');
     for (const query of ['', '?depth=0', '?depth=11', '?depth=two']) {

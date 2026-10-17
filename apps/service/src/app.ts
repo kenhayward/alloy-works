@@ -571,7 +571,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...versionHandlers(),
     ...archivalHandlers(),
     ...deletionHandlers(),
-    ...usesHandlers(),
+    ...usesHandlers(db, tenantOf, principalOf),
     ...impactHandlers(),
     ...jobHandlers(db, tenantOf, principalOf, options.objects),
     ...cohortHandlers(db, tenantOf, options.objects),
