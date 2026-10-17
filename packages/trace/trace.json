@@ -16052,6 +16052,10 @@
           "howItIsMet": "An administrator of the tenant invites an address, which makes a principal at once; every grant route names it before anybody has signed in, and what it is granted confers nothing until the first sign-in through a route the tenant permits whose provider asserts that address verified, which claims it (\"Invitations\")"
         },
         {
+          "id": "IAM-050",
+          "howItIsMet": "`POST /v1/grants/{id}/extension`: a new allow to somebody from outside, naming the grant it `extends`, which goes in the same change, to a later day no further than the tenant cap from now (the default from now where none is named); made by an administrator of where it stands, audited as the grant's events, the new one carrying both expiries. `POST /v1/grants` takes `expiresAt` too (the R13 plan, R13-E)"
+        },
+        {
           "id": "IAM-051",
           "howItIsMet": "`GET /v1/access/external` lists every external principal, each with every grant reaching them - directly or through a group, with its level and expiry - and the readable set those grants produce"
         },
@@ -20121,13 +20125,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 424,
+      "line": 426,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 437,
+      "line": 439,
       "kind": "title"
     },
     {
@@ -20463,7 +20467,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1366,
+      "line": 1368,
       "kind": "title"
     },
     {
@@ -20673,25 +20677,43 @@
     {
       "id": "COL-038",
       "file": "apps/service/src/external-routes.test.ts",
-      "line": 303,
+      "line": 311,
       "kind": "title"
     },
     {
       "id": "COL-059",
       "file": "apps/service/src/external-routes.test.ts",
-      "line": 267,
+      "line": 275,
       "kind": "title"
     },
     {
       "id": "IAM-045",
       "file": "apps/service/src/external-routes.test.ts",
-      "line": 214,
+      "line": 222,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-049",
+      "file": "apps/service/src/external-routes.test.ts",
+      "line": 489,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-050",
+      "file": "apps/service/src/external-routes.test.ts",
+      "line": 444,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-051",
+      "file": "apps/service/src/external-routes.test.ts",
+      "line": 505,
       "kind": "title"
     },
     {
       "id": "SCH-072",
       "file": "apps/service/src/external-routes.test.ts",
-      "line": 395,
+      "line": 403,
       "kind": "title"
     },
     {
@@ -21892,6 +21914,18 @@
       "id": "LIF-022",
       "file": "apps/web/src/admin/Holds.test.tsx",
       "line": 63,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-050",
+      "file": "apps/web/src/admin/Outside.test.tsx",
+      "line": 66,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-051",
+      "file": "apps/web/src/admin/Outside.test.tsx",
+      "line": 54,
       "kind": "title"
     },
     {
