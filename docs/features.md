@@ -117,12 +117,15 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   waits fourteen days, is renewed by inviting the address again, and can be withdrawn, with everything
   given to it, until it is accepted. Whether the person is from outside the organisation is chosen when
   inviting them, and cannot be changed afterwards yet. Somebody who has already signed in is given access directly, and
-  inviting their address is refused.
+  inviting their address is refused. Somebody from outside is shown with **Outside** beside their name
+  wherever they appear - who is here, threads and comments, suggestions, review rounds - and can be
+  named a reviewer on a round. Administration's **From outside** lists everybody from outside, what
+  each may read and every grant reaching them with its expiry, and **Extend** gives one a later day, no
+  further than the environment's limit; a grant to them can be made with its own expiry too.
 
   **This is grants to people, not the whole of managing access.** Nothing sends the invitation: the
-  administrator tells the person to sign in. Nothing creates or changes a role, marks somebody who has
-  already signed in as from outside the organisation, extends an expiring grant or gives one an expiry,
-  and no page shows a template on its own, so its access is reached from its row in Templates.
+  administrator tells the person to sign in. Nothing creates or changes a role or marks somebody who has
+  already signed in as from outside the organisation, and no page shows a template on its own, so its access is reached from its row in Templates.
 
 - **Spaces.** An administrator of the whole environment makes a space, renames one, and archives or
   restores one, from Administration's **Spaces** - a table of each space's status and your access,
@@ -1753,7 +1756,8 @@ Named explicitly so nobody has to read the source to find out:
 - No hosting. Everything runs on your own machine, over plain HTTP, with development passwords.
 - No search by meaning, no taxonomy. No layout the product seeds declares an approval page. Conditional text
   and suggestion handling are described in the content model and neither runs.
-- No email, webhook or internal-only thread: a notification is in the inbox alone, and every thread
-  is seen by whoever may read what it is on.
+- No email or webhook: a notification is in the inbox alone. A thread is seen by whoever may read what
+  it is on, but for an internal one, which nobody from outside the organisation sees, is told of or
+  finds.
 - No signed or published release - the installer builds locally and is unsigned.
 - No auto-update.

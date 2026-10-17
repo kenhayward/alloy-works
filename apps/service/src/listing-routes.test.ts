@@ -452,7 +452,9 @@ describe('the listings through the service', () => {
     };
     // Every route that answers a list: a new one is listed here, and so paged, or this fails. What
     // waits is capped at 20 with its total, never paged (the HM plan, HM-A).
-    const capped = ['getAttention'];
+    // Nor, yet, who from outside reaches what: one row a person from outside (the R13 plan, its Built
+    // note), which a tenant of thousands of guests would want paged.
+    const capped = ['getAttention', 'listExternalAccess'];
     const listings = allRoutes.filter(
       (route) =>
         route.method === 'GET' &&

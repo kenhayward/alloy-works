@@ -6,6 +6,7 @@ import type {
   RoundView,
 } from '@alloy-works/api-contract';
 import {
+  internalHeld,
   personView,
   actOnRound,
   closeRound,
@@ -112,7 +113,7 @@ async function viewOf(
   // A reader from outside counts no internal thread, which they are never shown (COL-038; R13-D).
   const outside =
     (await trx.selectFrom('principal').select('kind').where('id', '=', reader).executeTakeFirst())
-      ?.kind === 'external';
+      ?.kind === 'external' && (await internalHeld(trx));
   const threads = await trx
     .selectFrom('thread')
     .select(['created_by'])

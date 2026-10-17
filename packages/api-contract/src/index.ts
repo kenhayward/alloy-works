@@ -127,6 +127,8 @@ export {
 } from './erasure.js';
 export {
   GrantBody,
+  ExtensionBody,
+  ExternalAccessList,
   GrantList,
   GrantListQuery,
   GrantMade,

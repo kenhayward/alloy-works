@@ -340,6 +340,8 @@ const operationTags = {
     'listRoles',
     'listGrants',
     'makeGrant',
+    'extendGrant',
+    'listExternalAccess',
     'removeGrant',
   ],
   Search: ['search'],
@@ -772,6 +774,10 @@ const descriptions: Readonly<Record<string, string>> = {
   makeGrant:
     'Grants or denies a role to a person or group at the selected level. The resulting access decision takes effect on the next request.',
   removeGrant: 'Removes a grant unless it is needed to keep the environment administered.',
+  extendGrant:
+    'Extends a grant to somebody from outside the organisation: a new grant with a later expiry, no later than the tenant cap from now, which names and replaces the one it extends in the same change. A positive act by an administrator of where it stands, audited with both expiries; a grant to somebody inside the organisation is not extended this way.',
+  listExternalAccess:
+    'Lists everybody from outside the organisation: each grant reaching them, directly or through a group, with its level and expiry, and what those grants let them read. The report an administrator runs to see who from outside can reach what.',
   search:
     'Searches only content the caller may read, with facets and stable cursor paging: the latest version of each by default, every version on request, or what one baseline pins. Each result names the version it matched in.',
   getEditingSettings:

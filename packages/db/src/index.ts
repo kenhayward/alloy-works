@@ -287,7 +287,10 @@ export {
   type NewGrant,
   type RemovalAnswer,
   type StoredGrant,
+  extendGrant,
+  type ExtensionAnswer,
 } from './grants.js';
+export { listExternalReach, type ExternalGrant, type ExternalReach } from './external-access.js';
 export {
   listGrants,
   countPrincipals,
@@ -643,6 +646,7 @@ export {
 } from './definitions.js';
 export { componentFieldsNow, listPeople, unstorableValues } from './component-values.js';
 export { personView, type PersonView } from './person-view.js';
+export { internalHeld } from './internal-held.js';
 export { indexPublication, indexVersion, reindexSearch } from './search.js';
 export {
   changedRanges,

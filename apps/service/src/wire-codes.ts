@@ -32,6 +32,9 @@ const WIRE_CODES = {
   'grant.external_at_tenant': 'grant_external_at_tenant',
   'grant.external_capped': 'grant_external_capped',
   'grant.external_past_cap': 'grant_external_past_cap',
+  'grant.not_external': 'grant_not_external',
+  'grant.not_later': 'grant_not_later',
+  'grant.expiry_past': 'grant_expiry_past',
   'grant.last_administrator': 'grant_last_administrator',
   'invitation.signed_in': 'invitation_signed_in',
   'invitation.kind_differs': 'invitation_kind_differs',
@@ -187,6 +190,9 @@ const RULES: Partial<Record<DottedCode, string>> = {
   'layout.language': 'PUB-095',
   'grant.external_at_tenant': 'IAM-071',
   'grant.external_past_cap': 'IAM-049',
+  'grant.not_external': 'IAM-050',
+  'grant.not_later': 'IAM-050',
+  'grant.expiry_past': 'IAM-049',
   // Refused when a template is made or changed as well as when a document is made from it: a template
   // naming what does not resolve could make no document (TPL-004, templates.md TE-L).
   'template.unresolved': 'TPL-004',

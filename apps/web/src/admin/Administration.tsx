@@ -10,6 +10,7 @@ import { Editing } from './Editing.js';
 import { Groups } from './Groups.js';
 import { Holds } from './Holds.js';
 import { Overview } from './Overview.js';
+import { Outside } from './Outside.js';
 import { People } from './People.js';
 import { Retention } from './Retention.js';
 import { useListing } from './listing.js';
@@ -33,6 +34,8 @@ const SECTIONS = [
   { slug: 'people', title: 'People', group: 'People and access' },
   { slug: 'groups', title: 'Groups', group: 'People and access' },
   { slug: 'roles', title: 'Roles', group: 'People and access' },
+  // Everybody from outside and what each can reach (IAM-051; the R13 plan, R13-F).
+  { slug: 'outside', title: 'From outside', group: 'People and access' },
   { slug: 'holds', title: 'Legal holds', group: 'System' },
   { slug: 'retention', title: 'Retention', group: 'System' },
   { slug: 'audit', title: 'Audit log', group: 'System' },
@@ -262,6 +265,7 @@ export function Administration({
         {shown === 'people' && <People client={client} />}
         {shown === 'groups' && <Groups client={client} />}
         {shown === 'roles' && <Roles read={roles} />}
+        {shown === 'outside' && <Outside client={client} />}
         {shown === 'holds' && <Holds client={client} />}
         {shown === 'retention' && <Retention client={client} />}
         {shown === 'audit' && <AuditLog client={client} />}
