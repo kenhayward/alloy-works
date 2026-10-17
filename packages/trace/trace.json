@@ -6997,7 +6997,7 @@
       "id": "LIB-022",
       "area": "LIB",
       "statement": "A condition axis must be able to draw its permitted values from a vocabulary (**REU-020**)",
-      "tranche": "T4",
+      "tranche": "T7",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
       "line": 181
@@ -9643,7 +9643,7 @@
       "id": "REL-007",
       "area": "REL",
       "statement": "Relationship types must be exportable and importable with the rest of a tenant's configuration",
-      "tranche": "T4",
+      "tranche": "T7",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
       "line": 44
@@ -9814,7 +9814,7 @@
       "id": "REL-052",
       "area": "REL",
       "statement": "A relationship must be creatable between any artifact kind the product defines - the set **IAM** section 2 names - and the kinds a type permits (REL-008) must be drawn from that set rather than from a list repeated here",
-      "tranche": "T4",
+      "tranche": "T7",
       "status": "Specified",
       "document": "REL-relationships-and-the-graph.md",
       "line": 98
@@ -10219,7 +10219,7 @@
       "id": "REU-052",
       "area": "REU",
       "statement": "Where-used must cover every reference-bearing artifact - components, documents, assets, query definitions, styles and citation styles, terms, bibliography entries, vocabulary values, templates, and baselines and publications - and must distinguish **live references**, which a change would reach, from **pins in a baseline or publication**, which it never will (REU-006, **LIB-005**, **AST-018**, **TPL-032**, **VER-018**)",
-      "tranche": "T4",
+      "tranche": "T7",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
       "line": 81

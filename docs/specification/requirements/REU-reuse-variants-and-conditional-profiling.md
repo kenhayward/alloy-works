@@ -78,7 +78,7 @@ document's template, and the new section answers this one's. Finding the section
 | **REU-008** | Editing a component used elsewhere must warn before the change is saved, and must show what it will affect                                                                                                                                                                                                                                                                                                                             | T4         | Specified |
 | **REU-009** | The warning must distinguish documents that are drafts from documents that are approved, since the second is where a surprise is expensive                                                                                                                                                                                                                                                                                             | T4         | Specified |
 | **REU-010** | Where-used must respect permissions: a user must not learn of a document they may not read                                                                                                                                                                                                                                                                                                                                             | Constraint | Specified |
-| **REU-052** | Where-used must cover every reference-bearing artifact - components, documents, assets, query definitions, styles and citation styles, terms, bibliography entries, vocabulary values, templates, and baselines and publications - and must distinguish **live references**, which a change would reach, from **pins in a baseline or publication**, which it never will (REU-006, **LIB-005**, **AST-018**, **TPL-032**, **VER-018**) | T4         | Specified |
+| **REU-052** | Where-used must cover every reference-bearing artifact - components, documents, assets, query definitions, styles and citation styles, terms, bibliography entries, vocabulary values, templates, and baselines and publications - and must distinguish **live references**, which a change would reach, from **pins in a baseline or publication**, which it never will (REU-006, **LIB-005**, **AST-018**, **TPL-032**, **VER-018**) | T7         | Specified |
 
 **REU-052 makes one question answerable instead of six.** Five documents require where-used for
 their own artifact kind and REU-006 listed six kinds, so "what would changing this affect" depended
@@ -341,3 +341,11 @@ restates it.
 | Counts       | Before                    | After                                     |
 | ------------ | ------------------------- | ----------------------------------------- |
 | Requirements | 54, of which 3 superseded | 54, of which 3 superseded and 1 withdrawn |
+
+### Moved out of T4, 2026-10-17
+
+Not a review. Closing T4, Ken moved what T4 cannot answer to the tranche that builds what it needs.
+
+| What was found                                                                                                                                                         | Change     |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| **REU-052** moved from T4 to T7: terms, bibliography entries, citation styles and vocabulary values arrive with the reference libraries (**LIB-001**, **LIB-005**, T7) | Tranche T7 |
