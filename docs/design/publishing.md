@@ -242,6 +242,9 @@ under the epoch held for a change:
   by `GET /v1/publications/{id}/shares` beside each share.
 - **Superseded said.** Every reader is told `superseded`; `newer` names the newest superseding
   publication only where they may read it. A share never follows to it.
+- **On the page.** **Shared outside** in the record beside the publication, to whoever may share it;
+  the person shared with sees no document, baseline or trail to the publications, and sign-in returns
+  to the publication (`?to=`, held to a page of the app, followed once signed in).
 - **Nothing else.** Somebody from outside who may read no space is answered no people, and no space or
   owner in a listing's facets or a search; a publication's bindings are refused them. A walk of every
   route a session opens holds this ([share-routes.test.ts](../../apps/service/src/share-routes.test.ts)).

@@ -152,6 +152,21 @@ export function Header({
   );
   const [environment, setEnvironment] = useState<string | undefined>();
   const [who, setWho] = useState<Person | 'nobody' | undefined>();
+  // The ways in the environment offers, and the page to come back to once signed in: a shared
+  // publication's, so the person it was shared with lands on it (the R17 plan, R17-A).
+  const [ways, setWays] = useState<readonly string[]>(['organisation']);
+  const [here, setHere] = useState(() => window.location.hash);
+  useEffect(() => {
+    const moved = () => setHere(window.location.hash);
+    window.addEventListener('hashchange', moved);
+    return () => window.removeEventListener('hashchange', moved);
+  }, []);
+  const signInAt = (route: string) => {
+    const to = here.replace(/^#\//, '');
+    return /^[a-z]+(\/[a-z0-9-]+)*$/.test(to) && to.length <= 200
+      ? `/v1/sign-in/${route}?to=${encodeURIComponent(to)}`
+      : `/v1/sign-in/${route}`;
+  };
   const [managingTokens, setManagingTokens] = useState(false);
   const [seeingSessions, setSeeingSessions] = useState(false);
   const [readingInbox, setReadingInbox] = useState(false);
@@ -170,7 +185,9 @@ export function Header({
     client
       .GET('/v1/tenant')
       .then(({ data }) => {
-        if (current && data) setEnvironment(data.name);
+        if (!current || !data) return;
+        setEnvironment(data.name);
+        if (Array.isArray(data.signIn)) setWays(data.signIn);
       })
       .catch(() => undefined);
     client
@@ -271,9 +288,14 @@ export function Header({
       </button>
       <span className={styles['spacer']} />
       <ThemeMenu />
-      {who === 'nobody' && (
-        <a className={styles['chip']} href="/v1/sign-in/organisation">
+      {who === 'nobody' && ways.includes('organisation') && (
+        <a className={styles['chip']} href={signInAt('organisation')}>
           Sign in
+        </a>
+      )}
+      {who === 'nobody' && ways.includes('google') && (
+        <a className={styles['chip']} href={signInAt('google')}>
+          Sign in with Google
         </a>
       )}
       {who !== undefined && who !== 'nobody' && (

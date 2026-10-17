@@ -630,4 +630,106 @@ describe('a publication at its own address', () => {
       await screen.findByText('Checked for PDF/UA-1 by veraPDF 1.30.2: 1 rule failed.'),
     ).toBeInTheDocument();
   });
+
+  /** The page over a fake service answering by path: the publication, the reader, their shares. */
+  const routed = (publication: unknown, me: unknown, shares: Response = json(403, {})) =>
+    render(
+      <StrictMode>
+        <PublicationPage
+          client={createApiClient({
+            baseUrl: 'http://acme.example.test',
+            fetch: (async (input: Request) => {
+              const path = new URL(input.url).pathname;
+              if (path === '/v1/me') return json(200, me);
+              if (path.endsWith('/shares')) return shares.clone();
+              return json(200, publication);
+            }) as unknown as typeof fetch,
+          })}
+          id={PUBLICATION}
+        />
+      </StrictMode>,
+    );
+  const NEWER = 'ffffffff-0000-4000-8000-000000000002';
+  const member = {
+    id: 'm',
+    displayName: 'Grace',
+    email: null,
+    environment: 'Acme',
+    outside: false,
+  };
+  const outsider = {
+    id: 'o',
+    displayName: 'Iris',
+    email: null,
+    environment: 'Acme',
+    outside: true,
+  };
+
+  it('PUB-059 tells a reader a later publication superseded it, with the newer one where they may read it', async () => {
+    routed({ ...record, superseded: true, newer: NEWER }, member);
+    const notice = await screen.findByText(
+      'A later publication of this document supersedes this one.',
+    );
+    expect(notice).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Open the newer publication' })).toHaveAttribute(
+      'href',
+      `#/publications/${NEWER}`,
+    );
+  });
+
+  it('PUB-059 tells somebody who may not read the newer one that it is superseded all the same', async () => {
+    routed({ ...record, superseded: true, newer: null }, outsider);
+    expect(
+      await screen.findByText(
+        'A later publication of this document supersedes this one. Ask whoever shared it with you for the newer one.',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: 'Open the newer publication' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('PUB-084 shows somebody from outside the publication alone: its files to save, never its document', async () => {
+    const SERVED = `/v1/publications/${PUBLICATION}/outputs/pdf`;
+    routed(
+      {
+        ...record,
+        superseded: false,
+        newer: null,
+        outputs: [
+          {
+            format: 'pdf',
+            bytes: 2048,
+            sha256: 'a',
+            standard: 'ua-1',
+            producer: 'typst',
+            producerVersion: '1',
+            report: [],
+            download: SERVED,
+            view: null,
+            check: null,
+            checkState: 'pending',
+          },
+        ],
+      },
+      outsider,
+    );
+    expect(await screen.findByRole('link', { name: 'Download the PDF' })).toHaveAttribute(
+      'href',
+      SERVED,
+    );
+    expect(screen.queryByRole('link', { name: 'Open the document' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Publications' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Shared outside')).not.toBeInTheDocument();
+    expect(
+      screen.getByText('Shared with you to read and save. Your opening it is recorded.'),
+    ).toBeInTheDocument();
+  });
+
+  it('PUB-060 shows its shares beside the record to whoever may share it', async () => {
+    routed({ ...record, superseded: false, newer: null }, member, json(200, { shares: [] }));
+    expect(
+      await screen.findByText('Shared with nobody outside the organisation.'),
+    ).toBeInTheDocument();
+  });
 });

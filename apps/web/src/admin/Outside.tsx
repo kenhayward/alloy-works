@@ -65,10 +65,12 @@ export function Outside({ client }: { client: Client }) {
   }, [read]);
 
   const nameOf = (person: Reached['principal']) => person.name ?? person.email ?? 'Somebody';
-  const whereOf = (level: string, reads: Reached['reads']) => {
-    const [kind, id] = level.split(':');
+  const whereOf = (grant: Reached['grants'][number], reads: Reached['reads']) => {
+    const [kind, id] = grant.level.split(':');
     if (kind === 'space') return reads.spaces.find((each) => each.id === id)?.name ?? 'a space';
-    return 'one item';
+    // A share names its publication (the R17 plan); a grant before R17 names nothing.
+    const on = (grant as { on?: { kind: string; title: string | null } | null }).on;
+    return on?.title ? `${on.title} (${on.kind})` : 'one item';
   };
 
   const extend = async (person: Reached, grant: Reached['grants'][number], where: string) => {
@@ -127,7 +129,7 @@ export function Outside({ client }: { client: Client }) {
               </thead>
               <tbody>
                 {person.grants.map((grant) => {
-                  const where = whereOf(grant.level, person.reads);
+                  const where = whereOf(grant, person.reads);
                   const extendable = grant.effect === 'allow' && grant.group === null;
                   return (
                     <tr key={grant.id}>

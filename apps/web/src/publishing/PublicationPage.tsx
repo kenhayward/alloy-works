@@ -5,6 +5,7 @@ import { Notice } from '../states/Notice.js';
 import { baselineLink } from '../structure/links.js';
 import { Chip } from '../parts/Chip.js';
 import { reportIn, reportLines, type ReportEntry } from './formats.js';
+import { Shares } from './Shares.js';
 import styles from './PublicationPage.module.css';
 import { Waiting } from '../states/Waiting.js';
 
@@ -67,6 +68,9 @@ interface Shown {
   readonly template: number | null;
   /** One per format, the PDF first, as the service names them. */
   readonly outputs: readonly Output[];
+  /** Whether a later publication of its document supersedes it (PUB-059), and which, if readable. */
+  readonly superseded: boolean;
+  readonly newer: string | null;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -154,6 +158,9 @@ function shownIn(data: unknown): Shown | undefined {
     engine,
     template,
     outputs,
+    // Absent from an answer before R17: never said to be superseded.
+    superseded: data.superseded === true,
+    newer: typeof data.newer === 'string' ? data.newer : null,
   };
 }
 
@@ -172,11 +179,14 @@ const size = (bytes: number | null) =>
 export function PublicationPage({ client, id }: { readonly client: Client; readonly id: string }) {
   const [shown, setShown] = useState<Shown | 'missing' | 'failed' | null>(null);
   const [attempt, setAttempt] = useState(0);
+  // Whether the reader is from outside, shared this publication alone (the R17 plan): they are
+  // offered its files, never its document or its baseline. Read as a member until the answer says.
+  const [outside, setOutside] = useState(false);
   // The name of the baseline it was made from, read once the publication names one.
   const [baselineName, setBaselineName] = useState<string | null>(null);
   const baseline = typeof shown === 'object' && shown !== null ? shown.baseline : null;
   useEffect(() => {
-    if (baseline === null) return undefined;
+    if (baseline === null || outside) return undefined;
     let current = true;
     client
       .GET('/v1/baselines/{id}', { params: { path: { id: baseline } } })
@@ -187,7 +197,20 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
     return () => {
       current = false;
     };
-  }, [client, baseline]);
+  }, [client, baseline, outside]);
+
+  useEffect(() => {
+    let current = true;
+    client
+      .GET('/v1/me')
+      .then(({ data }) => {
+        if (current) setOutside(isRecord(data) && data.outside === true);
+      })
+      .catch(() => undefined);
+    return () => {
+      current = false;
+    };
+  }, [client]);
 
   useEffect(() => {
     let current = true;
@@ -238,17 +261,21 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
     <article aria-labelledby="publication-title" className={styles['page']}>
       {/* Layout D's head (the Ledger, ADR-0046): where it is, what it is, what can be taken away. */}
       <header className={styles['head']}>
-        <nav aria-label="Breadcrumb" className={styles['trail']}>
-          <a href="#/publications">Publications</a>
-        </nav>
+        {!outside && (
+          <nav aria-label="Breadcrumb" className={styles['trail']}>
+            <a href="#/publications">Publications</a>
+          </nav>
+        )}
         <div className={styles['titleRow']}>
           <h1 id="publication-title" className={styles['title']}>
             {shown.title}
           </h1>
           <div className={styles['actions']}>
-            <a className={styles['button']} href={`#/documents/${shown.document}`}>
-              Open the document
-            </a>
+            {!outside && (
+              <a className={styles['button']} href={`#/documents/${shown.document}`}>
+                Open the document
+              </a>
+            )}
             {word !== undefined && (
               <a className={styles['button']} href={word.download}>
                 Download the Word document
@@ -273,6 +300,18 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
             })}
           </span>
         </div>
+        {shown.superseded && (
+          <p className={styles['superseded']} role="status">
+            {shown.newer !== null ? (
+              <>
+                A later publication of this document supersedes this one.{' '}
+                <a href={`#/publications/${shown.newer}`}>Open the newer publication</a>
+              </>
+            ) : (
+              'A later publication of this document supersedes this one. Ask whoever shared it with you for the newer one.'
+            )}
+          </p>
+        )}
       </header>
       {/* Layout D: the publication itself, on the desk its pages sit on, shown by the browser's own
           PDF viewer - whose bookmarks, from the tagged PDF, are its contents. Nothing is editable.
@@ -292,6 +331,7 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
           What it was made from
         </h2>
         <p className={styles['notApproved']}>{DRAFT_NOTICE.text}</p>
+        {outside && <p>Shared with you to read and save. Your opening it is recorded.</p>}
         <p>
           Version {shown.version}, published by {shown.publisher ?? 'somebody'} on{' '}
           {new Date(shown.publishedAt).toLocaleString(undefined, {
@@ -300,7 +340,7 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
           })}
           .
         </p>
-        {shown.baseline !== null && (
+        {shown.baseline !== null && !outside && (
           <p>
             Made from the baseline{' '}
             <a href={baselineLink(shown.document, shown.baseline)}>
@@ -378,6 +418,7 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
             )}
           </section>
         )}
+        {!outside && <Shares client={client} publication={id} />}
       </aside>
     </article>
   );

@@ -18,6 +18,8 @@ import {
   type Sample,
   type SampleParams,
   type SignInCallback,
+  type SignInStartQuery,
+  SIGN_IN_RETURN,
   type StreamQuery,
 } from '@alloy-works/api-contract';
 import {
@@ -184,6 +186,8 @@ export interface AppOptions extends HttpOptions {
 
 /** Holds a sign-in's state for the browser that started it, so no other browser can finish it. */
 export const SIGN_IN_COOKIE = '__Host-aw_signin';
+/** The page a sign-in comes back to, as `SIGN_IN_RETURN` holds it (the R17 plan, R17-A). */
+export const RETURN_COOKIE = '__Host-aw_return';
 const SIGN_IN_ATTEMPT_MS = 10 * 60 * 1000;
 const CALLBACK_PATH = '/v1/sign-in/organisation/callback';
 const GOOGLE_CALLBACK_PATH = '/v1/sign-in/google/callback';
@@ -508,7 +512,17 @@ export function buildApp(options: AppOptions): FastifyInstance {
       throw principalErased();
     }
     reply.setCookie(SESSION_COOKIE, token, { ...COOKIE, maxAge: SESSION_POLICY.absoluteMs / 1000 });
-    return reply.redirect('/', 302);
+    // Back to the page the sign-in started from, held to a page of this app again as it is read.
+    const to = request.cookies[RETURN_COOKIE];
+    reply.clearCookie(RETURN_COOKIE, COOKIE);
+    return reply.redirect(to !== undefined && SIGN_IN_RETURN.test(to) ? `/#/${to}` : '/', 302);
+  }
+
+  /** Remembers the page to come back to, for the browser starting this sign-in. */
+  function returnTo(request: FastifyRequest, reply: FastifyReply): void {
+    const { to } = request.query as SignInStartQuery;
+    if (to === undefined) reply.clearCookie(RETURN_COOKIE, COOKIE);
+    else reply.setCookie(RETURN_COOKIE, to, { ...COOKIE, maxAge: SIGN_IN_ATTEMPT_MS / 1000 });
   }
 
   const { boundCreation, ...connectionRoutes } = connectionHandlers(
@@ -574,10 +588,15 @@ export function buildApp(options: AppOptions): FastifyInstance {
     getHealth: async () => ({ status: 'ok' }),
 
     getTenant: async (request) => {
-      const profile = await db.withTenant(tenantOf(request), (trx) =>
+      const tenant = tenantOf(request);
+      const profile = await db.withTenant(tenant, (trx) =>
         trx.selectFrom('profile').select('display_name').executeTakeFirstOrThrow(),
       );
-      return { name: profile.display_name };
+      // The ways in, so a sign-in page offers Google to somebody from outside where it may.
+      const signIn: ('organisation' | 'google')[] = [];
+      if (await permits(tenant, 'organisation')) signIn.push('organisation');
+      if (options.google && (await permits(tenant, 'google'))) signIn.push('google');
+      return { name: profile.display_name, signIn };
     },
 
     startOrganisationSignIn: async (request, reply) => {
@@ -593,6 +612,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
         ...COOKIE,
         maxAge: SIGN_IN_ATTEMPT_MS / 1000,
       });
+      returnTo(request, reply);
       return reply.redirect(start.url, 302);
     },
 
@@ -681,6 +701,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
       );
       await recordAttempt(tenant, 'google', hashToken(attempt), start);
       reply.setCookie(SIGN_IN_COOKIE, attempt, { ...COOKIE, maxAge: SIGN_IN_ATTEMPT_MS / 1000 });
+      returnTo(request, reply);
       return reply.redirect(start.url, 302);
     },
 
@@ -796,14 +817,20 @@ export function buildApp(options: AppOptions): FastifyInstance {
 
     getMe: async (request) => {
       const principal = principalOf(request);
-      const profile = await db.withTenant(tenantOf(request), (trx) =>
-        trx.selectFrom('profile').select('display_name').executeTakeFirstOrThrow(),
-      );
+      const { profile, kind } = await db.withTenant(tenantOf(request), async (trx) => ({
+        profile: await trx.selectFrom('profile').select('display_name').executeTakeFirstOrThrow(),
+        kind: await trx
+          .selectFrom('principal')
+          .select('kind')
+          .where('id', '=', principal.principalId)
+          .executeTakeFirst(),
+      }));
       return {
         id: principal.principalId,
         displayName: principal.displayName,
         email: principal.email,
         environment: profile.display_name,
+        outside: kind?.kind === 'external',
       };
     },
 

@@ -1133,6 +1133,17 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         shows: [page.locator('#publication-title'), page.getByText(/Not approved/).first()],
         hides: [tree],
       });
+      // Shared outside the organisation (the R17 plan): the dialog, then the share it lists. An address
+      // of its own each run, since the stack's data outlives one.
+      await page.getByRole('button', { name: 'Share outside' }).click();
+      const sharing = page.getByRole('dialog', { name: 'Share outside the organisation' });
+      await check('sharing a publication outside', { shows: sharing });
+      const outsider = `iris-${Date.now()}@example.net`;
+      await sharing.getByLabel('Their email address').fill(outsider);
+      await sharing.getByRole('button', { name: 'Share' }).click();
+      await check('a publication shared outside', {
+        shows: page.getByText(`Shared with ${outsider}.`, { exact: false }),
+      });
 
       // An earlier version of the document, read only (SCH-058; the SV plan, SV-H).
       const { data: listedVersions } = await client.GET('/v1/documents/{id}/versions', {

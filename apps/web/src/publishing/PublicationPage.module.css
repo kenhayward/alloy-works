@@ -137,6 +137,64 @@
   font-weight: 600;
 }
 
+/* Its shares outside the organisation (the R17 plan): one person to a row, Revoke at its end. */
+.shares {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.shares li {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.shares li button {
+  align-self: flex-start;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+/* The share dialog, as a hold's is. */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.form h2 {
+  margin: 0;
+  padding-inline-end: var(--space-40);
+  font-size: var(--size-16);
+}
+
+.form p {
+  margin: 0;
+}
+
+.form label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-8);
+}
+
+/* A later publication superseded this one (PUB-059): said before anything else. */
+.superseded {
+  grid-column: 1 / -1;
+}
+
 @media (max-width: 1000px) {
   .page {
     grid-template-columns: minmax(0, 1fr);

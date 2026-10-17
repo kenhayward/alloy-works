@@ -46,7 +46,27 @@ export type Health = z.infer<typeof Health>;
 
 export const TenantProfile = z.object({
   name: z.string().describe('What this environment is called, as its own people see it'),
+  signIn: z
+    .array(z.enum(['organisation', 'google']))
+    .describe("The ways in it offers: the organisation's provider, Google, or both"),
 });
+
+/**
+ * A page of the app to come back to once signed in, as its address after `#/` names it: a shared
+ * publication's, so the person it was shared with lands on it (the R17 plan, R17-A). Words and ids
+ * between slashes alone, so it can only ever name a page of this app.
+ */
+export const SIGN_IN_RETURN = /^[a-z]+(\/[a-z0-9-]+)*$/;
+
+export const SignInStartQuery = z.object({
+  to: z
+    .string()
+    .max(200)
+    .regex(SIGN_IN_RETURN)
+    .optional()
+    .describe('The page to come back to once signed in, as its address after `#/` names it'),
+});
+export type SignInStartQuery = z.infer<typeof SignInStartQuery>;
 export type TenantProfile = z.infer<typeof TenantProfile>;
 
 export const Me = z.object({
@@ -54,6 +74,11 @@ export const Me = z.object({
   displayName: z.string().nullable(),
   email: z.string().nullable(),
   environment: z.string().describe('The environment signed in to, as its people see it'),
+  outside: z
+    .boolean()
+    .describe(
+      'Whether they are from outside the organisation, as somebody shared a publication is',
+    ),
 });
 export type Me = z.infer<typeof Me>;
 

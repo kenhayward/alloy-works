@@ -30,6 +30,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from './app.js';
 import { createOidcClient } from './oidc.js';
 import { environmentSecrets } from './secrets.js';
+import { completeAtStandIn } from '@alloy-works/stand-in-idp/testing';
 import { configureStandIn, signIn, TEST_SEALING_KEY } from './test/sign-in.js';
 
 const HOST = '127.0.0.1';
@@ -326,6 +327,69 @@ describe('sharing a publication outside the organisation (the R17 plan)', () => 
       superseded: false,
       newer: null,
     });
+  });
+
+  it('PUB-084 shows each share in the listing of access from outside, naming the publication it reaches', async () => {
+    const shared = await publish(await document('The listed manual'));
+    expect(
+      (
+        await call('grace', 'POST', `/v1/publications/${shared}/shares`, {
+          email: 'iris@example.net',
+        })
+      ).statusCode,
+    ).toBe(200);
+    const listed = await call('ada', 'GET', '/v1/access/external');
+    expect(listed.statusCode, listed.body).toBe(200);
+    const iris = listed
+      .json<{
+        items: {
+          principal: { email: string | null };
+          grants: { level: string; role: { name: string }; on: unknown }[];
+        }[];
+      }>()
+      .items.find((each) => each.principal.email === 'iris@example.net')!;
+    expect(iris.grants.find((each) => each.level === `artifact:${shared}`)).toMatchObject({
+      role: { name: 'Shared reader' },
+      on: { kind: 'publication', title: 'The listed manual' },
+    });
+  });
+
+  it('returns from signing in to the publication the sign-in started from, and to nowhere else', async () => {
+    const shared = await publish(await document('The returned manual'));
+    const signInTo = async (to: string) => {
+      const started = await app.inject({
+        url: `/v1/sign-in/organisation?to=${encodeURIComponent(to)}`,
+        headers: { host: HOST },
+      });
+      if (started.statusCode !== 302) return { status: started.statusCode, location: undefined };
+      const cookie = started.cookies.map((each) => `${each.name}=${each.value}`).join('; ');
+      const back = await completeAtStandIn(started.headers.location!, 'iris', idp.issuer);
+      const finished = await app.inject({
+        url: `${back.pathname}${back.search}`,
+        headers: { host: HOST, cookie },
+      });
+      return { status: finished.statusCode, location: finished.headers.location };
+    };
+    expect(await signInTo(`publications/${shared}`)).toEqual({
+      status: 302,
+      location: `/#/publications/${shared}`,
+    });
+    // Anything but a page of this app is refused before the provider is asked.
+    for (const elsewhere of ['//evil.example', 'https://evil.example', '../v1/me', 'a b']) {
+      expect((await signInTo(elsewhere)).status, elsewhere).toBe(400);
+    }
+    // And with none, home.
+    expect((await signInTo('')).status).toBe(400);
+    const plain = await app.inject({ url: '/v1/sign-in/organisation', headers: { host: HOST } });
+    expect(plain.statusCode).toBe(302);
+  });
+
+  it('says to somebody from outside that they are, and which ways in this environment offers', async () => {
+    cookies.iris ??= await signIn(app, HOST, 'iris', idp.issuer);
+    expect((await call('iris', 'GET', '/v1/me')).json()).toMatchObject({ outside: true });
+    expect((await call('grace', 'GET', '/v1/me')).json()).toMatchObject({ outside: false });
+    const tenantProfile = await app.inject({ url: '/v1/tenant', headers: { host: HOST } });
+    expect(tenantProfile.json()).toMatchObject({ signIn: ['organisation'] });
   });
 
   it('PUB-084 tells somebody shared a publication nothing else of the organisation, at any route a session opens', async () => {

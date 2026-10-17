@@ -14440,6 +14440,32 @@
                                     }
                                   ],
                                   "description": "The group it reaches them through, or null for one made to them"
+                                },
+                                "on": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string"
+                                        },
+                                        "title": {
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "title"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "What a grant at an artifact is on, by its kind and title, as a share names its publication; null at a space"
                                 }
                               },
                               "required": [
@@ -14450,7 +14476,8 @@
                                 "expiresAt",
                                 "expired",
                                 "extends",
-                                "group"
+                                "group",
+                                "on"
                               ]
                             },
                             "description": "Every grant reaching them, directly or through a group"
@@ -164180,20 +164207,26 @@
                     "environment": {
                       "type": "string",
                       "description": "The environment signed in to, as its people see it"
+                    },
+                    "outside": {
+                      "type": "boolean",
+                      "description": "Whether they are from outside the organisation, as somebody shared a publication is"
                     }
                   },
                   "required": [
                     "id",
                     "displayName",
                     "email",
-                    "environment"
+                    "environment",
+                    "outside"
                   ]
                 },
                 "example": {
                   "id": "example",
                   "displayName": "example",
                   "email": "example",
-                  "environment": "example"
+                  "environment": "example",
+                  "outside": false
                 }
               }
             },
@@ -190371,6 +190404,17 @@
         "security": [],
         "parameters": [
           {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "The page to come back to once signed in, as its address after `#/` names it",
+              "type": "string",
+              "maxLength": 200,
+              "pattern": "^[a-z]+(\\/[a-z0-9-]+)*$"
+            }
+          },
+          {
             "name": "X-Request-Id",
             "in": "header",
             "required": false,
@@ -190391,6 +190435,47 @@
                   "type": "string"
                 }
               },
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A page to come back to that is not one of this app",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
               "X-Request-Id": {
                 "description": "Trace identifier assigned to this request.",
                 "schema": {
@@ -190901,6 +190986,17 @@
         "security": [],
         "parameters": [
           {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "The page to come back to once signed in, as its address after `#/` names it",
+              "type": "string",
+              "maxLength": 200,
+              "pattern": "^[a-z]+(\\/[a-z0-9-]+)*$"
+            }
+          },
+          {
             "name": "X-Request-Id",
             "in": "header",
             "required": false,
@@ -190921,6 +191017,47 @@
                   "type": "string"
                 }
               },
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A page to come back to that is not one of this app",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
               "X-Request-Id": {
                 "description": "Trace identifier assigned to this request.",
                 "schema": {
@@ -211329,14 +211466,27 @@
                     "name": {
                       "type": "string",
                       "description": "What this environment is called, as its own people see it"
+                    },
+                    "signIn": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "organisation",
+                          "google"
+                        ]
+                      },
+                      "description": "The ways in it offers: the organisation's provider, Google, or both"
                     }
                   },
                   "required": [
-                    "name"
+                    "name",
+                    "signIn"
                   ]
                 },
                 "example": {
-                  "name": "example"
+                  "name": "example",
+                  "signIn": []
                 }
               }
             },

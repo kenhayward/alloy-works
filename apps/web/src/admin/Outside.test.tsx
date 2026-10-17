@@ -89,4 +89,35 @@ describe('Administration: from outside the organisation (the R13 plan, R13-E, R1
     await userEvent.clear(day);
     expect(within(alice).getByRole('button', { name: 'Extend' })).toBeDisabled();
   });
+
+  it('PUB-084 names the publication a share reaches, by its title', async () => {
+    const PUBLICATION = 'ffffffff-0000-4000-8000-000000000001';
+    const fetching = (async () =>
+      json(200, {
+        items: [
+          {
+            principal: { id: ALICE, name: 'Iris', email: 'iris@example.net' },
+            grants: [
+              {
+                id: GRANT,
+                role: { id: 'r9', name: 'Shared reader' },
+                level: `artifact:${PUBLICATION}`,
+                effect: 'allow',
+                expiresAt: '2026-11-15T00:00:00.000Z',
+                expired: false,
+                extends: null,
+                group: null,
+                on: { kind: 'publication', title: 'The shared manual' },
+              },
+            ],
+            reads: { spaces: [], included: [PUBLICATION], excluded: [] },
+          },
+        ],
+      })) as unknown as typeof fetch;
+    render(<Outside client={createApiClient({ baseUrl: 'http://acme.test', fetch: fetching })} />);
+    const iris = await screen.findByRole('region', { name: 'Iris' });
+    expect(within(iris).getByRole('table', { name: 'What reaches Iris' })).toHaveTextContent(
+      'The shared manual (publication)',
+    );
+  });
 });
