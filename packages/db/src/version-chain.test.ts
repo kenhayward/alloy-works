@@ -372,6 +372,8 @@ describe('the version chain as stored', () => {
         'created_at',
         'id',
         'kind',
+        // Its divergent line (0112; ADR-0063): where in the chain it stands, closed, as its numbers are.
+        'line_id',
         'metadata_values',
         'not_carried',
         'note',
