@@ -2,7 +2,7 @@ import { createApiClient } from '@alloy-works/api-client';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { PlaceSectionButton } from './PlaceSection.js';
+import { PlaceIntoButton, PlaceSectionButton } from './PlaceSection.js';
 
 const HANDBOOK = 'dddddddd-0000-4000-8000-000000000001';
 const MANUAL = 'dddddddd-0000-4000-8000-000000000002';
@@ -71,6 +71,9 @@ function service(unreadable = 0, refuseFirst = false) {
         },
       });
     }
+    if (pathname === `/v1/documents/${HANDBOOK}`) {
+      return json(200, { version: { id: OPENED }, outline: { nodes: [] } });
+    }
     if (pathname === `/v1/documents/${HANDBOOK}/placement` && request.method === 'GET') {
       return json(200, report(unreadable));
     }
@@ -103,6 +106,35 @@ const choose = async () => {
   );
   return dialog;
 };
+
+describe('Place in a document, from a section found (the R14 plan, R14-C)', () => {
+  it('SCH-053 REU-054 places a found section in the document chosen, as Place from a document does there', async () => {
+    const { client, asked } = service();
+    const placed = vi.fn();
+    render(<PlaceIntoButton client={client} from={MANUAL} section={SECTION} onPlaced={placed} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Place in a document' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Place in a document' });
+    // The document it is in is not offered.
+    const into = within(dialog).getByRole('combobox', { name: 'Into' });
+    expect(within(into).queryByRole('option', { name: 'Pump manual' })).toBeNull();
+    await userEvent.selectOptions(
+      into,
+      await within(into).findByRole('option', { name: 'Pump handbook' }),
+    );
+    expect(await within(dialog).findByRole('region', { name: 'What it places' })).toHaveTextContent(
+      '3 references to 2 components',
+    );
+    expect(within(dialog).getByRole('textbox', { name: 'New section title' })).toHaveValue(
+      'Maintenance',
+    );
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Place' }));
+    expect(placed).toHaveBeenCalledWith(HANDBOOK);
+    expect(asked.find((each) => each.method === 'POST')).toMatchObject({
+      path: `/v1/documents/${HANDBOOK}/placement`,
+      body: { openedFrom: OPENED, from: MANUAL, fromVersion: MANUAL_VERSION, section: SECTION },
+    });
+  });
+});
 
 describe('Place from a document', () => {
   it('REU-046 REU-054 says how much a section pulls in, then places it under a new section in the mode chosen', async () => {

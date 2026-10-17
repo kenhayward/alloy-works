@@ -59172,6 +59172,18 @@ export interface operations {
                                 key: string;
                                 name: string;
                             } | null;
+                            /** @description A section's document and the components it places; null for anything else */
+                            section: {
+                                document: {
+                                    id: string;
+                                    title: string;
+                                };
+                                /** @description Each component placed beneath it that the reader may read, once, in outline order */
+                                components: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            } | null;
                         }[];
                         /** @description Every declared dimension, each counted with the other filters in force and its own left out */
                         facets: {

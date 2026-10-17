@@ -1,5 +1,7 @@
+import { OUTLINE_SCHEMA_VERSION } from '@alloy-works/domain';
 import {
   bootstrapCluster,
+  createArtifact,
   createTenant,
   latestVersion,
   migrate,
@@ -102,6 +104,72 @@ describe('searching through the service', () => {
       }),
     );
     expect(body.count).toBe(body.items.length);
+  });
+
+  it('SCH-053 answers a section with its document and the components it places', async () => {
+    const scanner = await tenantDb.withTenant(tenant, async (trx) => {
+      const found = await trx
+        .selectFrom('search_entry')
+        .select(['artifact_id', 'space_id'])
+        .where('kind', '=', 'component')
+        .where('title', '=', 'Calibrate the scanner')
+        .executeTakeFirstOrThrow();
+      const author = await trx
+        .selectFrom('principal')
+        .select('id')
+        .where('display_name', '=', 'Grace')
+        .executeTakeFirstOrThrow();
+      const made = await createArtifact(trx, {
+        author: author.id,
+        spaceId: found.space_id!,
+        substance: {
+          kind: 'document',
+          content: {
+            schemaVersion: OUTLINE_SCHEMA_VERSION,
+            title: 'Okapi manual',
+            language: 'en-GB',
+            direction: 'ltr',
+            nodes: [
+              {
+                type: 'section',
+                id: 'q'.repeat(26),
+                title: [{ type: 'text', value: 'Okapi calibration', marks: [] }],
+                numbered: true,
+                matter: 'body',
+                pageBreak: 'none',
+                values: {},
+                children: [
+                  {
+                    type: 'reference',
+                    id: 'r'.repeat(26),
+                    component: found.artifact_id,
+                    mode: { kind: 'latest' },
+                    numbered: true,
+                    matter: 'body',
+                    pageBreak: 'none',
+                    values: {},
+                    children: [],
+                  },
+                ],
+              },
+            ],
+          },
+        } as never,
+      });
+      return { component: found.artifact_id, document: made.artifactId };
+    });
+    const response = await search('grace', '?q=okapi&kind=section');
+    expect(response.statusCode).toBe(200);
+    expect(response.json<{ items: unknown[] }>().items).toEqual([
+      expect.objectContaining({
+        kind: 'section',
+        title: 'Okapi calibration',
+        section: {
+          document: { id: scanner.document, title: 'Okapi manual' },
+          components: [{ id: scanner.component, title: 'Calibrate the scanner' }],
+        },
+      }),
+    ]);
   });
 
   it('SCH-071 answers a thread by its words, with what it is on and whether it is resolved', async () => {
