@@ -28,10 +28,38 @@ export function reachedBy(uses: Uses): UsingDocument[] {
   );
 }
 
-/** Whether a new version would reach anything, as far as the reader may know (REU-008). */
-export function reachesAny(uses: Uses): boolean {
-  return reachedBy(uses).length > 0 || uses.unreadableDocuments;
+/** What reaches an artifact through a declared relationship (REL-024; the R19 plan, R19-C). */
+export interface Related {
+  readonly id: string;
+  readonly kind: string;
+  readonly title: string;
+  readonly depth: number;
 }
+
+/**
+ * What reaches it through relationships, three hops out: the impact walk's informational reach, never
+ * a reference's, which the documents a version reaches already say. None where it could not be read.
+ */
+export async function readRelated(client: Client, id: string): Promise<Related[]> {
+  const { data } = await client
+    .GET('/v1/artifacts/{id}/impact', { params: { path: { id }, query: { depth: '3' } } })
+    .catch(() => ({ data: undefined }));
+  return (data?.reached ?? [])
+    .filter((each) => !each.hard)
+    .map(({ id: at, kind, title, depth }) => ({ id: at, kind, title, depth }));
+}
+
+/**
+ * Whether a change would reach anything, as far as the reader may know (REU-008): a document
+ * following it, one they may not read, or anything related to it (REL-024).
+ */
+export function reachesAny(uses: Uses, related: readonly Related[] = []): boolean {
+  return reachedBy(uses).length > 0 || uses.unreadableDocuments || related.length > 0;
+}
+
+const KIND_SAID: Readonly<Record<string, string>> = {
+  queryDefinition: 'query definition',
+};
 
 /** How one reference follows the component, in the reader's words (REU-007). */
 export function followsSaid(reference: UsingReference): string {
@@ -179,14 +207,17 @@ function UsedInDialog({
  */
 export function ReachDialog({
   uses,
+  related = [],
   title,
   act,
   onConfirm,
   onCancel,
 }: {
   uses: Uses;
+  /** What reaches it through relationships (REL-024), said apart from the documents. */
+  related?: readonly Related[];
   title: string;
-  /** The button that goes ahead: Save version, or Done editing. */
+  /** The button that goes ahead: Save version, Done editing, or Approve. */
   act: string;
   onConfirm: () => void;
   onCancel: () => void;
@@ -210,15 +241,29 @@ export function ReachDialog({
   return (
     <Modal labelledBy={headingId} size="narrow" onClose={onCancel}>
       <div className={styles['dialog']}>
-        <h2 id={headingId}>{`Save a version of ${title}?`}</h2>
-        <p>
-          {count > 0
-            ? `It reaches ${count === 1 ? 'one document' : `${count} documents`} that follow this component: now where it follows the latest version, and once approved where it follows approved revisions.`
-            : 'It may reach documents that follow this component.'}
-        </p>
+        <h2 id={headingId}>
+          {act === 'Approve' ? `Approve ${title}?` : `Save a version of ${title}?`}
+        </h2>
+        {(count > 0 || uses.unreadableDocuments) && (
+          <p>
+            {count > 0
+              ? `It reaches ${count === 1 ? 'one document' : `${count} documents`} that follow this component: now where it follows the latest version, and once approved where it follows approved revisions.`
+              : 'It may reach documents that follow this component.'}
+          </p>
+        )}
         {group('approved', 'Approved documents', approved)}
         {group('drafts', 'Drafts', drafts)}
         {uses.unreadableDocuments && <p className={styles['muted']}>{MORE}</p>}
+        {related.length > 0 && (
+          <section aria-labelledby={`${headingId}related`}>
+            <h3 id={`${headingId}related`}>Related through relationships</h3>
+            <ul className={styles['list']}>
+              {related.map((each) => (
+                <li key={each.id}>{`${each.title} (${KIND_SAID[each.kind] ?? each.kind})`}</li>
+              ))}
+            </ul>
+          </section>
+        )}
         <div className={styles['buttons']}>
           <button type="button" onClick={onCancel}>
             Cancel

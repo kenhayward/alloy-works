@@ -2,7 +2,14 @@ import { createApiClient } from '@alloy-works/api-client';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { ReachDialog, reachesAny, UsedInButton, type Uses } from './UsedIn.js';
+import {
+  ReachDialog,
+  reachesAny,
+  readRelated,
+  UsedInButton,
+  type Related,
+  type Uses,
+} from './UsedIn.js';
 
 const STEP = 'cccccccc-0000-4000-8000-000000000001';
 const REPORT = 'dddddddd-0000-4000-8000-000000000001';
@@ -156,5 +163,56 @@ describe('the warning before a version reaches other documents', () => {
     expect(reachesAny(pinnedOnly)).toBe(false);
     expect(reachesAny({ ...pinnedOnly, unreadableDocuments: true })).toBe(true);
     expect(reachesAny(uses)).toBe(true);
+  });
+
+  it('REL-024 says, before a change is made, what reaches the component through relationships, apart from the documents a version reaches, and asks wherever only they do', async () => {
+    const related: Related[] = [
+      { id: ISSUE, kind: 'document', title: 'Change request 14', depth: 1 },
+      { id: PUBLICATION, kind: 'publication', title: 'Pump manual, issue 3', depth: 2 },
+    ];
+    const pinnedOnly: Uses = {
+      ...uses,
+      documents: [uses.documents[1]!],
+      unreadableDocuments: false,
+    };
+    expect(reachesAny(pinnedOnly, related)).toBe(true);
+    expect(reachesAny(pinnedOnly, [])).toBe(false);
+    render(
+      <ReachDialog
+        uses={pinnedOnly}
+        related={related}
+        title="Calibrate"
+        act="Approve"
+        onConfirm={() => undefined}
+        onCancel={() => undefined}
+      />,
+    );
+    const dialog = screen.getByRole('dialog', { name: 'Approve Calibrate?' });
+    const region = within(dialog).getByRole('region', { name: 'Related through relationships' });
+    expect(
+      within(region)
+        .getAllByRole('listitem')
+        .map((each) => each.textContent),
+    ).toEqual(['Change request 14 (document)', 'Pump manual, issue 3 (publication)']);
+
+    // Read from the impact walk: what a declared relationship reaches, three hops out, never a
+    // reference's, which the documents above already say.
+    const asked: string[] = [];
+    const client = createApiClient({
+      baseUrl: 'http://acme.test',
+      fetch: (async (input: Request) => {
+        asked.push(input.url);
+        return json(200, {
+          reached: [
+            { id: REPORT, kind: 'document', title: 'Pump report', depth: 1, via: STEP, hard: true },
+            { ...related[0]!, via: STEP, hard: false },
+          ],
+          cut: false,
+          more: false,
+        });
+      }) as unknown as typeof fetch,
+    });
+    expect(await readRelated(client, STEP)).toEqual([related[0]]);
+    expect(new URL(asked[0]!).search).toBe('?depth=3');
   });
 });

@@ -113,7 +113,15 @@ import { BoundTableReadOnly, TableReadOnly } from './TableReadOnly.js';
 import { FigurePanel } from './FigurePanel.js';
 import { ArchiveButton } from '../lifecycle/Archive.js';
 import { RelationshipsButton } from '../reuse/Relationships.js';
-import { ReachDialog, reachesAny, readUses, UsedInButton, type Uses } from '../reuse/UsedIn.js';
+import {
+  ReachDialog,
+  reachesAny,
+  readRelated,
+  readUses,
+  UsedInButton,
+  type Related,
+  type Uses,
+} from '../reuse/UsedIn.js';
 import { DeleteButton } from '../lifecycle/Delete.js';
 import { PlaceHoldButton } from '../lifecycle/Hold.js';
 import {
@@ -604,22 +612,31 @@ export function ComponentEditor({
   // Its scope as last saved or accepted here (R15-B), over the view's.
   const [scopeNow, setScopeNow] = useState<ScopeNow | null>(null);
   // Asked before a version reaching other documents is saved (REU-008; the R1 plan, R1-D).
-  const [reach, setReach] = useState<{ uses: Uses; act: string; go: () => void } | null>(null);
+  const [reach, setReach] = useState<{
+    uses: Uses;
+    related: readonly Related[];
+    act: string;
+    go: () => void;
+  } | null>(null);
   // One question at a time: a second press while the uses are read asks nothing more. Where they
   // cannot be read, the save goes ahead unasked, as a warning is not a refusal (R1-D).
   const askingReach = useRef(false);
   const askFirst = (act: string, go: () => void) => {
     if (askingReach.current) return;
     askingReach.current = true;
-    void readUses(client, componentId).then((read) => {
-      askingReach.current = false;
-      const uses = read && {
-        ...read,
-        documents: read.documents.filter((each) => each.id !== hostDocument),
-      };
-      if (uses && reachesAny(uses)) setReach({ uses, act, go });
-      else go();
-    });
+    // What a version reaches, and what reaches it through relationships, both before it is made
+    // (REU-008, REL-024).
+    void Promise.all([readUses(client, componentId), readRelated(client, componentId)]).then(
+      ([read, related]) => {
+        askingReach.current = false;
+        const uses = read && {
+          ...read,
+          documents: read.documents.filter((each) => each.id !== hostDocument),
+        };
+        if (uses && reachesAny(uses, related)) setReach({ uses, related, act, go });
+        else go();
+      },
+    );
   };
   // A hold placed from this page since it opened: shown On hold without reading the view again.
   const [heldNow, setHeldNow] = useState(false);
@@ -2505,6 +2522,7 @@ export function ComponentEditor({
                 }}
                 onNotice={setNotice}
                 onStale={restand}
+                askFirst={askFirst}
               />
             )}
             <ArchiveButton
@@ -2555,6 +2573,7 @@ export function ComponentEditor({
       {reach && (
         <ReachDialog
           uses={reach.uses}
+          related={reach.related}
           title={header?.title ?? ''}
           act={reach.act}
           onConfirm={() => {

@@ -3,7 +3,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import type { GraphNeighbour } from './graph.js';
-import { RelationshipsButton } from './Relationships.js';
+import { RelationshipsButton, saidFrom, type OfferedType } from './Relationships.js';
 
 const PROCEDURE = 'aaaaaaaa-0000-4000-8000-000000000001';
 const SUPERSEDES = 'bbbbbbbb-0000-4000-8000-000000000001';
@@ -207,6 +207,30 @@ describe('the relationships of an artifact, in the page (the R8 plan, R8-G)', ()
     await within(dialog).findByText('The relationship is removed.');
     expect(asked.find((each) => each.method === 'DELETE')!.url.pathname).toBe(
       `/v1/relationships/${edge(1, PROCEDURE, doc(1), 'Older').relationship.id}`,
+    );
+  });
+
+  it("REL-004 reads a relationship by its type's name from its from end and its inverse name from its far end, and an undirected one alike from both", () => {
+    const supersedes: OfferedType = {
+      id: SUPERSEDES,
+      name: 'Supersedes',
+      inverseName: 'Superseded by',
+      directed: true,
+      from: ['document'],
+      to: ['document'],
+      deprecated: false,
+      fields: [],
+    };
+    const related = edge(1, PROCEDURE, doc(1), 'Older').relationship;
+    expect(saidFrom({ relationship: related, from: PROCEDURE, to: doc(1) }, [supersedes])).toBe(
+      'Supersedes',
+    );
+    expect(saidFrom({ relationship: related, from: doc(1), to: PROCEDURE }, [supersedes])).toBe(
+      'Superseded by',
+    );
+    const alike = { ...supersedes, name: 'Relates to', inverseName: 'Relates to', directed: false };
+    expect(saidFrom({ relationship: related, from: doc(1), to: PROCEDURE }, [alike])).toBe(
+      'Relates to',
     );
   });
 });
