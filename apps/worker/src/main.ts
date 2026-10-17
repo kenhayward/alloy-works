@@ -16,6 +16,7 @@ import { sampleJob } from './jobs/sample.js';
 import {
   foldNotificationDigests,
   sweepExpiredIterations,
+  sweepExpiredQueryRuns,
   sweepExpiredPreviews,
   sweepExpiredSignIns,
   sweepOldNotifications,
@@ -87,6 +88,10 @@ const sweep = setInterval(() => {
   void sweepExpiredIterations(db, log)
     .then((removed) => removed > 0 && log.info({ removed }, 'swept expired iterations'))
     .catch((error: unknown) => log.error({ err: error }, 'iteration sweep failed'));
+  // Query runs past their 13 months (the R18 plan, R18-D).
+  void sweepExpiredQueryRuns(db, log)
+    .then((removed) => removed > 0 && log.info({ removed }, 'swept query runs'))
+    .catch((error: unknown) => log.error({ err: error }, 'query run sweep failed'));
   // The inbox's daily digests, after 07:00 UTC, and notifications past 90 days (the TH plan, TH-F, TH-H).
   void foldNotificationDigests(db, log)
     .then((made) => made > 0 && log.info({ made }, 'folded inbox digests'))

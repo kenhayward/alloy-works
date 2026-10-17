@@ -86,6 +86,11 @@ export const documentationGroups = [
       { name: 'Publication requests', description: 'Submit and follow publishing work.' },
       { name: 'Publications', description: 'List and retrieve completed publications.' },
       {
+        name: 'Query usage',
+        description:
+          'What the environment’s query runs cost, by query and by document, and every run as CSV.',
+      },
+      {
         name: 'Publication shares',
         description:
           'Share a publication with a named person outside the organisation, revoke it, and read every access.',
@@ -326,6 +331,7 @@ const operationTags = {
     'getPublication',
     'getPublicationBindings',
   ],
+  'Query usage': ['getQueryUsage', 'getQueryRunsCsv'],
   'Publication shares': [
     'listPublicationShares',
     'sharePublication',
@@ -706,6 +712,10 @@ const descriptions: Readonly<Record<string, string>> = {
   getPublication: 'Returns a completed publication’s immutable record and links to its outputs.',
   getPublicationBindings:
     'Returns each value a publication printed, by node and binding, with the dataset version and stored result it was taken from. Needs read on the publication. The SQL that ran, the connection and each column’s source column are included only where the caller may read the query definition; provenance.json, the publication’s own output, never holds them.',
+  getQueryUsage:
+    'Totals the environment’s query runs in a period - samples, resolves, checks and document creations - by query definition and by document: how many ran, failed or were throttled, their time, rows and bytes. Most time first. The last 30 days unless named, never more than 13 months. Needs administer at the environment.',
+  getQueryRunsCsv:
+    'Every query run in a period as CSV, one to a row, oldest first: when, which act, its outcome and failure code, who ran it, the connection, the query definition and the document, its milliseconds, rows and bytes. Needs administer at the environment.',
   listPublicationShares:
     'Lists a publication’s shares with people outside the organisation, expired ones too, each with its recipient, its expiry, who shared it and every access, newest first. Needs publish on its document and read on the publication.',
   sharePublication:

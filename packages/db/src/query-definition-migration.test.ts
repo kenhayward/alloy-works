@@ -202,6 +202,7 @@ describe('migration 0046, over an environment made before it', () => {
       '0112_divergent_lines',
       '0113_line_returned',
       '0114_publication_shares',
+      '0115_query_limits',
     ]);
     // Every row still there, and what 0048 seeds beside them: the value catalogue, its 0.1 and the
     // default theme's 0.6 (B1); and what 0055 seeds: the table catalogue's fifth version, the default
@@ -249,6 +250,8 @@ describe('migration 0046, over an environment made before it', () => {
     expect(upgradedPrivileges.tables).toEqual([{ privilege_type: 'SELECT' }]);
     expect(upgradedPrivileges.columns).toEqual([
       { column_name: 'bytes', privilege_type: 'UPDATE' },
+      // 0115's runs at once (the R18 plan, R18-A).
+      { column_name: 'concurrent_runs', privilege_type: 'UPDATE' },
       { column_name: 'rows', privilege_type: 'UPDATE' },
       { column_name: 'seconds', privilege_type: 'UPDATE' },
     ]);

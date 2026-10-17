@@ -259,6 +259,8 @@ describe('query definitions through the service', () => {
         url: 'http://connector.test:8090',
         key: FAKE_CONNECTOR_KEY,
         fetch: connector.fetch,
+        // A run waits a moment for a slot, not the product's five seconds (the R18 plan, R18-C).
+        waitMs: 300,
       },
     });
     for (const user of ['ada', 'grace', 'alice', 'ivy']) {
@@ -571,7 +573,9 @@ describe('query definitions through the service', () => {
       rows: null,
       bytes: null,
       seconds: null,
-      ceilings: { ...limitCeilings },
+      concurrentRuns: null,
+      defaults: { concurrentRuns: 4 },
+      ceilings: { ...limitCeilings, concurrentRuns: 16 },
     });
     // Only an administrator of the environment lowers them, and never past a ceiling.
     expect((await call('grace', 'PUT', '/v1/settings/data', { rows: 500 })).statusCode).toBe(403);
@@ -603,6 +607,84 @@ describe('query definitions through the service', () => {
     expect(shorter.limits).toEqual({ rows: 1000, bytes: 1_048_576, seconds: 5 });
     expect(shorter.deadlineMs).toBe(5000);
     await call('ada', 'PUT', '/v1/settings/data', { rows: null, bytes: null, seconds: null });
+  });
+
+  it("DAT-071 lets no more of the environment's runs be in flight at once than its limit, and fails one past it, after waiting, as query_throttled and retryable", async () => {
+    const source = await connection('Throttled');
+    connector.mode = 'answer';
+    connector.run = ranOk([['1', 'North']]);
+    expect(
+      (await call('ada', 'PUT', '/v1/settings/data', { concurrentRuns: 1 })).json(),
+    ).toMatchObject({ concurrentRuns: 1 });
+    connector.runMs = 1_000;
+    connector.mostRunning = 0;
+    try {
+      const [first, second] = await Promise.all([
+        sample('ada', source.id, draft(source.id)),
+        sample('ada', source.id, draft(source.id)),
+      ]);
+      const answers = [first!, second!].sort((a, b) => a.statusCode - b.statusCode);
+      expect(answers[0]!.json()).toMatchObject({ outcome: 'ok' });
+      expect(answers[1]!.statusCode).toBe(503);
+      expect(answers[1]!.json()).toMatchObject({
+        code: 'query_throttled',
+        attribution: 'product',
+        retryAfter: 5,
+      });
+      expect(connector.mostRunning).toBe(1);
+      // Once the first is answered, its slot is free again.
+      expect((await sample('ada', source.id, draft(source.id))).json()).toMatchObject({
+        outcome: 'ok',
+      });
+    } finally {
+      connector.runMs = undefined;
+      await call('ada', 'PUT', '/v1/settings/data', {});
+    }
+  });
+
+  it('DAT-053 records each run with its act, who ran it, its connection and its cost, and reports it to an administrator alone, as totals and as CSV', async () => {
+    const source = await connection('Recorded');
+    connector.mode = 'answer';
+    connector.run = ranOk([['1', 'North']]);
+    const from = new Date(Date.now() - 1000).toISOString();
+    expect((await sample('ada', source.id, draft(source.id))).json()).toMatchObject({
+      outcome: 'ok',
+    });
+    const runs = await tenantDb.withTenant(tenant, (trx) =>
+      trx.selectFrom('query_run').selectAll().where('connection_id', '=', source.id).execute(),
+    );
+    expect(runs).toEqual([
+      expect.objectContaining({
+        act: 'sample',
+        principal_id: ids.ada,
+        query_definition_id: null,
+        document_id: null,
+        row_count: 1,
+        outcome: 'ran',
+        failure: null,
+      }),
+    ]);
+    expect(Number(runs[0]!.bytes)).toBeGreaterThan(0);
+    const to = new Date(Date.now() + 1000).toISOString();
+    const period = `from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+    const usage = await call('ada', 'GET', `/v1/data/usage?${period}`);
+    expect(usage.statusCode, usage.body).toBe(200);
+    expect(usage.json()).toMatchObject({ byQueryDefinition: [], byDocument: [] });
+    const csv = await call('ada', 'GET', `/v1/data/usage/runs.csv?${period}`);
+    expect(csv.statusCode).toBe(200);
+    expect(csv.headers['content-type']).toMatch(/^text\/csv/);
+    const lines = csv.body.trim().split('\r\n');
+    expect(lines[0]).toBe(
+      'at,act,outcome,failure,principal,connection,query_definition,document,duration_ms,rows,bytes',
+    );
+    expect(lines.some((line) => line.includes(`,sample,ran,,${ids.ada},${source.id},,,`))).toBe(
+      true,
+    );
+    expect((await call('grace', 'GET', `/v1/data/usage?${period}`)).statusCode).toBe(403);
+    expect(
+      (await call('ada', 'GET', '/v1/data/usage?from=2026-10-17T00:00:00Z&to=2026-10-16T00:00:00Z'))
+        .statusCode,
+    ).toBe(400);
   });
 
   it("DAT-049 answers a run's failure with its attribution", async () => {

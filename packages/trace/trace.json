@@ -17297,6 +17297,14 @@
           "howItIsMet": "A definition declares rows, bytes and seconds; a tenant setting lowers each, and a run takes the lesser"
         },
         {
+          "id": "DAT-071",
+          "howItIsMet": "The tenant's runs at once, 4 unless an administrator lowers it and never past 16, across samples, resolves, checks and creations; one past it waits five seconds for a slot, then fails `query_throttled`, retryable and never partial ([Limits and cost](#limits-and-cost))"
+        },
+        {
+          "id": "DAT-053",
+          "howItIsMet": "Every run is recorded - act, who, connection, query definition, document, time, rows, bytes, outcome - and totalled by query and by document for an administrator, and given whole as CSV ([Limits and cost](#limits-and-cost))"
+        },
+        {
           "id": "DAT-109",
           "howItIsMet": "The connector's deadline covers the whole execution, and a limit reached cancels at the source: a PostgreSQL cancel request, a SQL Server attention once built (ADR-0038), an aborted HTTP or S3 exchange"
         },
@@ -20197,13 +20205,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 442,
+      "line": 447,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 455,
+      "line": 460,
       "kind": "title"
     },
     {
@@ -20335,37 +20343,49 @@
     {
       "id": "DAT-015",
       "file": "apps/service/src/bindings-routes.test.ts",
-      "line": 199,
+      "line": 268,
       "kind": "title"
     },
     {
       "id": "DAT-025",
       "file": "apps/service/src/bindings-routes.test.ts",
-      "line": 742,
+      "line": 811,
       "kind": "title"
     },
     {
       "id": "DAT-037",
       "file": "apps/service/src/bindings-routes.test.ts",
-      "line": 440,
+      "line": 509,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-053",
+      "file": "apps/service/src/bindings-routes.test.ts",
+      "line": 155,
       "kind": "title"
     },
     {
       "id": "DAT-066",
       "file": "apps/service/src/bindings-routes.test.ts",
-      "line": 690,
+      "line": 759,
       "kind": "title"
     },
     {
       "id": "DAT-070",
       "file": "apps/service/src/bindings-routes.test.ts",
-      "line": 321,
+      "line": 390,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-071",
+      "file": "apps/service/src/bindings-routes.test.ts",
+      "line": 190,
       "kind": "title"
     },
     {
       "id": "DAT-082",
       "file": "apps/service/src/bindings-routes.test.ts",
-      "line": 285,
+      "line": 354,
       "kind": "title"
     },
     {
@@ -20377,25 +20397,25 @@
     {
       "id": "DAT-084",
       "file": "apps/service/src/bindings-routes.test.ts",
-      "line": 243,
+      "line": 312,
       "kind": "title"
     },
     {
       "id": "DAT-086",
       "file": "apps/service/src/bindings-routes.test.ts",
-      "line": 886,
+      "line": 955,
       "kind": "title"
     },
     {
       "id": "DAT-090",
       "file": "apps/service/src/bindings-routes.test.ts",
-      "line": 602,
+      "line": 671,
       "kind": "title"
     },
     {
       "id": "DAT-093",
       "file": "apps/service/src/bindings-routes.test.ts",
-      "line": 399,
+      "line": 468,
       "kind": "title"
     },
     {
@@ -20647,7 +20667,7 @@
     {
       "id": "TPL-066",
       "file": "apps/service/src/document-arguments.test.ts",
-      "line": 197,
+      "line": 202,
       "kind": "title"
     },
     {
@@ -21181,49 +21201,61 @@
     {
       "id": "DAT-020",
       "file": "apps/service/src/query-definition-routes.test.ts",
-      "line": 550,
+      "line": 552,
       "kind": "rule"
     },
     {
       "id": "DAT-020",
       "file": "apps/service/src/query-definition-routes.test.ts",
-      "line": 527,
+      "line": 529,
       "kind": "title"
     },
     {
       "id": "DAT-049",
       "file": "apps/service/src/query-definition-routes.test.ts",
-      "line": 608,
+      "line": 690,
       "kind": "title"
     },
     {
       "id": "DAT-050",
       "file": "apps/service/src/query-definition-routes.test.ts",
-      "line": 563,
+      "line": 565,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-053",
+      "file": "apps/service/src/query-definition-routes.test.ts",
+      "line": 645,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-071",
+      "file": "apps/service/src/query-definition-routes.test.ts",
+      "line": 612,
       "kind": "title"
     },
     {
       "id": "DAT-101",
       "file": "apps/service/src/query-definition-routes.test.ts",
-      "line": 308,
+      "line": 310,
       "kind": "title"
     },
     {
       "id": "DAT-103",
       "file": "apps/service/src/query-definition-routes.test.ts",
-      "line": 480,
+      "line": 482,
       "kind": "rule"
     },
     {
       "id": "DAT-103",
       "file": "apps/service/src/query-definition-routes.test.ts",
-      "line": 462,
+      "line": 464,
       "kind": "title"
     },
     {
       "id": "DAT-120",
       "file": "apps/service/src/query-definition-routes.test.ts",
-      "line": 936,
+      "line": 1018,
       "kind": "title"
     },
     {
@@ -22039,13 +22071,13 @@
     {
       "id": "ADM-049",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1363,
+      "line": 1369,
       "kind": "title"
     },
     {
       "id": "LIF-022",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1505,
+      "line": 1511,
       "kind": "title"
     },
     {
@@ -22100,6 +22132,18 @@
       "id": "PUB-084",
       "file": "apps/web/src/admin/Outside.test.tsx",
       "line": 93,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-053",
+      "file": "apps/web/src/admin/QueryUsage.test.tsx",
+      "line": 54,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-071",
+      "file": "apps/web/src/admin/QueryUsage.test.tsx",
+      "line": 83,
       "kind": "title"
     },
     {
@@ -25691,6 +25735,18 @@
       "kind": "title"
     },
     {
+      "id": "DAT-053",
+      "file": "packages/db/src/query-runs.test.ts",
+      "line": 103,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-071",
+      "file": "packages/db/src/query-runs.test.ts",
+      "line": 66,
+      "kind": "title"
+    },
+    {
       "id": "IAM-075",
       "file": "packages/db/src/queue.test.ts",
       "line": 88,
@@ -27415,7 +27471,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 737,
+      "line": 739,
       "kind": "title"
     },
     {
@@ -29269,13 +29325,13 @@
     {
       "id": "CNT-155",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 898,
+      "line": 908,
       "kind": "title"
     },
     {
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 531,
+      "line": 541,
       "kind": "title"
     },
     {

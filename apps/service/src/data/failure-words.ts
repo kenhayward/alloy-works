@@ -1,5 +1,6 @@
 import {
   dataFailure,
+  runsAtOnce,
   type DataFailure,
   type DataFailureCode,
   type SourceRefusal,
@@ -45,6 +46,8 @@ const MESSAGES: Partial<Record<DataFailureCode, string>> = {
     'This source is older than PostgreSQL 14, or was built without ICU, which a filter that ignores case needs. Use a newer source, or one built with ICU.',
   connector_unavailable: 'No connector is available to reach the source. Try again later.',
   connector_busy: 'The connector is busy. Try again in a moment.',
+  query_throttled:
+    'Too many queries are running in this environment at once. Nothing was kept. Try again in a moment.',
   image_refused:
     'The image is not a complete PNG or JPEG image the product admits, or is too large. Nothing was kept.',
   account_holds_privilege:
@@ -184,6 +187,8 @@ export function failureView(failure: FailureIn | DataFailureCode, built = false)
   return {
     ...whole,
     ...(whole.source === undefined ? {} : { source: { ...whole.source } }),
+    // Retryable, and said when, wherever it is answered (the R18 plan, R18-C).
+    ...(whole.code === 'query_throttled' ? { retryAfter: runsAtOnce.waitMs / 1000 } : {}),
     message: failureMessage(whole, built),
   };
 }

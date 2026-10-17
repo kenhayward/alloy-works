@@ -1363,6 +1363,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/data/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What the environment's query runs cost in a period, by query and by document
+         * @description Totals the environment’s query runs in a period - samples, resolves, checks and document creations - by query definition and by document: how many ran, failed or were throttled, their time, rows and bytes. Most time first. The last 30 days unless named, never more than 13 months. Needs administer at the environment.
+         */
+        get: operations["getQueryUsage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/data/usage/runs.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Every query run in a period, one to a row, as CSV
+         * @description Every query run in a period as CSV, one to a row, oldest first: when, which act, its outcome and failure code, who ran it, the connection, the query definition and the document, its milliseconds, rows and bytes. Needs administer at the environment.
+         */
+        get: operations["getQueryRunsCsv"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/datasets/{id}/name": {
         parameters: {
             query?: never;
@@ -19508,6 +19548,8 @@ export interface operations {
                                 row?: number;
                                 /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
                                 status?: number;
+                                /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                                retryAfter?: number;
                             };
                             at: string;
                             by: {
@@ -19708,6 +19750,8 @@ export interface operations {
                                 row?: number;
                                 /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
                                 status?: number;
+                                /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                                retryAfter?: number;
                             };
                             at: string;
                         };
@@ -19834,10 +19878,12 @@ export interface operations {
                         };
                         column?: string;
                         row?: number;
+                        /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                        retryAfter?: number;
                     };
                 };
             };
-            /** @description `connector_unavailable`: no connector is configured or it did not answer; `connector_busy`: it is full */
+            /** @description `connector_unavailable`: no connector is configured or it did not answer; `connector_busy`: it is full; `query_throttled`: the environment already runs as many queries at once as it may, retryable after `retryAfter` seconds */
             503: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -19865,6 +19911,8 @@ export interface operations {
                         };
                         column?: string;
                         row?: number;
+                        /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                        retryAfter?: number;
                     };
                 };
             };
@@ -20309,6 +20357,8 @@ export interface operations {
                         };
                         column?: string;
                         row?: number;
+                        /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                        retryAfter?: number;
                         problems?: ({
                             /** @constant */
                             rule: "definition_invalid";
@@ -20415,6 +20465,8 @@ export interface operations {
                         };
                         column?: string;
                         row?: number;
+                        /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                        retryAfter?: number;
                         /** @enum {string} */
                         reason?: "untested" | "not_read_only" | "asserted";
                     };
@@ -20448,10 +20500,12 @@ export interface operations {
                         };
                         column?: string;
                         row?: number;
+                        /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                        retryAfter?: number;
                     };
                 };
             };
-            /** @description `connector_unavailable`: no connector is configured or it did not answer; `connector_busy`: it is full */
+            /** @description `connector_unavailable`: no connector is configured or it did not answer; `connector_busy`: it is full; `query_throttled`: the environment already runs as many queries at once as it may, retryable after `retryAfter` seconds */
             503: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -20479,6 +20533,8 @@ export interface operations {
                         };
                         column?: string;
                         row?: number;
+                        /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                        retryAfter?: number;
                     };
                 };
             };
@@ -20510,6 +20566,8 @@ export interface operations {
                         };
                         column?: string;
                         row?: number;
+                        /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                        retryAfter?: number;
                     };
                 };
             };
@@ -20913,6 +20971,8 @@ export interface operations {
                             row?: number;
                             /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
                             status?: number;
+                            /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                            retryAfter?: number;
                         };
                     };
                 };
@@ -20945,6 +21005,8 @@ export interface operations {
                         };
                         column?: string;
                         row?: number;
+                        /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                        retryAfter?: number;
                         problems?: ({
                             /** @constant */
                             rule: "definition_invalid";
@@ -21051,12 +21113,14 @@ export interface operations {
                         };
                         column?: string;
                         row?: number;
+                        /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                        retryAfter?: number;
                         /** @enum {string} */
                         reason?: "untested" | "not_read_only" | "asserted";
                     };
                 };
             };
-            /** @description `connector_unavailable`: no connector is configured or it did not answer; `connector_busy`: it is full */
+            /** @description `connector_unavailable`: no connector is configured or it did not answer; `connector_busy`: it is full; `query_throttled`: the environment already runs as many queries at once as it may, retryable after `retryAfter` seconds */
             503: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -21084,6 +21148,8 @@ export interface operations {
                         };
                         column?: string;
                         row?: number;
+                        /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                        retryAfter?: number;
                     };
                 };
             };
@@ -21174,6 +21240,8 @@ export interface operations {
                             row?: number;
                             /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
                             status?: number;
+                            /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                            retryAfter?: number;
                         };
                         at: string;
                     };
@@ -21269,10 +21337,12 @@ export interface operations {
                         };
                         column?: string;
                         row?: number;
+                        /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                        retryAfter?: number;
                     };
                 };
             };
-            /** @description `connector_unavailable`: no connector is configured or it did not answer; `connector_busy`: it is full */
+            /** @description `connector_unavailable`: no connector is configured or it did not answer; `connector_busy`: it is full; `query_throttled`: the environment already runs as many queries at once as it may, retryable after `retryAfter` seconds */
             503: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -21300,6 +21370,8 @@ export interface operations {
                         };
                         column?: string;
                         row?: number;
+                        /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                        retryAfter?: number;
                     };
                 };
             };
@@ -21830,6 +21902,8 @@ export interface operations {
                                 row?: number;
                                 /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
                                 status?: number;
+                                /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                                retryAfter?: number;
                             };
                             at: string;
                             by: {
@@ -22035,6 +22109,8 @@ export interface operations {
                                     row?: number;
                                     /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
                                     status?: number;
+                                    /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                                    retryAfter?: number;
                                 };
                                 at: string;
                                 by: {
@@ -22311,6 +22387,8 @@ export interface operations {
                                     row?: number;
                                     /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
                                     status?: number;
+                                    /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                                    retryAfter?: number;
                                 };
                                 at: string;
                                 by: {
@@ -22338,6 +22416,263 @@ export interface operations {
                             /** @description How many more name it that the caller may not read */
                             others: number;
                         };
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getQueryUsage: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The totals */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "from": "example",
+                     *       "to": "example",
+                     *       "byQueryDefinition": [],
+                     *       "byDocument": []
+                     *     }
+                     */
+                    "application/json": {
+                        from: string;
+                        to: string;
+                        /** @description Most time first; a sample of an unsaved draft is none */
+                        byQueryDefinition: {
+                            id: string;
+                            /** @description Its title at its latest version, or null where it has gone */
+                            title: string | null;
+                            runs: number;
+                            failed: number;
+                            /** @description Runs that waited for a slot and found none (query_throttled) */
+                            throttled: number;
+                            /** @description The time its runs took, in all */
+                            durationMs: number;
+                            rows: number;
+                            /** @description The bytes of its runs' results, in all */
+                            bytes: number;
+                        }[];
+                        /** @description Most time first; a sample is no document */
+                        byDocument: {
+                            id: string;
+                            /** @description Its title at its latest version, or null where it has gone */
+                            title: string | null;
+                            runs: number;
+                            failed: number;
+                            /** @description Runs that waited for a slot and found none (query_throttled) */
+                            throttled: number;
+                            /** @description The time its runs took, in all */
+                            durationMs: number;
+                            rows: number;
+                            /** @description The bytes of its runs' results, in all */
+                            bytes: number;
+                        }[];
+                    };
+                };
+            };
+            /** @description A period that ends before it starts, or longer than 13 months */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller does not administer the environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getQueryRunsCsv: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description when, act, outcome, failure, who, connection, query definition, document, milliseconds, rows and bytes, oldest first */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
+                };
+            };
+            /** @description A period that ends before it starts, longer than 13 months, or holding more than 100,000 runs */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller does not administer the environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
                     };
                 };
             };
@@ -22619,6 +22954,8 @@ export interface operations {
                                 row?: number;
                                 /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
                                 status?: number;
+                                /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                                retryAfter?: number;
                                 /** @description The query definition the binding names */
                                 definition: string;
                                 binding: string;
@@ -22660,6 +22997,8 @@ export interface operations {
                                 row?: number;
                                 /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
                                 status?: number;
+                                /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                                retryAfter?: number;
                                 /** @description The query definition the binding names */
                                 definition: string;
                                 binding: string;
@@ -26183,6 +26522,8 @@ export interface operations {
                         };
                         column?: string;
                         row?: number;
+                        /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                        retryAfter?: number;
                         problems?: ({
                             /** @constant */
                             rule: "definition_invalid";
@@ -26853,6 +27194,8 @@ export interface operations {
                         };
                         column?: string;
                         row?: number;
+                        /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                        retryAfter?: number;
                         problems?: ({
                             /** @constant */
                             rule: "definition_invalid";
@@ -28244,6 +28587,8 @@ export interface operations {
                         };
                         column?: string;
                         row?: number;
+                        /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                        retryAfter?: number;
                         problems?: ({
                             /** @constant */
                             rule: "definition_invalid";
@@ -28874,6 +29219,8 @@ export interface operations {
                         };
                         column?: string;
                         row?: number;
+                        /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                        retryAfter?: number;
                         problems?: ({
                             /** @constant */
                             rule: "definition_invalid";
@@ -29504,6 +29851,8 @@ export interface operations {
                         };
                         column?: string;
                         row?: number;
+                        /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                        retryAfter?: number;
                         problems?: ({
                             /** @constant */
                             rule: "definition_invalid";
@@ -30190,6 +30539,8 @@ export interface operations {
                                 row?: number;
                                 /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
                                 status?: number;
+                                /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                                retryAfter?: number;
                                 /** @description The query definition the binding names */
                                 definition: string;
                                 binding: string;
@@ -30270,6 +30621,8 @@ export interface operations {
                                 row?: number;
                                 /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
                                 status?: number;
+                                /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                                retryAfter?: number;
                                 /** @description The query definition the binding names */
                                 definition: string;
                                 binding: string;
@@ -30377,6 +30730,8 @@ export interface operations {
                         };
                         column?: string;
                         row?: number;
+                        /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                        retryAfter?: number;
                         problems?: ({
                             /** @constant */
                             rule: "definition_invalid";
@@ -30987,6 +31342,8 @@ export interface operations {
                         };
                         column?: string;
                         row?: number;
+                        /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                        retryAfter?: number;
                         problems?: ({
                             /** @constant */
                             rule: "definition_invalid";
@@ -32360,6 +32717,8 @@ export interface operations {
                         };
                         column?: string;
                         row?: number;
+                        /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                        retryAfter?: number;
                         problems?: ({
                             /** @constant */
                             rule: "definition_invalid";
@@ -33030,6 +33389,8 @@ export interface operations {
                         };
                         column?: string;
                         row?: number;
+                        /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                        retryAfter?: number;
                         problems?: ({
                             /** @constant */
                             rule: "definition_invalid";
@@ -33735,6 +34096,8 @@ export interface operations {
                                 row?: number;
                                 /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
                                 status?: number;
+                                /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                                retryAfter?: number;
                                 /** @description The query definition the binding names */
                                 definition: string;
                                 binding: string;
@@ -33799,6 +34162,8 @@ export interface operations {
                                 row?: number;
                                 /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
                                 status?: number;
+                                /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                                retryAfter?: number;
                                 /** @description The query definition the binding names */
                                 definition: string;
                                 binding: string;
@@ -33842,6 +34207,8 @@ export interface operations {
                         };
                         column?: string;
                         row?: number;
+                        /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                        retryAfter?: number;
                         problems?: ({
                             /** @constant */
                             rule: "definition_invalid";
@@ -34474,6 +34841,8 @@ export interface operations {
                         };
                         column?: string;
                         row?: number;
+                        /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                        retryAfter?: number;
                         problems?: ({
                             /** @constant */
                             rule: "definition_invalid";
@@ -35104,6 +35473,8 @@ export interface operations {
                         };
                         column?: string;
                         row?: number;
+                        /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                        retryAfter?: number;
                         problems?: ({
                             /** @constant */
                             rule: "definition_invalid";
@@ -35714,6 +36085,8 @@ export interface operations {
                         };
                         column?: string;
                         row?: number;
+                        /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                        retryAfter?: number;
                         problems?: ({
                             /** @constant */
                             rule: "definition_invalid";
@@ -37093,6 +37466,8 @@ export interface operations {
                         };
                         column?: string;
                         row?: number;
+                        /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                        retryAfter?: number;
                         problems?: ({
                             /** @constant */
                             rule: "definition_invalid";
@@ -37763,6 +38138,8 @@ export interface operations {
                         };
                         column?: string;
                         row?: number;
+                        /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                        retryAfter?: number;
                         problems?: ({
                             /** @constant */
                             rule: "definition_invalid";
@@ -59000,6 +59377,8 @@ export interface operations {
                         };
                         column?: string;
                         row?: number;
+                        /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                        retryAfter?: number;
                         /** @enum {string} */
                         reason?: "untested" | "not_read_only" | "asserted";
                         problems?: {
@@ -59404,6 +59783,8 @@ export interface operations {
                         };
                         column?: string;
                         row?: number;
+                        /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                        retryAfter?: number;
                         /** @enum {string} */
                         reason?: "untested" | "not_read_only" | "asserted";
                         problems?: {
@@ -62959,10 +63340,15 @@ export interface operations {
                      *       "rows": -9007199254740991,
                      *       "bytes": -9007199254740991,
                      *       "seconds": -9007199254740991,
+                     *       "concurrentRuns": -9007199254740991,
+                     *       "defaults": {
+                     *         "concurrentRuns": -9007199254740991
+                     *       },
                      *       "ceilings": {
                      *         "rows": -9007199254740991,
                      *         "bytes": -9007199254740991,
-                     *         "seconds": -9007199254740991
+                     *         "seconds": -9007199254740991,
+                     *         "concurrentRuns": -9007199254740991
                      *       }
                      *     }
                      */
@@ -62970,11 +63356,18 @@ export interface operations {
                         rows: number | null;
                         bytes: number | null;
                         seconds: number | null;
+                        /** @description Runs at once, or null for the default; one past them waits, then is query_throttled */
+                        concurrentRuns: number | null;
+                        /** @description The product's runs at once */
+                        defaults: {
+                            concurrentRuns: number;
+                        };
                         /** @description The product's ceilings, which no definition passes and an environment only lowers */
                         ceilings: {
                             rows: number;
                             bytes: number;
                             seconds: number;
+                            concurrentRuns: number;
                         };
                     };
                 };
@@ -63043,6 +63436,8 @@ export interface operations {
                     bytes?: number | null;
                     /** @description The most seconds a run may take, 1 to 120; null or absent lowers none */
                     seconds?: number | null;
+                    /** @description How many of the environment's query runs may be in flight at once, 1 to 16; null or absent for the product's 4 */
+                    concurrentRuns?: number | null;
                 };
             };
         };
@@ -63062,10 +63457,15 @@ export interface operations {
                      *       "rows": -9007199254740991,
                      *       "bytes": -9007199254740991,
                      *       "seconds": -9007199254740991,
+                     *       "concurrentRuns": -9007199254740991,
+                     *       "defaults": {
+                     *         "concurrentRuns": -9007199254740991
+                     *       },
                      *       "ceilings": {
                      *         "rows": -9007199254740991,
                      *         "bytes": -9007199254740991,
-                     *         "seconds": -9007199254740991
+                     *         "seconds": -9007199254740991,
+                     *         "concurrentRuns": -9007199254740991
                      *       }
                      *     }
                      */
@@ -63073,11 +63473,18 @@ export interface operations {
                         rows: number | null;
                         bytes: number | null;
                         seconds: number | null;
+                        /** @description Runs at once, or null for the default; one past them waits, then is query_throttled */
+                        concurrentRuns: number | null;
+                        /** @description The product's runs at once */
+                        defaults: {
+                            concurrentRuns: number;
+                        };
                         /** @description The product's ceilings, which no definition passes and an environment only lowers */
                         ceilings: {
                             rows: number;
                             bytes: number;
                             seconds: number;
+                            concurrentRuns: number;
                         };
                     };
                 };
@@ -65836,6 +66243,8 @@ export interface operations {
                                 row?: number;
                                 /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
                                 status?: number;
+                                /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                                retryAfter?: number;
                             };
                             at: string;
                             by: {
@@ -66041,6 +66450,8 @@ export interface operations {
                                     row?: number;
                                     /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
                                     status?: number;
+                                    /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                                    retryAfter?: number;
                                 };
                                 at: string;
                                 by: {
@@ -67448,6 +67859,8 @@ export interface operations {
                         };
                         column?: string;
                         row?: number;
+                        /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                        retryAfter?: number;
                         /** @enum {string} */
                         reason?: "untested" | "not_read_only" | "asserted";
                         problems?: {
@@ -67852,6 +68265,8 @@ export interface operations {
                         };
                         column?: string;
                         row?: number;
+                        /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                        retryAfter?: number;
                         /** @enum {string} */
                         reason?: "untested" | "not_read_only" | "asserted";
                         problems?: {

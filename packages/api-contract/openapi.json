@@ -96,6 +96,10 @@
       "description": "List and retrieve completed publications."
     },
     {
+      "name": "Query usage",
+      "description": "What the environment’s query runs cost, by query and by document, and every run as CSV."
+    },
+    {
       "name": "Publication shares",
       "description": "Share a publication with a named person outside the organisation, revoke it, and read every access."
     },
@@ -212,6 +216,7 @@
         "Previews",
         "Publication requests",
         "Publications",
+        "Query usage",
         "Publication shares",
         "Presentation and numbering"
       ]
@@ -47764,6 +47769,12 @@
                                   "type": "integer",
                                   "minimum": -9007199254740991,
                                   "maximum": 9007199254740991
+                                },
+                                "retryAfter": {
+                                  "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
                                 }
                               },
                               "required": [
@@ -48296,6 +48307,12 @@
                                   "type": "integer",
                                   "minimum": -9007199254740991,
                                   "maximum": 9007199254740991
+                                },
+                                "retryAfter": {
+                                  "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
                                 }
                               },
                               "required": [
@@ -48607,6 +48624,12 @@
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
+                    },
+                    "retryAfter": {
+                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
                     }
                   },
                   "required": [
@@ -48627,7 +48650,7 @@
             }
           },
           "503": {
-            "description": "`connector_unavailable`: no connector is configured or it did not answer; `connector_busy`: it is full",
+            "description": "`connector_unavailable`: no connector is configured or it did not answer; `connector_busy`: it is full; `query_throttled`: the environment already runs as many queries at once as it may, retryable after `retryAfter` seconds",
             "content": {
               "application/json": {
                 "schema": {
@@ -48678,6 +48701,12 @@
                       "type": "string"
                     },
                     "row": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "retryAfter": {
+                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
@@ -50670,6 +50699,12 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "retryAfter": {
+                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "problems": {
                       "type": "array",
                       "items": {
@@ -50935,6 +50970,12 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "retryAfter": {
+                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "reason": {
                       "type": "string",
                       "enum": [
@@ -51016,6 +51057,12 @@
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
+                    },
+                    "retryAfter": {
+                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
                     }
                   },
                   "required": [
@@ -51036,7 +51083,7 @@
             }
           },
           "503": {
-            "description": "`connector_unavailable`: no connector is configured or it did not answer; `connector_busy`: it is full",
+            "description": "`connector_unavailable`: no connector is configured or it did not answer; `connector_busy`: it is full; `query_throttled`: the environment already runs as many queries at once as it may, retryable after `retryAfter` seconds",
             "content": {
               "application/json": {
                 "schema": {
@@ -51087,6 +51134,12 @@
                       "type": "string"
                     },
                     "row": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "retryAfter": {
+                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
@@ -51161,6 +51214,12 @@
                       "type": "string"
                     },
                     "row": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "retryAfter": {
+                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
@@ -52769,6 +52828,12 @@
                               "type": "integer",
                               "minimum": -9007199254740991,
                               "maximum": 9007199254740991
+                            },
+                            "retryAfter": {
+                              "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
                             }
                           },
                           "required": [
@@ -52860,6 +52925,12 @@
                       "type": "string"
                     },
                     "row": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "retryAfter": {
+                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
@@ -53129,6 +53200,12 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "retryAfter": {
+                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "reason": {
                       "type": "string",
                       "enum": [
@@ -53156,7 +53233,7 @@
             }
           },
           "503": {
-            "description": "`connector_unavailable`: no connector is configured or it did not answer; `connector_busy`: it is full",
+            "description": "`connector_unavailable`: no connector is configured or it did not answer; `connector_busy`: it is full; `query_throttled`: the environment already runs as many queries at once as it may, retryable after `retryAfter` seconds",
             "content": {
               "application/json": {
                 "schema": {
@@ -53207,6 +53284,12 @@
                       "type": "string"
                     },
                     "row": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "retryAfter": {
+                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
@@ -53422,6 +53505,12 @@
                             },
                             "status": {
                               "description": "The HTTP status an HTTP source refused with: `source_refused` alone, never its body",
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "retryAfter": {
+                              "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
                               "type": "integer",
                               "minimum": -9007199254740991,
                               "maximum": 9007199254740991
@@ -53646,6 +53735,12 @@
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
+                    },
+                    "retryAfter": {
+                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
                     }
                   },
                   "required": [
@@ -53666,7 +53761,7 @@
             }
           },
           "503": {
-            "description": "`connector_unavailable`: no connector is configured or it did not answer; `connector_busy`: it is full",
+            "description": "`connector_unavailable`: no connector is configured or it did not answer; `connector_busy`: it is full; `query_throttled`: the environment already runs as many queries at once as it may, retryable after `retryAfter` seconds",
             "content": {
               "application/json": {
                 "schema": {
@@ -53717,6 +53812,12 @@
                       "type": "string"
                     },
                     "row": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "retryAfter": {
+                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
@@ -55218,6 +55319,12 @@
                                   "type": "integer",
                                   "minimum": -9007199254740991,
                                   "maximum": 9007199254740991
+                                },
+                                "retryAfter": {
+                                  "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
                                 }
                               },
                               "required": [
@@ -56000,6 +56107,12 @@
                                     },
                                     "status": {
                                       "description": "The HTTP status an HTTP source refused with: `source_refused` alone, never its body",
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "retryAfter": {
+                                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
                                       "type": "integer",
                                       "minimum": -9007199254740991,
                                       "maximum": 9007199254740991
@@ -56900,6 +57013,12 @@
                                       "type": "integer",
                                       "minimum": -9007199254740991,
                                       "maximum": 9007199254740991
+                                    },
+                                    "retryAfter": {
+                                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
                                     }
                                   },
                                   "required": [
@@ -57010,6 +57129,627 @@
                         "readable",
                         "others"
                       ]
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/data/usage": {
+      "get": {
+        "operationId": "getQueryUsage",
+        "summary": "What the environment's query runs cost in a period, by query and by document",
+        "description": "Totals the environment’s query runs in a period - samples, resolves, checks and document creations - by query definition and by document: how many ran, failed or were throttled, their time, rows and bytes. Most time first. The last 30 days unless named, never more than 13 months. Needs administer at the environment.",
+        "tags": [
+          "Query usage"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "administer",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "The start of the period, inclusive; 30 days before `to` where absent",
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "The end of the period, exclusive; now where absent",
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The totals",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "from": {
+                      "type": "string"
+                    },
+                    "to": {
+                      "type": "string"
+                    },
+                    "byQueryDefinition": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "description": "Its title at its latest version, or null where it has gone",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "runs": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "failed": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "throttled": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "Runs that waited for a slot and found none (query_throttled)"
+                          },
+                          "durationMs": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "The time its runs took, in all"
+                          },
+                          "rows": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "bytes": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "The bytes of its runs' results, in all"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "title",
+                          "runs",
+                          "failed",
+                          "throttled",
+                          "durationMs",
+                          "rows",
+                          "bytes"
+                        ]
+                      },
+                      "description": "Most time first; a sample of an unsaved draft is none"
+                    },
+                    "byDocument": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "description": "Its title at its latest version, or null where it has gone",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "runs": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "failed": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "throttled": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "Runs that waited for a slot and found none (query_throttled)"
+                          },
+                          "durationMs": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "The time its runs took, in all"
+                          },
+                          "rows": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "bytes": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "The bytes of its runs' results, in all"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "title",
+                          "runs",
+                          "failed",
+                          "throttled",
+                          "durationMs",
+                          "rows",
+                          "bytes"
+                        ]
+                      },
+                      "description": "Most time first; a sample is no document"
+                    }
+                  },
+                  "required": [
+                    "from",
+                    "to",
+                    "byQueryDefinition",
+                    "byDocument"
+                  ]
+                },
+                "example": {
+                  "from": "example",
+                  "to": "example",
+                  "byQueryDefinition": [],
+                  "byDocument": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A period that ends before it starts, or longer than 13 months",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller does not administer the environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/data/usage/runs.csv": {
+      "get": {
+        "operationId": "getQueryRunsCsv",
+        "summary": "Every query run in a period, one to a row, as CSV",
+        "description": "Every query run in a period as CSV, one to a row, oldest first: when, which act, its outcome and failure code, who ran it, the connection, the query definition and the document, its milliseconds, rows and bytes. Needs administer at the environment.",
+        "tags": [
+          "Query usage"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "administer",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "The start of the period, inclusive; 30 days before `to` where absent",
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "The end of the period, exclusive; now where absent",
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "when, act, outcome, failure, who, connection, query definition, document, milliseconds, rows and bytes, oldest first",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string",
+                  "contentMediaType": "text/csv"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A period that ends before it starts, longer than 13 months, or holding more than 100,000 runs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller does not administer the environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
                     }
                   },
                   "required": [
@@ -57637,6 +58377,12 @@
                                       "minimum": -9007199254740991,
                                       "maximum": 9007199254740991
                                     },
+                                    "retryAfter": {
+                                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
                                     "definition": {
                                       "type": "string",
                                       "description": "The query definition the binding names"
@@ -57763,6 +58509,12 @@
                                     },
                                     "status": {
                                       "description": "The HTTP status an HTTP source refused with: `source_refused` alone, never its body",
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "retryAfter": {
+                                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
                                       "type": "integer",
                                       "minimum": -9007199254740991,
                                       "maximum": 9007199254740991
@@ -68058,6 +68810,12 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "retryAfter": {
+                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "problems": {
                       "type": "array",
                       "items": {
@@ -70890,6 +71648,12 @@
                       "type": "string"
                     },
                     "row": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "retryAfter": {
+                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
@@ -76512,6 +77276,12 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "retryAfter": {
+                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "problems": {
                       "type": "array",
                       "items": {
@@ -79266,6 +80036,12 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "retryAfter": {
+                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "problems": {
                       "type": "array",
                       "items": {
@@ -82016,6 +82792,12 @@
                       "type": "string"
                     },
                     "row": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "retryAfter": {
+                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
@@ -84933,6 +85715,12 @@
                                     "minimum": -9007199254740991,
                                     "maximum": 9007199254740991
                                   },
+                                  "retryAfter": {
+                                    "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
                                   "definition": {
                                     "type": "string",
                                     "description": "The query definition the binding names"
@@ -85160,6 +85948,12 @@
                                   },
                                   "status": {
                                     "description": "The HTTP status an HTTP source refused with: `source_refused` alone, never its body",
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "retryAfter": {
+                                    "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
                                     "type": "integer",
                                     "minimum": -9007199254740991,
                                     "maximum": 9007199254740991
@@ -85425,6 +86219,12 @@
                       "type": "string"
                     },
                     "row": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "retryAfter": {
+                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
@@ -88138,6 +88938,12 @@
                       "type": "string"
                     },
                     "row": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "retryAfter": {
+                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
@@ -93721,6 +94527,12 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "retryAfter": {
+                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "problems": {
                       "type": "array",
                       "items": {
@@ -96553,6 +97365,12 @@
                       "type": "string"
                     },
                     "row": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "retryAfter": {
+                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
@@ -99516,6 +100334,12 @@
                                     "minimum": -9007199254740991,
                                     "maximum": 9007199254740991
                                   },
+                                  "retryAfter": {
+                                    "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
                                   "definition": {
                                     "type": "string",
                                     "description": "The query definition the binding names"
@@ -99698,6 +100522,12 @@
                                     "minimum": -9007199254740991,
                                     "maximum": 9007199254740991
                                   },
+                                  "retryAfter": {
+                                    "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
                                   "definition": {
                                     "type": "string",
                                     "description": "The query definition the binding names"
@@ -99823,6 +100653,12 @@
                       "type": "string"
                     },
                     "row": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "retryAfter": {
+                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
@@ -102588,6 +103424,12 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "retryAfter": {
+                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "problems": {
                       "type": "array",
                       "items": {
@@ -105342,6 +106184,12 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "retryAfter": {
+                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "problems": {
                       "type": "array",
                       "items": {
@@ -108051,6 +108899,12 @@
                       "type": "string"
                     },
                     "row": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "retryAfter": {
+                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
@@ -113654,6 +114508,12 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "retryAfter": {
+                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "problems": {
                       "type": "array",
                       "items": {
@@ -116486,6 +117346,12 @@
                       "type": "string"
                     },
                     "row": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "retryAfter": {
+                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
@@ -178048,6 +178914,12 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "retryAfter": {
+                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "reason": {
                       "type": "string",
                       "enum": [
@@ -179605,6 +180477,12 @@
                       "type": "string"
                     },
                     "row": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "retryAfter": {
+                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
@@ -189436,6 +190314,33 @@
                         }
                       ]
                     },
+                    "concurrentRuns": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Runs at once, or null for the default; one past them waits, then is query_throttled"
+                    },
+                    "defaults": {
+                      "type": "object",
+                      "properties": {
+                        "concurrentRuns": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "concurrentRuns"
+                      ],
+                      "description": "The product's runs at once"
+                    },
                     "ceilings": {
                       "type": "object",
                       "properties": {
@@ -189453,12 +190358,18 @@
                           "type": "integer",
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991
+                        },
+                        "concurrentRuns": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
                         }
                       },
                       "required": [
                         "rows",
                         "bytes",
-                        "seconds"
+                        "seconds",
+                        "concurrentRuns"
                       ],
                       "description": "The product's ceilings, which no definition passes and an environment only lowers"
                     }
@@ -189467,6 +190378,8 @@
                     "rows",
                     "bytes",
                     "seconds",
+                    "concurrentRuns",
+                    "defaults",
                     "ceilings"
                   ]
                 },
@@ -189474,10 +190387,15 @@
                   "rows": -9007199254740991,
                   "bytes": -9007199254740991,
                   "seconds": -9007199254740991,
+                  "concurrentRuns": -9007199254740991,
+                  "defaults": {
+                    "concurrentRuns": -9007199254740991
+                  },
                   "ceilings": {
                     "rows": -9007199254740991,
                     "bytes": -9007199254740991,
-                    "seconds": -9007199254740991
+                    "seconds": -9007199254740991,
+                    "concurrentRuns": -9007199254740991
                   }
                 }
               }
@@ -189658,6 +190576,19 @@
                         "type": "null"
                       }
                     ]
+                  },
+                  "concurrentRuns": {
+                    "description": "How many of the environment's query runs may be in flight at once, 1 to 16; null or absent for the product's 4",
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 16
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   }
                 },
                 "additionalProperties": false
@@ -189710,6 +190641,33 @@
                         }
                       ]
                     },
+                    "concurrentRuns": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Runs at once, or null for the default; one past them waits, then is query_throttled"
+                    },
+                    "defaults": {
+                      "type": "object",
+                      "properties": {
+                        "concurrentRuns": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "concurrentRuns"
+                      ],
+                      "description": "The product's runs at once"
+                    },
                     "ceilings": {
                       "type": "object",
                       "properties": {
@@ -189727,12 +190685,18 @@
                           "type": "integer",
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991
+                        },
+                        "concurrentRuns": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
                         }
                       },
                       "required": [
                         "rows",
                         "bytes",
-                        "seconds"
+                        "seconds",
+                        "concurrentRuns"
                       ],
                       "description": "The product's ceilings, which no definition passes and an environment only lowers"
                     }
@@ -189741,6 +190705,8 @@
                     "rows",
                     "bytes",
                     "seconds",
+                    "concurrentRuns",
+                    "defaults",
                     "ceilings"
                   ]
                 },
@@ -189748,10 +190714,15 @@
                   "rows": -9007199254740991,
                   "bytes": -9007199254740991,
                   "seconds": -9007199254740991,
+                  "concurrentRuns": -9007199254740991,
+                  "defaults": {
+                    "concurrentRuns": -9007199254740991
+                  },
                   "ceilings": {
                     "rows": -9007199254740991,
                     "bytes": -9007199254740991,
-                    "seconds": -9007199254740991
+                    "seconds": -9007199254740991,
+                    "concurrentRuns": -9007199254740991
                   }
                 }
               }
@@ -196506,6 +197477,12 @@
                                   "type": "integer",
                                   "minimum": -9007199254740991,
                                   "maximum": 9007199254740991
+                                },
+                                "retryAfter": {
+                                  "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
                                 }
                               },
                               "required": [
@@ -197288,6 +198265,12 @@
                                     },
                                     "status": {
                                       "description": "The HTTP status an HTTP source refused with: `source_refused` alone, never its body",
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "retryAfter": {
+                                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
                                       "type": "integer",
                                       "minimum": -9007199254740991,
                                       "maximum": 9007199254740991
@@ -201929,6 +202912,12 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "retryAfter": {
+                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "reason": {
                       "type": "string",
                       "enum": [
@@ -203486,6 +204475,12 @@
                       "type": "string"
                     },
                     "row": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "retryAfter": {
+                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991

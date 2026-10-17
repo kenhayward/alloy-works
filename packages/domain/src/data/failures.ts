@@ -18,7 +18,8 @@ export type Attribution = 'connector' | 'query' | 'product';
  * account that may read data of its own where a person's identity is asserted (DAT-112, D7-D), and the
  * review's `identity_role_unsafe`, a person's role that could log in, create, or own SQL that sets
  * another role; and the D6 plan's `describe_not_supported`, a describe of a source whose type lists no
- * relations (D6-A).
+ * relations (D6-A); and the R18 plan's `query_throttled`, the tenant's runs at once all in flight
+ * for as long as a run waits for a slot (DAT-071, R18-C), which is retryable and never a partial result.
  */
 export const dataFailures = Object.freeze({
   connection_failed: 'connector',
@@ -48,6 +49,7 @@ export const dataFailures = Object.freeze({
   connector_error: 'connector',
   connector_unavailable: 'product',
   connector_busy: 'product',
+  query_throttled: 'product',
   source_unsupported: 'connector',
   source_refused: 'query',
   value_unrepresentable: 'query',

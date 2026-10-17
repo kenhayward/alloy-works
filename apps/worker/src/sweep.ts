@@ -12,6 +12,7 @@ import {
   sweepNotifications,
   sweepPresence,
   sweepPreviews,
+  sweepQueryRuns,
   type JobQueue,
   type TenantDatabase,
 } from '@alloy-works/db';
@@ -84,6 +85,19 @@ export async function sweepExpiredIterations(db: TenantDatabase, log: WorkerLog)
       removed += await db.withTenant(tenant, (trx) => sweepIterations(trx));
     } catch (error) {
       log.error({ tenant: tenant.id, err: error }, 'the iteration sweep failed in a tenant');
+    }
+  }
+  return removed;
+}
+
+/** Query runs past their 13 months, in every tenant (the R18 plan, R18-D). */
+export async function sweepExpiredQueryRuns(db: TenantDatabase, log: WorkerLog): Promise<number> {
+  let removed = 0;
+  for (const tenant of await db.tenants()) {
+    try {
+      removed += await db.withTenant(tenant, (trx) => sweepQueryRuns(trx));
+    } catch (error) {
+      log.error({ tenant: tenant.id, err: error }, 'the query run sweep failed in a tenant');
     }
   }
   return removed;

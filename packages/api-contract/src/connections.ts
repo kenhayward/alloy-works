@@ -134,6 +134,11 @@ export const DataFailureView = z.object({
     .describe(
       'The HTTP status an HTTP source refused with: `source_refused` alone, never its body',
     ),
+  retryAfter: z
+    .number()
+    .int()
+    .optional()
+    .describe('`query_throttled` alone: the seconds to wait before trying again (DAT-071)'),
 });
 export type DataFailureView = z.infer<typeof DataFailureView>;
 
@@ -481,6 +486,11 @@ export const DataRefusal = ErrorBody.extend({
   source: SourceRefusalView.optional(),
   column: z.string().optional(),
   row: z.number().int().optional(),
+  retryAfter: z
+    .number()
+    .int()
+    .optional()
+    .describe('`query_throttled` alone: the seconds to wait before trying again (DAT-071)'),
 });
 
 /**
@@ -561,7 +571,7 @@ const settingsRefused = {
 } as const;
 const unavailable = {
   description:
-    '`connector_unavailable`: no connector is configured or it did not answer; `connector_busy`: it is full',
+    '`connector_unavailable`: no connector is configured or it did not answer; `connector_busy`: it is full; `query_throttled`: the environment already runs as many queries at once as it may, retryable after `retryAfter` seconds',
   schema: DataRefusal,
 } as const;
 const retiredOrUnset = {

@@ -28,6 +28,8 @@ const REASONS = {
   presence: 'Where a window is, which is presence, not an act: unlogged, and gone in a minute',
   inbox:
     "A person's own inbox: what they were told, read, cleared or chose, none of the tenant's content",
+  metering:
+    "A query run's slot and its record, which meter the tenant's runs (the R18 plan) and change none of its content",
   started:
     "A reviewer saying they have started (RR-A): kept on the round's own rows, which its readers read, and no change to the tenant's content",
 } as const;
@@ -117,6 +119,8 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   getPublication: writes('publication.shared_accessed'),
   getPublicationBindings: read,
   listPublicationShares: read,
+  getQueryUsage: read,
+  getQueryRunsCsv: read,
   sharePublication: writes('access.granted', 'invitation.sent'),
   revokePublicationShare: writes('access.revoked'),
   getSharedOutput: writes('publication.shared_accessed'),
@@ -372,6 +376,7 @@ const WRITERS: Readonly<Record<string, Readonly<Record<string, Entry>>>> = {
   sweeps: {
     sweepExpiredSignIns: writes('authentication.signed_out'),
     sweepExpiredIterations: { none: 'iteration' },
+    sweepExpiredQueryRuns: { none: 'metering' },
     sweepUncheckedPublications: { none: 'derived' },
     sweepExpiredPreviews: { none: 'preview' },
     sweepStalePresence: { none: 'presence' },

@@ -714,7 +714,13 @@ describe("Administration's menu", () => {
       within(screen.getByRole('list', { name: 'System' }))
         .getAllByRole('link')
         .map((link) => link.getAttribute('href')),
-    ).toEqual(['#/admin/holds', '#/admin/retention', '#/admin/audit', '#/admin/about']);
+    ).toEqual([
+      '#/admin/holds',
+      '#/admin/retention',
+      '#/admin/queries',
+      '#/admin/audit',
+      '#/admin/about',
+    ]);
   });
 
   it('opens Retention, counted by the keeps in force', async () => {

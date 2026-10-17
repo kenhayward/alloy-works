@@ -149,6 +149,7 @@ describe("migration 0056, which gives the default layout the word a table's note
       '0112_divergent_lines',
       '0113_line_returned',
       '0114_publication_shares',
+      '0115_query_limits',
     ]);
     expect((await layoutChain(tenant)).at(-1)).toMatchObject({
       version_no: 9,
