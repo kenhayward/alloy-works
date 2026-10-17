@@ -709,7 +709,7 @@ describe("Administration's menu", () => {
       within(screen.getByRole('list', { name: 'People and access' }))
         .getAllByRole('link')
         .map((link) => link.getAttribute('href')),
-    ).toEqual(['#/admin/people', '#/admin/groups', '#/admin/roles']);
+    ).toEqual(['#/admin/people', '#/admin/groups', '#/admin/roles', '#/admin/outside']);
     expect(
       within(screen.getByRole('list', { name: 'System' }))
         .getAllByRole('link')

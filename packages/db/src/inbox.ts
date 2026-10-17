@@ -366,7 +366,20 @@ export async function foldDigests(trx: TenantTransaction, now: Date): Promise<nu
       recipient,
       rows.map((row) => row.artifact_id),
     );
-    const kept = rows.filter((row) => readable.has(row.artifact_id));
+    // Nor anything of a thread made internal since, to somebody from outside (COL-038; the R13 final
+    // review): the thread is no longer theirs to be told of.
+    const keptFrom = new Set<string>();
+    for (const thread of new Set(
+      rows.flatMap((row) => (row.thread_id === null ? [] : [row.thread_id])),
+    )) {
+      for (const each of await outsideOf(trx, thread, [recipient])) {
+        if (each === recipient) keptFrom.add(thread);
+      }
+    }
+    const kept = rows.filter(
+      (row) =>
+        readable.has(row.artifact_id) && (row.thread_id === null || !keptFrom.has(row.thread_id)),
+    );
     if (kept.length === 0) continue;
     const counts: DigestCounts = {
       mention: kept.filter((row) => row.kind === 'mention').length,

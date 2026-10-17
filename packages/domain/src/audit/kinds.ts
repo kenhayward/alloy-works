@@ -83,6 +83,10 @@ const Grant = z.strictObject({
   effect: z.enum(['allow', 'deny']),
   grantee: Id,
   granteeKind: z.enum(['principal', 'group']),
+  // An extension (IAM-050; the R13 plan, R13-E): the grant it extends and both expiries.
+  extends: Id.optional(),
+  expiresAt: z.string().optional(),
+  extendedFrom: z.string().nullable().optional(),
 });
 
 const Membership = z.strictObject({

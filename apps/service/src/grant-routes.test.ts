@@ -342,7 +342,7 @@ describe('making, listing and removing grants through the service', () => {
       effect: 'allow',
     };
     for (const body of [
-      { ...base, expiresAt: '2030-01-01T00:00:00Z' },
+      { ...base, until: '2030-01-01T00:00:00Z' },
       { ...base, subject: { principal: ids.grace, group: MISSING } },
       { ...base, subject: { group: 'ABCDEF00-0000-4000-8000-000000000000' } },
       { ...base, role: roles.Reader!.toUpperCase() },

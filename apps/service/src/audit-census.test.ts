@@ -207,6 +207,8 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   listPrincipals: read,
   makeGrant: writes('access.granted'),
   removeGrant: writes('access.revoked'),
+  extendGrant: writes('access.revoked', 'access.granted'),
+  listExternalAccess: read,
   listInvitations: read,
   invite: writes('invitation.sent'),
   withdrawInvitation: writes('invitation.withdrawn', 'access.revoked', 'group.member_removed'),

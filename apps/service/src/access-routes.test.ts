@@ -1243,6 +1243,8 @@ describe('routes that check a permission', () => {
       },
     }),
     removeGrant: () => ({ url: `/v1/grants/${graceAuthors}`, status: 404 }),
+    extendGrant: () => ({ url: `/v1/grants/${graceAuthors}/extension`, status: 404, payload: {} }),
+    listExternalAccess: () => ({ url: '/v1/access/external', status: 403 }),
     listRoles: () => ({ url: '/v1/roles?level=tenant', status: 403 }),
     listPrincipals: () => ({ url: `/v1/principals?level=space:${clinical}`, status: 404 }),
     listInvitations: () => ({ url: '/v1/invitations', status: 403 }),
