@@ -13,6 +13,9 @@ import { permissions } from '../access/permissions.js';
  */
 
 const Id = z.uuid();
+/** A condition axis's key, or one of its values' (REU-020). */
+const ScopeKey = z.string().regex(/^[a-z][a-z0-9_]{0,63}$/);
+const ScopeValue = z.strictObject({ axis: ScopeKey, value: ScopeKey });
 
 /** A field's, setting's, code's or rule's name: lower camel or snake, dotted, never a value. */
 export const AuditName = z
@@ -366,6 +369,9 @@ export const auditKindSpecs = {
       kind: z.enum(['component', 'document', 'queryDefinition']),
       transition: AuditName,
       revision: z.int().positive(),
+      // The axis values it is effective for, fixed as it was designated (LIF-042; the R15 plan, R15-B);
+      // absent before R15 and where it is effective everywhere.
+      scope: z.array(ScopeValue).max(50).optional(),
     }),
     'packages/db/src/workflow-gates.ts',
   ),
@@ -496,6 +502,34 @@ export const auditKindSpecs = {
       owner: Id.nullable(),
     }),
     'packages/db/src/dates.ts',
+  ),
+  // The axis values a component's or document's next revision is effective for, set as an act, each
+  // with the party who must accept it there (LIF-042, LIF-047; the R15 plan, R15-B).
+  'scope.set': kind(
+    ['LIF-042', 'LIF-047'],
+    z.strictObject({
+      kind: z.enum(['component', 'document']),
+      scope: z
+        .array(
+          ScopeValue.extend({
+            party: z.strictObject({ kind: z.enum(['principal', 'group']), id: Id }).nullable(),
+          }),
+        )
+        .max(50),
+    }),
+    'packages/db/src/scopes.ts',
+  ),
+  // A revision accepted by its party in one scope, so it takes effect there (LIF-047; R15-E).
+  'revision.accepted': kind(
+    ['LIF-047'],
+    z.strictObject({
+      kind: z.enum(['component', 'document']),
+      revision: z.int().positive(),
+      version: Id,
+      axis: ScopeKey,
+      value: ScopeKey,
+    }),
+    'packages/db/src/scopes.ts',
   ),
   // A revision approved to take effect later taking it, by nobody (LIF-060; WF5-D).
   'revision.effective': kind(

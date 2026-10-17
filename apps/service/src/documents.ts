@@ -15,6 +15,7 @@ import type {
   PlacementReportView,
 } from '@alloy-works/api-contract';
 import { datesView, pastReviewOf } from './dates.js';
+import { scopeView } from './scopes.js';
 import { cursorFor, pageAsked } from './listing.js';
 import {
   createDocument,
@@ -240,6 +241,7 @@ async function documentView(
     mayHold: viewer.mayHold,
     ...(await workflowView(viewer.trx, document.id, viewer.facts, viewer.principalId)),
     ...(await datesView(viewer.trx, document.id)),
+    ...(await scopeView(viewer.trx, document.id)),
     mayPublish: viewer.mayPublish,
     mayComment: viewer.mayComment,
     mayReview: viewer.mayReview,
@@ -630,11 +632,14 @@ export function documentHandlers(
       // Which revision each reference tracking the latest approved one shows (CNT-163), and the
       // version the last publication carried where a newer one is approved since (LIF-041; WF4-E):
       // only of components the caller may read, which alone resolve.
+      // In the document's scope (R15-D).
       const revisions = await latestRevisionsOf(
         trx,
         readable.filter((component) =>
           [...approved].some((node) => componentOf.get(node) === component),
         ),
+        new Date(),
+        outline.profile?.values ?? {},
       );
       const published = approved.size === 0 ? new Map() : await lastPublishedOccurrences(trx, id);
       // Each readable component past its review day (LIF-018; WF5-H).

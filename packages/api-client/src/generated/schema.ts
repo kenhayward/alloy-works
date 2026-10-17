@@ -599,6 +599,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/components/{id}/acceptance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept a component's revision in a scope
+         * @description Accepts a component's revision in one scope, by the person, or a member of the group, its scope names there, who may read it. Until then the revision before stays effective in that scope; once, it takes effect there. Audited.
+         */
+        post: operations["acceptComponentRevision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/components/{id}/approvals": {
         parameters: {
             query?: never;
@@ -841,6 +861,26 @@ export interface paths {
          * @description Asks for a component an idle holder has: refused until they have been idle the environment’s take period. Asked, the holder is told at once on their stream and keeps it if they save anything within a minute; asked again by the same session once that minute has passed, the lock is the asker’s, and the taking is on the audit log.
          */
         post: operations["takeLock"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/components/{id}/scope": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set the scope a component's next revision is effective for
+         * @description Sets, as an act and needing edit, the condition axis values a component's next revision is effective for, such as a market or a site, fixed to that revision as a gate designates it; each value declared, and each perhaps naming a person or group who must accept the revision before it takes effect there, somebody who may read it. None is everywhere. A reference following approved revisions in a document serves the one effective in the document's profile. Audited.
+         */
+        put: operations["setComponentScope"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1403,6 +1443,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/documents/{id}/acceptance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept a document's revision in a scope
+         * @description Accepts a document's revision in one scope, by the person, or a member of the group, its scope names there, who may read it. Until then the revision before stays effective in that scope; once, it takes effect there. Audited.
+         */
+        post: operations["acceptDocumentRevision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/documents/{id}/approvals": {
         parameters: {
             query?: never;
@@ -1901,6 +1961,26 @@ export interface paths {
          * @description Opens a review round on a document: a title, the people who are to review it, its scope - the whole document or sections of it - and when the reviews are due; on the document as it is, or on one of its baselines, which its reviewers then read as a fixed text. Each reviewer must be a person who may comment on or suggest to the document and read all it covers, or the round is refused, saying how many may not. Each reviewer is told. Needs edit on the document.
          */
         post: operations["openRound"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{id}/scope": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set the scope a document's next revision is effective for
+         * @description Sets, as an act and needing edit, the condition axis values a document's next revision is effective for, such as a market or a site, fixed to that revision as a gate designates it; each value declared, and each perhaps naming a person or group who must accept the revision before it takes effect there, somebody who may read it. None is everywhere. Audited.
+         */
+        put: operations["setDocumentScope"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -11824,6 +11904,9 @@ export interface operations {
                      *         "pastReview": false,
                      *         "effectiveFrom": "2026-01-01T00:00:00.000Z"
                      *       },
+                     *       "scope": {
+                     *         "scope": []
+                     *       },
                      *       "onHold": false,
                      *       "mayHold": false,
                      *       "lock": {
@@ -11958,6 +12041,22 @@ export interface operations {
                             /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                             effectiveFrom: string | null;
                         };
+                        /** @description The scope a revision approved from now is effective for */
+                        scope: {
+                            /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
+                            scope: {
+                                axis: string;
+                                value: string;
+                                /** @description Who must accept a revision before it takes effect in this scope */
+                                party: {
+                                    /** @enum {string} */
+                                    kind: "principal" | "group";
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                } | null;
+                            }[];
+                        };
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                         onHold: boolean;
                         /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -12090,6 +12189,147 @@ export interface operations {
                 };
             };
             /** @description No such component in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    acceptComponentRevision: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "revision": 1,
+                 *       "axis": "example",
+                 *       "value": "example"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The revision accepted, by its number */
+                    revision: number;
+                    axis: string;
+                    value: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Accepted there, so it takes effect there */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "revision": 1,
+                     *       "axis": "example",
+                     *       "value": "example",
+                     *       "accepted": true
+                     *     }
+                     */
+                    "application/json": {
+                        revision: number;
+                        axis: string;
+                        value: string;
+                        /** @constant */
+                        accepted: true;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description acceptance_not_party: the caller is not the person, or a member of the group, who must accept it there */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such component, revision, or scope waiting on a party, or none the caller may read */
             404: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -14853,6 +15093,200 @@ export interface operations {
                             schemas: string[];
                             detail: string;
                         }[];
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    setComponentScope: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "scope": []
+                 *     }
+                 */
+                "application/json": {
+                    /** @description Each axis value once; none for everywhere */
+                    scope: {
+                        /** @description A condition axis's key */
+                        axis: string;
+                        /** @description One of its values */
+                        value: string;
+                        /** @description A person or group who must accept a revision before it takes effect here: somebody who may read it; null for none */
+                        party: {
+                            /** @enum {string} */
+                            kind: "principal" | "group";
+                            /** Format: uuid */
+                            id: string;
+                        } | null;
+                    }[];
+                };
+            };
+        };
+        responses: {
+            /** @description Its scope now */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "scope": []
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
+                        scope: {
+                            axis: string;
+                            value: string;
+                            /** @description Who must accept a revision before it takes effect in this scope */
+                            party: {
+                                /** @enum {string} */
+                                kind: "principal" | "group";
+                                /** Format: uuid */
+                                id: string;
+                                name: string | null;
+                            } | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description scope_unknown: an axis or value no condition axis declares; party_invalid: a party nobody who may read it; scope_invalid: an axis value twice */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the component but may not edit it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such component in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description artifact_archived: an archived component keeps its scope */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
                     };
                 };
             };
@@ -22375,6 +22809,9 @@ export interface operations {
                      *         "pastReview": false,
                      *         "effectiveFrom": "2026-01-01T00:00:00.000Z"
                      *       },
+                     *       "scope": {
+                     *         "scope": []
+                     *       },
                      *       "onHold": false,
                      *       "mayHold": false,
                      *       "mayPublish": false,
@@ -22582,6 +23019,22 @@ export interface operations {
                             /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                             effectiveFrom: string | null;
                         };
+                        /** @description The scope a revision approved from now is effective for */
+                        scope: {
+                            /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
+                            scope: {
+                                axis: string;
+                                value: string;
+                                /** @description Who must accept a revision before it takes effect in this scope */
+                                party: {
+                                    /** @enum {string} */
+                                    kind: "principal" | "group";
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                } | null;
+                            }[];
+                        };
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                         onHold: boolean;
                         /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -22657,6 +23110,147 @@ export interface operations {
                 };
             };
             /** @description No such document in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    acceptDocumentRevision: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "revision": 1,
+                 *       "axis": "example",
+                 *       "value": "example"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The revision accepted, by its number */
+                    revision: number;
+                    axis: string;
+                    value: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Accepted there, so it takes effect there */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "revision": 1,
+                     *       "axis": "example",
+                     *       "value": "example",
+                     *       "accepted": true
+                     *     }
+                     */
+                    "application/json": {
+                        revision: number;
+                        axis: string;
+                        value: string;
+                        /** @constant */
+                        accepted: true;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description acceptance_not_party: the caller is not the person, or a member of the group, who must accept it there */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document, revision, or scope waiting on a party, or none the caller may read */
             404: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -38415,6 +39009,9 @@ export interface operations {
                      *         "pastReview": false,
                      *         "effectiveFrom": "2026-01-01T00:00:00.000Z"
                      *       },
+                     *       "scope": {
+                     *         "scope": []
+                     *       },
                      *       "onHold": false,
                      *       "mayHold": false,
                      *       "mayPublish": false,
@@ -38621,6 +39218,22 @@ export interface operations {
                             pastReview: boolean;
                             /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                             effectiveFrom: string | null;
+                        };
+                        /** @description The scope a revision approved from now is effective for */
+                        scope: {
+                            /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
+                            scope: {
+                                axis: string;
+                                value: string;
+                                /** @description Who must accept a revision before it takes effect in this scope */
+                                party: {
+                                    /** @enum {string} */
+                                    kind: "principal" | "group";
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                } | null;
+                            }[];
                         };
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                         onHold: boolean;
@@ -38863,6 +39476,22 @@ export interface operations {
                                 pastReview: boolean;
                                 /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                                 effectiveFrom: string | null;
+                            };
+                            /** @description The scope a revision approved from now is effective for */
+                            scope: {
+                                /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
+                                scope: {
+                                    axis: string;
+                                    value: string;
+                                    /** @description Who must accept a revision before it takes effect in this scope */
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    } | null;
+                                }[];
                             };
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                             onHold: boolean;
@@ -39208,6 +39837,22 @@ export interface operations {
                                 pastReview: boolean;
                                 /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                                 effectiveFrom: string | null;
+                            };
+                            /** @description The scope a revision approved from now is effective for */
+                            scope: {
+                                /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
+                                scope: {
+                                    axis: string;
+                                    value: string;
+                                    /** @description Who must accept a revision before it takes effect in this scope */
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    } | null;
+                                }[];
                             };
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                             onHold: boolean;
@@ -39629,6 +40274,9 @@ export interface operations {
                      *         "pastReview": false,
                      *         "effectiveFrom": "2026-01-01T00:00:00.000Z"
                      *       },
+                     *       "scope": {
+                     *         "scope": []
+                     *       },
                      *       "onHold": false,
                      *       "mayHold": false,
                      *       "mayPublish": false,
@@ -39835,6 +40483,22 @@ export interface operations {
                             pastReview: boolean;
                             /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                             effectiveFrom: string | null;
+                        };
+                        /** @description The scope a revision approved from now is effective for */
+                        scope: {
+                            /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
+                            scope: {
+                                axis: string;
+                                value: string;
+                                /** @description Who must accept a revision before it takes effect in this scope */
+                                party: {
+                                    /** @enum {string} */
+                                    kind: "principal" | "group";
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                } | null;
+                            }[];
                         };
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                         onHold: boolean;
@@ -40077,6 +40741,22 @@ export interface operations {
                                 pastReview: boolean;
                                 /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                                 effectiveFrom: string | null;
+                            };
+                            /** @description The scope a revision approved from now is effective for */
+                            scope: {
+                                /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
+                                scope: {
+                                    axis: string;
+                                    value: string;
+                                    /** @description Who must accept a revision before it takes effect in this scope */
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    } | null;
+                                }[];
                             };
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                             onHold: boolean;
@@ -40422,6 +41102,22 @@ export interface operations {
                                 pastReview: boolean;
                                 /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                                 effectiveFrom: string | null;
+                            };
+                            /** @description The scope a revision approved from now is effective for */
+                            scope: {
+                                /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
+                                scope: {
+                                    axis: string;
+                                    value: string;
+                                    /** @description Who must accept a revision before it takes effect in this scope */
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    } | null;
+                                }[];
                             };
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                             onHold: boolean;
@@ -40986,6 +41682,9 @@ export interface operations {
                      *         "pastReview": false,
                      *         "effectiveFrom": "2026-01-01T00:00:00.000Z"
                      *       },
+                     *       "scope": {
+                     *         "scope": []
+                     *       },
                      *       "onHold": false,
                      *       "mayHold": false,
                      *       "mayPublish": false,
@@ -41192,6 +41891,22 @@ export interface operations {
                             pastReview: boolean;
                             /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                             effectiveFrom: string | null;
+                        };
+                        /** @description The scope a revision approved from now is effective for */
+                        scope: {
+                            /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
+                            scope: {
+                                axis: string;
+                                value: string;
+                                /** @description Who must accept a revision before it takes effect in this scope */
+                                party: {
+                                    /** @enum {string} */
+                                    kind: "principal" | "group";
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                } | null;
+                            }[];
                         };
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                         onHold: boolean;
@@ -41434,6 +42149,22 @@ export interface operations {
                                 pastReview: boolean;
                                 /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                                 effectiveFrom: string | null;
+                            };
+                            /** @description The scope a revision approved from now is effective for */
+                            scope: {
+                                /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
+                                scope: {
+                                    axis: string;
+                                    value: string;
+                                    /** @description Who must accept a revision before it takes effect in this scope */
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    } | null;
+                                }[];
                             };
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                             onHold: boolean;
@@ -41779,6 +42510,22 @@ export interface operations {
                                 pastReview: boolean;
                                 /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                                 effectiveFrom: string | null;
+                            };
+                            /** @description The scope a revision approved from now is effective for */
+                            scope: {
+                                /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
+                                scope: {
+                                    axis: string;
+                                    value: string;
+                                    /** @description Who must accept a revision before it takes effect in this scope */
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    } | null;
+                                }[];
                             };
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                             onHold: boolean;
@@ -42463,6 +43210,9 @@ export interface operations {
                      *         "pastReview": false,
                      *         "effectiveFrom": "2026-01-01T00:00:00.000Z"
                      *       },
+                     *       "scope": {
+                     *         "scope": []
+                     *       },
                      *       "onHold": false,
                      *       "mayHold": false,
                      *       "mayPublish": false,
@@ -42669,6 +43419,22 @@ export interface operations {
                             pastReview: boolean;
                             /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                             effectiveFrom: string | null;
+                        };
+                        /** @description The scope a revision approved from now is effective for */
+                        scope: {
+                            /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
+                            scope: {
+                                axis: string;
+                                value: string;
+                                /** @description Who must accept a revision before it takes effect in this scope */
+                                party: {
+                                    /** @enum {string} */
+                                    kind: "principal" | "group";
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                } | null;
+                            }[];
                         };
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                         onHold: boolean;
@@ -42911,6 +43677,22 @@ export interface operations {
                                 pastReview: boolean;
                                 /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                                 effectiveFrom: string | null;
+                            };
+                            /** @description The scope a revision approved from now is effective for */
+                            scope: {
+                                /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
+                                scope: {
+                                    axis: string;
+                                    value: string;
+                                    /** @description Who must accept a revision before it takes effect in this scope */
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    } | null;
+                                }[];
                             };
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                             onHold: boolean;
@@ -43256,6 +44038,22 @@ export interface operations {
                                 pastReview: boolean;
                                 /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                                 effectiveFrom: string | null;
+                            };
+                            /** @description The scope a revision approved from now is effective for */
+                            scope: {
+                                /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
+                                scope: {
+                                    axis: string;
+                                    value: string;
+                                    /** @description Who must accept a revision before it takes effect in this scope */
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    } | null;
+                                }[];
                             };
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                             onHold: boolean;
@@ -44283,6 +45081,200 @@ export interface operations {
             };
             /** @description No such document in this environment, or none the caller may read */
             404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    setDocumentScope: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "scope": []
+                 *     }
+                 */
+                "application/json": {
+                    /** @description Each axis value once; none for everywhere */
+                    scope: {
+                        /** @description A condition axis's key */
+                        axis: string;
+                        /** @description One of its values */
+                        value: string;
+                        /** @description A person or group who must accept a revision before it takes effect here: somebody who may read it; null for none */
+                        party: {
+                            /** @enum {string} */
+                            kind: "principal" | "group";
+                            /** Format: uuid */
+                            id: string;
+                        } | null;
+                    }[];
+                };
+            };
+        };
+        responses: {
+            /** @description Its scope now */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "scope": []
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
+                        scope: {
+                            axis: string;
+                            value: string;
+                            /** @description Who must accept a revision before it takes effect in this scope */
+                            party: {
+                                /** @enum {string} */
+                                kind: "principal" | "group";
+                                /** Format: uuid */
+                                id: string;
+                                name: string | null;
+                            } | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description scope_unknown: an axis or value no condition axis declares; party_invalid: a party nobody who may read it; scope_invalid: an axis value twice */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the document but may not edit it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description artifact_archived: an archived document keeps its scope */
+            409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;
@@ -46209,6 +47201,9 @@ export interface operations {
                      *         "pastReview": false,
                      *         "effectiveFrom": "2026-01-01T00:00:00.000Z"
                      *       },
+                     *       "scope": {
+                     *         "scope": []
+                     *       },
                      *       "onHold": false,
                      *       "mayHold": false,
                      *       "mayPublish": false,
@@ -46415,6 +47410,22 @@ export interface operations {
                             pastReview: boolean;
                             /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                             effectiveFrom: string | null;
+                        };
+                        /** @description The scope a revision approved from now is effective for */
+                        scope: {
+                            /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
+                            scope: {
+                                axis: string;
+                                value: string;
+                                /** @description Who must accept a revision before it takes effect in this scope */
+                                party: {
+                                    /** @enum {string} */
+                                    kind: "principal" | "group";
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                } | null;
+                            }[];
                         };
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                         onHold: boolean;
@@ -46657,6 +47668,22 @@ export interface operations {
                                 pastReview: boolean;
                                 /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                                 effectiveFrom: string | null;
+                            };
+                            /** @description The scope a revision approved from now is effective for */
+                            scope: {
+                                /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
+                                scope: {
+                                    axis: string;
+                                    value: string;
+                                    /** @description Who must accept a revision before it takes effect in this scope */
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    } | null;
+                                }[];
                             };
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                             onHold: boolean;
@@ -47002,6 +48029,22 @@ export interface operations {
                                 pastReview: boolean;
                                 /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                                 effectiveFrom: string | null;
+                            };
+                            /** @description The scope a revision approved from now is effective for */
+                            scope: {
+                                /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
+                                scope: {
+                                    axis: string;
+                                    value: string;
+                                    /** @description Who must accept a revision before it takes effect in this scope */
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    } | null;
+                                }[];
                             };
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                             onHold: boolean;
@@ -61786,6 +62829,9 @@ export interface operations {
                      *         "pastReview": false,
                      *         "effectiveFrom": "2026-01-01T00:00:00.000Z"
                      *       },
+                     *       "scope": {
+                     *         "scope": []
+                     *       },
                      *       "onHold": false,
                      *       "mayHold": false,
                      *       "lock": {
@@ -61919,6 +62965,22 @@ export interface operations {
                             pastReview: boolean;
                             /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                             effectiveFrom: string | null;
+                        };
+                        /** @description The scope a revision approved from now is effective for */
+                        scope: {
+                            /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
+                            scope: {
+                                axis: string;
+                                value: string;
+                                /** @description Who must accept a revision before it takes effect in this scope */
+                                party: {
+                                    /** @enum {string} */
+                                    kind: "principal" | "group";
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                } | null;
+                            }[];
                         };
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                         onHold: boolean;
@@ -62929,6 +63991,9 @@ export interface operations {
                      *         "pastReview": false,
                      *         "effectiveFrom": "2026-01-01T00:00:00.000Z"
                      *       },
+                     *       "scope": {
+                     *         "scope": []
+                     *       },
                      *       "onHold": false,
                      *       "mayHold": false,
                      *       "mayPublish": false,
@@ -63136,6 +64201,22 @@ export interface operations {
                             pastReview: boolean;
                             /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
                             effectiveFrom: string | null;
+                        };
+                        /** @description The scope a revision approved from now is effective for */
+                        scope: {
+                            /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
+                            scope: {
+                                axis: string;
+                                value: string;
+                                /** @description Who must accept a revision before it takes effect in this scope */
+                                party: {
+                                    /** @enum {string} */
+                                    kind: "principal" | "group";
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                } | null;
+                            }[];
                         };
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                         onHold: boolean;

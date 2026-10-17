@@ -1,5 +1,6 @@
 import {
   decidingDefinition,
+  effectiveRevision,
   initialState,
   parseWorkflowBody,
   transitionsFrom,
@@ -12,6 +13,7 @@ import {
   type WorkflowTransition,
 } from '@alloy-works/domain';
 import { datesStored } from './dates.js';
+import { revisionScopes, scopesStored } from './scopes.js';
 import { unmetConditions, type UnmetCondition } from './workflow-conditions.js';
 import { sql } from 'kysely';
 import { isArchived } from './archival.js';
@@ -88,18 +90,23 @@ export async function latestRevision(
 /**
  * Each of these artifacts' latest revision in effect, where it has one: what a reference tracking the
  * latest approved revision resolves to (LIF-038; the WF4 plan, WF4-A). One approved to take effect
- * later is not, until its instant (WF5-C; LIF-060). The caller passes only those its reader may read.
+ * later is not, until its instant (WF5-C; LIF-060). Under `profile`, the one effective in its scope
+ * (LIF-042, LIF-043; the R15 plan, R15-C, R15-D): the newest scoped to a value it holds and accepted
+ * there, else the newest unscoped; with none, the unscoped alone. The caller passes only those its
+ * reader may read.
  */
 export async function latestRevisionsOf(
   trx: TenantTransaction,
   artifactIds: readonly string[],
   now: Date = new Date(),
+  profile: Readonly<Record<string, readonly string[]>> = {},
 ): Promise<Map<string, Revision>> {
   if (artifactIds.length === 0 || !(await gatesStored(trx))) return new Map();
   const dated = await datesStored(trx);
+  const scoped = await scopesStored(trx);
   const rows = await trx
     .selectFrom('revision_designation as d')
-    .distinctOn('d.artifact_id')
+    .$if(!scoped, (query) => query.distinctOn('d.artifact_id'))
     .select(['d.artifact_id', 'd.revision_no', 'd.version_id', 'd.at'])
     .where('d.artifact_id', 'in', [...artifactIds])
     .$if(dated, (query) =>
@@ -117,12 +124,32 @@ export async function latestRevisionsOf(
     .orderBy('d.artifact_id')
     .orderBy('d.revision_no', 'desc')
     .execute();
-  return new Map(
-    rows.map((row) => [
-      row.artifact_id,
-      { number: row.revision_no, versionId: row.version_id, at: row.at },
-    ]),
-  );
+  if (!scoped) {
+    return new Map(
+      rows.map((row) => [
+        row.artifact_id,
+        { number: row.revision_no, versionId: row.version_id, at: row.at },
+      ]),
+    );
+  }
+  const scopes = await revisionScopes(trx, artifactIds);
+  const byArtifact = new Map<string, typeof rows>();
+  for (const row of rows)
+    byArtifact.set(row.artifact_id, [...(byArtifact.get(row.artifact_id) ?? []), row]);
+  const chosen = new Map<string, Revision>();
+  for (const [artifact, revisions] of byArtifact) {
+    const number = effectiveRevision(
+      revisions.map((row) => ({
+        number: row.revision_no,
+        scopes: scopes.get(row.version_id) ?? [],
+      })),
+      profile,
+    );
+    const row = revisions.find((each) => each.revision_no === number);
+    if (row)
+      chosen.set(artifact, { number: row.revision_no, versionId: row.version_id, at: row.at });
+  }
+  return chosen;
 }
 
 /** How far a gate from the artifact's state has got this round, on its current version (WF2-C). */

@@ -211,6 +211,11 @@ describe('the rule behind a refusal', () => {
       // The WF5 plan's (WF5-A): an owner who may not read it, an effective date with no offset.
       'owner.invalid',
       'dates.invalid',
+      // The R15 plan's (R15-B, R15-E): an axis value twice, or undeclared; a party who may not read it.
+      'scope.invalid',
+      'scope.unknown',
+      'party.invalid',
+      'acceptance.not_party',
       // The WF6 plan's (WF6-C): no template, already its newest, or not its newest.
       'template.none',
       'template.current',

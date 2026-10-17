@@ -7,6 +7,7 @@ import { artifactPlace, recordEvent } from './audit.js';
 import { isDeleted } from './deletion.js';
 import type { TenantTransaction } from './tables.js';
 import { fixEffective } from './dates.js';
+import { fixScope } from './scopes.js';
 import { lockArtifact } from './versions.js';
 import { unmetConditions, type UnmetCondition } from './workflow-conditions.js';
 import {
@@ -279,13 +280,25 @@ export async function decideGate(
         by: input.by,
       })
       .execute();
+    // The scope set now is the revision's, fixed (LIF-042; the R15 plan, R15-B).
+    const scope =
+      standing.kind === 'queryDefinition'
+        ? []
+        : await fixScope(trx, { artifactId: input.artifactId, version });
     await recordEvent(
       trx,
       {
         kind: 'revision.designated',
         subject,
         space: place.space,
-        detail: { kind: standing.kind, transition: transition.key, revision: number },
+        detail: {
+          kind: standing.kind,
+          transition: transition.key,
+          revision: number,
+          ...(scope.length === 0
+            ? {}
+            : { scope: scope.map(({ axis, value }) => ({ axis, value })) }),
+        },
       },
       place.labels,
     );

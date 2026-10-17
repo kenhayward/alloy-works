@@ -374,6 +374,10 @@ const operationTags = {
     'listQueryDefinitionApprovals',
     'setComponentDates',
     'setDocumentDates',
+    'setComponentScope',
+    'setDocumentScope',
+    'acceptComponentRevision',
+    'acceptDocumentRevision',
   ],
   'Audit log': ['listAuditEvents', 'requestAuditExport', 'getAuditExport', 'downloadAuditExport'],
 } as const;
@@ -734,6 +738,14 @@ const descriptions: Readonly<Record<string, string>> = {
     'Lists every approval and rejection of a component at its gates, newest first: the gate, the decision, who, when, the version decided and a rejection’s reason. Needs read on the component.',
   listDocumentApprovals:
     'Lists every approval and rejection of a document at its gates, newest first: the gate, the decision, who, when, the version decided and a rejection’s reason. Needs read on the document.',
+  acceptComponentRevision:
+    "Accepts a component's revision in one scope, by the person, or a member of the group, its scope names there, who may read it. Until then the revision before stays effective in that scope; once, it takes effect there. Audited.",
+  acceptDocumentRevision:
+    "Accepts a document's revision in one scope, by the person, or a member of the group, its scope names there, who may read it. Until then the revision before stays effective in that scope; once, it takes effect there. Audited.",
+  setComponentScope:
+    "Sets, as an act and needing edit, the condition axis values a component's next revision is effective for, such as a market or a site, fixed to that revision as a gate designates it; each value declared, and each perhaps naming a person or group who must accept the revision before it takes effect there, somebody who may read it. None is everywhere. A reference following approved revisions in a document serves the one effective in the document's profile. Audited.",
+  setDocumentScope:
+    "Sets, as an act and needing edit, the condition axis values a document's next revision is effective for, such as a market or a site, fixed to that revision as a gate designates it; each value declared, and each perhaps naming a person or group who must accept the revision before it takes effect there, somebody who may read it. None is everywhere. Audited.",
   setComponentDates:
     "Sets a component's dates as an act, needing edit: when a revision approved from now takes effect, which fixes it to that revision until then, the day it is to be reviewed by, and who is prompted to review it, somebody who may read it. Audited.",
   setDocumentDates:

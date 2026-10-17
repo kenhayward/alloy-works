@@ -722,6 +722,11 @@ describe('the domain package', () => {
         'CONDITIONS_BY_KIND',
         // WF5: a workflow's review policy, and what it is where none is declared.
         'reviewPolicy',
+        // R15: a revision's scopes, and which revision applies in one.
+        'scopePartySchema',
+        'scopeEntrySchema',
+        'scopeSchema',
+        'effectiveRevision',
       ].sort(),
     );
   });

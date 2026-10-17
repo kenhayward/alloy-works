@@ -291,6 +291,67 @@ export const DatesBody = z.strictObject({
 });
 export type DatesBody = z.infer<typeof DatesBody>;
 
+const ScopeKey = z.string().regex(/^[a-z][a-z0-9_]{0,63}$/);
+
+/** A component's or document's scope (LIF-042, LIF-047; the R15 plan, R15-B, R15-E). */
+export const ScopeView = z
+  .object({
+    scope: z
+      .array(
+        z.object({
+          axis: ScopeKey,
+          value: ScopeKey,
+          party: z
+            .object({
+              kind: z.enum(['principal', 'group']),
+              id: z.uuid(),
+              name: z.string().nullable(),
+            })
+            .nullable()
+            .describe('Who must accept a revision before it takes effect in this scope'),
+        }),
+      )
+      .describe(
+        'The condition axis values a revision approved from now is effective for; none is everywhere',
+      ),
+  })
+  .describe('The scope a revision approved from now is effective for');
+export type ScopeView = z.infer<typeof ScopeView>;
+
+export const ScopeBody = z.strictObject({
+  scope: z
+    .array(
+      z.strictObject({
+        axis: ScopeKey.describe("A condition axis's key"),
+        value: ScopeKey.describe('One of its values'),
+        party: z
+          .strictObject({ kind: z.enum(['principal', 'group']), id: z.uuid() })
+          .nullable()
+          .describe(
+            'A person or group who must accept a revision before it takes effect here: somebody who may read it; null for none',
+          ),
+      }),
+    )
+    .max(50)
+    .describe('Each axis value once; none for everywhere'),
+});
+export type ScopeBody = z.infer<typeof ScopeBody>;
+
+export const AcceptanceBody = z.strictObject({
+  revision: z.int().positive().describe('The revision accepted, by its number'),
+  axis: ScopeKey,
+  value: ScopeKey,
+});
+export type AcceptanceBody = z.infer<typeof AcceptanceBody>;
+
+export const AcceptanceView = z.object({
+  revision: z.int().positive(),
+  axis: ScopeKey,
+  value: ScopeKey,
+  accepted: z.literal(true),
+});
+export type AcceptanceView = z.infer<typeof AcceptanceView>;
+
 export const ApprovalBody = z.strictObject({
   transition: Key.describe('The gate, by its transition key'),
   version: z
@@ -445,7 +506,86 @@ const datesResponses = (kind: 'component' | 'document') =>
     },
   }) as const;
 
+const scopeResponses = (kind: 'component' | 'document') =>
+  ({
+    200: { description: 'Its scope now', schema: ScopeView },
+    400: {
+      description:
+        'scope_unknown: an axis or value no condition axis declares; party_invalid: a party nobody who may read it; scope_invalid: an axis value twice',
+      schema: ErrorBody,
+    },
+    401: unauthenticated,
+    403: { description: `The caller may read the ${kind} but may not edit it`, schema: ErrorBody },
+    404: {
+      description: `No such ${kind} in this environment, or none the caller may read`,
+      schema: ErrorBody,
+    },
+    409: {
+      description: `artifact_archived: an archived ${kind} keeps its scope`,
+      schema: ErrorBody,
+    },
+  }) as const;
+
+const acceptanceResponses = (kind: 'component' | 'document') =>
+  ({
+    200: { description: 'Accepted there, so it takes effect there', schema: AcceptanceView },
+    401: unauthenticated,
+    403: {
+      description:
+        'acceptance_not_party: the caller is not the person, or a member of the group, who must accept it there',
+      schema: ErrorBody,
+    },
+    404: {
+      description: `No such ${kind}, revision, or scope waiting on a party, or none the caller may read`,
+      schema: ErrorBody,
+    },
+  }) as const;
+
 export const workflowRoutes = {
+  acceptComponentRevision: {
+    operationId: 'acceptComponentRevision',
+    method: 'POST',
+    path: '/v1/components/{id}/acceptance',
+    summary: "Accept a component's revision in a scope",
+    tenantScoped: true,
+    access: read,
+    params: TransitionParams,
+    body: AcceptanceBody,
+    responses: acceptanceResponses('component'),
+  },
+  acceptDocumentRevision: {
+    operationId: 'acceptDocumentRevision',
+    method: 'POST',
+    path: '/v1/documents/{id}/acceptance',
+    summary: "Accept a document's revision in a scope",
+    tenantScoped: true,
+    access: read,
+    params: TransitionParams,
+    body: AcceptanceBody,
+    responses: acceptanceResponses('document'),
+  },
+  setComponentScope: {
+    operationId: 'setComponentScope',
+    method: 'PUT',
+    path: '/v1/components/{id}/scope',
+    summary: "Set the scope a component's next revision is effective for",
+    tenantScoped: true,
+    access: editing,
+    params: TransitionParams,
+    body: ScopeBody,
+    responses: scopeResponses('component'),
+  },
+  setDocumentScope: {
+    operationId: 'setDocumentScope',
+    method: 'PUT',
+    path: '/v1/documents/{id}/scope',
+    summary: "Set the scope a document's next revision is effective for",
+    tenantScoped: true,
+    access: editing,
+    params: TransitionParams,
+    body: ScopeBody,
+    responses: scopeResponses('document'),
+  },
   setComponentDates: {
     operationId: 'setComponentDates',
     method: 'PUT',
