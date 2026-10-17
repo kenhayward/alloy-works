@@ -294,4 +294,128 @@ describe('people from outside the organisation (the R13 plan)', () => {
     });
     expect(refused.statusCode).toBe(400);
   });
+
+  describe('internal threads (the R13 plan, R13-C, R13-D)', () => {
+    const inbox = async (who: string) =>
+      (await call('GET', '/v1/inbox', who)).json<{ notifications: { thread: string | null }[] }>()
+        .notifications;
+
+    it('COL-038 keeps an internal thread from somebody outside by every route, and shows it, marked, to everybody inside', async () => {
+      const version = await component([para('p1', 'Set the tray carefully.')]);
+      const started = await call('POST', `/v1/components/${version.artifactId}/threads`, 'ada', {
+        version: version.id,
+        anchor: SPAN,
+        parts: [
+          { text: 'Before the client sees it, ' },
+          { mention: ids.alice },
+          { mention: ids.grace },
+        ],
+        internal: true,
+      });
+      expect(started.statusCode, started.body).toBe(200);
+      const thread = started.json<{ id: string; internal: boolean }>();
+      expect(thread.internal).toBe(true);
+
+      // Somebody inside sees it, marked; and is told of it.
+      const asGrace = await call('GET', `/v1/threads/${thread.id}`, 'grace');
+      expect(asGrace.json<{ internal: boolean }>().internal).toBe(true);
+      expect((await inbox('grace')).map((each) => each.thread)).toContain(thread.id);
+
+      // Somebody outside is shown nothing of it, and told nothing.
+      const listed = (await call('GET', `/v1/components/${version.artifactId}/threads`, 'alice'))
+        .json<{ threads: { id: string }[] }>()
+        .threads.map((each) => each.id);
+      expect(listed).not.toContain(thread.id);
+      for (const [method, url, body] of [
+        ['GET', `/v1/threads/${thread.id}`, undefined],
+        ['POST', `/v1/threads/${thread.id}/comments`, { parts: said('May I see?') }],
+        ['POST', `/v1/threads/${thread.id}/resolution`, {}],
+      ] as const) {
+        expect((await call(method, url, 'alice', body)).statusCode, `${method} ${url}`).toBe(404);
+      }
+      expect((await inbox('alice')).map((each) => each.thread)).not.toContain(thread.id);
+    });
+
+    it('COL-038 makes an open thread internal, never public again, and only by somebody inside', async () => {
+      const version = await component([para('p1', 'Set the tray carefully.')]);
+      const started = await start(version, SPAN, 'ada');
+      const thread = started.json<{ id: string; internal: boolean }>();
+      expect(thread.internal).toBe(false);
+      expect((await call('GET', `/v1/threads/${thread.id}`, 'alice')).statusCode).toBe(200);
+
+      // Somebody outside may not make it so.
+      expect(
+        (await call('POST', `/v1/threads/${thread.id}/internal`, 'alice', {})).statusCode,
+      ).toBe(404);
+      const marked = await call('POST', `/v1/threads/${thread.id}/internal`, 'grace', {});
+      expect(marked.statusCode, marked.body).toBe(200);
+      expect(marked.json<{ internal: boolean }>().internal).toBe(true);
+      expect((await call('GET', `/v1/threads/${thread.id}`, 'alice')).statusCode).toBe(404);
+      // Marked again, it stays as it is.
+      expect(
+        (await call('POST', `/v1/threads/${thread.id}/internal`, 'ada', {})).json<{
+          internal: boolean;
+        }>().internal,
+      ).toBe(true);
+
+      // A resolved thread is not marked: it is closed as it stood.
+      const other = (await start(version, SPAN, 'ada')).json<{ id: string }>();
+      await call('POST', `/v1/threads/${other.id}/resolution`, 'ada', {});
+      const refused = await call('POST', `/v1/threads/${other.id}/internal`, 'ada', {});
+      expect(refused.statusCode).toBe(409);
+      expect(refused.json()).toMatchObject({ code: 'thread_resolved' });
+    });
+
+    it('COL-038 counts no internal thread for somebody outside, on a round they review', async () => {
+      const printer = await component([para('p1', 'Set the tray carefully.')]);
+      const document = await documentWith([
+        reference('b'.repeat(26), printer.artifactId, { kind: 'latest' }),
+      ]);
+      const opened = await call('POST', `/v1/documents/${document.artifactId}/rounds`, 'ada', {
+        title: 'Client review',
+        dueAt: new Date(Date.now() + 7 * 86_400_000).toISOString(),
+        reviewers: [ids.alice, ids.grace],
+      });
+      const round = opened.json<{ id: string }>().id;
+      const grace = await call('POST', `/v1/components/${printer.artifactId}/threads`, 'grace', {
+        version: printer.id,
+        anchor: SPAN,
+        parts: said('Between us: is this right?'),
+        internal: true,
+      });
+      expect(grace.statusCode, grace.body).toBe(200);
+      const threadsOf = async (who: string) =>
+        (await call('GET', `/v1/rounds/${round}`, who))
+          .json<{ reviewers: { person: { id: string }; threads: number }[] }>()
+          .reviewers.find((each) => each.person.id === ids.grace)!.threads;
+      expect(await threadsOf('ada')).toBe(1);
+      expect(await threadsOf('alice')).toBe(0);
+    });
+
+    it('SCH-072 filters threads in search by whether they are internal, and never finds an internal one for somebody outside', async () => {
+      const version = await component([para('p1', 'Set the tray carefully.')]);
+      const word = 'zephyrine';
+      const open = async (internal: boolean) =>
+        (
+          await call('POST', `/v1/components/${version.artifactId}/threads`, 'ada', {
+            version: version.id,
+            anchor: SPAN,
+            parts: said(`The ${word} reading`),
+            internal,
+          })
+        ).json<{ id: string }>().id;
+      const inside = await open(true);
+      const shared = await open(false);
+      const found = async (who: string, filter = '') =>
+        (await call('GET', `/v1/search?q=${word}&kind=thread${filter}`, who))
+          .json<{ items: { thread: { id: string } | null }[] }>()
+          .items.map((each) => each.thread?.id)
+          .sort();
+      expect(await found('ada')).toEqual([inside, shared].sort());
+      expect(await found('ada', '&internal=true')).toEqual([inside]);
+      expect(await found('ada', '&internal=false')).toEqual([shared]);
+      expect(await found('alice')).toEqual([shared]);
+      expect(await found('alice', '&internal=true')).toEqual([]);
+    });
+  });
 });

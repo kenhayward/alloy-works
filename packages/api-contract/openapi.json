@@ -22591,6 +22591,10 @@
                               }
                             ]
                           },
+                          "internal": {
+                            "type": "boolean",
+                            "description": "Kept from everybody from outside the organisation (COL-038)"
+                          },
                           "on": {
                             "type": "object",
                             "properties": {
@@ -22722,6 +22726,7 @@
                         },
                         "required": [
                           "id",
+                          "internal",
                           "on",
                           "anchor",
                           "madeAgainst",
@@ -37340,6 +37345,10 @@
                               }
                             ]
                           },
+                          "internal": {
+                            "type": "boolean",
+                            "description": "Kept from everybody from outside the organisation (COL-038)"
+                          },
                           "on": {
                             "type": "object",
                             "properties": {
@@ -37471,6 +37480,7 @@
                         },
                         "required": [
                           "id",
+                          "internal",
                           "on",
                           "anchor",
                           "madeAgainst",
@@ -37804,6 +37814,10 @@
                       "additionalProperties": {}
                     },
                     "description": "Its first comment"
+                  },
+                  "internal": {
+                    "description": "Kept from everybody from outside the organisation, who are never shown it or told of it (COL-038); not, when omitted",
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -37839,6 +37853,10 @@
                           "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                         }
                       ]
+                    },
+                    "internal": {
+                      "type": "boolean",
+                      "description": "Kept from everybody from outside the organisation (COL-038)"
                     },
                     "on": {
                       "type": "object",
@@ -38080,6 +38098,7 @@
                   },
                   "required": [
                     "id",
+                    "internal",
                     "on",
                     "anchor",
                     "madeAgainst",
@@ -38091,6 +38110,7 @@
                 },
                 "example": {
                   "id": "00000000-0000-4000-8000-000000000001",
+                  "internal": false,
                   "on": {
                     "id": "00000000-0000-4000-8000-000000000001",
                     "kind": "component"
@@ -141124,6 +141144,10 @@
                               }
                             ]
                           },
+                          "internal": {
+                            "type": "boolean",
+                            "description": "Kept from everybody from outside the organisation (COL-038)"
+                          },
                           "on": {
                             "type": "object",
                             "properties": {
@@ -141255,6 +141279,7 @@
                         },
                         "required": [
                           "id",
+                          "internal",
                           "on",
                           "anchor",
                           "madeAgainst",
@@ -141594,6 +141619,10 @@
                       "additionalProperties": {}
                     },
                     "description": "Its first comment"
+                  },
+                  "internal": {
+                    "description": "Kept from everybody from outside the organisation, who are never shown it or told of it (COL-038); not, when omitted",
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -141629,6 +141658,10 @@
                           "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                         }
                       ]
+                    },
+                    "internal": {
+                      "type": "boolean",
+                      "description": "Kept from everybody from outside the organisation (COL-038)"
                     },
                     "on": {
                       "type": "object",
@@ -141870,6 +141903,7 @@
                   },
                   "required": [
                     "id",
+                    "internal",
                     "on",
                     "anchor",
                     "madeAgainst",
@@ -141881,6 +141915,7 @@
                 },
                 "example": {
                   "id": "00000000-0000-4000-8000-000000000001",
+                  "internal": false,
                   "on": {
                     "id": "00000000-0000-4000-8000-000000000001",
                     "kind": "component"
@@ -178560,6 +178595,19 @@
             }
           },
           {
+            "name": "internal",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Threads alone: those internal to the organisation, or those that are not (SCH-072). Somebody from outside is never shown an internal one",
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          },
+          {
             "name": "X-Request-Id",
             "in": "header",
             "required": false,
@@ -201788,6 +201836,10 @@
                         }
                       ]
                     },
+                    "internal": {
+                      "type": "boolean",
+                      "description": "Kept from everybody from outside the organisation (COL-038)"
+                    },
                     "on": {
                       "type": "object",
                       "properties": {
@@ -202028,6 +202080,7 @@
                   },
                   "required": [
                     "id",
+                    "internal",
                     "on",
                     "anchor",
                     "madeAgainst",
@@ -202039,6 +202092,7 @@
                 },
                 "example": {
                   "id": "00000000-0000-4000-8000-000000000001",
+                  "internal": false,
                   "on": {
                     "id": "00000000-0000-4000-8000-000000000001",
                     "kind": "component"
@@ -202342,6 +202396,10 @@
                         }
                       ]
                     },
+                    "internal": {
+                      "type": "boolean",
+                      "description": "Kept from everybody from outside the organisation (COL-038)"
+                    },
                     "on": {
                       "type": "object",
                       "properties": {
@@ -202582,6 +202640,7 @@
                   },
                   "required": [
                     "id",
+                    "internal",
                     "on",
                     "anchor",
                     "madeAgainst",
@@ -202593,6 +202652,7 @@
                 },
                 "example": {
                   "id": "00000000-0000-4000-8000-000000000001",
+                  "internal": false,
                   "on": {
                     "id": "00000000-0000-4000-8000-000000000001",
                     "kind": "component"
@@ -203003,6 +203063,10 @@
                         }
                       ]
                     },
+                    "internal": {
+                      "type": "boolean",
+                      "description": "Kept from everybody from outside the organisation (COL-038)"
+                    },
                     "on": {
                       "type": "object",
                       "properties": {
@@ -203243,6 +203307,7 @@
                   },
                   "required": [
                     "id",
+                    "internal",
                     "on",
                     "anchor",
                     "madeAgainst",
@@ -203254,6 +203319,7 @@
                 },
                 "example": {
                   "id": "00000000-0000-4000-8000-000000000001",
+                  "internal": false,
                   "on": {
                     "id": "00000000-0000-4000-8000-000000000001",
                     "kind": "component"
@@ -203543,11 +203609,11 @@
         }
       }
     },
-    "/v1/threads/{id}/resolution": {
+    "/v1/threads/{id}/internal": {
       "post": {
-        "operationId": "resolveThread",
-        "summary": "Resolve a thread, once",
-        "description": "Resolves an open thread, recording who and when. A thread is resolved once and never reopened.",
+        "operationId": "markThreadInternal",
+        "summary": "Make an open thread internal, once and for good",
+        "description": "Makes an open thread internal: from then on nobody from outside the organisation is shown it, its comments or its notifications, or finds it in search. A thread is made internal once and is never made public again, so what was written for colleagues is never shown to a client. Somebody from outside may not make one internal, and a resolved thread is not changed.",
         "tags": [
           "Threads"
         ],
@@ -203600,7 +203666,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Resolved",
+            "description": "Internal, now or already",
             "content": {
               "application/json": {
                 "schema": {
@@ -203616,6 +203682,10 @@
                           "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                         }
                       ]
+                    },
+                    "internal": {
+                      "type": "boolean",
+                      "description": "Kept from everybody from outside the organisation (COL-038)"
                     },
                     "on": {
                       "type": "object",
@@ -203857,6 +203927,7 @@
                   },
                   "required": [
                     "id",
+                    "internal",
                     "on",
                     "anchor",
                     "madeAgainst",
@@ -203868,6 +203939,586 @@
                 },
                 "example": {
                   "id": "00000000-0000-4000-8000-000000000001",
+                  "internal": false,
+                  "on": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "kind": "component"
+                  },
+                  "anchor": {},
+                  "madeAgainst": "00000000-0000-4000-8000-000000000001",
+                  "startedBy": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "name": "example"
+                  },
+                  "startedAt": "2026-01-01T00:00:00.000Z",
+                  "resolution": {
+                    "by": {
+                      "id": "00000000-0000-4000-8000-000000000001",
+                      "name": "example"
+                    },
+                    "at": "2026-01-01T00:00:00.000Z"
+                  },
+                  "comments": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may read what the thread is on but may not comment on it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such thread in this environment, or one on something the caller may not read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`thread_resolved`: the thread is resolved, and takes nothing more",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/threads/{id}/resolution": {
+      "post": {
+        "operationId": "resolveThread",
+        "summary": "Resolve a thread, once",
+        "description": "Resolves an open thread, recording who and when. A thread is resolved once and never reopened.",
+        "tags": [
+          "Threads"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "comment",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resolved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "allOf": [
+                        {
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                        }
+                      ]
+                    },
+                    "internal": {
+                      "type": "boolean",
+                      "description": "Kept from everybody from outside the organisation (COL-038)"
+                    },
+                    "on": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "allOf": [
+                            {
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                            }
+                          ]
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "component",
+                            "document"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "kind"
+                      ]
+                    },
+                    "anchor": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {}
+                    },
+                    "madeAgainst": {
+                      "type": "string",
+                      "allOf": [
+                        {
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                        }
+                      ]
+                    },
+                    "startedBy": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "allOf": [
+                            {
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                            }
+                          ]
+                        },
+                        "name": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "external": {
+                          "description": "True where the person is from outside the organisation; absent otherwise",
+                          "type": "boolean",
+                          "const": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ]
+                    },
+                    "startedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "resolution": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "by": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "allOf": [
+                                    {
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    {
+                                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                    }
+                                  ]
+                                },
+                                "name": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "external": {
+                                  "description": "True where the person is from outside the organisation; absent otherwise",
+                                  "type": "boolean",
+                                  "const": true
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name"
+                              ]
+                            },
+                            "at": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                            }
+                          },
+                          "required": [
+                            "by",
+                            "at"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "comments": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "allOf": [
+                              {
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                              }
+                            ]
+                          },
+                          "author": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "allOf": [
+                                  {
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  {
+                                    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                  }
+                                ]
+                              },
+                              "name": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "external": {
+                                "description": "True where the person is from outside the organisation; absent otherwise",
+                                "type": "boolean",
+                                "const": true
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ]
+                          },
+                          "at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          },
+                          "texts": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "parts": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "propertyNames": {
+                                      "type": "string"
+                                    },
+                                    "additionalProperties": {}
+                                  }
+                                },
+                                "at": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                                }
+                              },
+                              "required": [
+                                "parts",
+                                "at"
+                              ]
+                            },
+                            "description": "Every text it has had, the latest last"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "author",
+                          "at",
+                          "texts"
+                        ]
+                      }
+                    },
+                    "untold": {
+                      "description": "On a comment just written: those it names who may not read what the thread is on, and so were told nothing (COL-015)",
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "allOf": [
+                          {
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          {
+                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "internal",
+                    "on",
+                    "anchor",
+                    "madeAgainst",
+                    "startedBy",
+                    "startedAt",
+                    "resolution",
+                    "comments"
+                  ]
+                },
+                "example": {
+                  "id": "00000000-0000-4000-8000-000000000001",
+                  "internal": false,
                   "on": {
                     "id": "00000000-0000-4000-8000-000000000001",
                     "kind": "component"

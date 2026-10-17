@@ -11,6 +11,7 @@ const VERSION = 'cccccccc-0000-4000-8000-000000000002';
 const ADA = 'aaaaaaaa-0000-4000-8000-000000000001';
 const GRACE = 'aaaaaaaa-0000-4000-8000-000000000002';
 const IVY = 'aaaaaaaa-0000-4000-8000-000000000003';
+const OUTSIDER = 'aaaaaaaa-0000-4000-8000-000000000004';
 const id = (n: number) => `bbbbbbbb-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const PEOPLE = [
   { id: ADA, name: 'Ada' },
@@ -26,6 +27,7 @@ interface Held {
   id: string;
   anchor: Record<string, unknown>;
   on: { id: string; kind: 'component' | 'document' };
+  internal: boolean;
   resolution: { by: { id: string; name: string }; at: string } | null;
   comments: {
     id: string;
@@ -54,6 +56,7 @@ function service() {
     startedBy: thread.comments[0]!.author,
     startedAt: thread.comments[0]!.at,
     resolvedAt: thread.resolution?.at ?? null,
+    internal: thread.internal,
     comments: thread.comments.length,
     lastAt: thread.comments[0]!.at,
     orphaned: false,
@@ -88,12 +91,18 @@ function service() {
     const body = (await request.json().catch(() => ({}))) as {
       parts: Part[];
       anchor: Record<string, unknown>;
+      internal?: boolean;
     };
+    if (url.pathname.endsWith('/internal')) {
+      thread!.internal = true;
+      return json(200, view(thread!));
+    }
     if (url.pathname.endsWith('/threads')) {
       const made: Held = {
         id: id(threads.length + 1),
         anchor: body.anchor,
         on: { id: COMPONENT, kind: 'component' },
+        internal: body.internal === true,
         resolution: null,
         comments: [comment(body.parts)],
       };
@@ -143,14 +152,14 @@ const TARGETS: ReviewTarget[] = [
   },
 ];
 
-const panel = (client: ReturnType<typeof service>['client']) =>
+const panel = (client: ReturnType<typeof service>['client'], as = ADA) =>
   render(
     <ThreadsPanel
       client={client}
       document={DOCUMENT}
       targets={TARGETS}
-      people={PEOPLE}
-      principalId={ADA}
+      people={[...PEOPLE, { id: OUTSIDER, name: 'Alice', external: true }]}
+      principalId={as}
       mayAnswer={() => true}
       placeOf={() => '1 Method'}
     />,
@@ -291,5 +300,43 @@ describe('the threads panel in Review', () => {
     expect(within(row).getByText('Its text is no longer there')).toBeInTheDocument();
     await userEvent.click(within(row).getByRole('button', { name: 'The whole component' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('This has been deleted.');
+  });
+
+  it('COL-038 starts a thread internal, says so, and makes an open one internal, offering neither to somebody from outside', async () => {
+    const { client, threads } = service();
+    const { unmount } = panel(client);
+    await screen.findByText('No threads here.');
+    await userEvent.type(screen.getByLabelText('Comment'), 'Between us.');
+    await userEvent.click(
+      screen.getByRole('checkbox', {
+        name: 'Internal: nobody from outside the organisation sees it',
+      }),
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Start thread' }));
+    await waitFor(() => expect(threads[0]?.internal).toBe(true));
+    const opened = screen.getByRole('heading', { name: '“the tray”' }).closest('section')!;
+    expect(within(opened).getByText('Internal')).toBeInTheDocument();
+    expect(within(opened).queryByRole('button', { name: 'Make internal' })).toBeNull();
+
+    // A thread started public is made internal from where it is read, once.
+    await userEvent.click(within(opened).getByRole('button', { name: 'All threads' }));
+    await userEvent.type(screen.getByLabelText('Comment'), 'For everybody.');
+    await userEvent.click(screen.getByRole('button', { name: 'Start thread' }));
+    const second = await screen.findByRole('button', { name: 'Make internal' });
+    await userEvent.click(second);
+    await waitFor(() => expect(threads[1]?.internal).toBe(true));
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Nobody from outside the organisation sees it now.',
+    );
+    unmount();
+
+    // Somebody from outside is offered neither.
+    panel(service().client, OUTSIDER);
+    await screen.findByText('No threads here.');
+    expect(
+      screen.queryByRole('checkbox', {
+        name: 'Internal: nobody from outside the organisation sees it',
+      }),
+    ).toBeNull();
   });
 });

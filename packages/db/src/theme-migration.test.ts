@@ -399,6 +399,7 @@ describe('migration 0024, which gives every environment its default theme', () =
       '0106_conditions_and_profiles',
       '0107_cohorts',
       '0108_relationships',
+      '0109_thread_internal',
     ]);
 
     // The one trigger held off during the migration stands enabled again, as does every other.
@@ -1143,6 +1144,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       '0106_conditions_and_profiles',
       '0107_cohorts',
       '0108_relationships',
+      '0109_thread_internal',
     ]);
 
     expect((await themeChain(tenant)).map((each) => each.id)).toEqual([
@@ -1258,6 +1260,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       '0106_conditions_and_profiles',
       '0107_cohorts',
       '0108_relationships',
+      '0109_thread_internal',
     ]);
 
     const chain = await themeChain(tenant);
@@ -2002,6 +2005,7 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
       '0106_conditions_and_profiles',
       '0107_cohorts',
       '0108_relationships',
+      '0109_thread_internal',
     ]);
 
     // The theme is at 0.6, under its fixed identifier, unauthored, on top of 0.5; the value catalogue
@@ -2160,6 +2164,7 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
       '0106_conditions_and_profiles',
       '0107_cohorts',
       '0108_relationships',
+      '0109_thread_internal',
     ]);
 
     // The theme is left at the environment's own version, with nothing of the product's on top; the
@@ -2245,6 +2250,7 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
       '0106_conditions_and_profiles',
       '0107_cohorts',
       '0108_relationships',
+      '0109_thread_internal',
     ]);
     return (await chainOf(tenant, DEFAULT_THEME_ID)).slice(4).map((each) => each.id);
   };

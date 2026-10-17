@@ -49,6 +49,7 @@ next hold the lock. A take is never instant and never silent.
 | **COL-034** | `notification_preference`: for each kind - mentions, replies on a thread one is in, resolutions - at once, in a daily digest, or never |
 | **COL-035** | The worker folds a person's held events, once a day, into one notification saying how many of what, and where, deciding again what they may read |
 | **COL-036** | A notification names its kind, who, and the thread and artifact by identifier: never the text. The inbox shows a title only to a reader of it, at the moment it is read |
+| **COL-038** | A thread is started internal, or made so while open by somebody inside, once (0109's `thread_internal`, audited `thread.made_internal`); to a principal from outside it does not exist - listed, read, replied to, resolved, counted on a round, told of, held in the inbox or found - and the page marks it **Internal** (the R13 plan, R13-C, R13-D) |
 | **COL-053** | The digest holds counts and identifiers alone, on the same terms |
 | **COL-062** | Kept 90 days, then swept; deleted by its recipient alone; a second copy of tenant content, in the tenant's schema and read only by its recipient (IAM-066). A deprovisioned principal's inbox is deleted with them - no act deprovisions anybody yet, so the rule is stated and waits for that act |
 | **CNT-155** | The document view offers **Review** beside Reading and Authoring |

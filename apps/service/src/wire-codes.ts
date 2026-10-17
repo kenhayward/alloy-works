@@ -100,6 +100,7 @@ const WIRE_CODES = {
   'anchor.invalid': 'anchor_invalid',
   'parts.invalid': 'parts_invalid',
   'thread.resolved': 'thread_resolved',
+  'thread.internal_outside': 'thread_internal_outside',
   'comment.not_yours': 'comment_not_yours',
   'suggestion.empty': 'suggestion_empty',
   'suggestion.limit': 'suggestion_limit',

@@ -8,6 +8,7 @@ import type {
 import {
   cadencesOf,
   deleteNotification,
+  internalThreads,
   listInbox,
   markRead,
   readableOf,
@@ -77,7 +78,19 @@ export function inboxHandlers(
           ]),
         );
         const onReadable = new Set<string>();
-        for (const thread of new Set(shown.flatMap((each) => each.counts?.threads ?? []))) {
+        const digested = [...new Set(shown.flatMap((each) => each.counts?.threads ?? []))];
+        // Somebody from outside is counted no internal thread (COL-038; the R13 plan, R13-D).
+        const outside =
+          (
+            await trx
+              .selectFrom('principal')
+              .select('kind')
+              .where('id', '=', recipient)
+              .executeTakeFirst()
+          )?.kind === 'external';
+        const kept = outside ? await internalThreads(trx, digested) : null;
+        for (const thread of digested) {
+          if (kept?.has(thread)) continue;
           const on = await threadOn(trx, thread);
           if (on !== undefined && readable.has(on)) onReadable.add(thread);
         }

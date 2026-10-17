@@ -33,6 +33,13 @@ export interface ThreadResolutionTable {
   resolved_at: ColumnType<Date, never, never>;
 }
 
+/** A thread kept from every principal from outside (0109; COL-038; the R13 plan, R13-C). */
+export interface ThreadInternalTable {
+  thread_id: ColumnType<string, string, never>;
+  marked_by: ColumnType<string, string, never>;
+  marked_at: ColumnType<Date, never, never>;
+}
+
 /** One person's notification (0076; COL-063): never the text (COL-036). */
 export interface NotificationTable {
   id: ColumnType<string, string | undefined, never>;

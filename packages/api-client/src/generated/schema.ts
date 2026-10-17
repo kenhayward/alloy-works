@@ -3807,6 +3807,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/threads/{id}/internal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Make an open thread internal, once and for good
+         * @description Makes an open thread internal: from then on nobody from outside the organisation is shown it, its comments or its notifications, or finds it in search. A thread is made internal once and is never made public again, so what was written for colleagues is never shown to a client. Somebody from outside may not make one internal, and a resolved thread is not changed.
+         */
+        post: operations["markThreadInternal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/threads/{id}/resolution": {
         parameters: {
             query?: never;
@@ -9760,6 +9780,8 @@ export interface operations {
                     "application/json": {
                         threads: {
                             id: string & (unknown & unknown);
+                            /** @description Kept from everybody from outside the organisation (COL-038) */
+                            internal: boolean;
                             on: {
                                 id: string & (unknown & unknown);
                                 /** @enum {string} */
@@ -15021,6 +15043,8 @@ export interface operations {
                     "application/json": {
                         threads: {
                             id: string & (unknown & unknown);
+                            /** @description Kept from everybody from outside the organisation (COL-038) */
+                            internal: boolean;
                             on: {
                                 id: string & (unknown & unknown);
                                 /** @enum {string} */
@@ -15198,6 +15222,8 @@ export interface operations {
                     parts: {
                         [key: string]: unknown;
                     }[];
+                    /** @description Kept from everybody from outside the organisation, who are never shown it or told of it (COL-038); not, when omitted */
+                    internal?: boolean;
                 };
             };
         };
@@ -15215,6 +15241,7 @@ export interface operations {
                     /**
                      * @example {
                      *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "internal": false,
                      *       "on": {
                      *         "id": "00000000-0000-4000-8000-000000000001",
                      *         "kind": "component"
@@ -15238,6 +15265,8 @@ export interface operations {
                      */
                     "application/json": {
                         id: string & (unknown & unknown);
+                        /** @description Kept from everybody from outside the organisation (COL-038) */
+                        internal: boolean;
                         on: {
                             id: string & (unknown & unknown);
                             /** @enum {string} */
@@ -44853,6 +44882,8 @@ export interface operations {
                     "application/json": {
                         threads: {
                             id: string & (unknown & unknown);
+                            /** @description Kept from everybody from outside the organisation (COL-038) */
+                            internal: boolean;
                             on: {
                                 id: string & (unknown & unknown);
                                 /** @enum {string} */
@@ -45030,6 +45061,8 @@ export interface operations {
                     parts: {
                         [key: string]: unknown;
                     }[];
+                    /** @description Kept from everybody from outside the organisation, who are never shown it or told of it (COL-038); not, when omitted */
+                    internal?: boolean;
                 };
             };
         };
@@ -45047,6 +45080,7 @@ export interface operations {
                     /**
                      * @example {
                      *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "internal": false,
                      *       "on": {
                      *         "id": "00000000-0000-4000-8000-000000000001",
                      *         "kind": "component"
@@ -45070,6 +45104,8 @@ export interface operations {
                      */
                     "application/json": {
                         id: string & (unknown & unknown);
+                        /** @description Kept from everybody from outside the organisation (COL-038) */
+                        internal: boolean;
                         on: {
                             id: string & (unknown & unknown);
                             /** @enum {string} */
@@ -58533,6 +58569,7 @@ export interface operations {
                 value?: string | string[];
                 versions?: "latest" | "all";
                 baseline?: string;
+                internal?: "true" | "false";
             };
             header?: {
                 /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
@@ -66659,6 +66696,7 @@ export interface operations {
                     /**
                      * @example {
                      *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "internal": false,
                      *       "on": {
                      *         "id": "00000000-0000-4000-8000-000000000001",
                      *         "kind": "component"
@@ -66682,6 +66720,8 @@ export interface operations {
                      */
                     "application/json": {
                         id: string & (unknown & unknown);
+                        /** @description Kept from everybody from outside the organisation (COL-038) */
+                        internal: boolean;
                         on: {
                             id: string & (unknown & unknown);
                             /** @enum {string} */
@@ -66867,6 +66907,7 @@ export interface operations {
                     /**
                      * @example {
                      *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "internal": false,
                      *       "on": {
                      *         "id": "00000000-0000-4000-8000-000000000001",
                      *         "kind": "component"
@@ -66890,6 +66931,8 @@ export interface operations {
                      */
                     "application/json": {
                         id: string & (unknown & unknown);
+                        /** @description Kept from everybody from outside the organisation (COL-038) */
+                        internal: boolean;
                         on: {
                             id: string & (unknown & unknown);
                             /** @enum {string} */
@@ -67116,6 +67159,7 @@ export interface operations {
                     /**
                      * @example {
                      *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "internal": false,
                      *       "on": {
                      *         "id": "00000000-0000-4000-8000-000000000001",
                      *         "kind": "component"
@@ -67139,6 +67183,8 @@ export interface operations {
                      */
                     "application/json": {
                         id: string & (unknown & unknown);
+                        /** @description Kept from everybody from outside the organisation (COL-038) */
+                        internal: boolean;
                         on: {
                             id: string & (unknown & unknown);
                             /** @enum {string} */
@@ -67321,6 +67367,223 @@ export interface operations {
             };
         };
     };
+    markThreadInternal: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Internal, now or already */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "internal": false,
+                     *       "on": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "kind": "component"
+                     *       },
+                     *       "anchor": {},
+                     *       "madeAgainst": "00000000-0000-4000-8000-000000000001",
+                     *       "startedBy": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "name": "example"
+                     *       },
+                     *       "startedAt": "2026-01-01T00:00:00.000Z",
+                     *       "resolution": {
+                     *         "by": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "name": "example"
+                     *         },
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       },
+                     *       "comments": []
+                     *     }
+                     */
+                    "application/json": {
+                        id: string & (unknown & unknown);
+                        /** @description Kept from everybody from outside the organisation (COL-038) */
+                        internal: boolean;
+                        on: {
+                            id: string & (unknown & unknown);
+                            /** @enum {string} */
+                            kind: "component" | "document";
+                        };
+                        anchor: {
+                            [key: string]: unknown;
+                        };
+                        madeAgainst: string & (unknown & unknown);
+                        startedBy: {
+                            id: string & (unknown & unknown);
+                            name: string | null;
+                            /**
+                             * @description True where the person is from outside the organisation; absent otherwise
+                             * @constant
+                             */
+                            external?: true;
+                        };
+                        /** Format: date-time */
+                        startedAt: string;
+                        resolution: {
+                            by: {
+                                id: string & (unknown & unknown);
+                                name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
+                            };
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                        comments: {
+                            id: string & (unknown & unknown);
+                            author: {
+                                id: string & (unknown & unknown);
+                                name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
+                            };
+                            /** Format: date-time */
+                            at: string;
+                            /** @description Every text it has had, the latest last */
+                            texts: {
+                                parts: {
+                                    [key: string]: unknown;
+                                }[];
+                                /** Format: date-time */
+                                at: string;
+                            }[];
+                        }[];
+                        /** @description On a comment just written: those it names who may not read what the thread is on, and so were told nothing (COL-015) */
+                        untold?: (string & (unknown & unknown))[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read what the thread is on but may not comment on it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such thread in this environment, or one on something the caller may not read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `thread_resolved`: the thread is resolved, and takes nothing more */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     resolveThread: {
         parameters: {
             query?: never;
@@ -67350,6 +67613,7 @@ export interface operations {
                     /**
                      * @example {
                      *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "internal": false,
                      *       "on": {
                      *         "id": "00000000-0000-4000-8000-000000000001",
                      *         "kind": "component"
@@ -67373,6 +67637,8 @@ export interface operations {
                      */
                     "application/json": {
                         id: string & (unknown & unknown);
+                        /** @description Kept from everybody from outside the organisation (COL-038) */
+                        internal: boolean;
                         on: {
                             id: string & (unknown & unknown);
                             /** @enum {string} */

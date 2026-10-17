@@ -75,6 +75,12 @@ export const SearchQuery = z.object({
     .describe(
       'Search only what this baseline pins, by id, at the versions it pins; not with `versions=all`',
     ),
+  internal: z
+    .enum(['true', 'false'])
+    .optional()
+    .describe(
+      'Threads alone: those internal to the organisation, or those that are not (SCH-072). Somebody from outside is never shown an internal one',
+    ),
 });
 export type SearchQuery = z.infer<typeof SearchQuery>;
 

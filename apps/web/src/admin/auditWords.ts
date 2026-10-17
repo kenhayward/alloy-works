@@ -86,6 +86,7 @@ export const KIND_WORDS: Readonly<Record<AuditKind, string>> = {
   'thread.started': 'Thread started',
   'comment.added': 'Comment added',
   'comment.edited': 'Comment edited',
+  'thread.made_internal': 'Thread made internal',
   'thread.resolved': 'Thread resolved',
   'suggestion.made': 'Suggestion made',
   'suggestion.accepted': 'Suggestion accepted',

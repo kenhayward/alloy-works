@@ -12,6 +12,7 @@ import {
 import { personView, type PersonView } from './person-view.js';
 import { sql } from 'kysely';
 import { tell } from './inbox.js';
+import { internalHeld } from './internal-held.js';
 import { AUDIT_LOG_KEPT, labelled, labels, recordEvent } from './audit.js';
 import { indexMessage, indexThreadStarted, reindexMessage } from './search-threads.js';
 import type { TenantTransaction } from './tables.js';
@@ -33,6 +34,8 @@ export interface StoredThread {
   readonly anchor: ThreadAnchor;
   readonly madeAgainst: string;
   readonly createdBy: PersonView;
+  /** Kept from every principal from outside (COL-038; the R13 plan, R13-C). */
+  readonly internal: boolean;
   readonly createdAt: Date;
   readonly resolution: {
     readonly by: PersonView;
@@ -49,6 +52,8 @@ export interface ThreadSummary {
   readonly anchor: ThreadAnchor;
   readonly madeAgainst: string;
   readonly createdBy: PersonView;
+  /** Kept from every principal from outside (COL-038; the R13 plan, R13-C). */
+  readonly internal: boolean;
   readonly createdAt: Date;
   readonly resolvedAt: Date | null;
   readonly comments: number;
@@ -95,7 +100,12 @@ async function checkedParts(
 
 async function recordThreadEvent(
   trx: TenantTransaction,
-  kind: 'thread.started' | 'comment.added' | 'comment.edited' | 'thread.resolved',
+  kind:
+    | 'thread.started'
+    | 'comment.added'
+    | 'comment.edited'
+    | 'thread.resolved'
+    | 'thread.made_internal',
   thread: string,
   detail: Readonly<Record<string, unknown>>,
 ): Promise<void> {
@@ -145,6 +155,8 @@ export async function startThread(
     readonly anchor: unknown;
     readonly parts: unknown;
     readonly author: string;
+    /** Kept from every principal from outside (COL-038; the R13 plan, R13-C). */
+    readonly internal?: boolean;
   },
 ): Promise<ThreadAnswer> {
   // Under its artifact's lock, as an archival or a deletion takes it, so its search row is flagged as
@@ -181,6 +193,12 @@ export async function startThread(
     })
     .returning('id')
     .executeTakeFirstOrThrow();
+  if (input.internal === true) {
+    await trx
+      .insertInto('thread_internal')
+      .values({ thread_id: thread.id, marked_by: input.author })
+      .execute();
+  }
   await recordThreadEvent(trx, 'thread.started', thread.id, {
     thread: thread.id,
     anchor: anchor.data.kind,
@@ -340,6 +358,55 @@ export async function editComment(
   return { answer: 'done', thread: input.thread, comment: input.comment, mentioned, untold };
 }
 
+/**
+ * **A thread made internal** (COL-038; the R13 plan, R13-C), by somebody inside, while it is open:
+ * once, and never undone. Marked already, it is left as it is; resolved, it is closed as it stood.
+ */
+export async function markThreadInternal(
+  trx: TenantTransaction,
+  input: { readonly thread: string; readonly by: string },
+): Promise<'marked' | 'marked.already' | 'missing' | 'resolved'> {
+  const found = await trx
+    .selectFrom('thread as t')
+    .leftJoin('thread_resolution as r', 'r.thread_id', 't.id')
+    .leftJoin('thread_internal as i', 'i.thread_id', 't.id')
+    .select(['t.id', 'r.thread_id as resolved', 'i.thread_id as internal'])
+    .where('t.id', '=', input.thread)
+    .executeTakeFirst();
+  if (!found) return 'missing';
+  if (found.internal !== null) return 'marked.already';
+  if (found.resolved !== null) return 'resolved';
+  const marked = await trx
+    .insertInto('thread_internal')
+    .values({ thread_id: input.thread, marked_by: input.by })
+    .onConflict((conflict) => conflict.column('thread_id').doNothing())
+    .returning('thread_id')
+    .executeTakeFirst();
+  if (!marked) return 'marked.already';
+  await recordThreadEvent(trx, 'thread.made_internal', input.thread, { thread: input.thread });
+  return 'marked';
+}
+
+/** Whether thread `t` is internal, as a column; false where the schema holds no marks. */
+const internalOf = (held: boolean) =>
+  held
+    ? sql<boolean>`exists (select 1 from thread_internal i where i.thread_id = t.id)`
+    : sql<boolean>`false`;
+
+/** The internal threads among these (COL-038; R13-D): what a principal from outside is never shown. */
+export async function internalThreads(
+  trx: TenantTransaction,
+  threads: readonly string[],
+): Promise<ReadonlySet<string>> {
+  if (threads.length === 0 || !(await internalHeld(trx))) return new Set();
+  const rows = await trx
+    .selectFrom('thread_internal')
+    .select('thread_id')
+    .where('thread_id', 'in', [...new Set(threads)])
+    .execute();
+  return new Set(rows.map((row) => row.thread_id));
+}
+
 /** A thread resolved, once (COL-013): who and when. */
 export async function resolveThread(
   trx: TenantTransaction,
@@ -399,6 +466,7 @@ export async function readThread(
     .leftJoin('thread_resolution as r', 'r.thread_id', 't.id')
     .leftJoin('principal as rp', 'rp.id', 'r.resolved_by')
     .select([
+      internalOf(await internalHeld(trx)).as('internal'),
       't.id',
       't.on_id',
       't.on_kind',
@@ -458,6 +526,7 @@ export async function readThread(
     anchor: row.anchor as ThreadAnchor,
     madeAgainst: row.made_against,
     createdBy: personView(row.created_by, row.created_name, row.created_kind),
+    internal: row.internal,
     createdAt: row.created_at,
     resolution:
       row.resolved_by === null
@@ -484,9 +553,12 @@ export async function listThreads(
     /** Where the previous page ended: the last thread's start and id. */
     readonly after?: { readonly at: Date; readonly id: string };
     readonly limit?: number;
+    /** Leaves out every internal thread: what a principal from outside is listed (COL-038; R13-D). */
+    readonly hideInternal?: boolean;
   },
 ): Promise<ThreadSummary[]> {
   if (input.on.length === 0) return [];
+  const held = await internalHeld(trx);
   let query = trx
     .selectFrom('thread as t')
     .innerJoin('principal as c', 'c.id', 't.created_by')
@@ -515,10 +587,12 @@ export async function listThreads(
       'c.kind',
       't.created_at',
       'r.resolved_at',
+      internalOf(held).as('internal'),
       'm.comments',
       'm.last_at',
     ])
     .where('t.on_id', 'in', [...input.on]);
+  if (input.hideInternal === true) query = query.where(sql<boolean>`not ${internalOf(held)}`);
   if (input.state === 'open') query = query.where('r.thread_id', 'is', null);
   if (input.state === 'resolved') query = query.where('r.thread_id', 'is not', null);
   if (input.author !== undefined) query = query.where('t.created_by', '=', input.author);
@@ -538,6 +612,7 @@ export async function listThreads(
     anchor: row.anchor as ThreadAnchor,
     madeAgainst: row.made_against,
     createdBy: personView(row.created_by, row.display_name, row.kind),
+    internal: row.internal,
     createdAt: row.created_at,
     resolvedAt: row.resolved_at,
     comments: Number(row.comments),

@@ -109,6 +109,10 @@ async function viewOf(
   }
   const on = [...readable];
   const until = round.closed?.at ?? new Date('9999-12-31T00:00:00.000Z');
+  // A reader from outside counts no internal thread, which they are never shown (COL-038; R13-D).
+  const outside =
+    (await trx.selectFrom('principal').select('kind').where('id', '=', reader).executeTakeFirst())
+      ?.kind === 'external';
   const threads = await trx
     .selectFrom('thread')
     .select(['created_by'])
@@ -117,6 +121,18 @@ async function viewOf(
     .where('created_by', 'in', round.reviewers)
     .where('created_at', '>=', round.openedAt)
     .where('created_at', '<=', until)
+    .$if(outside, (counted) =>
+      counted.where((eb) =>
+        eb.not(
+          eb.exists(
+            eb
+              .selectFrom('thread_internal')
+              .select('thread_internal.thread_id')
+              .whereRef('thread_internal.thread_id', '=', 'thread.id'),
+          ),
+        ),
+      ),
+    )
     .groupBy('created_by')
     .execute();
   const suggestions = await trx

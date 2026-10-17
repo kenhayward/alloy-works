@@ -154,6 +154,8 @@ describe('the rule behind a refusal', () => {
       'group.member_erased',
       'parts.invalid',
       'thread.resolved',
+      // Somebody from outside starting a thread kept from them (the R13 plan, R13-D): the design's own.
+      'thread.internal_outside',
       'comment.not_yours',
       'suggestion.empty',
       'suggestion.limit',

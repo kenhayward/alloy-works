@@ -219,6 +219,7 @@ describe('migration 0052, which widens dataset_take to an image', () => {
       '0106_conditions_and_profiles',
       '0107_cohorts',
       '0108_relationships',
+      '0109_thread_internal',
     ]);
     const kept = await queryAs(
       db.adminUrl,
