@@ -166,7 +166,7 @@ describe('divergent lines (the R16 plan, R16-A to R16-D)', () => {
     await db?.drop();
   });
 
-  it('LIF-044 LIF-046 diverges a line from a designated revision, numbered below the main line, shown by its name, and leaves every main-line read on the main line', async () => {
+  it('LIF-044 diverges a line from a designated revision, numbered below the main line, shown by its name, and leaves every main-line read on the main line', async () => {
     const first = await component('Label the drum');
     await approve(first);
     const main = await edit(first, 'Central wording');
@@ -286,7 +286,12 @@ describe('divergent lines (the R16 plan, R16-A to R16-D)', () => {
     const words = (value: string) => ({
       ...(substanceOf(first).content as object),
       content: [
-        { type: 'paragraph', id: 'b1', style: 'body', content: [{ type: 'text', value, marks: [] }] },
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'body',
+          content: [{ type: 'text', value, marks: [] }],
+        },
       ],
     });
     // The line's head is the revision it diverged from until it has a version of its own.
@@ -317,6 +322,8 @@ describe('divergent lines (the R16 plan, R16-A to R16-D)', () => {
       ),
     ).toEqual({ answer: 'released', version: null });
     expect((await as((trx) => latestVersion(trx, first.artifactId)))?.id).toBe(first.id);
-    expect((await as((trx) => workflowStanding(trx, first.artifactId)))?.state.key).toBe('approved');
+    expect((await as((trx) => workflowStanding(trx, first.artifactId)))?.state.key).toBe(
+      'approved',
+    );
   });
 });

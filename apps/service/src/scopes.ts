@@ -138,6 +138,7 @@ export function scopeHandlers() {
         kind,
         scope: parsed.data,
         by: principalId,
+        ...(body.line === undefined ? {} : { line: body.line }),
       });
       switch (answer.answer) {
         case 'artifact.missing':

@@ -35,6 +35,7 @@ import {
   type TenantDatabase,
   workflowStates,
   headVersion,
+  lineNumbers,
   readLines,
 } from '@alloy-works/db';
 import { decide, type EffectiveField } from '@alloy-works/domain';
@@ -77,6 +78,17 @@ export function versionView(version: VersionHeading) {
     createdAt: version.createdAt.toISOString(),
     note: version.note,
   };
+}
+
+/**
+ * A version as a view shows it, where it may be on a divergent line: a line's as `US 2.3` (LIF-046;
+ * ADR-0063), never by the number it is stored at.
+ */
+export async function shownVersionView(trx: TenantTransaction, version: StoredVersion) {
+  const view = versionView(version);
+  if (version.line === null) return view;
+  const shown = (await lineNumbers(trx, [version.id])).get(version.id);
+  return { ...view, number: shown?.number ?? view.number };
 }
 
 /**
@@ -411,7 +423,7 @@ export function componentHandlers(
       return {
         id,
         space,
-        version: versionView(version),
+        version: await shownVersionView(trx, version),
         content: version.content as Record<string, unknown>,
         // What the renderer offers from: the same decision a write would be refused by.
         mayEdit: decide('edit', facts).allowed,

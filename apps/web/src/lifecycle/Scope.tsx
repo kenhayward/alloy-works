@@ -122,6 +122,7 @@ export function ScopeButton({
   onSaved,
   className,
   mayEdit = true,
+  line,
 }: {
   client: Client;
   kind: 'component' | 'document';
@@ -132,6 +133,8 @@ export function ScopeButton({
   className?: string | undefined;
   /** Whether the reader may set it: else the dialog asks what was effective alone. */
   mayEdit?: boolean;
+  /** A divergent line's scope (R16-C), or undefined for the main line's. */
+  line?: string | undefined;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -147,6 +150,7 @@ export function ScopeButton({
           title={title}
           scope={scope}
           mayEdit={mayEdit}
+          line={line}
           onClose={() => setOpen(false)}
           onSaved={(now) => {
             setOpen(false);
@@ -165,6 +169,7 @@ function ScopeDialog({
   title,
   scope,
   mayEdit,
+  line,
   onClose,
   onSaved,
 }: {
@@ -174,6 +179,7 @@ function ScopeDialog({
   title: string;
   scope: ScopeNow;
   mayEdit: boolean;
+  line: string | undefined;
   onClose: () => void;
   onSaved: (scope: ScopeNow) => void;
 }) {
@@ -249,7 +255,10 @@ function ScopeDialog({
         };
       }),
     };
-    const options = { params: { path: { id } }, body };
+    const options = {
+      params: { path: { id } },
+      body: { ...body, ...(line === undefined ? {} : { line }) },
+    };
     const { data, error } = await (
       kind === 'component'
         ? client.PUT('/v1/components/{id}/scope', options)

@@ -935,7 +935,8 @@ describe('the citations in the committed model', () => {
     // 1578 (2026-10-17): R15b's Effective for and Accept on the page.
     // 1581 (2026-10-17): R15c's What was effective.
     // 1583 (2026-10-17): R16a's divergent lines.
-    expect(model.citations).toHaveLength(1583);
+    // 1584 (2026-10-17): R16b's lines on the page.
+    expect(model.citations).toHaveLength(1584);
   });
 
   it('cites no identifier the corpus does not hold', () => {
@@ -1038,6 +1039,7 @@ describe('scanning the repository for test files', () => {
     // 101, from 100 (2026-10-17): admin/Outside.test.tsx, citing IAM-050 and IAM-051.
     // 103, from 101 (2026-10-17): structure/CohortList.test.tsx and DocumentPage.usedIn.test.tsx.
     // 104, from 103 (2026-10-17): lifecycle/Scope.test.tsx, citing LIF-042 and LIF-047.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(104);
+    // 105, from 104 (2026-10-17): lifecycle/Lines.test.tsx, citing LIF-044.
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(105);
   });
 });

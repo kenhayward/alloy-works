@@ -11908,6 +11908,7 @@ export interface operations {
         parameters: {
             query?: {
                 session?: string & (unknown & unknown);
+                line?: string & (unknown & unknown);
             };
             header?: {
                 /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
@@ -11972,6 +11973,11 @@ export interface operations {
                      *         "scope": [],
                      *         "pending": []
                      *       },
+                     *       "line": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "name": "example"
+                     *       },
+                     *       "lines": [],
                      *       "onHold": false,
                      *       "mayHold": false,
                      *       "lock": {
@@ -12137,6 +12143,31 @@ export interface operations {
                                 mayAccept: boolean;
                             }[];
                         };
+                        /** @description The divergent line the version shown is on (LIF-046); null for the main line */
+                        line: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                        } | null;
+                        /** @description Its divergent lines (LIF-044, LIF-046): none where it has not diverged */
+                        lines: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                            /** @description The designated revision it diverged from */
+                            divergedFrom: {
+                                revision: number;
+                                /** Format: uuid */
+                                version: string;
+                            };
+                            /**
+                             * Format: date-time
+                             * @description When it diverged
+                             */
+                            at: string;
+                            /** @description Whether it was brought back, and takes no more versions */
+                            closed: boolean;
+                        }[];
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                         onHold: boolean;
                         /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -12621,6 +12652,11 @@ export interface operations {
                     reason?: string;
                     /** @description Where the gate permits a publication and this approval passes it, request one of the gate's baseline; needs publish */
                     publish?: boolean;
+                    /**
+                     * Format: uuid
+                     * @description A component's divergent line whose gate it is (LIF-044); its main line where absent
+                     */
+                    line?: string;
                 };
             };
         };
@@ -14439,6 +14475,8 @@ export interface operations {
                     values?: {
                         [key: string]: unknown;
                     };
+                    /** @description A component's divergent line to act on (LIF-044); its main line where absent */
+                    line?: string & (unknown & unknown);
                 };
             };
         };
@@ -15216,6 +15254,7 @@ export interface operations {
             query: {
                 session: string & (unknown & unknown);
                 openedFrom: string & (unknown & unknown);
+                line?: string & (unknown & unknown);
             };
             header?: {
                 /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
@@ -15711,6 +15750,11 @@ export interface operations {
                             id: string;
                         } | null;
                     }[];
+                    /**
+                     * Format: uuid
+                     * @description A component's divergent line whose scope it is (LIF-044); its main line where absent
+                     */
+                    line?: string;
                 };
             };
         };
@@ -16777,6 +16821,11 @@ export interface operations {
                     from: string;
                     /** @description Why, recorded with the move; required where the transition says so */
                     reason?: string;
+                    /**
+                     * Format: uuid
+                     * @description A component's divergent line to move (LIF-044); its main line where absent
+                     */
+                    line?: string;
                 };
             };
         };
@@ -17782,6 +17831,8 @@ export interface operations {
                     session: string & (unknown & unknown);
                     openedFrom: string & (unknown & unknown);
                     note?: string;
+                    /** @description A component's divergent line to act on (LIF-044); its main line where absent */
+                    line?: string & (unknown & unknown);
                 };
             };
         };
@@ -24051,6 +24102,11 @@ export interface operations {
                     reason?: string;
                     /** @description Where the gate permits a publication and this approval passes it, request one of the gate's baseline; needs publish */
                     publish?: boolean;
+                    /**
+                     * Format: uuid
+                     * @description A component's divergent line whose gate it is (LIF-044); its main line where absent
+                     */
+                    line?: string;
                 };
             };
         };
@@ -46100,6 +46156,11 @@ export interface operations {
                             id: string;
                         } | null;
                     }[];
+                    /**
+                     * Format: uuid
+                     * @description A component's divergent line whose scope it is (LIF-044); its main line where absent
+                     */
+                    line?: string;
                 };
             };
         };
@@ -47006,6 +47067,11 @@ export interface operations {
                                     until: string;
                                 } | null;
                             } | null;
+                            /** @description The divergent line the version shown is on (LIF-046), served by the document's scope; absent for the main line */
+                            line?: {
+                                id: string;
+                                name: string;
+                            };
                             /** @description The component's latest version, where the reference is pinned to an earlier one and the caller may read the component; absent otherwise */
                             newer?: {
                                 id: string;
@@ -47560,6 +47626,11 @@ export interface operations {
                     from: string;
                     /** @description Why, recorded with the move; required where the transition says so */
                     reason?: string;
+                    /**
+                     * Format: uuid
+                     * @description A component's divergent line to move (LIF-044); its main line where absent
+                     */
+                    line?: string;
                 };
             };
         };
@@ -56484,6 +56555,11 @@ export interface operations {
                     reason?: string;
                     /** @description Where the gate permits a publication and this approval passes it, request one of the gate's baseline; needs publish */
                     publish?: boolean;
+                    /**
+                     * Format: uuid
+                     * @description A component's divergent line whose gate it is (LIF-044); its main line where absent
+                     */
+                    line?: string;
                 };
             };
         };
@@ -56748,6 +56824,11 @@ export interface operations {
                     from: string;
                     /** @description Why, recorded with the move; required where the transition says so */
                     reason?: string;
+                    /**
+                     * Format: uuid
+                     * @description A component's divergent line to move (LIF-044); its main line where absent
+                     */
+                    line?: string;
                 };
             };
         };
@@ -63858,6 +63939,11 @@ export interface operations {
                      *         "scope": [],
                      *         "pending": []
                      *       },
+                     *       "line": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "name": "example"
+                     *       },
+                     *       "lines": [],
                      *       "onHold": false,
                      *       "mayHold": false,
                      *       "lock": {
@@ -64023,6 +64109,31 @@ export interface operations {
                                 mayAccept: boolean;
                             }[];
                         };
+                        /** @description The divergent line the version shown is on (LIF-046); null for the main line */
+                        line: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                        } | null;
+                        /** @description Its divergent lines (LIF-044, LIF-046): none where it has not diverged */
+                        lines: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                            /** @description The designated revision it diverged from */
+                            divergedFrom: {
+                                revision: number;
+                                /** Format: uuid */
+                                version: string;
+                            };
+                            /**
+                             * Format: date-time
+                             * @description When it diverged
+                             */
+                            at: string;
+                            /** @description Whether it was brought back, and takes no more versions */
+                            closed: boolean;
+                        }[];
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                         onHold: boolean;
                         /** @description Whether the caller may place a legal hold: an environment administrator */

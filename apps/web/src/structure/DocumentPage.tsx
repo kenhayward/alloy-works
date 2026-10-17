@@ -731,6 +731,8 @@ export function DocumentPage({
   // The number of the version each occurrence resolves to, by node (CNT-162), from the same answer.
   const [resolved, setResolved] = useState<ReadonlyMap<string, string>>(new Map());
   const [revisionByNode, setRevisionByNode] = useState<ReadonlyMap<string, number>>(new Map());
+  // The divergent line each reference's version is on (LIF-046; the R16 plan, R16-E).
+  const [lineByNode, setLineByNode] = useState<ReadonlyMap<string, string>>(new Map());
   const [pastReviewNodes, setPastReviewNodes] = useState<ReadonlySet<string>>(new Set());
   const [textsAttempt, setTextsAttempt] = useState(0);
   // The version whose texts have been answered, or refused: until then the text is its headings alone,
@@ -889,6 +891,15 @@ export function DocumentPage({
           new Set(
             data.occurrences.flatMap((occurrence) =>
               occurrence.pastReview === true ? [occurrence.node] : [],
+            ),
+          ),
+        );
+        setLineByNode(
+          new Map(
+            data.occurrences.flatMap((occurrence) =>
+              occurrence.line === undefined
+                ? []
+                : [[occurrence.node, occurrence.line.name] as const],
             ),
           ),
         );
@@ -2832,6 +2843,7 @@ export function DocumentPage({
                 marked={marked}
                 resolved={resolved}
                 revisions={revisionByNode}
+                lines={lineByNode}
                 pastReview={pastReviewNodes}
                 overridesOf={overridesByNode}
                 {...(document.mayEdit && authoring ? { onOverride: setOverriding } : {})}

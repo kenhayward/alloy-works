@@ -47,7 +47,7 @@ import {
 } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import { callerOf, notFound, type Authorised } from './access.js';
-import { lockView, versionView } from './components.js';
+import { lockView, shownVersionView, versionView } from './components.js';
 import { definitionReader } from './data/bindings.js';
 import type { AppError } from './errors.js';
 import { cursorFor, pageAsked } from './listing.js';
@@ -432,10 +432,10 @@ export function editingHandlers() {
         ...(body.line === undefined ? {} : { line: body.line }),
       });
       if (answer.answer === 'recorded') {
-        return { outcome: 'cut', version: versionView(answer.version) };
+        return { outcome: 'cut', version: await shownVersionView(trx, answer.version) };
       }
       if (answer.answer === 'version.unchanged') {
-        return { outcome: 'unchanged', version: versionView(answer.current) };
+        return { outcome: 'unchanged', version: await shownVersionView(trx, answer.current) };
       }
       throw refuse(answer);
     },
@@ -454,10 +454,11 @@ export function editingHandlers() {
         ...(query.line === undefined ? {} : { line: query.line }),
       });
       if (answer.answer !== 'released') throw refuse(answer);
-      if (answer.version) return { outcome: 'cut', version: versionView(answer.version) };
+      if (answer.version)
+        return { outcome: 'cut', version: await shownVersionView(trx, answer.version) };
       const current = await headVersion(trx, id, query.line);
       if (!current) throw notFound();
-      return { outcome: 'unchanged', version: versionView(current) };
+      return { outcome: 'unchanged', version: await shownVersionView(trx, current) };
     },
   };
 }

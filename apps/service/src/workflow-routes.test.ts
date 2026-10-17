@@ -14,6 +14,9 @@ import {
   bootstrapCluster,
   createDefinition,
   createSpace,
+  readVersion,
+  recordVersion,
+  substanceOf,
   createTenant,
   findRole,
   grant,
@@ -534,7 +537,7 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
     expect((await effective('?scope=Market')).statusCode).toBe(400);
   });
 
-  it('LIF-044 LIF-046 begins a divergent line from a designated revision, by whoever may edit, each name once, and opens and moves it apart, saying which line is read', async () => {
+  it('LIF-044 begins a divergent line from a designated revision, by whoever may edit, each name once, and opens and moves it apart, saying which line is read', async () => {
     const created = await made('components', 'Diverging dose');
     expect(
       (await move('components', created.id, 'ada', { transition: 'submit', from: 'draft' }))
@@ -596,6 +599,87 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
     } as never);
     expect(submitted.statusCode, submitted.body).toBe(200);
     expect((await component(created.id, 'ivy')).state.key).toBe('approved');
+
+    // Given its own version, effective in the US, and approved there, a document read in the US says so.
+    const usVersion = await tenantDb.withTenant(tenant, async (trx) => {
+      const base = (await readVersion(trx, created.version.id))!;
+      const recorded = await recordVersion(trx, {
+        artifactId: created.id,
+        openedFrom: created.version.id,
+        author: ids.ada!,
+        line: lineId,
+        substance: substanceOf(base),
+      });
+      // Content unchanged: a line's first version differs by its line alone, so record a word.
+      if (recorded.answer === 'recorded') return recorded.version.id;
+      const substance = substanceOf(base);
+      if (substance.kind !== 'component') throw new Error('not a component');
+      const changed = await recordVersion(trx, {
+        artifactId: created.id,
+        openedFrom: created.version.id,
+        author: ids.ada!,
+        line: lineId,
+        substance: {
+          ...substance,
+          content: {
+            ...substance.content,
+            content: [
+              {
+                type: 'paragraph',
+                id: 'b1',
+                style: 'body',
+                content: [{ type: 'text', value: 'US wording', marks: [] }],
+              },
+            ],
+          },
+        },
+      });
+      if (changed.answer !== 'recorded') throw new Error(changed.answer);
+      return changed.version.id;
+    });
+    expect(
+      (
+        await call('PUT', `/v1/components/${created.id}/scope`, 'ada', {
+          scope: [{ axis: 'market', value: 'us', party: null }],
+          line: lineId,
+        })
+      ).statusCode,
+    ).toBe(200);
+    expect(
+      (
+        await approve('components', created.id, 'grace', {
+          transition: 'approve',
+          version: usVersion,
+          decision: 'approved',
+          line: lineId,
+        } as never)
+      ).statusCode,
+    ).toBe(200);
+    const document = await made('documents', 'Diverged in the US');
+    const placed = await call('POST', `/v1/documents/${document.id}/outline`, 'ada', {
+      openedFrom: document.version.id,
+      operation: {
+        operation: 'insert',
+        parent: null,
+        position: 0,
+        node: { type: 'reference', component: created.id, mode: { kind: 'approved' } },
+      },
+    });
+    expect(placed.statusCode, placed.body).toBe(200);
+    const profiled = await call('PUT', `/v1/documents/${document.id}/profile`, 'ada', {
+      openedFrom: placed.json<{ version: { id: string } }>().version.id,
+      profile: { values: { market: ['us'] } },
+    });
+    expect(profiled.statusCode, profiled.body).toBe(200);
+    const texts = (await call('GET', `/v1/documents/${document.id}/texts`, 'ivy')).json<{
+      occurrences: { version: string; line?: { name: string } }[];
+      versions: { id: string; number: string }[];
+    }>();
+    expect(texts.occurrences[0]).toMatchObject({
+      version: usVersion,
+      line: { id: lineId, name: 'US' },
+    });
+    expect(texts.versions.find((each) => each.id === usVersion)?.number).toBe('US 2.1');
   });
 
   it('LIF-015 LIF-016 LIF-018 sets dates on edit, refuses an owner who may not read it, and shows past review in the view, the list and every document placing it', async () => {

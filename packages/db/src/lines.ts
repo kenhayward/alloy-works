@@ -219,10 +219,21 @@ export async function headVersion(
 export async function lineNumbers(
   trx: TenantTransaction,
   versionIds: readonly string[],
-): Promise<Map<string, { readonly line: { readonly id: string; readonly name: string }; readonly number: string }>> {
+): Promise<
+  Map<
+    string,
+    { readonly line: { readonly id: string; readonly name: string }; readonly number: string }
+  >
+> {
   const ids = [...new Set(versionIds.filter((id) => UUID.test(id)))];
   if (ids.length === 0 || !(await linesStored(trx))) return new Map();
-  const { rows } = await sql<{ id: string; line_id: string; name: string; version_no: number; base: number }>`
+  const { rows } = await sql<{
+    id: string;
+    line_id: string;
+    name: string;
+    version_no: number;
+    base: number;
+  }>`
     select v.id, v.line_id, l.name, v.version_no,
            coalesce(
              (select max(d.revision_no) from revision_designation d
@@ -236,7 +247,10 @@ export async function lineNumbers(
   return new Map(
     rows.map((row) => [
       row.id,
-      { line: { id: row.line_id, name: row.name }, number: `${row.name} ${row.base}.${row.version_no}` },
+      {
+        line: { id: row.line_id, name: row.name },
+        number: `${row.name} ${row.base}.${row.version_no}`,
+      },
     ]),
   );
 }

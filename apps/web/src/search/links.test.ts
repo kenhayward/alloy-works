@@ -59,6 +59,17 @@ describe("a search result's link and place", () => {
     expect(componentAddress(`#/components/${ID}/threads/${BASELINE}`)).toBeNull();
   });
 
+  it('reads a component address on a divergent line', () => {
+    const LINE = '11111111-1111-4111-8111-111111111111';
+    expect(componentAddress(`#/components/${ID}/lines/${LINE}`)).toEqual({
+      component: ID,
+      access: false,
+      block: null,
+      version: null,
+      line: LINE,
+    });
+  });
+
   it('reads a component address with a block, and without', () => {
     expect(componentAddress(`#/components/${ID}/blocks/b2`)).toEqual({
       component: ID,

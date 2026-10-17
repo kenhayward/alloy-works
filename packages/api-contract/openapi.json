@@ -38504,6 +38504,12 @@
                       "additionalProperties": false
                     },
                     "description": "Each axis value once; none for everywhere"
+                  },
+                  "line": {
+                    "description": "A component's divergent line whose scope it is (LIF-044); its main line where absent",
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                   }
                 },
                 "required": [
@@ -144270,6 +144276,12 @@
                       "additionalProperties": false
                     },
                     "description": "Each axis value once; none for everywhere"
+                  },
+                  "line": {
+                    "description": "A component's divergent line whose scope it is (LIF-044); its main line where absent",
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                   }
                 },
                 "required": [
@@ -146610,6 +146622,22 @@
                               }
                             ],
                             "description": "Who holds the component now and until when: null where nobody does, or where the caller may not read it"
+                          },
+                          "line": {
+                            "description": "The divergent line the version shown is on (LIF-046), served by the document's scope; absent for the main line",
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ]
                           },
                           "newer": {
                             "description": "The component's latest version, where the reference is pinned to an earlier one and the caller may read the component; absent otherwise",

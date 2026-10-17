@@ -327,3 +327,10 @@ numbers takes the main line's; the versions list and search's earlier versions h
 line's save, moves and gates are its own and never put the main line back to draft. A designation takes
 the artifact's next revision number, one sequence across lines; the revision the main line's versions
 count from is the main line's own. R15's rule serves a line's revisions wherever their scope applies.
+
+**On the page** (R16b): `#/components/{id}/lines/{line}` opens a component on a line - `GET
+/v1/components/{id}?line=` serves its head, its standing and scope - and its saves, cuts, release, moves,
+approvals and scope carry the line. The header's **Line** names every line, the revision each diverged
+from, and which is read; **Begin a line**, to whoever may edit, begins one from the main line's latest
+revision. A line's version is shown as `US 2.3` (`lineNumbers`), never by its stored number, and a
+document's reference served from a line says so (`US line`).

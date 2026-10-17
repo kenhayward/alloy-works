@@ -288,7 +288,9 @@ export const ComponentView = z.object({
     .object({ id: z.uuid(), name: z.string() })
     .nullable()
     .describe('The divergent line the version shown is on (LIF-046); null for the main line'),
-  lines: z.array(LineView).describe('Its divergent lines (LIF-044, LIF-046): none where it has not diverged'),
+  lines: z
+    .array(LineView)
+    .describe('Its divergent lines (LIF-044, LIF-046): none where it has not diverged'),
   onHold: z
     .boolean()
     .describe(

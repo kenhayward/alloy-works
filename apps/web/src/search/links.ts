@@ -151,7 +151,7 @@ export function searchLink(query: string, scope?: SearchScope): string {
 }
 
 const COMPONENT =
-  /^#\/components\/([0-9a-f-]{36})(?:\/(access)|\/versions\/([0-9a-f-]{36}))?(?:\/blocks\/([A-Za-z0-9_-]{1,64}))?$/;
+  /^#\/components\/([0-9a-f-]{36})(?:\/(access)|\/versions\/([0-9a-f-]{36})|\/lines\/([0-9a-f-]{36}))?(?:\/blocks\/([A-Za-z0-9_-]{1,64}))?$/;
 
 /**
  * What a `#/components/<id>...` address names: the component, its access, one of its blocks, or one of
@@ -162,13 +162,21 @@ export function componentAddress(hash: string): {
   readonly access: boolean;
   readonly block: string | null;
   readonly version: string | null;
+  /** A divergent line it is opened on (LIF-046; the R16 plan, R16-E). */
+  readonly line?: string;
 } | null {
   const matched = COMPONENT.exec(hash);
   if (!matched) return null;
   const access = matched[2] !== undefined;
-  const block = matched[4] ?? null;
+  const block = matched[5] ?? null;
   if (access && block !== null) return null;
-  return { component: matched[1]!, access, block, version: matched[3] ?? null };
+  return {
+    component: matched[1]!,
+    access,
+    block,
+    version: matched[3] ?? null,
+    ...(matched[4] === undefined ? {} : { line: matched[4] }),
+  };
 }
 
 /** Where in its entry a result matched, in words; `fields` names each field the reader may read. */

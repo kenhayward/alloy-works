@@ -357,6 +357,12 @@ export const ScopeBody = z.strictObject({
     )
     .max(50)
     .describe('Each axis value once; none for everywhere'),
+  line: z
+    .uuid()
+    .optional()
+    .describe(
+      "A component's divergent line whose scope it is (LIF-044); its main line where absent",
+    ),
 });
 export type ScopeBody = z.infer<typeof ScopeBody>;
 
@@ -453,7 +459,9 @@ export const ApprovalBody = z.strictObject({
   line: z
     .uuid()
     .optional()
-    .describe("A component's divergent line whose gate it is (LIF-044); its main line where absent"),
+    .describe(
+      "A component's divergent line whose gate it is (LIF-044); its main line where absent",
+    ),
 });
 export type ApprovalBody = z.infer<typeof ApprovalBody>;
 
