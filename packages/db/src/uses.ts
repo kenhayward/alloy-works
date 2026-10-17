@@ -174,6 +174,55 @@ const compare = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
  * deleted: a deleted one is neither named nor counted among the unreadable (DL-B), since nothing
  * reaches it.
  */
+/** A style by what it styles (the R20 plan, R20-A): a paragraph's, a table's, or an image's. */
+export type StyleKind = 'paragraph' | 'table' | 'image';
+
+/** Where each kind of style is named in a component's blocks, as a JSON path over its content. */
+const STYLE_PATHS: Readonly<Record<StyleKind, string>> = {
+  paragraph: '$.** ? (@.style == $key && @.type != "table" && @.type != "boundTable")',
+  table: '$.** ? ((@.type == "table" || @.type == "boundTable") && @.style == $key)',
+  image: '$.** ? (@.imageStyle == $key)',
+};
+
+export interface StyleUses {
+  readonly components: readonly { readonly id: string; readonly title: string }[];
+  /** Whether a component the reader may not read uses it too: never which. */
+  readonly unreadable: boolean;
+}
+
+/**
+ * **Where a style is used** (REU-055; the R20 plan, R20-A): the components whose main line's latest
+ * version names it - a paragraph style wherever a paragraph is, a table's cells among them - by title;
+ * what `by` may not read, or is deleted, only said to exist. A style is named by its key, not an
+ * artifact, so this reads the content rather than the reference index.
+ */
+export async function styleUses(
+  trx: TenantTransaction,
+  by: string,
+  style: { readonly kind: StyleKind; readonly key: string },
+): Promise<StyleUses> {
+  const readable = await loadReadableSet(trx, by);
+  const { rows } = await sql<{ id: string; space_id: string; title: string }>`
+    select a.id, a.space_id, latest.content ->> 'title' as title
+      from artifact a
+      cross join lateral (
+        select v.content from artifact_version v
+         where v.artifact_id = a.id
+         order by v.revision_no desc, v.version_no desc
+         limit 1
+      ) latest
+     where a.kind = 'component'
+       and jsonb_path_exists(latest.content -> 'content', ${STYLE_PATHS[style.kind]}::jsonpath,
+             jsonb_build_object('key', ${style.key}::text))`.execute(trx);
+  const shown = await readableAmong(trx, readable, rows);
+  return {
+    components: shown
+      .map((row) => ({ id: row.id, title: row.title }))
+      .sort((a, b) => compare(a.title, b.title) || compare(a.id, b.id)),
+    unreadable: shown.total > shown.length,
+  };
+}
+
 async function readableAmong<
   T extends { readonly id: string; readonly space_id: string; readonly subject?: string },
 >(

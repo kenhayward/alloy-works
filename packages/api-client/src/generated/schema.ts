@@ -3915,6 +3915,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/styles/uses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Where a style is used: the components naming it
+         * @description Lists the components whose latest version uses a style, by what it styles - a paragraph, a table or an image - and its key: a paragraph style wherever a paragraph is, a table cell among them. Those the caller may read are named by title; whether others use it too is said, never which.
+         */
+        get: operations["getStyleUses"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/suggestions/{id}": {
         parameters: {
             query?: never;
@@ -7388,6 +7408,13 @@ export interface operations {
                             failed: number;
                             /** @description The rows the run took */
                             of: number;
+                            /**
+                             * @description What it did at a failed row, as the cohort asked (TPL-047)
+                             * @enum {string}
+                             */
+                            onFailure?: "continue" | "stop";
+                            /** @description The failed row it stopped at, the rows after it waiting; null where it did not stop */
+                            stoppedAt?: number | null;
                         }) | null;
                         /** @description A succeeded job's result, to download */
                         result: {
@@ -11485,6 +11512,8 @@ export interface operations {
                      *       "title": "example",
                      *       "source": {},
                      *       "requestedAt": "example",
+                     *       "onFailure": "continue",
+                     *       "stoppedAt": -9007199254740991,
                      *       "rows": []
                      *     }
                      */
@@ -11503,6 +11532,13 @@ export interface operations {
                             dataset?: string & (unknown & unknown);
                         };
                         requestedAt: string;
+                        /**
+                         * @description What its run does at a failed row, as it was asked for (TPL-047)
+                         * @enum {string}
+                         */
+                        onFailure: "continue" | "stop";
+                        /** @description The failed row its run stopped at, the rows after it waiting for Rerun; null where none did */
+                        stoppedAt: number | null;
                         /** @description Every row, in order */
                         rows: {
                             row: number;
@@ -11636,6 +11672,8 @@ export interface operations {
                      *         "title": "example",
                      *         "source": {},
                      *         "requestedAt": "example",
+                     *         "onFailure": "continue",
+                     *         "stoppedAt": -9007199254740991,
                      *         "rows": []
                      *       },
                      *       "job": {
@@ -11686,6 +11724,13 @@ export interface operations {
                                 dataset?: string & (unknown & unknown);
                             };
                             requestedAt: string;
+                            /**
+                             * @description What its run does at a failed row, as it was asked for (TPL-047)
+                             * @enum {string}
+                             */
+                            onFailure: "continue" | "stop";
+                            /** @description The failed row its run stopped at, the rows after it waiting for Rerun; null where none did */
+                            stoppedAt: number | null;
                             /** @description Every row, in order */
                             rows: {
                                 row: number;
@@ -11760,6 +11805,13 @@ export interface operations {
                                 failed: number;
                                 /** @description The rows the run took */
                                 of: number;
+                                /**
+                                 * @description What it did at a failed row, as the cohort asked (TPL-047)
+                                 * @enum {string}
+                                 */
+                                onFailure?: "continue" | "stop";
+                                /** @description The failed row it stopped at, the rows after it waiting; null where it did not stop */
+                                stoppedAt?: number | null;
                             }) | null;
                             /** @description A succeeded job's result, to download */
                             result: {
@@ -53979,6 +54031,13 @@ export interface operations {
                             failed: number;
                             /** @description The rows the run took */
                             of: number;
+                            /**
+                             * @description What it did at a failed row, as the cohort asked (TPL-047)
+                             * @enum {string}
+                             */
+                            onFailure?: "continue" | "stop";
+                            /** @description The failed row it stopped at, the rows after it waiting; null where it did not stop */
+                            stoppedAt?: number | null;
                         }) | null;
                         /** @description A succeeded job's result, to download */
                         result: {
@@ -54155,6 +54214,13 @@ export interface operations {
                             failed: number;
                             /** @description The rows the run took */
                             of: number;
+                            /**
+                             * @description What it did at a failed row, as the cohort asked (TPL-047)
+                             * @enum {string}
+                             */
+                            onFailure?: "continue" | "stop";
+                            /** @description The failed row it stopped at, the rows after it waiting; null where it did not stop */
+                            stoppedAt?: number | null;
                         }) | null;
                         /** @description A succeeded job's result, to download */
                         result: {
@@ -64973,6 +65039,11 @@ export interface operations {
                     }[];
                     /** @description A query result's version whose rows are the rows: one parameter for each column, by its name */
                     dataset?: string & (unknown & unknown);
+                    /**
+                     * @description At a failed row: `continue`, the default, makes the rest; `stop` makes no more, the rows after it waiting for Rerun (TPL-047)
+                     * @enum {string}
+                     */
+                    onFailure?: "continue" | "stop";
                 };
             };
         };
@@ -64999,6 +65070,8 @@ export interface operations {
                      *         "title": "example",
                      *         "source": {},
                      *         "requestedAt": "example",
+                     *         "onFailure": "continue",
+                     *         "stoppedAt": -9007199254740991,
                      *         "rows": []
                      *       },
                      *       "job": {
@@ -65049,6 +65122,13 @@ export interface operations {
                                 dataset?: string & (unknown & unknown);
                             };
                             requestedAt: string;
+                            /**
+                             * @description What its run does at a failed row, as it was asked for (TPL-047)
+                             * @enum {string}
+                             */
+                            onFailure: "continue" | "stop";
+                            /** @description The failed row its run stopped at, the rows after it waiting for Rerun; null where none did */
+                            stoppedAt: number | null;
                             /** @description Every row, in order */
                             rows: {
                                 row: number;
@@ -65123,6 +65203,13 @@ export interface operations {
                                 failed: number;
                                 /** @description The rows the run took */
                                 of: number;
+                                /**
+                                 * @description What it did at a failed row, as the cohort asked (TPL-047)
+                                 * @enum {string}
+                                 */
+                                onFailure?: "continue" | "stop";
+                                /** @description The failed row it stopped at, the rows after it waiting; null where it did not stop */
+                                stoppedAt?: number | null;
                             }) | null;
                             /** @description A succeeded job's result, to download */
                             result: {
@@ -69085,6 +69172,108 @@ export interface operations {
             };
             /** @description This environment cannot stream yet */
             503: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getStyleUses: {
+        parameters: {
+            query: {
+                kind: "paragraph" | "table" | "image";
+                key: string;
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The components whose latest version uses the style - a paragraph style wherever a paragraph is, in a table cell too - those the caller may read named, and whether there are more */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "components": [],
+                     *       "unreadable": false
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description The components whose latest version uses it that the caller may read, by title */
+                        components: {
+                            id: string;
+                            title: string;
+                        }[];
+                        /** @description Whether one the caller may not read uses it too: never which */
+                        unreadable: boolean;
+                    };
+                };
+            };
+            /** @description A kind or a key that is not one */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;

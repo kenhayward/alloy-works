@@ -101,6 +101,26 @@ describe('applying conditions (the R6 plan, R6-C)', () => {
     expect(applied.excluded).toEqual(['Internal only. ', 'EU regulator.']);
   });
 
+  it("CNT-185 excludes every fragment of one condition, in runs and paragraphs apart, in the one profile's pass", () => {
+    // One condition, its identifier the same on each fragment the editor split it into.
+    const fragment = (value: string) => ({
+      type: 'text' as const,
+      value,
+      marks: [{ type: 'condition' as const, id: 'c7', axis: 'audience', values: ['internal'] }],
+    });
+    const applied = applyConditions(
+      doc(
+        paragraph('p1', run('Open. '), fragment('Internal, '), run('open again. ')),
+        paragraph('p2', fragment('still internal.'), run(' Open at last.')),
+        paragraph('p3', fragment('Wholly internal.')),
+      ),
+      regulator,
+    );
+    expect(textOf(applied.content)).toEqual(['Open. open again. ', ' Open at last.']);
+    expect(applied.excluded).toEqual(['Internal, ', 'still internal.', 'Wholly internal.']);
+    expect(applied.removed).toEqual(['p3']);
+  });
+
   it('REU-024 excludes what is conditioned on an axis the profile does not name, and says so', () => {
     const applied = applyConditions(
       doc(paragraph('p1', run('Kept. '), run('Draft note.', ['status', ['draft']]))),

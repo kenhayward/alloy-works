@@ -1,11 +1,33 @@
-import type { ComponentUsesParams, ComponentUsesView } from '@alloy-works/api-contract';
-import { componentUses } from '@alloy-works/db';
+import type {
+  ComponentUsesParams,
+  ComponentUsesView,
+  StyleUsesQuery,
+  StyleUsesView,
+} from '@alloy-works/api-contract';
+import { componentUses, styleUses, type Tenant, type TenantDatabase } from '@alloy-works/db';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
+import type { SessionPrincipal } from './sessions.js';
 
 /** Where a component is used (relationships.md; the R1 plan, R1-B), to a reader of it. */
-export function usesHandlers() {
+export function usesHandlers(
+  db: TenantDatabase,
+  tenantOf: (request: FastifyRequest) => Tenant,
+  principalOf: (request: FastifyRequest) => SessionPrincipal,
+) {
   return {
+    /** Where a style is used (REU-055; the R20 plan, R20-A): to anybody, naming what they may read. */
+    getStyleUses: async (request: FastifyRequest): Promise<StyleUsesView> => {
+      const { kind, key } = request.query as StyleUsesQuery;
+      const uses = await db.withTenant(tenantOf(request), (trx) =>
+        styleUses(trx, principalOf(request).principalId, { kind, key }),
+      );
+      return {
+        components: uses.components.map((each) => ({ ...each })),
+        unreadable: uses.unreadable,
+      };
+    },
+
     getComponentUses: async (
       request: FastifyRequest,
       { trx, principalId }: Authorised,

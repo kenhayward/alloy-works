@@ -15309,6 +15309,27 @@
                                   "minimum": -9007199254740991,
                                   "maximum": 9007199254740991,
                                   "description": "The rows the run took"
+                                },
+                                "onFailure": {
+                                  "description": "What it did at a failed row, as the cohort asked (TPL-047)",
+                                  "type": "string",
+                                  "enum": [
+                                    "continue",
+                                    "stop"
+                                  ]
+                                },
+                                "stoppedAt": {
+                                  "description": "The failed row it stopped at, the rows after it waiting; null where it did not stop",
+                                  "anyOf": [
+                                    {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
                                 }
                               },
                               "required": [
@@ -27417,6 +27438,27 @@
                     "requestedAt": {
                       "type": "string"
                     },
+                    "onFailure": {
+                      "type": "string",
+                      "enum": [
+                        "continue",
+                        "stop"
+                      ],
+                      "description": "What its run does at a failed row, as it was asked for (TPL-047)"
+                    },
+                    "stoppedAt": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "The failed row its run stopped at, the rows after it waiting for Rerun; null where none did"
+                    },
                     "rows": {
                       "type": "array",
                       "items": {
@@ -27511,6 +27553,8 @@
                     "title",
                     "source",
                     "requestedAt",
+                    "onFailure",
+                    "stoppedAt",
                     "rows"
                   ]
                 },
@@ -27524,6 +27568,8 @@
                   "title": "example",
                   "source": {},
                   "requestedAt": "example",
+                  "onFailure": "continue",
+                  "stoppedAt": -9007199254740991,
                   "rows": []
                 }
               }
@@ -27825,6 +27871,27 @@
                         "requestedAt": {
                           "type": "string"
                         },
+                        "onFailure": {
+                          "type": "string",
+                          "enum": [
+                            "continue",
+                            "stop"
+                          ],
+                          "description": "What its run does at a failed row, as it was asked for (TPL-047)"
+                        },
+                        "stoppedAt": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The failed row its run stopped at, the rows after it waiting for Rerun; null where none did"
+                        },
                         "rows": {
                           "type": "array",
                           "items": {
@@ -27919,6 +27986,8 @@
                         "title",
                         "source",
                         "requestedAt",
+                        "onFailure",
+                        "stoppedAt",
                         "rows"
                       ]
                     },
@@ -28114,6 +28183,27 @@
                                       "minimum": -9007199254740991,
                                       "maximum": 9007199254740991,
                                       "description": "The rows the run took"
+                                    },
+                                    "onFailure": {
+                                      "description": "What it did at a failed row, as the cohort asked (TPL-047)",
+                                      "type": "string",
+                                      "enum": [
+                                        "continue",
+                                        "stop"
+                                      ]
+                                    },
+                                    "stoppedAt": {
+                                      "description": "The failed row it stopped at, the rows after it waiting; null where it did not stop",
+                                      "anyOf": [
+                                        {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
                                     }
                                   },
                                   "required": [
@@ -28189,6 +28279,8 @@
                     "title": "example",
                     "source": {},
                     "requestedAt": "example",
+                    "onFailure": "continue",
+                    "stoppedAt": -9007199254740991,
                     "rows": []
                   },
                   "job": {
@@ -164053,6 +164145,27 @@
                                   "minimum": -9007199254740991,
                                   "maximum": 9007199254740991,
                                   "description": "The rows the run took"
+                                },
+                                "onFailure": {
+                                  "description": "What it did at a failed row, as the cohort asked (TPL-047)",
+                                  "type": "string",
+                                  "enum": [
+                                    "continue",
+                                    "stop"
+                                  ]
+                                },
+                                "stoppedAt": {
+                                  "description": "The failed row it stopped at, the rows after it waiting; null where it did not stop",
+                                  "anyOf": [
+                                    {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
                                 }
                               },
                               "required": [
@@ -164514,6 +164627,27 @@
                                   "minimum": -9007199254740991,
                                   "maximum": 9007199254740991,
                                   "description": "The rows the run took"
+                                },
+                                "onFailure": {
+                                  "description": "What it did at a failed row, as the cohort asked (TPL-047)",
+                                  "type": "string",
+                                  "enum": [
+                                    "continue",
+                                    "stop"
+                                  ]
+                                },
+                                "stoppedAt": {
+                                  "description": "The failed row it stopped at, the rows after it waiting; null where it did not stop",
+                                  "anyOf": [
+                                    {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
                                 }
                               },
                               "required": [
@@ -193930,6 +194064,14 @@
                         "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                       }
                     ]
+                  },
+                  "onFailure": {
+                    "description": "At a failed row: `continue`, the default, makes the rest; `stop` makes no more, the rows after it waiting for Rerun (TPL-047)",
+                    "type": "string",
+                    "enum": [
+                      "continue",
+                      "stop"
+                    ]
                   }
                 },
                 "required": [
@@ -194066,6 +194208,27 @@
                         "requestedAt": {
                           "type": "string"
                         },
+                        "onFailure": {
+                          "type": "string",
+                          "enum": [
+                            "continue",
+                            "stop"
+                          ],
+                          "description": "What its run does at a failed row, as it was asked for (TPL-047)"
+                        },
+                        "stoppedAt": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The failed row its run stopped at, the rows after it waiting for Rerun; null where none did"
+                        },
                         "rows": {
                           "type": "array",
                           "items": {
@@ -194160,6 +194323,8 @@
                         "title",
                         "source",
                         "requestedAt",
+                        "onFailure",
+                        "stoppedAt",
                         "rows"
                       ]
                     },
@@ -194355,6 +194520,27 @@
                                       "minimum": -9007199254740991,
                                       "maximum": 9007199254740991,
                                       "description": "The rows the run took"
+                                    },
+                                    "onFailure": {
+                                      "description": "What it did at a failed row, as the cohort asked (TPL-047)",
+                                      "type": "string",
+                                      "enum": [
+                                        "continue",
+                                        "stop"
+                                      ]
+                                    },
+                                    "stoppedAt": {
+                                      "description": "The failed row it stopped at, the rows after it waiting; null where it did not stop",
+                                      "anyOf": [
+                                        {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
                                     }
                                   },
                                   "required": [
@@ -194430,6 +194616,8 @@
                     "title": "example",
                     "source": {},
                     "requestedAt": "example",
+                    "onFailure": "continue",
+                    "stoppedAt": -9007199254740991,
                     "rows": []
                   },
                   "job": {
@@ -207321,6 +207509,239 @@
           },
           "503": {
             "description": "This environment cannot stream yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/styles/uses": {
+      "get": {
+        "operationId": "getStyleUses",
+        "summary": "Where a style is used: the components naming it",
+        "description": "Lists the components whose latest version uses a style, by what it styles - a paragraph, a table or an image - and its key: a paragraph style wherever a paragraph is, a table cell among them. Those the caller may read are named by title; whether others use it too is said, never which.",
+        "tags": [
+          "Components"
+        ],
+        "x-alloy-token-enabled": true,
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "paragraph",
+                "table",
+                "image"
+              ],
+              "description": "What it styles"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$",
+              "description": "Its key, as a block names it"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The components whose latest version uses the style - a paragraph style wherever a paragraph is, in a table cell too - those the caller may read named, and whether there are more",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "components": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "title"
+                        ]
+                      },
+                      "description": "The components whose latest version uses it that the caller may read, by title"
+                    },
+                    "unreadable": {
+                      "type": "boolean",
+                      "description": "Whether one the caller may not read uses it too: never which"
+                    }
+                  },
+                  "required": [
+                    "components",
+                    "unreadable"
+                  ]
+                },
+                "example": {
+                  "components": [],
+                  "unreadable": false
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A kind or a key that is not one",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
             "content": {
               "application/json": {
                 "schema": {

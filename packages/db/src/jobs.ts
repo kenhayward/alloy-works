@@ -29,6 +29,9 @@ export interface CohortOutcome {
   readonly made: number;
   readonly failed: number;
   readonly of: number;
+  /** What it did at a failed row, and the row it stopped at, if it did (TPL-047). */
+  readonly onFailure?: 'continue' | 'stop';
+  readonly stoppedAt?: number | null;
 }
 
 /** The kinds of job the API takes (the R3 plan; the R7 plan, R7-A). */

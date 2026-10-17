@@ -81,7 +81,13 @@ export {
   DeletionView,
   deletionRoutes,
 } from './deletion.js';
-export { ComponentUsesParams, ComponentUsesView, usesRoutes } from './uses.js';
+export {
+  ComponentUsesParams,
+  ComponentUsesView,
+  StyleUsesQuery,
+  StyleUsesView,
+  usesRoutes,
+} from './uses.js';
 export { ArtifactParams, ImpactQuery, ImpactView, ReferencesView, impactRoutes } from './impact.js';
 export {
   ImpactReportBody,

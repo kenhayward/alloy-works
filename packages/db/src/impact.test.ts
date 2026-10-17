@@ -321,7 +321,7 @@ describe('the reference index and impact (relationships.md; the R2 plan, R2-A to
     expect(walked.reached.at(-1)!.id).toBe(report.artifactId);
   });
 
-  it('indexes a document made from a template by the template version it was made from', async () => {
+  it('REU-055 indexes a document made from a template by the template version it was made from, and so says where a template is used', async () => {
     const template = await as(async (trx) => {
       const answer = await createTemplate(trx, {
         spaceId: general,
@@ -366,7 +366,7 @@ describe('the reference index and impact (relationships.md; the R2 plan, R2-A to
     ]);
   });
 
-  it('SCH-023 REL-017 answers what a change to an image reaches, to the depth asked and no further', async () => {
+  it('SCH-023 REL-017 REU-055 answers what a change to an image reaches, to the depth asked and no further, the components using it first', async () => {
     const picture = await image(general);
     const holder = await revise(await component(general, 'Tiles'), [figure(picture.id)]);
     const report = await document(general, 'Tiles report', [reference(holder.artifactId)]);

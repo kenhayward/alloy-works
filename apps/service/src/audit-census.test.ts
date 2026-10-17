@@ -120,6 +120,7 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   getPublicationBindings: read,
   listPublicationShares: read,
   getQueryUsage: read,
+  getStyleUses: read,
   getQueryRunsCsv: read,
   sharePublication: writes('access.granted', 'invitation.sent'),
   revokePublicationShare: writes('access.revoked'),

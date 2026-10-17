@@ -14,7 +14,8 @@ import type { JobHandler } from '../worker.js';
 /**
  * **A cohort's run** (REU-031, REU-033, REU-035; the R7 plan, R7-E, R7-F): each of its pending rows
  * made into a document from the cohort's one resolution, each in a transaction of its own, so a row
- * that fails leaves nothing and the run goes on; its progress kept, and a cancel heard, between rows.
+ * that fails leaves nothing and the run goes on - or stops there, the rows after it waiting, where the
+ * requester asked (TPL-047); its progress kept, and a cancel heard, between rows.
  * The report is JSON Lines in the tenant's store, one line for every row of the cohort. A retried
  * attempt carries on from the rows still pending.
  */
@@ -35,6 +36,8 @@ export function cohortJob(deps: {
       let made = 0;
       let failed = 0;
       let goOn = true;
+      // Where the requester asked it to stop at a failed row, the rows after it wait (TPL-047).
+      let stoppedAt: number | null = null;
       for (const row of rows) {
         const outcome = await deps.db.withTenant(tenant, (trx) => makeCohortRow(trx, cohort, row));
         if (outcome === 'made') made += 1;
@@ -43,6 +46,10 @@ export function cohortJob(deps: {
           progressJob(trx, id, { done: made + failed, of, unit: 'row' }),
         );
         if (!goOn) break;
+        if (outcome === 'failed' && cohort.onFailure === 'stop') {
+          stoppedAt = row;
+          break;
+        }
       }
       let kept: { key: string; sha256: string; bytes: number } | null = null;
       if (goOn) {
@@ -62,7 +69,9 @@ export function cohortJob(deps: {
         );
         kept = { key: put.key, sha256: put.sha256, bytes: put.size };
       }
-      await deps.db.withTenant(tenant, (trx) => finishJob(trx, id, { made, failed, of }, kept));
+      await deps.db.withTenant(tenant, (trx) =>
+        finishJob(trx, id, { made, failed, of, onFailure: cohort.onFailure, stoppedAt }, kept),
+      );
     },
 
     async failed(tenant, job) {

@@ -51,10 +51,14 @@ export function CohortPage({
     void load();
   }, [load, attempt]);
 
-  // Read again while a row is still waiting: the run makes them one at a time.
+  // Read again while a row is still waiting: the run makes them one at a time. A run that stopped at a
+  // failed row, as asked, makes no more of them (TPL-047).
+  const stoppedAt =
+    cohort !== null && typeof cohort === 'object' ? (cohort.stoppedAt ?? null) : null;
   const waiting =
     cohort !== null &&
     typeof cohort === 'object' &&
+    stoppedAt === null &&
     cohort.rows.some((row) => row.state === 'pending');
   useEffect(() => {
     if (!waiting) return;
@@ -112,7 +116,11 @@ export function CohortPage({
       <p className={styles['summary']} role="status">
         {`${made} of ${cohort.rows.length} made`}
         {failed.length > 0 ? `, ${failed.length} failed` : ''}
-        {waiting ? '. Still making the rest.' : '.'}
+        {waiting
+          ? '. Still making the rest.'
+          : stoppedAt !== null
+            ? `. Stopped at row ${stoppedAt}, as asked: the rows after it wait for Run the failed again.`
+            : '.'}
       </p>
       <table className={styles['table']}>
         <thead>
@@ -158,7 +166,7 @@ export function CohortPage({
                 {row.state === 'made' && row.document !== null && (
                   <a href={documentLink(row.document)}>Open the document</a>
                 )}
-                {row.state === 'pending' && 'Being made'}
+                {row.state === 'pending' && (stoppedAt === null ? 'Being made' : 'Waiting')}
                 {row.state === 'failed' && (
                   <span className={styles['failed']}>{row.failure?.message ?? 'It failed.'}</span>
                 )}

@@ -58,6 +58,25 @@ describe('Generate documents (the R7 plan, R7-B, R7-C)', () => {
     ]);
   });
 
+  it('TPL-047 asks for a run that stops at the first failed row where the requester ticks it, and carries on otherwise', async () => {
+    const { client, asked } = service();
+    render(
+      <GenerateDialog
+        client={client}
+        template={{ id: TEMPLATE, name: 'Site report', space: SPACE }}
+        onGenerated={() => undefined}
+        onCancel={() => undefined}
+      />,
+    );
+    await userEvent.type(screen.getByLabelText('Or paste the rows'), 'site{enter}1{enter}2');
+    const stop = screen.getByRole('checkbox', { name: 'Stop at the first row that fails' });
+    expect(stop).not.toBeChecked();
+    await userEvent.click(stop);
+    await userEvent.click(screen.getByRole('button', { name: 'Generate 2 documents' }));
+    await waitFor(() => expect(asked).toHaveLength(1));
+    expect(asked[0]!.body).toMatchObject({ onFailure: 'stop' });
+  });
+
   it('says what is wrong with pasted rows, and asks for nothing', async () => {
     const { client, asked } = service();
     render(
