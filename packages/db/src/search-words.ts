@@ -13,6 +13,7 @@ import { sql, type RawBuilder, type SqlBool } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
 import { isDeleted } from './deletion.js';
 import { HISTORY_KINDS, historyFielded, historyStored, historyTitled } from './search-history.js';
+import { sectionMembers, type SectionMembers } from './search-sections.js';
 import { vectorStored } from './search-threads.js';
 import type { TenantTransaction } from './tables.js';
 import { stateNames, workflowStored } from './workflow.js';
@@ -119,6 +120,8 @@ export interface SearchResult {
    * none.
    */
   readonly state: { readonly key: string; readonly name: string } | null;
+  /** A section's document and the components it places that the reader may read (SCH-053); else null. */
+  readonly section: SectionMembers | null;
 }
 
 /**
@@ -1264,6 +1267,15 @@ export async function searchWords(
     baseline !== undefined && row.items.some((item) => item.kind === 'component')
       ? await firstPinnedNodes(trx, baseline)
       : new Map<string, string>();
+  const members = await sectionMembers(
+    trx,
+    readable,
+    row.items.flatMap((item) =>
+      item.kind === 'section' && item.node !== null
+        ? [{ document: item.artifact_id, version: item.version_id, node: item.node }]
+        : [],
+    ),
+  );
   const fields = new Map<
     string,
     { field: string; name: string; dataType: string; values: FacetRow[] }
@@ -1326,6 +1338,10 @@ export async function searchWords(
               key: item.workflow_state,
               name: stateName(item.kind, item.workflow_state),
             },
+      section:
+        item.kind === 'section' && item.node !== null
+          ? (members.get(`${item.version_id}:${item.node}`) ?? null)
+          : null,
     })),
     facets: {
       kinds: capped(row.kinds),

@@ -155,6 +155,17 @@ export const SearchResultView = z.object({
     .describe(
       "A component's or a document's workflow state now, a section's its document's; null for anything else",
     ),
+  section: z
+    .object({
+      document: z.object({ id: z.string(), title: z.string() }),
+      components: z
+        .array(z.object({ id: z.string(), title: z.string() }))
+        .describe(
+          'Each component placed beneath it that the reader may read, once, in outline order',
+        ),
+    })
+    .nullable()
+    .describe("A section's document and the components it places; null for anything else"),
 });
 export type SearchResultView = z.infer<typeof SearchResultView>;
 

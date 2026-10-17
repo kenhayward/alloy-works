@@ -113,6 +113,39 @@ describe('the search page', () => {
     expect(marked.closest('p')).toHaveTextContent('Hold the lever until it clicks.');
   });
 
+  it('SCH-053 shows a section with its document and the components it places, and offers to place it in a document', async () => {
+    const PUMP = 'cccccccc-0000-4000-8000-0000000000aa';
+    const { client } = service(() =>
+      json(200, {
+        ...results,
+        count: 1,
+        message: '1 result.',
+        items: [
+          {
+            ...results.items[1],
+            section: {
+              document: { id: REPORT, title: 'Lever report' },
+              components: [{ id: PUMP, title: 'Prime the pump' }],
+            },
+          },
+        ],
+      }),
+    );
+    render(<SearchPage client={client} query="lever" onSearch={() => undefined} />);
+    const [findings] = await screen.findAllByRole('article');
+    expect(within(findings!).getByRole('link', { name: 'Lever report' })).toHaveAttribute(
+      'href',
+      `#/documents/${REPORT}`,
+    );
+    const places = within(findings!).getByRole('list', { name: 'It places' });
+    expect(within(places).getByRole('link', { name: 'Prime the pump' })).toHaveAttribute(
+      'href',
+      `#/components/${PUMP}`,
+    );
+    await userEvent.click(within(findings!).getByRole('button', { name: 'Place in a document' }));
+    expect(await screen.findByRole('dialog', { name: 'Place in a document' })).toBeVisible();
+  });
+
   it('shows a thread found by a message, resolved, linked to the message', async () => {
     const THREAD = 'ffffffff-0000-4000-8000-000000000001';
     const COMMENT = 'ffffffff-0000-4000-8000-000000000002';

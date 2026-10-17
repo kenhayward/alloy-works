@@ -89,24 +89,70 @@ export function PlaceSectionButton({
   );
 }
 
+/**
+ * **Place in a document** (SCH-053; the R14 plan, R14-C): a section found by search placed in a document
+ * the author chooses, by the act **Place from a document** is there.
+ */
+export function PlaceIntoButton({
+  client,
+  from,
+  section,
+  className,
+  onPlaced,
+}: {
+  client: Client;
+  /** The document the section is in. */
+  from: string;
+  section: string;
+  className?: string | undefined;
+  /** Handed the document it was placed in. */
+  onPlaced: (into: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button type="button" className={className} onClick={() => setOpen(true)}>
+        Place in a document
+      </button>
+      {open && (
+        <PlaceDialog
+          client={client}
+          found={{ from, section }}
+          onClose={() => setOpen(false)}
+          onPlaced={(_, into) => {
+            setOpen(false);
+            onPlaced(into);
+          }}
+        />
+      )}
+    </>
+  );
+}
+
 function PlaceDialog({
   client,
   documentId,
   openedFrom,
+  found,
   onClose,
   onPlaced,
 }: {
   client: Client;
-  documentId: string;
-  openedFrom: string;
+  /** The document placed in, and the version its outline was read at; chosen in the dialog if absent. */
+  documentId?: string;
+  openedFrom?: string;
+  /** The section placed, where it was found rather than chosen here. */
+  found?: { readonly from: string; readonly section: string };
   onClose: () => void;
-  onPlaced: (answer: unknown) => void;
+  onPlaced: (answer: unknown, into: string) => void;
 }) {
   const headingId = useId();
   const [documents, setDocuments] = useState<readonly { id: string; title: string }[]>([]);
-  const [from, setFrom] = useState('');
+  const [into, setInto] = useState(documentId ?? '');
+  const [opened, setOpened] = useState(openedFrom ?? '');
+  const [from, setFrom] = useState(found?.from ?? '');
   const [sections, setSections] = useState<readonly Section[]>([]);
-  const [section, setSection] = useState('');
+  const [section, setSection] = useState(found?.section ?? '');
   const [report, setReport] = useState<Report | null>(null);
   const [mode, setMode] = useState<Mode>('latest');
   const [title, setTitle] = useState('');
@@ -122,7 +168,7 @@ function PlaceDialog({
         if (current && data) {
           setDocuments(
             data.items
-              .filter((each) => each.id !== documentId)
+              .filter((each) => each.id !== (found ? found.from : documentId))
               .map((each) => ({ id: each.id, title: each.title })),
           );
         }
@@ -131,11 +177,28 @@ function PlaceDialog({
     return () => {
       current = false;
     };
-  }, [client, documentId]);
+  }, [client, documentId, found]);
+
+  // The version of the document chosen to place in, which the placement is made against.
+  useEffect(() => {
+    if (documentId !== undefined) return;
+    setOpened('');
+    if (into === '') return;
+    let current = true;
+    void client
+      .GET('/v1/documents/{id}', { params: { path: { id: into } } })
+      .then(({ data }) => {
+        if (current && data) setOpened(data.version.id);
+      })
+      .catch(() => undefined);
+    return () => {
+      current = false;
+    };
+  }, [client, documentId, into]);
 
   useEffect(() => {
     setSections([]);
-    setSection('');
+    setSection(found !== undefined && from === found.from ? found.section : '');
     if (from === '') return;
     let current = true;
     void client
@@ -159,11 +222,11 @@ function PlaceDialog({
 
   useEffect(() => {
     setReport(null);
-    if (section === '') return;
+    if (section === '' || into === '') return;
     let current = true;
     void client
       .GET('/v1/documents/{id}/placement', {
-        params: { path: { id: documentId }, query: { from, section } },
+        params: { path: { id: into }, query: { from, section } },
       })
       .then(({ data }) => {
         if (!current) return;
@@ -174,14 +237,14 @@ function PlaceDialog({
     return () => {
       current = false;
     };
-  }, [client, documentId, from, section, asked]);
+  }, [client, into, from, section, asked]);
 
   // A word said of one section is not said of the next; after a refusal, of the same one again.
   useEffect(() => setSaid(''), [from, section]);
 
   const place = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!report || busy) return;
+    if (!report || busy || opened === '') return;
     if (title.trim() === '') {
       setSaid('The new section needs a title.');
       return;
@@ -189,9 +252,9 @@ function PlaceDialog({
     setBusy(true);
     const { data, response } = await client
       .POST('/v1/documents/{id}/placement', {
-        params: { path: { id: documentId } },
+        params: { path: { id: into } },
         body: {
-          openedFrom,
+          openedFrom: opened,
           from,
           fromVersion: report.from.version,
           section,
@@ -204,7 +267,7 @@ function PlaceDialog({
       .catch(() => ({ data: undefined, response: undefined }));
     setBusy(false);
     if (data) {
-      onPlaced(data);
+      onPlaced(data, into);
       return;
     }
     if (response?.status === 409) {
@@ -220,37 +283,61 @@ function PlaceDialog({
   return (
     <Modal labelledBy={headingId} size="narrow" onClose={onClose}>
       <form className={styles['form']} onSubmit={(event) => void place(event)}>
-        <h2 id={headingId}>Place from a document</h2>
-        <p className={styles['muted']}>
-          The components a section of another document places are placed here, as references under a
-          new section of this document. Nothing else is copied.
-        </p>
-        <label>
-          Document
-          <select value={from} onChange={(event) => setFrom(event.target.value)}>
-            <option value="">Choose a document</option>
-            {documents.map((each) => (
-              <option key={each.id} value={each.id}>
-                {each.title}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Section
-          <select
-            value={section}
-            disabled={sections.length === 0}
-            onChange={(event) => setSection(event.target.value)}
-          >
-            <option value="">Choose a section</option>
-            {sections.map((each) => (
-              <option key={each.id} value={each.id}>
-                {`${'  '.repeat(each.depth)}${each.title}`}
-              </option>
-            ))}
-          </select>
-        </label>
+        <h2 id={headingId}>{found ? 'Place in a document' : 'Place from a document'}</h2>
+        {found ? (
+          <p className={styles['muted']}>
+            The components this section places are placed in the document chosen, as references
+            under a new section of its own. Nothing else is copied.
+          </p>
+        ) : (
+          <p className={styles['muted']}>
+            The components a section of another document places are placed here, as references under
+            a new section of this document. Nothing else is copied.
+          </p>
+        )}
+        {found && (
+          <label>
+            Into
+            <select value={into} onChange={(event) => setInto(event.target.value)}>
+              <option value="">Choose a document</option>
+              {documents.map((each) => (
+                <option key={each.id} value={each.id}>
+                  {each.title}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        {!found && (
+          <>
+            <label>
+              Document
+              <select value={from} onChange={(event) => setFrom(event.target.value)}>
+                <option value="">Choose a document</option>
+                {documents.map((each) => (
+                  <option key={each.id} value={each.id}>
+                    {each.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Section
+              <select
+                value={section}
+                disabled={sections.length === 0}
+                onChange={(event) => setSection(event.target.value)}
+              >
+                <option value="">Choose a section</option>
+                {sections.map((each) => (
+                  <option key={each.id} value={each.id}>
+                    {`${'  '.repeat(each.depth)}${each.title}`}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </>
+        )}
         {report && (
           <section aria-labelledby={`${headingId}report`} className={styles['report']}>
             <h3 id={`${headingId}report`}>What it places</h3>
@@ -311,7 +398,11 @@ function PlaceDialog({
           <button type="button" onClick={onClose}>
             Cancel
           </button>
-          <button type="submit" className="primary" disabled={!report || refused || busy}>
+          <button
+            type="submit"
+            className="primary"
+            disabled={!report || refused || busy || opened === ''}
+          >
             Place
           </button>
         </div>

@@ -909,7 +909,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   with `title:word` or a field's name, as in `Reviewer:Grace` - where you may read the field. Each
   result says what it is, where it is and where in it the words were found, shows a passage from there
   with the words marked, and opens at that place: a component at the paragraph, a section in its
-  document. A place that has gone since is said to be gone, and the latest version opens. Beside the
+  document. A section found says its document and the components it places, each a link, and offers
+  **Place in a document**, which places them in a document you choose under a new section of its own.
+  A place that has gone since is said to be gone, and the latest version opens. Beside the
   results, narrow them by kind, space, component type, who made it, when it last changed and a field's
   value, each choice saying how many results it would leave; past 1,000 a count says at least 1,000.
   Past 1,000 matches, the results are the best matches among the 1,000 changed most recently, and

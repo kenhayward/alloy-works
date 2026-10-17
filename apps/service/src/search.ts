@@ -86,6 +86,13 @@ function view(answer: SearchAnswer): SearchAnswerView {
       baseline: each.baseline === null ? null : { ...each.baseline },
       thread: each.thread === null ? null : { ...each.thread },
       state: each.state === null ? null : { ...each.state },
+      section:
+        each.section === null
+          ? null
+          : {
+              document: { ...each.section.document },
+              components: each.section.components.map((component) => ({ ...component })),
+            },
     })),
   };
 }

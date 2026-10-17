@@ -18356,6 +18356,10 @@
         {
           "id": "SCH-066",
           "howItIsMet": "An entry's rows are written in the transaction that writes its version, so new and changed words are findable the moment the version is: the interval is none, measured by a test that searches in the next transaction"
+        },
+        {
+          "id": "SCH-053",
+          "howItIsMet": "A section result carries its document, by id and title, and each component placed beneath it that the reader may read, once in outline order, read from the document version it matched in and titled from the entries now; the page links each and offers **Place in a document**, REU-054's act with the destination chosen (the R14 plan, R14-C)"
         }
       ]
     },
@@ -21325,13 +21329,19 @@
     {
       "id": "SCH-039",
       "file": "apps/service/src/search-routes.test.ts",
-      "line": 143,
+      "line": 211,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-053",
+      "file": "apps/service/src/search-routes.test.ts",
+      "line": 109,
       "kind": "title"
     },
     {
       "id": "SCH-071",
       "file": "apps/service/src/search-routes.test.ts",
-      "line": 107,
+      "line": 175,
       "kind": "title"
     },
     {
@@ -22939,19 +22949,25 @@
     {
       "id": "SCH-003",
       "file": "apps/web/src/search/SearchPage.test.tsx",
-      "line": 269,
+      "line": 302,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-053",
+      "file": "apps/web/src/search/SearchPage.test.tsx",
+      "line": 116,
       "kind": "title"
     },
     {
       "id": "SCH-058",
       "file": "apps/web/src/search/SearchPage.test.tsx",
-      "line": 269,
+      "line": 302,
       "kind": "title"
     },
     {
       "id": "SCH-060",
       "file": "apps/web/src/search/SearchPage.test.tsx",
-      "line": 328,
+      "line": 361,
       "kind": "title"
     },
     {
@@ -23551,13 +23567,19 @@
     {
       "id": "REU-046",
       "file": "apps/web/src/structure/PlaceSection.test.tsx",
-      "line": 108,
+      "line": 140,
       "kind": "title"
     },
     {
       "id": "REU-054",
       "file": "apps/web/src/structure/PlaceSection.test.tsx",
-      "line": 108,
+      "line": 111,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-053",
+      "file": "apps/web/src/structure/PlaceSection.test.tsx",
+      "line": 111,
       "kind": "title"
     },
     {
@@ -25700,6 +25722,12 @@
       "id": "VER-038",
       "file": "packages/db/src/search-history.test.ts",
       "line": 420,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-053",
+      "file": "packages/db/src/search-sections.test.ts",
+      "line": 137,
       "kind": "title"
     },
     {

@@ -88,3 +88,19 @@
   gap: var(--space-8);
   margin-block: var(--space-8);
 }
+
+/* A section's document and the components it places (SCH-053; the R14 plan, R14-C). */
+.members {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-4);
+}
+
+.placed {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4) var(--space-12);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}

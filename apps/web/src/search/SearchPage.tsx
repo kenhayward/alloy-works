@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { Notice } from '../states/Notice.js';
 import { Chip } from '../parts/Chip.js';
 import { StateLozenge } from '../states/Lozenge.js';
+import { PlaceIntoButton } from '../structure/PlaceSection.js';
 import { resultLink, whereFound, type SearchScope } from './links.js';
 import styles from './SearchPage.module.css';
 
@@ -43,6 +44,11 @@ interface Result {
   } | null;
   /** A component's or a document's state now, a section's its document's (WF-H). */
   readonly state?: { readonly key: string; readonly name: string } | null;
+  /** A section's document and the components it places (SCH-053); absent from a service before R14. */
+  readonly section?: {
+    readonly document: { readonly id: string; readonly title: string };
+    readonly components: readonly { readonly id: string; readonly title: string }[];
+  } | null;
 }
 
 interface Facets {
@@ -191,6 +197,51 @@ function FacetGroup({
  * The query is the address's, so a search can be linked to and gone back to; the facets chosen are
  * the page's, and a new query keeps them.
  */
+/**
+ * A section's document and what it places (SCH-053; the R14 plan, R14-C), so a section found is a route
+ * to reusing its components: each a link, and **Place in a document** for them all.
+ */
+function SectionMembers({
+  client,
+  section,
+  node,
+}: {
+  client: Client;
+  section: NonNullable<Result['section']>;
+  node: string;
+}) {
+  const label = useId();
+  return (
+    <div className={styles['members']}>
+      <p className={styles['about']}>
+        In <a href={`#/documents/${section.document.id}`}>{section.document.title}</a>
+      </p>
+      {section.components.length > 0 && (
+        <>
+          <p id={label} className={styles['about']}>
+            It places
+          </p>
+          <ul aria-labelledby={label} className={styles['placed']}>
+            {section.components.map((each) => (
+              <li key={each.id}>
+                <a href={`#/components/${each.id}`}>{each.title}</a>
+              </li>
+            ))}
+          </ul>
+          <PlaceIntoButton
+            client={client}
+            from={section.document.id}
+            section={node}
+            onPlaced={(into) => {
+              window.location.hash = `#/documents/${into}`;
+            }}
+          />
+        </>
+      )}
+    </div>
+  );
+}
+
 export function SearchPage({
   client,
   query,
@@ -469,6 +520,9 @@ export function SearchPage({
                           piece.matched ? <mark key={index}>{piece.text}</mark> : piece.text,
                         )}
                       </p>
+                    )}
+                    {item.section && item.node !== null && (
+                      <SectionMembers client={client} section={item.section} node={item.node} />
                     )}
                   </article>
                 </li>

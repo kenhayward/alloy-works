@@ -180097,6 +180097,57 @@
                                   }
                                 ],
                                 "description": "A component's or a document's workflow state now, a section's its document's; null for anything else"
+                              },
+                              "section": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "document": {
+                                        "type": "object",
+                                        "properties": {
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "title": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "id",
+                                          "title"
+                                        ]
+                                      },
+                                      "components": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "object",
+                                          "properties": {
+                                            "id": {
+                                              "type": "string"
+                                            },
+                                            "title": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "id",
+                                            "title"
+                                          ]
+                                        },
+                                        "description": "Each component placed beneath it that the reader may read, once, in outline order"
+                                      }
+                                    },
+                                    "required": [
+                                      "document",
+                                      "components"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "A section's document and the components it places; null for anything else"
                               }
                             },
                             "required": [
@@ -180111,7 +180162,8 @@
                               "version",
                               "baseline",
                               "thread",
-                              "state"
+                              "state",
+                              "section"
                             ]
                           }
                         },
