@@ -178,7 +178,7 @@ until the day somebody renames the term.
 | **LIB-020** | A vocabulary must be a named list of permitted values, each with a label and a stable identifier                                                                                                                                                                                                                                                                     | T7         | Specified             |
 | **LIB-058** | A vocabulary must be able to take its values from a declared external source (**LIB-032**) rather than being maintained by hand, each value held locally with the source it came from and the identifier the source gave it (**LIB-034**), re-checkable against that source (**LIB-035**), and never depended on at validation or publish (**LIB-033**, **MET-032**) | T6         | Specified             |
 | **LIB-021** | A metadata field must be able to draw its permitted values from a vocabulary (**TPL-008**)                                                                                                                                                                                                                                                                           | T7         | Superseded by MET-003 |
-| **LIB-022** | A condition axis must be able to draw its permitted values from a vocabulary (**REU-020**)                                                                                                                                                                                                                                                                           | T4         | Specified             |
+| **LIB-022** | A condition axis must be able to draw its permitted values from a vocabulary (**REU-020**)                                                                                                                                                                                                                                                                           | T7         | Specified             |
 | **LIB-023** | Retiring a value must not invalidate documents already using it; it must stop being offered and must be flagged where used                                                                                                                                                                                                                                           | Constraint | Specified             |
 | **LIB-024** | A vocabulary must carry labels per language                                                                                                                                                                                                                                                                                                                          | T6         | Specified             |
 | **LIB-053** | A vocabulary must declare the order its values are offered in, and that order must be deterministic rather than whatever the store returns                                                                                                                                                                                                                           | T7         | Specified             |
@@ -365,3 +365,11 @@ identifier, and only its tranche changes.
 | Counts       | Before                    | After                     |
 | ------------ | ------------------------- | ------------------------- |
 | Requirements | 58, of which 1 superseded | 58, of which 1 superseded |
+
+### Moved out of T4, 2026-10-17
+
+Not a review. Closing T4, Ken moved what T4 cannot answer to the tranche that builds what it needs.
+
+| What was found                                                                         | Change     |
+| -------------------------------------------------------------------------------------- | ---------- |
+| **LIB-022** moved from T4 to T7: vocabularies (**LIB-001**, T7) do not exist before it | Tranche T7 |
