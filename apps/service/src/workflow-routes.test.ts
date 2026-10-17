@@ -421,7 +421,7 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
     ]);
   });
 
-  it('LIF-042 LIF-047 sets the scope a next revision is effective for on edit, refuses an undeclared value or a party who may not read it, and shows it and what waits on acceptance in the view', async () => {
+  it('LIF-042 LIF-043 LIF-047 sets the scope a next revision is effective for on edit, refuses an undeclared value or a party who may not read it, shows it and what waits on acceptance in the view, and answers what was effective where and when', async () => {
     await tenantDb.withTenant(tenant, async (trx) => {
       const axis = await createDefinition(trx, {
         kind: 'conditionAxis',
@@ -512,6 +512,26 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
     expect(accepted.statusCode, accepted.body).toBe(200);
     expect(accepted.json()).toEqual({ revision: 1, axis: 'market', value: 'us', accepted: true });
     expect((await component(created.id, 'grace')).scope.pending).toEqual([]);
+
+    // What was effective, asked by any reader: in the US, revision 1 scoped there; elsewhere, none.
+    const effective = (query: string) =>
+      call('GET', `/v1/components/${created.id}/effective${query}`, 'ivy');
+    const inUs = await effective('?scope=market:us');
+    expect(inUs.statusCode, inUs.body).toBe(200);
+    expect(inUs.json()).toMatchObject({
+      scope: { axis: 'market', value: 'us' },
+      revision: { number: 1, version: created.version.id },
+      why: 'scoped',
+    });
+    expect((await effective('?scope=market:eu')).json()).toMatchObject({
+      revision: null,
+      why: 'none',
+    });
+    expect((await effective('?scope=market:us&at=2000-01-01T00:00:00Z')).json()).toMatchObject({
+      revision: null,
+      why: 'none',
+    });
+    expect((await effective('?scope=Market')).statusCode).toBe(400);
   });
 
   it('LIF-044 begins a divergent line from a designated revision, by whoever may edit, each name once', async () => {

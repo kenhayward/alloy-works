@@ -371,6 +371,34 @@ export const AcceptanceView = z.object({
 });
 export type AcceptanceView = z.infer<typeof AcceptanceView>;
 
+export const EffectiveQuery = z.object({
+  scope: z
+    .string()
+    .regex(/^[a-z][a-z0-9_]{0,63}:[a-z][a-z0-9_]{0,63}$/, 'Expected an axis, a colon and a value')
+    .optional()
+    .describe('The scope asked, as `<axis>:<value>`; absent for the unscoped revision'),
+  at: z.iso.datetime({ offset: true }).optional().describe('The instant asked; now when absent'),
+});
+export type EffectiveQuery = z.infer<typeof EffectiveQuery>;
+
+export const EffectiveView = z.object({
+  scope: z.object({ axis: ScopeKey, value: ScopeKey }).nullable(),
+  at: z.iso.datetime(),
+  revision: z
+    .object({
+      number: z.int().positive(),
+      version: z.uuid().describe('The version designated'),
+      at: z.iso.datetime().describe('When it was designated'),
+    })
+    .nullable(),
+  why: z
+    .enum(['scoped', 'unscoped', 'none'])
+    .describe(
+      'scoped: the newest revision effective for that scope then; unscoped: no revision was, so the newest effective everywhere; none: nothing was approved yet',
+    ),
+});
+export type EffectiveView = z.infer<typeof EffectiveView>;
+
 export const ApprovalBody = z.strictObject({
   transition: Key.describe('The gate, by its transition key'),
   version: z
@@ -560,7 +588,28 @@ const acceptanceResponses = (kind: 'component' | 'document') =>
     },
   }) as const;
 
+const effectiveRoute = (kind: 'component' | 'document') =>
+  ({
+    operationId: kind === 'component' ? 'readComponentEffective' : 'readDocumentEffective',
+    method: 'GET',
+    path: kind === 'component' ? '/v1/components/{id}/effective' : '/v1/documents/{id}/effective',
+    summary: `Say which revision of a ${kind} was effective in a scope at an instant`,
+    tenantScoped: true,
+    access: read,
+    params: TransitionParams,
+    query: EffectiveQuery,
+    responses: {
+      200: { description: 'The one revision effective there then, and why', schema: EffectiveView },
+      400: { description: 'A scope or an instant of the wrong shape', schema: ErrorBody },
+      401: unauthenticated,
+      403: { description: `The caller may not read this ${kind}`, schema: ErrorBody },
+      404: { description: `No such ${kind} the caller may read`, schema: ErrorBody },
+    },
+  }) as const;
+
 export const workflowRoutes = {
+  readComponentEffective: effectiveRoute('component'),
+  readDocumentEffective: effectiveRoute('document'),
   acceptComponentRevision: {
     operationId: 'acceptComponentRevision',
     method: 'POST',

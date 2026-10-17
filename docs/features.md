@@ -1076,6 +1076,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   stays effective elsewhere; a document reads, publishes and baselines the revision effective under its
   own profile. Each value can name who must accept the revision there: until they do, the header says
   it waits on them and the revision before stays effective there, and they alone see **Accept**.
+  Anybody who may read it asks there **What was effective**: which revision applied in a market or a
+  site at a given moment.
 - **The latest approved revision.** A reference can track its component's latest approved revision:
   **Always the latest approved revision** in its label's list. The label says which revision it shows,
   and publishing, previews and baselines take it. Where a newer revision is approved than the

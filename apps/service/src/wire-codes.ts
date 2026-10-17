@@ -156,6 +156,7 @@ const WIRE_CODES = {
   'scope.unknown': 'scope_unknown',
   'party.invalid': 'party_invalid',
   'acceptance.not_party': 'acceptance_not_party',
+  'group.in_scope': 'group_in_scope',
   'template.none': 'template_none',
   'template.current': 'template_current',
   'template.not_latest': 'template_not_latest',

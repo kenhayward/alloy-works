@@ -56,3 +56,8 @@
   align-items: center;
   gap: var(--space-8);
 }
+
+/* A dialog's heading above more than one form (the R15 plan's Effective for). */
+.heading {
+  margin: 0 0 var(--space-12);
+}

@@ -507,6 +507,7 @@ export {
 } from './dates.js';
 export {
   acceptRevision,
+  effectiveAt,
   fixScope,
   pendingAcceptances,
   readScopes,
@@ -514,6 +515,7 @@ export {
   scopesStored,
   setScope,
   type AcceptAnswer,
+  type EffectiveWhy,
   type ArtifactScope,
   type PendingAcceptance,
   type SetScopeAnswer,

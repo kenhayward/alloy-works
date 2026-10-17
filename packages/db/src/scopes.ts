@@ -1,4 +1,9 @@
-import { scopeSchema, type Scope, type ScopedRevision } from '@alloy-works/domain';
+import {
+  effectiveRevision,
+  scopeSchema,
+  type Scope,
+  type ScopedRevision,
+} from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { isArchived } from './archival.js';
 import { artifactPlace, recordEvent } from './audit.js';
@@ -7,6 +12,8 @@ import { isDeleted } from './deletion.js';
 import type { TenantTransaction } from './tables.js';
 import { lockArtifact } from './versions.js';
 import { linesStored } from './lines.js';
+import { datesStored } from './dates.js';
+import { gatesStored, type Revision } from './workflow.js';
 
 /**
  * **Scopes** (workflow.md, "Scopes"; the R15 plan, R15-A to R15-E): the condition axis values a
@@ -324,4 +331,71 @@ export async function pendingAcceptances(
         : { kind: 'group' as const, id: row.party_group! },
     mayAccept: row.may_accept === true,
   }));
+}
+
+/** Why a revision applies in a scope (LIF-043; R15-F): scoped to it, the unscoped fallback, or none. */
+export type EffectiveWhy = 'scoped' | 'unscoped' | 'none';
+
+/**
+ * What was effective (LIF-043; the R15 plan, R15-F): the one revision of an artifact effective in a
+ * scope at an instant, by R15-C's rule as it stood then - designated by then, its effective instant
+ * passed, accepted there by then where acceptance was asked - and why. No scope asks the unscoped.
+ */
+export async function effectiveAt(
+  trx: TenantTransaction,
+  artifactId: string,
+  scope: { readonly axis: string; readonly value: string } | null,
+  at: Date,
+): Promise<{ readonly revision: Revision | null; readonly why: EffectiveWhy }> {
+  if (!(await gatesStored(trx))) return { revision: null, why: 'none' };
+  const dated = await datesStored(trx);
+  const scoped = await scopesStored(trx);
+  const { rows } = await sql<{ revision_no: number; version_id: string; at: Date }>`
+    select d.revision_no, d.version_id, d.at
+      from revision_designation d
+     where d.artifact_id = ${artifactId}::uuid and d.at <= ${at}
+       and ${
+         dated
+           ? sql`not exists (select 1 from revision_effective e
+                              where e.version_id = d.version_id and e.effective_at > ${at})`
+           : sql`true`
+       }
+     order by d.revision_no desc`.execute(trx);
+  const scopes = new Map<string, { axis: string; value: string; pending: boolean }[]>();
+  if (scoped && rows.length > 0) {
+    const { rows: held } = await sql<{
+      version_id: string;
+      axis: string;
+      value: string;
+      pending: boolean;
+    }>`
+      select s.version_id, s.axis, s.value,
+             ((s.party_principal is not null or s.party_group is not null)
+               and not exists (select 1 from revision_acceptance a
+                                where a.version_id = s.version_id and a.axis = s.axis
+                                  and a.value = s.value and a.at <= ${at})) as pending
+        from revision_scope s
+       where s.artifact_id = ${artifactId}::uuid`.execute(trx);
+    for (const row of held) {
+      scopes.set(row.version_id, [
+        ...(scopes.get(row.version_id) ?? []),
+        { axis: row.axis, value: row.value, pending: row.pending },
+      ]);
+    }
+  }
+  const profile = scope === null ? {} : { [scope.axis]: [scope.value] };
+  const number = effectiveRevision(
+    rows.map((row) => ({ number: row.revision_no, scopes: scopes.get(row.version_id) ?? [] })),
+    profile,
+  );
+  const row = rows.find((each) => each.revision_no === number);
+  if (!row) return { revision: null, why: 'none' };
+  const matched = (scopes.get(row.version_id) ?? []).some(
+    (each) =>
+      !each.pending && scope !== null && each.axis === scope.axis && each.value === scope.value,
+  );
+  return {
+    revision: { number: row.revision_no, versionId: row.version_id, at: row.at },
+    why: matched ? 'scoped' : 'unscoped',
+  };
 }

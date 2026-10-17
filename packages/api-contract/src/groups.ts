@@ -159,6 +159,11 @@ export const groupRoutes = {
       401: unauthenticated,
       403: forbidden,
       404: missing,
+      409: {
+        description:
+          'group_in_scope: a scope names the group to accept a revision, now or in a revision designated',
+        schema: ErrorBody,
+      },
     },
   },
 } as const satisfies Record<string, RouteContract>;

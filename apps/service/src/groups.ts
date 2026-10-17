@@ -116,6 +116,9 @@ export function groupHandlers() {
     deleteGroup: async (request: FastifyRequest, { trx }: Authorised): Promise<GroupDeleted> => {
       const { id } = request.params as GroupParams;
       const answer = await deleteGroup(trx, id);
+      if ('refused' in answer && answer.refused === 'group.in_scope') {
+        throw refused(409, 'group.in_scope', 'A scope names this group to accept a revision.');
+      }
       if ('refused' in answer) throw notFound();
       return answer;
     },

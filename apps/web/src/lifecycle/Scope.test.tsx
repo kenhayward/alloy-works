@@ -53,6 +53,18 @@ function service() {
         pending: [],
       });
     }
+    if (url.pathname === `/v1/components/${PRINTER}/effective`) {
+      const scope = url.searchParams.get('scope');
+      return json(200, {
+        scope: scope === null ? null : { axis: 'market', value: scope.split(':')[1] },
+        at: url.searchParams.get('at') ?? '2026-10-17T09:00:00.000Z',
+        revision:
+          scope === 'market:us'
+            ? { number: 2, version: version.id, at: '2026-10-17T08:00:00.000Z' }
+            : { number: 1, version: version.id, at: '2026-10-01T08:00:00.000Z' },
+        why: scope === 'market:us' ? 'scoped' : 'unscoped',
+      });
+    }
     if (url.pathname === `/v1/components/${PRINTER}/acceptance`) {
       return json(200, { ...(body as object), accepted: true });
     }
@@ -143,5 +155,88 @@ describe('scopes in a header (the R15 plan, R15-B, R15-E)', () => {
       path: `/v1/components/${PRINTER}/scope`,
       body: { scope: [{ axis: 'market', value: 'us', party: { kind: 'principal', id: GRACE } }] },
     });
+  });
+
+  it('LIF-047 keeps a group named to accept as it was, saved unchanged', async () => {
+    const { client, asked } = service();
+    const REVIEWERS = '33333333-3333-4333-8333-333333333333';
+    render(
+      <ScopeButton
+        client={client}
+        kind="component"
+        id={PRINTER}
+        title="Install the printer"
+        scope={{
+          scope: [
+            {
+              axis: 'market',
+              value: 'eu',
+              party: { kind: 'group', id: REVIEWERS, name: 'Reviewers' },
+            },
+          ],
+          pending: [],
+        }}
+        onSaved={() => undefined}
+      />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Effective for' }));
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Effective for: Install the printer',
+    });
+    const market = await within(dialog).findByRole('group', { name: 'Market' });
+    expect(
+      within(market).getByRole('combobox', { name: 'Accepted in Europe by' }),
+    ).toHaveDisplayValue('Group: Reviewers');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    await waitFor(() =>
+      expect(asked.at(-1)).toMatchObject({
+        method: 'PUT',
+        body: { scope: [{ axis: 'market', value: 'eu', party: { kind: 'group', id: REVIEWERS } }] },
+      }),
+    );
+  });
+
+  it('LIF-043 answers, for a scope and a day anybody may ask, the one revision effective there then', async () => {
+    const { client, asked } = service();
+    render(
+      <ScopeButton
+        client={client}
+        kind="component"
+        id={PRINTER}
+        title="Install the printer"
+        scope={{ scope: [], pending: [] }}
+        onSaved={() => undefined}
+        mayEdit={false}
+      />,
+    );
+    // A reader is asked what was effective alone.
+    await userEvent.click(screen.getByRole('button', { name: 'Effective for' }));
+    const whole = await screen.findByRole('dialog', { name: 'Effective for: Install the printer' });
+    expect(within(whole).queryByRole('button', { name: 'Save' })).toBeNull();
+    const dialog = within(whole).getByRole('form', { name: 'What was effective' });
+    await userEvent.selectOptions(
+      within(dialog).getByRole('combobox', { name: 'Where' }),
+      await within(dialog).findByRole('option', { name: 'Market: United States' }),
+    );
+    const when = within(dialog).getByLabelText('When');
+    await userEvent.clear(when);
+    await userEvent.type(when, '2026-10-17T10:00');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Ask' }));
+    expect(await within(dialog).findByRole('status')).toHaveTextContent(
+      'Revision 2, effective for Market: United States then.',
+    );
+    const query = asked.at(-1)!.path;
+    expect(query).toBe(`/v1/components/${PRINTER}/effective`);
+
+    await userEvent.selectOptions(
+      within(dialog).getByRole('combobox', { name: 'Where' }),
+      'Market: Europe',
+    );
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Ask' }));
+    await waitFor(() =>
+      expect(within(dialog).getByRole('status')).toHaveTextContent(
+        'Revision 1, effective everywhere then: none was effective for Market: Europe.',
+      ),
+    );
   });
 });
