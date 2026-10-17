@@ -30,8 +30,10 @@ describe('the module an address belongs to', () => {
     expect(moduleOf('#/administrator')).toBe('Components');
   });
 
-  it('names Templates for the templates list', () => {
+  it('names Templates for the templates list, the cohorts list and a cohort', () => {
     expect(moduleOf('#/templates')).toBe('Templates');
+    expect(moduleOf('#/cohorts')).toBe('Templates');
+    expect(moduleOf('#/cohorts/cccccccc-0000-4000-8000-000000000001')).toBe('Templates');
   });
 
   it('names Query definitions for the list, a definition and a new one', () => {

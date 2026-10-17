@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto';
 import type {
+  CohortList,
+  CohortListQuery,
   CohortParams,
   CohortRun,
   CohortSpaceParams,
@@ -8,6 +10,7 @@ import type {
   SubmitCohortBody,
 } from '@alloy-works/api-contract';
 import {
+  listReadableCohorts,
   readCohortAs,
   readVersion,
   rerunCohort,
@@ -24,6 +27,7 @@ import { authoriseAt, callerOf, notFound, type Authorised } from './access.js';
 import { storageUnavailable } from './errors.js';
 import { refused } from './wire-codes.js';
 import { jobView } from './jobs.js';
+import { cursorFor, pageAsked } from './listing.js';
 
 export function cohortView(cohort: StoredCohort): CohortView {
   return {
@@ -149,6 +153,30 @@ export function cohortHandlers(
             "This template's required components run queries, which documents made in bulk cannot run yet. Make each document on its own.",
           );
       }
+    },
+
+    /** The cohorts the caller may read, sorted, filtered and paged (SCH-065; the R14 plan, R14-A). */
+    listCohorts: async (request: FastifyRequest): Promise<CohortList> => {
+      const query = request.query as CohortListQuery;
+      const asked = pageAsked('cohorts', query);
+      const listed = await db.withTenant(tenantOf(request), (trx) =>
+        listReadableCohorts(trx, callerOf(request).principalId, asked, {
+          ...(query.template === undefined ? {} : { template: query.template }),
+          ...(query.state === undefined ? {} : { state: query.state }),
+        }),
+      );
+      if (!listed) throw new Error('A signed-in principal is not in its own tenant');
+      return {
+        items: listed.items.map((each) => ({
+          id: each.id,
+          title: each.title,
+          template: { ...each.template },
+          space: { ...each.space },
+          requestedAt: each.requestedAt.toISOString(),
+          rows: { ...each.rows },
+        })),
+        next: cursorFor('cohorts', asked.sort, asked.order, listed.snapshot, listed.next),
+      };
     },
 
     getCohort: async (request: FastifyRequest): Promise<CohortView> => {

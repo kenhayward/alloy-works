@@ -98,6 +98,7 @@ export function TemplateList({ client }: { readonly client: Client }) {
       <section aria-labelledby="templates-heading">
         <div className={styles['titleRow']}>
           <h1 id="templates-heading">Templates</h1>
+          <a href="#/cohorts">Cohorts</a>
         </div>
         <SortChooser options={SORTS} chosen={sort} onChoose={setSort} />
         <p className={styles['summary']}>

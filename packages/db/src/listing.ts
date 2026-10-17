@@ -54,6 +54,11 @@ export const listingSorts = {
   iterations: { saved: { types: ['timestamptz'], order: 'desc' } },
   // The deleted a reader may read, the latest deleted first (the DL plan, DL-H).
   deleted: { deleted: { types: ['timestamptz'], order: 'desc' } },
+  // The cohorts a reader may read, the newest first or by their titles (SCH-065; the R14 plan, R14-A).
+  cohorts: {
+    requested: { types: ['timestamptz'], order: 'desc' },
+    title: { types: ['text'], order: 'asc' },
+  },
 } as const satisfies Record<
   string,
   Record<string, { types: readonly KeyType[]; order: SortOrder }>

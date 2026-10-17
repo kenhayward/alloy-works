@@ -67,17 +67,20 @@ export function UsedInButton({
   id,
   title,
   className,
+  label = 'Used in',
 }: {
   client: Client;
   id: string;
   title: string;
   className?: string | undefined;
+  /** Its words, where `Used in` alone would not say which component (STR-075). */
+  label?: string;
 }) {
   const [open, setOpen] = useState(false);
   return (
     <>
       <button type="button" className={className} onClick={() => setOpen(true)}>
-        Used in
+        {label}
       </button>
       {open && (
         <UsedInDialog client={client} id={id} title={title} onClose={() => setOpen(false)} />

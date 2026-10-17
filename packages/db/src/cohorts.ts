@@ -7,6 +7,17 @@ import {
 } from './documents.js';
 import { outlineDocumentSchema } from '@alloy-works/domain';
 import { loadReadableSet } from './access-facts.js';
+import {
+  checkedLimit,
+  isListingRequest,
+  keysetPage,
+  listingSorts,
+  snapshotFor,
+  sortColumns,
+  type Listed,
+  type ListingRequest,
+  type SortOf,
+} from './listing.js';
 import { enqueueJob } from './queue.js';
 import { mayReadArtifact } from './queryDefinitions.js';
 import { inSavepoint } from './savepoint.js';
@@ -370,4 +381,98 @@ export async function pendingRows(trx: TenantTransaction, cohort: string): Promi
     .orderBy('row_no')
     .execute();
   return rows.map((each) => each.row_no);
+}
+
+/** A cohort as a listing shows it (SCH-065): what it is, where, from what, and how its rows stand. */
+export interface CohortSummary {
+  readonly id: string;
+  readonly title: string;
+  readonly template: { readonly id: string; readonly version: string; readonly name: string };
+  readonly space: { readonly id: string; readonly name: string };
+  readonly requestedAt: Date;
+  readonly rows: { readonly made: number; readonly failed: number; readonly pending: number };
+}
+
+/** How a cohort stands: failed where a row failed, pending where one waits, else complete. */
+export type CohortState = 'complete' | 'failed' | 'pending';
+
+/**
+ * **The cohorts a principal may read** (SCH-065, TPL-040; the R14 plan, R14-A): those in a space they
+ * may read, a page at a time by keyset over the sort asked for and then the id, as of the walk's first
+ * snapshot, filtered by template and by state. Undefined where the tenant holds no such principal.
+ */
+export async function listReadableCohorts(
+  trx: TenantTransaction,
+  principalId: string,
+  request: ListingRequest<SortOf<'cohorts'>> = { limit: 100 },
+  filter: { readonly template?: string; readonly state?: CohortState } = {},
+): Promise<Listed<CohortSummary> | undefined> {
+  const limit = checkedLimit(request.limit);
+  const sort = request.sort ?? 'requested';
+  const { types, order: byDefault } = listingSorts.cohorts[sort];
+  if (!isListingRequest(request, types)) {
+    throw new Error('A page request names a cursor no listing gave out');
+  }
+  const readable = await loadReadableSet(trx, principalId);
+  if (!readable) return undefined;
+  const snapshot = await snapshotFor(trx, request.snapshot);
+  const spaces = [...readable.spaces];
+  const counted = sql<number>`(select count(*) from cohort_row r where r.cohort_id = c.id`;
+  let inner = trx
+    .selectFrom('cohort as c')
+    .innerJoin('space as s', 's.id', 'c.space_id')
+    .select([
+      'c.id',
+      'c.title',
+      'c.requested_at',
+      's.id as space_id',
+      's.name as space_name',
+      sql<string>`c.resolution -> 'template' ->> 'id'`.as('template_id'),
+      sql<string>`c.resolution -> 'template' ->> 'version'`.as('template_version'),
+      sql<string>`coalesce(c.resolution -> 'definition' ->> 'name', '')`.as('template_name'),
+      sql<number>`${counted} and r.state = 'made')::integer`.as('made'),
+      sql<number>`${counted} and r.state = 'failed')::integer`.as('failed'),
+      sql<number>`${counted} and r.state = 'pending')::integer`.as('pending'),
+    ])
+    .select(sortColumns([sort === 'title' ? sql`c.title` : sql`c.requested_at`]))
+    // A cohort is made, never changed, so a later one is the only thing a walk could meet: it is left
+    // to the keyset, which a newer row sorts before when the walk is newest first.
+    .where(
+      spaces.length === 0 ? sql<boolean>`false` : sql<boolean>`c.space_id = any(${spaces}::uuid[])`,
+    );
+  if (filter.template !== undefined) {
+    inner = inner.where(sql<boolean>`c.resolution -> 'template' ->> 'id' = ${filter.template}`);
+  }
+  if (filter.state === 'failed') inner = inner.where(sql<boolean>`${counted} and r.state = 'failed') > 0`);
+  if (filter.state === 'pending') {
+    inner = inner.where(sql<boolean>`${counted} and r.state = 'failed') = 0 and ${counted} and r.state = 'pending') > 0`);
+  }
+  if (filter.state === 'complete') {
+    inner = inner.where(sql<boolean>`${counted} and r.state <> 'made') = 0`);
+  }
+  const { rows, next } = await keysetPage<{
+    id: string;
+    title: string;
+    requested_at: Date;
+    space_id: string;
+    space_name: string;
+    template_id: string;
+    template_version: string;
+    template_name: string;
+    made: number;
+    failed: number;
+    pending: number;
+  }>(trx, inner, types, request.order ?? byDefault, limit, request.after);
+  return {
+    items: rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      template: { id: row.template_id, version: row.template_version, name: row.template_name },
+      space: { id: row.space_id, name: row.space_name },
+      requestedAt: row.requested_at,
+      rows: { made: row.made, failed: row.failed, pending: row.pending },
+    })),
+    next,
+    snapshot,
+  };
 }

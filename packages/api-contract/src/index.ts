@@ -415,6 +415,9 @@ export {
   templateMoveRoutes,
 } from './template-moves.js';
 export {
+  CohortList,
+  CohortListQuery,
+  CohortSummaryView,
   CohortParams,
   CohortRun,
   CohortSpaceParams,

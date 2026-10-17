@@ -345,7 +345,8 @@ const operationTags = {
   Search: ['search'],
   Impact: ['getArtifactImpact', 'getArtifactReferences', 'submitImpactReport'],
   Jobs: ['getJob', 'cancelJob', 'downloadJob'],
-  Cohorts: ['submitCohort', 'getCohort', 'rerunCohort'],
+  Cohorts: ['submitCohort', 'listCohorts',
+    'getCohort', 'rerunCohort'],
   Relationships: [
     'makeRelationship',
     'getRelationship',
@@ -541,6 +542,8 @@ const descriptions: Readonly<Record<string, string>> = {
     'Removes a relationship and records the removal, answering it as it was. Needs read on both ends and the permission the type declares at each.',
   submitCohort:
     "Makes a document in this space for each row of parameters, from one template, as a job: answered at once with the cohort, every row pending, and its job, to follow with getJob. The template and what it names are resolved now, once, and every row is made from that, rerun or not. Rows are given inline, at most 1,000, or taken from a query result's version the caller may read, a parameter for each column. Each document takes the title given, {name} standing for the row's value of that parameter. Each row is made in a transaction of its own: one that is refused leaves nothing and is reported, and the rest are made. Needs create in the space.",
+  listCohorts:
+    'Lists the cohorts in spaces the caller may read, newest first or by title, a page at a time by an opaque cursor: each with its title, template, space, when it was asked for and how many of its rows were made, failed or wait. Filtered by template, and by state: complete, failed where a row failed, or pending where a row waits and none failed.',
   getCohort:
     "Reads a cohort: its template version, its title, where its rows came from, and every row in order, its parameters, its document once made, or why it failed, and how many times it was tried. Anybody who may read the cohort's space reads it.",
   rerunCohort:
