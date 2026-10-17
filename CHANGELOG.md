@@ -11,6 +11,10 @@ Reuse's eighteenth slice: query limits and cost (the R18 plan).
 
 - **Query limits and cost.** No more of an environment's query runs are in flight at once than its limit, four unless an administrator lowers it in Administration > **Query usage**; one past it waits a moment, then fails as throttled and can be tried again, never with a partial result. Every run is recorded with what it cost, and **Query usage** shows the totals by query and by document over a period, with every run to download as CSV.
 
+### Fixed
+
+- **Small buttons in a component's header.** **Dates** and **Effective for** are large enough to press reliably wherever the header wraps.
+
 ## 0.188.0 - 2026-10-17 (PR #697)
 
 Reuse's seventeenth slice: publication shares (the R17 plan).
