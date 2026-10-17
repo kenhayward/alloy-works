@@ -590,6 +590,12 @@ export const DocumentTextsView = z.object({
         lock: Lock.nullable().describe(
           'Who holds the component now and until when: null where nobody does, or where the caller may not read it',
         ),
+        lines: z
+          .array(z.string())
+          .optional()
+          .describe(
+            "The component's open divergent lines, by name (LIF-046), whichever is shown; absent where it has not diverged, or where the caller may not read it",
+          ),
         line: z
           .object({ id: z.string(), name: z.string() })
           .optional()

@@ -283,7 +283,9 @@ export async function listWorkflows(trx: TenantTransaction): Promise<WorkflowSum
   const { rows } = await sql<{ kind: WorkflowKind; state: string; n: number }>`
     select t.kind, t.to_state as state, count(*)::int as n
       from (select distinct on (artifact_id) artifact_id, kind, to_state
-              from workflow_transition order by artifact_id, id desc) t
+              from workflow_transition
+             where ${(await linesStored(trx)) ? sql`line_id is null` : sql`true`}
+             order by artifact_id, id desc) t
      where not coalesce((select d.act = 'deleted' from artifact_deletion d
                           where d.artifact_id = t.artifact_id order by d.id desc limit 1), false)
      group by t.kind, t.to_state`.execute(trx);

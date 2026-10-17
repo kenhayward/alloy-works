@@ -25,6 +25,7 @@ const row = (id: string, title: string, space: string, by: { id: string; name: s
   changedBy: by,
   state: { key: 'in_review', name: 'In review' },
   pastReview: title === 'Replace the toner',
+  ...(title === 'Install the printer' ? { lines: ['US'] } : {}),
 });
 
 const SPACES = [
@@ -348,5 +349,13 @@ describe('the components list', () => {
     // Past its review day (LIF-018), and only that one.
     expect(within(link.closest('tr')!).getByText('Past review')).toBeInTheDocument();
     expect(screen.getAllByText('Past review')).toHaveLength(1);
+  });
+
+  it('LIF-046 says a component has diverged, naming its lines', async () => {
+    const { client } = service();
+    render(<ComponentList client={client} principalId="p9" />);
+    const link = await screen.findByRole('link', { name: 'Install the printer' });
+    expect(within(link.closest('tr')!).getByText('Diverged: US')).toBeInTheDocument();
+    expect(screen.getAllByText(/^Diverged/)).toHaveLength(1);
   });
 });

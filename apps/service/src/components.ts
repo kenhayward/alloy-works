@@ -35,6 +35,7 @@ import {
   workflowStates,
   headVersion,
   lineNumbers,
+  openLinesOf,
   readLines,
 } from '@alloy-works/db';
 import { decide, type EffectiveField } from '@alloy-works/domain';
@@ -333,7 +334,7 @@ export function componentHandlers(
       const principal = principalOf(request).principalId;
       const spaces = query.spaces?.split(',');
       const types = query.types?.split(',');
-      const { page, states, past } = await db.withTenant(tenantOf(request), async (trx) => {
+      const { page, states, past, open } = await db.withTenant(tenantOf(request), async (trx) => {
         const page = await listReadableComponents(trx, principal, asked, {
           ...(spaces === undefined ? {} : { spaces }),
           ...(types === undefined ? {} : { types }),
@@ -342,7 +343,9 @@ export function componentHandlers(
         // Each one's workflow state now (WF-G).
         const states = await workflowStates(trx, page?.items.map((item) => item.id) ?? []);
         const past = await pastReviewOf(trx, page?.items.map((item) => item.id) ?? []);
-        return { page, states, past };
+        // Each one's open lines (LIF-046; R16-E).
+        const open = await openLinesOf(trx, page?.items.map((item) => item.id) ?? []);
+        return { page, states, past, open };
       });
       if (!page) throw new Error('A signed-in principal is not in its own tenant');
       return {
@@ -357,6 +360,7 @@ export function componentHandlers(
           changedBy: item.changedBy,
           state: stateOf(states, item.id),
           pastReview: past.has(item.id),
+          ...(open.has(item.id) ? { lines: open.get(item.id)! } : {}),
         })),
         next: cursorFor('components', asked.sort, asked.order, page.snapshot, page.next),
         total: page.total,
@@ -411,7 +415,12 @@ export function componentHandlers(
       const lock = await readLock(trx, id);
       // The caller's own, and only its time (RC-F): what a closed tab left that was never made a
       // version, offered as Recover. What it holds is read only under the lock.
-      const unsaved = await newestUncutIteration(trx, { artifactId: id, principalId });
+      // The line's own unsaved work, never another's (the R16 final review).
+      const unsaved = await newestUncutIteration(trx, {
+        artifactId: id,
+        principalId,
+        ...(line === undefined ? {} : { line }),
+      });
       // The session a reload names, the caller's own: where its sequence stands, so the reload goes
       // on past what was saved rather than under it (component-editor.md, "Undo across a reload").
       const { session } = request.query as ComponentQuery;

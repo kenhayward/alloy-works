@@ -1075,7 +1075,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   beside the main one, begun from its approved revision - a market's wording, say - with its own
   drafts, approvals and scope, served wherever its scope applies, and never putting the main line back
   to draft. **Line** in the header names each line, the revision it diverged from, and which is read;
-  a document's reference served from a line says so.
+  a list, a search result and a document's reference say a component has diverged, and which line a
+  reference shows. **Bring back**, on a line, compares it with the main line block by block and takes
+  the line's side of the blocks chosen into a new main-line version; the line closes, and what was
+  carried and what was left behind are recorded.
 - **Revisions effective by scope.** A component's or document's header offers **Effective for**: the
   markets or sites, condition axis values, its next revision is effective for, while another revision
   stays effective elsewhere; a document reads, publishes and baselines the revision effective under its

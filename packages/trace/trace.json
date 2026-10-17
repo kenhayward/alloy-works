@@ -18596,6 +18596,14 @@
           "howItIsMet": "A component's divergent line, `artifact_line`, names the designated revision it diverged from and when; its versions are its own head, numbered below the main line's, its workflow and scope its own; `GET /v1/components/{id}/lines` lists them to any reader ([Lines](#lines))"
         },
         {
+          "id": "LIF-045",
+          "howItIsMet": "A line is brought back only after `GET .../lines/{line}/comparison`, naming both heads and each block that differs, and only from those heads: the author takes the line's side of each block carried; the main line gets a new version, the line closes, and `line_return` records each block carried and left behind, audited `line.returned` - never an overwrite ([Lines](#lines))"
+        },
+        {
+          "id": "LIF-046",
+          "howItIsMet": "A component with an open line says so wherever it appears: its page's **Line** names every line and which is read; its list row and its search result say **Diverged** with the lines' names; each reference in a document says the line the version shown is on, or **Main line; also** the others ([Lines](#lines))"
+        },
+        {
           "id": "VER-019",
           "howItIsMet": "`baseline_value` holds each bound value and its provenance, pinned at the same instant as the versions"
         },
@@ -20165,13 +20173,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 435,
+      "line": 437,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 448,
+      "line": 450,
       "kind": "title"
     },
     {
@@ -20519,7 +20527,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1381,
+      "line": 1396,
       "kind": "title"
     },
     {
@@ -21773,127 +21781,139 @@
     {
       "id": "LIF-001",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 160,
+      "line": 161,
       "kind": "title"
     },
     {
       "id": "LIF-002",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 160,
+      "line": 161,
       "kind": "title"
     },
     {
       "id": "LIF-004",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 775,
+      "line": 873,
       "kind": "rule"
     },
     {
       "id": "LIF-004",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 738,
+      "line": 836,
       "kind": "title"
     },
     {
       "id": "LIF-008",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 304,
+      "line": 305,
       "kind": "title"
     },
     {
       "id": "LIF-010",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 324,
+      "line": 325,
       "kind": "rule"
     },
     {
       "id": "LIF-010",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 304,
+      "line": 305,
       "kind": "title"
     },
     {
       "id": "LIF-015",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 685,
+      "line": 783,
       "kind": "title"
     },
     {
       "id": "LIF-016",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 685,
+      "line": 783,
       "kind": "title"
     },
     {
       "id": "LIF-018",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 685,
+      "line": 783,
       "kind": "title"
     },
     {
       "id": "LIF-042",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 427,
+      "line": 428,
       "kind": "title"
     },
     {
       "id": "LIF-043",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 427,
+      "line": 428,
       "kind": "title"
     },
     {
       "id": "LIF-044",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 540,
+      "line": 541,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-045",
+      "file": "apps/service/src/workflow-routes.test.ts",
+      "line": 696,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-046",
+      "file": "apps/service/src/workflow-routes.test.ts",
+      "line": 541,
       "kind": "title"
     },
     {
       "id": "LIF-047",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 427,
+      "line": 428,
       "kind": "title"
     },
     {
       "id": "LIF-050",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 347,
+      "line": 348,
       "kind": "title"
     },
     {
       "id": "LIF-051",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 396,
+      "line": 397,
       "kind": "title"
     },
     {
       "id": "LIF-052",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 396,
+      "line": 397,
       "kind": "title"
     },
     {
       "id": "LIF-054",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 174,
+      "line": 175,
       "kind": "title"
     },
     {
       "id": "LIF-061",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 279,
+      "line": 280,
       "kind": "rule"
     },
     {
       "id": "LIF-061",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 221,
+      "line": 222,
       "kind": "title"
     },
     {
       "id": "VER-059",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 347,
+      "line": 348,
       "kind": "title"
     },
     {
@@ -22481,13 +22501,19 @@
     {
       "id": "LIF-018",
       "file": "apps/web/src/editor/ComponentList.test.tsx",
-      "line": 340,
+      "line": 341,
       "kind": "title"
     },
     {
       "id": "LIF-020",
       "file": "apps/web/src/editor/ComponentList.test.tsx",
-      "line": 267,
+      "line": 268,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-046",
+      "file": "apps/web/src/editor/ComponentList.test.tsx",
+      "line": 354,
       "kind": "title"
     },
     {
@@ -22763,7 +22789,13 @@
     {
       "id": "LIF-044",
       "file": "apps/web/src/lifecycle/Lines.test.tsx",
-      "line": 60,
+      "line": 88,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-045",
+      "file": "apps/web/src/lifecycle/Lines.test.tsx",
+      "line": 114,
       "kind": "title"
     },
     {
@@ -23031,9 +23063,15 @@
       "kind": "title"
     },
     {
+      "id": "LIF-046",
+      "file": "apps/web/src/search/SearchPage.test.tsx",
+      "line": 149,
+      "kind": "title"
+    },
+    {
       "id": "SCH-003",
       "file": "apps/web/src/search/SearchPage.test.tsx",
-      "line": 336,
+      "line": 350,
       "kind": "title"
     },
     {
@@ -23045,25 +23083,25 @@
     {
       "id": "SCH-058",
       "file": "apps/web/src/search/SearchPage.test.tsx",
-      "line": 336,
+      "line": 350,
       "kind": "title"
     },
     {
       "id": "SCH-060",
       "file": "apps/web/src/search/SearchPage.test.tsx",
-      "line": 395,
+      "line": 409,
       "kind": "title"
     },
     {
       "id": "SCH-061",
       "file": "apps/web/src/search/SearchPage.test.tsx",
-      "line": 230,
+      "line": 244,
       "kind": "title"
     },
     {
       "id": "SCH-063",
       "file": "apps/web/src/search/SearchPage.test.tsx",
-      "line": 230,
+      "line": 244,
       "kind": "title"
     },
     {
@@ -23577,15 +23615,21 @@
       "kind": "title"
     },
     {
+      "id": "LIF-046",
+      "file": "apps/web/src/structure/DocumentText.test.tsx",
+      "line": 107,
+      "kind": "title"
+    },
+    {
       "id": "REU-011",
       "file": "apps/web/src/structure/DocumentText.test.tsx",
-      "line": 492,
+      "line": 505,
       "kind": "title"
     },
     {
       "id": "REU-015",
       "file": "apps/web/src/structure/DocumentText.test.tsx",
-      "line": 492,
+      "line": 505,
       "kind": "title"
     },
     {
@@ -25385,7 +25429,13 @@
     {
       "id": "LIF-044",
       "file": "packages/db/src/lines.test.ts",
-      "line": 169,
+      "line": 178,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-045",
+      "file": "packages/db/src/lines.test.ts",
+      "line": 339,
       "kind": "title"
     },
     {
@@ -26489,7 +26539,7 @@
     {
       "id": "LIF-030",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 212,
+      "line": 213,
       "kind": "title"
     },
     {
@@ -27233,7 +27283,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 734,
+      "line": 737,
       "kind": "title"
     },
     {
@@ -28740,6 +28790,12 @@
       "id": "TAB-054",
       "file": "packages/domain/src/word/write.test.ts",
       "line": 5027,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-045",
+      "file": "packages/domain/src/workflow/lines.test.ts",
+      "line": 24,
       "kind": "title"
     },
     {

@@ -6,6 +6,7 @@ import {
   type SearchFilters,
   type Tenant,
   type TenantDatabase,
+  openLinesOf,
 } from '@alloy-works/db';
 import type { SearchKind } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
@@ -46,7 +47,10 @@ export function sentenceFor(answer: SearchAnswer): string {
   }
 }
 
-function view(answer: SearchAnswer): SearchAnswerView {
+function view(
+  answer: SearchAnswer,
+  open: ReadonlyMap<string, readonly string[]> = new Map(),
+): SearchAnswerView {
   const message = sentenceFor(answer);
   if (answer.outcome === 'nothing_to_match') {
     return { outcome: answer.outcome, excluded: [...answer.excluded], message };
@@ -94,6 +98,10 @@ function view(answer: SearchAnswer): SearchAnswerView {
       baseline: each.baseline === null ? null : { ...each.baseline },
       thread: each.thread === null ? null : { ...each.thread },
       state: each.state === null ? null : { ...each.state },
+      // A component diverged says so (LIF-046; R16-E).
+      ...(each.kind === 'component' && open.has(each.artifactId)
+        ? { lines: [...open.get(each.artifactId)!] }
+        : {}),
       section:
         each.section === null
           ? null
@@ -176,8 +184,8 @@ export function searchHandlers(
           'Search every version or one baseline, not both.',
         );
       }
-      const answer = await db.withTenant(tenantOf(request), (trx) =>
-        searchWords(trx, principalOf(request).principalId, query.q ?? '', {
+      const { answer, open } = await db.withTenant(tenantOf(request), async (trx) => {
+        const found = await searchWords(trx, principalOf(request).principalId, query.q ?? '', {
           ...(query.offset === undefined ? {} : { offset: Number(query.offset) }),
           ...(query.limit === undefined ? {} : { limit: Number(query.limit) }),
           filters: filtersOf(query),
@@ -185,8 +193,14 @@ export function searchHandlers(
             query.baseline === undefined
               ? (query.versions ?? 'latest')
               : { baseline: query.baseline },
-        }),
-      );
+        });
+        // The open lines of each component found: of results the reader may read alone.
+        const components =
+          found !== undefined && found !== 'baseline_not_found' && found.outcome === 'results'
+            ? found.items.filter((each) => each.kind === 'component').map((each) => each.artifactId)
+            : [];
+        return { answer: found, open: await openLinesOf(trx, components) };
+      });
       if (answer === 'baseline_not_found') {
         throw new AppError(
           404,
@@ -214,6 +228,7 @@ export function searchHandlers(
             relations: [],
           },
         },
+        open,
       );
     },
   };

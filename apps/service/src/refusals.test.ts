@@ -219,6 +219,9 @@ describe('the rule behind a refusal', () => {
       'group.in_scope',
       // The R16 plan's (R16-B): a line's name the component's other line holds.
       'line.name_taken',
+      // The R16 plan's (R16-F): a line brought back already; a block carried that does not differ.
+      'line.closed',
+      'carry.invalid',
       // The WF6 plan's (WF6-C): no template, already its newest, or not its newest.
       'template.none',
       'template.current',

@@ -44,6 +44,8 @@ interface Result {
   } | null;
   /** A component's or a document's state now, a section's its document's (WF-H). */
   readonly state?: { readonly key: string; readonly name: string } | null;
+  /** A component's open divergent lines (LIF-046); absent where it has not diverged. */
+  readonly lines?: readonly string[];
   /** A section's document and the components it places (SCH-053); absent from a service before R14. */
   readonly section?: {
     readonly document: { readonly id: string; readonly title: string };
@@ -562,6 +564,9 @@ export function SearchPage({
                     </p>
                     <h2>{link === null ? item.title : <a href={link}>{item.title}</a>}</h2>
                     {item.state && <StateLozenge state={item.state} />}
+                    {(item.lines?.length ?? 0) > 0 && (
+                      <Chip>{`Diverged: ${item.lines!.join(', ')}`}</Chip>
+                    )}
                     {found !== null && <p className={styles['about']}>{found}</p>}
                     {where !== null && <p className={styles['about']}>{where}</p>}
                     {item.passage.length > 0 && (

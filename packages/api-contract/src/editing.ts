@@ -97,13 +97,24 @@ const HoldingSession = LowercaseUuid.describe(
   'The editing session asking, which must hold the lock on the component',
 );
 
-export const IterationListQuery = z.object({ session: HoldingSession, ...pageQuery });
+export const IterationListQuery = z.object({
+  session: HoldingSession,
+  line: LowercaseUuid.optional().describe(
+    "A component's divergent line whose iterations to read (LIF-044); its main line's where absent",
+  ),
+  ...pageQuery,
+});
 export type IterationListQuery = z.infer<typeof IterationListQuery>;
 
 export const SavedIterationParams = z.object({ id: z.uuid(), iteration: LowercaseUuid });
 export type SavedIterationParams = z.infer<typeof SavedIterationParams>;
 
-export const SavedIterationQuery = z.object({ session: HoldingSession });
+export const SavedIterationQuery = z.object({
+  session: HoldingSession,
+  line: LowercaseUuid.optional().describe(
+    "A component's divergent line whose iterations to read (LIF-044); its main line's where absent",
+  ),
+});
 export type SavedIterationQuery = z.infer<typeof SavedIterationQuery>;
 
 const IterationSummary = z.object({

@@ -257,6 +257,14 @@ const OTHER_TENANT_IDS: Readonly<
   readComponentEffective: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   divergeComponent: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   listComponentLines: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
+  compareComponentLine: async (tenant, db) => ({
+    id: await componentIdIn(tenant, db),
+    line: '00000000-0000-4000-8000-000000000001',
+  }),
+  bringComponentLineBack: async (tenant, db) => ({
+    id: await componentIdIn(tenant, db),
+    line: '00000000-0000-4000-8000-000000000001',
+  }),
   readDocumentEffective: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   archiveComponent: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   unarchiveComponent: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
@@ -538,6 +546,13 @@ const VALID_INPUT: Readonly<
   setDocumentScope: { payload: { scope: [] } },
   acceptComponentRevision: { payload: { revision: 1, axis: 'market', value: 'us' } },
   divergeComponent: { payload: { revision: 1, name: 'US' } },
+  bringComponentLineBack: {
+    payload: {
+      openedFrom: '00000000-0000-4000-8000-000000000001',
+      lineHead: '00000000-0000-4000-8000-000000000001',
+      carry: [],
+    },
+  },
   acceptDocumentRevision: { payload: { revision: 1, axis: 'market', value: 'us' } },
   decideQueryDefinitionGate: {
     payload: { transition: 'approve', version: SESSION, decision: 'approved' },

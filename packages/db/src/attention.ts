@@ -14,7 +14,7 @@ import { CREDENTIAL_CURRENT, credentialSetFor } from './connections.js';
 import { datesStored, dayOf } from './dates.js';
 import { readableArtifactsAs } from './readable-artifacts.js';
 import { newestUncutIteration } from './recovery.js';
-import { iterationRetained } from './retention.js';
+import { iterationLinesStored, iterationRetained } from './retention.js';
 import type { TenantTransaction } from './tables.js';
 import { newestDefinition, workflowStates } from './workflow.js';
 
@@ -187,7 +187,7 @@ async function withIterations(trx: TenantTransaction, me: string, readable: Read
     from iteration i
     join artifact a on a.id = i.artifact_id
     left join unsaved_discarded d on d.artifact_id = i.artifact_id and d.principal_id = ${me}
-    where i.principal_id = ${me} and ${iterationRetained('i')}
+    where i.principal_id = ${me} and ${iterationRetained('i', await iterationLinesStored(trx))}
       and ${readableArtifactsAs('a', readable)} and ${notArchivedAs('a')} and ${notDeletedAs('a')}
     group by i.artifact_id, d.up_to
     having d.up_to is null or max(i.created_at) > d.up_to

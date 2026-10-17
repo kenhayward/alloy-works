@@ -3,6 +3,21 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.187.0 - 2026-10-17 (PR #694)
+
+Reuse's sixteenth slice: divergent lines (the R16 plan).
+
+### Added
+
+- **Divergent lines.** A component can carry a line of revisions beside its main one, begun from one of its revisions, with its own drafts and approvals, served wherever its scope applies.
+- **Lines on the page.** A component's header offers **Begin a line** and, once it has one, **Line**, to open and edit each line apart; a document's reference served from a line says which.
+- **Bring a line back.** On a line, **Bring back** compares it with the main line block by block, takes the line's side of the blocks chosen into the main line, and closes it, recording what was carried and what was left behind.
+- **Diverged, wherever it appears.** A component's list row and search result say **Diverged** with its lines, and a document's reference says which line it shows.
+
+### Fixed
+
+- **A release check that failed by chance.** The check that the published API description matches the API no longer runs out of time on a busy build machine.
+
 ## 0.186.0 - 2026-10-17 (PR #690)
 
 Reuse's fifteenth slice: revisions effective by scope (the R15 plan).

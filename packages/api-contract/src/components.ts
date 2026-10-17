@@ -225,6 +225,10 @@ export const ComponentList = z.object({
         .describe('Who made its latest version; null for a version nobody authored'),
       state: WorkflowStateView,
       pastReview: z.boolean().describe('Whether its review-by day has passed (LIF-018)'),
+      lines: z
+        .array(z.string())
+        .optional()
+        .describe('Its open divergent lines, by name (LIF-046); absent where it has not diverged'),
     }),
   ),
   next: nextCursor,

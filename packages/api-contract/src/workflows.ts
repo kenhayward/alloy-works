@@ -432,6 +432,50 @@ export const LineView = z.object({
 });
 export type LineView = z.infer<typeof LineView>;
 
+export const LineParams = z.object({ id: z.uuid(), line: z.uuid() });
+export type LineParams = z.infer<typeof LineParams>;
+
+const BlockDifferenceView = z.object({
+  block: z.string(),
+  change: z
+    .enum(['changed', 'line', 'main'])
+    .describe('changed on either side; held by the line alone; held by the main line alone'),
+});
+
+/** Two lines compared, block by block (LIF-045; the R16 plan, R16-F). */
+export const LineComparisonView = z.object({
+  main: z.object({ id: z.uuid(), number: z.string() }).describe("The main line's latest version"),
+  line: z.object({ id: z.uuid(), number: z.string() }).describe("The line's head"),
+  differences: z
+    .array(
+      BlockDifferenceView.extend({
+        mainBlock: z.record(z.string(), z.unknown()).nullable().describe("The main line's block"),
+        lineBlock: z.record(z.string(), z.unknown()).nullable().describe("The line's block"),
+      }),
+    )
+    .describe("Each block that differs, in the main line's order, then the line's"),
+});
+export type LineComparisonView = z.infer<typeof LineComparisonView>;
+
+export const LineReturnBody = z.strictObject({
+  openedFrom: z.uuid().describe("The main line's latest version the comparison was read at"),
+  lineHead: z.uuid().describe("The line's head the comparison was read at"),
+  carry: z
+    .array(z.string().min(1).max(64))
+    .max(2000)
+    .describe("Each differing block to take the line's side of; every other keeps the main line's"),
+});
+export type LineReturnBody = z.infer<typeof LineReturnBody>;
+
+export const LineReturnView = z.object({
+  version: z
+    .object({ id: z.uuid(), number: z.string() })
+    .describe('The main-line version it made, or the latest where nothing was carried'),
+  carried: z.array(BlockDifferenceView),
+  left: z.array(BlockDifferenceView).describe('Each differing block left behind'),
+});
+export type LineReturnView = z.infer<typeof LineReturnView>;
+
 export const LinesView = z.object({
   lines: z.array(LineView).describe('Its lines, in the order they were begun; a component has few'),
 });
@@ -652,6 +696,56 @@ const effectiveRoute = (kind: 'component' | 'document') =>
   }) as const;
 
 export const workflowRoutes = {
+  compareComponentLine: {
+    operationId: 'compareComponentLine',
+    method: 'GET',
+    path: '/v1/components/{id}/lines/{line}/comparison',
+    summary: "Compare a component's divergent line with its main line, block by block",
+    tenantScoped: true,
+    access: read,
+    params: LineParams,
+    responses: {
+      200: { description: 'Each block that differs, both sides', schema: LineComparisonView },
+      401: unauthenticated,
+      403: { description: 'The caller may not read this component', schema: ErrorBody },
+      404: {
+        description: 'No such component, or open line of it, the caller may read',
+        schema: ErrorBody,
+      },
+    },
+  },
+  bringComponentLineBack: {
+    operationId: 'bringComponentLineBack',
+    method: 'POST',
+    path: '/v1/components/{id}/lines/{line}/return',
+    summary:
+      "Bring a component's divergent line back into its main line, block by block, and close it",
+    tenantScoped: true,
+    access: editing,
+    params: LineParams,
+    body: LineReturnBody,
+    responses: {
+      200: { description: 'Brought back, and what was carried and left', schema: LineReturnView },
+      400: {
+        description: 'carry_invalid: a block carried that does not differ',
+        schema: ErrorBody,
+      },
+      401: unauthenticated,
+      403: {
+        description: 'The caller may read the component but may not edit it',
+        schema: ErrorBody,
+      },
+      404: {
+        description: 'No such component, or line of it, the caller may read',
+        schema: ErrorBody,
+      },
+      409: {
+        description:
+          'version_precondition: either line moved since the comparison, which is to be read again; line_closed: it was brought back already; lock_held: somebody is editing it',
+        schema: ErrorBody,
+      },
+    },
+  },
   listComponentLines: {
     operationId: 'listComponentLines',
     method: 'GET',

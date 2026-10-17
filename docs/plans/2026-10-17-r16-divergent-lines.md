@@ -35,3 +35,17 @@ back, after a comparison, block by block, with what was left behind recorded.
 - **R16a**: 0112 (`artifact_line`, `line_closed`, `line_return`; `artifact_version.line_id` and the key; `workflow_transition.line_id`, its trigger and grant; `artifact_scope.line_id`; the audit kinds); the reads listing every version held to the main line; `diverge` and its route; `recordVersion` by line, the revision counted from per line; standing, moves, gates and scopes by line; a line's version not indexed. Tests: a line's versions numbered apart; the main line's reads, gates and publishing unchanged by a line; a line's save leaves the main line approved; a line's approval takes the next revision and is served in its scope.
 - **R16b**: the routes and view naming lines, each joining the route registries; the editor opening and saving a line, the editing iteration by line; the header, versions and each occurrence saying the line. Tests per place.
 - **R16c**: the comparison and the bring-back route and dialog; closing; the final review; the close.
+
+## Built
+
+R16a #692, R16b #693, and R16c with the close (0.187.0) #694. Departures: the pre-flight review moved
+R16-B to [ADR-0063](../decisions/0063-a-line-is-numbered-below-the-main-line.md), a line numbered below
+the main line, rather than a filter on about fifty reads; R16a also listed a component's lines, so
+LIF-044 was answered whole; and LIF-046 moved to R16c, with lists and search saying a component
+diverged. The final review found a line's unsaved work swept against the main line's cuts and offered
+as Recover on the main line, which an iteration's own line (0113) now holds apart; a line brought back
+under somebody's open session, now refused while the lock is held; and three state reads taking a
+line's state for the main line's; all fixed. Left: the component's one lock and search's entries stay
+the main line's (R16-H); the versions panel lists the main line's versions alone; a refused save names
+the current version by its stored number; approvals listed for a component mix its lines'; a line's
+workflow conditions are judged artifact-wide.

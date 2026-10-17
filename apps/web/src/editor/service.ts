@@ -307,7 +307,7 @@ export function sessionService(
         const { data, error, response } = await client.GET('/v1/components/{id}/iterations', {
           params: {
             path,
-            query: { session: current, ...(cursor === undefined ? {} : { cursor }) },
+            query: { session: current, ...onLine, ...(cursor === undefined ? {} : { cursor }) },
           },
         });
         if (!data) return { ok: false, code: readRefusalOf(response, error) };
@@ -370,7 +370,7 @@ export function sessionService(
       try {
         const { data, error, response } = await client.GET(
           '/v1/components/{id}/iterations/{iteration}',
-          { params: { path: { ...path, iteration: id }, query: { session: current } } },
+          { params: { path: { ...path, iteration: id }, query: { session: current, ...onLine } } },
         );
         if (!data) return { ok: false, code: readRefusalOf(response, error) };
         return { ok: true, content: data.content, values: data.values };

@@ -158,6 +158,8 @@ const WIRE_CODES = {
   'acceptance.not_party': 'acceptance_not_party',
   'group.in_scope': 'group_in_scope',
   'line.name_taken': 'line_name_taken',
+  'line.closed': 'line_closed',
+  'carry.invalid': 'carry_invalid',
   'template.none': 'template_none',
   'template.current': 'template_current',
   'template.not_latest': 'template_not_latest',

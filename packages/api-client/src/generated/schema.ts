@@ -867,6 +867,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/components/{id}/lines/{line}/comparison": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Compare a component's divergent line with its main line, block by block
+         * @description Compares a component's open divergent line with its main line, block by block: each block that differs, whether changed, held by the line alone or by the main line alone, with both sides, and the two versions compared, which bringing it back names. Needs read on the component.
+         */
+        get: operations["compareComponentLine"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/components/{id}/lines/{line}/return": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Bring a component's divergent line back into its main line, block by block, and close it
+         * @description Brings a component's divergent line back into its main line, needing edit, after a comparison: a new main-line version taking the line's side of each differing block carried and the main line's of every other, the main line's scope taking the line's values; the line is closed, and what was carried across and what was left behind are recorded. Refused where either line moved since the comparison. Audited.
+         */
+        post: operations["bringComponentLineBack"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/components/{id}/lock": {
         parameters: {
             query?: never;
@@ -11813,6 +11853,8 @@ export interface operations {
                             };
                             /** @description Whether its review-by day has passed (LIF-018) */
                             pastReview: boolean;
+                            /** @description Its open divergent lines, by name (LIF-046); absent where it has not diverged */
+                            lines?: string[];
                         }[];
                         /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
                         next: string | null;
@@ -14044,6 +14086,7 @@ export interface operations {
         parameters: {
             query: {
                 session: string & (unknown & unknown);
+                line?: string & (unknown & unknown);
                 cursor?: string;
                 limit?: string;
             };
@@ -14249,6 +14292,7 @@ export interface operations {
         parameters: {
             query: {
                 session: string & (unknown & unknown);
+                line?: string & (unknown & unknown);
             };
             header?: {
                 /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
@@ -14989,6 +15033,367 @@ export interface operations {
                 };
             };
             /** @description line_name_taken: another line of it has that name */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    compareComponentLine: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string;
+                line: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Each block that differs, both sides */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "main": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "number": "example"
+                     *       },
+                     *       "line": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "number": "example"
+                     *       },
+                     *       "differences": []
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description The main line's latest version */
+                        main: {
+                            /** Format: uuid */
+                            id: string;
+                            number: string;
+                        };
+                        /** @description The line's head */
+                        line: {
+                            /** Format: uuid */
+                            id: string;
+                            number: string;
+                        };
+                        /** @description Each block that differs, in the main line's order, then the line's */
+                        differences: {
+                            block: string;
+                            /**
+                             * @description changed on either side; held by the line alone; held by the main line alone
+                             * @enum {string}
+                             */
+                            change: "changed" | "line" | "main";
+                            /** @description The main line's block */
+                            mainBlock: {
+                                [key: string]: unknown;
+                            } | null;
+                            /** @description The line's block */
+                            lineBlock: {
+                                [key: string]: unknown;
+                            } | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not read this component */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such component, or open line of it, the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    bringComponentLineBack: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string;
+                line: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "openedFrom": "00000000-0000-4000-8000-000000000001",
+                 *       "lineHead": "00000000-0000-4000-8000-000000000001",
+                 *       "carry": []
+                 *     }
+                 */
+                "application/json": {
+                    /**
+                     * Format: uuid
+                     * @description The main line's latest version the comparison was read at
+                     */
+                    openedFrom: string;
+                    /**
+                     * Format: uuid
+                     * @description The line's head the comparison was read at
+                     */
+                    lineHead: string;
+                    /** @description Each differing block to take the line's side of; every other keeps the main line's */
+                    carry: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Brought back, and what was carried and left */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "version": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "number": "example"
+                     *       },
+                     *       "carried": [],
+                     *       "left": []
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description The main-line version it made, or the latest where nothing was carried */
+                        version: {
+                            /** Format: uuid */
+                            id: string;
+                            number: string;
+                        };
+                        carried: {
+                            block: string;
+                            /**
+                             * @description changed on either side; held by the line alone; held by the main line alone
+                             * @enum {string}
+                             */
+                            change: "changed" | "line" | "main";
+                        }[];
+                        /** @description Each differing block left behind */
+                        left: {
+                            block: string;
+                            /**
+                             * @description changed on either side; held by the line alone; held by the main line alone
+                             * @enum {string}
+                             */
+                            change: "changed" | "line" | "main";
+                        }[];
+                    };
+                };
+            };
+            /** @description carry_invalid: a block carried that does not differ */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the component but may not edit it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such component, or line of it, the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description version_precondition: either line moved since the comparison, which is to be read again; line_closed: it was brought back already; lock_held: somebody is editing it */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -47067,6 +47472,8 @@ export interface operations {
                                     until: string;
                                 } | null;
                             } | null;
+                            /** @description The component's open divergent lines, by name (LIF-046), whichever is shown; absent where it has not diverged, or where the caller may not read it */
+                            lines?: string[];
                             /** @description The divergent line the version shown is on (LIF-046), served by the document's scope; absent for the main line */
                             line?: {
                                 id: string;
@@ -61323,6 +61730,8 @@ export interface operations {
                                 key: string;
                                 name: string;
                             } | null;
+                            /** @description A component's open divergent lines, by name (LIF-046); absent where it has not diverged */
+                            lines?: string[];
                             /** @description A section's document and the components it places; null for anything else */
                             section: {
                                 document: {

@@ -531,6 +531,20 @@ export const auditKindSpecs = {
     }),
     'packages/db/src/lines.ts',
   ),
+  // A line brought back into the main line, block by block, and closed (LIF-045; the R16 plan,
+  // R16-F, R16-G): the version it made, and how many blocks were carried across and left behind - the
+  // blocks themselves on `line_return`, never here.
+  'line.returned': kind(
+    ['LIF-045'],
+    z.strictObject({
+      kind: z.literal('component'),
+      line: Id,
+      into: Id,
+      carried: z.int().nonnegative(),
+      left: z.int().nonnegative(),
+    }),
+    'packages/db/src/lines.ts',
+  ),
   // A revision accepted by its party in one scope, so it takes effect there (LIF-047; R15-E).
   'revision.accepted': kind(
     ['LIF-047'],
