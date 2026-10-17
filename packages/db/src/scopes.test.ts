@@ -242,7 +242,7 @@ describe('revisions effective by scope (the R15 plan, R15-A to R15-D)', () => {
     expect(await served(null)).toBe(third.id);
   });
 
-  it('keeps the revision before effective in a scope until its party accepts, and only the party accepts', async () => {
+  it('LIF-047 keeps the revision before effective in a scope until its party accepts, and only the party accepts', async () => {
     const first = await component('Weigh the batch');
     await approve(first);
     const second = await edit(first);

@@ -314,8 +314,27 @@ export const ScopeView = z
       .describe(
         'The condition axis values a revision approved from now is effective for; none is everywhere',
       ),
+    pending: z
+      .array(
+        z.object({
+          revision: z.int().positive(),
+          axis: ScopeKey,
+          value: ScopeKey,
+          party: z.object({
+            kind: z.enum(['principal', 'group']),
+            id: z.uuid(),
+            name: z.string().nullable(),
+          }),
+          mayAccept: z.boolean().describe('Whether the caller is the party, or one of the group'),
+        }),
+      )
+      .describe(
+        'Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted',
+      ),
   })
-  .describe('The scope a revision approved from now is effective for');
+  .describe(
+    'The scope a revision approved from now is effective for, and what waits on acceptance',
+  );
 export type ScopeView = z.infer<typeof ScopeView>;
 
 export const ScopeBody = z.strictObject({

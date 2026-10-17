@@ -49,3 +49,10 @@
   padding-left: var(--space-16);
   color: var(--muted);
 }
+
+/* A checkbox and its words on one line (the R15 plan's Effective for). */
+.choice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}

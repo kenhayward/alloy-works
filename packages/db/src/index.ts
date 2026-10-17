@@ -508,12 +508,14 @@ export {
 export {
   acceptRevision,
   fixScope,
+  pendingAcceptances,
   readScopes,
   revisionScopes,
   scopesStored,
   setScope,
   type AcceptAnswer,
   type ArtifactScope,
+  type PendingAcceptance,
   type SetScopeAnswer,
 } from './scopes.js';
 export {

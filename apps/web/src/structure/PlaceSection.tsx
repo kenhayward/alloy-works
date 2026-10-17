@@ -146,6 +146,9 @@ function PlaceDialog({
   onClose: () => void;
   onPlaced: (answer: unknown, into: string) => void;
 }) {
+  // Its parts, so an effect runs again only when one changes, not each render.
+  const foundFrom = found?.from;
+  const foundSection = found?.section;
   const headingId = useId();
   const [documents, setDocuments] = useState<readonly { id: string; title: string }[]>([]);
   const [into, setInto] = useState(documentId ?? '');
@@ -168,7 +171,7 @@ function PlaceDialog({
         if (current && data) {
           setDocuments(
             data.items
-              .filter((each) => each.id !== (found ? found.from : documentId))
+              .filter((each) => each.id !== (foundFrom ?? documentId))
               .map((each) => ({ id: each.id, title: each.title })),
           );
         }
@@ -177,7 +180,7 @@ function PlaceDialog({
     return () => {
       current = false;
     };
-  }, [client, documentId, found]);
+  }, [client, documentId, foundFrom]);
 
   // The version of the document chosen to place in, which the placement is made against.
   useEffect(() => {
@@ -198,7 +201,7 @@ function PlaceDialog({
 
   useEffect(() => {
     setSections([]);
-    setSection(found !== undefined && from === found.from ? found.section : '');
+    setSection(foundFrom !== undefined && from === foundFrom ? (foundSection ?? '') : '');
     if (from === '') return;
     let current = true;
     void client
@@ -212,7 +215,7 @@ function PlaceDialog({
     return () => {
       current = false;
     };
-  }, [client, from]);
+  }, [client, from, foundFrom, foundSection]);
 
   // The section's own title, offered as the new one's, each time a section is chosen: never over
   // what the author typed when the same section is reported again.
