@@ -288,6 +288,8 @@ describe('finding and opening components through the service', () => {
           pastReview: false,
           effectiveFrom: null,
         },
+        // No scope set: a revision approved from now is effective everywhere (R15-B).
+        scope: { scope: [] },
         // The starter type, Topic, assigns no schema: no fields, and no values.
         type: { id: STARTER_COMPONENT_TYPE_ID, name: 'Topic' },
         fields: [],

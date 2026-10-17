@@ -45,6 +45,7 @@ decisions, WF-A to WF-K, are the detail. Gates, approvals and revisions are
 | **LIF-018** | **Past review** on the artifact's header and in the lists, and on the label of every reference to it in a document                                                                                                                                                                                                   |
 | **LIF-059** | The workflow's `review.lapse`: shown alone, a move to a state by nobody, or an escalation to a person, acted on once per day passed                                                                                                                                                                                  |
 | **LIF-060** | A future effective date fixed to the revision approved, served only from that instant, its taking effect `revision.effective` by the system                                                                                                                                                                          |
+| **LIF-042** | A revision effective for condition axis values, fixed from the artifact's scope as a gate designates it, while another is effective elsewhere; `latestRevisionsOf` serves each scope the newest scoped to it, else the newest unscoped ([Scopes](#scopes))                                                           |
 
 VER-012 to VER-015 are [storage-and-versioning.md](storage-and-versioning.md)'s, built below. LIF-040
 was superseded by LIF-077, claimed below: a reference floating at latest takes a draft by its author's
@@ -260,3 +261,24 @@ named person's Home while that day stands. A move goes only to a state the defin
 artifact's next move has, else the lapse is shown alone. Two sweeps at once act once: the first
 `review_lapse` or `revision_effected` row wins. A review-by day passes at midnight UTC. **Past review** is computed when read, from the day, on
 the views, the lists and each occurrence in a document's texts.
+
+## Scopes
+
+**A scope is a condition axis value** (the R15 plan, R15-A): `market:us`, `site:plant_7`. `PUT
+/v1/{components|documents}/{id}/scope` on edit inserts an `artifact_scope` row (0111), its latest the
+artifact's scope: each value declared, once, perhaps naming a person or group who may read it as the
+party who must accept it there; none is everywhere. Audited `scope.set`. A gate designating a revision
+copies it into `revision_scope`, fixed, and says it in `revision.designated`; one scope governs every
+approval until it is changed, as a date does.
+
+**One answer** (R15-C, R15-D): `effectiveRevision` in the domain takes the revisions in effect - past
+their effective instant - and a profile, and answers the newest scoped to a value the profile holds and
+not waiting on acceptance there, else the newest unscoped, else none. A newer unscoped revision does not
+displace a scoped one; a new one scoped to the same value does. `latestRevisionsOf` applies it, and
+every `approved` reference resolves under the document's profile, a publish under the profile it chose,
+so a baseline pins what that profile served. A document with no profile reads the unscoped alone.
+
+**Acceptance** (R15-E): `POST /v1/{components|documents}/{id}/acceptance` names a revision, an axis and a
+value; only the person, or a member of the group, named there accepts, on read, once
+(`revision_acceptance`), audited `revision.accepted`. Until then the revision is pending in that scope
+and the one before stays effective there.

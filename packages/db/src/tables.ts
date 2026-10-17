@@ -649,6 +649,37 @@ export interface ArtifactDatesTable {
 }
 
 /** A revision approved to take effect later, its date fixed as the gate passed (0099; WF5-B). */
+/** A component's or document's scope, as an act (0111; the R15 plan, R15-B). */
+export interface ArtifactScopeTable {
+  id: ColumnType<string, never, never>;
+  artifact_id: ColumnType<string, string, never>;
+  kind: ColumnType<'component' | 'document', 'component' | 'document', never>;
+  scope: ColumnType<unknown, string, never>;
+  by: ColumnType<string, string, never>;
+  at: ColumnType<Date, never, never>;
+  written_by: ColumnType<string, never, never>;
+}
+
+/** A designated revision's scope, one row a value (0111). */
+export interface RevisionScopeTable {
+  version_id: ColumnType<string, string, never>;
+  artifact_id: ColumnType<string, string, never>;
+  axis: ColumnType<string, string, never>;
+  value: ColumnType<string, string, never>;
+  party_principal: ColumnType<string | null, string | null, never>;
+  party_group: ColumnType<string | null, string | null, never>;
+}
+
+/** A revision accepted by its party in one scope (0111; R15-E). */
+export interface RevisionAcceptanceTable {
+  version_id: ColumnType<string, string, never>;
+  axis: ColumnType<string, string, never>;
+  value: ColumnType<string, string, never>;
+  by: ColumnType<string, string, never>;
+  at: ColumnType<Date, never, never>;
+  written_by: ColumnType<string, never, never>;
+}
+
 export interface RevisionEffectiveTable {
   version_id: string;
   artifact_id: string;
@@ -1013,6 +1044,9 @@ export interface TenantTables {
   revision_designation: RevisionDesignationTable;
   artifact_dates: ArtifactDatesTable;
   revision_effective: RevisionEffectiveTable;
+  artifact_scope: ArtifactScopeTable;
+  revision_scope: RevisionScopeTable;
+  revision_acceptance: RevisionAcceptanceTable;
   revision_effected: RevisionEffectedTable;
   review_lapse: ReviewLapseTable;
   section_waiver: SectionWaiverTable;

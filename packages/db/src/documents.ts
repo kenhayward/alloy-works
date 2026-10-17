@@ -811,9 +811,12 @@ export async function recordRepoints(
   if (repoints.length === 0) return;
   const place = await artifactPlace(trx, version.artifactId, version.id);
   // An `approved` side names the version its latest revision is, as it resolves now (WF4-D).
-  const revisions = await latestRevisionsOf(trx, [
-    ...new Set(repoints.map((each) => each.component)),
-  ]);
+  const revisions = await latestRevisionsOf(
+    trx,
+    [...new Set(repoints.map((each) => each.component))],
+    new Date(),
+    after.profile?.values ?? {},
+  );
   const named = (mode: Repoint['from'], component: string) => {
     const revision = revisions.get(component);
     return mode.kind === 'approved' && revision !== undefined

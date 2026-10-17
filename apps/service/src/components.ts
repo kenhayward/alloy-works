@@ -10,6 +10,7 @@ import type {
   PeopleQuery,
 } from '@alloy-works/api-contract';
 import { datesView, pastReviewOf } from './dates.js';
+import { scopeView } from './scopes.js';
 import {
   componentFieldsNow,
   createComponent,
@@ -295,6 +296,7 @@ export function componentHandlers(
         // In its workflow's initial state, decided as `mayEdit` is, against the space.
         ...(await workflowView(trx, answer.version.artifactId, facts, principalId)),
         ...(await datesView(trx, answer.version.artifactId)),
+        ...(await scopeView(trx, answer.version.artifactId)),
         // Nothing holds what was made a moment ago but its space's hold, told as a page would.
         onHold:
           (decide('retire', facts).allowed || administersTenant(facts)) &&
@@ -408,6 +410,7 @@ export function componentHandlers(
         mayRetire: decide('retire', facts).allowed,
         ...(await workflowView(trx, id, facts, principalId)),
         ...(await datesView(trx, id)),
+        ...(await scopeView(trx, id)),
         // Told only to whoever may retire it or administer the environment (AH-G): a hold may be
         // confidential.
         onHold:

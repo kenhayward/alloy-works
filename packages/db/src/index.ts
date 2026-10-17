@@ -506,6 +506,17 @@ export {
   type SetDatesAnswer,
 } from './dates.js';
 export {
+  acceptRevision,
+  fixScope,
+  readScopes,
+  revisionScopes,
+  scopesStored,
+  setScope,
+  type AcceptAnswer,
+  type ArtifactScope,
+  type SetScopeAnswer,
+} from './scopes.js';
+export {
   createDocument,
   createFromResolution,
   newNodeIdentifier,

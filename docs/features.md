@@ -1071,6 +1071,11 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   the header, the lists and on every reference to it. Administration > Workflows says how long before
   the owner is prompted and what a lapsed review does: nothing more, a move to a state, or an
   escalation to a person, who then sees **Review overdue**.
+- **Revisions effective by scope.** Through the API, a component's or document's next revision can be
+  made effective for a market or a site, a condition axis value, while another revision stays
+  effective elsewhere; a document reads, publishes and baselines the revision effective under its own
+  profile. A scope can name a person or group who must accept the revision before it takes effect
+  there; until then the revision before stays effective there.
 - **The latest approved revision.** A reference can track its component's latest approved revision:
   **Always the latest approved revision** in its label's list. The label says which revision it shows,
   and publishing, previews and baselines take it. Where a newer revision is approved than the

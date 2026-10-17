@@ -29343,6 +29343,73 @@
                       ],
                       "description": "Its effective and review-by dates, and its review's owner"
                     },
+                    "scope": {
+                      "type": "object",
+                      "properties": {
+                        "scope": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "axis": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "value": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "party": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "principal",
+                                          "group"
+                                        ]
+                                      },
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "name": {
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "id",
+                                      "name"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "Who must accept a revision before it takes effect in this scope"
+                              }
+                            },
+                            "required": [
+                              "axis",
+                              "value",
+                              "party"
+                            ]
+                          },
+                          "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                        }
+                      },
+                      "required": [
+                        "scope"
+                      ],
+                      "description": "The scope a revision approved from now is effective for"
+                    },
                     "onHold": {
                       "type": "boolean",
                       "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
@@ -29608,6 +29675,7 @@
                     "gates",
                     "revision",
                     "dates",
+                    "scope",
                     "onHold",
                     "mayHold",
                     "lock",
@@ -29657,6 +29725,9 @@
                     },
                     "pastReview": false,
                     "effectiveFrom": "2026-01-01T00:00:00.000Z"
+                  },
+                  "scope": {
+                    "scope": []
                   },
                   "onHold": false,
                   "mayHold": false,
@@ -29825,6 +29896,318 @@
           },
           "404": {
             "description": "No such component in this environment, or none the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/components/{id}/acceptance": {
+      "post": {
+        "operationId": "acceptComponentRevision",
+        "summary": "Accept a component's revision in a scope",
+        "description": "Accepts a component's revision in one scope, by the person, or a member of the group, its scope names there, who may read it. Until then the revision before stays effective in that scope; once, it takes effect there. Audited.",
+        "tags": [
+          "Workflow"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "read",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "revision": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "The revision accepted, by its number"
+                  },
+                  "axis": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                  },
+                  "value": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                  }
+                },
+                "required": [
+                  "revision",
+                  "axis",
+                  "value"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "revision": 1,
+                "axis": "example",
+                "value": "example"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Accepted there, so it takes effect there",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "revision": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "axis": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                    },
+                    "value": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                    },
+                    "accepted": {
+                      "type": "boolean",
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "revision",
+                    "axis",
+                    "value",
+                    "accepted"
+                  ]
+                },
+                "example": {
+                  "revision": 1,
+                  "axis": "example",
+                  "value": "example",
+                  "accepted": true
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "acceptance_not_party: the caller is not the person, or a member of the group, who must accept it there",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such component, revision, or scope waiting on a party, or none the caller may read",
             "content": {
               "application/json": {
                 "schema": {
@@ -36704,6 +37087,474 @@
                           "detail"
                         ]
                       }
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/components/{id}/scope": {
+      "put": {
+        "operationId": "setComponentScope",
+        "summary": "Set the scope a component's next revision is effective for",
+        "description": "Sets, as an act and needing edit, the condition axis values a component's next revision is effective for, such as a market or a site, fixed to that revision as a gate designates it; each value declared, and each perhaps naming a person or group who must accept the revision before it takes effect there, somebody who may read it. None is everywhere. A reference following approved revisions in a document serves the one effective in the document's profile. Audited.",
+        "tags": [
+          "Workflow"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "edit",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "scope": {
+                    "maxItems": 50,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "axis": {
+                          "type": "string",
+                          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+                          "description": "A condition axis's key"
+                        },
+                        "value": {
+                          "type": "string",
+                          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+                          "description": "One of its values"
+                        },
+                        "party": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "principal",
+                                    "group"
+                                  ]
+                                },
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "A person or group who must accept a revision before it takes effect here: somebody who may read it; null for none"
+                        }
+                      },
+                      "required": [
+                        "axis",
+                        "value",
+                        "party"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "description": "Each axis value once; none for everywhere"
+                  }
+                },
+                "required": [
+                  "scope"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "scope": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Its scope now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "scope": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "axis": {
+                            "type": "string",
+                            "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                          },
+                          "value": {
+                            "type": "string",
+                            "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                          },
+                          "party": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "principal",
+                                      "group"
+                                    ]
+                                  },
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "name": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "id",
+                                  "name"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Who must accept a revision before it takes effect in this scope"
+                          }
+                        },
+                        "required": [
+                          "axis",
+                          "value",
+                          "party"
+                        ]
+                      },
+                      "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                    }
+                  },
+                  "required": [
+                    "scope"
+                  ],
+                  "description": "The scope a revision approved from now is effective for"
+                },
+                "example": {
+                  "scope": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "scope_unknown: an axis or value no condition axis declares; party_invalid: a party nobody who may read it; scope_invalid: an axis value twice",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may read the component but may not edit it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such component in this environment, or none the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "artifact_archived: an archived component keeps its scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
                     }
                   },
                   "required": [
@@ -58370,6 +59221,73 @@
                       ],
                       "description": "Its effective and review-by dates, and its review's owner"
                     },
+                    "scope": {
+                      "type": "object",
+                      "properties": {
+                        "scope": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "axis": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "value": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "party": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "principal",
+                                          "group"
+                                        ]
+                                      },
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "name": {
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "id",
+                                      "name"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "Who must accept a revision before it takes effect in this scope"
+                              }
+                            },
+                            "required": [
+                              "axis",
+                              "value",
+                              "party"
+                            ]
+                          },
+                          "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                        }
+                      },
+                      "required": [
+                        "scope"
+                      ],
+                      "description": "The scope a revision approved from now is effective for"
+                    },
                     "onHold": {
                       "type": "boolean",
                       "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
@@ -58471,6 +59389,7 @@
                     "gates",
                     "revision",
                     "dates",
+                    "scope",
                     "onHold",
                     "mayHold",
                     "mayPublish",
@@ -58542,6 +59461,9 @@
                     },
                     "pastReview": false,
                     "effectiveFrom": "2026-01-01T00:00:00.000Z"
+                  },
+                  "scope": {
+                    "scope": []
                   },
                   "onHold": false,
                   "mayHold": false,
@@ -58656,6 +59578,318 @@
           },
           "404": {
             "description": "No such document in this environment, or none the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/documents/{id}/acceptance": {
+      "post": {
+        "operationId": "acceptDocumentRevision",
+        "summary": "Accept a document's revision in a scope",
+        "description": "Accepts a document's revision in one scope, by the person, or a member of the group, its scope names there, who may read it. Until then the revision before stays effective in that scope; once, it takes effect there. Audited.",
+        "tags": [
+          "Workflow"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "read",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "revision": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "The revision accepted, by its number"
+                  },
+                  "axis": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                  },
+                  "value": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                  }
+                },
+                "required": [
+                  "revision",
+                  "axis",
+                  "value"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "revision": 1,
+                "axis": "example",
+                "value": "example"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Accepted there, so it takes effect there",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "revision": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "axis": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                    },
+                    "value": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                    },
+                    "accepted": {
+                      "type": "boolean",
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "revision",
+                    "axis",
+                    "value",
+                    "accepted"
+                  ]
+                },
+                "example": {
+                  "revision": 1,
+                  "axis": "example",
+                  "value": "example",
+                  "accepted": true
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "acceptance_not_party: the caller is not the person, or a member of the group, who must accept it there",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such document, revision, or scope waiting on a party, or none the caller may read",
             "content": {
               "application/json": {
                 "schema": {
@@ -121888,6 +123122,73 @@
                       ],
                       "description": "Its effective and review-by dates, and its review's owner"
                     },
+                    "scope": {
+                      "type": "object",
+                      "properties": {
+                        "scope": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "axis": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "value": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "party": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "principal",
+                                          "group"
+                                        ]
+                                      },
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "name": {
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "id",
+                                      "name"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "Who must accept a revision before it takes effect in this scope"
+                              }
+                            },
+                            "required": [
+                              "axis",
+                              "value",
+                              "party"
+                            ]
+                          },
+                          "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                        }
+                      },
+                      "required": [
+                        "scope"
+                      ],
+                      "description": "The scope a revision approved from now is effective for"
+                    },
                     "onHold": {
                       "type": "boolean",
                       "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
@@ -121989,6 +123290,7 @@
                     "gates",
                     "revision",
                     "dates",
+                    "scope",
                     "onHold",
                     "mayHold",
                     "mayPublish",
@@ -122060,6 +123362,9 @@
                     },
                     "pastReview": false,
                     "effectiveFrom": "2026-01-01T00:00:00.000Z"
+                  },
+                  "scope": {
+                    "scope": []
                   },
                   "onHold": false,
                   "mayHold": false,
@@ -122806,6 +124111,73 @@
                           ],
                           "description": "Its effective and review-by dates, and its review's owner"
                         },
+                        "scope": {
+                          "type": "object",
+                          "properties": {
+                            "scope": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "axis": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "value": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "party": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "enum": [
+                                              "principal",
+                                              "group"
+                                            ]
+                                          },
+                                          "id": {
+                                            "type": "string",
+                                            "format": "uuid",
+                                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                          },
+                                          "name": {
+                                            "type": [
+                                              "string",
+                                              "null"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "name"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "Who must accept a revision before it takes effect in this scope"
+                                  }
+                                },
+                                "required": [
+                                  "axis",
+                                  "value",
+                                  "party"
+                                ]
+                              },
+                              "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                            }
+                          },
+                          "required": [
+                            "scope"
+                          ],
+                          "description": "The scope a revision approved from now is effective for"
+                        },
                         "onHold": {
                           "type": "boolean",
                           "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
@@ -122907,6 +124279,7 @@
                         "gates",
                         "revision",
                         "dates",
+                        "scope",
                         "onHold",
                         "mayHold",
                         "mayPublish",
@@ -123909,6 +125282,73 @@
                           ],
                           "description": "Its effective and review-by dates, and its review's owner"
                         },
+                        "scope": {
+                          "type": "object",
+                          "properties": {
+                            "scope": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "axis": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "value": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "party": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "enum": [
+                                              "principal",
+                                              "group"
+                                            ]
+                                          },
+                                          "id": {
+                                            "type": "string",
+                                            "format": "uuid",
+                                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                          },
+                                          "name": {
+                                            "type": [
+                                              "string",
+                                              "null"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "name"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "Who must accept a revision before it takes effect in this scope"
+                                  }
+                                },
+                                "required": [
+                                  "axis",
+                                  "value",
+                                  "party"
+                                ]
+                              },
+                              "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                            }
+                          },
+                          "required": [
+                            "scope"
+                          ],
+                          "description": "The scope a revision approved from now is effective for"
+                        },
                         "onHold": {
                           "type": "boolean",
                           "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
@@ -124010,6 +125450,7 @@
                         "gates",
                         "revision",
                         "dates",
+                        "scope",
                         "onHold",
                         "mayHold",
                         "mayPublish",
@@ -125683,6 +127124,73 @@
                       ],
                       "description": "Its effective and review-by dates, and its review's owner"
                     },
+                    "scope": {
+                      "type": "object",
+                      "properties": {
+                        "scope": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "axis": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "value": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "party": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "principal",
+                                          "group"
+                                        ]
+                                      },
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "name": {
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "id",
+                                      "name"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "Who must accept a revision before it takes effect in this scope"
+                              }
+                            },
+                            "required": [
+                              "axis",
+                              "value",
+                              "party"
+                            ]
+                          },
+                          "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                        }
+                      },
+                      "required": [
+                        "scope"
+                      ],
+                      "description": "The scope a revision approved from now is effective for"
+                    },
                     "onHold": {
                       "type": "boolean",
                       "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
@@ -125784,6 +127292,7 @@
                     "gates",
                     "revision",
                     "dates",
+                    "scope",
                     "onHold",
                     "mayHold",
                     "mayPublish",
@@ -125855,6 +127364,9 @@
                     },
                     "pastReview": false,
                     "effectiveFrom": "2026-01-01T00:00:00.000Z"
+                  },
+                  "scope": {
+                    "scope": []
                   },
                   "onHold": false,
                   "mayHold": false,
@@ -126601,6 +128113,73 @@
                           ],
                           "description": "Its effective and review-by dates, and its review's owner"
                         },
+                        "scope": {
+                          "type": "object",
+                          "properties": {
+                            "scope": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "axis": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "value": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "party": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "enum": [
+                                              "principal",
+                                              "group"
+                                            ]
+                                          },
+                                          "id": {
+                                            "type": "string",
+                                            "format": "uuid",
+                                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                          },
+                                          "name": {
+                                            "type": [
+                                              "string",
+                                              "null"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "name"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "Who must accept a revision before it takes effect in this scope"
+                                  }
+                                },
+                                "required": [
+                                  "axis",
+                                  "value",
+                                  "party"
+                                ]
+                              },
+                              "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                            }
+                          },
+                          "required": [
+                            "scope"
+                          ],
+                          "description": "The scope a revision approved from now is effective for"
+                        },
                         "onHold": {
                           "type": "boolean",
                           "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
@@ -126702,6 +128281,7 @@
                         "gates",
                         "revision",
                         "dates",
+                        "scope",
                         "onHold",
                         "mayHold",
                         "mayPublish",
@@ -127704,6 +129284,73 @@
                           ],
                           "description": "Its effective and review-by dates, and its review's owner"
                         },
+                        "scope": {
+                          "type": "object",
+                          "properties": {
+                            "scope": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "axis": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "value": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "party": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "enum": [
+                                              "principal",
+                                              "group"
+                                            ]
+                                          },
+                                          "id": {
+                                            "type": "string",
+                                            "format": "uuid",
+                                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                          },
+                                          "name": {
+                                            "type": [
+                                              "string",
+                                              "null"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "name"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "Who must accept a revision before it takes effect in this scope"
+                                  }
+                                },
+                                "required": [
+                                  "axis",
+                                  "value",
+                                  "party"
+                                ]
+                              },
+                              "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                            }
+                          },
+                          "required": [
+                            "scope"
+                          ],
+                          "description": "The scope a revision approved from now is effective for"
+                        },
                         "onHold": {
                           "type": "boolean",
                           "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
@@ -127805,6 +129452,7 @@
                         "gates",
                         "revision",
                         "dates",
+                        "scope",
                         "onHold",
                         "mayHold",
                         "mayPublish",
@@ -130130,6 +131778,73 @@
                       ],
                       "description": "Its effective and review-by dates, and its review's owner"
                     },
+                    "scope": {
+                      "type": "object",
+                      "properties": {
+                        "scope": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "axis": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "value": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "party": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "principal",
+                                          "group"
+                                        ]
+                                      },
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "name": {
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "id",
+                                      "name"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "Who must accept a revision before it takes effect in this scope"
+                              }
+                            },
+                            "required": [
+                              "axis",
+                              "value",
+                              "party"
+                            ]
+                          },
+                          "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                        }
+                      },
+                      "required": [
+                        "scope"
+                      ],
+                      "description": "The scope a revision approved from now is effective for"
+                    },
                     "onHold": {
                       "type": "boolean",
                       "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
@@ -130231,6 +131946,7 @@
                     "gates",
                     "revision",
                     "dates",
+                    "scope",
                     "onHold",
                     "mayHold",
                     "mayPublish",
@@ -130302,6 +132018,9 @@
                     },
                     "pastReview": false,
                     "effectiveFrom": "2026-01-01T00:00:00.000Z"
+                  },
+                  "scope": {
+                    "scope": []
                   },
                   "onHold": false,
                   "mayHold": false,
@@ -131048,6 +132767,73 @@
                           ],
                           "description": "Its effective and review-by dates, and its review's owner"
                         },
+                        "scope": {
+                          "type": "object",
+                          "properties": {
+                            "scope": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "axis": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "value": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "party": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "enum": [
+                                              "principal",
+                                              "group"
+                                            ]
+                                          },
+                                          "id": {
+                                            "type": "string",
+                                            "format": "uuid",
+                                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                          },
+                                          "name": {
+                                            "type": [
+                                              "string",
+                                              "null"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "name"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "Who must accept a revision before it takes effect in this scope"
+                                  }
+                                },
+                                "required": [
+                                  "axis",
+                                  "value",
+                                  "party"
+                                ]
+                              },
+                              "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                            }
+                          },
+                          "required": [
+                            "scope"
+                          ],
+                          "description": "The scope a revision approved from now is effective for"
+                        },
                         "onHold": {
                           "type": "boolean",
                           "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
@@ -131149,6 +132935,7 @@
                         "gates",
                         "revision",
                         "dates",
+                        "scope",
                         "onHold",
                         "mayHold",
                         "mayPublish",
@@ -132151,6 +133938,73 @@
                           ],
                           "description": "Its effective and review-by dates, and its review's owner"
                         },
+                        "scope": {
+                          "type": "object",
+                          "properties": {
+                            "scope": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "axis": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "value": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "party": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "enum": [
+                                              "principal",
+                                              "group"
+                                            ]
+                                          },
+                                          "id": {
+                                            "type": "string",
+                                            "format": "uuid",
+                                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                          },
+                                          "name": {
+                                            "type": [
+                                              "string",
+                                              "null"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "name"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "Who must accept a revision before it takes effect in this scope"
+                                  }
+                                },
+                                "required": [
+                                  "axis",
+                                  "value",
+                                  "party"
+                                ]
+                              },
+                              "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                            }
+                          },
+                          "required": [
+                            "scope"
+                          ],
+                          "description": "The scope a revision approved from now is effective for"
+                        },
                         "onHold": {
                           "type": "boolean",
                           "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
@@ -132252,6 +134106,7 @@
                         "gates",
                         "revision",
                         "dates",
+                        "scope",
                         "onHold",
                         "mayHold",
                         "mayPublish",
@@ -134546,6 +136401,73 @@
                       ],
                       "description": "Its effective and review-by dates, and its review's owner"
                     },
+                    "scope": {
+                      "type": "object",
+                      "properties": {
+                        "scope": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "axis": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "value": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "party": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "principal",
+                                          "group"
+                                        ]
+                                      },
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "name": {
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "id",
+                                      "name"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "Who must accept a revision before it takes effect in this scope"
+                              }
+                            },
+                            "required": [
+                              "axis",
+                              "value",
+                              "party"
+                            ]
+                          },
+                          "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                        }
+                      },
+                      "required": [
+                        "scope"
+                      ],
+                      "description": "The scope a revision approved from now is effective for"
+                    },
                     "onHold": {
                       "type": "boolean",
                       "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
@@ -134647,6 +136569,7 @@
                     "gates",
                     "revision",
                     "dates",
+                    "scope",
                     "onHold",
                     "mayHold",
                     "mayPublish",
@@ -134718,6 +136641,9 @@
                     },
                     "pastReview": false,
                     "effectiveFrom": "2026-01-01T00:00:00.000Z"
+                  },
+                  "scope": {
+                    "scope": []
                   },
                   "onHold": false,
                   "mayHold": false,
@@ -135464,6 +137390,73 @@
                           ],
                           "description": "Its effective and review-by dates, and its review's owner"
                         },
+                        "scope": {
+                          "type": "object",
+                          "properties": {
+                            "scope": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "axis": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "value": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "party": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "enum": [
+                                              "principal",
+                                              "group"
+                                            ]
+                                          },
+                                          "id": {
+                                            "type": "string",
+                                            "format": "uuid",
+                                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                          },
+                                          "name": {
+                                            "type": [
+                                              "string",
+                                              "null"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "name"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "Who must accept a revision before it takes effect in this scope"
+                                  }
+                                },
+                                "required": [
+                                  "axis",
+                                  "value",
+                                  "party"
+                                ]
+                              },
+                              "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                            }
+                          },
+                          "required": [
+                            "scope"
+                          ],
+                          "description": "The scope a revision approved from now is effective for"
+                        },
                         "onHold": {
                           "type": "boolean",
                           "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
@@ -135565,6 +137558,7 @@
                         "gates",
                         "revision",
                         "dates",
+                        "scope",
                         "onHold",
                         "mayHold",
                         "mayPublish",
@@ -136567,6 +138561,73 @@
                           ],
                           "description": "Its effective and review-by dates, and its review's owner"
                         },
+                        "scope": {
+                          "type": "object",
+                          "properties": {
+                            "scope": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "axis": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "value": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "party": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "enum": [
+                                              "principal",
+                                              "group"
+                                            ]
+                                          },
+                                          "id": {
+                                            "type": "string",
+                                            "format": "uuid",
+                                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                          },
+                                          "name": {
+                                            "type": [
+                                              "string",
+                                              "null"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "name"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "Who must accept a revision before it takes effect in this scope"
+                                  }
+                                },
+                                "required": [
+                                  "axis",
+                                  "value",
+                                  "party"
+                                ]
+                              },
+                              "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                            }
+                          },
+                          "required": [
+                            "scope"
+                          ],
+                          "description": "The scope a revision approved from now is effective for"
+                        },
                         "onHold": {
                           "type": "boolean",
                           "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
@@ -136668,6 +138729,7 @@
                         "gates",
                         "revision",
                         "dates",
+                        "scope",
                         "onHold",
                         "mayHold",
                         "mayPublish",
@@ -139492,6 +141554,474 @@
           },
           "404": {
             "description": "No such document in this environment, or none the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/documents/{id}/scope": {
+      "put": {
+        "operationId": "setDocumentScope",
+        "summary": "Set the scope a document's next revision is effective for",
+        "description": "Sets, as an act and needing edit, the condition axis values a document's next revision is effective for, such as a market or a site, fixed to that revision as a gate designates it; each value declared, and each perhaps naming a person or group who must accept the revision before it takes effect there, somebody who may read it. None is everywhere. Audited.",
+        "tags": [
+          "Workflow"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "edit",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "scope": {
+                    "maxItems": 50,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "axis": {
+                          "type": "string",
+                          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+                          "description": "A condition axis's key"
+                        },
+                        "value": {
+                          "type": "string",
+                          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+                          "description": "One of its values"
+                        },
+                        "party": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "principal",
+                                    "group"
+                                  ]
+                                },
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "A person or group who must accept a revision before it takes effect here: somebody who may read it; null for none"
+                        }
+                      },
+                      "required": [
+                        "axis",
+                        "value",
+                        "party"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "description": "Each axis value once; none for everywhere"
+                  }
+                },
+                "required": [
+                  "scope"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "scope": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Its scope now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "scope": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "axis": {
+                            "type": "string",
+                            "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                          },
+                          "value": {
+                            "type": "string",
+                            "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                          },
+                          "party": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "principal",
+                                      "group"
+                                    ]
+                                  },
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "name": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "id",
+                                  "name"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Who must accept a revision before it takes effect in this scope"
+                          }
+                        },
+                        "required": [
+                          "axis",
+                          "value",
+                          "party"
+                        ]
+                      },
+                      "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                    }
+                  },
+                  "required": [
+                    "scope"
+                  ],
+                  "description": "The scope a revision approved from now is effective for"
+                },
+                "example": {
+                  "scope": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "scope_unknown: an axis or value no condition axis declares; party_invalid: a party nobody who may read it; scope_invalid: an axis value twice",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may read the document but may not edit it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such document in this environment, or none the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "artifact_archived: an archived document keeps its scope",
             "content": {
               "application/json": {
                 "schema": {
@@ -144879,6 +147409,73 @@
                       ],
                       "description": "Its effective and review-by dates, and its review's owner"
                     },
+                    "scope": {
+                      "type": "object",
+                      "properties": {
+                        "scope": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "axis": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "value": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "party": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "principal",
+                                          "group"
+                                        ]
+                                      },
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "name": {
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "id",
+                                      "name"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "Who must accept a revision before it takes effect in this scope"
+                              }
+                            },
+                            "required": [
+                              "axis",
+                              "value",
+                              "party"
+                            ]
+                          },
+                          "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                        }
+                      },
+                      "required": [
+                        "scope"
+                      ],
+                      "description": "The scope a revision approved from now is effective for"
+                    },
                     "onHold": {
                       "type": "boolean",
                       "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
@@ -144980,6 +147577,7 @@
                     "gates",
                     "revision",
                     "dates",
+                    "scope",
                     "onHold",
                     "mayHold",
                     "mayPublish",
@@ -145051,6 +147649,9 @@
                     },
                     "pastReview": false,
                     "effectiveFrom": "2026-01-01T00:00:00.000Z"
+                  },
+                  "scope": {
+                    "scope": []
                   },
                   "onHold": false,
                   "mayHold": false,
@@ -145797,6 +148398,73 @@
                           ],
                           "description": "Its effective and review-by dates, and its review's owner"
                         },
+                        "scope": {
+                          "type": "object",
+                          "properties": {
+                            "scope": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "axis": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "value": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "party": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "enum": [
+                                              "principal",
+                                              "group"
+                                            ]
+                                          },
+                                          "id": {
+                                            "type": "string",
+                                            "format": "uuid",
+                                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                          },
+                                          "name": {
+                                            "type": [
+                                              "string",
+                                              "null"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "name"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "Who must accept a revision before it takes effect in this scope"
+                                  }
+                                },
+                                "required": [
+                                  "axis",
+                                  "value",
+                                  "party"
+                                ]
+                              },
+                              "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                            }
+                          },
+                          "required": [
+                            "scope"
+                          ],
+                          "description": "The scope a revision approved from now is effective for"
+                        },
                         "onHold": {
                           "type": "boolean",
                           "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
@@ -145898,6 +148566,7 @@
                         "gates",
                         "revision",
                         "dates",
+                        "scope",
                         "onHold",
                         "mayHold",
                         "mayPublish",
@@ -146900,6 +149569,73 @@
                           ],
                           "description": "Its effective and review-by dates, and its review's owner"
                         },
+                        "scope": {
+                          "type": "object",
+                          "properties": {
+                            "scope": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "axis": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "value": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "party": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "enum": [
+                                              "principal",
+                                              "group"
+                                            ]
+                                          },
+                                          "id": {
+                                            "type": "string",
+                                            "format": "uuid",
+                                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                          },
+                                          "name": {
+                                            "type": [
+                                              "string",
+                                              "null"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "name"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "Who must accept a revision before it takes effect in this scope"
+                                  }
+                                },
+                                "required": [
+                                  "axis",
+                                  "value",
+                                  "party"
+                                ]
+                              },
+                              "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                            }
+                          },
+                          "required": [
+                            "scope"
+                          ],
+                          "description": "The scope a revision approved from now is effective for"
+                        },
                         "onHold": {
                           "type": "boolean",
                           "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
@@ -147001,6 +149737,7 @@
                         "gates",
                         "revision",
                         "dates",
+                        "scope",
                         "onHold",
                         "mayHold",
                         "mayPublish",
@@ -186509,6 +189246,73 @@
                       ],
                       "description": "Its effective and review-by dates, and its review's owner"
                     },
+                    "scope": {
+                      "type": "object",
+                      "properties": {
+                        "scope": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "axis": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "value": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "party": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "principal",
+                                          "group"
+                                        ]
+                                      },
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "name": {
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "id",
+                                      "name"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "Who must accept a revision before it takes effect in this scope"
+                              }
+                            },
+                            "required": [
+                              "axis",
+                              "value",
+                              "party"
+                            ]
+                          },
+                          "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                        }
+                      },
+                      "required": [
+                        "scope"
+                      ],
+                      "description": "The scope a revision approved from now is effective for"
+                    },
                     "onHold": {
                       "type": "boolean",
                       "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
@@ -186774,6 +189578,7 @@
                     "gates",
                     "revision",
                     "dates",
+                    "scope",
                     "onHold",
                     "mayHold",
                     "lock",
@@ -186823,6 +189628,9 @@
                     },
                     "pastReview": false,
                     "effectiveFrom": "2026-01-01T00:00:00.000Z"
+                  },
+                  "scope": {
+                    "scope": []
                   },
                   "onHold": false,
                   "mayHold": false,
@@ -190148,6 +192956,73 @@
                       ],
                       "description": "Its effective and review-by dates, and its review's owner"
                     },
+                    "scope": {
+                      "type": "object",
+                      "properties": {
+                        "scope": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "axis": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "value": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "party": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "principal",
+                                          "group"
+                                        ]
+                                      },
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "name": {
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "id",
+                                      "name"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "Who must accept a revision before it takes effect in this scope"
+                              }
+                            },
+                            "required": [
+                              "axis",
+                              "value",
+                              "party"
+                            ]
+                          },
+                          "description": "The condition axis values a revision approved from now is effective for; none is everywhere"
+                        }
+                      },
+                      "required": [
+                        "scope"
+                      ],
+                      "description": "The scope a revision approved from now is effective for"
+                    },
                     "onHold": {
                       "type": "boolean",
                       "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
@@ -190268,6 +193143,7 @@
                     "gates",
                     "revision",
                     "dates",
+                    "scope",
                     "onHold",
                     "mayHold",
                     "mayPublish",
@@ -190340,6 +193216,9 @@
                     },
                     "pastReview": false,
                     "effectiveFrom": "2026-01-01T00:00:00.000Z"
+                  },
+                  "scope": {
+                    "scope": []
                   },
                   "onHold": false,
                   "mayHold": false,

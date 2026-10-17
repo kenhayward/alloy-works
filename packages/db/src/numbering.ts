@@ -83,13 +83,19 @@ export async function numberingInputs(
   ];
   // An `approved` reference takes its component's latest revision (the WF4 plan, WF4-A), read with
   // the pins, of a component the principal may read alone.
-  const revisions = await latestRevisionsOf(trx, [
-    ...new Set(
-      references
-        .filter((each) => readable.has(each.component) && each.approved)
-        .map((each) => each.component),
-    ),
-  ]);
+  // In the document's scope (R15-D).
+  const revisions = await latestRevisionsOf(
+    trx,
+    [
+      ...new Set(
+        references
+          .filter((each) => readable.has(each.component) && each.approved)
+          .map((each) => each.component),
+      ),
+    ],
+    new Date(),
+    outline.profile?.values ?? {},
+  );
   const approvedOf = (component: string) => revisions.get(component)?.versionId ?? null;
   const pinned = [
     ...new Set([

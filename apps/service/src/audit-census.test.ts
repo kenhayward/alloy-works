@@ -247,6 +247,10 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   // Dates set (WF5-A).
   setComponentDates: writes('dates.set'),
   setDocumentDates: writes('dates.set'),
+  setComponentScope: writes('scope.set'),
+  setDocumentScope: writes('scope.set'),
+  acceptComponentRevision: writes('revision.accepted'),
+  acceptDocumentRevision: writes('revision.accepted'),
   listComponentApprovals: read,
   listDocumentApprovals: read,
   transitionQueryDefinition: writes('workflow.transitioned'),

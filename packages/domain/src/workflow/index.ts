@@ -26,3 +26,5 @@ export type {
   WorkflowState,
   WorkflowTransition,
 } from './workflow.js';
+export { effectiveRevision, scopeEntrySchema, scopePartySchema, scopeSchema } from './scope.js';
+export type { Scope, ScopeEntry, ScopeParty, ScopedRevision } from './scope.js';

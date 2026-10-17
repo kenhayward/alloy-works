@@ -17,6 +17,7 @@ import {
   TransitionView,
   WorkflowRevisionView,
   DatesView,
+  ScopeView,
   WorkflowStandingView,
   WorkflowStateView,
 } from './workflows.js';
@@ -384,6 +385,7 @@ export const DocumentView = z.object({
   gates: z.array(GateView).describe('Each gate from its state, decided by its approvers'),
   revision: WorkflowRevisionView,
   dates: DatesView,
+  scope: ScopeView,
   onHold: z
     .boolean()
     .describe(

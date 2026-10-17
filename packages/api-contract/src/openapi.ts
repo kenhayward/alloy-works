@@ -80,7 +80,14 @@ function exampleFor(schema: z.ZodType, io: 'input' | 'output', name = ''): unkno
       }
       return 'example';
     }
-    if (type === 'integer' || type === 'number') return Number(node.minimum ?? 0);
+    // A positive number's bound is exclusive: the least whole number past it.
+    if (type === 'integer' || type === 'number') {
+      return node.minimum !== undefined
+        ? Number(node.minimum)
+        : node.exclusiveMinimum !== undefined
+          ? Number(node.exclusiveMinimum) + 1
+          : 0;
+    }
     if (type === 'boolean') return false;
     return null;
   };

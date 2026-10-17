@@ -12,6 +12,7 @@ import type {
 } from '@alloy-works/api-contract';
 import {
   bootstrapCluster,
+  createDefinition,
   createSpace,
   createTenant,
   findRole,
@@ -27,7 +28,12 @@ import {
   type TestDatabase,
   testTenantDatabase,
 } from '@alloy-works/db/testing';
-import { SEED_DOCUMENT_WORKFLOW, SEED_WORKFLOW, SEED_WORKFLOW_1 } from '@alloy-works/domain';
+import {
+  DEFINITION_SCHEMA_VERSION,
+  SEED_DOCUMENT_WORKFLOW,
+  SEED_WORKFLOW,
+  SEED_WORKFLOW_1,
+} from '@alloy-works/domain';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -413,6 +419,84 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
     expect(listed.json<ApprovalsView>().approvals).toMatchObject([
       { decision: 'rejected', reason: 'Give the weight bands.', by: { id: ids.grace } },
     ]);
+  });
+
+  it('LIF-042 sets the scope a next revision is effective for on edit, refuses an undeclared value or a party who may not read it, and shows it in the view', async () => {
+    await tenantDb.withTenant(tenant, async (trx) => {
+      const axis = await createDefinition(trx, {
+        kind: 'conditionAxis',
+        definition: {
+          schemaVersion: DEFINITION_SCHEMA_VERSION,
+          name: 'Market',
+          key: 'market',
+          values: ['us', 'eu'].map((key) => ({ key, label: key.toUpperCase() })),
+        },
+        author: ids.ada!,
+      });
+      if (axis.answer !== 'created') throw new Error(axis.answer);
+    });
+    const created = await made('components', 'Scoped dose');
+    const scope = (who: string, body: object) =>
+      call('PUT', `/v1/components/${created.id}/scope`, who, body);
+    const set = await scope('ada', {
+      scope: [{ axis: 'market', value: 'us', party: { kind: 'principal', id: ids.grace } }],
+    });
+    expect(set.statusCode, set.body).toBe(200);
+    expect(set.json()).toEqual({
+      scope: [
+        {
+          axis: 'market',
+          value: 'us',
+          party: { kind: 'principal', id: ids.grace, name: expect.any(String) },
+        },
+      ],
+    });
+    expect((await scope('ivy', { scope: [] })).statusCode).toBe(403);
+    const unknown = await scope('ada', {
+      scope: [{ axis: 'market', value: 'mars', party: null }],
+    });
+    expect(unknown.statusCode).toBe(400);
+    expect(unknown.json()).toMatchObject({ code: 'scope_unknown' });
+    const stranger = await scope('ada', {
+      scope: [
+        {
+          axis: 'market',
+          value: 'eu',
+          party: { kind: 'principal', id: '00000000-0000-4000-8000-000000000001' },
+        },
+      ],
+    });
+    expect(stranger.statusCode).toBe(400);
+    expect(stranger.json()).toMatchObject({ code: 'party_invalid' });
+    expect((await component(created.id, 'ivy')).scope).toEqual(set.json());
+
+    // Approved, the revision waits on Grace in the US market; Ivy may not accept for her.
+    expect(
+      (await move('components', created.id, 'ada', { transition: 'submit', from: 'draft' }))
+        .statusCode,
+    ).toBe(200);
+    expect(
+      (
+        await approve('components', created.id, 'grace', {
+          transition: 'approve',
+          version: created.version.id,
+          decision: 'approved',
+        })
+      ).statusCode,
+    ).toBe(200);
+    const accept = (who: string, value: string) =>
+      call('POST', `/v1/components/${created.id}/acceptance`, who, {
+        revision: 1,
+        axis: 'market',
+        value,
+      });
+    const notTheParty = await accept('ivy', 'us');
+    expect(notTheParty.statusCode).toBe(403);
+    expect(notTheParty.json()).toMatchObject({ code: 'acceptance_not_party' });
+    expect((await accept('grace', 'eu')).statusCode).toBe(404);
+    const accepted = await accept('grace', 'us');
+    expect(accepted.statusCode, accepted.body).toBe(200);
+    expect(accepted.json()).toEqual({ revision: 1, axis: 'market', value: 'us', accepted: true });
   });
 
   it('LIF-015 LIF-016 LIF-018 sets dates on edit, refuses an owner who may not read it, and shows past review in the view, the list and every document placing it', async () => {

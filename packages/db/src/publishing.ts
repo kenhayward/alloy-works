@@ -125,6 +125,8 @@ export async function resolveOccurrences(
   trx: TenantTransaction,
   outline: OutlineDocument,
   principalId: string,
+  /** The profile read under: the document's own unless a publish chose another (R15-D). */
+  profile: Readonly<Record<string, readonly string[]>> = outline.profile?.values ?? {},
 ): Promise<OccurrenceOutcome[]> {
   const references: {
     node: string;
@@ -154,14 +156,19 @@ export async function resolveOccurrences(
     ),
   ];
   // An `approved` reference takes its component's latest revision (the WF4 plan, WF4-A), of a
-  // component the principal may read alone.
-  const revisions = await latestRevisionsOf(trx, [
-    ...new Set(
-      references
-        .filter((each) => readable.has(each.component) && each.approved)
-        .map((each) => each.component),
-    ),
-  ]);
+  // component the principal may read alone, the one effective in the profile's scope (R15-D).
+  const revisions = await latestRevisionsOf(
+    trx,
+    [
+      ...new Set(
+        references
+          .filter((each) => readable.has(each.component) && each.approved)
+          .map((each) => each.component),
+      ),
+    ],
+    new Date(),
+    profile,
+  );
   const pinned = [
     ...new Set(
       references.flatMap((each) =>
@@ -783,11 +790,10 @@ export async function resolvePublishable(
     };
   }
 
-  const outcomes = await resolveOccurrences(trx, read.outline, input.principal);
+  const profileValues = (input.profile ?? read.outline.profile)?.values ?? {};
+  const outcomes = await resolveOccurrences(trx, read.outline, input.principal, profileValues);
   // What the profile takes out is never published, so it fails nothing here either (R11-C).
-  const excluded = new Set(
-    selectOutline(read.outline, (input.profile ?? read.outline.profile)?.values ?? {}).excluded,
-  );
+  const excluded = new Set(selectOutline(read.outline, profileValues).excluded);
   const failures: PublishFailure[] = outcomes.flatMap((each) =>
     each.outcome === 'resolved' || excluded.has(each.node)
       ? []

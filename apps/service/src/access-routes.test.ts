@@ -1327,6 +1327,26 @@ describe('routes that check a permission', () => {
       status: 404,
       payload: { effectiveAt: null, reviewBy: '2030-01-01', owner: null },
     }),
+    setComponentScope: () => ({
+      url: `/v1/components/${dosing}/scope`,
+      status: 404,
+      payload: { scope: [] },
+    }),
+    setDocumentScope: () => ({
+      url: `/v1/documents/${MISSING}/scope`,
+      status: 404,
+      payload: { scope: [] },
+    }),
+    acceptComponentRevision: () => ({
+      url: `/v1/components/${dosing}/acceptance`,
+      status: 404,
+      payload: { revision: 1, axis: 'market', value: 'us' },
+    }),
+    acceptDocumentRevision: () => ({
+      url: `/v1/documents/${MISSING}/acceptance`,
+      status: 404,
+      payload: { revision: 1, axis: 'market', value: 'us' },
+    }),
     placeHold: () => ({
       url: '/v1/holds',
       status: 403,
