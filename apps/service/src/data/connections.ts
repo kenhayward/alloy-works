@@ -94,7 +94,7 @@ import {
   type RunAsked,
   type RunsThrough,
 } from './bindings.js';
-import { createConnectorClient, type Answered } from './connector.js';
+import { createConnectorClient } from './connector.js';
 import { failureView, failureViewFor, type FailureIn } from './failure-words.js';
 import { fetchRefused, mayRunFetch, maySqlWith, requireSqlPermitted } from './sql-access.js';
 

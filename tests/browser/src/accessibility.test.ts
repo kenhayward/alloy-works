@@ -486,6 +486,16 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
             .or(administration.getByText('Nothing is on hold.')),
         ],
       });
+      await sections.getByRole('link', { name: /^Query usage/ }).click();
+      await check('Administration, Query usage', {
+        shows: [
+          heading('Query usage', 1),
+          administration.getByLabel(/Queries running at once/),
+          administration
+            .getByRole('table', { name: 'By query definition' })
+            .or(administration.getByText('By query definition: none in this period.')),
+        ],
+      });
       await sections.getByRole('link', { name: /^Retention/ }).click();
       await check('Administration, Retention', {
         shows: [

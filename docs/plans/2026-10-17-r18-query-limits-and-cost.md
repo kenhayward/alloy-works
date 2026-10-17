@@ -9,10 +9,7 @@
 connector; a run over the limit is a named, retryable failure, never a partial result; and every run's
 cost is attributable to its tenant, query and document, and reported in Administration.
 
-| PR   | Holds                                                                                                   |
-| ---- | ------------------------------------------------------------------------------------------------------- |
-| R18a | This plan; 0115; the slot every run takes; `query_throttled`; every run recorded; usage through the API |
-| R18b | Administration's **Query usage** and the limit in **Data** settings; CSV; final review; 0.189.0         |
+One PR (R18), with the close: the page is small enough to ride with the limit it shows.
 
 ## Decisions
 
@@ -22,9 +19,9 @@ cost is attributable to its tenant, query and document, and reported in Administ
 | R18-B | **A leased slot** (default): a run takes a row of `query_slot` under the tenant's advisory lock where fewer than the limit stand, leased for its deadline and the client's slack, and gives it back when answered. A lease that lapses frees itself, so a process that dies holds nothing; any number of service instances share the count.        |
 | R18-C | **Wait briefly, then fail** (Ken): a run waits up to five seconds for a slot, then fails `query_throttled`, attributed to the product and retryable, `retryAfter` five seconds; never truncated or partial (DAT-045, DAT-051). A resolve or creation fails its question so, as any failed run does.                                                |
 | R18-D | **Every run recorded** (Ken; DAT-053): `query_run`, insert-only - when, which act (`sample`, `resolve`, `check`, `creation`), who, the connection, the query definition and the document (a creation's by the id it makes), its duration, rows, bytes of result, and its outcome and failure code; throttled ones too. Kept 13 months, then swept. |
-| R18-E | **Reported** (Ken): `GET /v1/data/usage` - totals by query definition and by document over a period - and `GET /v1/data/usage/runs.csv`, for an administrator; Administration > **Query usage** in R18b.                                                                                                                                           |
+| R18-E | **Reported** (Ken): `GET /v1/data/usage` - totals by query definition and by document over a period - and `GET /v1/data/usage/runs.csv`, for an administrator; Administration > **Query usage**.                                                                                                                                                   |
 
 ## Tasks
 
-- **R18a**: 0115 (`data_policy.concurrent_runs`, `query_slot`, `query_run`, their grants); `takeQuerySlot`, `giveQuerySlot`, `recordQueryRun`, `queryUsage`, the sweep; every run through one metered door in the service; the routes. Tests: the limit holds across acts and frees itself; a run past it waits then fails `query_throttled`; every run recorded and attributed; usage totals; the sweep.
-- **R18b**: the settings field, the page and its CSV; browser walks; the final review; the close.
+- **R18**: 0115 (`data_policy.concurrent_runs`, `query_slot`, `query_run`, their grants); `takeQuerySlot`, `giveQuerySlot`, `recordQueryRun`, `queryUsage`, the sweep; every run through one metered door in the service; the routes. Tests: the limit holds across acts and frees itself; a run past it waits then fails `query_throttled`; every run recorded and attributed; usage totals; the sweep.
+  Administration > **Query usage**: the limit, the totals for a period and the CSV; the browser walk; the final review; the close (0.189.0).

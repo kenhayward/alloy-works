@@ -1066,6 +1066,15 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   document supersedes says so, and opens the newer where the reader may. Administration > Outside names
   the publication each share reaches. Through the API, `GET`, `POST /v1/publications/{id}/shares` and
   `DELETE /v1/publications/{id}/shares/{share}`.
+- **Query limits and cost.** No more of the environment's query runs - samples, resolves, checks and
+  documents made from a template whose components run queries - are in flight at once than its limit,
+  four unless an administrator lowers it in Administration > **Query usage**, never past sixteen. One
+  more waits a few seconds for another to finish, then fails as throttled, to be tried again; nothing
+  partial is kept. Every run is recorded - when, which act, who, the connection, the query definition
+  and the document, its time, rows and size, and its outcome - for 13 months. **Query usage** totals a
+  chosen period by query definition and by document, and downloads every run as CSV. Through the API,
+  `GET /v1/data/usage` and `GET /v1/data/usage/runs.csv`, and `concurrentRuns` in
+  `/v1/settings/data`.
 - **Reviewed query definitions.** A query definition has a workflow of its own, its state and gate on
   its page beside its version, and its own section in Administration > Workflows.
 - **Template governance.** A document made from a template says which template and version, and

@@ -12,6 +12,7 @@ import { Holds } from './Holds.js';
 import { Overview } from './Overview.js';
 import { Outside } from './Outside.js';
 import { People } from './People.js';
+import { QueryUsage } from './QueryUsage.js';
 import { Retention } from './Retention.js';
 import { useListing } from './listing.js';
 import type { SpaceRow } from './SpaceDialogs.js';
@@ -38,6 +39,8 @@ const SECTIONS = [
   { slug: 'outside', title: 'From outside', group: 'People and access' },
   { slug: 'holds', title: 'Legal holds', group: 'System' },
   { slug: 'retention', title: 'Retention', group: 'System' },
+  // How many queries run at once, and what they cost (DAT-053, DAT-071; the R18 plan).
+  { slug: 'queries', title: 'Query usage', group: 'System' },
   { slug: 'audit', title: 'Audit log', group: 'System' },
   { slug: 'about', title: 'About and release notes', group: 'System' },
 ] as const;
@@ -268,6 +271,9 @@ export function Administration({
         {shown === 'outside' && <Outside client={client} />}
         {shown === 'holds' && <Holds client={client} />}
         {shown === 'retention' && <Retention client={client} />}
+        {shown === 'queries' && (
+          <QueryUsage client={client} mayChange={administers.get('tenant') === true} />
+        )}
         {shown === 'audit' && <AuditLog client={client} />}
         {shown === 'about' && <About about={about} />}
       </div>
