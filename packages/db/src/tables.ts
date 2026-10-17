@@ -278,6 +278,8 @@ export interface ArtifactVersionTable {
   /** Generated: `componentType` when the type is set, the key tying it to what the version records. */
   component_type_kind: ColumnType<'componentType' | null, never, never>;
   version_digest: ColumnType<string, string, never>;
+  /** Its line (0112; ADR-0063), none for the main line; absent before 0112. */
+  line_id: ColumnType<string | null, string | undefined, never>;
 }
 
 /** Insert and read, nothing else, on the same terms as the version row. */
@@ -597,6 +599,8 @@ export interface WorkflowTransitionTable {
   by: string | null;
   at: ColumnType<Date, never, never>;
   written_by: ColumnType<string, never, never>;
+  /** A line's move (0112; R16-C), none for the main line's; absent before 0112. */
+  line_id: ColumnType<string | null, string | undefined, never>;
 }
 
 /** One approval or rejection at a gate, inserted and never changed (0096; WF2-C). */
@@ -649,9 +653,42 @@ export interface ArtifactDatesTable {
 }
 
 /** A revision approved to take effect later, its date fixed as the gate passed (0099; WF5-B). */
+/** A component's divergent line (0112; the R16 plan, R16-B). */
+export interface ArtifactLineTable {
+  id: ColumnType<string, never, never>;
+  artifact_id: ColumnType<string, string, never>;
+  kind: ColumnType<'component', 'component', never>;
+  ordinal: ColumnType<number, number, never>;
+  name: ColumnType<string, string, never>;
+  diverged_from: ColumnType<string, string, never>;
+  by: ColumnType<string, string, never>;
+  at: ColumnType<Date, never, never>;
+  written_by: ColumnType<string, never, never>;
+}
+
+/** A line brought back and closed (0112; R16-F, R16-G). */
+export interface LineClosedTable {
+  line_id: ColumnType<string, string, never>;
+  by: ColumnType<string, string, never>;
+  at: ColumnType<Date, never, never>;
+  written_by: ColumnType<string, never, never>;
+}
+
+/** What bringing a line back carried across and left behind (0112; R16-F). */
+export interface LineReturnTable {
+  line_id: ColumnType<string, string, never>;
+  from_version: ColumnType<string, string, never>;
+  into_version: ColumnType<string, string, never>;
+  carried: ColumnType<unknown, string, never>;
+  left_behind: ColumnType<unknown, string, never>;
+  written_by: ColumnType<string, never, never>;
+}
+
 /** A component's or document's scope, as an act (0111; the R15 plan, R15-B). */
 export interface ArtifactScopeTable {
   id: ColumnType<string, never, never>;
+  /** A line's scope (0112; R16-C), none for the main line's; absent before 0112. */
+  line_id: ColumnType<string | null, string | undefined, never>;
   artifact_id: ColumnType<string, string, never>;
   kind: ColumnType<'component' | 'document', 'component' | 'document', never>;
   scope: ColumnType<unknown, string, never>;
@@ -1047,6 +1084,9 @@ export interface TenantTables {
   artifact_scope: ArtifactScopeTable;
   revision_scope: RevisionScopeTable;
   revision_acceptance: RevisionAcceptanceTable;
+  artifact_line: ArtifactLineTable;
+  line_closed: LineClosedTable;
+  line_return: LineReturnTable;
   revision_effected: RevisionEffectedTable;
   review_lapse: ReviewLapseTable;
   section_waiver: SectionWaiverTable;

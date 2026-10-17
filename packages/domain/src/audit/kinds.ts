@@ -519,6 +519,18 @@ export const auditKindSpecs = {
     }),
     'packages/db/src/scopes.ts',
   ),
+  // A divergent line of a component's revisions begun from a designated revision (LIF-044; the R16
+  // plan, R16-B): the line, its name - the author's words, a label - and what it diverged from.
+  'line.diverged': kind(
+    ['LIF-044'],
+    z.strictObject({
+      kind: z.literal('component'),
+      line: Id,
+      name: z.string().min(1).max(80),
+      from: z.strictObject({ revision: z.int().positive(), version: Id }),
+    }),
+    'packages/db/src/lines.ts',
+  ),
   // A revision accepted by its party in one scope, so it takes effect there (LIF-047; R15-E).
   'revision.accepted': kind(
     ['LIF-047'],

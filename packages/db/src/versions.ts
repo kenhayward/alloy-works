@@ -53,6 +53,7 @@ import { checkSpaceLive } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
 import { versionDigests } from './version-digest.js';
 import { draftOnSave, latestRevision, startWorkflow } from './workflow.js';
+import { lineHead, readLine } from './lines.js';
 
 /** A version as the chain holds it. `content` is exactly what was written, never migrated. */
 /**
@@ -95,6 +96,8 @@ export interface StoredVersion {
   readonly versionDigest: string;
   /** The earlier version a restore made this from (VER-033), or null. Authorship, in neither digest. */
   readonly restoredFrom: string | null;
+  /** Its divergent line (R16-B; ADR-0063), or null for the main line. */
+  readonly line: string | null;
 }
 
 /** Who cut a version and why. Outside both digests (ADR-0024). */
@@ -268,6 +271,7 @@ async function insertVersion(
   parent: string | null,
   digests = versionDigests(substance),
   restoredFrom: string | null = null,
+  line: string | null = null,
 ): Promise<StoredVersion> {
   const component = substance.kind === 'component' ? substance : undefined;
   const values =
@@ -295,6 +299,8 @@ async function insertVersion(
       // Named only when set, as parameters are, so a write to a schema before 0082 names no column it
       // lacks.
       ...(restoredFrom === null ? {} : { restored_from: restoredFrom }),
+      // Named only on a line's version, so a write to a schema before 0112 names no column it lacks.
+      ...(line === null ? {} : { line_id: line }),
     })
     .returning('id')
     .executeTakeFirstOrThrow();
@@ -315,10 +321,14 @@ async function insertVersion(
   }
   const stored = await readVersion(trx, row.id);
   if (!stored) throw new Error(`Version ${row.id} was written and cannot be read back`);
-  // Found by its words from the moment it exists, in its own transaction (search.md; SCH-066).
-  await indexVersion(trx, stored);
-  // Its references, replacing its previous version's (the R2 plan, R2-A).
-  await indexReferences(trx, stored);
+  // A line's version is found and placed as the main line's is not: search and where-used are the
+  // main line's (the R16 plan, R16-H).
+  if (line === null) {
+    // Found by its words from the moment it exists, in its own transaction (search.md; SCH-066).
+    await indexVersion(trx, stored);
+    // Its references, replacing its previous version's (the R2 plan, R2-A).
+    await indexReferences(trx, stored);
+  }
   await recordVersionCut(trx, stored, parent);
   return stored;
 }
@@ -515,6 +525,8 @@ export async function readVersion(
     versionDigest: row.version_digest,
     // A version read from a schema before 0082 has no such column, and was restored from nothing.
     restoredFrom: row.restored_from ?? null,
+    // A version read from a schema before 0112 has no such column, and is the main line's.
+    line: row.line_id ?? null,
   };
 }
 
@@ -633,6 +645,8 @@ export async function listVersions(
       'r.version_no as restored_version',
     ])
     .where('v.artifact_id', '=', artifactId)
+    // The main line's alone: a line's are numbered below it (ADR-0063).
+    .where('v.revision_no', '>=', 0)
     .$if(after !== undefined, (query) =>
       query.where(
         sql<boolean>`(v.revision_no, v.version_no) < (${after!.revision}, ${after!.version})`,
@@ -728,6 +742,8 @@ export interface NextVersion extends Authorship {
   /** The version the caller's session opened from, which must still be the latest. */
   readonly openedFrom: string;
   readonly substance: VersionSubstance;
+  /** A component's divergent line to record on (R16-B); the main line where absent. */
+  readonly line?: string | undefined;
 }
 
 export type RecordAnswer =
@@ -736,7 +752,7 @@ export type RecordAnswer =
   | { readonly answer: 'version.unchanged'; readonly current: StoredVersion }
   /** The latest version is not the one the caller opened from. Names the current one. */
   | { readonly answer: 'version.precondition'; readonly current: StoredVersion }
-  /** This tenant holds no such artifact. */
+  /** This tenant holds no such artifact, or no open line of it by that id: a closed one takes no more. */
   | { readonly answer: 'artifact.missing' };
 
 /**
@@ -821,7 +837,15 @@ async function record(
     );
   }
   await lockArtifact(trx, input.artifactId);
-  const current = await latestVersion(trx, input.artifactId);
+  // A line's head is its newest version, or the revision it diverged from (R16-B).
+  const line =
+    input.line === undefined ? undefined : await readLine(trx, input.artifactId, input.line);
+  if (input.line !== undefined && !line) return { answer: 'artifact.missing' };
+  // Brought back, a line takes no more versions (R16-G); its route says so by name before this.
+  if (line?.closed) return { answer: 'artifact.missing' };
+  const current = line
+    ? await readVersion(trx, await lineHead(trx, line))
+    : await latestVersion(trx, input.artifactId);
   if (!current) return { answer: 'artifact.missing' };
   // A deleted one takes no version (DL-B): checked under the lock its delete takes too.
   if (
@@ -865,23 +889,26 @@ async function record(
   if (digests.versionDigest === latest) {
     return { answer: 'version.unchanged', current };
   }
-  // After a revision is designated, versions count again from 1 under its number (VER-009, WF2-F).
-  const revision = Math.max(
-    current.revision,
-    (await latestRevision(trx, input.artifactId))?.number ?? 0,
-  );
+  // After a revision is designated, versions count again from 1 under its number (VER-009, WF2-F):
+  // the main line's own, never a line's (R16-C). A line's versions are numbered below the main line's,
+  // its ordinal negated, counting from 1 (ADR-0063).
+  const revision = line
+    ? -line.ordinal
+    : Math.max(current.revision, (await latestRevision(trx, input.artifactId))?.number ?? 0);
   const version = await insertVersion(
     trx,
     input.artifactId,
     {
       revision,
-      version: revision === current.revision ? current.version + 1 : 1,
+      version:
+        (line ? current.line === line.id : revision === current.revision) ? current.version + 1 : 1,
     },
     input,
     substance,
     current.id,
     digests,
     restoredFrom,
+    line?.id ?? null,
   );
   // Every save of an approved component or document starts a draft, whatever saved it (WF-F).
   if (

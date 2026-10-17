@@ -6,6 +6,7 @@ import { axesByKey } from './definitions.js';
 import { isDeleted } from './deletion.js';
 import type { TenantTransaction } from './tables.js';
 import { lockArtifact } from './versions.js';
+import { linesStored } from './lines.js';
 
 /**
  * **Scopes** (workflow.md, "Scopes"; the R15 plan, R15-A to R15-E): the condition axis values a
@@ -37,13 +38,19 @@ export interface ArtifactScope {
 export async function readScopes(
   trx: TenantTransaction,
   artifactIds: readonly string[],
+  /** A line's scope (R16-C); the main line's where absent. */
+  line?: string,
 ): Promise<Map<string, ArtifactScope>> {
   if (artifactIds.length === 0 || !(await scopesStored(trx))) return new Map();
+  const lined = await linesStored(trx);
+  if (line !== undefined && !lined) return new Map();
   const rows = await trx
     .selectFrom('artifact_scope')
     .distinctOn('artifact_id')
     .select(['artifact_id', 'scope', 'by', 'at'])
     .where('artifact_id', 'in', [...artifactIds])
+    .$if(lined && line === undefined, (query) => query.where('line_id', 'is', null))
+    .$if(line !== undefined, (query) => query.where('line_id', '=', line!))
     .orderBy('artifact_id')
     .orderBy('id', 'desc')
     .execute();
@@ -72,6 +79,8 @@ export async function setScope(
     readonly kind: 'component' | 'document';
     readonly scope: Scope;
     readonly by: string;
+    /** A line's scope (R16-C); the main line's where absent. */
+    readonly line?: string | undefined;
   },
 ): Promise<SetScopeAnswer> {
   const scope = scopeSchema.parse(input.scope);
@@ -90,7 +99,7 @@ export async function setScope(
     .filter((each) => !axes.get(each.axis)?.values.some((value) => value.key === each.value))
     .map((each) => `${each.axis}.${each.value}`);
   if (unknown.length > 0) return { answer: 'scope.unknown', unknown };
-  const was = (await readScopes(trx, [input.artifactId])).get(input.artifactId) ?? null;
+  const was = (await readScopes(trx, [input.artifactId], input.line)).get(input.artifactId) ?? null;
   if (JSON.stringify(was?.scope ?? []) === JSON.stringify(scope)) {
     return { answer: 'unchanged', scope: was };
   }
@@ -101,6 +110,7 @@ export async function setScope(
       kind: input.kind,
       scope: JSON.stringify(scope),
       by: input.by,
+      ...(input.line === undefined ? {} : { line_id: input.line }),
     })
     .execute();
   const place = await artifactPlace(trx, input.artifactId);
@@ -116,7 +126,7 @@ export async function setScope(
   );
   return {
     answer: 'set',
-    scope: (await readScopes(trx, [input.artifactId])).get(input.artifactId)!,
+    scope: (await readScopes(trx, [input.artifactId], input.line)).get(input.artifactId)!,
   };
 }
 
@@ -126,10 +136,11 @@ export async function setScope(
  */
 export async function fixScope(
   trx: TenantTransaction,
-  input: { readonly artifactId: string; readonly version: string },
+  input: { readonly artifactId: string; readonly version: string; readonly line?: string },
 ): Promise<Scope> {
   if (!(await scopesStored(trx))) return [];
-  const scope = (await readScopes(trx, [input.artifactId])).get(input.artifactId)?.scope ?? [];
+  const scope =
+    (await readScopes(trx, [input.artifactId], input.line)).get(input.artifactId)?.scope ?? [];
   if (scope.length === 0) return [];
   await trx
     .insertInto('revision_scope')

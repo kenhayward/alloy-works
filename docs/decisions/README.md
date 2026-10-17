@@ -56,6 +56,7 @@ exist.
 | [0060](0060-deletion-is-a-tombstone-and-retention-a-minimum.md)                   | Deletion is a tombstone, and retention a minimum                              | Accepted           |
 | [0061](0061-t9s-order.md)                                                         | T9's order                                                                    | Accepted           |
 | [0062](0062-a-templates-query-set-is-computed.md)                                 | A template's query set is computed                                            | Accepted           |
+| [0063](0063-a-line-is-numbered-below-the-main-line.md)                            | A line is numbered below the main line                                        | Accepted           |
 | [0048](0048-plain-http-sources-until-t7.md)                                       | Plain http sources until a tenant can refuse them                             | Accepted           |
 | [0047](0047-workflow-leaves-t3-for-t9.md)                                         | Workflow leaves T3 for T9                                                     | Accepted           |
 | [0046](0046-the-ledger-interface.md)                                              | The Ledger interface                                                          | Accepted           |

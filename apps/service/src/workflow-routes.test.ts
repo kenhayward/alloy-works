@@ -514,6 +514,39 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
     expect((await component(created.id, 'grace')).scope.pending).toEqual([]);
   });
 
+  it('LIF-044 begins a divergent line from a designated revision, by whoever may edit, each name once', async () => {
+    const created = await made('components', 'Diverging dose');
+    expect(
+      (await move('components', created.id, 'ada', { transition: 'submit', from: 'draft' }))
+        .statusCode,
+    ).toBe(200);
+    expect(
+      (
+        await approve('components', created.id, 'grace', {
+          transition: 'approve',
+          version: created.version.id,
+          decision: 'approved',
+        })
+      ).statusCode,
+    ).toBe(200);
+    const diverge = (who: string, body: object) =>
+      call('POST', `/v1/components/${created.id}/lines`, who, body);
+    const begun = await diverge('ada', { revision: 1, name: 'US' });
+    expect(begun.statusCode, begun.body).toBe(200);
+    expect(begun.json()).toEqual({
+      id: expect.any(String),
+      name: 'US',
+      divergedFrom: { revision: 1, version: created.version.id },
+      at: expect.any(String),
+      closed: false,
+    });
+    expect((await diverge('ada', { revision: 1, name: 'us' })).json()).toMatchObject({
+      code: 'line_name_taken',
+    });
+    expect((await diverge('ada', { revision: 9, name: 'EU' })).statusCode).toBe(404);
+    expect((await diverge('ivy', { revision: 1, name: 'EU' })).statusCode).toBe(403);
+  });
+
   it('LIF-015 LIF-016 LIF-018 sets dates on edit, refuses an owner who may not read it, and shows past review in the view, the list and every document placing it', async () => {
     const created = await made('components', 'Dated dose');
     const dates = (who: string, body: object) =>
