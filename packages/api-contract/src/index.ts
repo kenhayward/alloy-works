@@ -92,6 +92,17 @@ export {
   jobRoutes,
 } from './jobs.js';
 export { HoldBody, HoldList, HoldParams, HoldView, ReleaseHoldBody, holdRoutes } from './holds.js';
+export {
+  ShareBody,
+  ShareList,
+  ShareMade,
+  ShareParams,
+  ShareRevoked,
+  SharedOutputFormat,
+  SharedOutputParams,
+  ShareView,
+  shareRoutes,
+} from './shares.js';
 export { KeepView, RetentionBody, RetentionView, retentionRoutes } from './retention.js';
 export {
   ApprovalBody,

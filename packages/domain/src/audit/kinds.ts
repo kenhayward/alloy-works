@@ -601,7 +601,12 @@ export const auditKindSpecs = {
   'generation.run': kind(['LIF-071'], empty, LATER),
   'generation.accepted': kind(['LIF-071', 'GEN-024', 'LOC-041'], empty, LATER),
   'generation.discarded': kind(['LIF-071'], empty, LATER),
-  'publication.shared_accessed': kind(['LIF-070'], empty, LATER),
+  // A recipient from outside opening a shared publication, or one of its outputs (the R17 plan, R17-F).
+  'publication.shared_accessed': kind(
+    ['LIF-070', 'PUB-060'],
+    z.strictObject({ output: z.enum(['pdf', 'docx', 'provenance', 'verapdf']).nullable() }),
+    'packages/db/src/shares.ts',
+  ),
   'support.granted': kind(['LIF-072', 'ADM-042'], empty, LATER),
   'support.used': kind(['LIF-072', 'ADM-024'], empty, LATER),
   'support.revoked': kind(['LIF-072', 'ADM-042'], empty, LATER),

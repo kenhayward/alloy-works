@@ -180,6 +180,18 @@ const OTHER_TENANT_IDS: Readonly<
   getPublicationBindings: async (tenant, db) => ({
     id: (await publicationIn(tenant, db)).publication,
   }),
+  listPublicationShares: async (tenant, db) => ({
+    id: (await publicationIn(tenant, db)).publication,
+  }),
+  sharePublication: async (tenant, db) => ({ id: (await publicationIn(tenant, db)).publication }),
+  revokePublicationShare: async (tenant, db) => ({
+    id: (await publicationIn(tenant, db)).publication,
+    share: '00000000-0000-4000-8000-000000000001',
+  }),
+  getSharedOutput: async (tenant, db) => ({
+    id: (await publicationIn(tenant, db)).publication,
+    format: 'pdf',
+  }),
   makeBaseline: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   listBaselines: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   getBaseline: async (tenant, db) => ({ id: await baselineIn(tenant, db) }),
@@ -546,6 +558,7 @@ const VALID_INPUT: Readonly<
   setDocumentScope: { payload: { scope: [] } },
   acceptComponentRevision: { payload: { revision: 1, axis: 'market', value: 'us' } },
   divergeComponent: { payload: { revision: 1, name: 'US' } },
+  sharePublication: { payload: { email: 'iris@example.net' } },
   bringComponentLineBack: {
     payload: {
       openedFrom: '00000000-0000-4000-8000-000000000001',

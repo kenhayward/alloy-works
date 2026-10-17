@@ -37,6 +37,8 @@ export type RouteTarget =
   | { readonly suggestion: string }
   /** The path parameter holding a round's id: decided on its document (the RR plan). */
   | { readonly round: string }
+  /** The path parameter holding a publication's id: decided on its document (the R17 plan). */
+  | { readonly publication: string }
   | { readonly query: string }
   | { readonly body: string }
   | { readonly grant: string };

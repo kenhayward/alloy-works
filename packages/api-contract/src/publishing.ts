@@ -207,7 +207,9 @@ export type PublicationList = z.infer<typeof PublicationList>;
 
 const download = z
   .string()
-  .describe('A link to the bytes, valid for five minutes, named by the publication id and format');
+  .describe(
+    "A link to the bytes, named by the publication id and format: signed for five minutes, or for somebody from outside the organisation, the service's own address, decided at each request",
+  );
 
 /** What veraPDF found of a publication's PDF, checked after the publication was recorded (W14.1). */
 const PdfCheckView = z.object({
@@ -251,8 +253,9 @@ const PdfOutputView = z
     download,
     view: z
       .string()
+      .nullable()
       .describe(
-        'A link to the same bytes, valid for five minutes, that a browser shows rather than saves',
+        'A link to the same bytes, valid for five minutes, that a browser shows rather than saves; none for somebody from outside the organisation, whose bytes are saved',
       ),
     check: PdfCheckView.nullable().describe(
       'What veraPDF found of the PDF against PDF/UA-1; none until it has been checked, which follows the recording',
@@ -307,6 +310,17 @@ const ProvenanceOutputView = z.object({
 });
 
 export const PublicationView = PublicationSummary.extend({
+  superseded: z
+    .boolean()
+    .describe(
+      'Whether its document was published again later, under the same profile, from a later version (PUB-059)',
+    ),
+  newer: z
+    .string()
+    .nullable()
+    .describe(
+      'The newest publication superseding it, where the caller may read it; null where none does or they may not',
+    ),
   engine: z
     .object({ name: z.literal('typst'), version: z.string() })
     .nullable()

@@ -333,6 +333,8 @@ export interface RoleTable {
   name: string;
   permissions: Permission[];
   created_at: Generated<Date>;
+  /** The shared reader's alone (0114): refused change or removal. */
+  fixed: Generated<boolean>;
 }
 
 export interface AccessGroupTable {

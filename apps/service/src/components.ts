@@ -19,6 +19,7 @@ import {
   isHeld,
   latestSequence,
   listPeople,
+  readsOnlyShares,
   listComponentTypes,
   listReadableComponents,
   listVersions,
@@ -224,10 +225,17 @@ export function componentHandlers(
   principalOf: (request: FastifyRequest) => SessionPrincipal,
 ) {
   return {
-    // Anybody signed in may see who may be named in a user field (definitions.md, DE-J).
+    // Anybody signed in may see who may be named in a user field (definitions.md, DE-J) - but for
+    // somebody from outside who may read no space, who was shared a publication and nothing of the
+    // organisation's people (the R17 plan, R17-I).
     listPeople: async (request: FastifyRequest) => {
       const asked = pageAsked('people', request.query as PeopleQuery);
-      const people = await db.withTenant(tenantOf(request), (trx) => listPeople(trx, asked));
+      const people = await db.withTenant(tenantOf(request), async (trx) => {
+        const listed = await listPeople(trx, asked);
+        return (await readsOnlyShares(trx, principalOf(request).principalId))
+          ? { ...listed, items: [], next: null }
+          : listed;
+      });
       return {
         items: people.items.map((each) => ({ ...each })),
         next: cursorFor('people', asked.sort, asked.order, people.snapshot, people.next),

@@ -72,6 +72,7 @@ const REFUSALS = new Map<
     'A role that includes administer cannot be denied across the whole environment.',
   ],
   ['grant.role_missing', 'There is no such role in this environment.'],
+  ['grant.role_fixed', 'That role is granted only by sharing a publication.'],
   ['grant.subject_missing', 'There is no such person or group in this environment.'],
   ['grant.subject_erased', 'That person was erased, and is granted nothing again.'],
   [

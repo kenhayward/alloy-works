@@ -7,6 +7,7 @@ import {
   type Tenant,
   type TenantDatabase,
   openLinesOf,
+  readsOnlyShares,
 } from '@alloy-works/db';
 import type { SearchKind } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
@@ -50,6 +51,8 @@ export function sentenceFor(answer: SearchAnswer): string {
 function view(
   answer: SearchAnswer,
   open: ReadonlyMap<string, readonly string[]> = new Map(),
+  /** Somebody shared a publication alone: named no space and nobody (the R17 plan, R17-I). */
+  outside = false,
 ): SearchAnswerView {
   const message = sentenceFor(answer);
   if (answer.outcome === 'nothing_to_match') {
@@ -64,9 +67,9 @@ function view(
     message,
     facets: {
       kinds: answer.facets.kinds.map((each) => ({ ...each })),
-      spaces: answer.facets.spaces.map((each) => ({ ...each })),
+      spaces: outside ? [] : answer.facets.spaces.map((each) => ({ ...each })),
       componentTypes: answer.facets.componentTypes.map((each) => ({ ...each })),
-      owners: answer.facets.owners.map((each) => ({ ...each })),
+      owners: outside ? [] : answer.facets.owners.map((each) => ({ ...each })),
       states: answer.facets.states.map((each) => ({ ...each })),
       changed: answer.facets.changed.map((each) => ({ ...each })),
       fields: answer.facets.fields.map((each) => ({
@@ -88,7 +91,7 @@ function view(
       node: each.node,
       title: each.title,
       space:
-        each.spaceId === null || each.spaceName === null
+        outside || each.spaceId === null || each.spaceName === null
           ? null
           : { id: each.spaceId, name: each.spaceName },
       changedAt: each.changedAt.toISOString(),
@@ -184,7 +187,7 @@ export function searchHandlers(
           'Search every version or one baseline, not both.',
         );
       }
-      const { answer, open } = await db.withTenant(tenantOf(request), async (trx) => {
+      const { answer, open, outside } = await db.withTenant(tenantOf(request), async (trx) => {
         const found = await searchWords(trx, principalOf(request).principalId, query.q ?? '', {
           ...(query.offset === undefined ? {} : { offset: Number(query.offset) }),
           ...(query.limit === undefined ? {} : { limit: Number(query.limit) }),
@@ -199,7 +202,11 @@ export function searchHandlers(
           found !== undefined && found !== 'baseline_not_found' && found.outcome === 'results'
             ? found.items.filter((each) => each.kind === 'component').map((each) => each.artifactId)
             : [];
-        return { answer: found, open: await openLinesOf(trx, components) };
+        return {
+          answer: found,
+          open: await openLinesOf(trx, components),
+          outside: await readsOnlyShares(trx, principalOf(request).principalId),
+        };
       });
       if (answer === 'baseline_not_found') {
         throw new AppError(
@@ -229,6 +236,7 @@ export function searchHandlers(
           },
         },
         open,
+        outside,
       );
     },
   };

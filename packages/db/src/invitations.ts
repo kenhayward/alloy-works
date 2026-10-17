@@ -168,8 +168,18 @@ export async function countInvitations(trx: TenantTransaction): Promise<number> 
  */
 export async function invite(
   trx: TenantTransaction,
-  input: { readonly email: string; readonly external: boolean; readonly invitedBy: string },
+  input: {
+    readonly email: string;
+    readonly external: boolean;
+    readonly invitedBy: string;
+    /** When it lapses, in place of `INVITATION_DAYS` from now: a share's own expiry (shares.ts). */
+    readonly expiresAt?: Date;
+  },
 ): Promise<InvitationAnswer> {
+  const lapses =
+    input.expiresAt === undefined
+      ? sql<Date>`now() + make_interval(days => ${INVITATION_DAYS})`
+      : sql<Date>`${input.expiresAt}::timestamptz`;
   const email = invitedAddress(input.email);
   const kind = input.external ? 'external' : 'user';
   // Held until this transaction ends: another invitation of the address, and a first sign-in
@@ -191,8 +201,7 @@ export async function invite(
     await trx
       .updateTable('invitation')
       .set({
-        expires_at: sql<Date>`case when expires_at is null then null
-          else now() + make_interval(days => ${INVITATION_DAYS}) end`,
+        expires_at: sql<Date>`case when expires_at is null then null else ${lapses} end`,
       })
       .where('id', '=', waiting.id)
       .execute();
@@ -219,7 +228,7 @@ export async function invite(
       email,
       principal_id: principal.id,
       invited_by: input.invitedBy,
-      expires_at: sql<Date>`now() + make_interval(days => ${INVITATION_DAYS})`,
+      expires_at: lapses,
     })
     .returning('id')
     .executeTakeFirstOrThrow();

@@ -16150,6 +16150,10 @@
           "howItIsMet": "A bound value revised and an asset ingested are kinds of their own"
         },
         {
+          "id": "LIF-070",
+          "howItIsMet": "A relationship made, changed and removed, and an access to a shared publication, are kinds of their own, each written by its act's design"
+        },
+        {
           "id": "LIF-025",
           "howItIsMet": "Insert-only by the schema's grants and a guard trigger; no route changes or deletes an event ([Kept as written](#kept-as-written))"
         },
@@ -17630,6 +17634,26 @@
     {
       "document": "publishing.md",
       "owns": [
+        {
+          "id": "PUB-057",
+          "howItIsMet": "A publication is shared outside the organisation only with a named address: somebody from outside who signed in with it, verified, or the address invited as such; never one of the organisation's own, and nothing reads without a sign-in ([Shares](#shares))"
+        },
+        {
+          "id": "PUB-058",
+          "howItIsMet": "A share expires at the tenant's default for access from outside, or earlier, within its cap; revoking removes its grant, and since somebody from outside is given no signed link, their next request for the publication or its bytes finds nothing ([Shares](#shares))"
+        },
+        {
+          "id": "PUB-059",
+          "howItIsMet": "A publication says it is superseded where its document was published again later, under the same profile, from a later version, naming the newer only to whoever may read it ([Shares](#shares))"
+        },
+        {
+          "id": "PUB-060",
+          "howItIsMet": "Each opening of a shared publication or fetch of its bytes by somebody from outside is audited `publication.shared_accessed`, and listed with their share to whoever may share it ([Shares](#shares))"
+        },
+        {
+          "id": "PUB-084",
+          "howItIsMet": "A share is a grant of the fixed **Shared reader** role at that publication alone, time-bounded as every grant to somebody from outside is, in the external-access listing; nothing it reaches lists the organisation's people or spaces ([Shares](#shares))"
+        },
         {
           "id": "PUB-004",
           "howItIsMet": "An approved publication is made from a baseline taken as a workflow gate passed ([workflow.md](workflow.md), WF2-H): its record says `approval: 'approved'` (0097), and `publishing/22`, template 22 and Word print no notice and no sentence of being a draft. A person's baseline still publishes a draft, and the live document only ever does"
@@ -20173,13 +20197,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 437,
+      "line": 442,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 450,
+      "line": 455,
       "kind": "title"
     },
     {
@@ -20527,7 +20551,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1396,
+      "line": 1409,
       "kind": "title"
     },
     {
@@ -21416,6 +21440,36 @@
       "id": "VER-004",
       "file": "apps/service/src/settings-routes.test.ts",
       "line": 123,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-057",
+      "file": "apps/service/src/share-routes.test.ts",
+      "line": 188,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-058",
+      "file": "apps/service/src/share-routes.test.ts",
+      "line": 270,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-059",
+      "file": "apps/service/src/share-routes.test.ts",
+      "line": 305,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-060",
+      "file": "apps/service/src/share-routes.test.ts",
+      "line": 252,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-084",
+      "file": "apps/service/src/share-routes.test.ts",
+      "line": 225,
       "kind": "title"
     },
     {
@@ -25979,6 +26033,36 @@
       "kind": "title"
     },
     {
+      "id": "PUB-057",
+      "file": "packages/db/src/shares.test.ts",
+      "line": 137,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-058",
+      "file": "packages/db/src/shares.test.ts",
+      "line": 270,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-059",
+      "file": "packages/db/src/shares.test.ts",
+      "line": 356,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-060",
+      "file": "packages/db/src/shares.test.ts",
+      "line": 320,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-084",
+      "file": "packages/db/src/shares.test.ts",
+      "line": 217,
+      "kind": "title"
+    },
+    {
       "id": "MET-042",
       "file": "packages/db/src/starter-component-type.test.ts",
       "line": 59,
@@ -26538,6 +26622,12 @@
     },
     {
       "id": "LIF-030",
+      "file": "packages/domain/src/audit/kinds.test.ts",
+      "line": 232,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-070",
       "file": "packages/domain/src/audit/kinds.test.ts",
       "line": 213,
       "kind": "title"

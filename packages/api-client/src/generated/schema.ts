@@ -2999,6 +2999,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/publications/{id}/outputs/{format}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A publication's output, through the service, decided at each request
+         * @description Returns one of a publication’s outputs, or its PDF’s veraPDF report, through the service, saved as the publication’s id and never kept by the browser. Decided at each request, so a revoked share fetches nothing more; somebody from outside fetching it is recorded.
+         */
+        get: operations["getSharedOutput"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/publications/{id}/shares": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A publication's shares outside the organisation, each with every access
+         * @description Lists a publication’s shares with people outside the organisation, expired ones too, each with its recipient, its expiry, who shared it and every access, newest first. Needs publish on its document and read on the publication.
+         */
+        get: operations["listPublicationShares"];
+        put?: never;
+        /**
+         * Shares a publication with a named person outside the organisation
+         * @description Shares one publication with a named person from outside the organisation, by address: somebody from outside who signed in with it, verified, or else the address invited as such, the invitation lasting as long as the share. The share is a read-only grant of that publication alone, expiring at the environment’s default for outside access or the time given, within its cap. The person reads it only once they sign in. Refused for anybody in the organisation and for an address an administrator’s invitation already waits for.
+         */
+        post: operations["sharePublication"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/publications/{id}/shares/{share}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revokes a share at once
+         * @description Revokes a share at once: the recipient’s next request for the publication or any of its outputs finds nothing.
+         */
+        delete: operations["revokePublicationShare"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/query-definitions": {
         parameters: {
             query?: never;
@@ -55648,6 +55712,8 @@ export interface operations {
                      *       "approval": "none",
                      *       "baseline": "example",
                      *       "formats": [],
+                     *       "superseded": false,
+                     *       "newer": "example",
                      *       "engine": {
                      *         "name": "typst",
                      *         "version": "example"
@@ -55682,6 +55748,10 @@ export interface operations {
                         /** @description The baseline it was made from, or null */
                         baseline: string | null;
                         formats: string[];
+                        /** @description Whether its document was published again later, under the same profile, from a later version (PUB-059) */
+                        superseded: boolean;
+                        /** @description The newest publication superseding it, where the caller may read it; null where none does or they may not */
+                        newer: string | null;
                         /** @description The PDF's engine; none where the publication has no PDF */
                         engine: {
                             /** @constant */
@@ -55709,10 +55779,10 @@ export interface operations {
                             producerVersion: string;
                             report: [
                             ];
-                            /** @description A link to the bytes, valid for five minutes, named by the publication id and format */
+                            /** @description A link to the bytes, named by the publication id and format: signed for five minutes, or for somebody from outside the organisation, the service's own address, decided at each request */
                             download: string;
-                            /** @description A link to the same bytes, valid for five minutes, that a browser shows rather than saves */
-                            view: string;
+                            /** @description A link to the same bytes, valid for five minutes, that a browser shows rather than saves; none for somebody from outside the organisation, whose bytes are saved */
+                            view: string | null;
                             /** @description What veraPDF found of the PDF against PDF/UA-1; none until it has been checked, which follows the recording */
                             check: {
                                 /** @constant */
@@ -55853,7 +55923,7 @@ export interface operations {
                                 block: string;
                                 label: string | null;
                             })[];
-                            /** @description A link to the bytes, valid for five minutes, named by the publication id and format */
+                            /** @description A link to the bytes, named by the publication id and format: signed for five minutes, or for somebody from outside the organisation, the service's own address, decided at each request */
                             download: string;
                             /** @description None: a browser saves a Word document rather than showing it */
                             view: null;
@@ -55869,7 +55939,7 @@ export interface operations {
                             producerVersion: string;
                             report: [
                             ];
-                            /** @description A link to the bytes, valid for five minutes, named by the publication id and format */
+                            /** @description A link to the bytes, named by the publication id and format: signed for five minutes, or for somebody from outside the organisation, the service's own address, decided at each request */
                             download: string;
                             view: null;
                         })[];
@@ -56131,6 +56201,616 @@ export interface operations {
                 };
             };
             /** @description No such publication in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getSharedOutput: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+                format: "pdf" | "docx" | "provenance" | "verapdf";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The bytes, saved as the publication id and format: decided at each request, so a revoked share fetches nothing more */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": string;
+                    "application/json": string;
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a publication the caller may read is one they may open */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such publication or output, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description This environment has nowhere to keep documents yet */
+            503: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listPublicationShares: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The shares */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "shares": []
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description The publication's shares, oldest first, expired ones too */
+                        shares: {
+                            /** @description The share's id, which is the grant's */
+                            id: string;
+                            recipient: {
+                                id: string;
+                                email: string | null;
+                                /** @description Their name, once they have signed in */
+                                name: string | null;
+                                /** @description Whether they have proved who they are by signing in; until then they read nothing */
+                                signedIn: boolean;
+                            };
+                            expiresAt: string;
+                            expired: boolean;
+                            sharedBy: {
+                                id: string;
+                                name: string | null;
+                            };
+                            sharedAt: string;
+                            /** @description Every access, newest first */
+                            accesses: {
+                                at: string;
+                                /** @description What was fetched, or null where the publication itself was opened */
+                                output: ("pdf" | "docx" | "provenance" | "verapdf") | null;
+                            }[];
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not publish its document */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such publication in this environment, or none the caller may share */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    sharePublication: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "email": "developer@example.com"
+                 *     }
+                 */
+                "application/json": {
+                    /**
+                     * Format: email
+                     * @description The address of the person outside the organisation to share with; its case is not kept
+                     */
+                    email: string;
+                    /**
+                     * Format: date-time
+                     * @description When the share ends: within the environment's cap for access from outside, 90 days unless an administrator set another. Its default, 30 days, where absent
+                     */
+                    expiresAt?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Shared */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "share": {
+                     *         "id": "example",
+                     *         "recipient": {
+                     *           "id": "example",
+                     *           "email": "example",
+                     *           "name": "example",
+                     *           "signedIn": false
+                     *         },
+                     *         "expiresAt": "example",
+                     *         "expired": false,
+                     *         "sharedBy": {
+                     *           "id": "example",
+                     *           "name": "example"
+                     *         },
+                     *         "sharedAt": "example",
+                     *         "accesses": []
+                     *       },
+                     *       "invited": false
+                     *     }
+                     */
+                    "application/json": {
+                        share: {
+                            /** @description The share's id, which is the grant's */
+                            id: string;
+                            recipient: {
+                                id: string;
+                                email: string | null;
+                                /** @description Their name, once they have signed in */
+                                name: string | null;
+                                /** @description Whether they have proved who they are by signing in; until then they read nothing */
+                                signedIn: boolean;
+                            };
+                            expiresAt: string;
+                            expired: boolean;
+                            sharedBy: {
+                                id: string;
+                                name: string | null;
+                            };
+                            sharedAt: string;
+                            /** @description Every access, newest first */
+                            accesses: {
+                                at: string;
+                                /** @description What was fetched, or null where the publication itself was opened */
+                                output: ("pdf" | "docx" | "provenance" | "verapdf") | null;
+                            }[];
+                        };
+                        /** @description true: nobody had signed in with the address, so it was invited; the share opens once they sign in with it */
+                        invited: boolean;
+                    };
+                };
+            };
+            /** @description An address or an expiry that is not one */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not publish its document */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such publication in this environment, or none the caller may share */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description share_member: the address is somebody in the organisation, who reads through their own access; share_duplicate: it is shared with them already; share_expiry_past; share_past_cap: the expiry is past the cap; share_erased: the person was erased */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    revokePublicationShare: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+                share: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Revoked: they read nothing more of it */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "revoked": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description The share revoked */
+                        revoked: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not publish its document */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such share of this publication */
             404: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */

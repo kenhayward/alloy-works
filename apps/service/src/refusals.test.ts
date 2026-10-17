@@ -222,6 +222,16 @@ describe('the rule behind a refusal', () => {
       // The R16 plan's (R16-F): a line brought back already; a block carried that does not differ.
       'line.closed',
       'carry.invalid',
+      // The R17 plan's (R17-A, R17-B, R17-D): a share to one of the organisation's own, to an address
+      // an administrator's invitation waits for, twice, to somebody erased, past now or past the cap;
+      // the shared reader granted but as a share. Guards of the design's own.
+      'share.member',
+      'share.invitation_waiting',
+      'share.duplicate',
+      'share.erased',
+      'share.expiry_past',
+      'share.past_cap',
+      'grant.role_fixed',
       // The WF6 plan's (WF6-C): no template, already its newest, or not its newest.
       'template.none',
       'template.current',

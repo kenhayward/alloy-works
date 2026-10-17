@@ -10,11 +10,15 @@ import type {
   PublicationView,
   RequestPreviewBody,
   RequestPublicationBody,
+  SharedOutputFormat,
 } from '@alloy-works/api-contract';
 import { cursorFor, pageAsked } from './listing.js';
 import {
   listPublications,
   listReadablePublications,
+  loadFacts,
+  recordSharedAccess,
+  supersession,
   publicationBindings,
   readDocument,
   readPublication,
@@ -28,10 +32,10 @@ import {
   type TenantDatabase,
   type TenantTransaction,
 } from '@alloy-works/db';
-import { readOutline, walkOutline } from '@alloy-works/domain';
+import { decide, readOutline, walkOutline } from '@alloy-works/domain';
 import type { ObjectStores, TenantStore } from '@alloy-works/objects';
 import type { FastifyRequest } from 'fastify';
-import { authoriseAt, callerOf, notFound, type Authorised } from './access.js';
+import { authoriseAt, callerOf, notFound, scopesOf, type Authorised } from './access.js';
 import { versionView } from './components.js';
 import { definitionReader } from './data/bindings.js';
 import { storageUnavailable } from './errors.js';
@@ -421,18 +425,45 @@ export function publishingHandlers(
      * the title, because the link's query string reaches the store's logs. Each is served as the type
      * its bytes were kept as, its format's (`OUTPUT_CONTENT_TYPES`). Only the PDF has a link that shows
      * it in place: a browser saves a Word document whatever the link says.
+     *
+     * Somebody from outside the organisation is given no signed link at all (the R17 plan, R17-E):
+     * each is the service's own address, decided at every request, so a revoked share fetches
+     * nothing more; and their opening it is recorded (PUB-060). Whether it is superseded is said to
+     * everybody, the newer one named only where the caller may read it (PUB-059).
      */
     getPublication: async (
       request: FastifyRequest,
-      { trx }: Authorised,
+      { trx, facts, principalId }: Authorised,
     ): Promise<PublicationView> => {
       const { id } = request.params as PublicationParams;
       const publication = await readPublication(trx, id);
       if (!publication) throw notFound();
       if (!objects) throw storageUnavailable();
-      const store = await objects.forTenant(trx, tenantOf(request));
+      const kept = await objects.forTenant(trx, tenantOf(request));
+      const outside = facts.principal.kind === 'external';
+      const served = (format: SharedOutputFormat) => `/v1/publications/${id}/outputs/${format}`;
+      const store = {
+        signedLink: (key: string, seconds: number, name?: string) => {
+          if (!outside) return kept.signedLink(key, seconds, name);
+          const output = publication.outputs.find((each) => each.key === key);
+          return Promise.resolve(
+            output ? served(output.format as SharedOutputFormat) : served('verapdf'),
+          );
+        },
+      };
+      const { superseded, newer } = await supersession(trx, id);
+      const readsNewer =
+        newer !== null &&
+        (await loadFacts(trx, principalId, { kind: 'artifact', id: newer }).then(
+          (loaded) =>
+            loaded !== undefined &&
+            decide('read', { ...loaded, scopes: scopesOf(request) }).allowed,
+        ));
+      await recordSharedAccess(trx, { publication: id, output: null, principal: principalId });
       return {
         ...summaryView(publication),
+        superseded,
+        newer: readsNewer ? newer : null,
         engine: publication.engine && { ...publication.engine },
         template: publication.template && { ...publication.template },
         pipeline: publication.pipelineVersion,
@@ -457,8 +488,8 @@ export function publishingHandlers(
                   report: [] as [],
                   // Signed with no name, and so no `attachment`: stored as application/pdf, the
                   // bytes open in the browser's own viewer, which is how the publication page shows
-                  // them.
-                  view: await store.signedLink(output.key, DOWNLOAD_SECONDS),
+                  // them. None for somebody from outside, whose bytes are saved, never shown.
+                  view: outside ? null : await store.signedLink(output.key, DOWNLOAD_SECONDS),
                   // What veraPDF found, once the check that follows the recording has run (W14.1).
                   check: output.check && {
                     checker: output.check.checker,
@@ -525,9 +556,11 @@ export function publishingHandlers(
      */
     getPublicationBindings: async (
       request: FastifyRequest,
-      { trx }: Authorised,
+      { trx, facts }: Authorised,
     ): Promise<PublicationBindingList> => {
       const { id } = request.params as PublicationParams;
+      // Bindings name datasets and authors: never shared outside (the R17 plan, R17-I).
+      if (facts.principal.kind === 'external') throw notFound();
       if (!(await readPublication(trx, id))) throw notFound();
       const reads = definitionReader(trx, callerOf(request));
       const bindings: PublicationBindingList['bindings'] = [];

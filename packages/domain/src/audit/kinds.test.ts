@@ -210,6 +210,25 @@ describe('the audit kinds', () => {
     }
   });
 
+  it('LIF-070 has a relationship made, changed and removed, and an access to a shared publication, each a kind of its own with its writer', () => {
+    for (const kind of [
+      'relationship.made',
+      'relationship.changed',
+      'relationship.removed',
+      'publication.shared_accessed',
+    ] as const) {
+      expect(auditKindSpecs[kind].requirements, kind).toContain('LIF-070');
+      expect(auditKindSpecs[kind].emittedBy, kind).not.toBeNull();
+    }
+    // What was fetched is named, never anything of it (LIF-030).
+    expect(parseAuditDetail('publication.shared_accessed', { output: 'pdf' })).toEqual({
+      output: 'pdf',
+    });
+    expect(() =>
+      parseAuditDetail('publication.shared_accessed', { output: 'Shared manual' }),
+    ).toThrow();
+  });
+
   it('LIF-030 refuses a detail holding a value where a name belongs', () => {
     // A connection's changed settings are named, never given: a host, a credential, a sentence.
     for (const value of [

@@ -164,6 +164,18 @@ async function targetOf(
       .executeTakeFirst();
     return row ? parseLevel(`artifact:${row.document_id}`) : undefined;
   }
+  if ('publication' in declared) {
+    // A publication is decided on its document (the R17 plan, R17-C): one this tenant does not hold
+    // is no level at all, and so not found.
+    const id = params[declared.publication];
+    if (typeof id !== 'string' || !UUID.test(id)) return undefined;
+    const row = await trx
+      .selectFrom('publication')
+      .select('document_id')
+      .where('id', '=', id)
+      .executeTakeFirst();
+    return row ? parseLevel(`artifact:${row.document_id}`) : undefined;
+  }
   if ('suggestion' in declared) {
     // A suggestion is decided on its component (the SG plan): one this tenant does not hold is no
     // level at all, and so not found.
