@@ -1056,6 +1056,16 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   and may publish it: **Approve and publish** for an approver who may publish, or always where the
   gate says so. A publication made from it says **Approved** and prints no draft notice, and where its
   layout declares an approval page, lists who approved it, when and at which gate, in the PDF and Word.
+- **Publication shares.** A publication's page shows, to whoever may publish its document, **Shared
+  outside**: each share with its address, until when, and whether the person has signed in and how
+  often they opened it, with **Revoke**, which asks first and takes effect at once; and **Share
+  outside**, an address and a day, 30 days ahead unless changed and never past 90. The person shared
+  with signs in with that address - **Sign in**, or **Sign in with Google** where the environment
+  offers it, coming back to the publication - and sees it alone: its files to save, never its
+  document, its baseline or anybody in the organisation. Every page of a publication a later one of its
+  document supersedes says so, and opens the newer where the reader may. Administration > Outside names
+  the publication each share reaches. Through the API, `GET`, `POST /v1/publications/{id}/shares` and
+  `DELETE /v1/publications/{id}/shares/{share}`.
 - **Reviewed query definitions.** A query definition has a workflow of its own, its state and gate on
   its page beside its version, and its own section in Administration > Workflows.
 - **Template governance.** A document made from a template says which template and version, and

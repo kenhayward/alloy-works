@@ -11,6 +11,7 @@ import {
   listShares,
   loadFacts,
   readPublication,
+  readsOnlyShares,
   recordSharedAccess,
   revokeShare,
   sharePublication,
@@ -146,6 +147,8 @@ export function shareHandlers(
       const { id, format } = request.params as SharedOutputParams;
       const publication = await readPublication(trx, id);
       if (!publication) throw notFound();
+      // Never provenance.json to somebody shared it alone: it names people (the final review).
+      if (format === 'provenance' && (await readsOnlyShares(trx, principalId))) throw notFound();
       const key =
         format === 'verapdf'
           ? publication.outputs.find((each) => each.format === 'pdf')?.check?.report.key

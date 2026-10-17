@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { loadReadableSet } from './access-facts.js';
 import { bootstrapCluster } from './bootstrap.js';
 import { createDocument } from './documents.js';
-import { grant } from './grants.js';
+import { extendGrant, grant } from './grants.js';
 import { invite } from './invitations.js';
 import { findRole } from './roles.js';
 import { migrate } from './migrate.js';
@@ -315,6 +315,92 @@ describe('publication shares (publishing.md, "Shares"; the R17 plan)', () => {
         where kind = 'access.revoked' and subject = ${shared.share.id}`.execute(trx),
     );
     expect(revoked.rows[0]!.n).toBe(1);
+  });
+
+  it('PUB-058 keeps an invitation waiting as long as the longest share to it, an extended one included (the final review)', async () => {
+    const { first, second } = await published();
+    const email = `ines-${randomUUID()}@example.net`;
+    const now = Date.now();
+    const long = await as((trx) =>
+      sharePublication(trx, {
+        publication: first,
+        email,
+        expiresAt: new Date(now + 90 * DAY - 60_000),
+        sharedBy: ada,
+      }),
+    );
+    if (long.answer !== 'shared') throw new Error(long.answer);
+    const short = await as((trx) =>
+      sharePublication(trx, {
+        publication: second,
+        email,
+        expiresAt: new Date(now + 10 * DAY),
+        sharedBy: ada,
+      }),
+    );
+    if (short.answer !== 'shared') throw new Error(short.answer);
+    const waiting = () =>
+      as((trx) =>
+        trx
+          .selectFrom('invitation')
+          .select('expires_at')
+          .where('principal_id', '=', long.share.recipient.id)
+          .executeTakeFirstOrThrow(),
+      ).then((row) => row.expires_at!.getTime());
+    // The later, shorter share leaves the invitation as long as the first.
+    expect(await waiting()).toBe(long.share.expiresAt.getTime());
+
+    // An extended share takes its invitation with it.
+    const third = await published();
+    const lone = `iona-${randomUUID()}@example.net`;
+    const made = await as((trx) =>
+      sharePublication(trx, {
+        publication: third.first,
+        email: lone,
+        expiresAt: new Date(now + 10 * DAY),
+        sharedBy: ada,
+      }),
+    );
+    if (made.answer !== 'shared') throw new Error(made.answer);
+    const until = new Date(now + 60 * DAY);
+    const extended = await as((trx) =>
+      extendGrant(trx, { grant: made.share.id, expiresAt: until, by: ada }),
+    );
+    expect('granted' in extended).toBe(true);
+    const invitation = await as((trx) =>
+      trx
+        .selectFrom('invitation')
+        .select('expires_at')
+        .where('principal_id', '=', made.share.recipient.id)
+        .executeTakeFirstOrThrow(),
+    );
+    expect(invitation.expires_at!.getTime()).toBe(until.getTime());
+  });
+
+  it('PUB-058 shares again with somebody whose earlier share has ended (the final review)', async () => {
+    const { first } = await published();
+    const email = `isla-${randomUUID()}@example.net`;
+    const isla = await person('external', email, true);
+    // A share that ended yesterday, as one made long ago would have.
+    await as(async (trx) => {
+      const role = await sharedReaderRole(trx);
+      const ended = await grant(trx, {
+        roleId: role.id,
+        subject: { principal: isla },
+        level: { kind: 'artifact', id: first },
+        effect: 'allow',
+        expiresAt: new Date(Date.now() - DAY),
+        share: true,
+        grantedBy: ada,
+      });
+      if (!('granted' in ended)) throw new Error(ended.refused);
+    });
+    const again = await as((trx) =>
+      sharePublication(trx, { publication: first, email, sharedBy: ada }),
+    );
+    expect(again.answer).toBe('shared');
+    const listed = await as((trx) => listShares(trx, first));
+    expect(listed.map((each) => each.expired)).toEqual([false]);
   });
 
   it('PUB-060 records each access by somebody from outside, who, when and which, and lists it with their share', async () => {

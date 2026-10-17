@@ -204,6 +204,7 @@ export function managingAccessHandlers() {
           role: { ...grant.role },
           expiresAt: grant.expiresAt?.toISOString() ?? null,
           group: grant.group && { ...grant.group },
+          on: grant.on && { ...grant.on },
         })),
         reads: {
           spaces: each.reads.spaces.map((space) => ({ ...space })),

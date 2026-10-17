@@ -21445,31 +21445,31 @@
     {
       "id": "PUB-057",
       "file": "apps/service/src/share-routes.test.ts",
-      "line": 188,
+      "line": 204,
       "kind": "title"
     },
     {
       "id": "PUB-058",
       "file": "apps/service/src/share-routes.test.ts",
-      "line": 270,
+      "line": 312,
       "kind": "title"
     },
     {
       "id": "PUB-059",
       "file": "apps/service/src/share-routes.test.ts",
-      "line": 305,
+      "line": 347,
       "kind": "title"
     },
     {
       "id": "PUB-060",
       "file": "apps/service/src/share-routes.test.ts",
-      "line": 252,
+      "line": 294,
       "kind": "title"
     },
     {
       "id": "PUB-084",
       "file": "apps/service/src/share-routes.test.ts",
-      "line": 225,
+      "line": 241,
       "kind": "title"
     },
     {
@@ -22094,6 +22094,12 @@
       "id": "IAM-051",
       "file": "apps/web/src/admin/Outside.test.tsx",
       "line": 55,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-084",
+      "file": "apps/web/src/admin/Outside.test.tsx",
+      "line": 93,
       "kind": "title"
     },
     {
@@ -22925,6 +22931,24 @@
       "kind": "title"
     },
     {
+      "id": "PUB-059",
+      "file": "apps/web/src/publishing/PublicationPage.test.tsx",
+      "line": 670,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-060",
+      "file": "apps/web/src/publishing/PublicationPage.test.tsx",
+      "line": 731,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-084",
+      "file": "apps/web/src/publishing/PublicationPage.test.tsx",
+      "line": 694,
+      "kind": "title"
+    },
+    {
       "id": "PUB-100",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
       "line": 397,
@@ -22940,6 +22964,24 @@
       "id": "REU-027",
       "file": "apps/web/src/publishing/Publishing.test.tsx",
       "line": 154,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-057",
+      "file": "apps/web/src/publishing/Shares.test.tsx",
+      "line": 54,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-058",
+      "file": "apps/web/src/publishing/Shares.test.tsx",
+      "line": 78,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-060",
+      "file": "apps/web/src/publishing/Shares.test.tsx",
+      "line": 136,
       "kind": "title"
     },
     {
@@ -23173,7 +23215,7 @@
     {
       "id": "COL-063",
       "file": "apps/web/src/shell/Header.test.tsx",
-      "line": 196,
+      "line": 222,
       "kind": "title"
     },
     {
@@ -26047,13 +26089,13 @@
     {
       "id": "PUB-059",
       "file": "packages/db/src/shares.test.ts",
-      "line": 356,
+      "line": 442,
       "kind": "title"
     },
     {
       "id": "PUB-060",
       "file": "packages/db/src/shares.test.ts",
-      "line": 320,
+      "line": 406,
       "kind": "title"
     },
     {

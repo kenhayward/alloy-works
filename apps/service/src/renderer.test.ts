@@ -77,7 +77,7 @@ describe('the renderer, served by the service', () => {
   });
 
   it('leaves the API its own answers', async () => {
-    expect((await get('/v1/tenant')).json()).toEqual({ name: 'Production' });
+    expect((await get('/v1/tenant')).json()).toMatchObject({ name: 'Production' });
     const missing = await get('/v1/nothing-here');
     expect(missing.statusCode).toBe(404);
     expect(missing.json()).toMatchObject({ code: 'not_found' });

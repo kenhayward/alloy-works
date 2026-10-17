@@ -82,6 +82,12 @@ export const ExternalAccessList = z.object({
               .object({ id: z.string(), name: z.string() })
               .nullable()
               .describe('The group it reaches them through, or null for one made to them'),
+            on: z
+              .object({ kind: z.string(), title: z.string().nullable() })
+              .nullable()
+              .describe(
+                'What a grant at an artifact is on, by its kind and title, as a share names its publication; null at a space',
+              ),
           }),
         )
         .describe('Every grant reaching them, directly or through a group'),

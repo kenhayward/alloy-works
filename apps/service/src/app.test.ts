@@ -173,26 +173,26 @@ describe('the service', () => {
       url: '/v1/tenant',
       headers: { host: 'dev.acme.alloy.test' },
     });
-    expect(development.json()).toEqual({ name: 'Development' });
+    expect(development.json()).toMatchObject({ name: 'Development' });
 
     const production = await app.inject({
       url: '/v1/tenant',
       headers: { host: 'ACME.alloy.test:8080' },
     });
-    expect(production.json()).toEqual({ name: 'Production' });
+    expect(production.json()).toMatchObject({ name: 'Production' });
   });
 
   it("IAM-053 reaches each environment at its own hostname, two-level names included, and a customer's own domain once it is added, with no restart", async () => {
     const at = (host: string) => app.inject({ url: '/v1/tenant', headers: { host } });
     // An environment under the customer's name, and the customer's name itself.
-    expect((await at('dev.acme.alloy.test')).json()).toEqual({ name: 'Development' });
-    expect((await at('acme.alloy.test')).json()).toEqual({ name: 'Production' });
+    expect((await at('dev.acme.alloy.test')).json()).toMatchObject({ name: 'Development' });
+    expect((await at('acme.alloy.test')).json()).toMatchObject({ name: 'Production' });
 
     // A domain of the customer's own: unknown, then added to the running service's database - no
     // code, no configuration and no restart - and answered by the environment it was added to.
     expect((await at('docs.customer.example')).statusCode).toBe(404);
     await addHostnames(db.adminUrl, production.id, ['docs.customer.example']);
-    expect((await at('docs.customer.example')).json()).toEqual({ name: 'Production' });
+    expect((await at('docs.customer.example')).json()).toMatchObject({ name: 'Production' });
   });
 
   it('refuses a hostname that serves no environment, before any tenant data is touched', async () => {

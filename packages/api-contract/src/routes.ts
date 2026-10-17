@@ -55,6 +55,7 @@ import {
   Sample,
   SampleParams,
   SignInCallback,
+  SignInStartQuery,
   TenantProfile,
 } from './schemas.js';
 
@@ -134,7 +135,9 @@ const ownRoutes = {
     summary: "Begin signing in with the organisation's identity provider",
     tenantScoped: true,
     access: { check: 'none' },
+    query: SignInStartQuery,
     responses: {
+      400: { description: 'A page to come back to that is not one of this app', schema: ErrorBody },
       302: { description: 'On to the identity provider' },
       404: routeClosed,
     },
@@ -160,7 +163,9 @@ const ownRoutes = {
     summary: 'Begin signing in with a Google account, by way of the one sign-in address',
     tenantScoped: true,
     access: { check: 'none' },
+    query: SignInStartQuery,
     responses: {
+      400: { description: 'A page to come back to that is not one of this app', schema: ErrorBody },
       302: { description: 'On to Google' },
       404: routeClosed,
     },

@@ -6989,6 +6989,11 @@ export interface operations {
                                     id: string;
                                     name: string;
                                 } | null;
+                                /** @description What a grant at an artifact is on, by its kind and title, as a share names its publication; null at a space */
+                                on: {
+                                    kind: string;
+                                    title: string | null;
+                                } | null;
                             }[];
                             /** @description What those grants let them read, decided as every read is */
                             reads: {
@@ -54004,7 +54009,9 @@ export interface operations {
                      *       "id": "example",
                      *       "displayName": "example",
                      *       "email": "example",
-                     *       "environment": "example"
+                     *       "environment": "example",
+                     *       "outside": false,
+                     *       "sharesOnly": false
                      *     }
                      */
                     "application/json": {
@@ -54014,6 +54021,10 @@ export interface operations {
                         email: string | null;
                         /** @description The environment signed in to, as its people see it */
                         environment: string;
+                        /** @description Whether they are from outside the organisation, as somebody shared a publication is */
+                        outside: boolean;
+                        /** @description Whether they are from outside and may read no space: shared publications alone, never what they came from */
+                        sharesOnly: boolean;
                     };
                 };
             };
@@ -63369,7 +63380,9 @@ export interface operations {
     };
     startGoogleSignIn: {
         parameters: {
-            query?: never;
+            query?: {
+                to?: string;
+            };
             header?: {
                 /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
                 "X-Request-Id"?: string;
@@ -63389,6 +63402,26 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description A page to come back to that is not one of this app */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
             };
             /** @description This environment does not permit signing in this way */
             404: {
@@ -63630,7 +63663,9 @@ export interface operations {
     };
     startOrganisationSignIn: {
         parameters: {
-            query?: never;
+            query?: {
+                to?: string;
+            };
             header?: {
                 /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
                 "X-Request-Id"?: string;
@@ -63650,6 +63685,26 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description A page to come back to that is not one of this app */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
             };
             /** @description This environment does not permit signing in this way */
             404: {
@@ -70503,12 +70558,15 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "name": "example"
+                     *       "name": "example",
+                     *       "signIn": []
                      *     }
                      */
                     "application/json": {
                         /** @description What this environment is called, as its own people see it */
                         name: string;
+                        /** @description The ways in it offers: the organisation's provider, Google, or both */
+                        signIn: ("organisation" | "google")[];
                     };
                 };
             };

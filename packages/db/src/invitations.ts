@@ -201,7 +201,11 @@ export async function invite(
     await trx
       .updateTable('invitation')
       .set({
-        expires_at: sql<Date>`case when expires_at is null then null else ${lapses} end`,
+        // A share's renewal never shortens it: another share to the address may last longer.
+        expires_at:
+          input.expiresAt === undefined
+            ? sql<Date>`case when expires_at is null then null else ${lapses} end`
+            : sql<Date>`case when expires_at is null then null else greatest(expires_at, ${lapses}) end`,
       })
       .where('id', '=', waiting.id)
       .execute();

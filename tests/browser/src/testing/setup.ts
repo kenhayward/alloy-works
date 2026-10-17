@@ -68,7 +68,7 @@ export default async function setup(project: TestProject): Promise<() => Promise
     const context = await browser.newContext();
     const page = await context.newPage();
     await page.goto(SERVICE);
-    await page.getByRole('link', { name: 'Sign in' }).click();
+    await page.getByRole('link', { name: 'Sign in', exact: true }).click();
     await page.getByRole('link', { name: /^Ada / }).click();
     // Back at the renderer, which names who is signed in.
     await page.getByRole('button', { name: /Ada/ }).waitFor();

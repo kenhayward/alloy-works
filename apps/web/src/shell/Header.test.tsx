@@ -66,6 +66,32 @@ describe('the header band', () => {
     expect(screen.queryByRole('button', { name: /Ada/ })).not.toBeInTheDocument();
   });
 
+  it('signs in back to the page it was asked from, and with Google too where the environment offers it', async () => {
+    const PUBLICATION = 'ffffffff-0000-4000-8000-000000000001';
+    window.location.hash = `#/publications/${PUBLICATION}`;
+    try {
+      render(
+        <Header
+          fetch={serviceThat({
+            ...signedOut,
+            '/v1/tenant': { name: 'Development', signIn: ['organisation', 'google'] },
+          })}
+        />,
+      );
+      const back = `?to=${encodeURIComponent(`publications/${PUBLICATION}`)}`;
+      expect(await screen.findByRole('link', { name: 'Sign in' })).toHaveAttribute(
+        'href',
+        `/v1/sign-in/organisation${back}`,
+      );
+      expect(await screen.findByRole('link', { name: 'Sign in with Google' })).toHaveAttribute(
+        'href',
+        `/v1/sign-in/google${back}`,
+      );
+    } finally {
+      window.location.hash = '';
+    }
+  });
+
   it('signs out from the account chip', async () => {
     const posted: string[] = [];
     const signedOutNow = vi.fn();

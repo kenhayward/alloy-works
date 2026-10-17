@@ -1,4 +1,5 @@
 import { formatLevel } from '@alloy-works/domain';
+import { sql } from 'kysely';
 
 import { loadReadableSet } from './access-facts.js';
 import { erasedIn } from './erasure.js';
@@ -16,6 +17,8 @@ export interface ExternalGrant {
   readonly expired: boolean;
   readonly extends: string | null;
   readonly group: { readonly id: string; readonly name: string } | null;
+  /** What a grant at an artifact is on, by its kind and title: a share's publication (R17b). */
+  readonly on: { readonly kind: string; readonly title: string | null } | null;
 }
 
 /** Everybody from outside, with what reaches them and what it lets them read (IAM-051). */
@@ -97,6 +100,31 @@ export async function listExternalReach(trx: TenantTransaction): Promise<Externa
       row.name,
     ]),
   );
+  // What each grant at an artifact is on: a publication by its document's title as published, any
+  // other artifact by its main line's latest.
+  const artifacts = [
+    ...new Set(
+      [...direct, ...grouped].flatMap((row) => (row.artifact_id ? [row.artifact_id] : [])),
+    ),
+  ];
+  const named = new Map(
+    (artifacts.length === 0
+      ? []
+      : await trx
+          .selectFrom('artifact as a')
+          .select([
+            'a.id',
+            'a.kind',
+            sql<string | null>`coalesce(
+              (select v.content ->> 'title' from publication p
+                 join artifact_version v on v.id = p.document_version_id where p.id = a.id),
+              (select v.content ->> 'title' from artifact_version v where v.artifact_id = a.id
+                 order by v.revision_no desc, v.version_no desc limit 1))`.as('title'),
+          ])
+          .where('a.id', 'in', artifacts)
+          .execute()
+    ).map((row) => [row.id, { kind: row.kind as string, title: row.title }]),
+  );
   const grantOf = (
     row: (typeof direct)[number] & { group_id?: string; group_name?: string },
   ): ExternalGrant => ({
@@ -108,6 +136,7 @@ export async function listExternalReach(trx: TenantTransaction): Promise<Externa
     expired: row.expires_at !== null && row.expires_at.getTime() <= now.getTime(),
     extends: row.extends,
     group: row.group_id === undefined ? null : { id: row.group_id, name: row.group_name ?? '' },
+    on: row.artifact_id === null ? null : (named.get(row.artifact_id) ?? null),
   });
   const answer: ExternalReach[] = [];
   for (const person of people) {
