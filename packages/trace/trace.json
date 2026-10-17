@@ -19732,7 +19732,7 @@
         },
         {
           "id": "LIF-043",
-          "howItIsMet": "`GET /v1/{components\\|documents}/{id}/effective?scope=&at=` answers the one revision effective in a scope at an instant, by R15-C's rule as it stood then, and whether scoped, the unscoped fallback or none; **What was effective** asks it from the header, for every reader ([Scopes](#scopes))"
+          "howItIsMet": "`GET /v1/{components\\|documents}/{id}/effective?scope=&at=` answers the one revision effective in a scope at an instant, by R15-C's rule as it stood then, and whether scoped, the unscoped fallback or none; **Effective for** asks it, for every reader ([Scopes](#scopes))"
         }
       ]
     }

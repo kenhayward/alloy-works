@@ -47,7 +47,7 @@ decisions, WF-A to WF-K, are the detail. Gates, approvals and revisions are
 | **LIF-060** | A future effective date fixed to the revision approved, served only from that instant, its taking effect `revision.effective` by the system                                                                                                                                                                          |
 | **LIF-042** | A revision effective for condition axis values, fixed from the artifact's scope as a gate designates it, while another is effective elsewhere; `latestRevisionsOf` serves each scope the newest scoped to it, else the newest unscoped ([Scopes](#scopes))                                                           |
 | **LIF-047** | A scope value may name a person or group; the revision waits there, shown as pending in the view and the header with the revision before still served, until that party alone accepts it, audited `revision.accepted` ([Scopes](#scopes))                                                                            |
-| **LIF-043** | `GET /v1/{components\|documents}/{id}/effective?scope=&at=` answers the one revision effective in a scope at an instant, by R15-C's rule as it stood then, and whether scoped, the unscoped fallback or none; **What was effective** asks it from the header, for every reader ([Scopes](#scopes))                   |
+| **LIF-043** | `GET /v1/{components\|documents}/{id}/effective?scope=&at=` answers the one revision effective in a scope at an instant, by R15-C's rule as it stood then, and whether scoped, the unscoped fallback or none; **Effective for** asks it, for every reader ([Scopes](#scopes))                                        |
 
 VER-012 to VER-015 are [storage-and-versioning.md](storage-and-versioning.md)'s, built below. LIF-040
 was superseded by LIF-077, claimed below: a reference floating at latest takes a draft by its author's
@@ -292,5 +292,6 @@ with **Accept** to its party alone.
 
 **What was effective** (R15-F; LIF-043): `effectiveAt` applies the rule as it stood at an instant -
 revisions designated by then, their effective instants passed, acceptances given by then - and says
-why: `scoped`, `unscoped` or `none`. The header's **What was effective**, to every reader, asks it for
-a scope and a moment in the reader's own zone.
+why: `scoped`, `unscoped` or `none`. **Effective for**, offered to every reader, asks it for a scope and a
+moment in the reader's own zone; whoever may edit it sets the scope there too, one button so the
+header does not grow a row.

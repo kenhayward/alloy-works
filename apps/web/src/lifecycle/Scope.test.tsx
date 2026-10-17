@@ -3,7 +3,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
-import { EffectiveButton, ScopeButton, ScopeChips, type ScopeNow } from './Scope.js';
+import { ScopeButton, ScopeChips, type ScopeNow } from './Scope.js';
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
@@ -199,12 +199,21 @@ describe('scopes in a header (the R15 plan, R15-B, R15-E)', () => {
   it('LIF-043 answers, for a scope and a day anybody may ask, the one revision effective there then', async () => {
     const { client, asked } = service();
     render(
-      <EffectiveButton client={client} kind="component" id={PRINTER} title="Install the printer" />,
+      <ScopeButton
+        client={client}
+        kind="component"
+        id={PRINTER}
+        title="Install the printer"
+        scope={{ scope: [], pending: [] }}
+        onSaved={() => undefined}
+        mayEdit={false}
+      />,
     );
-    await userEvent.click(screen.getByRole('button', { name: 'What was effective' }));
-    const dialog = await screen.findByRole('dialog', {
-      name: 'What was effective: Install the printer',
-    });
+    // A reader is asked what was effective alone.
+    await userEvent.click(screen.getByRole('button', { name: 'Effective for' }));
+    const whole = await screen.findByRole('dialog', { name: 'Effective for: Install the printer' });
+    expect(within(whole).queryByRole('button', { name: 'Save' })).toBeNull();
+    const dialog = within(whole).getByRole('form', { name: 'What was effective' });
     await userEvent.selectOptions(
       within(dialog).getByRole('combobox', { name: 'Where' }),
       await within(dialog).findByRole('option', { name: 'Market: United States' }),

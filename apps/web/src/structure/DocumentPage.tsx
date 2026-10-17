@@ -1,13 +1,7 @@
 import type { FieldView } from '@alloy-works/api-client';
 import { TemplateLine, templateIn, type TemplateInfo } from './TemplateLine.js';
 import { DatesButton, DatesChips, datesIn, type Dates } from '../lifecycle/Dates.js';
-import {
-  EffectiveButton,
-  ScopeButton,
-  ScopeChips,
-  scopeIn,
-  type ScopeNow,
-} from '../lifecycle/Scope.js';
+import { NO_SCOPE, ScopeButton, ScopeChips, scopeIn, type ScopeNow } from '../lifecycle/Scope.js';
 import type { createApiClient, paths } from '@alloy-works/api-client';
 import {
   conditions,
@@ -2217,28 +2211,20 @@ export function DocumentPage({
                   }}
                 />
               )}
-              {/* What a revision approved from now is effective for (the R15 plan, R15-B). */}
-              {document.mayEdit && !document.archived && document.scope && (
-                <ScopeButton
-                  client={client}
-                  kind="document"
-                  id={document.id}
-                  title={document.outline.title}
-                  scope={document.scope}
-                  className={styles['toggle']}
-                  onSaved={(scope) => {
-                    if (latest.current?.id === document.id) show({ ...latest.current, scope });
-                    setNotice('Its scope is saved.');
-                  }}
-                />
-              )}
-              {/* What was effective where and when, to every reader (the R15 plan, R15-F). */}
-              <EffectiveButton
+              {/* What a revision approved from now is effective for, set where it may be, and what was
+                  effective where and when, asked by every reader (the R15 plan, R15-B, R15-F). */}
+              <ScopeButton
+                mayEdit={document.mayEdit && !document.archived && document.scope !== null}
                 client={client}
                 kind="document"
                 id={document.id}
                 title={document.outline.title}
+                scope={document.scope ?? NO_SCOPE}
                 className={styles['toggle']}
+                onSaved={(scope) => {
+                  if (latest.current?.id === document.id) show({ ...latest.current, scope });
+                  setNotice('Its scope is saved.');
+                }}
               />
               <RelationshipsButton
                 client={client}

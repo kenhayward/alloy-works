@@ -31,6 +31,9 @@ export interface ScopeNow {
   }[];
 }
 
+/** No scope and nothing waiting: what a view before R15 is read as. */
+export const NO_SCOPE: ScopeNow = { scope: [], pending: [] };
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
 
@@ -118,6 +121,7 @@ export function ScopeButton({
   scope,
   onSaved,
   className,
+  mayEdit = true,
 }: {
   client: Client;
   kind: 'component' | 'document';
@@ -126,6 +130,8 @@ export function ScopeButton({
   scope: ScopeNow;
   onSaved: (scope: ScopeNow) => void;
   className?: string | undefined;
+  /** Whether the reader may set it: else the dialog asks what was effective alone. */
+  mayEdit?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -140,6 +146,7 @@ export function ScopeButton({
           id={id}
           title={title}
           scope={scope}
+          mayEdit={mayEdit}
           onClose={() => setOpen(false)}
           onSaved={(now) => {
             setOpen(false);
@@ -157,6 +164,7 @@ function ScopeDialog({
   id,
   title,
   scope,
+  mayEdit,
   onClose,
   onSaved,
 }: {
@@ -165,6 +173,7 @@ function ScopeDialog({
   id: string;
   title: string;
   scope: ScopeNow;
+  mayEdit: boolean;
   onClose: () => void;
   onSaved: (scope: ScopeNow) => void;
 }) {
@@ -253,70 +262,80 @@ function ScopeDialog({
 
   return (
     <Modal labelledBy={headingId} size="narrow" onClose={onClose}>
-      <form className={styles['form']} onSubmit={(event) => void save(event)}>
-        <h2 id={headingId}>{`Effective for: ${title}`}</h2>
-        <p className={styles['muted']}>
-          A revision approved from now is effective for the values ticked, and the revision before
-          stays effective everywhere else. Tick none for everywhere.
-        </p>
-        {axes === null && <p role="status">Reading the condition axes.</p>}
-        {axes === 'unread' && <p role="alert">The condition axes could not be read.</p>}
-        {axes !== null && axes !== 'unread' && axes.length === 0 && (
-          <p>No condition axes are declared yet.</p>
-        )}
-        {axes !== null &&
-          axes !== 'unread' &&
-          axes.map((axis) => (
-            <fieldset key={axis.key}>
-              <legend>{axis.name}</legend>
-              {axis.values.map((value) => {
-                const key = `${axis.key}:${value.key}`;
-                return (
-                  <div key={key}>
-                    <label className={styles['choice']}>
-                      <input
-                        type="checkbox"
-                        checked={chosen.has(key)}
-                        onChange={() => toggle(key)}
-                      />
-                      {value.label}
-                    </label>
-                    {chosen.has(key) && (
-                      <label>
-                        {`Accepted in ${value.label} by`}
-                        <select
-                          value={chosen.get(key)}
-                          onChange={(event) => accepter(key, event.target.value)}
-                        >
-                          <option value="">Nobody, effective as approved</option>
-                          {groups.map(([group, name]) => (
-                            <option key={group} value={`group:${group}`}>
-                              {`Group: ${name ?? 'unnamed'}`}
-                            </option>
-                          ))}
-                          {people.map((each) => (
-                            <option key={each.id} value={`principal:${each.id}`}>
-                              {each.name}
-                            </option>
-                          ))}
-                        </select>
+      <h2 id={headingId} className={styles['heading']}>{`Effective for: ${title}`}</h2>
+      {mayEdit && (
+        <form className={styles['form']} onSubmit={(event) => void save(event)}>
+          <p className={styles['muted']}>
+            A revision approved from now is effective for the values ticked, and the revision before
+            stays effective everywhere else. Tick none for everywhere.
+          </p>
+          {axes === null && <p role="status">Reading the condition axes.</p>}
+          {axes === 'unread' && <p role="alert">The condition axes could not be read.</p>}
+          {axes !== null && axes !== 'unread' && axes.length === 0 && (
+            <p>No condition axes are declared yet.</p>
+          )}
+          {axes !== null &&
+            axes !== 'unread' &&
+            axes.map((axis) => (
+              <fieldset key={axis.key}>
+                <legend>{axis.name}</legend>
+                {axis.values.map((value) => {
+                  const key = `${axis.key}:${value.key}`;
+                  return (
+                    <div key={key}>
+                      <label className={styles['choice']}>
+                        <input
+                          type="checkbox"
+                          checked={chosen.has(key)}
+                          onChange={() => toggle(key)}
+                        />
+                        {value.label}
                       </label>
-                    )}
-                  </div>
-                );
-              })}
-            </fieldset>
-          ))}
-        <p role="status">{said}</p>
+                      {chosen.has(key) && (
+                        <label>
+                          {`Accepted in ${value.label} by`}
+                          <select
+                            value={chosen.get(key)}
+                            onChange={(event) => accepter(key, event.target.value)}
+                          >
+                            <option value="">Nobody, effective as approved</option>
+                            {groups.map(([group, name]) => (
+                              <option key={group} value={`group:${group}`}>
+                                {`Group: ${name ?? 'unnamed'}`}
+                              </option>
+                            ))}
+                            {people.map((each) => (
+                              <option key={each.id} value={`principal:${each.id}`}>
+                                {each.name}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      )}
+                    </div>
+                  );
+                })}
+              </fieldset>
+            ))}
+          {said !== '' && <p role="alert">{said}</p>}
+          <div className={styles['buttons']}>
+            <button type="button" onClick={onClose}>
+              Cancel
+            </button>
+            <button type="submit" className="primary" disabled={busy}>
+              Save
+            </button>
+          </div>
+        </form>
+      )}
+      <EffectiveAsk client={client} kind={kind} id={id} />
+      {!mayEdit && (
         <div className={styles['buttons']}>
           <button type="button" onClick={onClose}>
-            Cancel
-          </button>
-          <button type="submit" className="primary" disabled={busy}>
-            Save
+            Close
           </button>
         </div>
-      </form>
+      )}
     </Modal>
   );
 }
@@ -338,54 +357,18 @@ const localNow = () => {
 };
 
 /**
- * **What was effective**, offered to every reader (LIF-043; R15-F): a scope and a moment asked, and
- * the one revision effective there then said in words, so nobody needs engineering help to know what
- * applied at a plant on a day.
+ * **What was effective** (LIF-043; R15-F), within Effective for, to every reader: a scope and a
+ * moment asked, and the one revision effective there then said in words, so nobody needs engineering
+ * help to know what applied at a plant on a day.
  */
-export function EffectiveButton({
+function EffectiveAsk({
   client,
   kind,
   id,
-  title,
-  className,
 }: {
   client: Client;
   kind: 'component' | 'document';
   id: string;
-  title: string;
-  className?: string | undefined;
-}) {
-  const [open, setOpen] = useState(false);
-  return (
-    <>
-      <button type="button" className={className} onClick={() => setOpen(true)}>
-        What was effective
-      </button>
-      {open && (
-        <EffectiveDialog
-          client={client}
-          kind={kind}
-          id={id}
-          title={title}
-          onClose={() => setOpen(false)}
-        />
-      )}
-    </>
-  );
-}
-
-function EffectiveDialog({
-  client,
-  kind,
-  id,
-  title,
-  onClose,
-}: {
-  client: Client;
-  kind: 'component' | 'document';
-  id: string;
-  title: string;
-  onClose: () => void;
 }) {
   const headingId = useId();
   const [axes, setAxes] = useState<readonly OfferedAxis[]>([]);
@@ -446,40 +429,39 @@ function EffectiveDialog({
   };
 
   return (
-    <Modal labelledBy={headingId} size="narrow" onClose={onClose}>
-      <form className={styles['form']} onSubmit={(event) => void ask(event)}>
-        <h2 id={headingId}>{`What was effective: ${title}`}</h2>
-        <label>
-          Where
-          <select value={where} onChange={(event) => setWhere(event.target.value)}>
-            <option value="">Everywhere</option>
-            {axes.flatMap((axis) =>
-              axis.values.map((value) => (
-                <option key={`${axis.key}:${value.key}`} value={`${axis.key}:${value.key}`}>
-                  {`${axis.name}: ${value.label}`}
-                </option>
-              )),
-            )}
-          </select>
-        </label>
-        <label>
-          When
-          <input
-            type="datetime-local"
-            value={when}
-            onChange={(event) => setWhen(event.target.value)}
-          />
-        </label>
-        <p role="status">{answer}</p>
-        <div className={styles['buttons']}>
-          <button type="button" onClick={onClose}>
-            Close
-          </button>
-          <button type="submit" className="primary" disabled={busy}>
-            Ask
-          </button>
-        </div>
-      </form>
-    </Modal>
+    <form
+      className={styles['form']}
+      aria-labelledby={headingId}
+      onSubmit={(event) => void ask(event)}
+    >
+      <h3 id={headingId}>What was effective</h3>
+      <label>
+        Where
+        <select value={where} onChange={(event) => setWhere(event.target.value)}>
+          <option value="">Everywhere</option>
+          {axes.flatMap((axis) =>
+            axis.values.map((value) => (
+              <option key={`${axis.key}:${value.key}`} value={`${axis.key}:${value.key}`}>
+                {`${axis.name}: ${value.label}`}
+              </option>
+            )),
+          )}
+        </select>
+      </label>
+      <label>
+        When
+        <input
+          type="datetime-local"
+          value={when}
+          onChange={(event) => setWhen(event.target.value)}
+        />
+      </label>
+      <p role="status">{answer}</p>
+      <div className={styles['buttons']}>
+        <button type="submit" disabled={busy}>
+          Ask
+        </button>
+      </div>
+    </form>
   );
 }
