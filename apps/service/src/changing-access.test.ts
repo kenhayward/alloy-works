@@ -174,7 +174,7 @@ const answers = (responses: LightMyRequestResponse[]) =>
 describe('a route that changes access', () => {
   const env = freshEnvironment();
 
-  it("is declared by exactly the routes that make and remove grants, withdraw an invitation, set a group's members or delete it, and erase a person, each checking administer", () => {
+  it("is declared by exactly the routes that make and remove grants, withdraw an invitation, set a group's members or delete it, and erase a person, each checking administer, and those sharing a publication, checking publish", () => {
     const declaring = allRoutes.filter(
       (route) => route.access.check === 'permission' && route.access.changesAccess === true,
     );
@@ -184,11 +184,17 @@ describe('a route that changes access', () => {
       'extendGrant',
       'makeGrant',
       'removeGrant',
+      'revokePublicationShare',
       'setGroupMembers',
+      'sharePublication',
       'withdrawInvitation',
     ]);
+    // A share is a publisher's release of what they published (the R17 plan, R17-C).
+    const sharing = ['revokePublicationShare', 'sharePublication'];
     for (const route of declaring) {
-      expect(route.access, route.operationId).toMatchObject({ permission: 'administer' });
+      expect(route.access, route.operationId).toMatchObject({
+        permission: sharing.includes(route.operationId) ? 'publish' : 'administer',
+      });
     }
   });
 

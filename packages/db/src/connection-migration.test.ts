@@ -216,6 +216,7 @@ describe('migration 0044, over an environment made before it', () => {
       '0111_scoped_effectivity',
       '0112_divergent_lines',
       '0113_line_returned',
+      '0114_publication_shares',
     ]);
     // Every row still there, and what 0048 seeds beside them: the value catalogue, its 0.1 and the
     // default theme's 0.6 (B1); and what 0055 seeds: the table catalogue's fifth version, the default
@@ -225,7 +226,8 @@ describe('migration 0044, over an environment made before it', () => {
       ...counts,
       artifact: counts.artifact! + 1,
       artifact_version: counts.artifact_version! + 8,
-      role: counts.role! + 2,
+      // And 0114's shared reader (the R17 plan, R17-B).
+      role: counts.role! + 3,
     });
 
     fresh = await createTenant(db.adminUrl, db.migratorUrl, {

@@ -952,6 +952,23 @@ describe('routes that check a permission', () => {
       url: `/v1/publications/${reportPublication}/bindings`,
       status: 404,
     }),
+    listPublicationShares: () => ({
+      url: `/v1/publications/${reportPublication}/shares`,
+      status: 404,
+    }),
+    sharePublication: () => ({
+      url: `/v1/publications/${reportPublication}/shares`,
+      status: 404,
+      payload: { email: 'iris@example.net' },
+    }),
+    revokePublicationShare: () => ({
+      url: `/v1/publications/${reportPublication}/shares/${MISSING}`,
+      status: 404,
+    }),
+    getSharedOutput: () => ({
+      url: `/v1/publications/${reportPublication}/outputs/pdf`,
+      status: 404,
+    }),
     createTemplate: () => ({
       url: `/v1/spaces/${clinical}/templates`,
       status: 404,

@@ -7,6 +7,7 @@ import {
   OUTLINE_SCHEMA_VERSION,
   TEMPLATE_SCHEMA_VERSION,
   type SearchKind,
+  type StoredProfile,
 } from '@alloy-works/domain';
 import { createComponent } from '../creation.js';
 import { DEFAULT_LAYOUT_ID } from '../layouts.js';
@@ -33,6 +34,7 @@ export async function publish(
     readonly document: { readonly artifactId: string; readonly id: string };
     readonly author: string;
     readonly role: string;
+    readonly profile?: StoredProfile;
   },
 ): Promise<string> {
   const asked = await requestPublication(trx, {
@@ -40,6 +42,7 @@ export async function publish(
     version: input.document.id,
     formats: ['pdf'],
     requester: input.author,
+    ...(input.profile === undefined ? {} : { profile: input.profile }),
   });
   if (asked.answer !== 'requested') throw new Error(asked.answer);
   const publication = await recordPublication(trx, {

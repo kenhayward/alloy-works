@@ -42,6 +42,8 @@ export interface BinaryBody {
   readonly bytes: Buffer;
   /** Whether the bytes can never change, so a browser may keep them for a year. */
   readonly immutable: boolean;
+  /** Saved under this name rather than shown, and never kept (the R17 plan, R17-E). */
+  readonly attachment?: string;
 }
 
 const uploadView = (upload: StoredAssetUpload): AssetUploadView => ({

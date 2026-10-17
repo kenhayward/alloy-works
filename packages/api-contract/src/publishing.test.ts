@@ -23,6 +23,8 @@ const viewWith = (outputs: unknown[], record: Record<string, unknown> = {}) => (
   engine: { name: 'typst', version: '0.15.1' },
   template: { name: 'publication', version: 13 },
   pipeline: '13',
+  superseded: false,
+  newer: null,
   outputs,
   ...record,
 });
@@ -143,7 +145,8 @@ describe('the publishing contract (Word 1)', () => {
     expect(PublicationView.safeParse(viewWith([pdf, { ...docx, standard: 'ua-1' }])).success).toBe(
       false,
     );
-    expect(PublicationView.safeParse(viewWith([{ ...pdf, view: null }])).success).toBe(false);
+    // A PDF is shown in place to all but somebody from outside, whose bytes are saved (R17-E).
+    expect(PublicationView.safeParse(viewWith([{ ...pdf, view: null }])).success).toBe(true);
     // A report says only what the domain's report can say.
     expect(
       PublicationView.safeParse(viewWith([pdf, { ...docx, report: [{ kind: 'lost' }] }])).success,

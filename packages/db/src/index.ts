@@ -522,6 +522,18 @@ export {
   type Line,
 } from './lines.js';
 export {
+  listShares,
+  readsOnlyShares,
+  recordSharedAccess,
+  revokeShare,
+  sharedReaderRole,
+  sharePublication,
+  supersession,
+  type ShareAnswer,
+  type SharedOutput,
+  type StoredShare,
+} from './shares.js';
+export {
   acceptRevision,
   effectiveAt,
   fixScope,

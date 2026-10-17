@@ -2635,7 +2635,11 @@ async function readablePublications(
     snapshot,
     total: await countOf(trx, base()),
     facets: {
-      spaces: await facetOf(trx, base('spaces'), 'space_id', 'space_name'),
+      // A space is named only to whoever may read it: a publication shared from one names nothing of
+      // it to somebody from outside (the R17 plan, R17-I).
+      spaces: (await facetOf(trx, base('spaces'), 'space_id', 'space_name')).filter((each) =>
+        readable.spaces.includes(each.value),
+      ),
       // A document by its title at the version each publication made: the latest of them labels it.
       documents: await facetOf(trx, base('documents'), 'document_id', 'title'),
     },

@@ -57,7 +57,13 @@ describe('migration 0083, which gives Administrator the retire permission', () =
     const tenant: Tenant = { ...provisioned, id };
     const roles = () =>
       service.withTenant(tenant, (trx) =>
-        trx.selectFrom('role').select(['name', 'permissions']).orderBy('name').execute(),
+        trx
+          .selectFrom('role')
+          .select(['name', 'permissions'])
+          // 0114's shared reader, which comes after 0083, apart.
+          .where('name', '!=', 'Shared reader')
+          .orderBy('name')
+          .execute(),
       );
     // The environment's Administrator may publish too, by its own edit.
     await service.withTenant(tenant, (trx) =>

@@ -44,6 +44,7 @@ filtered by actor, kind, date and subject, and export it whole as a job.
 | **LIF-056** | The log is under no retention policy in T3: kept for ever, never shorter than anything it describes ([Retention](#retention))                                      |
 | **LIF-073** | Hold applied and removed, archival and deletion are kinds of their own; gate rejection (LIF-074) is declared                                                       |
 | **LIF-069** | A bound value revised and an asset ingested are kinds of their own                                                                                                 |
+| **LIF-070** | A relationship made, changed and removed, and an access to a shared publication, are kinds of their own, each written by its act's design                          |
 | **LIF-025** | Insert-only by the schema's grants and a guard trigger; no route changes or deletes an event ([Kept as written](#kept-as-written))                                 |
 | **LIF-029** | An event and its labels read without the content they describe, which may be gone                                                                                  |
 | **LIF-030** | Detail holds identifiers, field names, codes and rules; never a secret, a credential, a bound value or content                                                     |
@@ -59,7 +60,7 @@ filtered by actor, kind, date and subject, and export it whole as a job.
 | **ADM-039** | An administrator exports it, complete and scoped to the tenant                                                                                                     |
 | **DAT-007** | A connection made, changed (naming the fields changed), its credential set, tested or retired is an event; the credential's value never is                         |
 
-**Not claimed:** DAT-121, a query definition's review (T9); LIF-068, LIF-070, LIF-071, LIF-072 and
+**Not claimed:** DAT-121, a query definition's review (T9); LIF-068, LIF-071, LIF-072 and
 LIF-074 (the T3 audit), whose kinds are declared here and emitted by the designs that build their acts; LIF-055, LIF-034 and LIF-035 (T7, ADR-0045:
 the export leaves room for a signature over its sequence); IAM-070 (T7, an audit-reader permission);
 the workflow, approval, hold, deletion and generation events, whose kinds are listed here and whose

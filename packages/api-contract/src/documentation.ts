@@ -86,6 +86,11 @@ export const documentationGroups = [
       { name: 'Publication requests', description: 'Submit and follow publishing work.' },
       { name: 'Publications', description: 'List and retrieve completed publications.' },
       {
+        name: 'Publication shares',
+        description:
+          'Share a publication with a named person outside the organisation, revoke it, and read every access.',
+      },
+      {
         name: 'Presentation and numbering',
         description: 'Read layout, theme and document numbering.',
       },
@@ -320,6 +325,12 @@ const operationTags = {
     'listPublicationsEverywhere',
     'getPublication',
     'getPublicationBindings',
+  ],
+  'Publication shares': [
+    'listPublicationShares',
+    'sharePublication',
+    'revokePublicationShare',
+    'getSharedOutput',
   ],
   'Presentation and numbering': ['getNumbering', 'getDocumentPresentation', 'getPresentation'],
   Tokens: [
@@ -695,6 +706,14 @@ const descriptions: Readonly<Record<string, string>> = {
   getPublication: 'Returns a completed publication’s immutable record and links to its outputs.',
   getPublicationBindings:
     'Returns each value a publication printed, by node and binding, with the dataset version and stored result it was taken from. Needs read on the publication. The SQL that ran, the connection and each column’s source column are included only where the caller may read the query definition; provenance.json, the publication’s own output, never holds them.',
+  listPublicationShares:
+    'Lists a publication’s shares with people outside the organisation, expired ones too, each with its recipient, its expiry, who shared it and every access, newest first. Needs publish on its document and read on the publication.',
+  sharePublication:
+    'Shares one publication with a named person from outside the organisation, by address: somebody from outside who signed in with it, verified, or else the address invited as such, the invitation lasting as long as the share. The share is a read-only grant of that publication alone, expiring at the environment’s default for outside access or the time given, within its cap. The person reads it only once they sign in. Refused for anybody in the organisation and for an address an administrator’s invitation already waits for.',
+  revokePublicationShare:
+    'Revokes a share at once: the recipient’s next request for the publication or any of its outputs finds nothing.',
+  getSharedOutput:
+    'Returns one of a publication’s outputs, or its PDF’s veraPDF report, through the service, saved as the publication’s id and never kept by the browser. Decided at each request, so a revoked share fetches nothing more; somebody from outside fetching it is recorded.',
   listTokens:
     'Lists the caller’s own personal tokens and their expiry and last use. Token secrets are never returned by a listing.',
   createToken:

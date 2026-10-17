@@ -21,6 +21,8 @@ export interface NewGrant {
   readonly expiresAt?: Date | null;
   /** Refuses an expiry already past, as a request to make one is (`grant.expiry_past`). */
   readonly refusePast?: boolean;
+  /** A publication share (shares.ts), the one grant the fixed role may be made in. */
+  readonly share?: true;
   readonly grantedBy: string;
 }
 
@@ -41,6 +43,7 @@ export type ExternalRefusal =
 export type GrantRefusal =
   | ExternalRefusal
   | 'grant.role_missing'
+  | 'grant.role_fixed'
   | 'grant.subject_missing'
   | 'grant.subject_erased'
   | 'grant.duplicate'
@@ -139,10 +142,15 @@ export async function grant(trx: TenantTransaction, input: NewGrant): Promise<Gr
   // as a foreign key violation, since each tenant's schema holds only its own.
   const role = await trx
     .selectFrom('role')
-    .select('permissions')
+    .select([
+      'permissions',
+      sql<boolean>`coalesce((to_jsonb(role) ->> 'fixed')::boolean, false)`.as('fixed'),
+    ])
     .where('id', '=', input.roleId)
     .executeTakeFirst();
   if (!role) return { refused: 'grant.role_missing' };
+  // The shared reader is granted only as a publication share (the R17 plan, R17-B).
+  if (role.fixed && input.share !== true) return { refused: 'grant.role_fixed' };
   const external = await reachesExternal(trx, input.subject);
   if (external === undefined) return { refused: 'grant.subject_missing' };
   if (external === 'erased') return { refused: 'grant.subject_erased' };

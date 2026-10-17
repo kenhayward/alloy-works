@@ -181,6 +181,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0111_scoped_effectivity',
       '0112_divergent_lines',
       '0113_line_returned',
+      '0114_publication_shares',
     ]);
     expect(applied[own.id]).toEqual([
       '0058_query_roles',
@@ -239,6 +240,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0111_scoped_effectivity',
       '0112_divergent_lines',
       '0113_line_returned',
+      '0114_publication_shares',
     ]);
 
     expect(await queryRoles(development)).toEqual([
