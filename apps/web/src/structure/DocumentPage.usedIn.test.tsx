@@ -71,9 +71,7 @@ describe('where what a node places is used (the R14 plan, R14-B)', () => {
     await userEvent.click(item(/^Method/));
     const placed = await within(part()).findByRole('list', { name: 'Used in' });
     const offered = within(placed).getAllByRole('button');
-    expect(offered.map((each) => each.textContent)).toEqual([
-      'Where Install the printer is used',
-    ]);
+    expect(offered.map((each) => each.textContent)).toEqual(['Where Install the printer is used']);
     await userEvent.click(offered[0]!);
     const dialog = await screen.findByRole('dialog', { name: 'Where Install the printer is used' });
     expect(await within(dialog).findByRole('link', { name: 'Pump manual' })).toHaveAttribute(

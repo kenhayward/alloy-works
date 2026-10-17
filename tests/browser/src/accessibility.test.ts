@@ -298,6 +298,21 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         });
       }
 
+      // The cohorts, from Templates (the R14 plan, R14-A).
+      await page
+        .getByRole('region', { name: 'Templates', exact: true })
+        .getByRole('link', { name: 'Cohorts', exact: true })
+        .click();
+      const cohorts = page.getByRole('region', { name: 'Cohorts', exact: true });
+      await check('the cohorts list', {
+        shows: [
+          heading('Cohorts'),
+          cohorts
+            .getByRole('table')
+            .or(cohorts.getByText("No cohort here. A template's Generate makes one.")),
+        ],
+      });
+
       // The chosen component beside the list (LG6a).
       await page.goto(`${SERVICE}/#/components`);
       await page

@@ -1,5 +1,6 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import { useEffect, useId, useState } from 'react';
+import styles from './CohortList.module.css';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -61,42 +62,44 @@ export function CohortList({ client }: { client: Client }) {
   }, [client, sort, state]);
 
   return (
-    <section aria-labelledby={`${ids}-heading`}>
+    <section aria-labelledby={`${ids}-heading`} className={styles['page']}>
       <h1 id={`${ids}-heading`}>Cohorts</h1>
       <p>
         <a href="#/templates">Templates</a>
       </p>
-      <label htmlFor={`${ids}-state`}>Show</label>{' '}
-      <select
-        id={`${ids}-state`}
-        value={state}
-        onChange={(event) => setState(event.target.value as State)}
-      >
-        {(Object.keys(STATES) as State[]).map((each) => (
-          <option key={each} value={each}>
-            {STATES[each]}
-          </option>
-        ))}
-      </select>{' '}
-      <label htmlFor={`${ids}-sort`}>Sort by</label>{' '}
-      <select
-        id={`${ids}-sort`}
-        value={sort}
-        onChange={(event) => setSort(event.target.value as Sort)}
-      >
-        {(Object.keys(SORTS) as Sort[]).map((each) => (
-          <option key={each} value={each}>
-            {SORTS[each]}
-          </option>
-        ))}
-      </select>
+      <div className={styles['filters']}>
+        <label htmlFor={`${ids}-state`}>Show</label>{' '}
+        <select
+          id={`${ids}-state`}
+          value={state}
+          onChange={(event) => setState(event.target.value as State)}
+        >
+          {(Object.keys(STATES) as State[]).map((each) => (
+            <option key={each} value={each}>
+              {STATES[each]}
+            </option>
+          ))}
+        </select>{' '}
+        <label htmlFor={`${ids}-sort`}>Sort by</label>{' '}
+        <select
+          id={`${ids}-sort`}
+          value={sort}
+          onChange={(event) => setSort(event.target.value as Sort)}
+        >
+          {(Object.keys(SORTS) as Sort[]).map((each) => (
+            <option key={each} value={each}>
+              {SORTS[each]}
+            </option>
+          ))}
+        </select>
+      </div>
       {listed === null && <p role="status">Reading the cohorts.</p>}
       {listed === 'unread' && <p role="alert">The cohorts could not be read.</p>}
       {listed !== null && listed !== 'unread' && listed.length === 0 && (
         <p>No cohort here. A template&apos;s Generate makes one.</p>
       )}
       {listed !== null && listed !== 'unread' && listed.length > 0 && (
-        <table aria-label="Cohorts">
+        <table aria-label="Cohorts" className={styles['table']}>
           <thead>
             <tr>
               <th scope="col">Title</th>

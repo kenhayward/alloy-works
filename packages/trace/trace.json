@@ -18875,6 +18875,10 @@
         {
           "id": "STR-066",
           "howItIsMet": "Another person's change reaches the contents as it happens: the document's stream says its outline changed, and the panel reads it again once no act of the reader's own is in flight, which answers with the outline as it then stands (the PL plan, PL-J)"
+        },
+        {
+          "id": "STR-075",
+          "howItIsMet": "A node's details offer **Used in** for each component it places, itself where a reference or every one beneath it where a section, that the reader may read, each opening the component's where-used (REU-006), which names every document placing it. Nothing in another document refers to a node but through its component: a cross-reference stays within its document (the R14 plan, R14-B)"
         }
       ]
     },
@@ -19238,6 +19242,14 @@
         {
           "id": "TPL-051",
           "howItIsMet": "A definition's `profile` declares default values for axes and the axes a document must set; a parameter's `feeds.axis` gives its value to an axis. Making a document writes the profile, never none; a publish with a required axis unset is `profile_incomplete` ([Profile](#profile))"
+        },
+        {
+          "id": "TPL-040",
+          "howItIsMet": "A cohort is found again as a set: `GET /v1/cohorts` lists every cohort in a space the caller may read, each with its template, space and rows counted made, failed and waiting, and Templates' **Cohorts** opens each one's page (the R14 plan, R14-A)"
+        },
+        {
+          "id": "SCH-065",
+          "howItIsMet": "The cohort listing sorts by when asked, newest first, or by title, and filters by template and by state: complete, a row failed, or a row waiting and none failed; paged by the listing cursor (API-007)"
         }
       ]
     },
@@ -20125,13 +20137,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 426,
+      "line": 427,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 439,
+      "line": 440,
       "kind": "title"
     },
     {
@@ -20335,11 +20347,23 @@
     {
       "id": "REU-032",
       "file": "apps/service/src/cohort-routes.test.ts",
-      "line": 85,
+      "line": 140,
       "kind": "title"
     },
     {
       "id": "REU-034",
+      "file": "apps/service/src/cohort-routes.test.ts",
+      "line": 113,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-065",
+      "file": "apps/service/src/cohort-routes.test.ts",
+      "line": 58,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-040",
       "file": "apps/service/src/cohort-routes.test.ts",
       "line": 58,
       "kind": "title"
@@ -22997,6 +23021,18 @@
       "kind": "title"
     },
     {
+      "id": "SCH-065",
+      "file": "apps/web/src/structure/CohortList.test.tsx",
+      "line": 50,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-040",
+      "file": "apps/web/src/structure/CohortList.test.tsx",
+      "line": 50,
+      "kind": "title"
+    },
+    {
       "id": "REU-033",
       "file": "apps/web/src/structure/CohortPage.test.tsx",
       "line": 60,
@@ -23414,6 +23450,12 @@
       "id": "TPL-044",
       "file": "apps/web/src/structure/DocumentPage.template.test.tsx",
       "line": 85,
+      "kind": "title"
+    },
+    {
+      "id": "STR-075",
+      "file": "apps/web/src/structure/DocumentPage.usedIn.test.tsx",
+      "line": 69,
       "kind": "title"
     },
     {
@@ -28861,13 +28903,13 @@
     {
       "id": "CNT-155",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 883,
+      "line": 898,
       "kind": "title"
     },
     {
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 516,
+      "line": 531,
       "kind": "title"
     },
     {

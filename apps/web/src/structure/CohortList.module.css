@@ -1,0 +1,25 @@
+/* The cohorts, filtered and sorted, in a table (the R14 plan, R14-A). */
+.page {
+  display: grid;
+  gap: var(--space-12);
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: var(--space-8);
+  border-bottom: 1px solid var(--border);
+  text-align: start;
+  vertical-align: top;
+}

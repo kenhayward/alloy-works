@@ -6,7 +6,11 @@ import { describe, expect, it, vi } from 'vitest';
 import { CohortList } from './CohortList.js';
 
 const TEMPLATE = 'tttttttt-0000-4000-8000-000000000001';
-const cohort = (id: string, title: string, rows: { made: number; failed: number; pending: number }) => ({
+const cohort = (
+  id: string,
+  title: string,
+  rows: { made: number; failed: number; pending: number },
+) => ({
   id,
   title,
   template: { id: TEMPLATE, version: 'tttttttt-0000-4000-8000-0000000000a1', name: 'Site report' },
@@ -25,11 +29,18 @@ function service() {
     asked.push(`${url.pathname}${url.search}`);
     const state = url.searchParams.get('state');
     const all = [
-      cohort('cccccccc-0000-4000-8000-000000000002', 'Board {name}', { made: 1, failed: 1, pending: 0 }),
-      cohort('cccccccc-0000-4000-8000-000000000001', 'Annual {name}', { made: 2, failed: 0, pending: 0 }),
+      cohort('cccccccc-0000-4000-8000-000000000002', 'Board {name}', {
+        made: 1,
+        failed: 1,
+        pending: 0,
+      }),
+      cohort('cccccccc-0000-4000-8000-000000000001', 'Annual {name}', {
+        made: 2,
+        failed: 0,
+        pending: 0,
+      }),
     ];
-    const shown =
-      state === 'failed' ? all.filter((each) => each.rows.failed > 0) : all;
+    const shown = state === 'failed' ? all.filter((each) => each.rows.failed > 0) : all;
     return json(200, { items: shown, next: null });
   }) as unknown as typeof fetch;
   return { client: createApiClient({ baseUrl: 'http://acme.test', fetch: fetching }), asked };
