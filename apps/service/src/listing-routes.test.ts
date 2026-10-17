@@ -400,6 +400,29 @@ describe('the listings through the service', () => {
       });
       expect(saved.statusCode, saved.body).toBe(200);
     }
+    // A cohort, so the Cohorts listing has a row to page over (SCH-065).
+    const asker = (await get('/v1/me')).json<{ id: string }>().id;
+    await tenantDb.withTenant(tenant, (trx) =>
+      trx
+        .insertInto('cohort')
+        .values({
+          space_id: general,
+          template_id: '00000000-0000-4000-8000-0000000000c1',
+          resolution: JSON.stringify({
+            template: {
+              id: '00000000-0000-4000-8000-0000000000c1',
+              version: '00000000-0000-4000-8000-0000000000c2',
+            },
+            definition: { name: 'Site report' },
+          }),
+          title: 'Site {name}',
+          language: 'en-GB',
+          direction: 'ltr',
+          source: JSON.stringify({ rows: 1 }),
+          requested_by: asker,
+        })
+        .execute(),
+    );
     const addressed: Record<string, string> = {
       listComponents: '/v1/components',
       listComponentVersions: `/v1/components/${component}/versions`,
@@ -417,6 +440,7 @@ describe('the listings through the service', () => {
       listGroups: '/v1/groups',
       listHolds: '/v1/holds',
       listDeleted: '/v1/deleted',
+      listCohorts: '/v1/cohorts',
       listAuditEvents: '/v1/audit?kind=group.made',
       listTemplates: '/v1/templates',
       listConnections: '/v1/connections',

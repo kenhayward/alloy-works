@@ -19,8 +19,8 @@ export function moduleOf(hash: string): ModuleName | null {
   if (/^#\/documents(?:\/|$)/.test(hash)) return 'Documents';
   if (/^#\/publications(?:\/|$)/.test(hash)) return 'Publications';
   if (/^#\/templates(?:\/|$)/.test(hash)) return 'Templates';
-  // A cohort is generated from a template, and followed from Templates (the R7 plan, R7-G).
-  if (/^#\/cohorts\//.test(hash)) return 'Templates';
+  // A cohort is generated from a template, and followed from Templates (the R7 plan, R7-G; R14-A).
+  if (/^#\/cohorts(?:\/|$)/.test(hash)) return 'Templates';
   if (/^#\/connections(?:\/|$)/.test(hash)) return 'Connections';
   if (/^#\/query-definitions(?:\/|$)/.test(hash)) return 'Query definitions';
   if (/^#\/search(?:\?|$)/.test(hash)) return 'Search';

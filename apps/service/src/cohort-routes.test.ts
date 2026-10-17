@@ -55,6 +55,69 @@ describe('cohorts, through the service', () => {
       ...body,
     });
 
+  it('SCH-065 TPL-040 lists the cohorts the caller may read, newest first or by title, filtered by template and by state, each with its rows counted', async () => {
+    const make = async (title: string) =>
+      (
+        await submit({
+          title,
+          rows: [
+            { id: '1', name: 'Harbour' },
+            { id: '2', name: 'Quay' },
+          ],
+        })
+      ).json<{
+        cohort: { id: string };
+      }>().cohort.id;
+    const first = await make('Annual {name}');
+    const second = await make('Board {name}');
+    // The second's first row failed, as a run would leave it.
+    await h.tenantDb.withTenant(h.tenant, (trx) =>
+      trx
+        .updateTable('cohort_row')
+        .set({ state: 'failed', failure: JSON.stringify({ code: 'rows.invalid', message: 'No.' }) })
+        .where('cohort_id', '=', second)
+        .where('row_no', '=', 1)
+        .execute(),
+    );
+    type Listed = {
+      items: {
+        id: string;
+        title: string;
+        template: { id: string; name: string };
+        space: { id: string; name: string };
+        rows: { made: number; failed: number; pending: number };
+      }[];
+      next: string | null;
+    };
+    const listed = async (query = '', who = 'ada') => {
+      const answer = await h.call(who, 'GET', `/v1/cohorts${query}`);
+      expect(answer.statusCode, answer.body).toBe(200);
+      return answer.json<Listed>();
+    };
+    const ours = (page: Listed) => page.items.filter((each) => [first, second].includes(each.id));
+    expect(ours(await listed()).map((each) => each.id)).toEqual([second, first]);
+    expect(ours(await listed('?sort=title')).map((each) => each.title)).toEqual([
+      'Annual {name}',
+      'Board {name}',
+    ]);
+    expect(ours(await listed('?state=failed')).map((each) => each.id)).toEqual([second]);
+    expect(ours(await listed('?state=pending')).map((each) => each.id)).toEqual([first]);
+    expect(ours(await listed(`?template=${template}`)).length).toBe(2);
+    const shown = ours(await listed()).find((each) => each.id === second)!;
+    expect(shown).toMatchObject({
+      template: { id: template, name: 'Site report' },
+      space: { id: h.general, name: 'General' },
+      rows: { made: 0, failed: 1, pending: 1 },
+    });
+    // A page at a time, by an opaque cursor.
+    const page = await listed('?limit=1');
+    expect(page.items).toHaveLength(1);
+    expect(page.next).not.toBeNull();
+    // A reader of the space is shown them; somebody who may read nothing is shown none.
+    expect(ours(await listed('', 'alice'))).toHaveLength(2);
+    expect((await listed('', 'ivy')).items).toEqual([]);
+  });
+
   it('REU-034 asks for a cohort of rows given inline, every row pending, and finds it again by its id', async () => {
     const asked = await submit({
       rows: [

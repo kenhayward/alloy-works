@@ -811,6 +811,9 @@ export { mayStillRead } from './jobs.js';
 export { applyOutlineOverrides, overrideOriginals } from './overrides.js';
 // Bulk generation (the R7 plan): cohorts, their rows and the run that makes them.
 export {
+  listReadableCohorts,
+  type CohortState,
+  type CohortSummary,
   COHORT_ROWS_MAX,
   makeCohortRow,
   pendingRows,

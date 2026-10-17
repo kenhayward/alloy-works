@@ -50,7 +50,7 @@ extension replaces the grant it extends in the same change, as access.md designs
 said the old one lapses, which `access_grant_once` refuses; the new one confers all it did, for
 longer); and a new thread is not internal by default where the artifact has a reader from outside
 (R13-C's default), since the page cannot yet tell cheaply who reads an artifact - **Internal** is
-offered unticked, a choice for Ken. The final review found a digest counting replies from a thread made
+offered unticked, which Ken kept (2026-10-17). The final review found a digest counting replies from a thread made
 internal before it folded, an extension or a grant to a day already past, expired grants listed as if
 standing, an extension first offered for the day the grant already ends, and two reads of 0109's
 table on a schema before it; all fixed. Left: changing a principal's kind; publication shares

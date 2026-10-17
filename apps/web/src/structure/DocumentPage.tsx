@@ -62,6 +62,7 @@ import { InPlaceBand } from '../editor/InPlaceBand.js';
 import { keep, kept, PaneSeparator, PaneToggle, usePaneWidth } from '../layouts/PaneWidth.js';
 import { StatusBar, StatusTools, usePageShown, useStatus } from '../shell/Status.js';
 import { RelationshipsButton } from '../reuse/Relationships.js';
+import { UsedInButton } from '../reuse/UsedIn.js';
 import styles from './DocumentPage.module.css';
 import { ComponentEditor } from '../editor/ComponentEditor.js';
 import { ConditionDialog, declaredAxes, type OfferedAxis } from '../editor/ConditionDialog.js';
@@ -2411,6 +2412,14 @@ export function DocumentPage({
               components={componentsNow}
               onReloadComponents={() => setComponentsAttempt((count) => count + 1)}
               linked={linked}
+              usedIn={(component) => (
+                <UsedInButton
+                  client={client}
+                  id={component.id}
+                  title={component.title}
+                  label={`Where ${component.title} is used`}
+                />
+              )}
               linkOf={(node) =>
                 `${window.location.origin}${window.location.pathname}${nodeLink(document.id, node)}`
               }

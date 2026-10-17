@@ -11,6 +11,7 @@ import {
   queryDefinitionAddress,
   queryDefinitionTab,
 } from '../data/links.js';
+import { CohortList } from '../structure/CohortList.js';
 import { CohortPage } from '../structure/CohortPage.js';
 import { cohortAddress } from '../structure/links.js';
 import { QueryDefinitionPage } from '../data/QueryDefinitionPage.js';
@@ -64,6 +65,7 @@ const LISTS = new Set([
   '#/components',
   '#/documents',
   '#/templates',
+  '#/cohorts',
   '#/publications',
   '#/connections',
   '#/query-definitions',
@@ -448,6 +450,7 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
         </>
       );
     }
+    if (hash === '#/cohorts') return <CohortList client={client} />;
     if (hash === '#/publications') {
       return (
         <>

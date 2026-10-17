@@ -357,6 +357,8 @@ export interface OutlinePanelProps {
   readonly linked?: { readonly node: string; readonly arrival: number } | null;
   /** A node's shareable address (STR-044), shown for the selected node. */
   readonly linkOf?: (node: string) => string;
+  /** Where a component the selected node places is used, as the page offers it (STR-075; R14-B). */
+  readonly usedIn?: (component: ComponentChoice) => ReactNode;
   /** Told whenever the author chooses a node, so the page's address can follow. */
   readonly onSelected?: (node: string) => void;
   /**
@@ -493,6 +495,7 @@ export function OutlinePanel({
   onReloadComponents = () => {},
   linked = null,
   linkOf,
+  usedIn,
   onSelected = () => {},
   inView = null,
   marks,
@@ -788,6 +791,15 @@ export function OutlinePanel({
     node.type === 'reference' && node.component !== null && components.state === 'loaded'
       ? components.items.find((each) => each.id === node.component)?.state
       : undefined;
+  // Each component the node places, itself or beneath it, that the reader may read (STR-075; R14-B).
+  const usesOf = (node: OutlineViewNode) =>
+    usedIn !== undefined &&
+    components.state === 'loaded' && (
+      <UsedInRow
+        placed={placedBy(node).flatMap((id) => components.items.filter((each) => each.id === id))}
+        usedIn={usedIn}
+      />
+    );
   const referring = (id: string) =>
     referencesTo !== undefined && (
       <ReferencedBy
@@ -1295,7 +1307,12 @@ export function OutlinePanel({
                 openField={openField}
                 onNotice={onNotice}
                 onRemove={() => setConfirming(selected.id)}
-                referencedBy={referring(selected.id)}
+                referencedBy={
+                  <>
+                    {referring(selected.id)}
+                    {usesOf(selected)}
+                  </>
+                }
                 conditions={
                   <ConditionsRow
                     node={selected}
@@ -1356,6 +1373,7 @@ export function OutlinePanel({
                   onNotice={onNotice}
                 />
                 {referring(selected.id)}
+                {usesOf(selected)}
               </div>
             )}
           </div>,
@@ -1698,6 +1716,36 @@ function StateRow({
     <div className={styles['partRow']}>
       <span className={styles['rowLabel']}>State</span>
       <StateLozenge state={state} />
+    </div>
+  );
+}
+
+/** The components a node places, once each in outline order: its own, or every one beneath it. */
+export function placedBy(node: OutlineViewNode): string[] {
+  const own = node.type === 'reference' && node.component !== null ? [node.component] : [];
+  return [...new Set([...own, ...node.children.flatMap(placedBy)])];
+}
+
+/** **Used in** for each component a node places (STR-075; R14-B), said nowhere it places none. */
+function UsedInRow({
+  placed,
+  usedIn,
+}: {
+  placed: readonly ComponentChoice[];
+  usedIn: (component: ComponentChoice) => ReactNode;
+}) {
+  const label = useId();
+  if (placed.length === 0) return null;
+  return (
+    <div className={styles['partRow']}>
+      <span id={label} className={styles['rowLabel']}>
+        Used in
+      </span>
+      <ul aria-labelledby={label} className={styles['referring']}>
+        {placed.map((each) => (
+          <li key={each.id}>{usedIn(each)}</li>
+        ))}
+      </ul>
     </div>
   );
 }

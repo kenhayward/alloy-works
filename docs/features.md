@@ -1077,7 +1077,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   it, which no change reaches. What you may not read is never named; the dialog says only that there is
   more. **Save version**, and **Done editing** with changes, ask first where the new version reaches a
   document, approved ones listed apart from drafts. A publish placing a component that was deleted says
-  so, apart from one you may not read.
+  so, apart from one you may not read. In a document, a node's details offer the same for each
+  component it places, or each one placed beneath a section.
 - **Place from a document.** The outline offers **Place from a document**: choose another document
   and one of its sections, and it says first how many references placing it makes and how much text
   the components hold. Choose how each reference follows its component and a title, and the
@@ -1126,8 +1127,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 {site}`. Through the API (`POST /v1/spaces/{space}/cohorts`) the rows may also come from a query
   result. Every row is made from the template as it stood when asked for, in a transaction of its own:
   a row that is refused leaves nothing and says why. The cohort's page follows the rows, opens each
-  document, and runs the failed rows again, corrected, without touching the rest. Approving or
-  publishing a cohort as one act is not there yet.
+  document, and runs the failed rows again, corrected, without touching the rest. Templates'
+  **Cohorts** lists every cohort you may read, newest first or by title, filtered by whether its rows
+  were all made, one failed, or some wait. Approving or publishing a cohort as one act is not there yet.
 - **Relationships.** Declare a relationship type through the API (`POST /v1/definitions`, kind
   `relationshipType`): the kinds it relates at each end, how many each may hold, whether it reads the
   same both ways, may relate an artifact to itself or close a cycle, the permission it needs at each

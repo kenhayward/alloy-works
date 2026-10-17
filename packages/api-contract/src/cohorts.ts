@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { RouteContract } from './contract.js';
 import { JobView } from './jobs.js';
+import { listingQuery, nextCursor } from './listing.js';
 import { ErrorBody, LowercaseUuid } from './schemas.js';
 
 /** The most rows one cohort takes (the R7 plan, R7-B). */
@@ -120,6 +121,37 @@ const unseen = {
   schema: ErrorBody,
 } as const;
 
+/** The cohorts listing's query (SCH-065; the R14 plan, R14-A): sorted, filtered and paged. */
+export const CohortListQuery = z.object({
+  ...listingQuery(['requested', 'title'], 'requested'),
+  template: LowercaseUuid.optional().describe('Only cohorts made from this template'),
+  state: z
+    .enum(['complete', 'failed', 'pending'])
+    .optional()
+    .describe(
+      'Only cohorts every row of which was made, one with a row that failed, or one with a row waiting and none failed',
+    ),
+});
+export type CohortListQuery = z.infer<typeof CohortListQuery>;
+
+export const CohortSummaryView = z.object({
+  id: LowercaseUuid,
+  title: z.string().describe('The title each document takes, `{name}` standing for a parameter'),
+  template: z.object({ id: LowercaseUuid, version: LowercaseUuid, name: z.string() }),
+  space: z.object({ id: LowercaseUuid, name: z.string() }),
+  requestedAt: z.string(),
+  rows: z
+    .object({
+      made: z.int().nonnegative(),
+      failed: z.int().nonnegative(),
+      pending: z.int().nonnegative(),
+    })
+    .describe('How its rows stand'),
+});
+
+export const CohortList = z.object({ items: z.array(CohortSummaryView), next: nextCursor });
+export type CohortList = z.infer<typeof CohortList>;
+
 /** Cohorts: documents made in bulk from one template (templates.md; the R7 plan). */
 export const cohortRoutes = {
   submitCohort: {
@@ -152,6 +184,24 @@ export const cohortRoutes = {
           "`cohort_bound`: the template's required components run queries, which documents made in bulk cannot run yet",
         schema: ErrorBody,
       },
+    },
+  },
+  listCohorts: {
+    operationId: 'listCohorts',
+    method: 'GET',
+    path: '/v1/cohorts',
+    summary:
+      'The cohorts the caller may read, newest first or by title, filtered by template and state',
+    tenantScoped: true,
+    access: { check: 'session' },
+    query: CohortListQuery,
+    responses: {
+      200: { description: 'A page of cohorts', schema: CohortList },
+      400: {
+        description: 'A cursor this listing did not give out, or a limit outside 1 to 100',
+        schema: ErrorBody,
+      },
+      401: unauthenticated,
     },
   },
   getCohort: {

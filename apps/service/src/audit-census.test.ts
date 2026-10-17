@@ -203,6 +203,7 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   // What is offered to the caller to recover, about their own iterations: no act of record (the R2 plan).
   discardUnsaved: { none: 'iteration' },
   listGrants: read,
+  listCohorts: read,
   listRoles: read,
   listPrincipals: read,
   makeGrant: writes('access.granted'),
