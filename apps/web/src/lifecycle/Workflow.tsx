@@ -260,7 +260,7 @@ export function TransitionButtons({
   askFirst?: ((act: string, go: () => void) => void) | undefined;
 }) {
   const [busy, setBusy] = useState(false);
-  const approving = (go: () => void) => (askFirst ? askFirst('Approve', go) : go());
+  const approving = (act: string, go: () => void) => (askFirst ? askFirst(act, go) : go());
   const [asking, setAsking] = useState<Offered | null>(null);
   const [rejecting, setRejecting] = useState<Gate | null>(null);
 
@@ -349,7 +349,7 @@ export function TransitionButtons({
                   disabled={busy}
                   title={`Approve, towards ${gate.to.name}`}
                   onClick={() =>
-                    approving(() => {
+                    approving('Approve', () => {
                       void decideAt(gate).then((refused) => {
                         if (refused !== undefined) onNotice(refused);
                       });
@@ -367,7 +367,7 @@ export function TransitionButtons({
                   disabled={busy}
                   title={`Approve, and publish once ${gate.to.name}`}
                   onClick={() =>
-                    approving(() => {
+                    approving('Approve and publish', () => {
                       void decideAt(gate, undefined, true).then((refused) => {
                         if (refused !== undefined) onNotice(refused);
                       });

@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   ReachDialog,
   reachesAny,
+  reachToAsk,
   readRelated,
   UsedInButton,
   type Related,
@@ -214,5 +215,22 @@ describe('the warning before a version reaches other documents', () => {
     });
     expect(await readRelated(client, STEP)).toEqual([related[0]]);
     expect(new URL(asked[0]!).search).toBe('?depth=3');
+  });
+
+  it('REL-024 asks about what is related where where it is used could not be read, leaves out the document it is open in, and asks nothing of a walk too slow (the final review)', async () => {
+    const related: Related[] = [
+      { id: ISSUE, kind: 'document', title: 'Change request 14', depth: 1 },
+      { id: REPORT, kind: 'document', title: 'Pump report', depth: 1 },
+    ];
+    expect(reachToAsk(null, related, undefined)?.related).toEqual(related);
+    // Open in the Pump report, it is not said to reach itself.
+    expect(reachToAsk(null, related, REPORT)?.related).toEqual([related[0]]);
+    expect(reachToAsk(null, [related[1]!], REPORT)).toBeNull();
+    // A walk that does not answer in time is no reason to wait.
+    const hung = createApiClient({
+      baseUrl: 'http://acme.test',
+      fetch: (() => new Promise<Response>(() => undefined)) as unknown as typeof fetch,
+    });
+    expect(await readRelated(hung, STEP, 20)).toEqual([]);
   });
 });

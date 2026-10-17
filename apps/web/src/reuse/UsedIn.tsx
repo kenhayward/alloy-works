@@ -40,13 +40,44 @@ export interface Related {
  * What reaches it through relationships, three hops out: the impact walk's informational reach, never
  * a reference's, which the documents a version reaches already say. None where it could not be read.
  */
-export async function readRelated(client: Client, id: string): Promise<Related[]> {
-  const { data } = await client
-    .GET('/v1/artifacts/{id}/impact', { params: { path: { id }, query: { depth: '3' } } })
-    .catch(() => ({ data: undefined }));
+export async function readRelated(
+  client: Client,
+  id: string,
+  withinMs = RELATED_WITHIN_MS,
+): Promise<Related[]> {
+  // A walk slower than this asks nothing of it, rather than hold up the act (the final review).
+  const late = new Promise<{ data: undefined }>((resolve) =>
+    setTimeout(() => resolve({ data: undefined }), withinMs),
+  );
+  const { data } = await Promise.race([
+    client
+      .GET('/v1/artifacts/{id}/impact', { params: { path: { id }, query: { depth: '3' } } })
+      .catch(() => ({ data: undefined })),
+    late,
+  ]);
   return (data?.reached ?? [])
     .filter((each) => !each.hard)
     .map(({ id: at, kind, title, depth }) => ({ id: at, kind, title, depth }));
+}
+
+/** How long the question waits for what is related before it asks without it. */
+export const RELATED_WITHIN_MS = 3_000;
+
+/**
+ * What to ask before a change (REU-008, REL-024), or null where nothing reaches it: the documents a
+ * version reaches and what is related, the document it is open in left out of both. Where it is used
+ * could not be read, what is related is asked about still (the final review).
+ */
+export function reachToAsk(
+  read: Uses | null,
+  related: readonly Related[],
+  host: string | undefined,
+): { readonly uses: Uses; readonly related: readonly Related[] } | null {
+  const uses: Uses = read
+    ? { ...read, documents: read.documents.filter((each) => each.id !== host) }
+    : ({ documents: [], unreadableDocuments: false } as unknown as Uses);
+  const others = related.filter((each) => each.id !== host);
+  return reachesAny(uses, others) ? { uses, related: others } : null;
 }
 
 /**
@@ -242,7 +273,7 @@ export function ReachDialog({
     <Modal labelledBy={headingId} size="narrow" onClose={onCancel}>
       <div className={styles['dialog']}>
         <h2 id={headingId}>
-          {act === 'Approve' ? `Approve ${title}?` : `Save a version of ${title}?`}
+          {act.startsWith('Approve') ? `${act} ${title}?` : `Save a version of ${title}?`}
         </h2>
         {(count > 0 || uses.unreadableDocuments) && (
           <p>

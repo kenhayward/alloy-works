@@ -115,7 +115,7 @@ import { ArchiveButton } from '../lifecycle/Archive.js';
 import { RelationshipsButton } from '../reuse/Relationships.js';
 import {
   ReachDialog,
-  reachesAny,
+  reachToAsk,
   readRelated,
   readUses,
   UsedInButton,
@@ -629,11 +629,8 @@ export function ComponentEditor({
     void Promise.all([readUses(client, componentId), readRelated(client, componentId)]).then(
       ([read, related]) => {
         askingReach.current = false;
-        const uses = read && {
-          ...read,
-          documents: read.documents.filter((each) => each.id !== hostDocument),
-        };
-        if (uses && reachesAny(uses, related)) setReach({ uses, related, act, go });
+        const asked = reachToAsk(read, related, hostDocument);
+        if (asked) setReach({ ...asked, act, go });
         else go();
       },
     );

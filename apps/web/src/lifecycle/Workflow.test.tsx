@@ -196,7 +196,7 @@ describe('deciding a gate (the WF2 plan, WF2-L)', () => {
     ]);
   });
 
-  it('REL-024 asks what approving reaches before it approves, and approves only once it is answered', async () => {
+  it('asks what approving reaches before it approves, and approves only once it is answered (the R19 plan, R19-C)', async () => {
     const { client, sent } = service(() =>
       json(200, {
         state: { key: 'approved', name: 'Approved', approved: true },
