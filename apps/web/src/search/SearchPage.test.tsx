@@ -227,6 +227,40 @@ describe('the search page', () => {
     expect(asked.at(-1)?.get('kind')).toBe('section');
   });
 
+  it('SCH-061 SCH-063 narrows by a condition and by a relationship field, each under its own heading', async () => {
+    const SUPERSEDES = 'dddddddd-0000-4000-8000-000000000001';
+    const BASIS = 'dddddddd-0000-4000-8000-000000000002';
+    const { client, asked } = service(() =>
+      json(200, {
+        ...results,
+        facets: {
+          ...results.facets,
+          conditions: [{ axis: 'market', values: [facet('market:eu', 'market:eu', 1)] }],
+          relations: [
+            {
+              type: SUPERSEDES,
+              typeName: 'Supersedes',
+              field: BASIS,
+              name: 'Basis',
+              dataType: 'text',
+              values: [facet('Recall', 'Recall', 2)],
+            },
+          ],
+        },
+      }),
+    );
+    render(<SearchPage client={client} query="lever" onSearch={() => undefined} />);
+    const market = await screen.findByRole('group', { name: 'Conditioned on market' });
+    await userEvent.click(within(market).getByRole('checkbox', { name: 'eu (1)' }));
+    await waitFor(() => expect(asked.at(-1)?.getAll('condition')).toEqual(['market:eu']));
+    const basis = screen.getByRole('group', { name: 'Supersedes: Basis' });
+    await userEvent.click(within(basis).getByRole('checkbox', { name: 'Recall (2)' }));
+    await waitFor(() =>
+      expect(asked.at(-1)?.getAll('related')).toEqual([`${SUPERSEDES}:${BASIS}:Recall`]),
+    );
+    expect(asked.at(-1)?.getAll('condition')).toEqual(['market:eu']);
+  });
+
   it('shows more results a page at a time, once however often it is asked', async () => {
     const third = {
       ...results.items[0]!,

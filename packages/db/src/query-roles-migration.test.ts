@@ -177,6 +177,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0107_cohorts',
       '0108_relationships',
       '0109_thread_internal',
+      '0110_search_conditions',
     ]);
     expect(applied[own.id]).toEqual([
       '0058_query_roles',
@@ -231,6 +232,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0107_cohorts',
       '0108_relationships',
       '0109_thread_internal',
+      '0110_search_conditions',
     ]);
 
     expect(await queryRoles(development)).toEqual([

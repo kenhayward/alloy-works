@@ -59066,6 +59066,8 @@ export interface operations {
                 changedFrom?: string;
                 changedTo?: string;
                 value?: string | string[];
+                condition?: string | string[];
+                related?: string | string[];
                 versions?: "latest" | "all";
                 baseline?: string;
                 internal?: "true" | "false";
@@ -59244,6 +59246,38 @@ export interface operations {
                                 capped: boolean;
                             }[];
                             fields: {
+                                field: string;
+                                name: string;
+                                dataType: string;
+                                /** @description Its ten commonest values */
+                                values: {
+                                    /** @description What to filter by to leave these */
+                                    value: string;
+                                    label: string;
+                                    /** @description How many it would leave, up to 1,000 */
+                                    count: number;
+                                    /** @description Whether more than the count, which is then a lower bound */
+                                    capped: boolean;
+                                }[];
+                            }[];
+                            /** @description Each axis results are conditioned on */
+                            conditions: {
+                                axis: string;
+                                /** @description Its ten commonest values, each `<axis>:<value>` */
+                                values: {
+                                    /** @description What to filter by to leave these */
+                                    value: string;
+                                    label: string;
+                                    /** @description How many it would leave, up to 1,000 */
+                                    count: number;
+                                    /** @description Whether more than the count, which is then a lower bound */
+                                    capped: boolean;
+                                }[];
+                            }[];
+                            /** @description Each relationship type's field the results' relationships hold */
+                            relations: {
+                                type: string;
+                                typeName: string;
                                 field: string;
                                 name: string;
                                 dataType: string;

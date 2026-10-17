@@ -260,6 +260,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0107_cohorts',
       '0108_relationships',
       '0109_thread_internal',
+      '0110_search_conditions',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,

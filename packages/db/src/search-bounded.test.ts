@@ -628,6 +628,8 @@ describe('search bounded at scale (SV3)', () => {
               states: [],
               changed: ZERO_CHANGED,
               fields: [],
+              conditions: [],
+              relations: [],
             },
           },
         });

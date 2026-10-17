@@ -12,6 +12,7 @@ import {
 import { sql } from 'kysely';
 import { artifactPlace, recordEvent } from './audit.js';
 import { currentDefinition } from './creation.js';
+import { reindexArtifacts } from './search.js';
 import type { TenantTransaction } from './tables.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -272,6 +273,7 @@ export async function makeRelationship(
     returning *`.execute(trx);
   const relationship = stored(rows[0]!);
   await audited(trx, 'relationship.made', relationship);
+  await reindexArtifacts(trx, [from.artifact, to.artifact]);
   return { answer: 'made', relationship };
 }
 
@@ -317,6 +319,7 @@ export async function changeRelationship(
     returning *`.execute(trx);
   const relationship = stored(rows[0]!);
   await audited(trx, 'relationship.changed', relationship);
+  await reindexArtifacts(trx, [held.from.artifact, held.to.artifact, from.artifact, to.artifact]);
   return { answer: 'changed', relationship };
 }
 
@@ -329,6 +332,7 @@ export async function removeRelationship(
   if (!held) return { answer: 'missing' };
   await sql`delete from relationship where id = ${id}`.execute(trx);
   await audited(trx, 'relationship.removed', held);
+  await reindexArtifacts(trx, [held.from.artifact, held.to.artifact]);
   return { answer: 'removed' };
 }
 

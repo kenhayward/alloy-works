@@ -421,6 +421,7 @@ describe('the domain package', () => {
         'variableDefinitionSchema',
         // R6: condition axes, profiles, and content as a profile selects it.
         'applyConditions',
+        'conditionsIn',
         'conditionAxisDefinitionSchema',
         'profileSchema',
         // R11: an outline as a profile selects it.

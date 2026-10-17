@@ -53,6 +53,7 @@ export function CohortList({ client }: { client: Client }) {
       .GET('/v1/cohorts', {
         params: { query: { sort, ...(state === 'all' ? {} : { state }), limit: '100' } },
       })
+      .catch(() => ({ data: undefined }))
       .then(({ data }) => {
         if (current) setListed(data ? (data.items as readonly Listed[]) : 'unread');
       });

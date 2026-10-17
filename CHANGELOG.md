@@ -3,6 +3,18 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.185.0 - 2026-10-17 (PR #685)
+
+Reuse's fourteenth slice: search and listings (the R14 plan).
+
+### Added
+
+- **Cohorts listed.** Templates offers **Cohorts**: every cohort you may read, newest first or by title, filtered by whether its rows were all made, one failed, or some wait.
+- **Used in from the outline.** A node's details offer **Used in** for each component it places, or each one placed beneath a section.
+- **A section found says what it places.** A section in search results names its document and the components it places, and offers **Place in a document** to reuse them.
+- **Search by condition.** Search narrows by what results are conditioned on, an axis at a time, as a section, a block or a phrase in a component is kept for some readers.
+- **Search by a relationship's fields.** Search narrows by the fields of the relationships a result is an end of, under the relationship type, and a change to a relationship is found at once at both ends.
+
 ## 0.184.0 - 2026-10-17 (PR #679)
 
 Reuse's thirteenth slice: people from outside the organisation (the R13 plan).

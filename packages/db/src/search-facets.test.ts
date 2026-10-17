@@ -313,7 +313,17 @@ describe('narrowing a search, and counting what narrows it', () => {
     const { facets } = await search(ada, { spaces: [quality] });
     // Declared dimensions, each always present, and nothing else.
     expect(Object.keys(facets).sort()).toEqual(
-      ['changed', 'componentTypes', 'fields', 'kinds', 'owners', 'spaces', 'states'].sort(),
+      [
+        'changed',
+        'componentTypes',
+        'conditions',
+        'fields',
+        'kinds',
+        'owners',
+        'relations',
+        'spaces',
+        'states',
+      ].sort(),
     );
     // Space leaves out its own filter, so General is still offered, with what it would add.
     expect(counted(facets.spaces)).toEqual([

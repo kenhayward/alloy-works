@@ -69,6 +69,14 @@ function view(answer: SearchAnswer): SearchAnswerView {
         ...each,
         values: each.values.map((value) => ({ ...value })),
       })),
+      conditions: answer.facets.conditions.map((each) => ({
+        ...each,
+        values: each.values.map((value) => ({ ...value })),
+      })),
+      relations: answer.facets.relations.map((each) => ({
+        ...each,
+        values: each.values.map((value) => ({ ...value })),
+      })),
     },
     items: answer.items.map((each) => ({
       kind: each.kind,
@@ -105,6 +113,8 @@ function view(answer: SearchAnswer): SearchAnswerView {
 export function filtersOf(query: SearchQuery): SearchFilters {
   const list = (value: string | undefined) => (value === undefined ? undefined : value.split(','));
   const values = query.value === undefined ? [] : [query.value].flat();
+  const conditions = query.condition === undefined ? [] : [query.condition].flat();
+  const related = query.related === undefined ? [] : [query.related].flat();
   const changed =
     query.changed !== undefined
       ? { within: query.changed }
@@ -134,6 +144,17 @@ export function filtersOf(query: SearchQuery): SearchFilters {
             const colon = each.indexOf(':');
             return { field: each.slice(0, colon), value: each.slice(colon + 1) };
           }),
+        }),
+    ...(conditions.length === 0 ? {} : { conditions }),
+    ...(related.length === 0
+      ? {}
+      : {
+          // A type's id and a field's are UUIDs, so the value is everything after the second colon.
+          relations: related.map((each) => ({
+            type: each.slice(0, 36),
+            field: each.slice(37, 73),
+            value: each.slice(74),
+          })),
         }),
   };
 }
@@ -189,6 +210,8 @@ export function searchHandlers(
             states: [],
             changed: [],
             fields: [],
+            conditions: [],
+            relations: [],
           },
         },
       );

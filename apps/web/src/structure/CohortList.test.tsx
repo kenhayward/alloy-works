@@ -65,4 +65,14 @@ describe('the cohorts listing (the R14 plan, R14-A)', () => {
     await userEvent.selectOptions(screen.getByLabelText('Sort by'), 'title');
     await waitFor(() => expect(asked.at(-1)).toContain('sort=title'));
   });
+
+  it('says the cohorts could not be read where the service cannot be reached', async () => {
+    const failing = (async () => {
+      throw new TypeError('Failed to fetch');
+    }) as unknown as typeof fetch;
+    render(
+      <CohortList client={createApiClient({ baseUrl: 'http://acme.test', fetch: failing })} />,
+    );
+    expect(await screen.findByRole('alert')).toHaveTextContent('The cohorts could not be read.');
+  });
 });

@@ -30,3 +30,14 @@ search narrows by condition value and by the fields relationships carry.
 - **R14a**: listing sort and query, route and contract, the page; Used in from the outline. Tests: sorted, filtered, paged, readable-set held; a section's components each offered.
 - **R14b**: the result's members and the page's link. Tests: one section, its components, one the reader may not read left out.
 - **R14c**: 0110; the writers; the filters and facets. Tests: each kind of condition found; a relationship's field faceted at both ends and gone with it. The final review; the close.
+
+## Built
+
+R14a #680, R14b #683, and R14c with the close (0.185.0) #685. One departure: conditions and
+relationships' fields are held in an entry's `field_values`, under `~conditions` and `~relations`, keys
+no field's id can take, rather than columns of their own, so no table an older schema lacks a column
+of is read; 0110 adds the conditions' indexes and writes every entry again. The final review found a
+relationship to a deleted end still counted, a filter on a relationship type the reader may not read,
+an earlier version's row keeping relationships it moved with, and a deleted component named among a
+section's; all fixed, with an unreachable service now said on the cohorts page. Left: an axis named
+by its definition's name in the facet, and paging the cohorts and the Into list past 100.

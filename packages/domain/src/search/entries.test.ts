@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { MATHML_NAMESPACE } from '../content/admission/mathml.js';
 import { parseContentDocument } from '../content/model/document.js';
-import { parseOutlineDocument } from '../structure/outline.js';
+import { OUTLINE_SCHEMA_VERSION, parseOutlineDocument } from '../structure/outline.js';
 import { templateDefinitionSchema } from '../template/definition.js';
 import { parseAssetVersion } from '../assets/version.js';
 import type { QueryDefinition } from '../data/definition.js';
@@ -413,5 +413,73 @@ describe("a thread's words (the SV plan, SV-K)", () => {
       threadTitle('one two three four five six seven eight nine ten eleven twelve thirteen'),
     ).toBe('one two three four five six seven eight nine ten eleven twelve...');
     expect(threadTitle('')).toBe('A thread');
+  });
+});
+
+describe('the conditions an entry holds (the R14 plan, R14-D)', () => {
+  const regulator = [{ axis: 'audience', values: ['regulator'] }];
+  it("SCH-061 holds every axis and value a component's blocks and marks, and a document's and each section's nodes, are conditioned on", () => {
+    const content = parseContentDocument({
+      schemaVersion: 1,
+      title: 'Calibrating the scanner',
+      language: 'en-GB',
+      direction: 'ltr',
+      content: [
+        para('p1', {
+          type: 'text',
+          value: 'For the inspector',
+          marks: [
+            { type: 'condition', id: 'm1', axis: 'audience', values: ['inspector', 'regulator'] },
+          ],
+        }),
+        {
+          type: 'table',
+          id: 't1',
+          style: 'table',
+          caption: [text('Tolerances')],
+          headerRows: 0,
+          headerColumns: 0,
+          conditions: [{ axis: 'market', values: ['eu'] }],
+          rows: [{ cells: [{ content: [para('c1', text('Gauge'))], colspan: 1, rowspan: 1 }] }],
+        },
+      ],
+    });
+    const [component] = entriesOf({ kind: 'component', content, values: {} }, context);
+    expect(component!.conditions).toEqual([
+      'audience:inspector',
+      'audience:regulator',
+      'market:eu',
+    ]);
+
+    const section = (id: string, title: string, extra: object, children: unknown[] = []) => ({
+      type: 'section',
+      id,
+      title: [text(title)],
+      numbered: true,
+      matter: 'body',
+      pageBreak: 'none',
+      values: {},
+      children,
+      ...extra,
+    });
+    const outline = parseOutlineDocument({
+      schemaVersion: OUTLINE_SCHEMA_VERSION,
+      title: 'Scanner manual',
+      language: 'en-GB',
+      direction: 'ltr',
+      nodes: [
+        section(INTRO, 'Introduction', { conditions: regulator }, [
+          section(SCOPE, 'Scope', { conditions: [{ axis: 'market', values: ['us'] }] }),
+        ]),
+        section('c'.repeat(26), 'Plain', {}),
+      ],
+    });
+    const entries = entriesOf({ kind: 'document', content: outline, values: {} }, context);
+    expect(entries.map((each) => [each.title, each.conditions])).toEqual([
+      ['Scanner manual', ['audience:regulator', 'market:us']],
+      ['Introduction', ['audience:regulator', 'market:us']],
+      ['Scope', ['market:us']],
+      ['Plain', []],
+    ]);
   });
 });

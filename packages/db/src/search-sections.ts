@@ -1,4 +1,5 @@
 import { readOutline, walkOutline, type OutlineNode, type ReadableSet } from '@alloy-works/domain';
+import { deletedAmong } from './deletion.js';
 import { mayReadArtifact } from './queryDefinitions.js';
 import type { TenantTransaction } from './tables.js';
 
@@ -64,9 +65,15 @@ export async function sectionMembers(
     .where('kind', 'in', ['component', 'document'])
     .where('artifact_id', 'in', ids)
     .execute();
+  // A component since deleted is named nowhere (LIF-023), as a placement reads it.
+  const deleted = await deletedAmong(trx, ids);
   const titled = new Map(
     entries
-      .filter((each) => mayReadArtifact(readable, { id: each.artifact_id, spaceId: each.space_id }))
+      .filter(
+        (each) =>
+          !deleted.has(each.artifact_id) &&
+          mayReadArtifact(readable, { id: each.artifact_id, spaceId: each.space_id }),
+      )
       .map((each) => [each.artifact_id, each.title]),
   );
   for (const each of sections) {
