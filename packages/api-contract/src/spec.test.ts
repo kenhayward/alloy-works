@@ -9,8 +9,14 @@ describe('the committed openapi.json', () => {
     const committed: unknown = JSON.parse(
       readFileSync(new URL('../openapi.json', import.meta.url), 'utf8'),
     );
-    expect(committed).toEqual(buildOpenApi(allRoutes));
-  });
+    const generated = buildOpenApi(allRoutes);
+    // The texts first: a deep comparison of the whole document took CI past five seconds under load
+    // (issue #689), so it runs only where they differ, to say how - and to pass where only the order
+    // of a key differs, as it always has.
+    if (JSON.stringify(committed) !== JSON.stringify(generated)) {
+      expect(committed).toEqual(generated);
+    }
+  }, 30_000);
 });
 
 describe('the committed asyncapi.json', () => {
