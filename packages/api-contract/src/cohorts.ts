@@ -190,7 +190,8 @@ export const cohortRoutes = {
     operationId: 'listCohorts',
     method: 'GET',
     path: '/v1/cohorts',
-    summary: 'The cohorts the caller may read, newest first or by title, filtered by template and state',
+    summary:
+      'The cohorts the caller may read, newest first or by title, filtered by template and state',
     tenantScoped: true,
     access: { check: 'session' },
     query: CohortListQuery,

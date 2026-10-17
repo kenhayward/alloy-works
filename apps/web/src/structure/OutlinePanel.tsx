@@ -796,9 +796,7 @@ export function OutlinePanel({
     usedIn !== undefined &&
     components.state === 'loaded' && (
       <UsedInRow
-        placed={placedBy(node).flatMap((id) =>
-          components.items.filter((each) => each.id === id),
-        )}
+        placed={placedBy(node).flatMap((id) => components.items.filter((each) => each.id === id))}
         usedIn={usedIn}
       />
     );

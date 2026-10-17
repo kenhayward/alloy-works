@@ -443,9 +443,12 @@ export async function listReadableCohorts(
   if (filter.template !== undefined) {
     inner = inner.where(sql<boolean>`c.resolution -> 'template' ->> 'id' = ${filter.template}`);
   }
-  if (filter.state === 'failed') inner = inner.where(sql<boolean>`${counted} and r.state = 'failed') > 0`);
+  if (filter.state === 'failed')
+    inner = inner.where(sql<boolean>`${counted} and r.state = 'failed') > 0`);
   if (filter.state === 'pending') {
-    inner = inner.where(sql<boolean>`${counted} and r.state = 'failed') = 0 and ${counted} and r.state = 'pending') > 0`);
+    inner = inner.where(
+      sql<boolean>`${counted} and r.state = 'failed') = 0 and ${counted} and r.state = 'pending') > 0`,
+    );
   }
   if (filter.state === 'complete') {
     inner = inner.where(sql<boolean>`${counted} and r.state <> 'made') = 0`);

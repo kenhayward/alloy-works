@@ -57,7 +57,15 @@ describe('cohorts, through the service', () => {
 
   it('SCH-065 TPL-040 lists the cohorts the caller may read, newest first or by title, filtered by template and by state, each with its rows counted', async () => {
     const make = async (title: string) =>
-      (await submit({ title, rows: [{ id: '1', name: 'Harbour' }, { id: '2', name: 'Quay' }] })).json<{
+      (
+        await submit({
+          title,
+          rows: [
+            { id: '1', name: 'Harbour' },
+            { id: '2', name: 'Quay' },
+          ],
+        })
+      ).json<{
         cohort: { id: string };
       }>().cohort.id;
     const first = await make('Annual {name}');

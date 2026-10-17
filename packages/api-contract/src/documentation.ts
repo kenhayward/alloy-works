@@ -347,8 +347,7 @@ const operationTags = {
   Search: ['search'],
   Impact: ['getArtifactImpact', 'getArtifactReferences', 'submitImpactReport'],
   Jobs: ['getJob', 'cancelJob', 'downloadJob'],
-  Cohorts: ['submitCohort', 'listCohorts',
-    'getCohort', 'rerunCohort'],
+  Cohorts: ['submitCohort', 'listCohorts', 'getCohort', 'rerunCohort'],
   Relationships: [
     'makeRelationship',
     'getRelationship',
