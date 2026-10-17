@@ -13,6 +13,7 @@ import {
   type WorkflowTransition,
 } from '@alloy-works/domain';
 import { datesStored } from './dates.js';
+import { lineHead, linesStored, readLine } from './lines.js';
 import { revisionScopes, scopesStored } from './scopes.js';
 import { unmetConditions, type UnmetCondition } from './workflow-conditions.js';
 import { sql } from 'kysely';
@@ -71,20 +72,46 @@ export interface Revision {
   readonly at: Date;
 }
 
-/** An artifact's latest revision, or null where none was ever designated (revision 0, VER-015). */
+/**
+ * An artifact's latest revision on its main line, or null where none was ever designated (revision 0,
+ * VER-015); on a line (R16-C), its latest, or the revision it diverged from. A line's versions are
+ * numbered below the main line's (ADR-0063), so the main line's are those numbered from 0.
+ */
 export async function latestRevision(
   trx: TenantTransaction,
   artifactId: string,
+  line?: string,
 ): Promise<Revision | null> {
   if (!(await gatesStored(trx))) return null;
   const row = await trx
-    .selectFrom('revision_designation')
-    .select(['revision_no', 'version_id', 'at'])
-    .where('artifact_id', '=', artifactId)
-    .orderBy('revision_no', 'desc')
+    .selectFrom('revision_designation as d')
+    .innerJoin('artifact_version as v', 'v.id', 'd.version_id')
+    .select(['d.revision_no', 'd.version_id', 'd.at'])
+    .where('d.artifact_id', '=', artifactId)
+    .$if(line === undefined, (query) => query.where('v.revision_no', '>=', 0))
+    .$if(line !== undefined, (query) => query.where('v.line_id', '=', line!))
+    .orderBy('d.revision_no', 'desc')
     .limit(1)
     .executeTakeFirst();
-  return row ? { number: row.revision_no, versionId: row.version_id, at: row.at } : null;
+  if (row) return { number: row.revision_no, versionId: row.version_id, at: row.at };
+  if (line === undefined) return null;
+  const begun = await readLine(trx, artifactId, line);
+  return begun
+    ? { number: begun.divergedFrom.revision, versionId: begun.divergedFrom.version, at: begun.at }
+    : null;
+}
+
+/** The next revision's number, across every line (R16-C): revisions are one sequence. */
+export async function nextRevisionNumber(
+  trx: TenantTransaction,
+  artifactId: string,
+): Promise<number> {
+  const row = await trx
+    .selectFrom('revision_designation')
+    .select(({ fn }) => fn.max('revision_no').as('newest'))
+    .where('artifact_id', '=', artifactId)
+    .executeTakeFirst();
+  return Number(row?.newest ?? 0) + 1;
 }
 
 /**
@@ -332,14 +359,28 @@ export interface WorkflowStanding {
   readonly version: string | null;
   /** The move that put it in its state: a gate's round began there (WF2-C). */
   readonly round: string;
-  /** Its latest revision, or null for revision 0 (WF2-F). */
+  /** Its latest revision, or null for revision 0 (WF2-F); a line's, or what it diverged from. */
   readonly revision: Revision | null;
+  /** The line it is the standing of (R16-C), or null for the main line. */
+  readonly line: string | null;
   /** Each gate from its state, and how far it has got. */
   readonly gates: readonly GateProgress[];
 }
 
-/** The id of an artifact's latest version: what a move, an approval and a designation name. */
-export async function latestVersionId(trx: TenantTransaction, artifactId: string): Promise<string> {
+/**
+ * The id of an artifact's latest version: what a move, an approval and a designation name. On a line,
+ * its head (R16-B).
+ */
+export async function latestVersionId(
+  trx: TenantTransaction,
+  artifactId: string,
+  line?: string,
+): Promise<string> {
+  if (line !== undefined) {
+    const begun = await readLine(trx, artifactId, line);
+    if (!begun) throw new Error(`Artifact ${artifactId} has no line ${line}`);
+    return lineHead(trx, begun);
+  }
   const latest = await trx
     .selectFrom('artifact_version')
     .select('id')
@@ -357,6 +398,7 @@ async function gateProgress(
   artifactId: string,
   round: string,
   transitions: readonly WorkflowTransition[],
+  line?: string,
 ): Promise<GateProgress[]> {
   const gates = transitions.filter((each) => each.gate !== undefined);
   if (gates.length === 0) return [];
@@ -366,7 +408,7 @@ async function gateProgress(
         .select(['transition', 'by'])
         .where('round', '=', round)
         .where('decision', '=', 'approved')
-        .where('version_id', '=', await latestVersionId(trx, artifactId))
+        .where('version_id', '=', await latestVersionId(trx, artifactId, line))
         .orderBy('id')
         .execute()
     : [];
@@ -388,10 +430,13 @@ export async function stateKey(
   trx: TenantTransaction,
   artifactId: string,
 ): Promise<string | undefined> {
+  const lined = await linesStored(trx);
   const row = await trx
     .selectFrom('workflow_transition')
     .select('to_state')
     .where('artifact_id', '=', artifactId)
+    // The main line's: a line's moves are its own (R16-C).
+    .$if(lined, (query) => query.where('line_id', 'is', null))
     .orderBy('id', 'desc')
     .limit(1)
     .executeTakeFirst();
@@ -402,12 +447,18 @@ export async function stateKey(
 export async function workflowStanding(
   trx: TenantTransaction,
   artifactId: string,
+  /** A line's standing (R16-C); the main line's where absent. */
+  line?: string,
 ): Promise<WorkflowStanding | undefined> {
   if (!UUID.test(artifactId) || !(await workflowStored(trx))) return undefined;
+  const lined = await linesStored(trx);
+  if (line !== undefined && !lined) return undefined;
   const row = await trx
     .selectFrom('workflow_transition')
     .select(['id', 'kind', 'to_state', 'definition_id', 'version_id'])
     .where('artifact_id', '=', artifactId)
+    .$if(lined && line === undefined, (query) => query.where('line_id', 'is', null))
+    .$if(line !== undefined, (query) => query.where('line_id', '=', line!))
     .orderBy('id', 'desc')
     .limit(1)
     .executeTakeFirst();
@@ -431,8 +482,9 @@ export async function workflowStanding(
     transitions,
     version: row.version_id,
     round: String(row.id),
-    revision: await latestRevision(trx, artifactId),
-    gates: await gateProgress(trx, artifactId, String(row.id), transitions),
+    revision: await latestRevision(trx, artifactId, line),
+    line: line ?? null,
+    gates: await gateProgress(trx, artifactId, String(row.id), transitions, line),
   };
 }
 
@@ -455,6 +507,7 @@ export async function workflowStates(
     definition_id: string;
   }>`select distinct on (artifact_id) artifact_id, kind, to_state, definition_id
        from workflow_transition where artifact_id = any(${ids}::uuid[])
+        and ${(await linesStored(trx)) ? sql`line_id is null` : sql`true`}
       order by artifact_id, id desc`.execute(trx);
   const definitions = new Map<string, WorkflowDefinition>();
   const newest = new Map<WorkflowKind, WorkflowDefinition>();
@@ -560,9 +613,12 @@ export async function moved(
       definition_id: standing.definition.id,
       reason: move.reason,
       by: move.by,
+      // Named only on a line's move, so a schema before 0112 is asked for no column it lacks.
+      ...(standing.line === null ? {} : { line_id: standing.line }),
     })
     .execute();
-  await setSearchState(trx, move.artifactId, move.to);
+  // Search holds the main line's state (R16-H).
+  if (standing.line === null) await setSearchState(trx, move.artifactId, move.to);
   const place = await artifactPlace(trx, move.artifactId);
   await recordEvent(
     trx,
@@ -593,10 +649,16 @@ export async function moved(
  */
 export async function draftOnSave(
   trx: TenantTransaction,
-  version: { readonly artifactId: string; readonly id: string; readonly author: string | null },
+  version: {
+    readonly artifactId: string;
+    readonly id: string;
+    readonly author: string | null;
+    readonly line: string | null;
+  },
   approved: string,
 ): Promise<void> {
-  const standing = await workflowStanding(trx, version.artifactId);
+  // A line's save moves the line alone (R16-C).
+  const standing = await workflowStanding(trx, version.artifactId, version.line ?? undefined);
   if (!standing?.state.approved) return;
   await moved(trx, standing, {
     artifactId: version.artifactId,
@@ -640,11 +702,13 @@ export async function moveArtifact(
     readonly reason?: string | undefined;
     readonly by: string;
     readonly may: (permission: TransitionPermission) => boolean;
+    /** A line's move (R16-C); the main line's where absent. */
+    readonly line?: string | undefined;
   },
 ): Promise<MoveAnswer> {
   if (!UUID.test(input.artifactId)) return { answer: 'artifact.missing' };
   await lockArtifact(trx, input.artifactId);
-  const standing = await workflowStanding(trx, input.artifactId);
+  const standing = await workflowStanding(trx, input.artifactId, input.line);
   if (!standing || standing.kind !== input.kind || (await isDeleted(trx, input.artifactId))) {
     return { answer: 'artifact.missing' };
   }
@@ -670,11 +734,14 @@ export async function moveArtifact(
   if (unmet.length > 0) return { answer: 'conditions.unmet', unmet };
   await moved(trx, standing, {
     artifactId: input.artifactId,
-    version: await latestVersionId(trx, input.artifactId),
+    version: await latestVersionId(trx, input.artifactId, input.line),
     transition: transition.key,
     to: transition.to,
     reason: reason === '' ? null : reason,
     by: input.by,
   });
-  return { answer: 'moved', standing: (await workflowStanding(trx, input.artifactId))! };
+  return {
+    answer: 'moved',
+    standing: (await workflowStanding(trx, input.artifactId, input.line))!,
+  };
 }

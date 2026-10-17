@@ -222,6 +222,7 @@ describe('migration 0052, which widens dataset_take to an image', () => {
       '0109_thread_internal',
       '0110_search_conditions',
       '0111_scoped_effectivity',
+      '0112_divergent_lines',
     ]);
     const kept = await queryAs(
       db.adminUrl,

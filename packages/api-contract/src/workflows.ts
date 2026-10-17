@@ -399,6 +399,34 @@ export const EffectiveView = z.object({
 });
 export type EffectiveView = z.infer<typeof EffectiveView>;
 
+export const LineBody = z.strictObject({
+  revision: z.int().positive().describe('The designated revision the line diverges from'),
+  name: z
+    .string()
+    .trim()
+    .min(1)
+    .max(80)
+    .describe("Its name, such as a market's: no other line of the component's has it"),
+});
+export type LineBody = z.infer<typeof LineBody>;
+
+/** A component's divergent line (LIF-044; the R16 plan, R16-B). */
+export const LineView = z.object({
+  id: z.uuid(),
+  name: z.string(),
+  divergedFrom: z
+    .object({ revision: z.int().positive(), version: z.uuid() })
+    .describe('The designated revision it diverged from'),
+  at: z.iso.datetime().describe('When it diverged'),
+  closed: z.boolean().describe('Whether it was brought back, and takes no more versions'),
+});
+export type LineView = z.infer<typeof LineView>;
+
+export const LinesView = z.object({
+  lines: z.array(LineView).describe('Its lines, in the order they were begun; a component has few'),
+});
+export type LinesView = z.infer<typeof LinesView>;
+
 export const ApprovalBody = z.strictObject({
   transition: Key.describe('The gate, by its transition key'),
   version: z
@@ -608,6 +636,44 @@ const effectiveRoute = (kind: 'component' | 'document') =>
   }) as const;
 
 export const workflowRoutes = {
+  listComponentLines: {
+    operationId: 'listComponentLines',
+    method: 'GET',
+    path: '/v1/components/{id}/lines',
+    summary: "List a component's divergent lines",
+    tenantScoped: true,
+    access: read,
+    params: TransitionParams,
+    responses: {
+      200: { description: 'Its lines', schema: LinesView },
+      401: unauthenticated,
+      403: { description: 'The caller may not read this component', schema: ErrorBody },
+      404: { description: 'No such component the caller may read', schema: ErrorBody },
+    },
+  },
+  divergeComponent: {
+    operationId: 'divergeComponent',
+    method: 'POST',
+    path: '/v1/components/{id}/lines',
+    summary: 'Begin a divergent line of a component from one of its revisions',
+    tenantScoped: true,
+    access: editing,
+    params: TransitionParams,
+    body: LineBody,
+    responses: {
+      200: { description: 'The line begun', schema: LineView },
+      401: unauthenticated,
+      403: {
+        description: 'The caller may read the component but may not edit it',
+        schema: ErrorBody,
+      },
+      404: {
+        description: 'No such component, or revision of it designated, the caller may read',
+        schema: ErrorBody,
+      },
+      409: { description: 'line_name_taken: another line of it has that name', schema: ErrorBody },
+    },
+  },
   readComponentEffective: effectiveRoute('component'),
   readDocumentEffective: effectiveRoute('document'),
   acceptComponentRevision: {

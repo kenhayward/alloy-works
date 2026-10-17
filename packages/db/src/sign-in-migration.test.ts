@@ -121,6 +121,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0109_thread_internal',
       '0110_search_conditions',
       '0111_scoped_effectivity',
+      '0112_divergent_lines',
     ]);
 
     const read = async () =>

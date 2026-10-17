@@ -61,6 +61,7 @@ describe('the audit kinds', () => {
       'revision.designated',
       'dates.set',
       'scope.set',
+      'line.diverged',
       'revision.accepted',
       'review.lapsed',
       'section.waived',

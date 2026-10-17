@@ -184,6 +184,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0109_thread_internal',
       '0110_search_conditions',
       '0111_scoped_effectivity',
+      '0112_divergent_lines',
     ]);
 
     // The component and its version are as they were.
@@ -359,6 +360,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0109_thread_internal',
       '0110_search_conditions',
       '0111_scoped_effectivity',
+      '0112_divergent_lines',
     ]);
 
     const { rows } = await queryAs(

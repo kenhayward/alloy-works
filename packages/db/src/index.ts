@@ -506,6 +506,15 @@ export {
   type SetDatesAnswer,
 } from './dates.js';
 export {
+  diverge,
+  lineHead,
+  linesStored,
+  readLine,
+  readLines,
+  type DivergeAnswer,
+  type Line,
+} from './lines.js';
+export {
   acceptRevision,
   effectiveAt,
   fixScope,

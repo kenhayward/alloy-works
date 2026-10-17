@@ -255,6 +255,8 @@ const OTHER_TENANT_IDS: Readonly<
   listComponentApprovals: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   listDocumentApprovals: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   readComponentEffective: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
+  divergeComponent: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
+  listComponentLines: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   readDocumentEffective: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   archiveComponent: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   unarchiveComponent: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
@@ -535,6 +537,7 @@ const VALID_INPUT: Readonly<
   setComponentScope: { payload: { scope: [] } },
   setDocumentScope: { payload: { scope: [] } },
   acceptComponentRevision: { payload: { revision: 1, axis: 'market', value: 'us' } },
+  divergeComponent: { payload: { revision: 1, name: 'US' } },
   acceptDocumentRevision: { payload: { revision: 1, axis: 'market', value: 'us' } },
   decideQueryDefinitionGate: {
     payload: { transition: 'approve', version: SESSION, decision: 'approved' },

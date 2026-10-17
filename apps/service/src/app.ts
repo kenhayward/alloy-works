@@ -2,6 +2,7 @@ import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { templateMoveHandlers } from './template-moves.js';
 import { datesHandlers } from './dates.js';
 import { scopeHandlers } from './scopes.js';
+import { lineHandlers } from './lines.js';
 import { IDEMPOTENT_REPLAYED, keyedRequest, once } from './idempotency.js';
 import { Accepted, AfterCommit, Revalidated } from './after-commit.js';
 import cookie from '@fastify/cookie';
@@ -564,6 +565,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...workflowHandlers(),
     ...datesHandlers(),
     ...scopeHandlers(),
+    ...lineHandlers(),
     ...templateMoveHandlers(),
     ...erasureHandlers(),
 

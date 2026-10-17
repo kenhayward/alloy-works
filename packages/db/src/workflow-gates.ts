@@ -14,6 +14,7 @@ import {
   gatesStored,
   latestRevision,
   latestVersionId,
+  nextRevisionNumber,
   MAX_REASON,
   moved,
   workflowStanding,
@@ -95,13 +96,15 @@ export async function decideGate(
     /** Where the gate permits a publication, whether the approver asks for one as it passes. */
     readonly publish?: boolean | undefined;
     readonly may: (permission: TransitionPermission) => boolean;
+    /** A line's gate (R16-C); the main line's where absent. */
+    readonly line?: string | undefined;
   },
 ): Promise<GateAnswer> {
   if (!UUID.test(input.artifactId) || !UUID.test(input.version)) {
     return { answer: 'artifact.missing' };
   }
   await lockArtifact(trx, input.artifactId);
-  const standing = await workflowStanding(trx, input.artifactId);
+  const standing = await workflowStanding(trx, input.artifactId, input.line);
   if (!standing || standing.kind !== input.kind || (await isDeleted(trx, input.artifactId))) {
     return { answer: 'artifact.missing' };
   }
@@ -111,7 +114,7 @@ export async function decideGate(
   const gate = transition?.gate;
   if (!transition || !gate) return { answer: 'transition.unknown' };
   if (transition.from !== standing.state.key) return { answer: 'state.moved', standing };
-  const version = await latestVersionId(trx, input.artifactId);
+  const version = await latestVersionId(trx, input.artifactId, input.line);
   if (version !== input.version) return { answer: 'version.moved', standing };
   if (await isArchived(trx, input.artifactId)) return { answer: 'artifact.archived' };
   if (!input.may(transition.permission)) {
@@ -157,7 +160,10 @@ export async function decideGate(
       reason,
       by: input.by,
     });
-    return { answer: 'rejected', standing: (await workflowStanding(trx, input.artifactId))! };
+    return {
+      answer: 'rejected',
+      standing: (await workflowStanding(trx, input.artifactId, input.line))!,
+    };
   }
 
   if (progress.approvedBy.includes(input.by)) return { answer: 'approval.given' };
@@ -175,7 +181,10 @@ export async function decideGate(
   const passes = progress.count + 1 >= gate.approvals;
   // A version is designated once: approved again unchanged, it keeps its revision (WF2-F).
   const designating = passes && gate.designates && standing.revision?.versionId !== version;
-  const number = designating ? (standing.revision?.number ?? 0) + 1 : standing.revision?.number;
+  // Revisions are one sequence across lines (R16-C).
+  const number = designating
+    ? await nextRevisionNumber(trx, input.artifactId)
+    : standing.revision?.number;
 
   // The baseline and the publication the gate asks for are made first, so that a gate which cannot
   // take them records nothing and stays where it was (WF2-H, WF2-I).
@@ -255,7 +264,10 @@ export async function decideGate(
     place.labels,
   );
   if (count < gate.approvals) {
-    return { answer: 'approved', standing: (await workflowStanding(trx, input.artifactId))! };
+    return {
+      answer: 'approved',
+      standing: (await workflowStanding(trx, input.artifactId, input.line))!,
+    };
   }
 
   await moved(trx, standing, {
@@ -284,7 +296,11 @@ export async function decideGate(
     const scope =
       standing.kind === 'queryDefinition'
         ? []
-        : await fixScope(trx, { artifactId: input.artifactId, version });
+        : await fixScope(trx, {
+            artifactId: input.artifactId,
+            version,
+            ...(input.line === undefined ? {} : { line: input.line }),
+          });
     await recordEvent(
       trx,
       {
@@ -310,7 +326,7 @@ export async function decideGate(
   }
   return {
     answer: 'passed',
-    standing: (await workflowStanding(trx, input.artifactId))!,
+    standing: (await workflowStanding(trx, input.artifactId, input.line))!,
     revision: gate.designates ? (revision?.number ?? null) : null,
     baseline,
     request,

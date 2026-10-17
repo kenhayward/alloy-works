@@ -430,6 +430,8 @@ async function artifactFacts(
     .selectFrom('artifact_version')
     .select('author_id')
     .where('artifact_id', '=', artifactId)
+    // The main line's first: a line's versions are numbered below it (ADR-0063).
+    .where('revision_no', '>=', 0)
     .orderBy('revision_no')
     .orderBy('version_no')
     .limit(1)
@@ -619,7 +621,8 @@ async function writeEveryEarlier(trx: TenantTransaction): Promise<void> {
                    row_number() over (partition by artifact_id
                                       order by revision_no desc, version_no desc) as newest
               from artifact_version
-             where kind = any(${[...kept]}::text[])) v
+             -- The main line's: a line's versions are numbered below it and never searched (ADR-0063).
+             where kind = any(${[...kept]}::text[]) and revision_no >= 0) v
      where v.newest > 1
      order by v.artifact_id, v.revision_no, v.version_no`.execute(trx);
   let current: { readonly artifactId: string; readonly facts: ArtifactFacts } | undefined;

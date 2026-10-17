@@ -18577,7 +18577,7 @@
         },
         {
           "id": "VER-015",
-          "howItIsMet": "`revision_no` counts from 1 within an artifact; a version never designated carries revision 0"
+          "howItIsMet": "`revision_no` counts from 1 within an artifact; a version never designated carries revision 0; a divergent line's versions are stored below the main line's and present as the revision they count from ([Lines](#lines))"
         },
         {
           "id": "VER-016",
@@ -18590,6 +18590,10 @@
         {
           "id": "VER-018",
           "howItIsMet": "`baseline_pin` holds one foreign key per pinned artifact version, covering every kind VER-011 versions"
+        },
+        {
+          "id": "LIF-044",
+          "howItIsMet": "A component's divergent line, `artifact_line`, names the designated revision it diverged from and when; its versions are its own head, numbered below the main line's, its workflow and scope its own; `GET /v1/components/{id}/lines` lists them to any reader ([Lines](#lines))"
         },
         {
           "id": "VER-019",
@@ -20161,13 +20165,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 433,
+      "line": 435,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 446,
+      "line": 448,
       "kind": "title"
     },
     {
@@ -20515,7 +20519,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1378,
+      "line": 1381,
       "kind": "title"
     },
     {
@@ -21781,13 +21785,13 @@
     {
       "id": "LIF-004",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 627,
+      "line": 664,
       "kind": "rule"
     },
     {
       "id": "LIF-004",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 590,
+      "line": 627,
       "kind": "title"
     },
     {
@@ -21811,19 +21815,19 @@
     {
       "id": "LIF-015",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 537,
+      "line": 574,
       "kind": "title"
     },
     {
       "id": "LIF-016",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 537,
+      "line": 574,
       "kind": "title"
     },
     {
       "id": "LIF-018",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 537,
+      "line": 574,
       "kind": "title"
     },
     {
@@ -21836,6 +21840,12 @@
       "id": "LIF-043",
       "file": "apps/service/src/workflow-routes.test.ts",
       "line": 424,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-044",
+      "file": "apps/service/src/workflow-routes.test.ts",
+      "line": 537,
       "kind": "title"
     },
     {
@@ -25367,6 +25377,12 @@
       "kind": "title"
     },
     {
+      "id": "LIF-044",
+      "file": "packages/db/src/lines.test.ts",
+      "line": 167,
+      "kind": "title"
+    },
+    {
       "id": "SCH-022",
       "file": "packages/db/src/listing.test.ts",
       "line": 211,
@@ -26467,7 +26483,7 @@
     {
       "id": "LIF-030",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 211,
+      "line": 212,
       "kind": "title"
     },
     {
