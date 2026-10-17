@@ -196,6 +196,37 @@ describe('deciding a gate (the WF2 plan, WF2-L)', () => {
     ]);
   });
 
+  it('asks what approving reaches before it approves, and approves only once it is answered (the R19 plan, R19-C)', async () => {
+    const { client, sent } = service(() =>
+      json(200, {
+        state: { key: 'approved', name: 'Approved', approved: true },
+        transitions: [],
+        gates: [],
+        revision: { number: 1, versionId: VERSION, at: '2026-10-14T12:00:00.000Z' },
+      }),
+    );
+    const asked: { act: string; go: () => void }[] = [];
+    render(
+      <TransitionButtons
+        client={client}
+        kind="component"
+        id={ID}
+        title="Calibrate"
+        standing={AT_GATE}
+        versionId={VERSION}
+        onMoved={() => undefined}
+        onNotice={() => undefined}
+        onStale={() => undefined}
+        askFirst={(act, go) => asked.push({ act, go })}
+      />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Approve' }));
+    expect(asked.map((each) => each.act)).toEqual(['Approve']);
+    expect(sent).toEqual([]);
+    asked[0]!.go();
+    await waitFor(() => expect(sent).toHaveLength(1));
+  });
+
   it('LIF-051 asks why before a rejection, and sends it as one', async () => {
     const { client, sent } = service(() =>
       json(200, {

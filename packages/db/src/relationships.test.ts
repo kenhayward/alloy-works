@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { DEFINITION_SCHEMA_VERSION } from '@alloy-works/domain';
+import { DEFINITION_SCHEMA_VERSION, relatableKinds } from '@alloy-works/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import { createComponent } from './creation.js';
@@ -189,6 +189,36 @@ describe('relationships (the R8 plan, R8-A to R8-E)', () => {
     expect(
       await relate(supersedes.id, newer.artifactId, older.artifactId, { fromVersion: older.id }),
     ).toEqual({ answer: 'version.foreign', end: 'from' });
+  });
+
+  it('draws the kinds a type may relate from the kinds people relate, and refuses any other where it is written (the R19 plan, R19-A)', async () => {
+    for (const kind of relatableKinds) {
+      await type({ from: { kinds: [kind], cardinality: 'many', permission: 'read' } });
+    }
+    for (const kind of ['theme', 'connection', 'field', 'nonsense']) {
+      const made = await as((trx) =>
+        createDefinition(trx, {
+          kind: 'relationshipType',
+          definition: {
+            schemaVersion: DEFINITION_SCHEMA_VERSION,
+            name: `Odd ${randomUUID().slice(0, 8)}`,
+            inverseName: 'Odd of',
+            directed: true,
+            from: { kinds: ['document'], cardinality: 'many', permission: 'read' },
+            to: { kinds: [kind], cardinality: 'many', permission: 'read' },
+            selfReference: false,
+            acyclic: false,
+            informational: true,
+            schemas: [],
+          },
+          author: ada,
+        }),
+      );
+      expect(made, kind).toMatchObject({
+        answer: 'definition.invalid',
+        failures: [{ code: 'metadata.unknown', rule: 'unknown' }],
+      });
+    }
   });
 
   it('REL-045 REL-046 refuses an artifact related to itself, and a relationship closing a cycle where the type is acyclic', async () => {

@@ -82,6 +82,9 @@ export * from './workflow/index.js';
 // Relationships (the R8 plan): declared types, and the ends a type permits.
 export {
   endsRefused,
+  relatableKinds,
+  unrelatableKinds,
+  type RelatableKind,
   relationshipTypeDefinitionSchema,
   type EndRefusal,
   type RelationshipEnd,

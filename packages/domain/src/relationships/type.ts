@@ -3,6 +3,29 @@ import { z } from 'zod';
 import { assignmentSchema } from '../metadata/component-type.js';
 import { definitionIdentity } from '../metadata/definition.js';
 
+/**
+ * The kinds a relationship may join (the R19 plan, R19-A): the content people relate - components,
+ * documents, publications, assets, templates, query definitions and datasets - never configuration.
+ * A type's kinds are drawn from these where it is written; a stored one reads as it was.
+ */
+export const relatableKinds = Object.freeze([
+  'component',
+  'document',
+  'publication',
+  'asset',
+  'template',
+  'queryDefinition',
+  'dataset',
+] as const);
+export type RelatableKind = (typeof relatableKinds)[number];
+
+/** The kinds a type names that no relationship may join, each once, in its order. */
+export function unrelatableKinds(type: RelationshipTypeDefinition): string[] {
+  return [...new Set([...type.from.kinds, ...type.to.kinds])].filter(
+    (kind) => !(relatableKinds as readonly string[]).includes(kind),
+  );
+}
+
 /** How many relationships of a type one artifact may hold at an end (REL-042). */
 const cardinality = z.enum(['one', 'many']);
 

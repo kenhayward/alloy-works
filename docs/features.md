@@ -1169,14 +1169,16 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   **Cohorts** lists every cohort you may read, newest first or by title, filtered by whether its rows
   were all made, one failed, or some wait. Approving or publishing a cohort as one act is not there yet.
 - **Relationships.** Declare a relationship type through the API (`POST /v1/definitions`, kind
-  `relationshipType`): the kinds it relates at each end, how many each may hold, whether it reads the
+  `relationshipType`): the kinds it relates at each end - components, documents, publications,
+  assets, templates, query definitions and datasets, and no others - how many each may hold, whether it reads the
   same both ways, may relate an artifact to itself or close a cycle, the permission it needs at each
   end and the fields it carries. A component's or a document's header offers **Relationships**: its
   relationships drawn as a graph centred on it and listed beside, expanded a ring at a time, filtered
   by type, direction and a field's value, many of one kind drawn as a count. Each view names the API
   query answering it (`GET /v1/artifacts/{id}/relationships`, and `.../path` for a shortest path).
   Relate it to an artifact found by search, or remove one; each act is checked as its type says and
-  audited. Impact walks relationships too, apart from references. Exporting types with the
+  audited. Impact walks relationships too, apart from references, and Save version, Done editing and
+  approving a component say first what is related to it. Exporting types with the
   environment's configuration, acting on many at once and the MCP surface are not there yet.
 - **Required components.** A template made through the API (`components` in its definition) may
   name components every document from it includes, each at the start or end of a starting section

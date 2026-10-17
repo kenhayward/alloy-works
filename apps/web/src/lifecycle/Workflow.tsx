@@ -238,6 +238,7 @@ export function TransitionButtons({
   onStale,
   className,
   line,
+  askFirst,
 }: {
   client: Client;
   kind: Movable;
@@ -252,8 +253,14 @@ export function TransitionButtons({
   onNotice: (said: string) => void;
   onStale: () => void;
   className?: string | undefined;
+  /**
+   * Asks first what approving reaches (REL-024; the R19 plan, R19-C), going ahead once answered, as
+   * saving a version asks; approving goes ahead at once where none is given.
+   */
+  askFirst?: ((act: string, go: () => void) => void) | undefined;
 }) {
   const [busy, setBusy] = useState(false);
+  const approving = (act: string, go: () => void) => (askFirst ? askFirst(act, go) : go());
   const [asking, setAsking] = useState<Offered | null>(null);
   const [rejecting, setRejecting] = useState<Gate | null>(null);
 
@@ -341,11 +348,13 @@ export function TransitionButtons({
                   className={className}
                   disabled={busy}
                   title={`Approve, towards ${gate.to.name}`}
-                  onClick={() => {
-                    void decideAt(gate).then((refused) => {
-                      if (refused !== undefined) onNotice(refused);
-                    });
-                  }}
+                  onClick={() =>
+                    approving('Approve', () => {
+                      void decideAt(gate).then((refused) => {
+                        if (refused !== undefined) onNotice(refused);
+                      });
+                    })
+                  }
                 >
                   {gate.name}
                 </button>
@@ -357,11 +366,13 @@ export function TransitionButtons({
                   className={className}
                   disabled={busy}
                   title={`Approve, and publish once ${gate.to.name}`}
-                  onClick={() => {
-                    void decideAt(gate, undefined, true).then((refused) => {
-                      if (refused !== undefined) onNotice(refused);
-                    });
-                  }}
+                  onClick={() =>
+                    approving('Approve and publish', () => {
+                      void decideAt(gate, undefined, true).then((refused) => {
+                        if (refused !== undefined) onNotice(refused);
+                      });
+                    })
+                  }
                 >
                   {`${gate.name} and publish`}
                 </button>

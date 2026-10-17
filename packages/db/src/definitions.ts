@@ -12,6 +12,7 @@ import {
   type VariableDefinition,
   conditionAxisDefinitionSchema,
   relationshipTypeDefinitionSchema,
+  unrelatableKinds,
   type ConditionAxisDefinition,
   type StoredProfile,
   type RelationshipTypeDefinition,
@@ -355,6 +356,22 @@ async function refusal(
     }
     const refused = await keyRefused(trx, 'variable', variable.key, self);
     if (refused) return refused;
+  }
+  if (kind === 'relationshipType') {
+    // Its kinds drawn from those people relate (the R19 plan, R19-A).
+    const unrelatable = unrelatableKinds(candidate as RelationshipTypeDefinition);
+    if (unrelatable.length > 0) {
+      return {
+        answer: 'definition.invalid',
+        failures: unrelatable.map((each) => ({
+          code: 'metadata.unknown' as const,
+          field: each,
+          rule: 'unknown' as const,
+          schemas: [],
+          detail: `A relationship cannot join a ${each}: choose a component, document, publication, asset, template, query definition or dataset`,
+        })),
+      };
+    }
   }
   if (kind === 'relationshipType' && self !== undefined) {
     // A change that would leave relationships of the type invalid is refused, counted (REL-054).

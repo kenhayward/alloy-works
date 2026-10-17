@@ -18069,10 +18069,6 @@
           "howItIsMet": "Each end's kind is held to the kinds the type permits there, in the transaction that writes the relationship (`endsRefused`)"
         },
         {
-          "id": "REL-052",
-          "howItIsMet": "An end's kind is an artifact kind, tied to `artifact(id, kind)` by a composite foreign key, so any kind a type permits may be an end"
-        },
-        {
           "id": "REL-010",
           "howItIsMet": "Its values are checked against the fields its type's schemas assign, before it is written"
         },
@@ -18174,7 +18170,7 @@
         },
         {
           "id": "REL-024",
-          "howItIsMet": "Hard impact is the cheap walk - 76ms at worst in the spike - so it runs before a change is saved, not after"
+          "howItIsMet": "Hard impact is the cheap walk - 76ms at worst in the spike - so it runs before a change is made: Save version, Done editing and approving a component each say first the documents a version reaches and what reaches it through relationships, three hops out (the R19 plan, R19-C)"
         },
         {
           "id": "REL-029",
@@ -22929,13 +22925,13 @@
     {
       "id": "LIF-050",
       "file": "apps/web/src/lifecycle/Workflow.test.tsx",
-      "line": 242,
+      "line": 273,
       "kind": "title"
     },
     {
       "id": "LIF-051",
       "file": "apps/web/src/lifecycle/Workflow.test.tsx",
-      "line": 199,
+      "line": 230,
       "kind": "title"
     },
     {
@@ -22947,7 +22943,7 @@
     {
       "id": "VER-015",
       "file": "apps/web/src/lifecycle/Workflow.test.tsx",
-      "line": 267,
+      "line": 298,
       "kind": "title"
     },
     {
@@ -23029,6 +23025,12 @@
       "kind": "title"
     },
     {
+      "id": "REL-004",
+      "file": "apps/web/src/reuse/Relationships.test.tsx",
+      "line": 213,
+      "kind": "title"
+    },
+    {
       "id": "REL-025",
       "file": "apps/web/src/reuse/Relationships.test.tsx",
       "line": 122,
@@ -23059,21 +23061,27 @@
       "kind": "title"
     },
     {
+      "id": "REL-024",
+      "file": "apps/web/src/reuse/UsedIn.test.tsx",
+      "line": 169,
+      "kind": "title"
+    },
+    {
       "id": "REU-007",
       "file": "apps/web/src/reuse/UsedIn.test.tsx",
-      "line": 58,
+      "line": 66,
       "kind": "title"
     },
     {
       "id": "REU-008",
       "file": "apps/web/src/reuse/UsedIn.test.tsx",
-      "line": 117,
+      "line": 125,
       "kind": "title"
     },
     {
       "id": "REU-009",
       "file": "apps/web/src/reuse/UsedIn.test.tsx",
-      "line": 117,
+      "line": 125,
       "kind": "title"
     },
     {
@@ -25785,19 +25793,19 @@
     {
       "id": "REL-010",
       "file": "packages/db/src/relationships.test.ts",
-      "line": 218,
+      "line": 248,
       "kind": "title"
     },
     {
       "id": "REL-011",
       "file": "packages/db/src/relationships.test.ts",
-      "line": 235,
+      "line": 265,
       "kind": "title"
     },
     {
       "id": "REL-012",
       "file": "packages/db/src/relationships.test.ts",
-      "line": 206,
+      "line": 236,
       "kind": "title"
     },
     {
@@ -25809,31 +25817,31 @@
     {
       "id": "REL-033",
       "file": "packages/db/src/relationships.test.ts",
-      "line": 235,
+      "line": 265,
       "kind": "title"
     },
     {
       "id": "REL-034",
       "file": "packages/db/src/relationships.test.ts",
-      "line": 235,
+      "line": 265,
       "kind": "title"
     },
     {
       "id": "REL-037",
       "file": "packages/db/src/relationships.test.ts",
-      "line": 267,
+      "line": 297,
       "kind": "title"
     },
     {
       "id": "REL-038",
       "file": "packages/db/src/relationships.test.ts",
-      "line": 267,
+      "line": 297,
       "kind": "title"
     },
     {
       "id": "REL-042",
       "file": "packages/db/src/relationships.test.ts",
-      "line": 206,
+      "line": 236,
       "kind": "title"
     },
     {
@@ -25845,31 +25853,31 @@
     {
       "id": "REL-045",
       "file": "packages/db/src/relationships.test.ts",
-      "line": 194,
+      "line": 224,
       "kind": "title"
     },
     {
       "id": "REL-046",
       "file": "packages/db/src/relationships.test.ts",
-      "line": 194,
+      "line": 224,
       "kind": "title"
     },
     {
       "id": "REL-049",
       "file": "packages/db/src/relationships.test.ts",
-      "line": 206,
+      "line": 236,
       "kind": "title"
     },
     {
       "id": "REL-053",
       "file": "packages/db/src/relationships.test.ts",
-      "line": 218,
+      "line": 248,
       "kind": "title"
     },
     {
       "id": "REL-054",
       "file": "packages/db/src/relationships.test.ts",
-      "line": 267,
+      "line": 297,
       "kind": "title"
     },
     {
@@ -27471,7 +27479,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 739,
+      "line": 742,
       "kind": "title"
     },
     {

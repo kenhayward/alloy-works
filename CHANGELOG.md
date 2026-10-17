@@ -3,6 +3,15 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.190.0 - 2026-10-17 (PR #699)
+
+Reuse's nineteenth slice: relationships finished (the R19 plan).
+
+### Added
+
+- **What a change reaches, before it is made.** Saving a version of a component, finishing editing it, and now approving it each say first what is related to it through relationships, beside the documents a new version reaches.
+- **Relationship types relate content alone.** A type may join components, documents, publications, assets, templates, query definitions and datasets, and is refused any other kind.
+
 ## 0.189.0 - 2026-10-17 (PR #698)
 
 Reuse's eighteenth slice: query limits and cost (the R18 plan).

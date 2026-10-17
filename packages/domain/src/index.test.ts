@@ -434,6 +434,9 @@ describe('the domain package', () => {
         'PROBE_WORDS',
         // R8: relationship types, and the ends one permits.
         'endsRefused',
+        // The kinds a relationship may join, and those a type names that it may not (the R19 plan).
+        'relatableKinds',
+        'unrelatableKinds',
         'relationshipTypeDefinitionSchema',
         // What a definition is checked against before it is written (definitions.md, W5.1).
         'assignmentConflicts',
