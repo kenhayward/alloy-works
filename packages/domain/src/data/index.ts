@@ -161,7 +161,7 @@ export type {
   TestFinding,
   TestRequest,
 } from './protocol.js';
-export { defaultLimits, effectiveLimits, limitCeilings } from './limits.js';
+export { defaultLimits, effectiveLimits, limitCeilings, runsAtOnce } from './limits.js';
 export type { Limits, TenantLimits } from './limits.js';
 export {
   bindingDigestInput,

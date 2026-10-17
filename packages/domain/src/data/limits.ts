@@ -14,6 +14,13 @@ export const limitCeilings = Object.freeze({
   seconds: 120,
 } as const);
 
+/**
+ * How many of a tenant's runs may be in flight at once (DAT-071; the R18 plan, R18-A): four unless an
+ * administrator lowers it, never past sixteen; and how long a run waits for a slot before it is
+ * `query_throttled`.
+ */
+export const runsAtOnce = Object.freeze({ default: 4, ceiling: 16, waitMs: 5_000 } as const);
+
 /** A run's limits: rows, bytes and seconds. */
 export interface Limits {
   readonly rows: number;

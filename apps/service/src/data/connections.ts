@@ -7,6 +7,7 @@ import type {
   CreateConnectionBody,
   CredentialBody,
   DescribeBody,
+  DocumentParams,
   SampleBody,
   SampleView,
   SpaceParams,
@@ -18,6 +19,11 @@ import {
   credentialOf,
   dataPolicy,
   definitionsNaming,
+  giveQuerySlot,
+  recordQueryRun,
+  takeQuerySlot,
+  type QueryAct,
+  type QueryRun,
   latestConnectionTest,
   listReadableConnections,
   readConnection,
@@ -64,7 +70,9 @@ import {
   type Parameter,
   type Query,
   type ParameterValues,
+  type RunRequest,
   type TestAnswer,
+  runsAtOnce,
 } from '@alloy-works/domain';
 import type { ObjectStores } from '@alloy-works/objects';
 import type { FastifyRequest } from 'fastify';
@@ -83,6 +91,7 @@ import {
   creationAct,
   documentsOnConnection,
   resolveAct,
+  type RunAsked,
   type RunsThrough,
 } from './bindings.js';
 import { createConnectorClient, type Answered } from './connector.js';
@@ -94,6 +103,8 @@ export interface ConnectorOptions {
   readonly url: string;
   readonly key: string;
   readonly fetch?: typeof globalThis.fetch;
+  /** How long a run waits for a slot before it is `query_throttled`; the product's unless a test says. */
+  readonly waitMs?: number;
 }
 
 /** A sealed credential a request is made with, and its row's number, which a test records. */
@@ -412,14 +423,97 @@ export function connectionHandlers(
     return client;
   }
 
+  const waitMs = connector?.waitMs ?? runsAtOnce.waitMs;
+
+  /**
+   * **The one door every run passes** (DAT-071, DAT-053; the R18 plan): a slot of the tenant's runs at
+   * once, waited for up to `waitMs` and then `query_throttled`, leased for the run's deadline and the
+   * client's slack; the run; and its record - which act, who, the connection, the query definition, the
+   * document, its time, rows, bytes and outcome - written as the slot is given back. Outside any
+   * transaction, as every run is.
+   */
+  function metered(request: FastifyRequest, act: QueryAct, document: string | null) {
+    const tenant = tenantOf(request);
+    const principal = principalOf(request).principalId;
+    return async (
+      asked: RunRequest,
+      signal: AbortSignal,
+      queryDefinition: string | null,
+    ): Promise<RunAsked> => {
+      const asking = connected();
+      const leaseMs = asked.deadlineMs + 3_000;
+      const waiting = Date.now();
+      let slot: string | undefined;
+      for (;;) {
+        slot = await db.withTenant(tenant, (trx) => takeQuerySlot(trx, { leaseMs }));
+        const waited = Date.now() - waiting;
+        if (slot !== undefined || waited >= waitMs || signal.aborted) break;
+        await new Promise((resolve) => setTimeout(resolve, Math.min(200, waitMs - waited)));
+      }
+      const record = (
+        run: Omit<QueryRun, 'act' | 'principal' | 'connection' | 'queryDefinition' | 'document'>,
+      ) =>
+        db.withTenant(tenant, async (trx) => {
+          if (slot !== undefined) await giveQuerySlot(trx, slot);
+          await recordQueryRun(trx, {
+            act,
+            principal,
+            connection: asked.connection.id,
+            queryDefinition,
+            document,
+            ...run,
+          });
+        });
+      if (slot === undefined) {
+        await record({
+          durationMs: Date.now() - waiting,
+          rows: null,
+          bytes: null,
+          outcome: 'throttled',
+          failure: 'query_throttled',
+        });
+        return { refused: { code: 'query_throttled' } };
+      }
+      const began = Date.now();
+      let answered: RunAsked | undefined;
+      try {
+        answered = await asking.run(asked, signal);
+        return answered;
+      } finally {
+        const ran = answered !== undefined && 'answer' in answered ? answered.answer : undefined;
+        await record({
+          durationMs: Date.now() - began,
+          rows: ran?.outcome === 'ok' ? ran.rowCount : null,
+          bytes:
+            ran?.outcome === 'ok'
+              ? Buffer.byteLength(canonicalResultBytes(ran.result), 'utf8')
+              : null,
+          outcome: ran?.outcome === 'ok' ? 'ran' : 'failed',
+          failure:
+            ran === undefined
+              ? answered !== undefined && 'refused' in answered
+                ? answered.refused.code
+                : 'connector_unavailable'
+              : ran.outcome === 'failed'
+                ? ran.failure.code
+                : null,
+        });
+      }
+    };
+  }
+
   /**
    * What a resolve and a check run through: this connector, these routes' own refusals, who the
    * caller runs as on a connection, and the watch on their authority.
    */
-  function runsThrough(request: FastifyRequest): RunsThrough {
-    const asking = connected();
+  function runsThrough(
+    request: FastifyRequest,
+    act: QueryAct,
+    document: string | null,
+  ): RunsThrough {
+    connected();
     return {
-      run: (asked, signal) => asking.run(asked, signal),
+      run: metered(request, act, document),
       runnable,
       usableSealed,
       acting: (trx, connection) => actingOn(trx, request, connection),
@@ -427,8 +521,18 @@ export function connectionHandlers(
     };
   }
 
-  function answered<T>(answer: Answered<T>): T {
-    if ('refused' in answer) throw dataRefused(503, answer.refused.code);
+  function answered<T>(
+    answer: { readonly answer: T } | { readonly refused: { readonly code: DataFailureCode } },
+  ): T {
+    if ('refused' in answer) {
+      const refusal = dataRefused(503, answer.refused.code);
+      // Retryable, and said when (the R18 plan, R18-C).
+      if (answer.refused.code !== 'query_throttled') throw refusal;
+      throw new AppError(refusal.status, refusal.code, refusal.message, refusal.rule, {
+        ...refusal.members,
+        retryAfter: runsAtOnce.waitMs / 1000,
+      });
+    }
     return answer.answer;
   }
 
@@ -918,7 +1022,8 @@ export function connectionHandlers(
       await requireSqlPermitted(trx, connection, draft.fetch);
       const built = draft.fetch.kind === 'builder';
       const { sealed } = await usableSealed(trx, id);
-      const client = connected();
+      connected();
+      const run = metered(request, 'sample', null);
       const tenant = tenantOf(request);
       // The least of the definition's limits and the tenant's (DAT-050), and a deadline of the time.
       const limits = effectiveLimits(draft.limits, await dataPolicy(trx));
@@ -929,7 +1034,7 @@ export function connectionHandlers(
       return new AfterCommit(() =>
         whileHeld(request, async (signal): Promise<SampleView> => {
           const ran = answered(
-            await client.run(
+            await run(
               {
                 requestId: randomUUID(),
                 tenant: tenant.id,
@@ -943,6 +1048,8 @@ export function connectionHandlers(
                 ...runIdentity(acting),
               },
               signal,
+              // A sample runs a draft, saved or not: its definition is none (R18-D).
+              null,
             ),
           );
           if (signal.aborted) throw signal.reason;
@@ -1012,20 +1119,20 @@ export function connectionHandlers(
     // (data.md, "Resolve" and "Check"): decided and read in the deciding transaction, asked once it
     // commits, and recorded in a second that decides again (D3-H). `bindings.ts` holds the rest.
     resolveBindings: async (request: FastifyRequest, authorised: Authorised) => {
-      const through = runsThrough(request);
-      connected();
+      const through = runsThrough(request, 'resolve', (request.params as DocumentParams).id);
       return resolveAct(db, tenantOf(request), objects, request, authorised, through);
     },
 
     checkBindings: async (request: FastifyRequest, authorised: Authorised) => {
-      const through = runsThrough(request);
-      connected();
+      const through = runsThrough(request, 'check', (request.params as DocumentParams).id);
       return checkAct(db, tenantOf(request), objects, request, authorised, through);
     },
 
     // A document whose template's required components run queries is made after they run (the R9
     // plan, R9-E): not a route of its own, handed to `createDocument`.
     boundCreation: (request: FastifyRequest, authorised: Authorised) =>
-      creationAct(db, tenantOf(request), objects, request, authorised, () => runsThrough(request)),
+      creationAct(db, tenantOf(request), objects, request, authorised, (document) =>
+        runsThrough(request, 'creation', document),
+      ),
   };
 }

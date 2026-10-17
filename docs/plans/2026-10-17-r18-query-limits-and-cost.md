@@ -1,0 +1,30 @@
+# R18: Query limits and cost
+
+> T4's eighteenth slice, extending [data.md](../design/data.md). **Full tier**: a migration (0115),
+> a tenant-wide limit every query run passes through, and new routes. Built inline, one final review at
+> the slice's end. Decisions marked **(default)** are recommendations Ken may overturn; the rest are his
+> answers of 2026-10-17.
+
+**Goal:** no tenant's runs - document creations, checks, resolves and samples - can flood the
+connector; a run over the limit is a named, retryable failure, never a partial result; and every run's
+cost is attributable to its tenant, query and document, and reported in Administration.
+
+| PR   | Holds                                                                                                   |
+| ---- | ------------------------------------------------------------------------------------------------------- |
+| R18a | This plan; 0115; the slot every run takes; `query_throttled`; every run recorded; usage through the API |
+| R18b | Administration's **Query usage** and the limit in **Data** settings; CSV; final review; 0.189.0         |
+
+## Decisions
+
+| ID    | Decision                                                                                                                                                                                                                                                                                                                                           |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R18-A | **Runs at once, per tenant** (Ken; DAT-071, DAT-Q06): one number for the tenant's runs in flight across every act, 4 unless an administrator lowers it, never past the product's ceiling of 16 (default). It sits with the run limits in `data_policy`, set as they are (DAT-050).                                                                 |
+| R18-B | **A leased slot** (default): a run takes a row of `query_slot` under the tenant's advisory lock where fewer than the limit stand, leased for its deadline and the client's slack, and gives it back when answered. A lease that lapses frees itself, so a process that dies holds nothing; any number of service instances share the count.        |
+| R18-C | **Wait briefly, then fail** (Ken): a run waits up to five seconds for a slot, then fails `query_throttled`, attributed to the product and retryable, `retryAfter` five seconds; never truncated or partial (DAT-045, DAT-051). A resolve or creation fails its question so, as any failed run does.                                                |
+| R18-D | **Every run recorded** (Ken; DAT-053): `query_run`, insert-only - when, which act (`sample`, `resolve`, `check`, `creation`), who, the connection, the query definition and the document (a creation's by the id it makes), its duration, rows, bytes of result, and its outcome and failure code; throttled ones too. Kept 13 months, then swept. |
+| R18-E | **Reported** (Ken): `GET /v1/data/usage` - totals by query definition and by document over a period - and `GET /v1/data/usage/runs.csv`, for an administrator; Administration > **Query usage** in R18b.                                                                                                                                           |
+
+## Tasks
+
+- **R18a**: 0115 (`data_policy.concurrent_runs`, `query_slot`, `query_run`, their grants); `takeQuerySlot`, `giveQuerySlot`, `recordQueryRun`, `queryUsage`, the sweep; every run through one metered door in the service; the routes. Tests: the limit holds across acts and frees itself; a run past it waits then fails `query_throttled`; every run recorded and attributed; usage totals; the sweep.
+- **R18b**: the settings field, the page and its CSV; browser walks; the final review; the close.

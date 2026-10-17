@@ -247,7 +247,11 @@ const MOST_RUNS = 50;
 /** What asking the connector for a run came to: its answer, or why there is none. */
 export type RunAsked =
   | { readonly answer: RunAnswer }
-  | { readonly refused: { readonly code: 'connector_busy' | 'connector_unavailable' } };
+  | {
+      readonly refused: {
+        readonly code: 'connector_busy' | 'connector_unavailable' | 'query_throttled';
+      };
+    };
 
 /**
  * What the connection routes lend a resolve and a check: the run itself, the connection's own
@@ -255,7 +259,12 @@ export type RunAsked =
  * runs as on a connection (D7-G), and the watch on their authority while the source answers (D7-I).
  */
 export interface RunsThrough {
-  readonly run: (request: RunRequest, signal: AbortSignal) => Promise<RunAsked>;
+  /** A run, metered (the R18 plan): through the tenant's slots, and recorded with its query. */
+  readonly run: (
+    request: RunRequest,
+    signal: AbortSignal,
+    queryDefinition: string | null,
+  ) => Promise<RunAsked>;
   readonly runnable: (trx: TenantTransaction, id: string) => Promise<StoredConnection>;
   readonly usableSealed: (
     trx: TenantTransaction,
@@ -897,6 +906,7 @@ async function runOnce(
       ...runIdentity(prepared.acting),
     },
     signal,
+    prepared.definition.id,
   );
   // Nothing of a run whose authority ended is kept, its rows among them (IAM-082).
   if (signal.aborted) throw signal.reason;
@@ -3496,7 +3506,7 @@ export async function creationAct(
   objects: ObjectStores | undefined,
   request: FastifyRequest,
   { trx, principalId, facts }: Authorised,
-  through: () => RunsThrough,
+  through: (document: string) => RunsThrough,
 ): Promise<AfterCommit<Awaited<ReturnType<typeof createdView>>> | undefined> {
   const { space } = request.params as SpaceParams;
   const body = request.body as CreateDocumentBody;
@@ -3510,9 +3520,10 @@ export async function creationAct(
   // A key's answer is kept where the document is made, after its queries run (#661; API-008): the
   // deciding transaction recalled it already, and the making one recalls it again under its lock.
   const keyed = keyedRequest(request, 'createDocument');
-  const running = through();
   const caller = callerOf(request);
   const artifactId = randomUUID();
+  // Its runs are the document's it makes, by the id chosen here (the R18 plan, R18-D).
+  const running = through(artifactId);
   const ids: string[] = [];
   const input = {
     spaceId: space,

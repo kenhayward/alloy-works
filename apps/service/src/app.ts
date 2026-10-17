@@ -4,6 +4,7 @@ import { datesHandlers } from './dates.js';
 import { scopeHandlers } from './scopes.js';
 import { lineHandlers } from './lines.js';
 import { shareHandlers } from './shares.js';
+import { queryUsageHandlers } from './query-usage.js';
 import { IDEMPOTENT_REPLAYED, keyedRequest, once } from './idempotency.js';
 import { Accepted, AfterCommit, Revalidated } from './after-commit.js';
 import cookie from '@fastify/cookie';
@@ -583,6 +584,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...scopeHandlers(),
     ...lineHandlers(),
     ...shareHandlers(tenantOf, options.objects),
+    ...queryUsageHandlers(),
     ...templateMoveHandlers(),
     ...erasureHandlers(),
 

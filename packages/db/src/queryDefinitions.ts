@@ -388,13 +388,19 @@ export async function definitionsNaming(
   };
 }
 
-/** The tenant's lowered limits (D2-N): each null where the tenant has not lowered it. */
-export async function dataPolicy(trx: TenantTransaction): Promise<Required<TenantLimits>> {
+/**
+ * The tenant's lowered limits (D2-N), and its runs at once (R18-A): each null where the tenant has not
+ * lowered it. The runs at once read so a schema before 0115 answers null.
+ */
+export async function dataPolicy(
+  trx: TenantTransaction,
+): Promise<Required<TenantLimits> & { readonly concurrentRuns: number | null }> {
   const row = await trx
     .selectFrom('data_policy')
     .select(['rows', 'bytes', 'seconds'])
+    .select(sql<number | null>`(to_jsonb(data_policy) ->> 'concurrent_runs')::integer`.as('runs'))
     .executeTakeFirstOrThrow();
-  return { rows: row.rows, bytes: row.bytes, seconds: row.seconds };
+  return { rows: row.rows, bytes: row.bytes, seconds: row.seconds, concurrentRuns: row.runs };
 }
 
 /** Sets the tenant's lowered limits, each null to lower none; the table holds each to its ceiling. */
@@ -404,10 +410,17 @@ export async function setDataPolicy(
     readonly rows: number | null;
     readonly bytes: number | null;
     readonly seconds: number | null;
+    /** Left as it is where absent. */
+    readonly concurrentRuns?: number | null;
   },
 ): Promise<void> {
   await trx
     .updateTable('data_policy')
-    .set({ rows: limits.rows, bytes: limits.bytes, seconds: limits.seconds })
+    .set({
+      rows: limits.rows,
+      bytes: limits.bytes,
+      seconds: limits.seconds,
+      ...(limits.concurrentRuns === undefined ? {} : { concurrent_runs: limits.concurrentRuns }),
+    })
     .execute();
 }

@@ -187,6 +187,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0112_divergent_lines',
       '0113_line_returned',
       '0114_publication_shares',
+      '0115_query_limits',
     ]);
 
     // The component and its version are as they were.
@@ -365,6 +366,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0112_divergent_lines',
       '0113_line_returned',
       '0114_publication_shares',
+      '0115_query_limits',
     ]);
 
     const { rows } = await queryAs(

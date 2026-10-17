@@ -1,4 +1,4 @@
-import { limitCeilings } from '@alloy-works/domain';
+import { limitCeilings, runsAtOnce } from '@alloy-works/domain';
 import { z } from 'zod';
 import type { RouteContract } from './contract.js';
 import { ErrorBody } from './schemas.js';
@@ -76,6 +76,15 @@ export const DataSettingsBody = z.strictObject({
     .describe(
       `The most seconds a run may take, 1 to ${limitCeilings.seconds}; null or absent lowers none`,
     ),
+  concurrentRuns: z
+    .int()
+    .min(1)
+    .max(runsAtOnce.ceiling)
+    .nullable()
+    .optional()
+    .describe(
+      `How many of the environment's query runs may be in flight at once, 1 to ${runsAtOnce.ceiling}; null or absent for the product's ${runsAtOnce.default}`,
+    ),
 });
 export type DataSettingsBody = z.infer<typeof DataSettingsBody>;
 
@@ -83,8 +92,15 @@ export const DataSettings = z.object({
   rows: z.int().nullable(),
   bytes: z.int().nullable(),
   seconds: z.int().nullable(),
+  concurrentRuns: z
+    .int()
+    .nullable()
+    .describe(
+      'Runs at once, or null for the default; one past them waits, then is query_throttled',
+    ),
+  defaults: z.object({ concurrentRuns: z.int() }).describe("The product's runs at once"),
   ceilings: z
-    .object({ rows: z.int(), bytes: z.int(), seconds: z.int() })
+    .object({ rows: z.int(), bytes: z.int(), seconds: z.int(), concurrentRuns: z.int() })
     .describe("The product's ceilings, which no definition passes and an environment only lowers"),
 });
 export type DataSettings = z.infer<typeof DataSettings>;

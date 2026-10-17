@@ -42,6 +42,8 @@ describe('a data failure', () => {
       connector_error: 'connector',
       connector_unavailable: 'product',
       connector_busy: 'product',
+      // The R18 plan's R18-C: the tenant's runs at once all in flight.
+      query_throttled: 'product',
       source_unsupported: 'connector',
       // D2-H's two: the source refused the author's statement, and a value no canonical form of its
       // declared type can hold.

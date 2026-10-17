@@ -14,7 +14,7 @@ import {
   type TenantDatabase,
   type TenantTransaction,
 } from '@alloy-works/db';
-import { limitCeilings } from '@alloy-works/domain';
+import { limitCeilings, runsAtOnce } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import type { Authorised } from './access.js';
 import { AppError } from './errors.js';
@@ -95,7 +95,8 @@ export function settingsHandlers(
     getDataSettings: async (request: FastifyRequest): Promise<DataSettings> =>
       db.withTenant(tenantOf(request), async (trx) => ({
         ...(await dataPolicy(trx)),
-        ceilings: { ...limitCeilings },
+        defaults: { concurrentRuns: runsAtOnce.default },
+        ceilings: { ...limitCeilings, concurrentRuns: runsAtOnce.ceiling },
       })),
 
     setDataSettings: async (
@@ -109,10 +110,15 @@ export function settingsHandlers(
         rows: body.rows ?? null,
         bytes: body.bytes ?? null,
         seconds: body.seconds ?? null,
+        concurrentRuns: body.concurrentRuns ?? null,
       });
       const after = await dataPolicy(trx);
       await recordSettingsChanged(trx, 'data', before, after);
-      return { ...after, ceilings: { ...limitCeilings } };
+      return {
+        ...after,
+        defaults: { concurrentRuns: runsAtOnce.default },
+        ceilings: { ...limitCeilings, concurrentRuns: runsAtOnce.ceiling },
+      };
     },
   };
 }

@@ -152,6 +152,41 @@ describe('bindings and datasets through the service', () => {
     }
   });
 
+  it("DAT-053 records each resolve's and check's runs against their query definition and document, and totals them by each", async () => {
+    const definition = await h.definition(connection.id);
+    const { document, node } = await placed(binding('b1', definition.id));
+    h.connector.mode = 'answer';
+    h.connector.run = ranOk([['1', 'North']]);
+    const from = new Date(Date.now() - 1000);
+    expect((await resolve('ada', document.id, [{ node, binding: 'b1' }])).statusCode).toBe(200);
+    expect((await check('ada', document.id)).statusCode).toBe(200);
+    const recorded = (await rowsOf('query_run')).filter((each) => each.document_id === document.id);
+    expect(recorded.map((each) => [each.act, each.query_definition_id, each.principal_id])).toEqual(
+      expect.arrayContaining([
+        ['resolve', definition.id, h.ids.ada],
+        ['check', definition.id, h.ids.ada],
+      ]),
+    );
+    const to = new Date(Date.now() + 1000);
+    const usage = await h.call(
+      'ada',
+      'GET',
+      `/v1/data/usage?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}`,
+    );
+    expect(usage.statusCode, usage.body).toBe(200);
+    const { byDocument, byQueryDefinition } = usage.json<{
+      byDocument: { id: string; title: string | null; runs: number; rows: number }[];
+      byQueryDefinition: { id: string; runs: number }[];
+    }>();
+    expect(byDocument.find((each) => each.id === document.id)).toMatchObject({
+      runs: recorded.length,
+      rows: recorded.length,
+    });
+    expect(
+      byQueryDefinition.find((each) => each.id === definition.id)!.runs,
+    ).toBeGreaterThanOrEqual(recorded.length);
+  });
+
   it('stores a result once, under its checksum, and refuses one whose bytes do not match it, recording nothing', async () => {
     const definition = await h.definition(connection.id);
     const { document, node } = await placed(binding('b1', definition.id));

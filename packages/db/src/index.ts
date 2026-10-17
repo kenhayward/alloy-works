@@ -629,6 +629,18 @@ export {
   type StoredQueryDefinition,
 } from './queryDefinitions.js';
 export {
+  giveQuerySlot,
+  queryRunsBetween,
+  queryUsage,
+  recordQueryRun,
+  sweepQueryRuns,
+  takeQuerySlot,
+  type QueryAct,
+  type QueryRun,
+  type StoredQueryRun,
+  type UsageTotal,
+} from './query-runs.js';
+export {
   assetHolding,
   componentsBinding,
   datasetFor,

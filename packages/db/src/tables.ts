@@ -5,7 +5,7 @@ import type {
   SearchConfiguration,
   SearchKind,
 } from '@alloy-works/domain';
-import type { ColumnType, Generated, Transaction } from 'kysely';
+import type { ColumnType, Generated, RawBuilder, Transaction } from 'kysely';
 import type { ArtifactKind } from './artifact-kind.js';
 import type { AssetUploadTable } from './assets-tables.js';
 import type {
@@ -897,6 +897,31 @@ export interface DataPolicyTable {
   rows: ColumnType<number | null, never, number | null>;
   bytes: ColumnType<number | null, never, number | null>;
   seconds: ColumnType<number | null, never, number | null>;
+  /** The tenant's runs at once (0115; R18-A), null for the product's default. */
+  concurrent_runs: ColumnType<number | null, never, number | null>;
+}
+
+/** A run's slot (0115; R18-B), leased for its deadline. */
+export interface QuerySlotTable {
+  id: Generated<string>;
+  taken_at: Generated<Date>;
+  lease_until: ColumnType<Date, Date | RawBuilder<Date>, never>;
+}
+
+/** A query run (0115; R18-D), insert-only and swept after 13 months. */
+export interface QueryRunTable {
+  id: Generated<string>;
+  at: Generated<Date>;
+  act: string;
+  principal_id: string | null;
+  connection_id: string;
+  query_definition_id: string | null;
+  document_id: string | null;
+  duration_ms: number;
+  row_count: number | null;
+  bytes: ColumnType<string | number | null, number | null, never>;
+  outcome: string;
+  failure: string | null;
 }
 
 /** A dataset's identity (0047; the D3 plan, D3-A): the question its versions answer. Insert-only. */
@@ -1104,6 +1129,8 @@ export interface TenantTables {
   connection_credential: ConnectionCredentialTable;
   connection_test: ConnectionTestTable;
   data_policy: DataPolicyTable;
+  query_slot: QuerySlotTable;
+  query_run: QueryRunTable;
   dataset: DatasetTable;
   dataset_name: DatasetNameTable;
   binding_resolution: BindingResolutionTable;
