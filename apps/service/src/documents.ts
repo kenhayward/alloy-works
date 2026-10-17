@@ -60,6 +60,7 @@ import {
   placeFromSection,
   previewPlacement,
   applyOutlineOverrides,
+  lineNumbers,
 } from '@alloy-works/db';
 import type { AfterCommit } from './after-commit.js';
 import {
@@ -606,6 +607,8 @@ export function documentHandlers(
         ),
       ];
       const contents = await versionContents(trx, resolved);
+      // A version on a divergent line, shown by its line (LIF-046; ADR-0063).
+      const onLines = await lineNumbers(trx, resolved);
       // Whether the caller may edit each component now, and who holds it (CNT-074), decided as the
       // component's own route decides it - of every component the caller may read, whether or not
       // its occurrence has a version to show, and said of no component they may not. The facts and
@@ -757,8 +760,10 @@ export function documentHandlers(
                     stale: staleOf.has(`${occurrence.node}/${each.block}`),
                   })),
                 };
+          const onLine = occurrence.version === null ? undefined : onLines.get(occurrence.version);
           return {
             ...occurrence,
+            ...(onLine === undefined ? {} : { line: onLine.line }),
             ...newer,
             ...tracked,
             ...moved,
@@ -778,7 +783,7 @@ export function documentHandlers(
             : [
                 {
                   id: version,
-                  number: `${held.revision}.${held.version}`,
+                  number: onLines.get(version)?.number ?? `${held.revision}.${held.version}`,
                   content: held.content as Record<string, unknown>,
                 },
               ];

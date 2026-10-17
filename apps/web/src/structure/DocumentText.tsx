@@ -438,6 +438,7 @@ export function DocumentText({
   resolved,
   revisions,
   pastReview,
+  lines,
   overridesOf,
   onOverride,
   choosing,
@@ -490,6 +491,8 @@ export function DocumentText({
   revisions?: ReadonlyMap<string, number>;
   /** The references whose component is past its review-by day, by node (LIF-018; WF5-H). */
   pastReview?: ReadonlySet<string>;
+  /** The divergent line each node's version is on, by node (LIF-046; R16-E): none for the main line. */
+  lines?: ReadonlyMap<string, string>;
   /** Each reference's local overrides by node, and whether each stands (REU-011; the R4 plan, R4-G). */
   overridesOf?: ReadonlyMap<string, readonly OverrideView[]>;
   /** Asked to change a reference's overrides, by node: offered to whoever may edit the document. */
@@ -678,6 +681,7 @@ export function DocumentText({
                         {versionSaid(node.mode, resolved?.get(node.id), revisions?.get(node.id))}
                       </span>
                     )}
+                    {lines?.has(node.id) === true && <Chip>{`${lines.get(node.id)} line`}</Chip>}
                     {pastReview?.has(node.id) === true && <Chip tone="warn">Past review</Chip>}
                     {(overridesOf?.get(node.id) ?? []).some((each) => !each.stale) && (
                       <Chip>Overridden here</Chip>

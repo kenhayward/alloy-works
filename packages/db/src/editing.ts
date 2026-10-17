@@ -11,7 +11,8 @@ import { componentFieldsNow, unstorableValues } from './component-values.js';
 import { isDeleted, shareDeletion } from './deletion.js';
 import type { TenantTransaction } from './tables.js';
 import { sha256Hex } from './version-digest.js';
-import { latestVersion, type StoredVersion } from './versions.js';
+import { type StoredVersion } from './versions.js';
+import { headVersion } from './lines.js';
 
 /**
  * How long a lock lasts without activity unless an administrator changes it (COL-008): fifteen
@@ -62,6 +63,8 @@ export interface EditingSession {
   readonly artifactId: string;
   readonly principal: string;
   readonly session: string;
+  /** The divergent line edited (R16-B), or absent for the main line. */
+  readonly line?: string | undefined;
 }
 
 /** A write refused because the caller's session does not hold the lock. */
@@ -330,7 +333,7 @@ export async function sessionContent(
     .orderBy('sequence', 'desc')
     .limit(1)
     .executeTakeFirst();
-  const current = await latestVersion(trx, session.artifactId);
+  const current = await headVersion(trx, session.artifactId, session.line);
   if (!latest || !current || latest.opened_from !== current.id) return undefined;
   return { content: latest.content, openedFrom: latest.opened_from };
 }
@@ -376,7 +379,7 @@ export async function saveIteration(
   await serialise(trx, input.artifactId);
   const lock = await holding(trx, input);
   if (isRefusal(lock)) return lock;
-  const current = await latestVersion(trx, input.artifactId);
+  const current = await headVersion(trx, input.artifactId, input.line);
   if (!current) return { answer: 'artifact.missing' };
   if (current.id !== input.openedFrom) return { answer: 'version.precondition', current };
 

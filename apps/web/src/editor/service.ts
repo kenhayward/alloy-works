@@ -185,8 +185,11 @@ export function sessionService(
   principal: string,
   storage?: Pick<Storage, 'getItem' | 'setItem'>,
   onFresh?: (session: string) => void,
+  /** The divergent line edited (R16-B), or undefined for the main line. */
+  line?: string,
 ): SessionService {
   const path = { id: componentId };
+  const onLine = line === undefined ? {} : { line };
   let current = initialSession;
   // Every session this window has used for the component, so a listed iteration is this window's
   // whether it was saved under the id held now, the one before a fresh claim, or one from before a
@@ -249,6 +252,7 @@ export function sessionService(
               openedFrom,
               content: content as unknown as Record<string, unknown>,
               ...(values === undefined ? {} : { values: { ...values } }),
+              ...onLine,
             },
             ...(signal ? { signal } : {}),
           },
@@ -275,7 +279,7 @@ export function sessionService(
       try {
         const { data, error, response } = await client.POST('/v1/components/{id}/versions', {
           params: { path },
-          body: { session: current, openedFrom },
+          body: { session: current, openedFrom, ...onLine },
         });
         if (data) return { ok: true, outcome: data.outcome, version: data.version };
         return { ok: false, code: refusalOf(response) ?? codeOf(error) };
@@ -287,7 +291,7 @@ export function sessionService(
     async release(openedFrom): Promise<CutResult> {
       try {
         const { data, error, response } = await client.DELETE('/v1/components/{id}/lock', {
-          params: { path, query: { session: current, openedFrom } },
+          params: { path, query: { session: current, openedFrom, ...onLine } },
         });
         if (data) return { ok: true, outcome: data.outcome, version: data.version };
         return { ok: false, code: refusalOf(response) ?? codeOf(error) };

@@ -590,6 +590,12 @@ export const DocumentTextsView = z.object({
         lock: Lock.nullable().describe(
           'Who holds the component now and until when: null where nobody does, or where the caller may not read it',
         ),
+        line: z
+          .object({ id: z.string(), name: z.string() })
+          .optional()
+          .describe(
+            "The divergent line the version shown is on (LIF-046), served by the document's scope; absent for the main line",
+          ),
         newer: z
           .object({ id: z.string(), number: z.string().describe('`revision.version`, as `0.3`') })
           .optional()

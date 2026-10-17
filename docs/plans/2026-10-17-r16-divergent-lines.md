@@ -15,7 +15,7 @@ back, after a comparison, block by block, with what was left behind recorded.
 | ---- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | R16a | This plan; 0112; a line diverged from a revision, numbered below the main line; versions, standing, gates and scopes per line (LIF-044) |
 | R16b | Editing a line on the page; the line said wherever the component appears (LIF-046)                                                      |
-| R16c | Bringing a line back, block by block (LIF-045); final review; 0.187.0                                                                   |
+| R16c | Bringing a line back, block by block (LIF-045); lists and search saying a component diverged (LIF-046); final review; 0.187.0           |
 
 ## Decisions
 

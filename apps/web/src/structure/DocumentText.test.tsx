@@ -91,6 +91,19 @@ describe("the document's text", () => {
     expect(within(text).getAllByRole('link')).toHaveLength(1);
   });
 
+  it("says the divergent line a reference's version is on", () => {
+    render(
+      <DocumentText
+        outline={outline}
+        scheme={defaultLayout.scheme}
+        names={new Map([[PRINTER, 'Install the printer']])}
+        lines={new Map([[PRINTER_NODE, 'US']])}
+      />,
+    );
+    const text = screen.getByRole('region', { name: "The document's text" });
+    expect(within(text).getByText('US line')).toBeInTheDocument();
+  });
+
   it("never leaves a component's text empty while it is drawn again, so nothing measuring the page meanwhile finds it short (issue #384)", () => {
     // The outline pane's effects run between the text's, in the same flush: it reveals the reader's
     // node in its pane by measuring, and a page measured with every card emptied is short enough

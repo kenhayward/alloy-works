@@ -61,6 +61,9 @@ export const IterationBody = z.strictObject({
     .describe(
       "The component's values, whole, by field identifier; absent keeps those of the version opened from",
     ),
+  line: LowercaseUuid.optional().describe(
+    "A component's divergent line to act on (LIF-044); its main line where absent",
+  ),
 });
 export type IterationBody = z.infer<typeof IterationBody>;
 
@@ -71,10 +74,19 @@ export const CutBody = z.strictObject({
   session: LowercaseUuid,
   openedFrom: LowercaseUuid,
   note: z.string().min(1).max(500).optional(),
+  line: LowercaseUuid.optional().describe(
+    "A component's divergent line to act on (LIF-044); its main line where absent",
+  ),
 });
 export type CutBody = z.infer<typeof CutBody>;
 
-export const ReleaseQuery = z.object({ session: LowercaseUuid, openedFrom: LowercaseUuid });
+export const ReleaseQuery = z.object({
+  session: LowercaseUuid,
+  openedFrom: LowercaseUuid,
+  line: LowercaseUuid.optional().describe(
+    "A component's divergent line edited (LIF-044); its main line where absent",
+  ),
+});
 export type ReleaseQuery = z.infer<typeof ReleaseQuery>;
 
 /**

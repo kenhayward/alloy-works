@@ -312,8 +312,9 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
                 <ZoomControl />
               </StatusTools>
               <ComponentEditor
-                key={`${opened}:${restored}`}
+                key={`${opened}:${address?.line ?? ''}:${restored}`}
                 componentId={opened}
+                line={address?.line}
                 client={client}
                 principalId={me}
                 onSpace={(space) => setPlaced({ component: opened, space })}

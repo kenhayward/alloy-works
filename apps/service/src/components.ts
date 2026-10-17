@@ -11,13 +11,13 @@ import type {
 } from '@alloy-works/api-contract';
 import { datesView, pastReviewOf } from './dates.js';
 import { scopeView } from './scopes.js';
+import { lineView } from './lines.js';
 import {
   componentFieldsNow,
   createComponent,
   isArchived,
   isHeld,
   latestSequence,
-  latestVersion,
   listPeople,
   listComponentTypes,
   listReadableComponents,
@@ -33,6 +33,9 @@ import {
   type Tenant,
   type TenantDatabase,
   workflowStates,
+  headVersion,
+  lineNumbers,
+  readLines,
 } from '@alloy-works/db';
 import { decide, type EffectiveField } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
@@ -74,6 +77,17 @@ export function versionView(version: VersionHeading) {
     createdAt: version.createdAt.toISOString(),
     note: version.note,
   };
+}
+
+/**
+ * A version as a view shows it, where it may be on a divergent line: a line's as `US 2.3` (LIF-046;
+ * ADR-0063), never by the number it is stored at.
+ */
+export async function shownVersionView(trx: TenantTransaction, version: StoredVersion) {
+  const view = versionView(version);
+  if (version.line === null) return view;
+  const shown = (await lineNumbers(trx, [version.id])).get(version.id);
+  return { ...view, number: shown?.number ?? view.number };
 }
 
 /**
@@ -297,6 +311,9 @@ export function componentHandlers(
         ...(await workflowView(trx, answer.version.artifactId, facts, principalId)),
         ...(await datesView(trx, answer.version.artifactId)),
         ...(await scopeView(trx, answer.version.artifactId, principalId)),
+        // Made a moment ago, it has diverged nowhere.
+        line: null,
+        lines: [],
         // Nothing holds what was made a moment ago but its space's hold, told as a page would.
         onHold:
           (decide('retire', facts).allowed || administersTenant(facts)) &&
@@ -380,8 +397,11 @@ export function componentHandlers(
 
     getComponent: async (request: FastifyRequest, { trx, principalId, facts }: Authorised) => {
       const { id } = request.params as ComponentParams;
-      const version = await latestVersion(trx, id);
+      // On a line, its head (R16-B); a line it does not hold, or a closed one, is none.
+      const { line } = request.query as ComponentQuery;
+      const version = await headVersion(trx, id, line);
       if (!version || version.kind !== 'component') throw notFound();
+      const lines = await readLines(trx, id);
       const space = await trx
         .selectFrom('artifact as a')
         .innerJoin('space as s', 's.id', 'a.space_id')
@@ -402,15 +422,21 @@ export function componentHandlers(
       return {
         id,
         space,
-        version: versionView(version),
+        version: await shownVersionView(trx, version),
         content: version.content as Record<string, unknown>,
         // What the renderer offers from: the same decision a write would be refused by.
         mayEdit: decide('edit', facts).allowed,
         archived: await isArchived(trx, id),
         mayRetire: decide('retire', facts).allowed,
-        ...(await workflowView(trx, id, facts, principalId)),
+        ...(await workflowView(trx, id, facts, principalId, line)),
         ...(await datesView(trx, id)),
-        ...(await scopeView(trx, id, principalId)),
+        ...(await scopeView(trx, id, principalId, line)),
+        // Which line is read, and every line (LIF-046; R16-E).
+        line:
+          line === undefined
+            ? null
+            : { id: line, name: lines.find((each) => each.id === line)?.name ?? '' },
+        lines: lines.map(lineView),
         // Told only to whoever may retire it or administer the environment (AH-G): a hold may be
         // confidential.
         onHold:

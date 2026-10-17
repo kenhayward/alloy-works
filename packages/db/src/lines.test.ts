@@ -6,7 +6,9 @@ import { bootstrapCluster } from './bootstrap.js';
 import { createComponent } from './creation.js';
 import { createDefinition } from './definitions.js';
 import { grant } from './grants.js';
-import { diverge, readLines } from './lines.js';
+import { claimLock, saveIteration } from './editing.js';
+import { diverge, lineNumbers, readLines } from './lines.js';
+import { cutVersion, releaseLock } from './promotion.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import { findRole } from './roles.js';
@@ -164,7 +166,7 @@ describe('divergent lines (the R16 plan, R16-A to R16-D)', () => {
     await db?.drop();
   });
 
-  it('LIF-044 diverges a line from a designated revision, numbered below the main line, and leaves every main-line read on the main line', async () => {
+  it('LIF-044 diverges a line from a designated revision, numbered below the main line, shown by its name, and leaves every main-line read on the main line', async () => {
     const first = await component('Label the drum');
     await approve(first);
     const main = await edit(first, 'Central wording');
@@ -189,6 +191,13 @@ describe('divergent lines (the R16 plan, R16-A to R16-D)', () => {
     const us2 = await edit(us1, 'US wording, again', begun.line.id);
     expect([us1.line, us1.revision, us1.version]).toEqual([begun.line.id, -1, 1]);
     expect([us2.revision, us2.version]).toEqual([-1, 2]);
+    // Shown as the line's name, the revision it counts from and its own version, never by its sort key.
+    expect(await as((trx) => lineNumbers(trx, [us1.id, us2.id, main.id]))).toEqual(
+      new Map([
+        [us1.id, { line: { id: begun.line.id, name: 'US' }, number: 'US 1.1' }],
+        [us2.id, { line: { id: begun.line.id, name: 'US' }, number: 'US 1.2' }],
+      ]),
+    );
 
     // The main line reads as it did.
     expect((await as((trx) => latestVersion(trx, first.artifactId)))?.id).toBe(main.id);
@@ -263,5 +272,58 @@ describe('divergent lines (the R16 plan, R16-A to R16-D)', () => {
       ).get(first.artifactId)?.versionId;
     expect(await served('us')).toBe(us1.id);
     expect(await served('eu')).toBe(first.id);
+  });
+
+  it('LIF-044 edits a line through a session: its iterations and its cut on the line, the main line untouched', async () => {
+    const first = await component('Weigh the drum');
+    await approve(first);
+    const begun = await as((trx) =>
+      diverge(trx, { artifactId: first.artifactId, revision: 1, name: 'US', by: ada }),
+    );
+    if (begun.answer !== 'diverged') throw new Error(begun.answer);
+    const session = { artifactId: first.artifactId, principal: ada, session: randomUUID() };
+    await as((trx) => claimLock(trx, session));
+    const words = (value: string) => ({
+      ...(substanceOf(first).content as object),
+      content: [
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'body',
+          content: [{ type: 'text', value, marks: [] }],
+        },
+      ],
+    });
+    // The line's head is the revision it diverged from until it has a version of its own.
+    expect(
+      await as((trx) =>
+        saveIteration(trx, {
+          ...session,
+          line: begun.line.id,
+          sequence: 1,
+          openedFrom: first.id,
+          content: words('US wording') as never,
+        }),
+      ),
+    ).toMatchObject({ answer: 'accepted' });
+    const cut = await as((trx) =>
+      cutVersion(trx, { ...session, line: begun.line.id, openedFrom: first.id }),
+    );
+    if (cut.answer !== 'recorded') throw new Error(cut.answer);
+    expect([cut.version.line, cut.version.revision, cut.version.version]).toEqual([
+      begun.line.id,
+      -1,
+      1,
+    ]);
+    // Opened from the line's head now, and released with nothing more to cut.
+    expect(
+      await as((trx) =>
+        releaseLock(trx, { ...session, line: begun.line.id, openedFrom: cut.version.id }),
+      ),
+    ).toEqual({ answer: 'released', version: null });
+    expect((await as((trx) => latestVersion(trx, first.artifactId)))?.id).toBe(first.id);
+    expect((await as((trx) => workflowStanding(trx, first.artifactId)))?.state.key).toBe(
+      'approved',
+    );
   });
 });

@@ -145,7 +145,7 @@ async function move(
   client: Client,
   kind: Movable,
   id: string,
-  body: { transition: string; from: string; reason?: string },
+  body: { transition: string; from: string; reason?: string; line?: string },
 ): Promise<Moved> {
   const options = { params: { path: { id } }, body };
   try {
@@ -182,6 +182,7 @@ async function decideGate(
     decision: 'approved' | 'rejected';
     reason?: string;
     publish?: boolean;
+    line?: string;
   },
 ): Promise<Moved> {
   const options = { params: { path: { id } }, body };
@@ -236,6 +237,7 @@ export function TransitionButtons({
   onNotice,
   onStale,
   className,
+  line,
 }: {
   client: Client;
   kind: Movable;
@@ -244,6 +246,8 @@ export function TransitionButtons({
   standing: Standing;
   /** The version the reader sees: what an approval approves. */
   versionId: string;
+  /** The divergent line moved (R16-C), or undefined for the main line. */
+  line?: string | undefined;
   onMoved: (standing: Standing, said: string) => void;
   onNotice: (said: string) => void;
   onStale: () => void;
@@ -269,6 +273,7 @@ export function TransitionButtons({
       decision: reason === undefined ? 'approved' : 'rejected',
       ...(reason === undefined ? {} : { reason }),
       ...(publish ? { publish } : {}),
+      ...(line === undefined ? {} : { line }),
     });
     setBusy(false);
     if ('moved' in answer) {
@@ -293,6 +298,7 @@ export function TransitionButtons({
       transition: transition.key,
       from: standing.state.key,
       ...(reason === undefined ? {} : { reason }),
+      ...(line === undefined ? {} : { line }),
     });
     setBusy(false);
     if ('moved' in answer) {

@@ -210,6 +210,10 @@ export const TransitionBody = z.strictObject({
     .max(2000)
     .optional()
     .describe('Why, recorded with the move; required where the transition says so'),
+  line: z
+    .uuid()
+    .optional()
+    .describe("A component's divergent line to move (LIF-044); its main line where absent"),
 });
 export type TransitionBody = z.infer<typeof TransitionBody>;
 
@@ -353,6 +357,12 @@ export const ScopeBody = z.strictObject({
     )
     .max(50)
     .describe('Each axis value once; none for everywhere'),
+  line: z
+    .uuid()
+    .optional()
+    .describe(
+      "A component's divergent line whose scope it is (LIF-044); its main line where absent",
+    ),
 });
 export type ScopeBody = z.infer<typeof ScopeBody>;
 
@@ -445,6 +455,12 @@ export const ApprovalBody = z.strictObject({
     .optional()
     .describe(
       "Where the gate permits a publication and this approval passes it, request one of the gate's baseline; needs publish",
+    ),
+  line: z
+    .uuid()
+    .optional()
+    .describe(
+      "A component's divergent line whose gate it is (LIF-044); its main line where absent",
     ),
 });
 export type ApprovalBody = z.infer<typeof ApprovalBody>;

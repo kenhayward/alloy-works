@@ -84,11 +84,13 @@ export async function scopeView(
   trx: TenantTransaction,
   id: string,
   by: string,
+  /** A line's scope (R16-C); the main line's where absent. */
+  line?: string,
 ): Promise<{ scope: ScopeView }> {
   return {
     scope: await viewOf(
       trx,
-      (await readScopes(trx, [id])).get(id)?.scope ?? [],
+      (await readScopes(trx, [id], line)).get(id)?.scope ?? [],
       await pendingAcceptances(trx, id, by),
     ),
   };
@@ -136,6 +138,7 @@ export function scopeHandlers() {
         kind,
         scope: parsed.data,
         by: principalId,
+        ...(body.line === undefined ? {} : { line: body.line }),
       });
       switch (answer.answer) {
         case 'artifact.missing':

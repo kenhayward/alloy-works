@@ -1,6 +1,7 @@
 import type { ComponentView, createApiClient } from '@alloy-works/api-client';
 import { DatesButton, DatesChips, datesIn, type Dates } from '../lifecycle/Dates.js';
 import { NO_SCOPE, ScopeButton, ScopeChips, scopeIn, type ScopeNow } from '../lifecycle/Scope.js';
+import { LinesControl, linesIn } from '../lifecycle/Lines.js';
 import type { ContentDocument } from '@alloy-works/domain';
 import {
   bindingDigestInput,
@@ -225,6 +226,8 @@ export interface ComponentEditorProps {
    */
   readonly onMine?: (mine: (() => Mine) | null) => void;
   readonly componentId: string;
+  /** A divergent line to open it on (LIF-044, LIF-046; the R16 plan, R16-E); its main line where absent. */
+  readonly line?: string | undefined;
   readonly client: Client;
   /** The signed-in principal, to tell this author's other window from somebody else. */
   readonly principalId: string;
@@ -525,6 +528,7 @@ export function ComponentEditor({
   onSaved,
   onMine,
   draft,
+  line,
 }: ComponentEditorProps) {
   const drafting = draft !== undefined;
   const draftRef = useRef(draft);
@@ -1192,7 +1196,15 @@ export function ComponentEditor({
       .GET('/v1/components/{id}', {
         params: {
           path: { id: componentId },
-          ...(asked === null ? {} : { query: { session: asked } }),
+          // On a line, its head (R16-B).
+          ...(asked === null && line === undefined
+            ? {}
+            : {
+                query: {
+                  ...(asked === null ? {} : { session: asked }),
+                  ...(line === undefined ? {} : { line }),
+                },
+              }),
         },
       })
       .then(({ data, response }) => {
@@ -1251,7 +1263,7 @@ export function ComponentEditor({
     return () => {
       current = false;
     };
-  }, [client, componentId, attempt, drafting, principalId]);
+  }, [client, componentId, attempt, drafting, principalId, line]);
 
   const component = loaded.state === 'open' ? loaded.component : null;
 
@@ -1497,8 +1509,14 @@ export function ComponentEditor({
             id: component.version.id,
             number: component.version.number,
           })
-        : sessionService(client, component.id, initialSession, principalId, undefined, (id) =>
-            keeping.rebind(id),
+        : sessionService(
+            client,
+            component.id,
+            initialSession,
+            principalId,
+            undefined,
+            (id) => keeping.rebind(id),
+            line,
           ),
       sequence: startAt,
       onSent: (sequence) => keeping.sent(sequence),
@@ -1713,7 +1731,7 @@ export function ComponentEditor({
       setSurface(null);
       view.destroy();
     };
-  }, [component, client, principalId, drafting]);
+  }, [component, client, principalId, drafting, line]);
 
   // Arrived at by a link naming a block, on opening or while open: the caret goes to the block's start,
   // or it is selected where it has nothing to type into - an equation, a footnote - or the page says
@@ -2394,6 +2412,19 @@ export function ComponentEditor({
             </span>
             {standing && <StateLozenge state={standing.state} />}
             <RevisionChip revision={standing?.revision} />
+            {/* Which line is read, and a move to another (LIF-044, LIF-046; R16-E). */}
+            <LinesControl
+              client={client}
+              componentId={componentId}
+              line={line}
+              lines={linesIn(shown)}
+              revision={standing?.revision?.number ?? null}
+              mayEdit={shown.mayEdit === true && !archived}
+              onGo={(address) => {
+                window.location.hash = address;
+              }}
+              className={styles['archive']}
+            />
             <DatesChips dates={datesNow ?? datesIn(shown)} />
             {shown.mayEdit === true && !archived && (datesNow ?? datesIn(shown)) && (
               <DatesButton
@@ -2415,6 +2446,7 @@ export function ComponentEditor({
             />
             {/* Set where it may be, and asked what was effective by every reader (R15-B, R15-F). */}
             <ScopeButton
+              line={line}
               mayEdit={
                 shown.mayEdit === true && !archived && (scopeNow ?? scopeIn(shown)) !== undefined
               }
@@ -2447,6 +2479,7 @@ export function ComponentEditor({
                 client={client}
                 kind="component"
                 id={componentId}
+                line={line}
                 title={header.title}
                 standing={standing}
                 versionId={shown.version.id}
