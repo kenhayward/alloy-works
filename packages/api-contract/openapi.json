@@ -47769,6 +47769,12 @@
                                   "type": "integer",
                                   "minimum": -9007199254740991,
                                   "maximum": 9007199254740991
+                                },
+                                "retryAfter": {
+                                  "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
                                 }
                               },
                               "required": [
@@ -48298,6 +48304,12 @@
                                 },
                                 "status": {
                                   "description": "The HTTP status an HTTP source refused with: `source_refused` alone, never its body",
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "retryAfter": {
+                                  "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
                                   "type": "integer",
                                   "minimum": -9007199254740991,
                                   "maximum": 9007199254740991
@@ -52816,6 +52828,12 @@
                               "type": "integer",
                               "minimum": -9007199254740991,
                               "maximum": 9007199254740991
+                            },
+                            "retryAfter": {
+                              "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
                             }
                           },
                           "required": [
@@ -53487,6 +53505,12 @@
                             },
                             "status": {
                               "description": "The HTTP status an HTTP source refused with: `source_refused` alone, never its body",
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "retryAfter": {
+                              "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
                               "type": "integer",
                               "minimum": -9007199254740991,
                               "maximum": 9007199254740991
@@ -55295,6 +55319,12 @@
                                   "type": "integer",
                                   "minimum": -9007199254740991,
                                   "maximum": 9007199254740991
+                                },
+                                "retryAfter": {
+                                  "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
                                 }
                               },
                               "required": [
@@ -56077,6 +56107,12 @@
                                     },
                                     "status": {
                                       "description": "The HTTP status an HTTP source refused with: `source_refused` alone, never its body",
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "retryAfter": {
+                                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
                                       "type": "integer",
                                       "minimum": -9007199254740991,
                                       "maximum": 9007199254740991
@@ -56977,6 +57013,12 @@
                                       "type": "integer",
                                       "minimum": -9007199254740991,
                                       "maximum": 9007199254740991
+                                    },
+                                    "retryAfter": {
+                                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
                                     }
                                   },
                                   "required": [
@@ -57605,7 +57647,7 @@
             }
           },
           "400": {
-            "description": "A period that ends before it starts, or longer than 13 months",
+            "description": "A period that ends before it starts, longer than 13 months, or holding more than 100,000 runs",
             "content": {
               "application/json": {
                 "schema": {
@@ -58335,6 +58377,12 @@
                                       "minimum": -9007199254740991,
                                       "maximum": 9007199254740991
                                     },
+                                    "retryAfter": {
+                                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
                                     "definition": {
                                       "type": "string",
                                       "description": "The query definition the binding names"
@@ -58461,6 +58509,12 @@
                                     },
                                     "status": {
                                       "description": "The HTTP status an HTTP source refused with: `source_refused` alone, never its body",
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "retryAfter": {
+                                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
                                       "type": "integer",
                                       "minimum": -9007199254740991,
                                       "maximum": 9007199254740991
@@ -85661,6 +85715,12 @@
                                     "minimum": -9007199254740991,
                                     "maximum": 9007199254740991
                                   },
+                                  "retryAfter": {
+                                    "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
                                   "definition": {
                                     "type": "string",
                                     "description": "The query definition the binding names"
@@ -85888,6 +85948,12 @@
                                   },
                                   "status": {
                                     "description": "The HTTP status an HTTP source refused with: `source_refused` alone, never its body",
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "retryAfter": {
+                                    "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
                                     "type": "integer",
                                     "minimum": -9007199254740991,
                                     "maximum": 9007199254740991
@@ -100268,6 +100334,12 @@
                                     "minimum": -9007199254740991,
                                     "maximum": 9007199254740991
                                   },
+                                  "retryAfter": {
+                                    "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
                                   "definition": {
                                     "type": "string",
                                     "description": "The query definition the binding names"
@@ -100446,6 +100518,12 @@
                                   },
                                   "status": {
                                     "description": "The HTTP status an HTTP source refused with: `source_refused` alone, never its body",
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "retryAfter": {
+                                    "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
                                     "type": "integer",
                                     "minimum": -9007199254740991,
                                     "maximum": 9007199254740991
@@ -197399,6 +197477,12 @@
                                   "type": "integer",
                                   "minimum": -9007199254740991,
                                   "maximum": 9007199254740991
+                                },
+                                "retryAfter": {
+                                  "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
                                 }
                               },
                               "required": [
@@ -198181,6 +198265,12 @@
                                     },
                                     "status": {
                                       "description": "The HTTP status an HTTP source refused with: `source_refused` alone, never its body",
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "retryAfter": {
+                                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
                                       "type": "integer",
                                       "minimum": -9007199254740991,
                                       "maximum": 9007199254740991

@@ -19548,6 +19548,8 @@ export interface operations {
                                 row?: number;
                                 /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
                                 status?: number;
+                                /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                                retryAfter?: number;
                             };
                             at: string;
                             by: {
@@ -19748,6 +19750,8 @@ export interface operations {
                                 row?: number;
                                 /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
                                 status?: number;
+                                /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                                retryAfter?: number;
                             };
                             at: string;
                         };
@@ -20967,6 +20971,8 @@ export interface operations {
                             row?: number;
                             /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
                             status?: number;
+                            /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                            retryAfter?: number;
                         };
                     };
                 };
@@ -21234,6 +21240,8 @@ export interface operations {
                             row?: number;
                             /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
                             status?: number;
+                            /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                            retryAfter?: number;
                         };
                         at: string;
                     };
@@ -21894,6 +21902,8 @@ export interface operations {
                                 row?: number;
                                 /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
                                 status?: number;
+                                /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                                retryAfter?: number;
                             };
                             at: string;
                             by: {
@@ -22099,6 +22109,8 @@ export interface operations {
                                     row?: number;
                                     /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
                                     status?: number;
+                                    /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                                    retryAfter?: number;
                                 };
                                 at: string;
                                 by: {
@@ -22375,6 +22387,8 @@ export interface operations {
                                     row?: number;
                                     /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
                                     status?: number;
+                                    /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                                    retryAfter?: number;
                                 };
                                 at: string;
                                 by: {
@@ -22602,7 +22616,7 @@ export interface operations {
                     "text/csv": string;
                 };
             };
-            /** @description A period that ends before it starts, or longer than 13 months */
+            /** @description A period that ends before it starts, longer than 13 months, or holding more than 100,000 runs */
             400: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -22940,6 +22954,8 @@ export interface operations {
                                 row?: number;
                                 /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
                                 status?: number;
+                                /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                                retryAfter?: number;
                                 /** @description The query definition the binding names */
                                 definition: string;
                                 binding: string;
@@ -22981,6 +22997,8 @@ export interface operations {
                                 row?: number;
                                 /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
                                 status?: number;
+                                /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                                retryAfter?: number;
                                 /** @description The query definition the binding names */
                                 definition: string;
                                 binding: string;
@@ -30521,6 +30539,8 @@ export interface operations {
                                 row?: number;
                                 /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
                                 status?: number;
+                                /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                                retryAfter?: number;
                                 /** @description The query definition the binding names */
                                 definition: string;
                                 binding: string;
@@ -30601,6 +30621,8 @@ export interface operations {
                                 row?: number;
                                 /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
                                 status?: number;
+                                /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                                retryAfter?: number;
                                 /** @description The query definition the binding names */
                                 definition: string;
                                 binding: string;
@@ -34074,6 +34096,8 @@ export interface operations {
                                 row?: number;
                                 /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
                                 status?: number;
+                                /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                                retryAfter?: number;
                                 /** @description The query definition the binding names */
                                 definition: string;
                                 binding: string;
@@ -34138,6 +34162,8 @@ export interface operations {
                                 row?: number;
                                 /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
                                 status?: number;
+                                /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                                retryAfter?: number;
                                 /** @description The query definition the binding names */
                                 definition: string;
                                 binding: string;
@@ -66217,6 +66243,8 @@ export interface operations {
                                 row?: number;
                                 /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
                                 status?: number;
+                                /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                                retryAfter?: number;
                             };
                             at: string;
                             by: {
@@ -66422,6 +66450,8 @@ export interface operations {
                                     row?: number;
                                     /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
                                     status?: number;
+                                    /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                                    retryAfter?: number;
                                 };
                                 at: string;
                                 by: {

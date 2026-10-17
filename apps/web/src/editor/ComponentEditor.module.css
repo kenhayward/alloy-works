@@ -127,6 +127,8 @@
   margin-inline: var(--space-8);
   font-size: var(--size-12);
   white-space: nowrap;
+  /* A target of its own size, whatever wraps beside it (WCAG 2.5.8; issue #695). */
+  min-block-size: 24px;
 }
 
 .divider {
