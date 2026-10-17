@@ -160,7 +160,10 @@ export async function decideGate(
       reason,
       by: input.by,
     });
-    return { answer: 'rejected', standing: (await workflowStanding(trx, input.artifactId, input.line))! };
+    return {
+      answer: 'rejected',
+      standing: (await workflowStanding(trx, input.artifactId, input.line))!,
+    };
   }
 
   if (progress.approvedBy.includes(input.by)) return { answer: 'approval.given' };
@@ -261,7 +264,10 @@ export async function decideGate(
     place.labels,
   );
   if (count < gate.approvals) {
-    return { answer: 'approved', standing: (await workflowStanding(trx, input.artifactId, input.line))! };
+    return {
+      answer: 'approved',
+      standing: (await workflowStanding(trx, input.artifactId, input.line))!,
+    };
   }
 
   await moved(trx, standing, {

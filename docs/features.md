@@ -1071,6 +1071,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   the header, the lists and on every reference to it. Administration > Workflows says how long before
   the owner is prompted and what a lapsed review does: nothing more, a move to a state, or an
   escalation to a person, who then sees **Review overdue**.
+- **Divergent lines.** Through the API, a component can carry a divergent line of revisions beside the
+  main one, begun from one of its revisions: a market's wording, say, with its own drafts and
+  approvals, served wherever its scope applies, and never putting the main line back to draft.
 - **Revisions effective by scope.** A component's or document's header offers **Effective for**: the
   markets or sites, condition axis values, its next revision is effective for, while another revision
   stays effective elsewhere; a document reads, publishes and baselines the revision effective under its

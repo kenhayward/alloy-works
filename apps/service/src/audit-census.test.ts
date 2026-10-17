@@ -254,6 +254,8 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   listComponentApprovals: read,
   listDocumentApprovals: read,
   readComponentEffective: read,
+  divergeComponent: writes('line.diverged'),
+  listComponentLines: read,
   readDocumentEffective: read,
   transitionQueryDefinition: writes('workflow.transitioned'),
   decideQueryDefinitionGate: writes(

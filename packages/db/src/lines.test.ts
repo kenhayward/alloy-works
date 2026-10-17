@@ -28,12 +28,7 @@ import {
   substanceOf,
   type StoredVersion,
 } from './versions.js';
-import {
-  latestRevision,
-  latestRevisionsOf,
-  moveArtifact,
-  workflowStanding,
-} from './workflow.js';
+import { latestRevision, latestRevisionsOf, moveArtifact, workflowStanding } from './workflow.js';
 import { decideGate } from './workflow-gates.js';
 
 describe('divergent lines (the R16 plan, R16-A to R16-D)', () => {
@@ -197,9 +192,9 @@ describe('divergent lines (the R16 plan, R16-A to R16-D)', () => {
 
     // The main line reads as it did.
     expect((await as((trx) => latestVersion(trx, first.artifactId)))?.id).toBe(main.id);
-    expect((await as((trx) => latestVersionsOf(trx, [first.artifactId]))).get(first.artifactId)?.id).toBe(
-      main.id,
-    );
+    expect(
+      (await as((trx) => latestVersionsOf(trx, [first.artifactId]))).get(first.artifactId)?.id,
+    ).toBe(main.id);
     const listed = await as((trx) => listVersions(trx, first.artifactId, { limit: 50 }));
     expect(listed.items.map((each) => each.id)).toEqual([main.id, first.id]);
     expect(await as((trx) => readLines(trx, first.artifactId))).toEqual([
@@ -217,7 +212,12 @@ describe('divergent lines (the R16 plan, R16-A to R16-D)', () => {
       return rows.map((row) => row.detail);
     });
     expect(events).toEqual([
-      { kind: 'component', line: begun.line.id, name: 'US', from: { revision: 1, version: first.id } },
+      {
+        kind: 'component',
+        line: begun.line.id,
+        name: 'US',
+        from: { revision: 1, version: first.id },
+      },
     ]);
   });
 
@@ -230,7 +230,9 @@ describe('divergent lines (the R16 plan, R16-A to R16-D)', () => {
     if (begun.answer !== 'diverged') throw new Error(begun.answer);
     const us1 = await edit(first, 'US wording', begun.line.id);
     // Saving the line leaves the main line approved; the line is a draft of its own.
-    expect((await as((trx) => workflowStanding(trx, first.artifactId)))?.state.key).toBe('approved');
+    expect((await as((trx) => workflowStanding(trx, first.artifactId)))?.state.key).toBe(
+      'approved',
+    );
     expect(
       (await as((trx) => workflowStanding(trx, first.artifactId, begun.line.id)))?.state.key,
     ).toBe('draft');
@@ -246,7 +248,9 @@ describe('divergent lines (the R16 plan, R16-A to R16-D)', () => {
     );
     await approve(us1, begun.line.id);
     // The line's approval takes revision 2; the main line still counts from revision 1.
-    expect((await as((trx) => latestRevision(trx, first.artifactId, begun.line.id)))?.number).toBe(2);
+    expect((await as((trx) => latestRevision(trx, first.artifactId, begun.line.id)))?.number).toBe(
+      2,
+    );
     expect((await as((trx) => latestRevision(trx, first.artifactId)))?.number).toBe(1);
     const main = await edit(first, 'Central wording');
     expect([main.revision, main.version]).toEqual([1, 1]);

@@ -380,6 +380,8 @@ const operationTags = {
     'acceptDocumentRevision',
     'readComponentEffective',
     'readDocumentEffective',
+    'divergeComponent',
+    'listComponentLines',
   ],
   'Audit log': ['listAuditEvents', 'requestAuditExport', 'getAuditExport', 'downloadAuditExport'],
 } as const;
@@ -740,6 +742,10 @@ const descriptions: Readonly<Record<string, string>> = {
     'Lists every approval and rejection of a component at its gates, newest first: the gate, the decision, who, when, the version decided and a rejection’s reason. Needs read on the component.',
   listDocumentApprovals:
     'Lists every approval and rejection of a document at its gates, newest first: the gate, the decision, who, when, the version decided and a rejection’s reason. Needs read on the document.',
+  listComponentLines:
+    "Lists a component's divergent lines, in the order they were begun: each line's name, the revision it diverged from and when, and whether it was brought back. Needs read on the component.",
+  divergeComponent:
+    "Begins a divergent line of a component from one of its designated revisions, needing edit: a second line of revisions beside the main one, such as a market's wording, numbered apart, with its own workflow and scope, its revisions served wherever their scope applies. Each line's name is the component's once. Audited.",
   readComponentEffective:
     'Says which one revision of a component was effective in a scope, a condition axis value, at an instant, now where none is asked: the newest effective for that scope then, else the newest effective everywhere, as it stood then, and which of the two it is. Needs read on the component.',
   readDocumentEffective:

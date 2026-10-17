@@ -565,6 +565,10 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
     });
     expect((await diverge('ada', { revision: 9, name: 'EU' })).statusCode).toBe(404);
     expect((await diverge('ivy', { revision: 1, name: 'EU' })).statusCode).toBe(403);
+    // Any reader sees its lines, what each diverged from and when.
+    const listed = await call('GET', `/v1/components/${created.id}/lines`, 'ivy');
+    expect(listed.statusCode, listed.body).toBe(200);
+    expect(listed.json()).toEqual({ lines: [begun.json()] });
   });
 
   it('LIF-015 LIF-016 LIF-018 sets dates on edit, refuses an owner who may not read it, and shows past review in the view, the list and every document placing it', async () => {

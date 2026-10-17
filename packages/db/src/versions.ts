@@ -900,8 +900,9 @@ async function record(
     input.artifactId,
     {
       revision,
-      version:
-        (line ? current.line === line.id : revision === current.revision) ? current.version + 1 : 1,
+      version: (line ? current.line === line.id : revision === current.revision)
+        ? current.version + 1
+        : 1,
     },
     input,
     substance,
