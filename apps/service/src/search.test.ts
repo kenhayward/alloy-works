@@ -1,6 +1,7 @@
 import type { SearchAnswer } from '@alloy-works/db';
 import { describe, expect, it } from 'vitest';
-import { sentenceFor } from './search.js';
+import { SearchQuery } from '@alloy-works/api-contract';
+import { filtersOf, sentenceFor } from './search.js';
 
 const results = (count: number, capped: boolean, facetsBounded: boolean): SearchAnswer => ({
   outcome: 'results',
@@ -16,7 +17,29 @@ const results = (count: number, capped: boolean, facetsBounded: boolean): Search
     states: [],
     changed: [],
     fields: [],
+    conditions: [],
+    relations: [],
   },
+});
+
+describe('the filters a query string names (the R14 plan, R14-D, R14-E)', () => {
+  const TYPE = '10000000-0000-4000-8000-000000000001';
+  const FIELD = '10000000-0000-4000-8000-000000000002';
+  it('SCH-061 SCH-063 reads conditions as axis:value, and a relationship field value under its type, a value holding colons whole', () => {
+    expect(
+      filtersOf(
+        SearchQuery.parse({
+          condition: ['market:eu', 'audience:inspector'],
+          related: `${TYPE}:${FIELD}:Recall: urgent`,
+        }),
+      ),
+    ).toEqual({
+      conditions: ['market:eu', 'audience:inspector'],
+      relations: [{ type: TYPE, field: FIELD, value: 'Recall: urgent' }],
+    });
+    expect(SearchQuery.safeParse({ condition: 'Market:EU' }).success).toBe(false);
+    expect(SearchQuery.safeParse({ related: `${TYPE}:Recall` }).success).toBe(false);
+  });
 });
 
 describe('the sentence a search answers with', () => {

@@ -65,6 +65,20 @@ interface Facets {
     readonly dataType: string;
     readonly values: readonly FacetValue[];
   }[];
+  /** Absent from a service before R14 (SCH-061). */
+  readonly conditions?: readonly {
+    readonly axis: string;
+    readonly values: readonly FacetValue[];
+  }[];
+  /** Absent from a service before R14 (SCH-063). */
+  readonly relations?: readonly {
+    readonly type: string;
+    readonly typeName: string;
+    readonly field: string;
+    readonly name: string;
+    readonly dataType: string;
+    readonly values: readonly FacetValue[];
+  }[];
 }
 
 type Answer =
@@ -87,6 +101,10 @@ interface Chosen {
   readonly owners: readonly string[];
   readonly changed: string | null;
   readonly values: readonly string[];
+  /** Each `<axis>:<value>` (SCH-061). */
+  readonly conditions: readonly string[];
+  /** Each `<type>:<field>:<value>` (SCH-063). */
+  readonly related: readonly string[];
 }
 
 const LATEST: SearchScope = { versions: 'latest', baseline: null };
@@ -109,6 +127,8 @@ const NOTHING_CHOSEN: Chosen = {
   owners: [],
   changed: null,
   values: [],
+  conditions: [],
+  related: [],
 };
 
 const KINDS: Record<string, string> = {
@@ -306,6 +326,8 @@ export function SearchPage({
             ...listed('owner', chosen.owners),
             ...(chosen.changed === null ? {} : { changed: chosen.changed as 'today' }),
             ...(chosen.values.length === 0 ? {} : { value: [...chosen.values] }),
+            ...(chosen.conditions.length === 0 ? {} : { condition: [...chosen.conditions] }),
+            ...(chosen.related.length === 0 ? {} : { related: [...chosen.related] }),
             ...(baseline !== null
               ? { baseline }
               : versions === 'all'
@@ -495,6 +517,34 @@ export function SearchPage({
                 chosen={chosen.values.filter((value) => value.startsWith(`${field.field}:`))}
                 label={(facet) => facet.label}
                 onToggle={choose('values')}
+              />
+            ))}
+            {/* What results are conditioned on, an axis a heading (SCH-061; the R14 plan, R14-D). */}
+            {(results.facets.conditions ?? []).map((axis) => (
+              <FacetGroup
+                key={`condition:${axis.axis}`}
+                legend={`Conditioned on ${axis.axis}`}
+                values={axis.values}
+                chosen={chosen.conditions.filter((value) => value.startsWith(`${axis.axis}:`))}
+                label={(facet) => facet.value.slice(axis.axis.length + 1)}
+                onToggle={choose('conditions')}
+              />
+            ))}
+            {/* A relationship type's field, under the type (SCH-063; R14-E). */}
+            {(results.facets.relations ?? []).map((relation) => (
+              <FacetGroup
+                key={`relation:${relation.type}:${relation.field}`}
+                legend={`${relation.typeName}: ${relation.name}`}
+                values={relation.values.map((facet) => ({
+                  ...facet,
+                  value: `${relation.type}:${relation.field}:${facet.value}`,
+                  label: valueLabel(relation.dataType, facet),
+                }))}
+                chosen={chosen.related.filter((value) =>
+                  value.startsWith(`${relation.type}:${relation.field}:`),
+                )}
+                label={(facet) => facet.label}
+                onToggle={choose('related')}
               />
             ))}
           </div>

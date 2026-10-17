@@ -1,5 +1,6 @@
 export {
   applyConditions,
+  conditionsIn,
   conditionAxisDefinitionSchema,
   profileSchema,
   selected as conditionsSelect,

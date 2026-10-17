@@ -319,6 +319,8 @@ describe('searching words', () => {
                 capped: false,
               })),
               fields: [],
+              conditions: [],
+              relations: [],
             },
           },
         });

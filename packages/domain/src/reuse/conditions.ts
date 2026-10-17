@@ -63,6 +63,39 @@ const isCondition = (mark: unknown): mark is ConditionMark =>
  * read, whatever marks split them, and each sequence apart from the next by a space. What the scan
  * looks for (REU-048).
  */
+/**
+ * Every `axis:value` a piece of content is conditioned on, once each and sorted (SCH-061; the R14 plan,
+ * R14-D): a node's or a numbered block's `conditions`, and a condition mark's, wherever they stand in
+ * it. Nothing is resolved under a profile.
+ */
+export function conditionsIn(value: unknown): string[] {
+  const found = new Set<string>();
+  const add = (axis: unknown, values: unknown) => {
+    if (typeof axis !== 'string' || !Array.isArray(values)) return;
+    for (const each of values) if (typeof each === 'string') found.add(`${axis}:${each}`);
+  };
+  const walk = (node: unknown) => {
+    if (Array.isArray(node)) {
+      node.forEach(walk);
+      return;
+    }
+    if (typeof node !== 'object' || node === null) return;
+    const record = node as Record<string, unknown>;
+    if (record['type'] === 'condition') add(record['axis'], record['values']);
+    if (Array.isArray(record['conditions'])) {
+      for (const each of record['conditions'] as unknown[]) {
+        if (typeof each === 'object' && each !== null) {
+          const condition = each as Record<string, unknown>;
+          add(condition['axis'], condition['values']);
+        }
+      }
+    }
+    for (const [key, child] of Object.entries(record)) if (key !== 'conditions') walk(child);
+  };
+  walk(value);
+  return [...found].sort();
+}
+
 export function wordsOf(value: unknown): string {
   const sequences: string[] = [];
   const walk = (each: unknown) => {

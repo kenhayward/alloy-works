@@ -10,6 +10,16 @@ const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected a day, YYYY-MM-DD
 const fieldValue = z
   .string()
   .regex(new RegExp(`^${UUID}:.{1,500}$`, 's'), 'Expected a field id, a colon and a value');
+const KEY = '[a-z][a-z0-9_]{0,63}';
+const conditionValue = z
+  .string()
+  .regex(new RegExp(`^${KEY}:${KEY}$`), 'Expected an axis, a colon and a value, each a key');
+const relatedValue = z
+  .string()
+  .regex(
+    new RegExp(`^${UUID}:${UUID}:.{1,500}$`, 's'),
+    'Expected a relationship type id, a field id and a value, separated by colons',
+  );
 
 export const SearchQuery = z.object({
   q: z
@@ -61,6 +71,18 @@ export const SearchQuery = z.object({
     .optional()
     .describe(
       "Only what holds this value of a field, as `<field id>:<value>`, the value as the field's facet gives it; repeated for more, several of one field either of them",
+    ),
+  condition: z
+    .union([conditionValue, z.array(conditionValue).max(20)])
+    .optional()
+    .describe(
+      'Only what is conditioned on this, as `<axis>:<value>`; repeated for more, several of one axis either of them, several axes all of them',
+    ),
+  related: z
+    .union([relatedValue, z.array(relatedValue).max(20)])
+    .optional()
+    .describe(
+      "Only what is an end of a relationship of this type holding this value of a field, as `<type id>:<field id>:<value>`, the value as the facet gives it; repeated for more, several of one type's field either of them",
     ),
   versions: z
     .enum(['latest', 'all'])
@@ -196,6 +218,28 @@ export const SearchFacetsView = z
         values: z.array(FacetValueView).describe('Its ten commonest values'),
       }),
     ),
+    conditions: z
+      .array(
+        z.object({
+          axis: z.string(),
+          values: z
+            .array(FacetValueView)
+            .describe('Its ten commonest values, each `<axis>:<value>`'),
+        }),
+      )
+      .describe('Each axis results are conditioned on'),
+    relations: z
+      .array(
+        z.object({
+          type: z.string(),
+          typeName: z.string(),
+          field: z.string(),
+          name: z.string(),
+          dataType: z.string(),
+          values: z.array(FacetValueView).describe('Its ten commonest values'),
+        }),
+      )
+      .describe("Each relationship type's field the results' relationships hold"),
   })
   .describe(
     'Every declared dimension, each counted with the other filters in force and its own left out',

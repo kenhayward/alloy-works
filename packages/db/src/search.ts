@@ -20,6 +20,7 @@ import { sql } from 'kysely';
 import { archivalStored, isArchived } from './archival.js';
 import { deletionStored, isDeleted } from './deletion.js';
 import { earlierStored } from './search-earlier.js';
+import { relationsHeld, storedValues } from './search-relations.js';
 import { foldHistory, rebuildHistory } from './search-history.js';
 import { indexEveryThread, vectorStored } from './search-threads.js';
 import type { TenantTransaction } from './tables.js';
@@ -244,6 +245,8 @@ async function write(
   if (threads) gone = gone.where('thread_id', 'is', null);
   await gone.execute();
   if (drafts.length === 0) return;
+  // An artifact's relationships are its own, not a section's (SCH-063; R14-E).
+  const relations = await relationsHeld(trx, placing.artifactId);
   const entries = drafts.map((draft) => ({ id: randomUUID(), draft }));
   const bodyOf = (draft: SearchEntryDraft) => draft.texts.map((each) => each.text).join(' ');
   await trx
@@ -264,7 +267,11 @@ async function write(
         owner: placing.owner,
         changed_at: placing.changedAt,
         component_type: draft.kind === 'component' ? placing.componentType : null,
-        field_values: JSON.stringify(draft.values),
+        field_values: storedValues(
+          draft.values,
+          draft.conditions,
+          draft.kind === 'section' ? [] : relations,
+        ),
         configuration: draft.configuration,
         body: bodyOf(draft),
         ...(placing.archived === undefined ? {} : { archived: placing.archived }),
@@ -310,7 +317,8 @@ async function writeEarlier(
           owner: placing.owner,
           changed_at: placing.changedAt,
           component_type: draft.kind === 'component' ? placing.componentType : null,
-          field_values: JSON.stringify(draft.values),
+          // An earlier version keeps its conditions; its relationships are the artifact's now.
+          field_values: storedValues(draft.values, draft.conditions, []),
           configuration: draft.configuration,
           body,
           vector: vector(draft.configuration, body),
@@ -369,8 +377,12 @@ async function moveEarlier(trx: TenantTransaction, version: StoredVersion): Prom
   const columns = sql.raw(
     'id, artifact_id, kind, node, version_id, space_id, title, owner, changed_at, component_type, field_values, configuration, body, vector, archived, deleted',
   );
+  // An earlier version's relationships are the artifact's now, which `writeEarlier` holds none of.
+  const moved = sql.raw(
+    "id, artifact_id, kind, node, version_id, space_id, title, owner, changed_at, component_type, field_values - '~relations', configuration, body, vector, archived, deleted",
+  );
   await sql`insert into search_earlier (${columns})
-    select ${columns} from search_entry e
+    select ${moved} from search_entry e
      where artifact_id = ${version.artifactId} and version_id in ${older} ${notThread}`.execute(
     trx,
   );
@@ -502,6 +514,23 @@ export async function lockNaming(trx: TenantTransaction, person: string): Promis
         .execute()
     : await current.distinct().orderBy('artifact_id').execute();
   for (const row of rows) await lockArtifact(trx, row.artifact_id);
+}
+
+/**
+ * Rewrites the entries of each artifact a relationship act touched (SCH-063; the R14 plan, R14-E): both
+ * ends, and an end it moved from, each under its lock in id order and from its latest version, so its
+ * relationships' fields are found as they stand.
+ */
+export async function reindexArtifacts(
+  trx: TenantTransaction,
+  artifacts: readonly string[],
+): Promise<void> {
+  if (!(await projected(trx))) return;
+  for (const id of [...new Set(artifacts)].sort()) {
+    await lockArtifact(trx, id);
+    const version = await latestVersion(trx, id);
+    if (version) await indexVersion(trx, version);
+  }
 }
 
 /**

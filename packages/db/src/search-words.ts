@@ -11,8 +11,9 @@ import {
 import { internalHeld } from './internal-held.js';
 import { sql, type RawBuilder, type SqlBool } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
-import { isDeleted } from './deletion.js';
+import { deletedAs, deletionStored, isDeleted } from './deletion.js';
 import { HISTORY_KINDS, historyFielded, historyStored, historyTitled } from './search-history.js';
+import { CONDITIONS_KEY, RELATIONS_KEY } from './search-relations.js';
 import { sectionMembers, type SectionMembers } from './search-sections.js';
 import { vectorStored } from './search-threads.js';
 import type { TenantTransaction } from './tables.js';
@@ -164,6 +165,20 @@ export interface SearchFilters {
   readonly changed?:
     { readonly within: ChangedRange } | { readonly from?: string; readonly to?: string };
   readonly values?: readonly { readonly field: string; readonly value: string }[];
+  /**
+   * Conditions, each `axis:value` (SCH-061; the R14 plan, R14-D): several of one axis either of them,
+   * several axes all of them.
+   */
+  readonly conditions?: readonly string[];
+  /**
+   * A relationship's field value, under its type (SCH-063; R14-E), as a field's value is named: an
+   * artifact an end of one of that type holding it, whose other end the reader may read.
+   */
+  readonly relations?: readonly {
+    readonly type: string;
+    readonly field: string;
+    readonly value: string;
+  }[];
   /** Threads alone, internal or not (SCH-072; the R13 plan, R13-D). */
   readonly internal?: boolean;
 }
@@ -190,6 +205,20 @@ export interface SearchFacets {
   readonly changed: readonly FacetValue[];
   /** Each field the reader may read whose data type facets, with its commonest values. */
   readonly fields: readonly {
+    readonly field: string;
+    readonly name: string;
+    readonly dataType: string;
+    readonly values: readonly FacetValue[];
+  }[];
+  /** Each axis results are conditioned on, with its commonest values, each `axis:value` (SCH-061). */
+  readonly conditions: readonly {
+    readonly axis: string;
+    readonly values: readonly FacetValue[];
+  }[];
+  /** Each relationship type's field results' relationships hold, with its commonest values (SCH-063). */
+  readonly relations: readonly {
+    readonly type: string;
+    readonly typeName: string;
     readonly field: string;
     readonly name: string;
     readonly dataType: string;
@@ -777,8 +806,22 @@ export async function searchWords(
   for (const each of filters.values ?? []) {
     byField.set(each.field, [...(byField.get(each.field) ?? []), each.value]);
   }
+  const byAxis = new Map<string, string[]>();
+  for (const each of filters.conditions ?? []) {
+    const axis = each.slice(0, each.indexOf(':'));
+    byAxis.set(axis, [...(byAxis.get(axis) ?? []), each]);
+  }
+  const byRelation = new Map<string, { type: string; field: string; values: string[] }>();
+  for (const each of filters.relations ?? []) {
+    const key = `${each.type}:${each.field}`;
+    const held = byRelation.get(key) ?? { type: each.type, field: each.field, values: [] };
+    byRelation.set(key, { ...held, values: [...held.values, each.value] });
+  }
+  const fieldsAsked = [
+    ...new Set([...byField.keys(), ...[...byRelation.values()].map((each) => each.field)]),
+  ];
   const filterFields = new Map(
-    byField.size === 0
+    fieldsAsked.length === 0
       ? []
       : (
           await sql<{ field: string; data_type: string; multiplicity: string }>`
@@ -786,7 +829,7 @@ export async function searchWords(
                    v.content ->> 'dataType' as data_type, v.content ->> 'multiplicity' as multiplicity
             from artifact_version v
             where v.kind = 'field'
-              and v.artifact_id = any(${[...byField.keys()].filter((id) => UUID.test(id))}::uuid[])
+              and v.artifact_id = any(${fieldsAsked.filter((id) => UUID.test(id))}::uuid[])
               and ((${readable.tenant}::boolean
                     and not v.artifact_id = any(${[...readable.excluded]}::uuid[]))
                    or v.artifact_id = any(${[...readable.included]}::uuid[]))
@@ -809,6 +852,69 @@ export async function searchWords(
             = any(${[...values]}::text[])
         and ${valueKey(sql`el.x`, sql`${known.data_type}::text`, sql`${known.multiplicity}::text`)} <> '')`;
   };
+  // The types filtered on that the reader may read, as `readable_types` reads them for the facet.
+  const typesAsked = [...new Set([...byRelation.values()].map((each) => each.type))].filter((id) =>
+    UUID.test(id),
+  );
+  const readableTypes = new Set(
+    typesAsked.length === 0
+      ? []
+      : (
+          await sql<{ type: string }>`
+            select distinct v.artifact_id::text as type from artifact_version v
+            where v.kind = 'relationshipType' and v.artifact_id = any(${typesAsked}::uuid[])
+              and ((${readable.tenant}::boolean
+                    and not v.artifact_id = any(${[...readable.excluded]}::uuid[]))
+                   or v.artifact_id = any(${[...readable.included]}::uuid[]))`.execute(trx)
+        ).rows.map((row) => row.type),
+  );
+  const conditionFilters = [...byAxis].map(([axis, values], index) => ({
+    axis,
+    values,
+    flag: `f_cond_${index}`,
+  }));
+  const relationFilters = [...byRelation.values()].map((each, index) => ({
+    ...each,
+    flag: `f_rel_${index}`,
+  }));
+  const conditionFilter = (alias: string, values: readonly string[]) =>
+    // The operator, not `jsonb_exists_any`, so 0110's index serves it.
+    sql<SqlBool>`(${sql.ref(`${alias}.field_values`)} -> '~conditions') ?| ${[...values]}::text[]`;
+  // The other end read as an artifact the reader may read, by access.md's predicate, so a value is
+  // never said of a relationship to what they may not read.
+  const deletable = await deletionStored(trx);
+  const otherReadable = (other: RawBuilder<unknown>) => sql<SqlBool>`exists (
+    select 1 from artifact a where a.id = (${other})::uuid
+      and ${deletable ? sql`not ${deletedAs('a')}` : sql`true`}
+      and (((a.space_id = any(${[...readable.spaces]}::uuid[])
+              or (a.space_id is null and ${readable.tenant}::boolean))
+            and not a.id = any(${[...readable.excluded]}::uuid[]))
+           or a.id = any(${[...readable.included]}::uuid[])))`;
+  const heldRelations = (alias: string) => {
+    const held = sql`${sql.ref(`${alias}.field_values`)} -> ${RELATIONS_KEY}::text`;
+    return sql`jsonb_array_elements(
+      case when jsonb_typeof(${held}) = 'array' then ${held} else '[]'::jsonb end)`;
+  };
+  const relationFilter = (
+    alias: string,
+    relation: { type: string; field: string; values: readonly string[] },
+  ) => {
+    const known = filterFields.get(relation.field);
+    if (known === undefined || !readableTypes.has(relation.type)) return sql<SqlBool>`false`;
+    const key = valueKey(
+      sql`el.x`,
+      sql`${known.data_type}::text`,
+      sql`${known.multiplicity}::text`,
+    );
+    return sql<SqlBool>`exists (
+      select 1 from ${heldRelations(alias)} r(x)
+      cross join lateral jsonb_array_elements(
+        case when jsonb_typeof(r.x -> 'value') = 'array' then r.x -> 'value'
+             else jsonb_build_array(r.x -> 'value') end) el(x)
+      where r.x ->> 'type' = ${relation.type} and r.x ->> 'field' = ${relation.field}
+        and ${key} = any(${[...relation.values]}::text[]) and ${key} <> ''
+        and ${otherReadable(sql`r.x ->> 'other'`)})`;
+  };
   const flagsOver = (alias: string) =>
     [
       ['f_kind', among(alias, 'kind', filters.kinds, false)],
@@ -825,6 +931,10 @@ export async function searchWords(
       ...fieldFilters.map(
         ({ field, values, flag }) => [flag, valueFilter(alias, field, values)] as const,
       ),
+      ...conditionFilters.map(
+        ({ values, flag }) => [flag, conditionFilter(alias, values)] as const,
+      ),
+      ...relationFilters.map((each) => [each.flag, relationFilter(alias, each)] as const),
     ] as const;
   const flagged = sql.join(
     flagsOver('b').map(([flag, predicate]) => sql`${predicate} as ${sql.raw(flag)}`),
@@ -838,20 +948,42 @@ export async function searchWords(
         .map(([flag]) => `b.${flag}`)
         .join(' and ') || 'true',
     );
-  // A field's own filter is left out of that field's facet, and only that field's.
-  const fieldFacetScope = sql.join(
-    [
-      sql.raw(
-        ['f_kind', 'f_space', 'f_type', 'f_owner', 'f_state', 'f_changed']
-          .map((f) => `b.${f}`)
-          .join(' and '),
-      ),
-      ...fieldFilters.map(
-        ({ field, flag }) => sql`(${sql.raw(`b.${flag}`)} or ev.field::text = ${field})`,
-      ),
-    ],
-    sql` and `,
-  );
+  // A field's own filter is left out of that field's facet, and only that field's; an axis's of that
+  // axis's, and a relationship field's of its own.
+  const grouped = [
+    ...fieldFilters.map(({ field, flag }) => ({
+      flag,
+      dimension: 'field',
+      own: sql<SqlBool>`ev.field::text = ${field}`,
+    })),
+    ...conditionFilters.map(({ axis, flag }) => ({
+      flag,
+      dimension: 'condition',
+      own: sql<SqlBool>`ec.axis = ${axis}`,
+    })),
+    ...relationFilters.map(({ type, field, flag }) => ({
+      flag,
+      dimension: 'relation',
+      own: sql<SqlBool>`(er.type = ${type} and er.field::text = ${field})`,
+    })),
+  ];
+  const facetScope = (dimension: 'field' | 'condition' | 'relation') =>
+    sql.join(
+      [
+        sql.raw(
+          ['f_kind', 'f_space', 'f_type', 'f_owner', 'f_state', 'f_changed']
+            .map((f) => `b.${f}`)
+            .join(' and '),
+        ),
+        ...grouped.map((each) =>
+          each.dimension === dimension
+            ? sql`(${sql.raw(`b.${each.flag}`)} or ${each.own})`
+            : sql.raw(`b.${each.flag}`),
+        ),
+      ],
+      sql` and `,
+    );
+  const fieldFacetScope = facetScope('field');
   const facetJson = (rows: RawBuilder<unknown>) => sql`(
     select coalesce(json_agg(json_build_object('value', x.value, 'label', x.label, 'n', x.n)
                              order by x.n desc, x.label, x.value), '[]'::json)
@@ -1018,6 +1150,8 @@ export async function searchWords(
     );
     const inForce =
       byField.size +
+      byAxis.size +
+      byRelation.size +
       (filters.changed === undefined ? 0 : 1) +
       [
         filters.kinds,
@@ -1118,6 +1252,16 @@ export async function searchWords(
     states: FacetRow[];
     changed: FacetRow[];
     fields: (FacetRow & { field: string; name: string; data_type: string })[] | null;
+    conditions: (FacetRow & { axis: string })[] | null;
+    relations:
+      | (FacetRow & {
+          type: string;
+          type_name: string;
+          field: string;
+          name: string;
+          data_type: string;
+        })[]
+      | null;
   }>`
     with readable_fields as (
       select distinct on (v.artifact_id)
@@ -1145,6 +1289,39 @@ export async function searchWords(
                     else jsonb_build_array(fv.value) end) as el(x)
       ) k
       where k.key is not null and k.key <> ''
+    ),
+    -- Each condition an entry holds, by its axis (SCH-061; R14-D).
+    entry_conditions as (
+      select b.id as entry_id, split_part(c.v, ':', 1) as axis, c.v as key
+      from base b
+      cross join lateral jsonb_array_elements_text(
+        case when jsonb_typeof(b.field_values -> ${CONDITIONS_KEY}::text) = 'array'
+             then b.field_values -> ${CONDITIONS_KEY}::text else '[]'::jsonb end) as c(v)
+    ),
+    readable_types as (
+      select distinct on (v.artifact_id) v.artifact_id as type, v.content ->> 'name' as name
+      from artifact_version v
+      where v.kind = 'relationshipType'
+        and ((${readable.tenant}::boolean
+              and not v.artifact_id = any(${[...readable.excluded]}::uuid[]))
+             or v.artifact_id = any(${[...readable.included]}::uuid[]))
+      order by v.artifact_id, v.revision_no desc, v.version_no desc
+    ),
+    -- Each value of a relationship an entry's artifact is an end of, of a type and a field the reader
+    -- may read, to an other end they may read, as a field's facet names it (SCH-063; R14-E).
+    entry_relations as (
+      select b.id as entry_id, (r.x ->> 'type')::uuid as type, f.field, f.data_type, k.key
+      from base b
+      cross join lateral ${heldRelations('b')} as r(x)
+      join readable_types t on t.type::text = r.x ->> 'type'
+      join readable_fields f on f.field::text = r.x ->> 'field'
+      cross join lateral (
+        select ${valueKey(sql`el`, sql`f.data_type`, sql`f.multiplicity`)} as key
+        from jsonb_array_elements(
+               case when jsonb_typeof(r.x -> 'value') = 'array' then r.x -> 'value'
+                    else jsonb_build_array(r.x -> 'value') end) as el
+      ) k
+      where k.key is not null and k.key <> '' and ${otherReadable(sql`r.x ->> 'other'`)}
     ),
     flagged as (select b.*, ${flagged} from base b),
     matched as (${matched}),
@@ -1240,7 +1417,43 @@ export async function searchWords(
            group by ev.field, f.name, f.data_type, ev.key, pr.display_name
          ) x
        ) y
-       where y.place <= ${FIELD_FACET_VALUES}) as fields`;
+       where y.place <= ${FIELD_FACET_VALUES}) as fields,
+      (select json_agg(json_build_object('axis', y.axis, 'value', y.value, 'label', y.label,
+                                         'n', y.n)
+                       order by y.axis, y.n desc, y.label)
+       from (
+         select x.*, row_number() over (partition by x.axis order by x.n desc, x.label) as place
+         from (
+           select ec.axis, ec.key as value, ec.key as label,
+                  ${collapse ? counted : sql`count(distinct ec.entry_id)`}::int as n
+           from entry_conditions ec
+           join flagged b on b.id = ec.entry_id
+           where ${facetScope('condition')}
+           group by ec.axis, ec.key
+         ) x
+       ) y
+       where y.place <= ${FIELD_FACET_VALUES}) as conditions,
+      (select json_agg(json_build_object('type', y.type, 'type_name', y.type_name, 'field', y.field,
+                                         'name', y.name, 'data_type', y.data_type,
+                                         'value', y.value, 'label', y.label, 'n', y.n)
+                       order by y.type_name, y.type, y.name, y.field, y.n desc, y.label)
+       from (
+         select x.*,
+                row_number() over (partition by x.type, x.field order by x.n desc, x.label) as place
+         from (
+           select er.type::text as type, t.name as type_name, er.field::text as field, f.name,
+                  f.data_type, er.key as value, coalesce(pr.display_name, er.key) as label,
+                  ${collapse ? counted : sql`count(distinct er.entry_id)`}::int as n
+           from entry_relations er
+           join flagged b on b.id = er.entry_id
+           join readable_types t on t.type = er.type
+           join readable_fields f on f.field = er.field
+           left join principal pr on er.data_type = 'user' and pr.id::text = er.key
+           where ${facetScope('relation')}
+           group by er.type, t.name, er.field, f.name, f.data_type, er.key, pr.display_name
+         ) x
+       ) y
+       where y.place <= ${FIELD_FACET_VALUES}) as relations`;
   if (options.probe?.explain === true) {
     const { rows: plan } = await sql<{
       'QUERY PLAN': unknown;
@@ -1289,6 +1502,37 @@ export async function searchWords(
     };
     held.values.push({ value: each.value, label: each.label, n: each.n });
     fields.set(each.field, held);
+  }
+  const axes = new Map<string, FacetRow[]>();
+  for (const each of row.conditions ?? []) {
+    axes.set(each.axis, [
+      ...(axes.get(each.axis) ?? []),
+      { value: each.value, label: each.label, n: each.n },
+    ]);
+  }
+  const relations = new Map<
+    string,
+    {
+      type: string;
+      typeName: string;
+      field: string;
+      name: string;
+      dataType: string;
+      values: FacetRow[];
+    }
+  >();
+  for (const each of row.relations ?? []) {
+    const key = `${each.type}:${each.field}`;
+    const held = relations.get(key) ?? {
+      type: each.type,
+      typeName: each.type_name,
+      field: each.field,
+      name: each.name,
+      dataType: each.data_type,
+      values: [],
+    };
+    held.values.push({ value: each.value, label: each.label, n: each.n });
+    relations.set(key, held);
   }
   return {
     outcome: 'results',
@@ -1357,6 +1601,15 @@ export async function searchWords(
         values: capped(
           [...each.values].sort((a, b) => b.n - a.n || a.label.localeCompare(b.label)),
         ),
+      })),
+      conditions: [...axes].map(([axis, values]) => ({ axis, values: capped(values) })),
+      relations: [...relations.values()].map((each) => ({
+        type: each.type,
+        typeName: each.typeName,
+        field: each.field,
+        name: each.name,
+        dataType: each.dataType,
+        values: capped(each.values),
       })),
     },
   };

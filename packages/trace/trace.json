@@ -18360,6 +18360,14 @@
         {
           "id": "SCH-053",
           "howItIsMet": "A section result carries its document, by id and title, and each component placed beneath it that the reader may read, once in outline order, read from the document version it matched in and titled from the entries now; the page links each and offers **Place in a document**, REU-054's act with the destination chosen (the R14 plan, R14-C)"
+        },
+        {
+          "id": "SCH-061",
+          "howItIsMet": "An entry's `field_values` hold every `axis:value` its content is conditioned on under `~conditions` - a component's blocks' and marks', a document's every node's, a section's own and those beneath it - read with `conditionsIn`, nothing resolved under a profile; `condition=<axis>:<value>` filters, several of one axis either and several axes all, served by 0110's index, and each axis facets, its own filter left out (the R14 plan, R14-D)"
+        },
+        {
+          "id": "SCH-063",
+          "howItIsMet": "A component's or a document's entry holds, under `~relations`, each field value of every relationship its artifact is an end of, with the type and the other end; `related=<type>:<field>:<value>` filters and each type's field facets as a field's values do, a value said only of a relationship whose type, field and other end the reader may read. Making, changing or removing a relationship writes both ends' entries again, and an end it moved from (R14-E)"
         }
       ]
     },
@@ -21345,6 +21353,18 @@
       "kind": "title"
     },
     {
+      "id": "SCH-061",
+      "file": "apps/service/src/search.test.ts",
+      "line": 28,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-063",
+      "file": "apps/service/src/search.test.ts",
+      "line": 28,
+      "kind": "title"
+    },
+    {
       "id": "IAM-039",
       "file": "apps/service/src/session-routes.test.ts",
       "line": 80,
@@ -22949,7 +22969,7 @@
     {
       "id": "SCH-003",
       "file": "apps/web/src/search/SearchPage.test.tsx",
-      "line": 302,
+      "line": 336,
       "kind": "title"
     },
     {
@@ -22961,13 +22981,25 @@
     {
       "id": "SCH-058",
       "file": "apps/web/src/search/SearchPage.test.tsx",
-      "line": 302,
+      "line": 336,
       "kind": "title"
     },
     {
       "id": "SCH-060",
       "file": "apps/web/src/search/SearchPage.test.tsx",
-      "line": 361,
+      "line": 395,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-061",
+      "file": "apps/web/src/search/SearchPage.test.tsx",
+      "line": 230,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-063",
+      "file": "apps/web/src/search/SearchPage.test.tsx",
+      "line": 230,
       "kind": "title"
     },
     {
@@ -25643,7 +25675,19 @@
     {
       "id": "SCH-010",
       "file": "packages/db/src/search-bounded.test.ts",
-      "line": 638,
+      "line": 640,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-061",
+      "file": "packages/db/src/search-conditions.test.ts",
+      "line": 171,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-063",
+      "file": "packages/db/src/search-conditions.test.ts",
+      "line": 266,
       "kind": "title"
     },
     {
@@ -25685,13 +25729,13 @@
     {
       "id": "SCH-062",
       "file": "packages/db/src/search-facets.test.ts",
-      "line": 351,
+      "line": 361,
       "kind": "title"
     },
     {
       "id": "SCH-073",
       "file": "packages/db/src/search-facets.test.ts",
-      "line": 388,
+      "line": 398,
       "kind": "title"
     },
     {
@@ -27101,7 +27145,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 728,
+      "line": 729,
       "kind": "title"
     },
     {
@@ -27942,6 +27986,12 @@
       "id": "SCH-002",
       "file": "packages/domain/src/search/entries.test.ts",
       "line": 60,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-061",
+      "file": "packages/domain/src/search/entries.test.ts",
+      "line": 421,
       "kind": "title"
     },
     {

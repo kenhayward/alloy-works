@@ -156,6 +156,22 @@ describe('a section found by search (the R14 plan, R14-C)', () => {
     );
   });
 
+  it('SCH-053 names no component since deleted', async () => {
+    await service.withTenant(production, (trx) =>
+      trx
+        .insertInto('artifact_deletion')
+        .values({ artifact_id: gauge, kind: 'component', act: 'deleted', by: ada } as never)
+        .execute(),
+    );
+    const answer = await service.withTenant(production, (trx) =>
+      searchWords(trx, ada, 'wombat', { filters: { kinds: ['section'] } }),
+    );
+    if (answer?.outcome !== 'results') throw new Error(String(answer?.outcome));
+    expect(
+      answer.items.find((each) => each.title === 'Wombat maintenance')?.section?.components,
+    ).toEqual([{ id: pump, title: 'Prime the pump' }]);
+  });
+
   it('carries nothing of the kind for a result that is not a section', async () => {
     const answer = await service.withTenant(production, (trx) =>
       searchWords(trx, ada, 'pump', { filters: { kinds: ['component', 'document'] } }),

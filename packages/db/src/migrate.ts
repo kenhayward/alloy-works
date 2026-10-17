@@ -29,13 +29,15 @@ const DEFAULT_DIR = new URL('../migrations/', import.meta.url);
  * it, is added here, so every environment's is rebuilt by the run that applies it (search.md, "Written
  * with the version").
  */
-const REINDEXED_BY = new Map<string, ReindexScope>([
+const REINDEXED_BY = new Map<string, ReindexScope | readonly ReindexScope[]>([
   ['0031_search', 'whole'],
   ['0088_search_earlier', 'earlier'],
   // Every thread's row, and nothing else's (the SV plan, SV-K).
   ['0089_search_threads', 'threads'],
   // Every place's words over every version, from the projection (the SV3 plan, SV3-N).
   ['0091_search_history', 'history'],
+  // Every entry's conditions, at every version, and its relationships' fields (the R14 plan, R14-D).
+  ['0110_search_conditions', ['whole', 'earlier']],
 ]);
 
 /**

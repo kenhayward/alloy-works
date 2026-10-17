@@ -8,6 +8,7 @@ import type { ComponentTypeDefinition } from '../metadata/component-type.js';
 import type { DataType, FieldDefinition } from '../metadata/field.js';
 import type { MetadataSchemaDefinition } from '../metadata/schema.js';
 import { isUserValue, type MetadataValues } from '../metadata/values.js';
+import { conditionsIn } from '../reuse/conditions.js';
 import type { OutlineDocument, OutlineNode } from '../structure/outline.js';
 import type { StartingSection, TemplateDefinition } from '../template/definition.js';
 
@@ -107,6 +108,8 @@ export interface SearchEntryDraft {
   readonly configuration: SearchConfiguration;
   /** The values as stored - what a filter and a facet read - or none for a kind that holds none. */
   readonly values: MetadataValues;
+  /** Every `axis:value` its content is conditioned on (SCH-061; the R14 plan, R14-D), sorted. */
+  readonly conditions: readonly string[];
   readonly texts: readonly SearchText[];
 }
 
@@ -305,6 +308,7 @@ function sectionEntries(
         title,
         configuration,
         values: node.values,
+        conditions: conditionsIn(node),
         texts: titled(title, valueTexts(node.values, context)),
       },
       ...below,
@@ -340,12 +344,14 @@ export function entriesOf(source: SearchSource, context: SearchContext): SearchE
     configuration: SearchConfiguration,
     texts: readonly SearchText[],
     values: MetadataValues = {},
+    conditions: readonly string[] = [],
   ): SearchEntryDraft => ({
     kind: source.kind,
     node: null,
     title: words(title),
     configuration,
     values,
+    conditions,
     texts,
   });
   switch (source.kind) {
@@ -357,6 +363,7 @@ export function entriesOf(source: SearchSource, context: SearchContext): SearchE
           configurationFor(content.language),
           titled(content.title, [...blockTexts(content.content), ...valueTexts(values, context)]),
           values,
+          conditionsIn(content.content),
         ),
       ];
     }
@@ -369,6 +376,7 @@ export function entriesOf(source: SearchSource, context: SearchContext): SearchE
           configuration,
           titled(content.title, valueTexts(values, context)),
           values,
+          conditionsIn(content.nodes),
         ),
         ...sectionEntries(content.nodes, configuration, context),
       ];

@@ -911,6 +911,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   with the words marked, and opens at that place: a component at the paragraph, a section in its
   document. A section found says its document and the components it places, each a link, and offers
   **Place in a document**, which places them in a document you choose under a new section of its own.
+  Narrow by what results are conditioned on, an axis at a time, and by the fields of the relationships
+  they are an end of, under the relationship type.
   A place that has gone since is said to be gone, and the latest version opens. Beside the
   results, narrow them by kind, space, component type, who made it, when it last changed and a field's
   value, each choice saying how many results it would leave; past 1,000 a count says at least 1,000.
