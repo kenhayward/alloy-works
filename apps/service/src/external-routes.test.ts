@@ -5,6 +5,7 @@ import {
   createSpace,
   createTenant,
   findRole,
+  foldDigests,
   grant,
   migrate,
   recordVersion,
@@ -400,6 +401,27 @@ describe('people from outside the organisation (the R13 plan)', () => {
       expect(await threadsOf('alice')).toBe(0);
     });
 
+    it('COL-038 counts nothing in a digest for somebody outside of a thread made internal before it folded', async () => {
+      await call('PUT', '/v1/inbox/preferences', 'alice', {
+        mention: 'daily',
+        reply: 'daily',
+        resolution: 'daily',
+        round: 'at_once',
+      });
+      const version = await component([para('p1', 'Set the tray carefully.')]);
+      const thread = (await start(version, SPAN, 'ada')).json<{ id: string }>().id;
+      await call('POST', `/v1/threads/${thread}/comments`, 'alice', { parts: said('Looks fine.') });
+      await call('POST', `/v1/threads/${thread}/comments`, 'ada', { parts: said('Thanks.') });
+      await call('POST', `/v1/threads/${thread}/internal`, 'ada', {});
+      await tenantDb.withTenant(tenant, (trx) =>
+        foldDigests(trx, new Date(Date.now() + 2 * 86_400_000)),
+      );
+      const digests = (await call('GET', '/v1/inbox', 'alice'))
+        .json<{ notifications: { kind: string; counts: { reply: number } | null }[] }>()
+        .notifications.filter((each) => each.kind === 'digest');
+      expect(digests.every((each) => (each.counts?.reply ?? 0) === 0)).toBe(true);
+    });
+
     it('SCH-072 filters threads in search by whether they are internal, and never finds an internal one for somebody outside', async () => {
       const version = await component([para('p1', 'Set the tray carefully.')]);
       const word = 'zephyrine';
@@ -451,6 +473,10 @@ describe('people from outside the organisation (the R13 plan)', () => {
       const past = await extend(before.id, new Date(Date.now() + 200 * DAY).toISOString());
       expect(past.statusCode).toBe(409);
       expect(past.json()).toMatchObject({ code: 'grant_external_past_cap' });
+      // Not to a day already past, whatever the grant held (the R13 final review).
+      const gone = await extend(before.id, new Date(Date.now() - DAY).toISOString());
+      expect(gone.statusCode).toBe(409);
+      expect(gone.json()).toMatchObject({ code: 'grant_not_later' });
       const sooner = await extend(before.id, new Date(Date.now() + DAY).toISOString());
       expect(sooner.statusCode).toBe(409);
       expect(sooner.json()).toMatchObject({ code: 'grant_not_later' });
@@ -491,8 +517,19 @@ describe('people from outside the organisation (the R13 plan)', () => {
       const roles = (await call('GET', `/v1/roles?level=space:${quality}`, 'ada')).json<{
         items: { id: string; name: string }[];
       }>().items;
+      const reader = roles.find((each) => each.name === 'Reader')!.id;
+      // Not one already past: it would confer nothing from the moment it was made.
+      const past = await call('POST', '/v1/grants', 'ada', {
+        role: reader,
+        subject: { principal: ids.alice },
+        level: `space:${quality}`,
+        effect: 'allow',
+        expiresAt: new Date(Date.now() - DAY).toISOString(),
+      });
+      expect(past.statusCode).toBe(409);
+      expect(past.json()).toMatchObject({ code: 'grant_expiry_past' });
       const made = await call('POST', '/v1/grants', 'ada', {
-        role: roles.find((each) => each.name === 'Reader')!.id,
+        role: reader,
         subject: { principal: ids.alice },
         level: `space:${quality}`,
         effect: 'allow',
@@ -518,6 +555,9 @@ describe('people from outside the organisation (the R13 plan)', () => {
         expect.arrayContaining([['Reviewer', `space:${clinical}`]]),
       );
       expect(alice.grants.every((each) => each.expiresAt !== null)).toBe(true);
+      expect(
+        alice.grants.every((each) => typeof (each as { expired?: boolean }).expired === 'boolean'),
+      ).toBe(true);
       expect(alice.reads.spaces.map((each) => each.name)).toContain('Clinical');
       // An administrator's report alone.
       expect((await call('GET', '/v1/access/external', 'grace')).statusCode).toBe(403);

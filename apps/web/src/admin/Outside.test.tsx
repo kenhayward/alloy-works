@@ -28,6 +28,7 @@ function service() {
             level: `space:${CLINICAL}`,
             effect: 'allow',
             expiresAt: until,
+            expired: false,
             extends: id === EXTENDED ? GRANT : null,
             group: null,
           },
@@ -78,5 +79,14 @@ describe('Administration: from outside the organisation (the R13 plan, R13-E, R1
       { path: `/v1/grants/${GRANT}/extension`, body: { expiresAt: '2026-12-20T23:59:59.000Z' } },
     ]);
     expect(await screen.findByText('20 Dec 2026')).toBeInTheDocument();
+  });
+
+  it('offers the day after a grant ends first, and no extension without a day', async () => {
+    render(<Outside client={service().client} />);
+    const alice = await screen.findByRole('region', { name: 'Alice' });
+    const day = within(alice).getByLabelText('Extend Reviewer in Clinical to');
+    expect(day).toHaveValue('2026-11-16');
+    await userEvent.clear(day);
+    expect(within(alice).getByRole('button', { name: 'Extend' })).toBeDisabled();
   });
 });

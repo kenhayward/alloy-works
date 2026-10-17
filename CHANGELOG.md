@@ -3,6 +3,18 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.184.0 - 2026-10-17 (PR #PRNUM)
+
+Reuse's thirteenth slice: people from outside the organisation (the R13 plan).
+
+### Added
+
+- **Who is from outside the organisation is said everywhere.** A person from outside is shown with **Outside** beside their name in who is here, on threads and comments, on suggestions and on review rounds, and the API says so on every person it names.
+- **A reviewer from outside.** A review round can name somebody from outside the organisation as a reviewer, on the same terms as somebody inside it.
+- **Internal threads.** A thread can be started internal, or made internal later while it is open, and nobody from outside the organisation then sees it, its comments or its notifications, or finds it in search. A thread is made internal once and never made public again. Search can show internal threads alone, or the others.
+- **Who from outside can reach what.** Administration offers **From outside**: everybody from outside the organisation, what each may read, and every grant reaching them with its expiry, an ended one said so. The API lists the same.
+- **Extending access from outside.** An administrator extends somebody from outside to a later day, no further than the environment's cap, and the change is audited with both days. A grant can also be made with its own expiry, never one already past.
+
 ## 0.183.0 - 2026-10-16 (PR #676)
 
 Reuse's twelfth slice: conditions in the page.

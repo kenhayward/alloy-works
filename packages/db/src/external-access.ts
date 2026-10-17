@@ -2,7 +2,7 @@ import { formatLevel } from '@alloy-works/domain';
 
 import { loadReadableSet } from './access-facts.js';
 import { erasedIn } from './erasure.js';
-import { levelOf } from './grants.js';
+import { accessPolicy, levelOf } from './grants.js';
 import type { TenantTransaction } from './tables.js';
 
 /** One grant reaching somebody from outside: directly, or through a group they are in. */
@@ -12,6 +12,8 @@ export interface ExternalGrant {
   readonly level: string;
   readonly effect: 'allow' | 'deny';
   readonly expiresAt: Date | null;
+  /** Whether it has ended, and so confers nothing now (the R13 final review). */
+  readonly expired: boolean;
   readonly extends: string | null;
   readonly group: { readonly id: string; readonly name: string } | null;
 }
@@ -88,6 +90,7 @@ export async function listExternalReach(trx: TenantTransaction): Promise<Externa
     ])
     .where('m.principal_id', 'in', ids)
     .execute();
+  const now = (await accessPolicy(trx)).now;
   const spaceNames = new Map(
     (await trx.selectFrom('space').select(['id', 'name']).execute()).map((row) => [
       row.id,
@@ -102,6 +105,7 @@ export async function listExternalReach(trx: TenantTransaction): Promise<Externa
     level: formatLevel(levelOf(row)),
     effect: row.effect,
     expiresAt: row.expires_at,
+    expired: row.expires_at !== null && row.expires_at.getTime() <= now.getTime(),
     extends: row.extends,
     group: row.group_id === undefined ? null : { id: row.group_id, name: row.group_name ?? '' },
   });

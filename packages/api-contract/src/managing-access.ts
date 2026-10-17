@@ -76,6 +76,7 @@ export const ExternalAccessList = z.object({
             level: z.string().describe('`space:<id>` or `artifact:<id>`'),
             effect: z.enum(['allow', 'deny']),
             expiresAt: z.string().nullable(),
+            expired: z.boolean().describe('Whether it has ended, and so confers nothing now'),
             extends: z.string().nullable(),
             group: z
               .object({ id: z.string(), name: z.string() })
@@ -247,7 +248,7 @@ export const managingAccessRoutes = {
       404: notFound,
       409: {
         description:
-          'grant_duplicate, grant_allow_without_read, grant_administer_denied_at_tenant, grant_role_missing, grant_subject_missing, grant_subject_erased, grant_external_at_tenant, grant_external_capped or grant_external_past_cap',
+          'grant_expiry_past, grant_duplicate, grant_allow_without_read, grant_administer_denied_at_tenant, grant_role_missing, grant_subject_missing, grant_subject_erased, grant_external_at_tenant, grant_external_capped or grant_external_past_cap',
         schema: ErrorBody,
       },
     },
@@ -274,7 +275,8 @@ export const managingAccessRoutes = {
       401: unauthenticated,
       404: notFound,
       409: {
-        description: 'grant_not_external, grant_not_later or grant_external_past_cap',
+        description:
+          'grant_not_external, grant_not_later (no later than the grant or than now) or grant_external_past_cap',
         schema: ErrorBody,
       },
     },

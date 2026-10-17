@@ -42,3 +42,16 @@ PUB-084).
   principal sees none of it, by every route.
 - **R13c**: the extension route and `expiresAt`; the audit detail; the listing route and page. The
   final review hunts an internal thread or an over-long grant reaching outside. The close: 0.184.0.
+
+## Built
+
+R13a #677, R13b #678, and R13c with the close (0.184.0) #PRNUM. Two departures from the decisions: an
+extension replaces the grant it extends in the same change, as access.md designs it (R13-E's text
+said the old one lapses, which `access_grant_once` refuses; the new one confers all it did, for
+longer); and a new thread is not internal by default where the artifact has a reader from outside
+(R13-C's default), since the page cannot yet tell cheaply who reads an artifact - **Internal** is
+offered unticked, a choice for Ken. The final review found a digest counting replies from a thread made
+internal before it folded, an extension or a grant to a day already past, expired grants listed as if
+standing, an extension first offered for the day the grant already ends, and two reads of 0109's
+table on a schema before it; all fixed. Left: changing a principal's kind; publication shares
+(PUB-058, PUB-060, PUB-084); paging the external listing for a tenant of thousands of guests.

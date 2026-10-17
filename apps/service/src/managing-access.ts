@@ -57,7 +57,8 @@ const REFUSALS = new Map<
     'grant.not_external',
     'Only an allow to someone from outside the organisation is extended this way; grant anybody else a new role.',
   ],
-  ['grant.not_later', 'An extension ends later than the grant it extends.'],
+  ['grant.not_later', 'An extension ends later than now, and later than the grant it extends.'],
+  ['grant.expiry_past', 'That expiry has already passed, so the grant would confer nothing.'],
   [
     'grant.duplicate',
     'That role is already granted to that person or group here, with that effect.',

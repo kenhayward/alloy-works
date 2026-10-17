@@ -43,7 +43,8 @@ export type GrantRefusal =
   | 'grant.subject_erased'
   | 'grant.duplicate'
   | 'grant.allow_without_read'
-  | 'grant.administer_denied_at_tenant';
+  | 'grant.administer_denied_at_tenant'
+  | 'grant.expiry_past';
 
 export type GrantAnswer = { readonly granted: StoredGrant } | { readonly refused: GrantRefusal };
 
@@ -158,6 +159,10 @@ export async function grant(trx: TenantTransaction, input: NewGrant): Promise<Gr
   }
 
   let expiresAt = input.expiresAt ?? null;
+  // A grant that ends before it is made confers nothing from the start (the R13 final review).
+  if (expiresAt !== null && expiresAt.getTime() <= (await accessPolicy(trx)).now.getTime()) {
+    return { refused: 'grant.expiry_past' };
+  }
   if (external) {
     const policy = await accessPolicy(trx);
     const refusal = externalRefusal(
@@ -452,7 +457,11 @@ export async function extendGrant(
   if (until.getTime() > policy.now.getTime() + policy.externalCapDays * DAY_MS) {
     return { refused: 'grant.external_past_cap' };
   }
-  if (row.expires_at !== null && until.getTime() <= row.expires_at.getTime()) {
+  // Later than it held, and later than now: an extension that has already ended extends nothing.
+  if (
+    until.getTime() <= policy.now.getTime() ||
+    (row.expires_at !== null && until.getTime() <= row.expires_at.getTime())
+  ) {
     return { refused: 'grant.not_later' };
   }
   const old = storedOf(row);

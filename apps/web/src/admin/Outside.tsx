@@ -19,6 +19,7 @@ interface Reached {
     readonly level: string;
     readonly effect: 'allow' | 'deny';
     readonly expiresAt: string | null;
+    readonly expired?: boolean;
     readonly group: { readonly id: string; readonly name: string } | null;
   }[];
   readonly reads: { readonly spaces: readonly { readonly id: string; readonly name: string }[] };
@@ -33,6 +34,15 @@ const day = new Intl.DateTimeFormat('en-GB', {
 
 /** The day a date picker holds for an instant, in UTC. */
 const isoDay = (at: string) => at.slice(0, 10);
+
+/**
+ * The day an extension is offered first: the day after the grant ends, or after today where it has
+ * ended or never does - never the day it already ends, which would extend it by hours.
+ */
+const nextDay = (expiresAt: string | null) => {
+  const from = Math.max(expiresAt === null ? 0 : new Date(expiresAt).getTime(), Date.now());
+  return isoDay(new Date(from + 86_400_000).toISOString());
+};
 
 /**
  * Administration's **From outside** (IAM-050, IAM-051; the R13 plan, R13-E, R13-F): everybody from
@@ -64,7 +74,8 @@ export function Outside({ client }: { client: Client }) {
   const extend = async (person: Reached, grant: Reached['grants'][number], where: string) => {
     setSaid('');
     setRefused('');
-    const chosen = days[grant.id] ?? (grant.expiresAt === null ? '' : isoDay(grant.expiresAt));
+    const chosen = days[grant.id] ?? nextDay(grant.expiresAt);
+    if (chosen === '') return;
     const { error } = await client.POST('/v1/grants/{id}/extension', {
       params: { path: { id: grant.id } },
       body: { expiresAt: `${chosen}T23:59:59.000Z` },
@@ -129,7 +140,7 @@ export function Outside({ client }: { client: Client }) {
                       <td>
                         {grant.expiresAt === null
                           ? 'No end'
-                          : day.format(new Date(grant.expiresAt))}
+                          : `${grant.expired === true ? 'Ended ' : ''}${day.format(new Date(grant.expiresAt))}`}
                       </td>
                       <td>
                         {extendable && (
@@ -140,15 +151,16 @@ export function Outside({ client }: { client: Client }) {
                             <input
                               id={`${ids}-${grant.id}`}
                               type="date"
-                              value={
-                                days[grant.id] ??
-                                (grant.expiresAt === null ? '' : isoDay(grant.expiresAt))
-                              }
+                              value={days[grant.id] ?? nextDay(grant.expiresAt)}
                               onChange={(event) =>
                                 setDays((now) => ({ ...now, [grant.id]: event.target.value }))
                               }
                             />{' '}
-                            <button type="button" onClick={() => void extend(person, grant, where)}>
+                            <button
+                              type="button"
+                              disabled={(days[grant.id] ?? nextDay(grant.expiresAt)) === ''}
+                              onClick={() => void extend(person, grant, where)}
+                            >
                               Extend
                             </button>
                           </>

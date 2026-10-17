@@ -6713,6 +6713,8 @@ export interface operations {
                                 /** @enum {string} */
                                 effect: "allow" | "deny";
                                 expiresAt: string | null;
+                                /** @description Whether it has ended, and so confers nothing now */
+                                expired: boolean;
                                 extends: string | null;
                                 /** @description The group it reaches them through, or null for one made to them */
                                 group: {
@@ -48149,7 +48151,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description grant_duplicate, grant_allow_without_read, grant_administer_denied_at_tenant, grant_role_missing, grant_subject_missing, grant_subject_erased, grant_external_at_tenant, grant_external_capped or grant_external_past_cap */
+            /** @description grant_expiry_past, grant_duplicate, grant_allow_without_read, grant_administer_denied_at_tenant, grant_role_missing, grant_subject_missing, grant_subject_erased, grant_external_at_tenant, grant_external_capped or grant_external_past_cap */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -48450,7 +48452,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description grant_not_external, grant_not_later or grant_external_past_cap */
+            /** @description grant_not_external, grant_not_later (no later than the grant or than now) or grant_external_past_cap */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */

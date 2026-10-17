@@ -8,6 +8,7 @@ import {
   type SearchKind,
   type WorkflowKind,
 } from '@alloy-works/domain';
+import { internalHeld } from './internal-held.js';
 import { sql, type RawBuilder, type SqlBool } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
 import { isDeleted } from './deletion.js';
@@ -734,15 +735,24 @@ export async function searchWords(
         .executeTakeFirst()
     )?.kind === 'external';
   const internalOf = sql<SqlBool>`exists (select 1 from thread_internal ti where ti.thread_id = e.thread_id)`;
+  // A schema before 0109 holds no internal thread: none is kept, and the filter finds no internal one.
+  const marksHeld =
+    (outside || options.filters?.internal !== undefined) && (await internalHeld(trx));
   const askedInternal = options.filters?.internal;
   const threadsKept = sql<SqlBool>`${
-    outside ? sql<SqlBool>`(e.thread_id is null or not ${internalOf})` : sql<SqlBool>`true`
+    outside && marksHeld
+      ? sql<SqlBool>`(e.thread_id is null or not ${internalOf})`
+      : sql<SqlBool>`true`
   } and ${
     askedInternal === undefined
       ? sql<SqlBool>`true`
       : askedInternal
-        ? sql<SqlBool>`(e.thread_id is not null and ${internalOf})`
-        : sql<SqlBool>`(e.thread_id is not null and not ${internalOf})`
+        ? marksHeld
+          ? sql<SqlBool>`(e.thread_id is not null and ${internalOf})`
+          : sql<SqlBool>`false`
+        : marksHeld
+          ? sql<SqlBool>`(e.thread_id is not null and not ${internalOf})`
+          : sql<SqlBool>`e.thread_id is not null`
   }`;
   const readableRow = sql<SqlBool>`(
       ((e.space_id = any(${[...readable.spaces]}::uuid[])
