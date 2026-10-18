@@ -1155,6 +1155,18 @@ describe('routes that check a permission', () => {
       },
     }),
     getPrompt: () => ({ url: `/v1/prompts/${MISSING}`, status: 404 }),
+    listPromptLibraries: () => ({ url: '/v1/prompt-libraries', status: 403 }),
+    createPromptLibrary: () => ({
+      url: '/v1/prompt-libraries',
+      status: 403,
+      payload: { library: { schemaVersion: 1, name: 'Probe', prompts: [] } },
+    }),
+    getPromptLibrary: () => ({ url: `/v1/prompt-libraries/${MISSING}`, status: 403 }),
+    recordPromptLibraryVersion: () => ({
+      url: `/v1/prompt-libraries/${MISSING}/versions`,
+      status: 403,
+      payload: { openedFrom: MISSING, library: { schemaVersion: 1, name: 'Probe', prompts: [] } },
+    }),
     listPromptApprovals: () => ({ url: `/v1/prompts/${MISSING}/approvals`, status: 404 }),
     transitionPrompt: () => ({
       url: `/v1/prompts/${MISSING}/transitions`,

@@ -145,6 +145,7 @@ export async function templateReferences(
   const named = [
     definition.theme,
     definition.layout,
+    ...(definition.prompts === undefined ? [] : [definition.prompts]),
     ...definition.schemas.map((each) => each.schema),
   ].filter((id) => UUID.test(id));
   const rows =

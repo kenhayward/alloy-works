@@ -129,6 +129,9 @@ export const templateDefinitionSchema = z
     changes: z.strictObject({ add: z.boolean(), remove: z.boolean(), reorder: z.boolean() }),
     // Additive at schema 1: absent reads as none (templates.md, "Declared on the template").
     parameters: z.array(templateParameterSchema).max(MAX_TEMPLATE_PARAMETERS).optional(),
+    // Additive at schema 1, as `parameters` is: the prompt library it binds, absent reading as the
+    // tenant's empty default (TPL-061, TPL-071; the G4 plan, G4-F).
+    prompts: artifact.optional(),
     // Additive at schema 1, as `parameters` is: absent reads as none (the R9 plan, R9-A).
     components: z.array(templateComponentSchema).max(MAX_TEMPLATE_COMPONENTS).optional(),
     // Additive at schema 1 (TPL-051; the R10 plan, R10-E): its documents' profile, as defaults on

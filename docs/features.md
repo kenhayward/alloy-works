@@ -194,7 +194,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   parameters), the component type whose text it writes, and the purpose and models it accepts. Every
   version is checked so nothing undeclared can reach a model. A prompt is reviewed through its own
   workflow, as a query definition is: submitted, approved by somebody other than its author, and back
-  to draft when saved (`/v1/prompts`). Libraries and running them are still to come.
+  to draft when saved (`/v1/prompts`). **Prompt libraries** list prompts by
+  identity, each running at its latest approved revision, so a library follows its prompts as they
+  are approved; every environment holds an empty default. A template names the library it binds
+  (`prompts`), or binds the default (`/v1/prompt-libraries`). Running a prompt is still to come.
 - **Groups, and your organisation's directory.** An administrator of the whole environment makes groups
   in Administration's **Groups** and grants a role to one as to a person, from any access page: everybody
   in it holds that role there. Groups lists each group in a table you can search, with where its members come from and who

@@ -947,8 +947,8 @@ describe('the citations in the committed model', () => {
     // 1631 (2026-10-18): R21a's stored results as sources.
     // 1634 (2026-10-18): R21b's tenant export.
     // 1637 (2026-10-18): R22a's warm range preview.
-    // 1695 (2026-10-18): G4a2's prompt review. 1694 (2026-10-18): G4a1's prompt shape. 1693 (2026-10-18): G3's generated content in publishing. 1687 (2026-10-18): G2b's Assistant panel and the final review's titles. 1685 (2026-10-18): G2a's assistant. 1656 (2026-10-18): G1b's model endpoints and page. 1647 (2026-10-18): G1a's model calls. 1641 (2026-10-18): R22b's pages as you edit.
-    expect(model.citations).toHaveLength(1695);
+    // 1701 (2026-10-18): G4b's libraries and a template's. 1695 (2026-10-18): G4a2's prompt review. 1694 (2026-10-18): G4a1's prompt shape. 1693 (2026-10-18): G3's generated content in publishing. 1687 (2026-10-18): G2b's Assistant panel and the final review's titles. 1685 (2026-10-18): G2a's assistant. 1656 (2026-10-18): G1b's model endpoints and page. 1647 (2026-10-18): G1a's model calls. 1641 (2026-10-18): R22b's pages as you edit.
+    expect(model.citations).toHaveLength(1701);
   });
 
   it('cites no identifier the corpus does not hold', () => {

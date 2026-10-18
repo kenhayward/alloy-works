@@ -355,6 +355,10 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   createPrompt: writes('content.version_cut'),
   getPrompt: read,
   recordPromptVersion: writes('content.version_cut'),
+  listPromptLibraries: read,
+  createPromptLibrary: writes('content.version_cut'),
+  getPromptLibrary: read,
+  recordPromptLibraryVersion: writes('content.version_cut'),
   getDocumentBindings: read,
   // A dataset version, and what each binding takes from it (dataset_take, derived), and its event.
   // Each also decides the values revised by hand standing on what it replaces (the RV plan, RV-D).

@@ -507,7 +507,14 @@ describe('the listings through the service', () => {
     // note), which a tenant of thousands of guests would want paged.
     // Nor the model endpoints and routes (the G1 plan): a route is one row a purpose, four, and the
     // endpoints a tenant's handful, every one of which the routes' choice is made from.
-    const capped = ['getAttention', 'listExternalAccess', 'listModelEndpoints', 'listModelRoutes'];
+    // Nor the prompt libraries (the G4 plan): the environment's handful, at most 200.
+    const capped = [
+      'getAttention',
+      'listExternalAccess',
+      'listModelEndpoints',
+      'listModelRoutes',
+      'listPromptLibraries',
+    ];
     const listings = allRoutes.filter(
       (route) =>
         route.method === 'GET' &&

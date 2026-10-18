@@ -791,6 +791,13 @@ describe('the domain package', () => {
         'placeParameters',
         'placedParameters',
         'promptSchema',
+        // G4: a prompt library's shape, and the default every tenant holds.
+        'DEFAULT_PROMPT_LIBRARY_ID',
+        'LIBRARY_PROMPTS_MAX',
+        'LibraryRefused',
+        'PROMPT_LIBRARY_SCHEMA_VERSION',
+        'parsePromptLibrary',
+        'promptLibrarySchema',
       ].sort(),
     );
   });

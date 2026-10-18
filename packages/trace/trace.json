@@ -20608,13 +20608,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 505,
+      "line": 509,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 518,
+      "line": 522,
       "kind": "title"
     },
     {
@@ -20980,7 +20980,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1653,
+      "line": 1681,
       "kind": "title"
     },
     {
@@ -21616,7 +21616,19 @@
     {
       "id": "GEN-001",
       "file": "apps/service/src/prompt-routes.test.ts",
-      "line": 112,
+      "line": 116,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-004",
+      "file": "apps/service/src/prompt-routes.test.ts",
+      "line": 216,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-061",
+      "file": "apps/service/src/prompt-routes.test.ts",
+      "line": 216,
       "kind": "title"
     },
     {
@@ -26312,6 +26324,18 @@
       "kind": "title"
     },
     {
+      "id": "GEN-001",
+      "file": "packages/db/src/prompt-libraries.test.ts",
+      "line": 200,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-071",
+      "file": "packages/db/src/prompt-libraries.test.ts",
+      "line": 136,
+      "kind": "title"
+    },
+    {
       "id": "IAM-078",
       "file": "packages/db/src/provision.test.ts",
       "line": 44,
@@ -28174,7 +28198,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 798,
+      "line": 805,
       "kind": "title"
     },
     {
@@ -29398,7 +29422,19 @@
     {
       "id": "TPL-053",
       "file": "packages/domain/src/template/resolve.test.ts",
-      "line": 69,
+      "line": 85,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-061",
+      "file": "packages/domain/src/template/resolve.test.ts",
+      "line": 70,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-071",
+      "file": "packages/domain/src/template/resolve.test.ts",
+      "line": 70,
       "kind": "title"
     },
     {

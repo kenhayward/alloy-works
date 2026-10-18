@@ -16,7 +16,8 @@ import { CohortPage } from '../structure/CohortPage.js';
 import { cohortAddress } from '../structure/links.js';
 import { QueryDefinitionPage } from '../data/QueryDefinitionPage.js';
 import { QueryDefinitions } from '../data/QueryDefinitions.js';
-import { promptAddress, PROMPTS } from '../prompts/links.js';
+import { LibraryPage, PromptLibraries } from '../prompts/Libraries.js';
+import { LIBRARIES, libraryAddress, promptAddress, PROMPTS } from '../prompts/links.js';
 import { PromptPage } from '../prompts/PromptPage.js';
 import { Prompts } from '../prompts/Prompts.js';
 import { Home } from '../home/Home.js';
@@ -73,6 +74,7 @@ const LISTS = new Set([
   '#/connections',
   '#/query-definitions',
   '#/prompts',
+  '#/prompts/libraries',
 ]);
 const isWork = (hash: string) => !LISTS.has(hash) && !hash.startsWith('#/admin');
 
@@ -434,6 +436,9 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
         />
       );
     }
+    const library = libraryAddress(hash);
+    if (library !== null) return <LibraryPage key={library} client={client} id={library} />;
+    if (hash === LIBRARIES) return <PromptLibraries client={client} />;
     const prompt = promptAddress(hash);
     if (prompt !== null) return <PromptPage key={prompt} client={client} id={prompt} />;
     if (hash === PROMPTS) return <Prompts client={client} />;

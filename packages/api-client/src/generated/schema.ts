@@ -3431,6 +3431,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/prompt-libraries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The environment's prompt libraries, the default first
+         * @description Lists the environment's prompt libraries: the default first, which a template naming none binds and which lists nothing, then the rest by name.
+         */
+        get: operations["listPromptLibraries"];
+        put?: never;
+        /**
+         * Make a prompt library, at version 0.1
+         * @description Creates a prompt library: a name and the prompts it lists, by identity, each once. Each runs at its latest approved revision, so a library follows its prompts as they are approved. It needs design here.
+         */
+        post: operations["createPromptLibrary"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/prompt-libraries/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A prompt library at its latest version, with each prompt at the version it runs
+         * @description Returns a library at its latest version, with each prompt it lists at the revision a run of it runs: its latest approved one, or none where it was never approved. A prompt the caller may not read is counted, never named.
+         */
+        get: operations["getPromptLibrary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/prompt-libraries/{id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cut a prompt library's next version from the one the caller opened
+         * @description Records the next library version from the version the caller opened, checked as a new library is. It needs design here.
+         */
+        post: operations["recordPromptLibraryVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/prompts": {
         parameters: {
             query?: never;
@@ -43959,7 +44023,7 @@ export interface operations {
                         /** @description values_unresolved: what the document's template names that does not resolve now */
                         unresolved?: {
                             /** @enum {string} */
-                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
+                            reference: "theme" | "layout" | "library" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
                             id: string;
                             /** @description component and query: the key of the required component it concerns */
                             key?: string;
@@ -44335,7 +44399,7 @@ export interface operations {
                         /** @description values_unresolved: what the document's template names that does not resolve now */
                         unresolved?: {
                             /** @enum {string} */
-                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
+                            reference: "theme" | "layout" | "library" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
                             id: string;
                             /** @description component and query: the key of the required component it concerns */
                             key?: string;
@@ -45270,7 +45334,7 @@ export interface operations {
                         /** @description values_unresolved: what the document's template names that does not resolve now */
                         unresolved?: {
                             /** @enum {string} */
-                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
+                            reference: "theme" | "layout" | "library" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
                             id: string;
                             /** @description component and query: the key of the required component it concerns */
                             key?: string;
@@ -45646,7 +45710,7 @@ export interface operations {
                         /** @description values_unresolved: what the document's template names that does not resolve now */
                         unresolved?: {
                             /** @enum {string} */
-                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
+                            reference: "theme" | "layout" | "library" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
                             id: string;
                             /** @description component and query: the key of the required component it concerns */
                             key?: string;
@@ -46724,7 +46788,7 @@ export interface operations {
                         /** @description values_unresolved: what the document's template names that does not resolve now */
                         unresolved?: {
                             /** @enum {string} */
-                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
+                            reference: "theme" | "layout" | "library" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
                             id: string;
                             /** @description component and query: the key of the required component it concerns */
                             key?: string;
@@ -47100,7 +47164,7 @@ export interface operations {
                         /** @description values_unresolved: what the document's template names that does not resolve now */
                         unresolved?: {
                             /** @enum {string} */
-                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
+                            reference: "theme" | "layout" | "library" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
                             id: string;
                             /** @description component and query: the key of the required component it concerns */
                             key?: string;
@@ -48298,7 +48362,7 @@ export interface operations {
                         /** @description values_unresolved: what the document's template names that does not resolve now */
                         unresolved?: {
                             /** @enum {string} */
-                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
+                            reference: "theme" | "layout" | "library" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
                             id: string;
                             /** @description component and query: the key of the required component it concerns */
                             key?: string;
@@ -48674,7 +48738,7 @@ export interface operations {
                         /** @description values_unresolved: what the document's template names that does not resolve now */
                         unresolved?: {
                             /** @enum {string} */
-                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
+                            reference: "theme" | "layout" | "library" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
                             id: string;
                             /** @description component and query: the key of the required component it concerns */
                             key?: string;
@@ -53073,7 +53137,7 @@ export interface operations {
                         /** @description values_unresolved: what the document's template names that does not resolve now */
                         unresolved?: {
                             /** @enum {string} */
-                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
+                            reference: "theme" | "layout" | "library" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
                             id: string;
                             /** @description component and query: the key of the required component it concerns */
                             key?: string;
@@ -53449,7 +53513,7 @@ export interface operations {
                         /** @description values_unresolved: what the document's template names that does not resolve now */
                         unresolved?: {
                             /** @enum {string} */
-                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
+                            reference: "theme" | "layout" | "library" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
                             id: string;
                             /** @description component and query: the key of the required component it concerns */
                             key?: string;
@@ -61404,6 +61468,1160 @@ export interface operations {
                         rule?: string;
                         /** @description Quote this when reporting a problem */
                         traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listPromptLibraries: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The libraries */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": []
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description The default first, then by name: an environment's handful */
+                        items: {
+                            id: string;
+                            name: string;
+                            isDefault: boolean;
+                            /** @description How many prompts it lists */
+                            prompts: number;
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not read the environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    createPromptLibrary: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "library": {
+                 *         "schemaVersion": 1,
+                 *         "name": "example",
+                 *         "prompts": []
+                 *       }
+                 *     }
+                 */
+                "application/json": {
+                    library: {
+                        /** @constant */
+                        schemaVersion: 1;
+                        name: string;
+                        prompts: string[];
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Made, at version 0.1 */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "library": {
+                     *         "schemaVersion": 1,
+                     *         "name": "example",
+                     *         "prompts": []
+                     *       },
+                     *       "isDefault": false,
+                     *       "prompts": [],
+                     *       "mayEdit": false
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        library: {
+                            /** @constant */
+                            schemaVersion: 1;
+                            name: string;
+                            prompts: string[];
+                        };
+                        /** @description Whether it is the environment's default, which a template naming none binds */
+                        isDefault: boolean;
+                        /** @description Each prompt it lists, in its order */
+                        prompts: ({
+                            id: string;
+                            /** @constant */
+                            state: "approved";
+                            /** @description Its latest approved revision: what a run of it runs */
+                            revision: {
+                                number: number;
+                                versionId: string;
+                            };
+                            prompt: {
+                                /** @constant */
+                                schemaVersion: 1;
+                                title: string;
+                                description: string;
+                                instructions: string;
+                                context: ({
+                                    /** @constant */
+                                    source: "outline";
+                                    /** @enum {string} */
+                                    scope: "part" | "section" | "document";
+                                } | {
+                                    /** @constant */
+                                    source: "related";
+                                    /** Format: uuid */
+                                    type: string;
+                                    /** @enum {string} */
+                                    direction: "out" | "in";
+                                } | {
+                                    /** @constant */
+                                    source: "field";
+                                    /** Format: uuid */
+                                    field: string;
+                                    value: string | number | boolean;
+                                } | {
+                                    /** @constant */
+                                    source: "parameters";
+                                    names: string[];
+                                })[];
+                                output: {
+                                    componentType: string | null;
+                                };
+                                models: {
+                                    /** @enum {string} */
+                                    purpose: "drafting" | "chat" | "summarising";
+                                    accepts: string[];
+                                };
+                            };
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                        } | {
+                            id: string;
+                            /**
+                             * @description Never approved: it runs nothing until it is
+                             * @constant
+                             */
+                            state: "unapproved";
+                            title: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                        } | {
+                            id: string;
+                            /**
+                             * @description One the caller may not read, or no prompt any more
+                             * @constant
+                             */
+                            state: "hidden";
+                        })[];
+                        /** @description Whether the caller may cut its next version: design here */
+                        mayEdit: boolean;
+                    };
+                };
+            };
+            /** @description `library_invalid`: the library fails a rule, each problem named: a prompt listed twice, or one newly listed that is no prompt the caller may read */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        problems?: {
+                            /** @constant */
+                            rule: "library_invalid";
+                            /** @description The member refused, dotted, as `prompts.2` */
+                            path: string;
+                            message: string;
+                        }[];
+                        current?: {
+                            id: string;
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            library: {
+                                /** @constant */
+                                schemaVersion: 1;
+                                name: string;
+                                prompts: string[];
+                            };
+                            /** @description Whether it is the environment's default, which a template naming none binds */
+                            isDefault: boolean;
+                            /** @description Each prompt it lists, in its order */
+                            prompts: ({
+                                id: string;
+                                /** @constant */
+                                state: "approved";
+                                /** @description Its latest approved revision: what a run of it runs */
+                                revision: {
+                                    number: number;
+                                    versionId: string;
+                                };
+                                prompt: {
+                                    /** @constant */
+                                    schemaVersion: 1;
+                                    title: string;
+                                    description: string;
+                                    instructions: string;
+                                    context: ({
+                                        /** @constant */
+                                        source: "outline";
+                                        /** @enum {string} */
+                                        scope: "part" | "section" | "document";
+                                    } | {
+                                        /** @constant */
+                                        source: "related";
+                                        /** Format: uuid */
+                                        type: string;
+                                        /** @enum {string} */
+                                        direction: "out" | "in";
+                                    } | {
+                                        /** @constant */
+                                        source: "field";
+                                        /** Format: uuid */
+                                        field: string;
+                                        value: string | number | boolean;
+                                    } | {
+                                        /** @constant */
+                                        source: "parameters";
+                                        names: string[];
+                                    })[];
+                                    output: {
+                                        componentType: string | null;
+                                    };
+                                    models: {
+                                        /** @enum {string} */
+                                        purpose: "drafting" | "chat" | "summarising";
+                                        accepts: string[];
+                                    };
+                                };
+                                space: {
+                                    id: string;
+                                    name: string;
+                                };
+                            } | {
+                                id: string;
+                                /**
+                                 * @description Never approved: it runs nothing until it is
+                                 * @constant
+                                 */
+                                state: "unapproved";
+                                title: string;
+                                space: {
+                                    id: string;
+                                    name: string;
+                                };
+                            } | {
+                                id: string;
+                                /**
+                                 * @description One the caller may not read, or no prompt any more
+                                 * @constant
+                                 */
+                                state: "hidden";
+                            })[];
+                            /** @description Whether the caller may cut its next version: design here */
+                            mayEdit: boolean;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not design here */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getPromptLibrary: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The library */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "library": {
+                     *         "schemaVersion": 1,
+                     *         "name": "example",
+                     *         "prompts": []
+                     *       },
+                     *       "isDefault": false,
+                     *       "prompts": [],
+                     *       "mayEdit": false
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        library: {
+                            /** @constant */
+                            schemaVersion: 1;
+                            name: string;
+                            prompts: string[];
+                        };
+                        /** @description Whether it is the environment's default, which a template naming none binds */
+                        isDefault: boolean;
+                        /** @description Each prompt it lists, in its order */
+                        prompts: ({
+                            id: string;
+                            /** @constant */
+                            state: "approved";
+                            /** @description Its latest approved revision: what a run of it runs */
+                            revision: {
+                                number: number;
+                                versionId: string;
+                            };
+                            prompt: {
+                                /** @constant */
+                                schemaVersion: 1;
+                                title: string;
+                                description: string;
+                                instructions: string;
+                                context: ({
+                                    /** @constant */
+                                    source: "outline";
+                                    /** @enum {string} */
+                                    scope: "part" | "section" | "document";
+                                } | {
+                                    /** @constant */
+                                    source: "related";
+                                    /** Format: uuid */
+                                    type: string;
+                                    /** @enum {string} */
+                                    direction: "out" | "in";
+                                } | {
+                                    /** @constant */
+                                    source: "field";
+                                    /** Format: uuid */
+                                    field: string;
+                                    value: string | number | boolean;
+                                } | {
+                                    /** @constant */
+                                    source: "parameters";
+                                    names: string[];
+                                })[];
+                                output: {
+                                    componentType: string | null;
+                                };
+                                models: {
+                                    /** @enum {string} */
+                                    purpose: "drafting" | "chat" | "summarising";
+                                    accepts: string[];
+                                };
+                            };
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                        } | {
+                            id: string;
+                            /**
+                             * @description Never approved: it runs nothing until it is
+                             * @constant
+                             */
+                            state: "unapproved";
+                            title: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                        } | {
+                            id: string;
+                            /**
+                             * @description One the caller may not read, or no prompt any more
+                             * @constant
+                             */
+                            state: "hidden";
+                        })[];
+                        /** @description Whether the caller may cut its next version: design here */
+                        mayEdit: boolean;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not read the environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such prompt library in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    recordPromptLibraryVersion: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "openedFrom": "00000000-0000-4000-8000-000000000001",
+                 *       "library": {
+                 *         "schemaVersion": 1,
+                 *         "name": "example",
+                 *         "prompts": []
+                 *       }
+                 *     }
+                 */
+                "application/json": {
+                    openedFrom: string & (unknown & unknown);
+                    library: {
+                        /** @constant */
+                        schemaVersion: 1;
+                        name: string;
+                        prompts: string[];
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description The library at its latest version: the one cut, or the one before where nothing changed */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "library": {
+                     *         "schemaVersion": 1,
+                     *         "name": "example",
+                     *         "prompts": []
+                     *       },
+                     *       "isDefault": false,
+                     *       "prompts": [],
+                     *       "mayEdit": false
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        library: {
+                            /** @constant */
+                            schemaVersion: 1;
+                            name: string;
+                            prompts: string[];
+                        };
+                        /** @description Whether it is the environment's default, which a template naming none binds */
+                        isDefault: boolean;
+                        /** @description Each prompt it lists, in its order */
+                        prompts: ({
+                            id: string;
+                            /** @constant */
+                            state: "approved";
+                            /** @description Its latest approved revision: what a run of it runs */
+                            revision: {
+                                number: number;
+                                versionId: string;
+                            };
+                            prompt: {
+                                /** @constant */
+                                schemaVersion: 1;
+                                title: string;
+                                description: string;
+                                instructions: string;
+                                context: ({
+                                    /** @constant */
+                                    source: "outline";
+                                    /** @enum {string} */
+                                    scope: "part" | "section" | "document";
+                                } | {
+                                    /** @constant */
+                                    source: "related";
+                                    /** Format: uuid */
+                                    type: string;
+                                    /** @enum {string} */
+                                    direction: "out" | "in";
+                                } | {
+                                    /** @constant */
+                                    source: "field";
+                                    /** Format: uuid */
+                                    field: string;
+                                    value: string | number | boolean;
+                                } | {
+                                    /** @constant */
+                                    source: "parameters";
+                                    names: string[];
+                                })[];
+                                output: {
+                                    componentType: string | null;
+                                };
+                                models: {
+                                    /** @enum {string} */
+                                    purpose: "drafting" | "chat" | "summarising";
+                                    accepts: string[];
+                                };
+                            };
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                        } | {
+                            id: string;
+                            /**
+                             * @description Never approved: it runs nothing until it is
+                             * @constant
+                             */
+                            state: "unapproved";
+                            title: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                        } | {
+                            id: string;
+                            /**
+                             * @description One the caller may not read, or no prompt any more
+                             * @constant
+                             */
+                            state: "hidden";
+                        })[];
+                        /** @description Whether the caller may cut its next version: design here */
+                        mayEdit: boolean;
+                    };
+                };
+            };
+            /** @description `library_invalid`: the library fails a rule, each problem named: a prompt listed twice, or one newly listed that is no prompt the caller may read */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        problems?: {
+                            /** @constant */
+                            rule: "library_invalid";
+                            /** @description The member refused, dotted, as `prompts.2` */
+                            path: string;
+                            message: string;
+                        }[];
+                        current?: {
+                            id: string;
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            library: {
+                                /** @constant */
+                                schemaVersion: 1;
+                                name: string;
+                                prompts: string[];
+                            };
+                            /** @description Whether it is the environment's default, which a template naming none binds */
+                            isDefault: boolean;
+                            /** @description Each prompt it lists, in its order */
+                            prompts: ({
+                                id: string;
+                                /** @constant */
+                                state: "approved";
+                                /** @description Its latest approved revision: what a run of it runs */
+                                revision: {
+                                    number: number;
+                                    versionId: string;
+                                };
+                                prompt: {
+                                    /** @constant */
+                                    schemaVersion: 1;
+                                    title: string;
+                                    description: string;
+                                    instructions: string;
+                                    context: ({
+                                        /** @constant */
+                                        source: "outline";
+                                        /** @enum {string} */
+                                        scope: "part" | "section" | "document";
+                                    } | {
+                                        /** @constant */
+                                        source: "related";
+                                        /** Format: uuid */
+                                        type: string;
+                                        /** @enum {string} */
+                                        direction: "out" | "in";
+                                    } | {
+                                        /** @constant */
+                                        source: "field";
+                                        /** Format: uuid */
+                                        field: string;
+                                        value: string | number | boolean;
+                                    } | {
+                                        /** @constant */
+                                        source: "parameters";
+                                        names: string[];
+                                    })[];
+                                    output: {
+                                        componentType: string | null;
+                                    };
+                                    models: {
+                                        /** @enum {string} */
+                                        purpose: "drafting" | "chat" | "summarising";
+                                        accepts: string[];
+                                    };
+                                };
+                                space: {
+                                    id: string;
+                                    name: string;
+                                };
+                            } | {
+                                id: string;
+                                /**
+                                 * @description Never approved: it runs nothing until it is
+                                 * @constant
+                                 */
+                                state: "unapproved";
+                                title: string;
+                                space: {
+                                    id: string;
+                                    name: string;
+                                };
+                            } | {
+                                id: string;
+                                /**
+                                 * @description One the caller may not read, or no prompt any more
+                                 * @constant
+                                 */
+                                state: "hidden";
+                            })[];
+                            /** @description Whether the caller may cut its next version: design here */
+                            mayEdit: boolean;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not design here */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such prompt library in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `version_precondition`: the library has a newer version than the one named, answered with it */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        problems?: {
+                            /** @constant */
+                            rule: "library_invalid";
+                            /** @description The member refused, dotted, as `prompts.2` */
+                            path: string;
+                            message: string;
+                        }[];
+                        current?: {
+                            id: string;
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            library: {
+                                /** @constant */
+                                schemaVersion: 1;
+                                name: string;
+                                prompts: string[];
+                            };
+                            /** @description Whether it is the environment's default, which a template naming none binds */
+                            isDefault: boolean;
+                            /** @description Each prompt it lists, in its order */
+                            prompts: ({
+                                id: string;
+                                /** @constant */
+                                state: "approved";
+                                /** @description Its latest approved revision: what a run of it runs */
+                                revision: {
+                                    number: number;
+                                    versionId: string;
+                                };
+                                prompt: {
+                                    /** @constant */
+                                    schemaVersion: 1;
+                                    title: string;
+                                    description: string;
+                                    instructions: string;
+                                    context: ({
+                                        /** @constant */
+                                        source: "outline";
+                                        /** @enum {string} */
+                                        scope: "part" | "section" | "document";
+                                    } | {
+                                        /** @constant */
+                                        source: "related";
+                                        /** Format: uuid */
+                                        type: string;
+                                        /** @enum {string} */
+                                        direction: "out" | "in";
+                                    } | {
+                                        /** @constant */
+                                        source: "field";
+                                        /** Format: uuid */
+                                        field: string;
+                                        value: string | number | boolean;
+                                    } | {
+                                        /** @constant */
+                                        source: "parameters";
+                                        names: string[];
+                                    })[];
+                                    output: {
+                                        componentType: string | null;
+                                    };
+                                    models: {
+                                        /** @enum {string} */
+                                        purpose: "drafting" | "chat" | "summarising";
+                                        accepts: string[];
+                                    };
+                                };
+                                space: {
+                                    id: string;
+                                    name: string;
+                                };
+                            } | {
+                                id: string;
+                                /**
+                                 * @description Never approved: it runs nothing until it is
+                                 * @constant
+                                 */
+                                state: "unapproved";
+                                title: string;
+                                space: {
+                                    id: string;
+                                    name: string;
+                                };
+                            } | {
+                                id: string;
+                                /**
+                                 * @description One the caller may not read, or no prompt any more
+                                 * @constant
+                                 */
+                                state: "hidden";
+                            })[];
+                            /** @description Whether the caller may cut its next version: design here */
+                            mayEdit: boolean;
+                        };
                     };
                 };
             };
@@ -74642,7 +75860,7 @@ export interface operations {
                         traceId: string;
                         unresolved?: {
                             /** @enum {string} */
-                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
+                            reference: "theme" | "layout" | "library" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
                             id: string;
                             /** @description component and query: the key of the required component it concerns */
                             key?: string;
@@ -76899,6 +78117,8 @@ export interface operations {
                                 variables?: string[];
                             };
                         }[];
+                        /** Format: uuid */
+                        prompts?: string;
                         components?: {
                             key: string;
                             /** Format: uuid */
@@ -77006,7 +78226,7 @@ export interface operations {
                         traceId: string;
                         unresolved?: {
                             /** @enum {string} */
-                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
+                            reference: "theme" | "layout" | "library" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
                             id: string;
                             /** @description component and query: the key of the required component it concerns */
                             key?: string;
@@ -78933,6 +80153,8 @@ export interface operations {
                                 variables?: string[];
                             };
                         }[];
+                        /** Format: uuid */
+                        prompts?: string;
                         components?: {
                             key: string;
                             /** Format: uuid */
@@ -79040,7 +80262,7 @@ export interface operations {
                         traceId: string;
                         unresolved?: {
                             /** @enum {string} */
-                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
+                            reference: "theme" | "layout" | "library" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
                             id: string;
                             /** @description component and query: the key of the required component it concerns */
                             key?: string;
@@ -79175,7 +80397,7 @@ export interface operations {
                         traceId: string;
                         unresolved?: {
                             /** @enum {string} */
-                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
+                            reference: "theme" | "layout" | "library" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
                             id: string;
                             /** @description component and query: the key of the required component it concerns */
                             key?: string;

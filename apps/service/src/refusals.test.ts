@@ -102,6 +102,7 @@ describe('the rule behind a refusal', () => {
       'definition.invalid',
       // A prompt's own shape and checks (the G4 plan, G4-A), which no requirement names as a rule.
       'prompt.invalid',
+      'library.invalid',
       // A connection's settings past their shape, which the contract checks at the door: made retired,
       // which the design refuses (data.md, "The connection") and no requirement names.
       'connection.invalid',

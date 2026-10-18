@@ -19,6 +19,7 @@ const LABELLED_BY = {
   layout: 'name',
   theme: 'name',
   catalogue: 'name',
+  promptLibrary: 'name',
   dataset: 'name',
   asset: 'name',
   space: 'name',
