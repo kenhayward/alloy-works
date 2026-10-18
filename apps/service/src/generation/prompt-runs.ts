@@ -272,33 +272,40 @@ export function promptRunHandlers(
           if (!input.trial) {
             // The part's whole text, proposed against the version the context read, as the
             // requester, who must still read the document and suggest on the part.
-            const made = await db.withTenant(
-              tenant,
-              async (inner) => {
-                await authoriseAt(inner, caller, 'read', { kind: 'artifact', id: input.document });
-                await authoriseAt(inner, caller, 'suggest', {
-                  kind: 'artifact',
-                  id: part.component,
-                });
-                const edited = applyEdits(
-                  part.content,
-                  wholeText(part.content, said.trim()),
-                  markdownReader(part.content),
-                );
-                if (!edited.ok) return { problem: edited.problem };
-                return {
-                  proposal: await makeProposal(inner, {
-                    run,
-                    component: part.component,
-                    against: part.version,
-                    proposed: edited.content,
-                  }),
-                };
-              },
-              context,
-            );
-            proposal = made.proposal;
-            problem = made.problem;
+            const made =
+              said.trim() === ''
+                ? { problem: 'The model wrote nothing, so nothing is proposed.' }
+                : await db.withTenant(
+                    tenant,
+                    async (inner) => {
+                      await authoriseAt(inner, caller, 'read', {
+                        kind: 'artifact',
+                        id: input.document,
+                      });
+                      await authoriseAt(inner, caller, 'suggest', {
+                        kind: 'artifact',
+                        id: part.component,
+                      });
+                      const edited = applyEdits(
+                        part.content,
+                        wholeText(part.content, said.trim()),
+                        markdownReader(part.content),
+                      );
+                      if (!edited.ok) return { problem: edited.problem };
+                      // Nothing written is no text to propose: a part is never emptied by a blank reply.
+                      return {
+                        proposal: await makeProposal(inner, {
+                          run,
+                          component: part.component,
+                          against: part.version,
+                          proposed: edited.content,
+                        }),
+                      };
+                    },
+                    context,
+                  );
+            if ('proposal' in made) proposal = made.proposal;
+            else problem = made.problem;
           }
         }
       } catch (error) {
@@ -329,7 +336,12 @@ export function promptRunHandlers(
             },
             context,
           )
-          .catch(() => undefined);
+          .catch((error: unknown) => {
+            // A run whose end is not recorded says so, and never reads as finished.
+            request.log.error({ err: error }, 'a prompt run could not be recorded as ended');
+            failure ??= { code: 'connector_error' };
+            return undefined;
+          });
         if (proposal) {
           send('proposal', {
             id: proposal.id,

@@ -8,6 +8,9 @@ import { AssistantPanel } from './AssistantPanel.js';
 const DOCUMENT = '0b6f6b8e-4a39-4c1e-9d0f-3c0a8f1e2d41';
 const SITES = '6a1d9c2e-7b3f-4e8a-9c5d-1f2e3a4b5c6d';
 const PROPOSAL = '2c4e6a8b-1d3f-4a5b-8c7d-9e0f1a2b3c4d';
+const PROMPT = '3d5f7b9c-2e4a-4b6c-9d8e-0f1a2b3c4d5e';
+const LIBRARY = '4e6a8c0d-3f5b-4c7d-8e9f-1a2b3c4d5e6f';
+const NODE = 'n1';
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
@@ -19,6 +22,27 @@ function service() {
     const request = input instanceof Request ? input : new Request(String(input), init);
     const path = new URL(request.url).pathname;
     asked.push(`${request.method} ${path}`);
+    if (path === `/v1/documents/${DOCUMENT}/prompts`) {
+      return json(200, {
+        library: { id: LIBRARY, isDefault: false },
+        prompts: [
+          {
+            id: PROMPT,
+            state: 'approved',
+            revision: { number: 1, versionId: PROMPT },
+            prompt: { title: 'Say it plainly' },
+            space: { id: SITES, name: 'General' },
+          },
+          {
+            id: SITES,
+            state: 'unapproved',
+            title: 'Not yet approved',
+            space: { id: SITES, name: 'General' },
+          },
+          { id: PROPOSAL, state: 'hidden' },
+        ],
+      });
+    }
     if (path === '/v1/me/assistant-usage') {
       return json(200, { runs: 3, costs: [{ currency: 'USD', cost: '0.001800' }] });
     }
@@ -215,5 +239,75 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
     await user.type(screen.getByLabelText('Ask the assistant'), 'Hello');
     await user.click(screen.getByRole('button', { name: 'Ask' }));
     expect(await screen.findByText('No model endpoint is set up for drafting.')).toBeVisible();
+  });
+
+  it("offers the library's approved prompts for the part open, runs one on it, and shows its proposal", async () => {
+    const user = userEvent.setup();
+    const { client } = service();
+    const stream = vi.fn(
+      running([
+        ['run', { run: 'r2', endpoint: { name: 'Drafting', boundary: 'inside' }, trial: false }],
+        ['text', { text: 'Plainly put.' }],
+        [
+          'proposal',
+          {
+            id: PROPOSAL,
+            number: 1,
+            component: SITES,
+            against: 'v1',
+            proposed: {
+              content: [{ type: 'paragraph', content: [{ type: 'text', value: 'Plainly put.' }] }],
+            },
+          },
+        ],
+        ended(),
+      ]),
+    );
+    render(
+      <AssistantPanel
+        client={client}
+        document={DOCUMENT}
+        component={SITES}
+        node={NODE}
+        nameOf={() => 'Sites'}
+        onCite={() => {}}
+        stream={stream}
+        origin="http://doc.test"
+      />,
+    );
+    const offered = await screen.findByRole('region', { name: 'Prompts' });
+    // Only an approved prompt runs: one never approved, and one the reader may not read, are not offered.
+    expect(
+      within(offered)
+        .getAllByRole('button')
+        .map((each) => each.getAttribute('aria-label')),
+    ).toEqual(['Run Say it plainly on this part']);
+    await user.click(
+      within(offered).getByRole('button', { name: 'Run Say it plainly on this part' }),
+    );
+    expect(stream).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: `http://doc.test/v1/documents/${DOCUMENT}/prompt-runs`,
+        body: { prompt: PROMPT, node: NODE },
+      }),
+    );
+    const proposal = await screen.findByRole('article', { name: 'Proposal 1' });
+    expect(within(proposal).getByRole('button', { name: 'Accept' })).toBeInTheDocument();
+  });
+
+  it('asks for a part to be opened before a prompt runs', async () => {
+    const { client } = service();
+    render(
+      <AssistantPanel
+        client={client}
+        document={DOCUMENT}
+        component={null}
+        node={null}
+        onCite={() => {}}
+      />,
+    );
+    const offered = await screen.findByRole('region', { name: 'Prompts' });
+    expect(within(offered).getByText('Open a part to run a prompt on it.')).toBeInTheDocument();
+    expect(within(offered).queryByRole('button')).toBeNull();
   });
 });

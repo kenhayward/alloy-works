@@ -40,3 +40,15 @@ it, recorded and shown, its output a proposal; approving a prompt version needs 
 - **G4b**: 0124 (`promptLibrary`, the default, `prompt_library_default`); `packages/db/src/prompt-libraries.ts`; a template's `prompts`; routes; the pages. Tests: GEN-001 a library listing its prompts, each at its latest approved version; TPL-061 a template binding one, refused one of another kind or one not there; TPL-071 one naming none resolving to the default, and TPL-004 a missing one blocking a document.
 - **G4c**: 0125 (`trial` run purpose; seed v2); `packages/db/src/prompt-context.ts` (`resolveContext`); `apps/service/src/generation/prompt-runs.ts`; the `trial` condition. Tests: GEN-003 nothing undeclared sent; GEN-056 each source; GEN-057 the resolved set on the run and read back; GEN-058 a part the runner may not read left out; GEN-059 nothing resolved and too much refused; GEN-005 an endpoint whose model is not accepted refused before any call; GEN-006 the run's prompt version, model, parameters and digest; GEN-045 approval refused without a trial, taken after one, and a workflow lifting `trial` refused.
 - **G4d**: the Assistant tab's **Prompts** for the part open; the prompt page's **Try it**; the walks; the final review; the close.
+
+## Built
+
+G4 in five PRs: G4a1 #715, G4a2 #716, G4b #717, G4c #718 and the close #719. Departures: G4a split in
+two, as the pre-flight review advised; libraries are the tenant's, as themes are, read across the
+environment and written with `design` there; a writer may newly list only a prompt they may read,
+refused alike whether hidden or missing (a security review's finding). Templates have no page in the
+web app, so binding a library is the API's. The final review found no leak; it fixed a parameter's
+value placed as instructions (now wrapped as data), a blank reply proposing an empty part, an unrecorded
+run's end read as finished, a refused reply unseen, and a cancelled trial said as tried. Left: a field
+source's match has no test; that a trial of an older version cannot approve a newer one is guarded by
+the condition, not by a test; Try it lists the first 100 documents.

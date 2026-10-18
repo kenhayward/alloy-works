@@ -19,6 +19,7 @@ import { StateLozenge } from '../states/Lozenge.js';
 import { Notice } from '../states/Notice.js';
 import { promptLink, PROMPTS } from './links.js';
 import styles from './PromptPage.module.css';
+import { TryIt } from './TryIt.js';
 import {
   BLANK,
   draftOf,
@@ -472,11 +473,33 @@ export function PromptPage({ client, id }: { readonly client: Client; readonly i
       strip={[]}
       notice={said === '' ? undefined : <p role="status">{said}</p>}
       label="Prompt"
-      tabs={[{ key: 'prompt', label: 'Prompt' }]}
+      tabs={
+        shown === null
+          ? [{ key: 'prompt', label: 'Prompt' }]
+          : [
+              { key: 'prompt', label: 'Prompt' },
+              { key: 'try', label: 'Try it' },
+            ]
+      }
       chosen={null}
       link={() => (shown === null ? '#/prompts/new' : promptLink(shown.id))}
     >
-      {() => form}
+      {(tab) =>
+        tab === 'try' && shown !== null ? (
+          <TryIt
+            client={client}
+            prompt={shown.id}
+            version={shown.version.id}
+            onTried={() => {
+              void readStanding(client, 'prompt', shown.id).then((now) => {
+                if (now) setStanding(now);
+              });
+            }}
+          />
+        ) : (
+          form
+        )
+      }
     </DetailPage>
   );
 }

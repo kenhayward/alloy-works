@@ -1,10 +1,11 @@
-import { createApiClient } from '@alloy-works/api-client';
+import { createApiClient, type StreamPostOptions } from '@alloy-works/api-client';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { LibraryPage, PromptLibraries } from './Libraries.js';
 import { PromptPage } from './PromptPage.js';
+import { partsOf, TryIt } from './TryIt.js';
 import { Prompts } from './Prompts.js';
 
 const GENERAL = '11111111-1111-4111-8111-111111111111';
@@ -151,6 +152,32 @@ function service(options: { held?: unknown; refuse?: boolean } = {}) {
       }
       return json(200, view({ version: { id: PARAGRAPH, number: '0.2' } }));
     }
+    if (request.method === 'GET' && path === '/v1/documents') {
+      return json(200, {
+        items: [{ id: OTHER, title: 'The readings report' }],
+        next: null,
+        total: 1,
+        facets: { spaces: [] },
+      });
+    }
+    if (request.method === 'GET' && path === `/v1/documents/${OTHER}`) {
+      return json(200, {
+        id: OTHER,
+        outline: {
+          nodes: [
+            {
+              type: 'section',
+              id: 's1',
+              title: [{ type: 'text', value: 'Results', marks: [] }],
+              children: [
+                { type: 'reference', id: 'n1', component: PARAGRAPH, children: [] },
+                { type: 'reference', id: 'n2', component: null, children: [] },
+              ],
+            },
+          ],
+        },
+      });
+    }
     if (request.method === 'GET' && path === '/v1/prompt-libraries') {
       return json(200, {
         items: [
@@ -274,5 +301,93 @@ describe('the prompt libraries', () => {
       openedFrom: VERSION,
       library: { schemaVersion: 1, name: 'Reports', prompts: [PROMPT] },
     });
+  });
+});
+
+describe("a prompt's trial", () => {
+  it('labels each part the reader may read by its place', () => {
+    expect(
+      partsOf({
+        nodes: [
+          { type: 'reference', id: 'a', component: 'x', children: [] },
+          {
+            type: 'section',
+            id: 's',
+            title: [{ type: 'text', value: 'Results' }],
+            children: [
+              { type: 'reference', id: 'b', component: 'y', children: [] },
+              { type: 'reference', id: 'c', component: null, children: [] },
+            ],
+          },
+        ],
+      }),
+    ).toEqual([
+      { node: 'a', label: 'Part 1' },
+      { node: 'b', label: 'Part 2, in Results' },
+    ]);
+  });
+
+  it('tries the version shown on the part chosen, shows what it wrote, and has the page read its standing again', async () => {
+    const user = userEvent.setup();
+    const { client } = service();
+    const tried = vi.fn();
+    const stream = vi.fn(async (options: StreamPostOptions) => {
+      options.onEvent('run', { run: 'r1', trial: true });
+      options.onEvent('text', { text: 'Plainly put.' });
+      options.onEvent('ended', { outcome: 'finished', tokensIn: 90, tokensOut: 12 });
+      return { kind: 'streamed' as const };
+    });
+    render(
+      <TryIt
+        client={client}
+        prompt={PROMPT}
+        version={VERSION}
+        onTried={tried}
+        stream={stream}
+        origin="http://prompts.test"
+      />,
+    );
+    await user.selectOptions(
+      await screen.findByRole('combobox', { name: 'Document' }),
+      'The readings report',
+    );
+    expect(await screen.findByRole('option', { name: 'Part 1, in Results' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Try it' }));
+    expect(stream).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: `http://prompts.test/v1/prompts/${PROMPT}/versions/${VERSION}/trials`,
+        body: { document: OTHER, node: 'n1' },
+      }),
+    );
+    expect(await screen.findByLabelText('What it wrote')).toHaveTextContent('Plainly put.');
+    expect(screen.getByText('Tried: 90 tokens in, 12 out.')).toBeInTheDocument();
+    expect(tried).toHaveBeenCalled();
+  });
+
+  it('says a trial that did not finish does not count', async () => {
+    const user = userEvent.setup();
+    const { client } = service();
+    const stream = vi.fn(async (options: StreamPostOptions) => {
+      options.onEvent('ended', { outcome: 'cancelled', tokensIn: null, tokensOut: null });
+      return { kind: 'streamed' as const };
+    });
+    render(
+      <TryIt
+        client={client}
+        prompt={PROMPT}
+        version={VERSION}
+        onTried={() => {}}
+        stream={stream}
+      />,
+    );
+    await user.selectOptions(
+      await screen.findByRole('combobox', { name: 'Document' }),
+      'The readings report',
+    );
+    await screen.findByRole('option', { name: 'Part 1, in Results' });
+    await user.click(screen.getByRole('button', { name: 'Try it' }));
+    expect(
+      await screen.findByText('The trial did not finish, so it does not count towards approval.'),
+    ).toBeInTheDocument();
   });
 });

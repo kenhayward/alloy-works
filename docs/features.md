@@ -203,7 +203,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   resolved to nothing, or is more than the endpoint takes; its reply is proposed as the part's whole
   text (`POST /v1/documents/{id}/prompt-runs`). A trial runs any version and proposes nothing
   (`POST /v1/prompts/{id}/versions/{version}/trials`), and approving a prompt needs a finished trial of
-  the version approved, whatever a tenant's workflow says.
+  the version approved, whatever a tenant's workflow says. With a part open, the document's **Assistant** tab lists
+  the library's approved prompts, each with **Run**; a prompt's page has **Try it**.
 - **Groups, and your organisation's directory.** An administrator of the whole environment makes groups
   in Administration's **Groups** and grants a role to one as to a person, from any access page: everybody
   in it holds that role there. Groups lists each group in a table you can search, with where its members come from and who
