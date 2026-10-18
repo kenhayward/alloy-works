@@ -120,6 +120,9 @@ importers:
       '@alloy-works/objects':
         specifier: workspace:^
         version: link:../../packages/objects
+      '@alloy-works/readers':
+        specifier: workspace:^
+        version: link:../../packages/readers
       '@fastify/cookie':
         specifier: ^11.1.2
         version: 11.1.2

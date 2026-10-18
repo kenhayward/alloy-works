@@ -263,12 +263,24 @@ export {
   setModelRoute,
   startRun,
   usableModelKey,
+  noteStep,
+  sweepAbandonedRuns,
+  recordGenerationRun,
+  runsThisMonth,
   type EndpointWritten,
   type GenerationRun,
   type ModelKeyState,
   type ModelRoute,
   type StoredModelEndpoint,
 } from './model-endpoints.js';
+export {
+  actOnProposal,
+  makeProposal,
+  proposalsOfRun,
+  readProposal,
+  type GenerationProposal,
+  type ProposalState,
+} from './generation-proposals.js';
 export { sha256Hex, versionDigests, type VersionDigests } from './version-digest.js';
 export {
   archiveSpace,

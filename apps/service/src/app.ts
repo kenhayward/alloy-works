@@ -6,7 +6,7 @@ import { lineHandlers } from './lines.js';
 import { shareHandlers } from './shares.js';
 import { queryUsageHandlers } from './query-usage.js';
 import { IDEMPOTENT_REPLAYED, keyedRequest, once } from './idempotency.js';
-import { Accepted, AfterCommit, Revalidated } from './after-commit.js';
+import { Accepted, AfterCommit, Revalidated, Streamed } from './after-commit.js';
 import cookie from '@fastify/cookie';
 import {
   routes,
@@ -77,8 +77,10 @@ import { editingHandlers } from './editing.js';
 import { AppError, storageUnavailable, toErrorBody } from './errors.js';
 import { admitGoogleAccount } from './google.js';
 import { createHttp, logFailure, type HttpOptions } from './http.js';
+import { sendStreamed } from './streamed.js';
 import { groupHandlers } from './groups.js';
 import { auditHandlers, tenantExportHandlers } from './audit-log.js';
+import { assistantHandlers } from './generation/assistant.js';
 import { modelEndpointHandlers } from './generation/models.js';
 import { rangePreviewHandlers } from './range-previews.js';
 import { ownSessionHandlers } from './own-sessions.js';
@@ -206,7 +208,9 @@ type Success<R extends RouteContract> = R['responses'] extends {
   ? z.input<S>
   : R['responses'] extends { 200: { binary: object } }
     ? BinaryBody
-    : never;
+    : R['responses'] extends { 200: { stream: true } }
+      ? Streamed
+      : never;
 
 /**
  * A route that checks a permission is handed what was decided, and runs in the transaction it was
@@ -562,6 +566,14 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...tenantExportHandlers(tenantOf, options.objects),
     ...rangePreviewHandlers(),
     ...modelEndpointHandlers(db, tenantOf, options.connector),
+    ...assistantHandlers(
+      db,
+      tenantOf,
+      principalOf,
+      options.connector,
+      options.objects,
+      options.events,
+    ),
     ...ownSessionHandlers(db, tenantOf, principalOf, { name: SESSION_COOKIE, options: COOKIE }),
     ...presenceHandlers(db, tenantOf, principalOf),
     ...baselineHandlers(tenantOf, options.objects),
@@ -1033,6 +1045,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
         contextOf(request),
       );
       if (replayed) void reply.header(IDEMPOTENT_REPLAYED, 'true');
+      if (body instanceof Streamed) return sendStreamed(request, reply, body);
       // The deciding transaction has committed, and its lock on access with it: the rest of the work -
       // a connector's, say - holds back no grant or revocation (the D1 fix, C4).
       if (body instanceof AfterCommit) {

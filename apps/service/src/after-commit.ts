@@ -42,3 +42,19 @@ export class Revalidated<T> {
     readonly body: T | undefined,
   ) {}
 }
+
+/**
+ * Work answered as a stream of server-sent events once the deciding transaction has committed (the
+ * G2 plan, G2-A): the route's wrapper writes the head, a `: alive` comment every 25 s, and ends the
+ * stream when `run` settles. `send` writes one event; `closed` aborts once the caller has gone. A
+ * refusal is thrown by the handler before it returns this, as JSON; once streaming, `run` says a
+ * failure as an event of its own.
+ */
+export class Streamed {
+  constructor(
+    readonly run: (
+      send: (event: string, data: unknown) => void,
+      closed: AbortSignal,
+    ) => Promise<void>,
+  ) {}
+}

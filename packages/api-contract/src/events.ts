@@ -144,14 +144,86 @@ export const streamEvents = {
 
 export type StreamEventName = keyof typeof streamEvents;
 
+const Citation = z.object({ component: Id, block: z.string() });
+
+/**
+ * What a run of the assistant sends (API-064; the G2 plan, G2-A), by each frame's `event`: its own
+ * channel, apart from the stream's, its messages named with the prefix `assistant_` in the document.
+ */
+export const assistantEvents = {
+  run: {
+    summary:
+      'The run began: its identifier, and the endpoint it calls and whether that sits outside the data boundary',
+    schema: z.object({
+      run: Id,
+      endpoint: z.object({ name: z.string(), boundary: z.enum(['inside', 'outside']) }),
+    }),
+  },
+  text: {
+    summary: "The model's answer, a piece at a time, as it is made",
+    schema: z.object({ text: z.string() }),
+  },
+  tool_call: {
+    summary: 'The model called one of its tools, with these arguments',
+    schema: z.object({
+      id: z.string(),
+      name: z.string(),
+      input: z.record(z.string(), z.unknown()),
+    }),
+  },
+  tool_result: {
+    summary: 'What the tool answered, as the model was given it, and a summary for a person',
+    schema: z.object({
+      id: z.string(),
+      name: z.string(),
+      ok: z.boolean(),
+      summary: z.string(),
+      result: z.string(),
+    }),
+  },
+  proposal: {
+    summary:
+      'An edit proposed to a component, which changes nothing until its requester acts on it',
+    schema: z.object({
+      id: Id,
+      number: z.number().int(),
+      component: Id,
+      against: Id,
+      proposed: z.record(z.string(), z.unknown()),
+    }),
+  },
+  ended: {
+    summary: 'The run ended: the model, its tokens and cost, and the citations kept and dropped',
+    schema: z.object({
+      outcome: z.string(),
+      model: z.string().nullable(),
+      tokensIn: z.number().int().nullable(),
+      tokensOut: z.number().int().nullable(),
+      cost: z.string().nullable(),
+      currency: z.string(),
+      citations: z.array(Citation),
+      dropped: z.array(Citation),
+    }),
+  },
+  failed: {
+    summary: 'The run failed, by code and reason, in the product\u2019s words',
+    schema: z.object({ code: z.string(), reason: z.string().optional(), message: z.string() }),
+  },
+} as const;
+
+export type AssistantEventName = keyof typeof assistantEvents;
+
 /**
  * The AsyncAPI 3.0 document: one channel, the stream, its three scopes as parameters, and one message
  * per event. Built from `streamEvents` as `openapi.json` is from the routes, committed, and held to
  * them by a test.
  */
 export function buildAsyncApi() {
-  const messages = Object.fromEntries(
-    Object.entries(streamEvents).map(([name, event]) => [
+  const messages: Record<
+    string,
+    { name: string; summary: string; contentType: string; payload: unknown }
+  > = Object.fromEntries([
+    ...Object.entries(streamEvents).map(([name, event]) => [
       name,
       {
         name,
@@ -160,7 +232,16 @@ export function buildAsyncApi() {
         payload: z.toJSONSchema(event.schema, { io: 'output' }),
       },
     ]),
-  );
+    ...Object.entries(assistantEvents).map(([name, event]) => [
+      `assistant_${name}`,
+      {
+        name,
+        summary: event.summary,
+        contentType: 'application/json',
+        payload: z.toJSONSchema(event.schema, { io: 'output' }),
+      },
+    ]),
+  ]);
   return {
     asyncapi: '3.0.0',
     info: {
@@ -179,6 +260,18 @@ export function buildAsyncApi() {
           ]),
         ),
       },
+      assistantRun: {
+        address: '/v1/documents/{id}/assistant/runs',
+        description:
+          "What `POST /v1/documents/{id}/assistant/runs` answers, as Server-Sent Events: `run` first, then the model's text, its tool calls and their results, and its proposals as they come, and `ended` or `failed` last. Closing the request ends the run.",
+        parameters: { id: { description: 'The document' } },
+        messages: Object.fromEntries(
+          Object.keys(assistantEvents).map((name) => [
+            name,
+            { $ref: `#/components/messages/assistant_${name}` },
+          ]),
+        ),
+      },
     },
     operations: {
       receive: {
@@ -186,6 +279,13 @@ export function buildAsyncApi() {
         channel: { $ref: '#/channels/stream' },
         messages: Object.keys(streamEvents).map((name) => ({
           $ref: `#/channels/stream/messages/${name}`,
+        })),
+      },
+      receiveAssistantRun: {
+        action: 'receive',
+        channel: { $ref: '#/channels/assistantRun' },
+        messages: Object.keys(assistantEvents).map((name) => ({
+          $ref: `#/channels/assistantRun/messages/${name}`,
         })),
       },
     },

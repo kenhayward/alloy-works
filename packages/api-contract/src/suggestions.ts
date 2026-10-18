@@ -50,6 +50,11 @@ export const SuggestionSummaryView = z.object({
   madeAgainst: LowercaseUuid.describe('The version it was made against'),
   madeBy: Person,
   madeAt: z.iso.datetime(),
+  generated: z
+    .boolean()
+    .describe(
+      'Whether a run of the assistant proposed it: marked generated until it is resolved (GEN-022)',
+    ),
   state: z.enum(['pending', 'accepted', 'rejected', 'withdrawn']),
   stale: z
     .array(StalePlace)

@@ -9,6 +9,7 @@ import {
   modelRequestSchema,
   modelSealRequestSchema,
   type ModelEvent,
+  type ModelRequest,
   runRequestSchema,
   testRequestSchema,
   type Parameter,
@@ -42,6 +43,8 @@ export interface FakeConnector {
   run: RunAnswer;
   /** What a model call streams, a line an event (the G1 plan, G1-C). */
   model: ModelEvent[];
+  /** Where set, a model call's events by what it was sent, in place of `model`: a model's turns. */
+  modelFor?: ((request: ModelRequest) => ModelEvent[]) | undefined;
   /** Where set, a run's answer by what it was sent, in place of `run`. */
   runFor?: ((body: { readonly values: Record<string, unknown> }) => RunAnswer) | undefined;
   /** Where set, a test and a describe wait for it before answering: a source that is slow. */
@@ -164,7 +167,8 @@ export function fakeConnector(): FakeConnector {
       }
       if (path === '/v1/test') return Response.json(fake.test);
       if (path === '/v1/model') {
-        return new Response(fake.model.map((event) => `${JSON.stringify(event)}\n`).join(''), {
+        const events = fake.modelFor ? fake.modelFor(body as unknown as ModelRequest) : fake.model;
+        return new Response(events.map((event) => `${JSON.stringify(event)}\n`).join(''), {
           status: 200,
           headers: { 'content-type': 'application/x-ndjson' },
         });
