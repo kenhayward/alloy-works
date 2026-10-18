@@ -2,8 +2,12 @@ import { createHash, timingSafeEqual } from 'node:crypto';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 
 import {
+  MODEL_REQUEST_MAX_BYTES,
   RUN_REQUEST_MAX_BYTES,
   credentialContext,
+  modelCredentialContext,
+  modelRequestSchema,
+  modelSealRequestSchema,
   describeRequestSchema,
   describeSqlRequestSchema,
   runRequestSchema,
@@ -34,6 +38,9 @@ const bodyLimits: Readonly<Record<string, number>> = {
   '/v1/test': MAX_BODY_BYTES,
   '/v1/describe': RUN_REQUEST_MAX_BYTES,
   '/v1/run': RUN_REQUEST_MAX_BYTES,
+  // A model's key, and a model call, which holds a whole conversation (the G1 plan, G1-C).
+  '/v1/model/seal': MAX_BODY_BYTES,
+  '/v1/model': MODEL_REQUEST_MAX_BYTES,
 };
 
 class TooLarge extends Error {}
@@ -156,6 +163,20 @@ export function createConnectorServer(options: {
       };
       return send(200, answer);
     }
+    if (path === '/v1/model/seal') {
+      const parsed = modelSealRequestSchema.safeParse(body);
+      if (!parsed.success) return send(400, { code: 'request_invalid' });
+      const answer: SealAnswer = {
+        sealed: sealSecret(
+          config.sealingKey,
+          'model-credential',
+          parsed.data.tenant,
+          parsed.data.secret,
+          modelCredentialContext(parsed.data.endpoint.id, parsed.data.endpoint),
+        ),
+      };
+      return send(200, answer);
+    }
     const before = stderrBytes;
     // A caller that closes its request before the answer is sent has stopped waiting - a person signed
     // out, or a token revoked (IAM-082, the D7 plan's D7-I): the child is killed, and with it its
@@ -164,6 +185,24 @@ export function createConnectorServer(options: {
     response.on('close', () => {
       if (!response.writableFinished) gone.abort();
     });
+    if (path === '/v1/model') {
+      // A model call (the G1 plan, G1-C): its events as lines of JSON, each written as the child
+      // writes it, the last `ended` or `failed`; the head goes once the call holds a child.
+      const parsed = modelRequestSchema.safeParse(body);
+      if (!parsed.success) return send(400, { code: 'request_invalid' });
+      const call = supervisor.model(
+        parsed.data,
+        (event) => {
+          response.write(`${JSON.stringify(event)}\n`);
+        },
+        gone.signal,
+      );
+      if (call === 'busy') return send(503, { code: 'connector_busy' });
+      response.writeHead(200, { 'content-type': 'application/x-ndjson' });
+      await call;
+      response.end();
+      return { status: 200, stderrBytes: stderrBytes - before };
+    }
     let answer;
     if (path === '/v1/run') {
       const parsed = runRequestSchema.safeParse(body);

@@ -947,8 +947,8 @@ describe('the citations in the committed model', () => {
     // 1631 (2026-10-18): R21a's stored results as sources.
     // 1634 (2026-10-18): R21b's tenant export.
     // 1637 (2026-10-18): R22a's warm range preview.
-    // 1641 (2026-10-18): R22b's pages as you edit.
-    expect(model.citations).toHaveLength(1641);
+    // 1647 (2026-10-18): G1a's model calls. 1641 (2026-10-18): R22b's pages as you edit.
+    expect(model.citations).toHaveLength(1647);
   });
 
   it('cites no identifier the corpus does not hold', () => {

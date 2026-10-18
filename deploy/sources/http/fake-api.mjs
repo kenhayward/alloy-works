@@ -15,6 +15,8 @@ import { clearInterval, setInterval, setTimeout } from 'node:timers';
 import { fileURLToPath, URL } from 'node:url';
 import { gzipSync } from 'node:zlib';
 
+import { answerModel, isModelPath } from './stand-in-model.mjs';
+
 /** The development key, sent verbatim in `x-api-key`. Invented; it opens nothing but this fake. */
 export const DEV_KEY = 'source-http-dev-key';
 
@@ -79,6 +81,8 @@ export function createFakeApi(options = {}) {
       const headers = { ...request.headers };
       const key = headers['x-api-key'];
       delete headers['x-api-key'];
+      // The stand-in model's key rides here in OpenAI's protocol, and is never remembered either.
+      delete headers.authorization;
       seen.push({
         method: request.method,
         rawPath: request.url,
@@ -90,6 +94,8 @@ export function createFakeApi(options = {}) {
         response.writeHead(status, { 'content-length': String(bytes.length), ...extra });
         response.end(bytes);
       };
+      // The stand-in model (the G1 plan, G1-H), behind its own key.
+      if (isModelPath(url.pathname)) return answerModel(request, url, body, response);
       if (url.pathname === '/v1/status/401' || key !== DEV_KEY)
         return send(401, json({ error: 'key' }));
       const status = /^\/v1\/status\/([0-9]{3})$/.exec(url.pathname);

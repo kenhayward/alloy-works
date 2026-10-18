@@ -20162,6 +20162,30 @@
       "kind": "title"
     },
     {
+      "id": "GEN-027",
+      "file": "apps/connector/src/model.test.ts",
+      "line": 112,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-029",
+      "file": "apps/connector/src/model.test.ts",
+      "line": 152,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-030",
+      "file": "apps/connector/src/model.test.ts",
+      "line": 139,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-032",
+      "file": "apps/connector/src/model.test.ts",
+      "line": 193,
+      "kind": "title"
+    },
+    {
       "id": "DAT-056",
       "file": "apps/connector/src/package.test.ts",
       "line": 52,
@@ -27824,9 +27848,21 @@
       "kind": "title"
     },
     {
+      "id": "GEN-027",
+      "file": "packages/domain/src/generation/endpoint.test.ts",
+      "line": 27,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-031",
+      "file": "packages/domain/src/generation/endpoint.test.ts",
+      "line": 39,
+      "kind": "title"
+    },
+    {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 747,
+      "line": 774,
       "kind": "title"
     },
     {

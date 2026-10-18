@@ -866,3 +866,11 @@ The reuse, a slice at a time ([R1](2026-10-15-r1-where-a-component-is-used.md) s
 | R20 | [T4 tidy](2026-10-17-r20-t4-tidy.md)                                                                          | REU-055 for REU-006, IAM-016, CNT-185, TPL-047: where a style is used; references across spaces; condition exclusion in one pass; a bulk run that stops at a failure where asked                                                     | Built (PR #701)        |
 | R21 | [Stored results and export](2026-10-18-r21-stored-results-and-export.md)                                      | DAT-094, API-044: a stored result queried as a source through the builder; a tenant export as a job                                                                                                                                  | Built (PR #703)        |
 | R22 | [The warm range preview](2026-10-18-r22-the-warm-range-preview.md)                                            | PUB-076, CNT-151, PUB-080, REU-049: the section being edited previewed within a second of a save, byte-identical warm and cold, untagged and saying so; bulk generation's budget                                                     | Built (PR #705)        |
+
+## T5
+
+The intelligence, a slice at a time ([generation.md](../design/generation.md) sketches the order).
+
+| #   | Plan                                                | Builds                                                                                                                                              | Status   |
+| --- | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| G1  | [Model endpoints](2026-10-18-g1-model-endpoints.md) | GEN-027 to GEN-032, GEN-046, IAM-076: endpoints across providers, their keys through the connector, routes by purpose, and a test recorded as a run | Building |

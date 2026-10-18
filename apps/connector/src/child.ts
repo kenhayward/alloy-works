@@ -1,12 +1,14 @@
-import { childRequestSchema } from '@alloy-works/domain';
+import { childModelRequestSchema, childRequestSchema } from '@alloy-works/domain';
 
+import { answerModel } from './model.js';
 import { answerRequest } from './work.js';
 
 /**
  * The child's entry (D1-H): one line in - the request, its one opened credential and the guard's
- * ranges - and one line out, then exit. It holds no key and inherits no environment. Anything it
- * cannot parse ends it without an answer and without saying what it read, which the supervisor
- * answers `connector_error`.
+ * ranges - and one line out, then exit; a model call (the G1 plan, G1-C) writes a line an event, the
+ * last `ended` or `failed`. It holds no key and inherits no environment. Anything it cannot parse
+ * ends it without an answer and without saying what it read, which the supervisor answers
+ * `connector_error`.
  */
 async function readInput(): Promise<string> {
   const chunks: Buffer[] = [];
@@ -14,18 +16,30 @@ async function readInput(): Promise<string> {
   return Buffer.concat(chunks).toString('utf8').split('\n')[0] ?? '';
 }
 
+const line = (value: unknown) =>
+  new Promise<void>((resolve) =>
+    process.stdout.write(`${JSON.stringify(value)}\n`, () => resolve()),
+  );
+
 async function main(): Promise<number> {
-  let request;
+  let input: unknown;
   try {
-    request = childRequestSchema.parse(JSON.parse(await readInput()));
+    input = JSON.parse(await readInput()) as unknown;
   } catch {
     return 2;
   }
+  const model = childModelRequestSchema.safeParse(input);
+  if (model.success) {
+    await answerModel(model.data, line);
+    return 0;
+  }
+  const parsed = childRequestSchema.safeParse(input);
+  if (!parsed.success) return 2;
   // Its deadline from when the process started, which is as close as it can see to the spawn.
-  const answer = await answerRequest(request, { startedAt: Math.floor(performance.timeOrigin) });
-  await new Promise<void>((resolve) =>
-    process.stdout.write(`${JSON.stringify(answer)}\n`, () => resolve()),
-  );
+  const answer = await answerRequest(parsed.data, {
+    startedAt: Math.floor(performance.timeOrigin),
+  });
+  await line(answer);
   return 0;
 }
 
