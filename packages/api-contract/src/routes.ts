@@ -11,6 +11,7 @@ import { queryUsageRoutes } from './query-usage.js';
 import { datasetSourceRoutes } from './dataset-sources.js';
 import { exportRoutes } from './exports.js';
 import { modelEndpointRoutes } from './model-endpoints.js';
+import { assistantRoutes } from './assistant.js';
 import { rangePreviewRoutes } from './range-previews.js';
 import { erasureRoutes } from './erasure.js';
 import { retentionRoutes } from './retention.js';
@@ -376,6 +377,7 @@ type Routes = typeof ownRoutes &
   typeof datasetSourceRoutes &
   typeof exportRoutes &
   typeof modelEndpointRoutes &
+  typeof assistantRoutes &
   typeof rangePreviewRoutes;
 
 export const routes: Routes = {
@@ -429,6 +431,7 @@ export const routes: Routes = {
   ...datasetSourceRoutes,
   ...exportRoutes,
   ...modelEndpointRoutes,
+  ...assistantRoutes,
   ...rangePreviewRoutes,
 } as const satisfies Record<string, RouteContract>;
 

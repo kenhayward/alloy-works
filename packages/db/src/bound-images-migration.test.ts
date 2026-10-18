@@ -231,6 +231,7 @@ describe('migration 0052, which widens dataset_take to an image', () => {
       '0118_tenant_export',
       '0119_range_preview',
       '0120_model_endpoints',
+      '0121_assistant',
     ]);
     const kept = await queryAs(
       db.adminUrl,

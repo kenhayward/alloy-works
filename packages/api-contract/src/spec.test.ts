@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { buildAsyncApi, streamEvents } from './events.js';
+import { assistantEvents, buildAsyncApi, streamEvents } from './events.js';
 import { buildOpenApi } from './openapi.js';
 import { allRoutes } from './routes.js';
 
@@ -45,7 +45,10 @@ describe('the committed asyncapi.json', () => {
   it('names a message for every event and a schema for each', () => {
     const document = buildAsyncApi();
     expect(Object.keys(document.components.messages).sort()).toEqual(
-      Object.keys(streamEvents).sort(),
+      [
+        ...Object.keys(streamEvents),
+        ...Object.keys(assistantEvents).map((name) => `assistant_${name}`),
+      ].sort(),
     );
     for (const message of Object.values(document.components.messages)) {
       expect(message.payload).toBeTypeOf('object');

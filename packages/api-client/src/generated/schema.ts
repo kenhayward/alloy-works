@@ -259,6 +259,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/assistant/proposals/{id}/acceptance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept a proposal: a suggestion made from it and accepted at once, as you
+         * @description Accepts a proposal from your run: a suggestion is made from it, marked generated, and accepted at once, as you, so the lock, a change since and the save’s checks refuse it as they refuse any acceptance. Needs edit on the component. Recorded as a generation accepted.
+         */
+        post: operations["acceptProposal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/assistant/proposals/{id}/discarding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Discard a proposal: it is kept, recorded as discarded by you
+         * @description Discards a proposal from your run. It is kept, and recorded as discarded by you; nothing about the component changes.
+         */
+        post: operations["discardProposal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/assistant/proposals/{id}/keeping": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Keep a proposal as a suggestion, marked generated, for review
+         * @description Keeps a proposal from your run as a suggestion, marked generated, for review beside the component, where it is accepted or rejected as any suggestion is. Needs suggest on the component.
+         */
+        post: operations["keepProposal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/assistant/runs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A run of the assistant you made: each call, what it read and what came back
+         * @description Returns a run of the assistant you made: the endpoint and model, each tool call with its arguments and what came back, what it read, its digest, its tokens and cost, and its proposals. Anybody else is told there is none.
+         */
+        get: operations["getAssistantRun"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/audit": {
         parameters: {
             query?: never;
@@ -1671,6 +1751,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/documents/{id}/assistant/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask the assistant about the open document, its answer streamed as it is made
+         * @description Asks the assistant about a document you may read, with a signed-in session alone. It calls the model endpoint drafting is sent to, through the connector, and answers as Server-Sent Events: the run, the model’s text as it comes, each tool call and what came back, each proposal, and how it ended, with its tokens and cost. Its tools read only what you may read of this document; a proposal changes nothing. Closing the request ends the run. Recorded as a run.
+         */
+        post: operations["startAssistantRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/documents/{id}/baselines": {
         parameters: {
             query?: never;
@@ -2935,6 +3035,26 @@ export interface paths {
          * @description Returns the person represented by the supplied personal token or signed-in session and the environment in which that credential was issued.
          */
         get: operations["getMe"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/assistant-usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Your runs of the assistant this month, and what they cost
+         * @description Returns how many runs of the assistant you made this calendar month, UTC, and what they cost, by currency.
+         */
+        get: operations["getAssistantUsage"];
         put?: never;
         post?: never;
         delete?: never;
@@ -8995,6 +9115,600 @@ export interface operations {
                 };
             };
             /** @description No such thing in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    acceptProposal: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Acted on, once */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "proposal": {
+                     *         "id": "example",
+                     *         "state": "accepted",
+                     *         "suggestion": "example"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        proposal: {
+                            id: string;
+                            /** @enum {string} */
+                            state: "accepted" | "kept" | "discarded";
+                            /** @description The suggestion made from it: accepted at once, or kept for review */
+                            suggestion: string | null;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not edit the component */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such proposal of yours in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `proposal_resolved`, or the suggestion’s own refusals: `suggestion.empty`, `suggestion.limit`, `suggestion.stale`, `lock.held`, `edits.pending`, `values.invalid` */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    discardProposal: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Acted on, once */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "proposal": {
+                     *         "id": "example",
+                     *         "state": "accepted",
+                     *         "suggestion": "example"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        proposal: {
+                            id: string;
+                            /** @enum {string} */
+                            state: "accepted" | "kept" | "discarded";
+                            /** @description The suggestion made from it: accepted at once, or kept for review */
+                            suggestion: string | null;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not read the component */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such proposal of yours in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `proposal_resolved`, or the suggestion’s own refusals: `suggestion.empty`, `suggestion.limit`, `suggestion.stale`, `lock.held`, `edits.pending`, `values.invalid` */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    keepProposal: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Acted on, once */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "proposal": {
+                     *         "id": "example",
+                     *         "state": "accepted",
+                     *         "suggestion": "example"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        proposal: {
+                            id: string;
+                            /** @enum {string} */
+                            state: "accepted" | "kept" | "discarded";
+                            /** @description The suggestion made from it: accepted at once, or kept for review */
+                            suggestion: string | null;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not suggest changes to the component */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such proposal of yours in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `proposal_resolved`, or the suggestion’s own refusals: `suggestion.empty`, `suggestion.limit`, `suggestion.stale`, `lock.held`, `edits.pending`, `values.invalid` */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getAssistantRun: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The run */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "run": {
+                     *         "id": "example",
+                     *         "document": "example",
+                     *         "endpoint": {
+                     *           "name": "example",
+                     *           "boundary": "example"
+                     *         },
+                     *         "model": "example",
+                     *         "outcome": "example",
+                     *         "startedAt": "example",
+                     *         "finishedAt": "example",
+                     *         "tokensIn": -9007199254740991,
+                     *         "tokensOut": -9007199254740991,
+                     *         "cost": "example",
+                     *         "currency": "example",
+                     *         "contextDigest": "example",
+                     *         "read": [],
+                     *         "steps": [],
+                     *         "proposals": []
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        run: {
+                            id: string;
+                            document: string | null;
+                            endpoint: {
+                                name: string;
+                                boundary: string;
+                            };
+                            model: string | null;
+                            outcome: string;
+                            startedAt: string;
+                            finishedAt: string | null;
+                            tokensIn: number | null;
+                            tokensOut: number | null;
+                            cost: string | null;
+                            currency: string;
+                            /** @description SHA-256 of what the model was last given, which a suggestion made from it carries */
+                            contextDigest: string;
+                            /** @description Each component version the run read, and its blocks */
+                            read: unknown[];
+                            /** @description Each tool call, its arguments, and what came back */
+                            steps: unknown[];
+                            proposals: {
+                                id: string;
+                                number: number;
+                                component: string;
+                                /** @enum {string} */
+                                state: "open" | "accepted" | "kept" | "discarded" | "resolved";
+                                suggestion: string | null;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `token_not_allowed`: the assistant takes a signed-in session alone */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such run of yours in this environment */
             404: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -17062,6 +17776,8 @@ export interface operations {
                             };
                             /** Format: date-time */
                             madeAt: string;
+                            /** @description Whether a run of the assistant proposed it: marked generated until it is resolved (GEN-022) */
+                            generated: boolean;
                             /** @enum {string} */
                             state: "pending" | "accepted" | "rejected" | "withdrawn";
                             /** @description A pending one’s places where it no longer fits the current version, computed now; empty where it applies, null once resolved */
@@ -17253,6 +17969,7 @@ export interface operations {
                      *         "name": "example"
                      *       },
                      *       "madeAt": "2026-01-01T00:00:00.000Z",
+                     *       "generated": false,
                      *       "state": "pending",
                      *       "stale": [],
                      *       "resolution": {
@@ -17286,6 +18003,8 @@ export interface operations {
                         };
                         /** Format: date-time */
                         madeAt: string;
+                        /** @description Whether a run of the assistant proposed it: marked generated until it is resolved (GEN-022) */
+                        generated: boolean;
                         /** @enum {string} */
                         state: "pending" | "accepted" | "rejected" | "withdrawn";
                         /** @description A pending one’s places where it no longer fits the current version, computed now; empty where it applies, null once resolved */
@@ -26501,6 +27220,167 @@ export interface operations {
             };
             /** @description No such document in this environment, or none the caller may read */
             404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    startAssistantRun: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "ask": "example"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description What the author asks the assistant */
+                    ask: string;
+                    /** @description The component the author has open, if one is */
+                    component?: string & (unknown & unknown);
+                };
+            };
+        };
+        responses: {
+            /** @description Server-sent events, as the AsyncAPI document’s `assistantRun` channel declares them: `run`, then `text`, `tool_call`, `tool_result` and `proposal` as they come, and `ended` or `failed` */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": string;
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description A personal token: the assistant takes a session alone */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document you may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `model_unconfigured`: no endpoint is set up for drafting; `endpoint_unusable`: it is retired or has no key */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `connector_unavailable` */
+            503: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;
@@ -49451,6 +50331,8 @@ export interface operations {
                             };
                             /** Format: date-time */
                             madeAt: string;
+                            /** @description Whether a run of the assistant proposed it: marked generated until it is resolved (GEN-022) */
+                            generated: boolean;
                             /** @enum {string} */
                             state: "pending" | "accepted" | "rejected" | "withdrawn";
                             /** @description A pending one’s places where it no longer fits the current version, computed now; empty where it applies, null once resolved */
@@ -57173,6 +58055,104 @@ export interface operations {
             };
             /** @description No session, or not one this environment issued */
             401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getAssistantUsage: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description This month, by currency */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "runs": -9007199254740991,
+                     *       "costs": []
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Your runs of the assistant this calendar month, UTC */
+                        runs: number;
+                        costs: {
+                            currency: string;
+                            cost: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `token_not_allowed`: the assistant takes a signed-in session alone */
+            403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;
@@ -73726,6 +74706,7 @@ export interface operations {
                      *         "name": "example"
                      *       },
                      *       "madeAt": "2026-01-01T00:00:00.000Z",
+                     *       "generated": false,
                      *       "state": "pending",
                      *       "stale": [],
                      *       "resolution": {
@@ -73759,6 +74740,8 @@ export interface operations {
                         };
                         /** Format: date-time */
                         madeAt: string;
+                        /** @description Whether a run of the assistant proposed it: marked generated until it is resolved (GEN-022) */
+                        generated: boolean;
                         /** @enum {string} */
                         state: "pending" | "accepted" | "rejected" | "withdrawn";
                         /** @description A pending one’s places where it no longer fits the current version, computed now; empty where it applies, null once resolved */
@@ -73921,6 +74904,7 @@ export interface operations {
                      *         "name": "example"
                      *       },
                      *       "madeAt": "2026-01-01T00:00:00.000Z",
+                     *       "generated": false,
                      *       "state": "pending",
                      *       "stale": [],
                      *       "resolution": {
@@ -73954,6 +74938,8 @@ export interface operations {
                         };
                         /** Format: date-time */
                         madeAt: string;
+                        /** @description Whether a run of the assistant proposed it: marked generated until it is resolved (GEN-022) */
+                        generated: boolean;
                         /** @enum {string} */
                         state: "pending" | "accepted" | "rejected" | "withdrawn";
                         /** @description A pending one’s places where it no longer fits the current version, computed now; empty where it applies, null once resolved */
@@ -74208,6 +75194,7 @@ export interface operations {
                      *         "name": "example"
                      *       },
                      *       "madeAt": "2026-01-01T00:00:00.000Z",
+                     *       "generated": false,
                      *       "state": "pending",
                      *       "stale": [],
                      *       "resolution": {
@@ -74241,6 +75228,8 @@ export interface operations {
                         };
                         /** Format: date-time */
                         madeAt: string;
+                        /** @description Whether a run of the assistant proposed it: marked generated until it is resolved (GEN-022) */
+                        generated: boolean;
                         /** @enum {string} */
                         state: "pending" | "accepted" | "rejected" | "withdrawn";
                         /** @description A pending one’s places where it no longer fits the current version, computed now; empty where it applies, null once resolved */
@@ -74449,6 +75438,7 @@ export interface operations {
                      *         "name": "example"
                      *       },
                      *       "madeAt": "2026-01-01T00:00:00.000Z",
+                     *       "generated": false,
                      *       "state": "pending",
                      *       "stale": [],
                      *       "resolution": {
@@ -74482,6 +75472,8 @@ export interface operations {
                         };
                         /** Format: date-time */
                         madeAt: string;
+                        /** @description Whether a run of the assistant proposed it: marked generated until it is resolved (GEN-022) */
+                        generated: boolean;
                         /** @enum {string} */
                         state: "pending" | "accepted" | "rejected" | "withdrawn";
                         /** @description A pending one’s places where it no longer fits the current version, computed now; empty where it applies, null once resolved */

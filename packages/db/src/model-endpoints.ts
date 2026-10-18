@@ -414,6 +414,9 @@ export async function endRun(
     readonly model?: string | null;
     readonly usage?: { readonly in: number; readonly out: number } | null;
     readonly steps?: readonly unknown[];
+    /** What the model was last given, as it ends (the G2 plan, G2-J): its digest, and what it read. */
+    readonly contextDigest?: string;
+    readonly context?: readonly unknown[];
   },
 ): Promise<GenerationRun> {
   const { rows: started } =
@@ -426,7 +429,9 @@ export async function endRun(
       model = ${ended.model ?? null}, tokens_in = ${ended.usage?.in ?? null},
       tokens_out = ${ended.usage?.out ?? null},
       cost_micros = ${cost === null ? null : cost.toString()},
-      steps = ${JSON.stringify(ended.steps ?? run.steps)}::jsonb, finished_at = now()
+      steps = ${JSON.stringify(ended.steps ?? run.steps)}::jsonb,
+      context_digest = ${ended.contextDigest ?? run.context_digest},
+      context = ${JSON.stringify(ended.context ?? run.context)}::jsonb, finished_at = now()
     where id = ${id} returning *`.execute(trx);
   return runOf(rows[0]!);
 }
@@ -447,4 +452,61 @@ export async function recordEndpointTest(
   outcome: string,
 ): Promise<void> {
   await event(trx, 'model_endpoint.tested', endpointId, { run, outcome });
+}
+
+/**
+ * A step of a run while it runs (the G2 plan, G2-B): each tool call, its arguments and its result,
+ * appended as it is made, so a run that never ends still says what it did (GEN-010).
+ */
+export async function noteStep(
+  trx: TenantTransaction,
+  id: string,
+  step: Readonly<Record<string, unknown>>,
+): Promise<void> {
+  await sql`update generation_run set steps = steps || ${JSON.stringify([step])}::jsonb
+    where id = ${id} and outcome = 'running'`.execute(trx);
+}
+
+/** The runs left running past `olderThanMs`, ended `abandoned` (the worker's sweep; G2-B). */
+export async function sweepAbandonedRuns(
+  trx: TenantTransaction,
+  olderThanMs = 60 * 60 * 1000,
+): Promise<number> {
+  const { rows } = await sql<{ id: string }>`update generation_run
+    set outcome = 'abandoned', finished_at = now()
+    where outcome = 'running' and started_at < now() - ${`${olderThanMs} milliseconds`}::interval
+    returning id`.execute(trx);
+  return rows.length;
+}
+
+/** A run of the assistant ended (LIF-071): its own event, as its requester's. */
+export async function recordGenerationRun(
+  trx: TenantTransaction,
+  run: GenerationRun,
+): Promise<void> {
+  await recordEvent(trx, {
+    kind: 'generation.run',
+    subject: { kind: 'generation_run', id: run.id },
+    detail: { run: run.id, outcome: run.outcome, purpose: run.purpose },
+  });
+}
+
+/** A person's runs this calendar month, UTC, and what they cost (GEN-037). */
+export async function runsThisMonth(
+  trx: TenantTransaction,
+  by: string,
+): Promise<{
+  readonly runs: number;
+  readonly costs: readonly { currency: string; micros: bigint }[];
+}> {
+  const { rows } = await sql<{ currency: string; runs: string; micros: string | null }>`
+    select endpoint ->> 'currency' as currency, count(*) as runs, sum(cost_micros) as micros
+      from generation_run
+     where requested_by = ${by} and purpose <> 'test'
+       and started_at >= date_trunc('month', now() at time zone 'utc') at time zone 'utc'
+     group by 1 order by 1`.execute(trx);
+  return {
+    runs: rows.reduce((total, row) => total + Number(row.runs), 0),
+    costs: rows.map((row) => ({ currency: row.currency, micros: BigInt(row.micros ?? '0') })),
+  };
 }

@@ -871,6 +871,7 @@ The reuse, a slice at a time ([R1](2026-10-15-r1-where-a-component-is-used.md) s
 
 The intelligence, a slice at a time ([generation.md](../design/generation.md) sketches the order).
 
-| #   | Plan                                                | Builds                                                                                                                                     | Status                 |
-| --- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------- |
-| G1  | [Model endpoints](2026-10-18-g1-model-endpoints.md) | GEN-027 to GEN-032, IAM-076: endpoints across providers, their keys through the connector, routes by purpose, and a test recorded as a run | Built (PRs #708, #709) |
+| #   | Plan                                                              | Builds                                                                                                                                                                                                                    | Status                 |
+| --- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| G1  | [Model endpoints](2026-10-18-g1-model-endpoints.md)               | GEN-027 to GEN-032, IAM-076: endpoints across providers, their keys through the connector, routes by purpose, and a test recorded as a run                                                                                | Built (PRs #708, #709) |
+| G2  | [The drafting assistant](2026-10-18-g2-the-drafting-assistant.md) | GEN-007 to GEN-019, GEN-022, GEN-024, GEN-039 to GEN-041, GEN-060, GEN-033, GEN-037, ADM-010, API-064: the assistant on the open document, its five tools as the requester, proposals acted on once, content held to data | Building               |

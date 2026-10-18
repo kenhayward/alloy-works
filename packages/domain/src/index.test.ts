@@ -767,6 +767,18 @@ describe('the domain package', () => {
         'replyModelMatches',
         'canonicalCall',
         'childModelRequestSchema',
+        // G2: the assistant's instructions, tools, data wrapping, block edits and citations.
+        'ASSISTANT_INSTRUCTIONS',
+        'ASSISTANT_INSTRUCTIONS_VERSION',
+        'ASSISTANT_TOOLS',
+        'applyEdits',
+        'asData',
+        'blockEditSchema',
+        'citationsIn',
+        'componentAsText',
+        'editableProblem',
+        'isAssistantTool',
+        'toolInputSchemas',
       ].sort(),
     );
   });

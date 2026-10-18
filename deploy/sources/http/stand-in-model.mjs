@@ -1,8 +1,8 @@
 // A model endpoint, for development and CI only (the G1 plan, G1-H): Anthropic's Messages API under
 // /models/anthropic and OpenAI's chat completions under /models/openai, each streamed as server-sent
 // events, flushed an event at a time, behind the invented key `stand-in-model-dev-key`. No suite calls
-// a real provider. Every reply is scripted by the last user message: `script:` and a JSON object
-// streams what it says; anything else answers `ready.`. No dependency but Node.
+// a real provider. Every reply is scripted by the first user message: `script:` and a JSON object
+// streams what it says, `turns` one a turn; anything else answers `ready.`. No dependency but Node.
 //
 //   { "items": [{ "text": "..." }, { "tool": { "id", "name", "input" } }, { "pause": ms }, { "cut": true }],
 //     "status": 400, "body": "...", "model": "...", "stop": "max_tokens", "usage": false }
@@ -21,27 +21,79 @@ const OPENAI = /^\/models\/openai(?:\/.*)?\/chat\/completions$/;
 /** Whether a path is the stand-in model's, which `fake-api.mjs` asks before its own routes. */
 export const isModelPath = (pathname) => ANTHROPIC.test(pathname) || OPENAI.test(pathname);
 
-/** The script in a call's last user message, or the default reply. */
+/** The text of a message, in either protocol's spelling. */
+const textOf = (message) => {
+  const content = message?.content;
+  if (typeof content === 'string') return content;
+  if (!Array.isArray(content)) return '';
+  return content
+    .filter((block) => block.type === 'text' || typeof block === 'string')
+    .map((block) => (typeof block === 'string' ? block : block.text))
+    .join('');
+};
+
+/** What the tools answered in the latest turn: Anthropic's tool results, or OpenAI's tool messages. */
+function toolResultsOf(messages) {
+  const found = [];
+  for (const message of messages) {
+    if (message.role === 'tool' && typeof message.content === 'string') found.push(message.content);
+    if (message.role === 'user' && Array.isArray(message.content)) {
+      for (const block of message.content) {
+        if (block.type === 'tool_result') {
+          found.push(
+            typeof block.content === 'string' ? block.content : JSON.stringify(block.content),
+          );
+        }
+      }
+    }
+  }
+  return found;
+}
+
+/**
+ * The script for this turn (G1-H; the G2 plan, G2-H). The first user message holds it: `script:` and
+ * JSON; `turns` holds one script a turn, chosen by how many answers the conversation already has.
+ * An `{ "obey": true }` item is the compliant model: every tool call any tool result asks for with
+ * `INSTRUCTION:` and a JSON `{ name, input }` is made. Anything else answers `ready.`.
+ */
 function scriptOf(call, protocol) {
   const messages = Array.isArray(call.messages) ? call.messages : [];
-  const users = messages.filter((message) => message.role === 'user');
-  const last = users.at(-1);
-  const content = last?.content;
-  const text =
-    typeof content === 'string'
-      ? content
-      : Array.isArray(content)
-        ? content
-            .filter((block) => block.type === 'text' || typeof block === 'string')
-            .map((block) => (typeof block === 'string' ? block : block.text))
-            .join('')
-        : '';
+  const first = messages.find((message) => message.role === 'user');
+  const text = textOf(first);
   if (!text.startsWith('script:')) return { items: [{ text: 'ready.' }] };
+  let script;
   try {
-    return JSON.parse(text.slice('script:'.length));
+    script = JSON.parse(text.slice('script:'.length));
   } catch {
     return { status: 400, body: JSON.stringify({ error: `${protocol}: the script is not JSON` }) };
   }
+  if (Array.isArray(script.turns)) {
+    const answered = messages.filter((message) => message.role === 'assistant').length;
+    script = { ...script, ...script.turns[Math.min(answered, script.turns.length - 1)] };
+  }
+  const items = [];
+  let obeyed = 0;
+  for (const item of Array.isArray(script.items) ? script.items : []) {
+    if (!item.obey) {
+      items.push(item);
+      continue;
+    }
+    for (const result of toolResultsOf(messages)) {
+      for (const match of result.matchAll(/INSTRUCTION:\s*(\{[^\n]*\})/g)) {
+        try {
+          const asked = JSON.parse(match[1].replace(/&quot;/g, '"'));
+          obeyed += 1;
+          items.push({
+            tool: { id: `obey_${obeyed}`, name: asked.name, input: asked.input ?? {} },
+          });
+        } catch {
+          // Not a call: nothing to obey.
+        }
+      }
+    }
+    if (obeyed === 0) items.push({ text: 'Nothing asked me to do anything.' });
+  }
+  return { ...script, items };
 }
 
 const tokensOf = (text) => Math.max(1, Math.ceil(Buffer.byteLength(text, 'utf8') / 4));

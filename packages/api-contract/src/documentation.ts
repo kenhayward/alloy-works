@@ -91,6 +91,11 @@ export const documentationGroups = [
           'The pages of the occurrence being edited and one either side, drawn from its author’s saves as pictures within a second, untagged by design and saying so: the tagged PDF a preview makes is the accessible path.',
       },
       {
+        name: 'Assistant',
+        description:
+          'Ask the assistant about the open document: it reads what you may read of it, shows each call it makes and what came back, cites what it read, and proposes edits that change nothing until you accept one, keep it as a suggestion or discard it.',
+      },
+      {
         name: 'Model endpoints',
         description:
           'The model endpoints the environment calls, on its own provider accounts: their keys, which the connector seals and no route answers, whether each sits outside the data boundary, which purpose goes to which, and a test recorded as a run.',
@@ -359,6 +364,14 @@ const operationTags = {
     'getRangePreview',
     'refreshRangePreview',
     'getRangePage',
+  ],
+  Assistant: [
+    'startAssistantRun',
+    'getAssistantRun',
+    'getAssistantUsage',
+    'acceptProposal',
+    'keepProposal',
+    'discardProposal',
   ],
   'Model endpoints': [
     'listModelEndpoints',
@@ -771,6 +784,18 @@ const descriptions: Readonly<Record<string, string>> = {
     'Asks for the range to be drawn again from the latest save its editing session recorded: call it after each save. The asker’s alone. Needs read on the document.',
   getRangePage:
     'Returns one page of a range preview as PNG, drawn again at each refresh. The asker’s alone. Needs read on the document.',
+  startAssistantRun:
+    'Asks the assistant about a document you may read, with a signed-in session alone. It calls the model endpoint drafting is sent to, through the connector, and answers as Server-Sent Events: the run, the model’s text as it comes, each tool call and what came back, each proposal, and how it ended, with its tokens and cost. Its tools read only what you may read of this document; a proposal changes nothing. Closing the request ends the run. Recorded as a run.',
+  getAssistantRun:
+    'Returns a run of the assistant you made: the endpoint and model, each tool call with its arguments and what came back, what it read, its digest, its tokens and cost, and its proposals. Anybody else is told there is none.',
+  getAssistantUsage:
+    'Returns how many runs of the assistant you made this calendar month, UTC, and what they cost, by currency.',
+  acceptProposal:
+    'Accepts a proposal from your run: a suggestion is made from it, marked generated, and accepted at once, as you, so the lock, a change since and the save’s checks refuse it as they refuse any acceptance. Needs edit on the component. Recorded as a generation accepted.',
+  keepProposal:
+    'Keeps a proposal from your run as a suggestion, marked generated, for review beside the component, where it is accepted or rejected as any suggestion is. Needs suggest on the component.',
+  discardProposal:
+    'Discards a proposal from your run. It is kept, and recorded as discarded by you; nothing about the component changes.',
   listModelEndpoints:
     'Lists the environment’s model endpoints, those in use first: each with its protocol, base URL, model, context window, prices per million tokens, whether it sits outside the data boundary, and whether its key is set, never the key. Needs administer at the environment.',
   makeModelEndpoint:

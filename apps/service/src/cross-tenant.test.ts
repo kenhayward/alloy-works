@@ -39,6 +39,8 @@ import {
   requestAuditExport,
   requestTenantExport,
   makeModelEndpoint,
+  makeProposal,
+  startRun,
   submitImpactReport,
   makeRelationship,
 } from '@alloy-works/db';
@@ -177,6 +179,11 @@ const OTHER_TENANT_IDS: Readonly<
   requestPublication: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   requestPreview: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   requestRangePreview: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  startAssistantRun: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  getAssistantRun: async (tenant, db) => ({ id: (await assistantIn(tenant, db)).run }),
+  acceptProposal: async (tenant, db) => ({ id: (await assistantIn(tenant, db)).proposal }),
+  keepProposal: async (tenant, db) => ({ id: (await assistantIn(tenant, db)).proposal }),
+  discardProposal: async (tenant, db) => ({ id: (await assistantIn(tenant, db)).proposal }),
   getRangePreview: async (tenant, db) => ({ id: await documentIdIn(tenant, db), range: SESSION }),
   refreshRangePreview: async (tenant, db) => ({
     id: await documentIdIn(tenant, db),
@@ -623,6 +630,7 @@ const VALID_INPUT: Readonly<
   },
   requestAuditExport: { payload: {} },
   requestTenantExport: { payload: {} },
+  startAssistantRun: { payload: { ask: 'Hello' } },
   makeModelEndpoint: {
     payload: {
       name: 'Elsewhere',
@@ -1347,6 +1355,57 @@ const tenantExportIdIn = (tenant: Tenant, db: TenantDatabase) =>
       .returning('id')
       .executeTakeFirstOrThrow();
     return (await requestTenantExport(trx, asker.id)).id;
+  });
+
+/** A run of the assistant in an environment, and a proposal it made, its requester somebody there. */
+const assistantIn = (tenant: Tenant, db: TenantDatabase) =>
+  db.withTenant(tenant, async (trx) => {
+    const asker = await trx
+      .insertInto('principal')
+      .values({
+        issuer: 'https://idp.example',
+        subject: `ivy-${randomUUID()}`,
+        email: null,
+        display_name: null,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    const made = await makeModelEndpoint(
+      trx,
+      {
+        name: `Theirs ${randomUUID()}`,
+        protocol: 'anthropic',
+        baseUrl: 'https://models.example.test',
+        model: 'claude-test',
+        contextWindow: 200000,
+        priceIn: 0,
+        priceOut: 0,
+        currency: 'USD',
+        boundary: 'outside',
+      },
+      asker.id,
+    );
+    if (made.answer !== 'written') throw new Error(made.answer);
+    const run = await startRun(trx, {
+      purpose: 'drafting',
+      endpoint: made.endpoint,
+      parameters: {},
+      contextDigest: '0'.repeat(64),
+      by: asker.id,
+    });
+    const proposal = await makeProposal(trx, {
+      run,
+      component: randomUUID(),
+      against: randomUUID(),
+      proposed: {
+        schemaVersion: 1,
+        title: 'x',
+        language: 'en',
+        direction: 'ltr',
+        content: [],
+      } as never,
+    });
+    return { run, proposal: proposal.id };
   });
 
 const modelEndpointIdIn = (tenant: Tenant, db: TenantDatabase) =>

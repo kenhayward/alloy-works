@@ -160,6 +160,7 @@ const SESSIONS = 'apps/service/src/sessions.ts';
 const AUDIT_LOG = 'apps/service/src/audit-log.ts';
 const LATER = null;
 const MODELS = 'packages/db/src/model-endpoints.ts';
+const PROPOSALS = 'packages/db/src/generation-proposals.ts';
 
 /** A relationship acted on: its type and itself, both by identifier (the R8 plan, R8-E). */
 const Related = z.strictObject({ type: z.uuid(), relationship: z.uuid() });
@@ -618,9 +619,22 @@ export const auditKindSpecs = {
   'relationship.made': kind(['LIF-070', 'REL-011'], Related, 'packages/db/src/relationships.ts'),
   'relationship.changed': kind(['LIF-070', 'REL-033'], Related, 'packages/db/src/relationships.ts'),
   'relationship.removed': kind(['LIF-070', 'REL-011'], Related, 'packages/db/src/relationships.ts'),
-  'generation.run': kind(['LIF-071'], empty, LATER),
-  'generation.accepted': kind(['LIF-071', 'GEN-024', 'LOC-041'], empty, LATER),
-  'generation.discarded': kind(['LIF-071'], empty, LATER),
+  // The assistant (the G2 plan, G2-E): a run ended, and a proposal accepted or discarded.
+  'generation.run': kind(
+    ['LIF-071'],
+    z.strictObject({ run: Id, outcome: AuditName, purpose: AuditName }),
+    'packages/db/src/model-endpoints.ts',
+  ),
+  'generation.accepted': kind(
+    ['LIF-071', 'GEN-024', 'LOC-041'],
+    z.strictObject({ run: Id, proposal: Id, suggestion: Id }),
+    PROPOSALS,
+  ),
+  'generation.discarded': kind(
+    ['LIF-071', 'GEN-040'],
+    z.strictObject({ run: Id, proposal: Id, suggestion: Id.optional() }),
+    PROPOSALS,
+  ),
   // A recipient from outside opening a shared publication, or one of its outputs (the R17 plan, R17-F).
   'publication.shared_accessed': kind(
     ['LIF-070', 'PUB-060'],

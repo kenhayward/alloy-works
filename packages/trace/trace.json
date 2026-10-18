@@ -20432,6 +20432,144 @@
       "kind": "title"
     },
     {
+      "id": "ADM-010",
+      "file": "apps/service/src/assistant-routes.test.ts",
+      "line": 509,
+      "kind": "title"
+    },
+    {
+      "id": "API-064",
+      "file": "apps/service/src/assistant-routes.test.ts",
+      "line": 184,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-007",
+      "file": "apps/service/src/assistant-routes.test.ts",
+      "line": 207,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-008",
+      "file": "apps/service/src/assistant-routes.test.ts",
+      "line": 243,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-009",
+      "file": "apps/service/src/assistant-routes.test.ts",
+      "line": 303,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-010",
+      "file": "apps/service/src/assistant-routes.test.ts",
+      "line": 207,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-011",
+      "file": "apps/service/src/assistant-routes.test.ts",
+      "line": 274,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-012",
+      "file": "apps/service/src/assistant-routes.test.ts",
+      "line": 163,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-013",
+      "file": "apps/service/src/assistant-routes.test.ts",
+      "line": 263,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-014",
+      "file": "apps/service/src/assistant-routes.test.ts",
+      "line": 243,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-015",
+      "file": "apps/service/src/assistant-routes.test.ts",
+      "line": 263,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-016",
+      "file": "apps/service/src/assistant-routes.test.ts",
+      "line": 408,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-017",
+      "file": "apps/service/src/assistant-routes.test.ts",
+      "line": 426,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-018",
+      "file": "apps/service/src/assistant-routes.test.ts",
+      "line": 426,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-019",
+      "file": "apps/service/src/assistant-routes.test.ts",
+      "line": 426,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-022",
+      "file": "apps/service/src/assistant-routes.test.ts",
+      "line": 344,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-024",
+      "file": "apps/service/src/assistant-routes.test.ts",
+      "line": 310,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-033",
+      "file": "apps/service/src/assistant-routes.test.ts",
+      "line": 509,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-037",
+      "file": "apps/service/src/assistant-routes.test.ts",
+      "line": 509,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-039",
+      "file": "apps/service/src/assistant-routes.test.ts",
+      "line": 385,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-040",
+      "file": "apps/service/src/assistant-routes.test.ts",
+      "line": 344,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-041",
+      "file": "apps/service/src/assistant-routes.test.ts",
+      "line": 362,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-060",
+      "file": "apps/service/src/assistant-routes.test.ts",
+      "line": 310,
+      "kind": "title"
+    },
+    {
       "id": "LIF-005",
       "file": "apps/service/src/attention-routes.test.ts",
       "line": 296,
@@ -20452,13 +20590,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 472,
+      "line": 491,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 485,
+      "line": 504,
       "kind": "title"
     },
     {
@@ -20824,7 +20962,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1540,
+      "line": 1599,
       "kind": "title"
     },
     {
@@ -25784,6 +25922,24 @@
       "kind": "title"
     },
     {
+      "id": "GEN-010",
+      "file": "packages/db/src/generation-proposals.test.ts",
+      "line": 101,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-040",
+      "file": "packages/db/src/generation-proposals.test.ts",
+      "line": 135,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-041",
+      "file": "packages/db/src/generation-proposals.test.ts",
+      "line": 135,
+      "kind": "title"
+    },
+    {
       "id": "IAM-022",
       "file": "packages/db/src/grants.test.ts",
       "line": 115,
@@ -27908,6 +28064,24 @@
       "kind": "title"
     },
     {
+      "id": "GEN-007",
+      "file": "packages/domain/src/generation/assistant.test.ts",
+      "line": 37,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-011",
+      "file": "packages/domain/src/generation/assistant.test.ts",
+      "line": 122,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-017",
+      "file": "packages/domain/src/generation/assistant.test.ts",
+      "line": 47,
+      "kind": "title"
+    },
+    {
       "id": "GEN-031",
       "file": "packages/domain/src/generation/endpoint.test.ts",
       "line": 39,
@@ -27916,7 +28090,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 774,
+      "line": 786,
       "kind": "title"
     },
     {

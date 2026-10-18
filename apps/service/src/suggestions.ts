@@ -63,6 +63,7 @@ async function summaryOf(
     madeAgainst: suggestion.madeAgainst,
     madeBy: person(suggestion.madeBy),
     madeAt: suggestion.madeAt.toISOString(),
+    generated: suggestion.run !== null,
     state: suggestion.resolution?.act ?? 'pending',
     stale,
     resolution:

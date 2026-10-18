@@ -139,6 +139,15 @@ export {
   modelEndpointRoutes,
 } from './model-endpoints.js';
 export {
+  AssistantRunBody,
+  AssistantRunParams,
+  AssistantRunView,
+  AssistantUsage,
+  ProposalActed,
+  ProposalParams,
+  assistantRoutes,
+} from './assistant.js';
+export {
   RangePageParams,
   RangePreviewParams,
   RangePreviewView,
@@ -409,6 +418,7 @@ export {
   SampleEvent,
   ScopedSnapshot,
   streamEvents,
+  assistantEvents,
   type StreamEventName,
   WorkflowEvent,
 } from './events.js';

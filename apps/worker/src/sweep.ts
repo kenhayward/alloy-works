@@ -14,6 +14,7 @@ import {
   sweepPreviews,
   sweepQueryRuns,
   sweepRangePreviews,
+  sweepAbandonedRuns,
   expireTenantExport,
   tenantExportsDue,
   type JobQueue,
@@ -120,6 +121,25 @@ export async function sweepExpiredRangePreviews(
     }
   }
   return removed;
+}
+
+/**
+ * Runs of a model left running an hour, in every tenant, ended `abandoned` (the G2 plan, G2-B): their
+ * service went away mid-run, and its steps so far stay on them.
+ */
+export async function sweepAbandonedGenerationRuns(
+  db: TenantDatabase,
+  log: WorkerLog,
+): Promise<number> {
+  let ended = 0;
+  for (const tenant of await db.tenants()) {
+    try {
+      ended += await db.withTenant(tenant, (trx) => sweepAbandonedRuns(trx));
+    } catch (error) {
+      log.error({ tenant: tenant.id, err: error }, 'the abandoned run sweep failed in a tenant');
+    }
+  }
+  return ended;
 }
 
 /**

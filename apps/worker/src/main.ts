@@ -22,6 +22,7 @@ import {
   sweepExpiredPreviews,
   sweepExpiredTenantExports,
   sweepExpiredRangePreviews,
+  sweepAbandonedGenerationRuns,
   sweepExpiredSignIns,
   sweepOldNotifications,
   sweepDates,
@@ -92,6 +93,10 @@ const sweep = setInterval(() => {
   void sweepExpiredRangePreviews(db, log)
     .then((removed) => removed > 0 && log.info({ removed }, 'swept range previews'))
     .catch((error: unknown) => log.error({ err: error }, 'range preview sweep failed'));
+  // Model runs left running an hour, ended abandoned (the G2 plan, G2-B).
+  void sweepAbandonedGenerationRuns(db, log)
+    .then((ended) => ended > 0 && log.info({ ended }, 'ended abandoned runs'))
+    .catch((error: unknown) => log.error({ err: error }, 'abandoned run sweep failed'));
   // Tenant exports seven days after they were written, and their archives (the R21 plan, R21-B).
   void sweepExpiredTenantExports(db, stores, log)
     .then((removed) => removed > 0 && log.info({ removed }, 'swept expired exports'))

@@ -37,6 +37,38 @@
           "$ref": "#/components/messages/sample"
         }
       }
+    },
+    "assistantRun": {
+      "address": "/v1/documents/{id}/assistant/runs",
+      "description": "What `POST /v1/documents/{id}/assistant/runs` answers, as Server-Sent Events: `run` first, then the model's text, its tool calls and their results, and its proposals as they come, and `ended` or `failed` last. Closing the request ends the run.",
+      "parameters": {
+        "id": {
+          "description": "The document"
+        }
+      },
+      "messages": {
+        "run": {
+          "$ref": "#/components/messages/assistant_run"
+        },
+        "text": {
+          "$ref": "#/components/messages/assistant_text"
+        },
+        "tool_call": {
+          "$ref": "#/components/messages/assistant_tool_call"
+        },
+        "tool_result": {
+          "$ref": "#/components/messages/assistant_tool_result"
+        },
+        "proposal": {
+          "$ref": "#/components/messages/assistant_proposal"
+        },
+        "ended": {
+          "$ref": "#/components/messages/assistant_ended"
+        },
+        "failed": {
+          "$ref": "#/components/messages/assistant_failed"
+        }
+      }
     }
   },
   "operations": {
@@ -72,6 +104,35 @@
         },
         {
           "$ref": "#/channels/stream/messages/sample"
+        }
+      ]
+    },
+    "receiveAssistantRun": {
+      "action": "receive",
+      "channel": {
+        "$ref": "#/channels/assistantRun"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/assistantRun/messages/run"
+        },
+        {
+          "$ref": "#/channels/assistantRun/messages/text"
+        },
+        {
+          "$ref": "#/channels/assistantRun/messages/tool_call"
+        },
+        {
+          "$ref": "#/channels/assistantRun/messages/tool_result"
+        },
+        {
+          "$ref": "#/channels/assistantRun/messages/proposal"
+        },
+        {
+          "$ref": "#/channels/assistantRun/messages/ended"
+        },
+        {
+          "$ref": "#/channels/assistantRun/messages/failed"
         }
       ]
     }
@@ -540,6 +601,300 @@
           ],
           "additionalProperties": false,
           "description": "A development sample's state"
+        }
+      },
+      "assistant_run": {
+        "name": "run",
+        "summary": "The run began: its identifier, and the endpoint it calls and whether that sits outside the data boundary",
+        "contentType": "application/json",
+        "payload": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "run": {
+              "type": "string",
+              "description": "An id, as the API names the thing elsewhere"
+            },
+            "endpoint": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "boundary": {
+                  "type": "string",
+                  "enum": [
+                    "inside",
+                    "outside"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "boundary"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "run",
+            "endpoint"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "assistant_text": {
+        "name": "text",
+        "summary": "The model's answer, a piece at a time, as it is made",
+        "contentType": "application/json",
+        "payload": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "text"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "assistant_tool_call": {
+        "name": "tool_call",
+        "summary": "The model called one of its tools, with these arguments",
+        "contentType": "application/json",
+        "payload": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "input": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {}
+            }
+          },
+          "required": [
+            "id",
+            "name",
+            "input"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "assistant_tool_result": {
+        "name": "tool_result",
+        "summary": "What the tool answered, as the model was given it, and a summary for a person",
+        "contentType": "application/json",
+        "payload": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "ok": {
+              "type": "boolean"
+            },
+            "summary": {
+              "type": "string"
+            },
+            "result": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "name",
+            "ok",
+            "summary",
+            "result"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "assistant_proposal": {
+        "name": "proposal",
+        "summary": "An edit proposed to a component, which changes nothing until its requester acts on it",
+        "contentType": "application/json",
+        "payload": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "An id, as the API names the thing elsewhere"
+            },
+            "number": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "component": {
+              "type": "string",
+              "description": "An id, as the API names the thing elsewhere"
+            },
+            "against": {
+              "type": "string",
+              "description": "An id, as the API names the thing elsewhere"
+            },
+            "proposed": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {}
+            }
+          },
+          "required": [
+            "id",
+            "number",
+            "component",
+            "against",
+            "proposed"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "assistant_ended": {
+        "name": "ended",
+        "summary": "The run ended: the model, its tokens and cost, and the citations kept and dropped",
+        "contentType": "application/json",
+        "payload": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "outcome": {
+              "type": "string"
+            },
+            "model": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "tokensIn": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "tokensOut": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "cost": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "currency": {
+              "type": "string"
+            },
+            "citations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "component": {
+                    "type": "string",
+                    "description": "An id, as the API names the thing elsewhere"
+                  },
+                  "block": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "component",
+                  "block"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "dropped": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "component": {
+                    "type": "string",
+                    "description": "An id, as the API names the thing elsewhere"
+                  },
+                  "block": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "component",
+                  "block"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "outcome",
+            "model",
+            "tokensIn",
+            "tokensOut",
+            "cost",
+            "currency",
+            "citations",
+            "dropped"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "assistant_failed": {
+        "name": "failed",
+        "summary": "The run failed, by code and reason, in the product’s words",
+        "contentType": "application/json",
+        "payload": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "reason": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "code",
+            "message"
+          ],
+          "additionalProperties": false
         }
       }
     }

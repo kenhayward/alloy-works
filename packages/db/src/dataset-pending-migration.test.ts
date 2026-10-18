@@ -210,6 +210,7 @@ describe('migration 0051, which keeps a result waiting on its images', () => {
       '0118_tenant_export',
       '0119_range_preview',
       '0120_model_endpoints',
+      '0121_assistant',
     ]);
     const kept = await queryAs(
       db.adminUrl,
