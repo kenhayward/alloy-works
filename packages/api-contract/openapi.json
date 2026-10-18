@@ -20104,6 +20104,20 @@
                             "boundary"
                           ]
                         },
+                        "ask": {
+                          "description": "What the person asked, or null for a prompt run (GN-I)",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "reply": {
+                          "description": "What the model wrote, set as the run ended; null while it runs (GN-I)",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
                         "model": {
                           "type": [
                             "string",
@@ -20219,6 +20233,8 @@
                         "promptVersion",
                         "parameters",
                         "endpoint",
+                        "ask",
+                        "reply",
                         "model",
                         "outcome",
                         "startedAt",
@@ -20249,6 +20265,8 @@
                       "name": "example",
                       "boundary": "example"
                     },
+                    "ask": "example",
+                    "reply": "example",
                     "model": "example",
                     "outcome": "example",
                     "startedAt": "example",

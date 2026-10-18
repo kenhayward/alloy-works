@@ -37,6 +37,8 @@ describe("the connector's one caller", () => {
       'generation/assistant.ts',
       'generation/models.ts',
       'generation/prompt-runs.ts',
+      // The loop both runs share, which a route hands the client (the G5 plan, G5-A).
+      'generation/run-loop.ts',
     ]);
     // And those routes are the connection routes, each a person's request: nothing the service runs
     // on its own - no job, no timer, no stream - reaches them.

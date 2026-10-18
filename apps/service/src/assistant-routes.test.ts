@@ -181,6 +181,15 @@ describe('the drafting assistant through the service (the G2 plan)', () => {
     });
   });
 
+  it("keeps a run's transcript, the person's words and the model's, and shows it to them", async () => {
+    h.connector.modelFor = turns([text('The north weir '), text('floods.'), ended()]);
+    const frames = await ask('ada', 'What floods?');
+    const run = (await h.call('ada', 'GET', `/v1/assistant/runs/${runOf(frames)}`)).json<{
+      run: { ask: string; reply: string };
+    }>().run;
+    expect(run).toMatchObject({ ask: 'What floods?', reply: 'The north weir floods.' });
+  });
+
   it('API-064 sends every frame as a message of the AsyncAPI document’s assistant channel', async () => {
     const conforms = (frames: { event: string; data: Json }[]) => {
       for (const frame of frames) {
