@@ -8,6 +8,7 @@ import { describeWorkerConfig, loadWorkerConfig } from './config.js';
 import { loadPinnedFonts, PINNED_FONT_FILES } from './fonts.js';
 import { auditExportJob } from './jobs/audit-export.js';
 import { tenantExportJob } from './jobs/tenant-export.js';
+import { createWarmPool, rangePreviewJob } from './jobs/range-preview.js';
 import { impactReportJob } from './jobs/impact-report.js';
 import { cohortJob } from './jobs/cohort.js';
 import { checkJob } from './jobs/check.js';
@@ -20,6 +21,7 @@ import {
   sweepExpiredQueryRuns,
   sweepExpiredPreviews,
   sweepExpiredTenantExports,
+  sweepExpiredRangePreviews,
   sweepExpiredSignIns,
   sweepOldNotifications,
   sweepDates,
@@ -55,6 +57,8 @@ const checker = startLocalVeraPdf({
   ...(config.verapdfJavaOptions === undefined ? {} : { javaOptions: config.verapdfJavaOptions }),
   ...veraPdfTimeouts(config.leaseMs),
 });
+// The warm range previews this worker holds between refreshes (the R22 plan, R22-B).
+const warmPool = createWarmPool();
 const handlers: Record<string, JobHandler> = {
   sample_pdf: sampleJob({ db, stores, typst }),
   publish,
@@ -65,6 +69,7 @@ const handlers: Record<string, JobHandler> = {
   impact_report: impactReportJob({ db, stores }),
   cohort: cohortJob({ db, stores }),
   tenant_export: tenantExportJob({ db, stores }),
+  range: rangePreviewJob({ db, stores, fonts, binary: config.typstBinary, pool: warmPool }),
 };
 
 // A connection of its own, held open: NOTIFY wakes the worker between polls.
@@ -83,6 +88,10 @@ const sweep = setInterval(() => {
   void sweepExpiredPreviews(db, stores, log)
     .then((removed) => removed > 0 && log.info({ removed }, 'swept expired previews'))
     .catch((error: unknown) => log.error({ err: error }, 'preview sweep failed'));
+  // Range previews an hour past their last change (the R22 plan, R22-B).
+  void sweepExpiredRangePreviews(db, log)
+    .then((removed) => removed > 0 && log.info({ removed }, 'swept range previews'))
+    .catch((error: unknown) => log.error({ err: error }, 'range preview sweep failed'));
   // Tenant exports seven days after they were written, and their archives (the R21 plan, R21-B).
   void sweepExpiredTenantExports(db, stores, log)
     .then((removed) => removed > 0 && log.info({ removed }, 'swept expired exports'))
@@ -130,6 +139,7 @@ const stop = async (signal: string) => {
   log.info({ signal }, 'stopping');
   await listener.end();
   await checker.close();
+  await warmPool.close();
   await queue.close();
   await db.close();
 };

@@ -846,6 +846,24 @@ describe('routes that check a permission', () => {
       status: 404,
       payload: { version: MISSING },
     }),
+    requestRangePreview: () => ({
+      url: `/v1/documents/${report}/range-previews`,
+      status: 404,
+      payload: { version: MISSING, node: 'aaaaaaaaaaaaaaaaaaaaaaaaaa', session: MISSING },
+    }),
+    getRangePreview: () => ({
+      url: `/v1/documents/${report}/range-previews/${MISSING}`,
+      status: 404,
+    }),
+    refreshRangePreview: () => ({
+      url: `/v1/documents/${report}/range-previews/${MISSING}/refresh`,
+      status: 404,
+      payload: {},
+    }),
+    getRangePage: () => ({
+      url: `/v1/documents/${report}/range-previews/${MISSING}/pages/1`,
+      status: 404,
+    }),
     listPublications: () => ({ url: `/v1/documents/${report}/publications`, status: 404 }),
     getPublication: () => ({ url: `/v1/publications/${reportPublication}`, status: 404 }),
     makeBaseline: () => ({

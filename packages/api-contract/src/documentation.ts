@@ -86,6 +86,11 @@ export const documentationGroups = [
       { name: 'Publication requests', description: 'Submit and follow publishing work.' },
       { name: 'Publications', description: 'List and retrieve completed publications.' },
       {
+        name: 'Range previews',
+        description:
+          'The pages of the occurrence being edited and one either side, drawn from its author’s saves as pictures within a second, untagged by design and saying so: the tagged PDF a preview makes is the accessible path.',
+      },
+      {
         name: 'Tenant export',
         description:
           'The whole environment exported as a job: its content, versions, relationships, baselines and publication records as JSON Lines, the bytes they name by hash, and a manifest of what it leaves out. Kept seven days.',
@@ -344,6 +349,12 @@ const operationTags = {
   ],
   'Query usage': ['getQueryUsage', 'getQueryRunsCsv'],
   'Stored results as sources': ['listDatasetSources', 'sampleDataset'],
+  'Range previews': [
+    'requestRangePreview',
+    'getRangePreview',
+    'refreshRangePreview',
+    'getRangePage',
+  ],
   'Tenant export': [
     'requestTenantExport',
     'listTenantExports',
@@ -736,6 +747,14 @@ const descriptions: Readonly<Record<string, string>> = {
     'Lists the stored results the caller may read, a page at a time, each by its name or its query definition’s title, with its latest version’s columns: what a query over it may select.',
   sampleDataset:
     'Runs a draft query definition over a stored result, as the query builder builds it - its columns, condition, grouping and aggregates - against sample values, storing nothing. The service evaluates it over the result’s kept rows; the source the result came from is never asked. Needs read on the stored result.',
+  requestRangePreview:
+    'Asks for a range preview of the occurrence being edited in the latest version of a document: its pages and one either side, drawn by a job from the editing session’s latest save as PNG images. Each image is untagged by design, and its alternative text says so and names the tagged PDF that Preview makes. Needs read on the document.',
+  getRangePreview:
+    'Returns a range preview: waiting until its latest refresh is drawn, then ready, with each page’s number and alternative text, and the save it shows. The asker’s alone. Needs read on the document.',
+  refreshRangePreview:
+    'Asks for the range to be drawn again from the latest save its editing session recorded: call it after each save. The asker’s alone. Needs read on the document.',
+  getRangePage:
+    'Returns one page of a range preview as PNG, drawn again at each refresh. The asker’s alone. Needs read on the document.',
   requestTenantExport:
     'Asks for an export of the whole environment as it stands now, written by a job into one ZIP archive: a JSON Lines file each for its artifacts, versions, relationships, baselines and publications, the bytes its assets and publications hold under objects/ by their SHA-256, and manifest.json saying what it holds and what it leaves out. Recorded as an export produced. Needs administer at the environment.',
   listTenantExports:

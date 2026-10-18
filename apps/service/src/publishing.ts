@@ -73,7 +73,9 @@ async function requestView(
   return {
     id: request.id,
     document: request.documentId,
-    kind: request.kind,
+    // A range's request is never answered here (`getPublicationRequest` refuses it), so a publish or
+    // a preview.
+    kind: request.kind === 'range' ? 'preview' : request.kind,
     state: request.state,
     failures: request.failures.map((each) => ({ ...each })),
     publication: request.publication,
@@ -338,7 +340,11 @@ export function publishingHandlers(
       const tenant = tenantOf(request);
       return db.withTenant(tenant, async (trx) => {
         const found = await readPublicationRequest(trx, id);
-        if (!found || found.requestedBy !== principal.principalId) throw notFound();
+        // A range preview's request records its inputs and nothing to read here: its pages are
+        // the range preview's own (the R22 plan, R22-B).
+        if (!found || found.requestedBy !== principal.principalId || found.kind === 'range') {
+          throw notFound();
+        }
         // A preview's pages are the document's, so its asker must still read the document at every
         // answer, as a publication is read on its own grants at every answer: losing `read` stops the
         // links at the next request, not at the hour's end (W10.2's review). Refused as if there

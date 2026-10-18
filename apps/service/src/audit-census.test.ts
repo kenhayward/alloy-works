@@ -116,6 +116,10 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   ),
   requestPublication: writes('publication.requested'),
   requestPreview: { none: 'preview' },
+  requestRangePreview: { none: 'preview' },
+  getRangePreview: read,
+  refreshRangePreview: { none: 'preview' },
+  getRangePage: read,
   getPublicationRequest: read,
   listPublications: read,
   listPublicationsEverywhere: read,
@@ -378,6 +382,7 @@ const WRITERS: Readonly<Record<string, Readonly<Record<string, Entry>>>> = {
     // A report of what is recorded, kept for its requester alone (the R3 plan, R3-F).
     impact_report: { none: 'derived' },
     tenant_export: { none: 'derived' },
+    range: { none: 'preview' },
     // Each row's document cut at 0.1, as a document made by hand is (the R7 plan, R7-E).
     cohort: writes('content.version_cut'),
   },
@@ -389,6 +394,7 @@ const WRITERS: Readonly<Record<string, Readonly<Record<string, Entry>>>> = {
     sweepUncheckedPublications: { none: 'derived' },
     sweepExpiredPreviews: { none: 'preview' },
     sweepExpiredTenantExports: { none: 'derived' },
+    sweepExpiredRangePreviews: { none: 'preview' },
     sweepStalePresence: { none: 'presence' },
     foldNotificationDigests: { none: 'inbox' },
     sweepOldNotifications: { none: 'inbox' },

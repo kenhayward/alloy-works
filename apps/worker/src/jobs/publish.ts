@@ -10,6 +10,7 @@ import {
   recordPublication,
   type NewPublicationOutput,
   type PublicationInputs,
+  type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
 import {
@@ -278,6 +279,84 @@ async function keep(store: TenantStore, bytes: Uint8Array, format: 'pdf' | 'docx
 }
 
 /**
+ * A request's recorded inputs through `assemble`, as its job reads them (PUB-006): each value from its
+ * stored result, every pinned face, and the status the pages say. A range preview hands `content`, the
+ * occurrence content it shows in place of what the request recorded: its author's latest iteration
+ * of the component being edited (the R22 plan, R22-B).
+ */
+export async function assembleRequest(
+  deps: {
+    readonly fonts: PinnedFonts;
+    readonly conditionContent?: (node: string, content: ContentDocument) => ContentDocument;
+  },
+  inputs: PublicationInputs,
+  store: TenantStore,
+  tenant: Tenant,
+  options: {
+    readonly status: 'preview' | 'approved' | 'draft';
+    readonly content?: (node: string, recorded: ContentDocument) => ContentDocument | undefined;
+  },
+) {
+  const {
+    request,
+    outline,
+    refused,
+    layout,
+    theme,
+    revision,
+    approved,
+    assets,
+    boundAssets,
+    variables,
+    profile,
+  } = inputs;
+  const { formats } = request;
+  const held = await heldResults(inputs.bindings, (key) => store.get(key), tenantPrefix(tenant));
+  // Every pinned face by its hash, checked as a compile checks them, which a table's columns are
+  // measured by where its style widths them by what they hold (TG3), and Word embeds.
+  const faces = await pinnedFacesByHash(deps.fonts.directory);
+  return assemble({
+    faces,
+    // A preview says so on every page in the layout's words (PUB-005), and is otherwise assembled
+    // exactly as a publish of the same request would be (PUB-006).
+    // An approved one - made from a baseline taken at a gate - says nothing of being a draft
+    // (PUB-004), and lists its approvals where its layout declares an approval page (PUB-089).
+    status: options.status,
+    ...(approved ? { approvals: approved.approvals } : {}),
+    // Told the formats, so it refuses what only the PDF's engine cannot set where a PDF is asked
+    // for, and what Word cannot carry yet where Word is (Word 1, rulings R2 and R3): a request for
+    // both fails if either would, before either output is made.
+    formats,
+    outline,
+    occurrences: new Map(
+      [...inputs.occurrences].map(([node, each]) => [
+        node,
+        options.content?.(node, each.content) ?? each.content,
+      ]),
+    ),
+    // The binding stage's results, by node and binding: a preview takes and fails as a publish does.
+    bindings: held,
+    // What its variables resolve by: the declared ones, and the document's parameters and values.
+    variables,
+    // The profile it was made under, which selects each occurrence's conditional content (R6-F).
+    profile: { values: profile.values, excludeUnset: profile.excludeUnset === true },
+    refused,
+    // The layout version the request was made under, never the latest; none for a request made
+    // before layouts, which `assemble` makes `publishing/1` of, as the first slice did.
+    layout: layout?.layout ?? null,
+    // And the theme version, which a request made before layouts has none of, as it has no layout
+    // (migration 0024).
+    theme: theme?.theme ?? null,
+    revision,
+    covers: deps.fonts.covers,
+    // The request's own images, and every one a held result could place (B6-F): the binding
+    // stage sets a bound image as an ordinary one, naming its asset version, sized from these.
+    assets: new Map([...boundAssets, ...assets]),
+    ...(deps.conditionContent ? { conditionContent: deps.conditionContent } : {}),
+  });
+}
+
+/**
  * One publish: the recorded inputs through `assemble` once, for every format the request names; the
  * published document through the pinned Typst and the fixed template for the PDF, and through the
  * Word writer for Word; each output into the tenant's store by its hash, and the publication recorded
@@ -313,21 +392,7 @@ export function publishJob(deps: {
       }));
       // Nothing to do: finished by another attempt.
       if (!read.inputs) return;
-      const {
-        request,
-        outline,
-        occurrences,
-        refused,
-        layout,
-        theme,
-        revision,
-        approved,
-        assets,
-        bindings,
-        boundAssets,
-        variables,
-        profile,
-      } = read.inputs;
+      const { request, theme, approved, assets, bindings, boundAssets } = read.inputs;
 
       // The theme's faces held to the pinned files before anything is composed (themes 1, ruling R5,
       // and the final review's M1): a typeface the worker does not hold exactly - its files, their
@@ -353,43 +418,8 @@ export function publishJob(deps: {
       const preview = request.kind === 'preview';
       // Each value from its stored result, read from the store by its checksum, never from a source:
       // the worker holds no connector and no connection's configuration (DAT-088).
-      const held = await heldResults(bindings, (key) => read.store.get(key), tenantPrefix(tenant));
-      // Every pinned face by its hash, checked as a compile checks them, which a table's columns are
-      // measured by where its style widths them by what they hold (TG3), and Word embeds.
-      const faces = await pinnedFacesByHash(deps.fonts.directory);
-      const assembled = assemble({
-        faces,
-        // A preview says so on every page in the layout's words (PUB-005), and is otherwise assembled
-        // exactly as a publish of the same request would be (PUB-006).
-        // An approved one - made from a baseline taken at a gate - says nothing of being a draft
-        // (PUB-004), and lists its approvals where its layout declares an approval page (PUB-089).
+      const assembled = await assembleRequest(deps, read.inputs, read.store, tenant, {
         status: preview ? 'preview' : approved ? 'approved' : 'draft',
-        ...(approved ? { approvals: approved.approvals } : {}),
-        // Told the formats, so it refuses what only the PDF's engine cannot set where a PDF is asked
-        // for, and what Word cannot carry yet where Word is (Word 1, rulings R2 and R3): a request for
-        // both fails if either would, before either output is made.
-        formats,
-        outline,
-        occurrences: new Map([...occurrences].map(([node, each]) => [node, each.content])),
-        // The binding stage's results, by node and binding: a preview takes and fails as a publish does.
-        bindings: held,
-        // What its variables resolve by: the declared ones, and the document's parameters and values.
-        variables,
-        // The profile it was made under, which selects each occurrence's conditional content (R6-F).
-        profile: { values: profile.values, excludeUnset: profile.excludeUnset === true },
-        refused,
-        // The layout version the request was made under, never the latest; none for a request made
-        // before layouts, which `assemble` makes `publishing/1` of, as the first slice did.
-        layout: layout?.layout ?? null,
-        // And the theme version, which a request made before layouts has none of, as it has no layout
-        // (migration 0024).
-        theme: theme?.theme ?? null,
-        revision,
-        covers: deps.fonts.covers,
-        // The request's own images, and every one a held result could place (B6-F): the binding
-        // stage sets a bound image as an ordinary one, naming its asset version, sized from these.
-        assets: new Map([...boundAssets, ...assets]),
-        ...(deps.conditionContent ? { conditionContent: deps.conditionContent } : {}),
       });
       if (!assembled.ok) throw new PublishRefused(assembled.failures);
 
@@ -453,7 +483,7 @@ export function publishJob(deps: {
           word,
           formats,
           // The theme's faces were held to exactly these files above, so every file it names is here.
-          faces,
+          faces: await pinnedFacesByHash(deps.fonts.directory),
           images: new Map(images.map((image) => [image.path, image.bytes])),
           // How the PDF set each table too wide for its measure (TB3-J).
           wide: wide.flatMap(({ node, table, scale, rotate }): WideTable[] =>

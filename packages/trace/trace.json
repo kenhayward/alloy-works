@@ -17788,6 +17788,10 @@
           "howItIsMet": "A range preview's pages are images whose alternative text says each is an untagged preview page and names the tagged PDF; the panel says the same on screen and offers the tagged PDF beside it. T4's since ADR-0045"
         },
         {
+          "id": "PUB-076",
+          "howItIsMet": "A warm compile, `typst watch` over the document's own root, and a clean compile of the same input make the same bytes - every PNG page, and the tagged PDF with the creation time pinned as every compile pins it ([The warm range preview](#the-warm-range-preview))"
+        },
+        {
           "id": "PUB-007",
           "howItIsMet": "A layout's paged format declares page size, orientation, margins as top, bottom, inside and outside, and a gutter"
         },
@@ -19261,6 +19265,10 @@
           "howItIsMet": "A cohort declares `onFailure` (0116): `continue`, the default, goes on past a failed row as REU-033 says; `stop` makes no more, the rows after it waiting, and Rerun runs them under the cohort's own choice; the job's outcome and the cohort's view say which it was and the row it stopped at (the R20 plan, R20-D)"
         },
         {
+          "id": "REU-049",
+          "howItIsMet": "Bulk generation's budget is four hundred documents from one template within an hour, measured on CI's reference runner and recorded beside it on every run, held to a tenth of it for production's margin; production's own measurement arrives with ADM-016 (T7)"
+        },
+        {
           "id": "TPL-039",
           "howItIsMet": "As REU-033: every row reported made or failed, and a failed row leaves no document (R7-E)"
         },
@@ -20226,13 +20234,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 457,
+      "line": 463,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 470,
+      "line": 476,
       "kind": "title"
     },
     {
@@ -20598,7 +20606,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1454,
+      "line": 1468,
       "kind": "title"
     },
     {
@@ -21295,6 +21303,12 @@
       "id": "DAT-120",
       "file": "apps/service/src/query-definition-routes.test.ts",
       "line": 1018,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-080",
+      "file": "apps/service/src/range-preview-routes.test.ts",
+      "line": 30,
       "kind": "title"
     },
     {
@@ -24216,13 +24230,19 @@
     {
       "id": "REU-033",
       "file": "apps/worker/src/cohort.test.ts",
-      "line": 152,
+      "line": 153,
+      "kind": "title"
+    },
+    {
+      "id": "REU-049",
+      "file": "apps/worker/src/cohort.test.ts",
+      "line": 232,
       "kind": "title"
     },
     {
       "id": "TPL-047",
       "file": "apps/worker/src/cohort.test.ts",
-      "line": 181,
+      "line": 182,
       "kind": "title"
     },
     {
@@ -24510,7 +24530,7 @@
     {
       "id": "PUB-102",
       "file": "apps/worker/src/publishing-budget.test.ts",
-      "line": 155,
+      "line": 58,
       "kind": "title"
     },
     {
@@ -24697,6 +24717,12 @@
       "id": "PUB-044",
       "file": "apps/worker/src/typst.test.ts",
       "line": 110,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-076",
+      "file": "apps/worker/src/warm.test.ts",
+      "line": 137,
       "kind": "title"
     },
     {

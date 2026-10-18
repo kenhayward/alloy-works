@@ -25,6 +25,7 @@ import { testObjectStore, type TestObjectStore } from '@alloy-works/objects/test
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { cohortJob } from './jobs/cohort.js';
 import { processNext, type JobHandler, type WorkerLog } from './worker.js';
+import { machine } from './testing/machine.js';
 
 const quiet: WorkerLog = { info: () => {}, warn: () => {}, error: () => {} };
 
@@ -228,7 +229,9 @@ describe("a cohort's run, from the queue to the store", () => {
     expect((await as((trx) => readCohort(trx, cohort.id)))!.stoppedAt).toBeNull();
   }, 120_000);
 
-  it("makes four hundred documents well within the hour bulk generation's budget names", async () => {
+  it("REU-049 makes four hundred documents from one template within the hour bulk generation's budget names, recorded beside the machine", async ({
+    task,
+  }) => {
     const rows = Array.from({ length: 400 }, (_, at) => ({ site: String(at + 1) }));
     const { job } = await asked(rows);
     const started = Date.now();
@@ -241,7 +244,13 @@ describe("a cohort's run, from the queue to the store", () => {
       onFailure: 'continue',
       stoppedAt: null,
     });
-    // An hour is the budget; a tenth of it here leaves the margin production needs.
-    expect(took).toBeLessThan(6 * 60 * 1000);
+    // An hour is the budget (REU-049), stated against CI's reference runner (the R22 plan, R22-E),
+    // and recorded beside it; a tenth of it here leaves the margin production needs.
+    const result = { documents: 400, budgetMs: 60 * 60 * 1000, tookMs: took };
+    Object.assign(task.meta, { bulkBudget: { configuration: machine(), result } });
+    console.info(
+      `REU-049 bulk generation: ${JSON.stringify({ configuration: machine(), result })}`,
+    );
+    expect(took).toBeLessThan(result.budgetMs / 10);
   }, 600_000);
 });

@@ -34,7 +34,11 @@ export interface PublicationRequestTable {
   theme_version_id: ColumnType<string | null, string, never>;
   theme_kind: ColumnType<'theme', never, never>;
   /** A publish or a preview, named when it is asked for and never changed (0035). */
-  kind: ColumnType<'publish' | 'preview', 'publish' | 'preview' | undefined, never>;
+  kind: ColumnType<
+    'publish' | 'preview' | 'range',
+    'publish' | 'preview' | 'range' | undefined,
+    never
+  >;
   /** The baseline it is made from, read from its pins and never resolved again (0073), or none. */
   baseline_id: ColumnType<string | null, string | null | undefined, never>;
   /**

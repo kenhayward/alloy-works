@@ -247,6 +247,8 @@ describe('the rule behind a refusal', () => {
       'relationship.refused',
       'relationship.cardinality',
       'relationship.cycle',
+      // The R22 plan's (R22-B): a range preview of a node placing no component.
+      'node.missing',
     ];
     expect([...ruled.map(([dotted]) => dotted), ...unruled].sort()).toEqual(
       [...DOTTED_CODES].sort(),

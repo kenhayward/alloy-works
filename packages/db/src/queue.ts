@@ -20,7 +20,8 @@ export type JobKind =
   | 'audit_export'
   | 'impact_report'
   | 'cohort'
-  | 'tenant_export';
+  | 'tenant_export'
+  | 'range';
 
 /** What a worker is told: whose work, of what kind, about which id. Never any content. */
 export interface Job {
