@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto';
 
 import {
   CONVERSATION_TURNS_MOST,
+  listGuardrails,
   listConversations,
   listModelEndpoints,
   readConversation,
@@ -366,7 +367,9 @@ export function assistantHandlers(
           },
         ],
       };
+      const guardrails = await listGuardrails(trx);
       return streamedRun({
+        guardrails,
         request,
         db,
         tenant: tenantOf(request),
@@ -480,14 +483,14 @@ export function assistantHandlers(
           if (sealed === undefined) {
             throw new AppError(409, 'endpoint_unusable', 'The endpoint has no key set.');
           }
-          return { conversation, turns, endpoint, sealed };
+          return { conversation, turns, endpoint, sealed, guardrails: await listGuardrails(trx) };
         },
         contextOf(request),
       );
       if (!client) {
         throw new AppError(503, 'connector_unavailable', failureWords('connector_unavailable'));
       }
-      const { conversation, turns, endpoint, sealed } = prepared;
+      const { conversation, turns, endpoint, sealed, guardrails } = prepared;
       const document = conversation.documentId;
       // The earlier finished turns' words, never their tool results (G5-A).
       const earlier: ModelMessage[] = turns.flatMap((each): ModelMessage[] =>
@@ -505,6 +508,7 @@ export function assistantHandlers(
 
 (The author has component ${component} open.)`;
       return streamedRun({
+        guardrails,
         request,
         db,
         tenant,

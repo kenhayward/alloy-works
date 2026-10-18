@@ -1167,6 +1167,13 @@ describe('routes that check a permission', () => {
     }),
     getPrompt: () => ({ url: `/v1/prompts/${MISSING}`, status: 404 }),
     listPromptLibraries: () => ({ url: '/v1/prompt-libraries', status: 403 }),
+    listGuardrails: () => ({ url: '/v1/guardrails', status: 403 }),
+    setGuardrail: () => ({
+      url: '/v1/guardrails',
+      status: 403,
+      payload: { phrase: 'Probe', applies: 'sent', reason: 'Probe' },
+    }),
+    retireGuardrail: () => ({ url: `/v1/guardrails/${MISSING}/retirement`, status: 403 }),
     createPromptLibrary: () => ({
       url: '/v1/prompt-libraries',
       status: 403,

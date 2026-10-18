@@ -518,6 +518,8 @@ describe('the listings through the service', () => {
       'listConversations',
       // And the endpoints a turn may run on: the tenant's handful in use, as the endpoints are.
       'listConversationEndpoints',
+      // And the guardrails: an environment's own short list (the G5 plan, G5-F).
+      'listGuardrails',
     ];
     const listings = allRoutes.filter(
       (route) =>

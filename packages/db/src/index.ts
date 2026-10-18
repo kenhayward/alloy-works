@@ -731,6 +731,12 @@ export {
   type Turn,
 } from './conversations.js';
 export {
+  listGuardrails,
+  retireGuardrail,
+  setGuardrail,
+  type StoredGuardrail,
+} from './guardrails.js';
+export {
   giveQuerySlot,
   QUERY_RUNS_MOST,
   queryRunsBetween,

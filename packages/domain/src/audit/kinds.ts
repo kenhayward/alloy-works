@@ -161,6 +161,7 @@ const AUDIT_LOG = 'apps/service/src/audit-log.ts';
 const LATER = null;
 const MODELS = 'packages/db/src/model-endpoints.ts';
 const PROPOSALS = 'packages/db/src/generation-proposals.ts';
+const GUARDRAILS = 'packages/db/src/guardrails.ts';
 
 /** A relationship acted on: its type and itself, both by identifier (the R8 plan, R8-E). */
 const Related = z.strictObject({ type: z.uuid(), relationship: z.uuid() });
@@ -295,6 +296,9 @@ export const auditKindSpecs = {
     z.strictObject({ purpose: AuditName, endpoint: Id.nullable() }),
     MODELS,
   ),
+  // A tenant's guardrails (the G5 plan, G5-F): which side a rule watches, never its phrase.
+  'guardrail.set': kind(['LIF-067', 'GEN-049'], z.strictObject({ applies: AuditName }), GUARDRAILS),
+  'guardrail.retired': kind(['LIF-067', 'GEN-049'], empty, GUARDRAILS),
   'binding.resolved': kind(['LIF-067'], Binding, 'apps/service/src/data/bindings.ts'),
   'binding.checked': kind(['LIF-067'], Binding, 'apps/service/src/data/bindings.ts'),
   'binding.accepted': kind(['LIF-067', 'DAT-037'], Binding, 'apps/service/src/data/bindings.ts'),

@@ -187,6 +187,14 @@ export {
   conversationRoutes,
 } from './conversations.js';
 export {
+  GuardrailBody,
+  GuardrailList,
+  GuardrailListQuery,
+  GuardrailParams,
+  GuardrailView,
+  guardrailRoutes,
+} from './guardrails.js';
+export {
   RangePageParams,
   RangePreviewParams,
   RangePreviewView,

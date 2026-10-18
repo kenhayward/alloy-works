@@ -807,6 +807,12 @@ describe('the domain package', () => {
         'promptCall',
         'tooLarge',
         'wholeText',
+        // G5: a guardrail, and how a phrase is matched.
+        'GUARDRAIL_SIDES',
+        'guardrailMatch',
+        'guardrailSchema',
+        'matchable',
+        'watchesReplies',
       ].sort(),
     );
   });

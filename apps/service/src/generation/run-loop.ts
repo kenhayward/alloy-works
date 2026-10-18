@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 
 import {
+  actOnProposal,
   endRun,
   noteStep,
   recordGenerationRun,
@@ -13,6 +14,9 @@ import {
 } from '@alloy-works/db';
 import {
   canonicalCall,
+  guardrailMatch,
+  watchesReplies,
+  type GuardrailRule,
   type GenerationFailure,
   type ModelCall,
   type ModelMessage,
@@ -107,6 +111,8 @@ export function streamedRun(input: {
   ) => Readonly<Record<string, unknown>>;
   /** What `run` says beyond the run and its endpoint. */
   readonly started?: Readonly<Record<string, unknown>>;
+  /** The tenant's guardrails in force, checked on what is sent and what returns (G5-F). */
+  readonly guardrails?: readonly GuardrailRule[];
 }): Streamed {
   const { request, db, tenant, endpoint, sealed, limits } = input;
   const context = contextOf(request);
@@ -160,6 +166,12 @@ export function streamedRun(input: {
     let calls = 0;
     let outcome = 'finished';
     let failure: GenerationFailure | undefined;
+    // A guardrail that refused the run, by its rule (G5-F): never a connector's failure.
+    let refusedBy: GuardrailRule | undefined;
+    const rules = input.guardrails ?? [];
+    // Where a rule watches replies, each answer is held until it is checked, and sent once cleared.
+    const holding = watchesReplies(rules);
+    const proposed: GenerationProposal[] = [];
     let last = callOf();
     try {
       for (let turn = 0; turn < limits.turns; turn += 1) {
@@ -174,6 +186,9 @@ export function streamedRun(input: {
         }
         // What this turn gives the model, which is what the run's digest is over if it is the last.
         last = callOf();
+        // Everything it is about to be sent, the tools' results among it, checked first (G5-F).
+        refusedBy = guardrailMatch(rules, 'sent', sentText(last));
+        if (refusedBy) break;
         let text = '';
         const calledFor: { id: string; name: string; input: Record<string, unknown> }[] = [];
         const answer = await input.asking.model(
@@ -188,7 +203,7 @@ export function streamedRun(input: {
           (event) => {
             if (event.type === 'text') {
               text += event.text;
-              send('text', { text: event.text });
+              if (!holding) send('text', { text: event.text });
             } else if (event.type === 'tool_call') {
               calledFor.push({ id: event.id, name: event.name, input: event.input });
             }
@@ -213,6 +228,11 @@ export function streamedRun(input: {
           usage.in += ended.usage.in;
           usage.out += ended.usage.out;
           usage.reported = true;
+        }
+        if (holding && text !== '') {
+          refusedBy = guardrailMatch(rules, 'returned', text);
+          if (refusedBy) break;
+          send('text', { text });
         }
         said += text;
         const content: Extract<ModelMessage, { role: 'assistant' }>['content'] = [];
@@ -259,6 +279,7 @@ export function streamedRun(input: {
             result: answered.content,
           });
           if (answered.proposal) {
+            proposed.push(answered.proposal);
             send('proposal', {
               id: answered.proposal.id,
               number: answered.proposal.number,
@@ -287,11 +308,17 @@ export function streamedRun(input: {
       failure = { code: 'connector_error' };
     } finally {
       authority.stop();
-      const ending = failure?.code ?? outcome;
+      const ending = refusedBy ? 'guardrail_refused' : (failure?.code ?? outcome);
       const recorded = await db
         .withTenant(
           tenant,
           async (inner) => {
+            // A refused run's proposals are the model's output too, and are discarded with it.
+            if (refusedBy) {
+              for (const proposal of proposed) {
+                await actOnProposal(inner, { proposal, act: 'discarded', by: input.principalId });
+              }
+            }
             const ended = await endRun(inner, run, {
               outcome: ending,
               model,
@@ -310,7 +337,14 @@ export function streamedRun(input: {
           failure ??= { code: 'connector_error' };
           return undefined;
         });
-      if (failure) {
+      if (refusedBy) {
+        send('failed', {
+          code: 'guardrail_refused',
+          reason: refusedBy.reason,
+          rule: refusedBy.id,
+          message: `A guardrail refused this: ${refusedBy.reason}`,
+        });
+      } else if (failure) {
         send('failed', {
           code: failure.code,
           ...(failure.reason ? { reason: failure.reason } : {}),
@@ -329,4 +363,19 @@ export function streamedRun(input: {
       }
     }
   });
+}
+
+/** Everything a call sends but the product's own instructions: the words, tool calls and results. */
+function sentText(call: ModelCall): string {
+  return call.messages
+    .flatMap((message) =>
+      message.content.map((block) =>
+        block.type === 'text'
+          ? block.text
+          : block.type === 'tool_result'
+            ? block.content
+            : JSON.stringify(block.input),
+      ),
+    )
+    .join('\n');
 }
