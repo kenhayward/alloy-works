@@ -744,6 +744,16 @@ export {
   type StoredGuardrail,
 } from './guardrails.js';
 export {
+  changePersonalPrompt,
+  deletePersonalPrompt,
+  listPersonalPrompts,
+  PERSONAL_PROMPTS_MOST,
+  readPersonalPrompt,
+  recordPromotion,
+  savePersonalPrompt,
+  type PersonalPrompt,
+} from './personal-prompts.js';
+export {
   giveQuerySlot,
   QUERY_RUNS_MOST,
   queryRunsBetween,

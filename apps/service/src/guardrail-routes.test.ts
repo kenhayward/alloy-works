@@ -166,4 +166,47 @@ describe('guardrails through the service (the G5 plan, G5-F)', () => {
       await h.call('ada', 'POST', `/v1/guardrails/${id}/retirement`);
     }
   });
+
+  it('GEN-049 refuses a proposal whose text a reply rule forbids, before the tool runs', async () => {
+    const id = await rule('Project Merlin', 'returned', 'An unannounced project');
+    answer = () => [
+      {
+        type: 'tool_call',
+        id: 't1',
+        name: 'propose_edit',
+        input: {
+          component: sites.id,
+          edits: [{ replace: 'p1', markdown: 'Project Merlin floods.' }],
+        },
+      },
+      ended('tool_use'),
+    ];
+    try {
+      const frames = await turn('Rewrite the part.');
+      expect(frames.map((frame) => frame.event)).not.toContain('proposal');
+      expect(frames.at(-1)).toMatchObject({
+        event: 'failed',
+        data: { code: 'guardrail_refused', rule: id },
+      });
+    } finally {
+      answer = () => [text('Fine.'), ended()];
+      await h.call('ada', 'POST', `/v1/guardrails/${id}/retirement`);
+    }
+  });
+
+  it('keeps no reply a rule refused on a run, so no read of the run shows it', async () => {
+    const id = await rule('Project Kite', 'returned', 'An unannounced project');
+    answer = () => [text('Project Kite is next.'), ended()];
+    try {
+      const frames = await turn('What is next?');
+      const run = (
+        await h.call('grace', 'GET', `/v1/assistant/runs/${String(frames[0]!.data.run)}`)
+      ).json<{ run: { reply: string | null; outcome: string } }>().run;
+      expect(run.outcome).toBe('guardrail_refused');
+      expect(JSON.stringify(run)).not.toContain('Project Kite is next');
+    } finally {
+      answer = () => [text('Fine.'), ended()];
+      await h.call('ada', 'POST', `/v1/guardrails/${id}/retirement`);
+    }
+  });
 });

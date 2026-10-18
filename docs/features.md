@@ -190,6 +190,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   find one to add.
   A conversation may also propose a new part: where, its title and its text. Nothing is made until you
   accept it, when it is made as yours at 0.1, and the document's **Generated content** names it.
+  **Your prompts** keeps words of your own, which nobody else sees: **Use** one as what you ask,
+  **Save** what you are asking, and **Promote** one into a space as a new prompt at draft, which is
+  then reviewed and tried like any other (`/v1/me/prompts`).
 - **Guardrails.** Administration's **Guardrails** lists phrases the environment forbids in what a
   model is sent, what it returns, or both, each with its reason. A turn, a run or a trial meeting one
   is refused before any call, or its reply withheld, saying which rule and why; where a rule watches

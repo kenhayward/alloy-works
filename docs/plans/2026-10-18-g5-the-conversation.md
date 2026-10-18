@@ -40,3 +40,14 @@ what it forbids in what is sent and what returns (GEN-047 to GEN-055).
 - **G5d**: `conversation_context` (0129); tray routes; tools without a document; the Conversations page. Tests: GEN-053 a part added, removed, and one whose access is revoked between turns absent from the call.
 - **G5e**: 0130; `propose_component`; accepting; the report's arm. Tests: GEN-052 a component proposed, accepted, made at 0.1, and in the generated report once placed.
 - **G5f**: `personal_prompt` (0131); routes; the panel's own prompts and Promote. Tests: GEN-054 another person never sees or runs one, a template refused its id (TPL-061); GEN-055 promotion the one path, its prompt at draft. The walks; the final review; the close.
+
+## Built
+
+G5 in six PRs: G5a #720, G5b #721, G5c #723, G5d #724, G5e #725 and the close #726. Departures: a
+session's route may stream (`app.ts`); a conversation on no document has its own tools, search, read
+and propose against the latest version; `propose_component` is a conversation's alone, the assistant
+on a document keeping its five; trays stay with their conversations when a person is erased. The final
+review found no leak; it fixed a refused prompt-run reply still stored, a reply rule blind to proposal
+text, a second promotion, failed turns counted towards the 20, and a no-document turn read back blank.
+Left, named in generation.md: an earlier reply replays as written; two turns sent at once can both
+start. GEN-021 is the model's, left for a real-model run.

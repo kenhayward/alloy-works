@@ -17764,6 +17764,14 @@
         {
           "id": "GEN-052",
           "howItIsMet": "`propose_component` in a conversation: made at 0.1 as the person only once accepted, never kept, reported as generated (G5-E)"
+        },
+        {
+          "id": "GEN-054",
+          "howItIsMet": "`personal_prompt`: its owner's alone, never an artifact, so no template binds one and nobody else reads or runs it (G5-G)"
+        },
+        {
+          "id": "GEN-055",
+          "howItIsMet": "Promotion, the one path: a new prompt at draft in a space its owner may edit, reviewed and tried like any other (G5-G)"
         }
       ]
     },
@@ -20636,13 +20644,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 526,
+      "line": 533,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 539,
+      "line": 546,
       "kind": "title"
     },
     {
@@ -20996,19 +21004,19 @@
     {
       "id": "GEN-051",
       "file": "apps/service/src/conversation-routes.test.ts",
-      "line": 138,
+      "line": 146,
       "kind": "title"
     },
     {
       "id": "GEN-052",
       "file": "apps/service/src/conversation-routes.test.ts",
-      "line": 258,
+      "line": 266,
       "kind": "title"
     },
     {
       "id": "GEN-053",
       "file": "apps/service/src/conversation-routes.test.ts",
-      "line": 185,
+      "line": 193,
       "kind": "title"
     },
     {
@@ -21044,7 +21052,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1743,
+      "line": 1778,
       "kind": "title"
     },
     {
@@ -21657,6 +21665,24 @@
       "id": "IAM-040",
       "file": "apps/service/src/own-sessions.test.ts",
       "line": 33,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-054",
+      "file": "apps/service/src/personal-prompt-routes.test.ts",
+      "line": 42,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-055",
+      "file": "apps/service/src/personal-prompt-routes.test.ts",
+      "line": 85,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-061",
+      "file": "apps/service/src/personal-prompt-routes.test.ts",
+      "line": 42,
       "kind": "title"
     },
     {

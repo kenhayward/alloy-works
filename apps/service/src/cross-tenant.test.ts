@@ -13,6 +13,7 @@ import {
   createPrompt,
   startConversation,
   setGuardrail,
+  savePersonalPrompt,
   createQueryDefinition,
   readPrompt,
   createTemplate,
@@ -197,6 +198,9 @@ const OTHER_TENANT_IDS: Readonly<
   startAssistantRun: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   getConversation: async (tenant, db) => ({ id: await conversationIdIn(tenant, db) }),
   getConversationContext: async (tenant, db) => ({ id: await conversationIdIn(tenant, db) }),
+  changePersonalPrompt: async (tenant, db) => ({ id: await personalPromptIdIn(tenant, db) }),
+  removePersonalPrompt: async (tenant, db) => ({ id: await personalPromptIdIn(tenant, db) }),
+  promotePersonalPrompt: async (tenant, db) => ({ id: await personalPromptIdIn(tenant, db) }),
   addConversationContext: async (tenant, db) => ({ id: await conversationIdIn(tenant, db) }),
   removeConversationContext: async (tenant, db) => ({
     id: await conversationIdIn(tenant, db),
@@ -708,6 +712,16 @@ const VALID_INPUT: Readonly<
   setGuardrail: { payload: { phrase: 'Probe', applies: 'sent', reason: 'Probe' } },
   takeTurn: { payload: { ask: 'Hello' } },
   addConversationContext: { payload: { component: SESSION } },
+  savePersonalPrompt: { payload: { title: 'Mine', instructions: 'Mine.' } },
+  changePersonalPrompt: { payload: { title: 'Mine', instructions: 'Mine.' } },
+  promotePersonalPrompt: {
+    payload: {
+      space: SESSION,
+      context: [{ source: 'outline', scope: 'part' }],
+      output: { componentType: null },
+      models: { purpose: 'drafting', accepts: ['m'] },
+    },
+  },
   startPromptRun: { payload: { prompt: SESSION, node: 'n1' } },
   startPromptTrial: { payload: { document: SESSION, node: 'n1' } },
   makeModelEndpoint: {
@@ -1005,6 +1019,27 @@ const conversationIdIn = (tenant: Tenant, db: TenantDatabase) =>
       .executeTakeFirstOrThrow();
     return (await startConversation(trx, { owner: owner.id, documentId: null, title: 'Theirs' }))
       .id;
+  });
+
+/** A personal prompt in environment B, of a person there. */
+const personalPromptIdIn = (tenant: Tenant, db: TenantDatabase) =>
+  db.withTenant(tenant, async (trx) => {
+    const owner = await trx
+      .insertInto('principal')
+      .values({
+        issuer: 'https://idp.example',
+        subject: `ivy-${randomUUID()}`,
+        email: null,
+        display_name: null,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    const saved = await savePersonalPrompt(trx, owner.id, {
+      title: 'Theirs',
+      instructions: 'Theirs.',
+    });
+    if (saved === 'full') throw new Error('full');
+    return saved.id;
   });
 
 /** A prompt library in environment B. */

@@ -522,6 +522,8 @@ describe('the listings through the service', () => {
       'listGuardrails',
       // And a conversation's tray: at most 50 parts (G5-D).
       'getConversationContext',
+      // And a person's own prompts, at most 200 (G5-G).
+      'listPersonalPrompts',
     ];
     const listings = allRoutes.filter(
       (route) =>

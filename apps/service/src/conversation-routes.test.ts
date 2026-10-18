@@ -133,6 +133,14 @@ describe('conversations through the service (the G5 plan, G5-A to G5-C)', () => 
     expect(ran.statusCode).toBe(200);
     expect(framesOf(ran.body).map((frame) => frame.event)).toEqual(['run', 'text', 'ended']);
     expect(JSON.stringify(asked.at(-1)!.call.messages)).toContain('What is a good name for a cat?');
+    // A turn on no document is its requester's own to read back, words and all.
+    const run = (
+      await h.call('grace', 'GET', `/v1/assistant/runs/${String(framesOf(ran.body)[0]!.data.run)}`)
+    ).json<{ run: { ask: string; reply: string } }>().run;
+    expect(run).toMatchObject({
+      ask: 'What is a good name for a cat?',
+      reply: expect.stringMatching(/^Answer/),
+    });
   });
 
   it('GEN-051 runs a turn on the endpoint chosen among those in use, saying which and where it sits', async () => {

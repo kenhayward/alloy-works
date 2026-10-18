@@ -3,6 +3,20 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.198.0 - 2026-10-18 (PR #726)
+
+The intelligence's fifth slice: the conversation (the G5 plan).
+
+### Added
+
+- **A run keeps its words.** Each run of the assistant now keeps what you asked and what the model wrote, and its page shows them to you.
+- **Conversations.** The Assistant tab now holds conversations: pick an earlier one to see its turns and go on, or start a new one. Each turn carries the earlier turns' words, and you choose the endpoint it runs on.
+- **Guardrails.** Administration's Guardrails forbids phrases in what a model is sent, what it returns, or both, each with a reason. A conversation's turn, an assistant run or a prompt run meeting one is refused and says which rule and why; a reply is shown only once checked wherever a rule watches replies.
+- **What a conversation reads.** Each conversation lists what it reads: the parts its turns read and any you add. Every turn reads them again as you, leaving out, and saying so, any you may no longer read; remove a part, or find one to add.
+- **Conversations.** A Conversations module holds conversations about no document, where the assistant searches and reads what you may read and proposes edits as it does on a document.
+- **New parts from a conversation.** A conversation can propose a new part, with its title and text. Nothing is made until you accept it; it is then made as yours, and a document placing it says a model wrote it.
+- **Your prompts.** Save words of your own, which nobody else sees, use one in a conversation, and promote one into a space as a new prompt, which is then reviewed and tried like any other.
+
 ## 0.197.0 - 2026-10-18 (PR #719)
 
 The intelligence's fourth slice: prompts and libraries (the G4 plan).
