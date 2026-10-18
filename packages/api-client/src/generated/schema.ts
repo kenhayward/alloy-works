@@ -2127,6 +2127,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/documents/{id}/range-previews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview the pages of the occurrence being edited, refreshed after each save
+         * @description Asks for a range preview of the occurrence being edited in the latest version of a document: its pages and one either side, drawn by a job from the editing session’s latest save as PNG images. Each image is untagged by design, and its alternative text says so and names the tagged PDF that Preview makes. Needs read on the document.
+         */
+        post: operations["requestRangePreview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{id}/range-previews/{range}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A range preview: whether its latest refresh is drawn, and its pages
+         * @description Returns a range preview: waiting until its latest refresh is drawn, then ready, with each page’s number and alternative text, and the save it shows. The asker’s alone. Needs read on the document.
+         */
+        get: operations["getRangePreview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{id}/range-previews/{range}/pages/{page}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One page of a range preview, as PNG
+         * @description Returns one page of a range preview as PNG, drawn again at each refresh. The asker’s alone. Needs read on the document.
+         */
+        get: operations["getRangePage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{id}/range-previews/{range}/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Draw the range again from the latest save its session recorded
+         * @description Asks for the range to be drawn again from the latest save its editing session recorded: call it after each save. The asker’s alone. Needs read on the document.
+         */
+        post: operations["refreshRangePreview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/documents/{id}/rounds": {
         parameters: {
             query?: never;
@@ -47781,6 +47861,709 @@ export interface operations {
                              */
                             reason: "never" | "changed";
                         }[];
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    requestRangePreview: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "version": "00000000-0000-4000-8000-000000000001",
+                 *       "node": "example",
+                 *       "session": "00000000-0000-4000-8000-000000000001"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The document version being edited, which must be the latest */
+                    version: string & (unknown & unknown);
+                    /** @description The occurrence being edited, by its outline node */
+                    node: string;
+                    /** @description The editing session whose saves the range shows */
+                    session: string & (unknown & unknown);
+                    /** @description The profile to preview under in place of the document's own (REU-025) */
+                    profile?: {
+                        values: {
+                            [key: string]: string[];
+                        };
+                        /** @constant */
+                        excludeUnset?: true;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Asked for: its pages are drawn by a job */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "state": "waiting",
+                     *       "node": "example",
+                     *       "sequence": -9007199254740991,
+                     *       "pages": -9007199254740991,
+                     *       "images": [],
+                     *       "untagged": "example",
+                     *       "failure": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        /**
+                         * @description waiting until the latest refresh asked for is drawn; ready once it is; failed where it could not be
+                         * @enum {string}
+                         */
+                        state: "waiting" | "ready" | "failed";
+                        node: string;
+                        /** @description The editing session's save the pages show, or null where they show the version */
+                        sequence: number | null;
+                        /** @description How many pages the document has */
+                        pages: number | null;
+                        /** @description The pages drawn, in order: the occurrence and one either side */
+                        images: {
+                            page: number;
+                            /** @description Says the page is an untagged preview, and names the tagged PDF as the accessible way to read it */
+                            alternative: string;
+                        }[];
+                        /** @description What the pane says on screen: these pages are untagged, and the tagged PDF is the accessible path */
+                        untagged: string;
+                        failure: string | null;
+                    };
+                };
+            };
+            /** @description `node_missing`: the version places no component at that node; otherwise as a preview's refusals */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description profile_invalid: each axis, or `axis.value`, the environment does not declare */
+                        unknown?: string[];
+                        /** @description profile_incomplete: each axis the document's template requires its profile to set */
+                        axes?: string[];
+                        /** @description version_precondition: the version the document is at */
+                        current?: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        /** @description section_required: each section the document's template requires that none of its sections came from */
+                        sections?: {
+                            key: string;
+                            title: string;
+                        }[];
+                        /** @description component_required: each component the document's template requires, by its key, that no reference came from and no reason waived */
+                        components?: {
+                            key: string;
+                        }[];
+                        /** @description metadata_invalid: each value that does not satisfy the document's template, in MET-022's shape, with the node it belongs to, null for the document's own */
+                        failures?: {
+                            node: string | null;
+                            code: string;
+                            field: string;
+                            rule: string;
+                            schemas: string[];
+                            detail: string;
+                        }[];
+                        /** @description values_unresolved: what the document's template names that does not resolve now */
+                        unresolved?: {
+                            [key: string]: unknown;
+                        }[];
+                        /**
+                         * @description binding_unresolved: the product's: a value is resolved in the document, not the source
+                         * @enum {string}
+                         */
+                        attribution?: "product";
+                        /** @description binding_unresolved: the document holding the bindings */
+                        document?: string;
+                        /** @description binding_unresolved: each binding with no result to print, by the outline node whose component holds it, the binding's identifier and why */
+                        bindings?: {
+                            node: string;
+                            binding: string;
+                            /**
+                             * @description `never`: never resolved in this document; `changed`: edited since it was
+                             * @enum {string}
+                             */
+                            reason: "never" | "changed";
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a reader may preview */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `version_precondition`: the document has a newer version than the one named */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description profile_invalid: each axis, or `axis.value`, the environment does not declare */
+                        unknown?: string[];
+                        /** @description profile_incomplete: each axis the document's template requires its profile to set */
+                        axes?: string[];
+                        /** @description version_precondition: the version the document is at */
+                        current?: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        /** @description section_required: each section the document's template requires that none of its sections came from */
+                        sections?: {
+                            key: string;
+                            title: string;
+                        }[];
+                        /** @description component_required: each component the document's template requires, by its key, that no reference came from and no reason waived */
+                        components?: {
+                            key: string;
+                        }[];
+                        /** @description metadata_invalid: each value that does not satisfy the document's template, in MET-022's shape, with the node it belongs to, null for the document's own */
+                        failures?: {
+                            node: string | null;
+                            code: string;
+                            field: string;
+                            rule: string;
+                            schemas: string[];
+                            detail: string;
+                        }[];
+                        /** @description values_unresolved: what the document's template names that does not resolve now */
+                        unresolved?: {
+                            [key: string]: unknown;
+                        }[];
+                        /**
+                         * @description binding_unresolved: the product's: a value is resolved in the document, not the source
+                         * @enum {string}
+                         */
+                        attribution?: "product";
+                        /** @description binding_unresolved: the document holding the bindings */
+                        document?: string;
+                        /** @description binding_unresolved: each binding with no result to print, by the outline node whose component holds it, the binding's identifier and why */
+                        bindings?: {
+                            node: string;
+                            binding: string;
+                            /**
+                             * @description `never`: never resolved in this document; `changed`: edited since it was
+                             * @enum {string}
+                             */
+                            reason: "never" | "changed";
+                        }[];
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getRangePreview: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+                range: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The range preview */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "state": "waiting",
+                     *       "node": "example",
+                     *       "sequence": -9007199254740991,
+                     *       "pages": -9007199254740991,
+                     *       "images": [],
+                     *       "untagged": "example",
+                     *       "failure": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        /**
+                         * @description waiting until the latest refresh asked for is drawn; ready once it is; failed where it could not be
+                         * @enum {string}
+                         */
+                        state: "waiting" | "ready" | "failed";
+                        node: string;
+                        /** @description The editing session's save the pages show, or null where they show the version */
+                        sequence: number | null;
+                        /** @description How many pages the document has */
+                        pages: number | null;
+                        /** @description The pages drawn, in order: the occurrence and one either side */
+                        images: {
+                            page: number;
+                            /** @description Says the page is an untagged preview, and names the tagged PDF as the accessible way to read it */
+                            alternative: string;
+                        }[];
+                        /** @description What the pane says on screen: these pages are untagged, and the tagged PDF is the accessible path */
+                        untagged: string;
+                        failure: string | null;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such range preview of a document the caller may read, or not theirs */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getRangePage: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+                range: string & (unknown & unknown);
+                page: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The page as the warm compile drew it: an image, untagged by design */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": string;
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such page of a range preview of the caller */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    refreshRangePreview: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+                range: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Asked for: the pages are drawn again by a job */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "state": "waiting",
+                     *       "node": "example",
+                     *       "sequence": -9007199254740991,
+                     *       "pages": -9007199254740991,
+                     *       "images": [],
+                     *       "untagged": "example",
+                     *       "failure": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        /**
+                         * @description waiting until the latest refresh asked for is drawn; ready once it is; failed where it could not be
+                         * @enum {string}
+                         */
+                        state: "waiting" | "ready" | "failed";
+                        node: string;
+                        /** @description The editing session's save the pages show, or null where they show the version */
+                        sequence: number | null;
+                        /** @description How many pages the document has */
+                        pages: number | null;
+                        /** @description The pages drawn, in order: the occurrence and one either side */
+                        images: {
+                            page: number;
+                            /** @description Says the page is an untagged preview, and names the tagged PDF as the accessible way to read it */
+                            alternative: string;
+                        }[];
+                        /** @description What the pane says on screen: these pages are untagged, and the tagged PDF is the accessible path */
+                        untagged: string;
+                        failure: string | null;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such range preview of a document the caller may read, or not theirs */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
                     };
                 };
             };

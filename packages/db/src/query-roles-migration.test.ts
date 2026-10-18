@@ -186,6 +186,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0116_cohort_on_failure',
       '0117_dataset_source',
       '0118_tenant_export',
+      '0119_range_preview',
     ]);
     expect(applied[own.id]).toEqual([
       '0058_query_roles',
@@ -249,6 +250,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0116_cohort_on_failure',
       '0117_dataset_source',
       '0118_tenant_export',
+      '0119_range_preview',
     ]);
 
     expect(await queryRoles(development)).toEqual([

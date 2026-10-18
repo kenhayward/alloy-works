@@ -4,10 +4,13 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts'],
-    // The publishing budget binds only off a shared runner (W-D), so CI does not run it.
+    // The publishing budget binds only off a shared runner (W-D), so CI does not run it; the range
+    // preview's runs there on its own after the suite (vitest.budget.config.ts; the R22 plan, R22-C).
     exclude: [
       ...configDefaults.exclude,
-      ...(process.env['CI'] === 'true' ? ['src/publishing-budget.test.ts'] : []),
+      ...(process.env['CI'] === 'true'
+        ? ['src/publishing-budget.test.ts', 'src/range-preview-budget.test.ts']
+        : []),
     ],
     // The login roles set once for the run, so each file prepares only its own database and the
     // files run side by side; and one veraPDF kept warm for the run (src/testing/verapdf-server.ts),

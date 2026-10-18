@@ -18,6 +18,8 @@ const WIRE_CODES = {
   'iteration.stale': 'iteration_stale',
   'iteration.conflict': 'iteration_conflict',
   'version.precondition': 'version_precondition',
+  // A range preview of a node its version places nothing at (the R22 plan, R22-B).
+  'node.missing': 'node_missing',
   'version.unchanged': 'version_unchanged',
   'content.invalid': 'content_invalid',
   'artifact.missing': 'artifact_missing',

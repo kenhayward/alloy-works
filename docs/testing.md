@@ -489,6 +489,16 @@ PostgreSQL 17 in Docker.** A run on another machine binds as this one does, but 
 machine's; a number quoted for the budget is quoted from this configuration. W14.2 measured a p95 of
 1.4 to 1.6 seconds on it alone, over four runs, and 1.8 seconds beside the rest of the suite.
 
+### The range preview's budget
+
+CNT-186's budget (a saved edit in the range preview within three seconds at the 95th percentile, none
+above six, on the reference document; CNT-151's one second was not met there, 1.2 s, and is revisited
+with every budget at the end of the implementation) is stated against **CI's runner**, GitHub Actions `ubuntu-latest` (4 vCPU, 16 GB), Ken's
+choice in [the R22 plan](plans/2026-10-18-r22-the-warm-range-preview.md) (R22-C). It runs alone after the
+worker suite, `pnpm --filter @alloy-works/worker test:budget`, binds on every run and records the time
+beside the machine in `.trace-results/worker-budget.json`; locally it runs with the rest. REU-049's
+400 documents within the hour is recorded the same way, by `apps/worker/src/cohort.test.ts`.
+
 ## The Open XML validator
 
 Every worker test that makes a `.docx` - `apps/worker/src/word.test.ts` and the publish job's Word

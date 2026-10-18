@@ -47,6 +47,7 @@ export {
   MAX_FAILED_RULES,
   publicationBindings,
   publicationInputs,
+  rangeInputs,
   publicationToCheck,
   readPublication,
   readPublicationRequest,
@@ -234,6 +235,19 @@ export {
   type ExportPart,
   type TenantExport,
 } from './tenant-export.js';
+export {
+  failRangePreview,
+  latestIteration,
+  rangePreviewOf,
+  readRangePage,
+  readRangePreview,
+  recordRangePages,
+  refreshRangePreview,
+  requestRangePreview,
+  sweepRangePreviews,
+  type RangePreview,
+  type RangePreviewAnswer,
+} from './range-previews.js';
 export { sha256Hex, versionDigests, type VersionDigests } from './version-digest.js';
 export {
   archiveSpace,

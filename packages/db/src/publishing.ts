@@ -745,7 +745,7 @@ export async function resolvePublishable(
     readonly version: string;
     readonly principal: string;
     readonly formats: readonly string[] | null;
-    readonly kind: 'publish' | 'preview';
+    readonly kind: 'publish' | 'preview' | 'range';
     /** The profile it is made under where not the document's own (REU-027). */
     readonly profile?: StoredProfile;
   },
@@ -770,7 +770,7 @@ export async function resolvePublishable(
     if (unsupported.length > 0) return { answer: 'format.unsupported', formats: unsupported };
     // A preview is the PDF alone (PV-C): Word's pagination would be our guess at Word's, which is why
     // CNT-095 was narrowed. Each format beyond it is named once, in the order asked.
-    if (kind === 'preview') {
+    if (kind !== 'publish') {
       const beyond = [...new Set(formats.filter((format) => format !== 'pdf'))];
       if (beyond.length > 0) return { answer: 'format.unsupported', formats: beyond };
     }
@@ -933,8 +933,11 @@ export async function requestPublication(
     readonly version: string;
     readonly formats: readonly string[];
     readonly requester: string;
-    /** A publish unless told: a preview of that version, marked as one and kept for an hour. */
-    readonly kind?: 'publish' | 'preview';
+    /**
+     * A publish unless told: a preview of that version, marked as one and kept for an hour; or a range,
+     * the warm range preview's inputs, recorded as a preview's are (the R22 plan, R22-B).
+     */
+    readonly kind?: 'publish' | 'preview' | 'range';
     /** The profile to make it under in place of the document's (REU-027; the R6 plan, R6-F). */
     readonly profile?: StoredProfile;
   },
@@ -973,7 +976,7 @@ export async function requestPublication(
       theme_id: theme.artifactId,
       theme_version_id: theme.versionId,
       // A preview names its kind; a publish is the column's default, as every request before 0035 was.
-      ...(kind === 'preview' ? { kind } : {}),
+      ...(kind === 'publish' ? {} : { kind }),
       ...(said ? { profile: JSON.stringify(profile) } : {}),
     })
     .returning(['id'])
@@ -1079,7 +1082,7 @@ export interface PublicationInputs {
   readonly request: {
     readonly id: string;
     /** What the job makes of it (0035): a publication, or a preview, which records none. */
-    readonly kind: 'publish' | 'preview';
+    readonly kind: 'publish' | 'preview' | 'range';
     readonly documentId: string;
     readonly documentVersionId: string;
     readonly requestedBy: string;
@@ -1368,6 +1371,25 @@ export async function publicationInputs(
   trx: TenantTransaction,
   requestId: string,
 ): Promise<PublicationInputs | undefined> {
+  return inputsOf(trx, requestId, false);
+}
+
+/**
+ * A range preview's inputs (the R22 plan, R22-B): its request's, as `publicationInputs` reads them,
+ * read again at each refresh after the first has finished the request. Undefined for any other kind.
+ */
+export async function rangeInputs(
+  trx: TenantTransaction,
+  requestId: string,
+): Promise<PublicationInputs | undefined> {
+  return inputsOf(trx, requestId, true);
+}
+
+async function inputsOf(
+  trx: TenantTransaction,
+  requestId: string,
+  range: boolean,
+): Promise<PublicationInputs | undefined> {
   const request = await trx
     .selectFrom('publication_request as r')
     .innerJoin('artifact as a', 'a.id', 'r.document_id')
@@ -1401,7 +1423,10 @@ export async function publicationInputs(
     ])
     .where('r.id', '=', requestId)
     .executeTakeFirst();
-  if (!request || request.state !== 'queued') return undefined;
+  if (!request) return undefined;
+  if (range ? request.kind !== 'range' || request.state === 'failed' : request.state !== 'queued') {
+    return undefined;
+  }
   const pinnedBy =
     request.baseline_id === null
       ? null
@@ -1638,7 +1663,7 @@ export async function failPublicationRequest(
   failures: readonly PublishFailure[],
 ): Promise<
   | {
-      readonly kind: 'publish' | 'preview';
+      readonly kind: 'publish' | 'preview' | 'range';
       readonly documentId: string;
       readonly documentVersionId: string;
       readonly requestedBy: string;
@@ -2044,7 +2069,7 @@ export interface StoredPublicationRequest {
   readonly documentId: string;
   readonly requestedBy: string;
   /** A publish, or a preview (0035). */
-  readonly kind: 'publish' | 'preview';
+  readonly kind: 'publish' | 'preview' | 'range';
   readonly state: 'queued' | 'done' | 'failed';
   readonly failures: readonly PublishFailure[];
   readonly publication: string | null;

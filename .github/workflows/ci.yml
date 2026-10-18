@@ -305,6 +305,13 @@ jobs:
       - name: Test
         run: pnpm exec turbo run test --filter=@alloy-works/${{ matrix.suite }} -- --retry=1
 
+      # The warm range preview's budget on this, its reference runner (CNT-151; the R22 plan, R22-C):
+      # alone, after the suite, so it measures the runner and nothing beside it; recorded every run,
+      # and over budget it fails.
+      - name: The range preview budget
+        if: ${{ matrix.suite == 'worker' }}
+        run: pnpm --filter @alloy-works/worker test:budget
+
       - name: Flakes
         if: always()
         env:

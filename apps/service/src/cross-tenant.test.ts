@@ -175,6 +175,17 @@ const OTHER_TENANT_IDS: Readonly<
   getDocumentTexts: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   requestPublication: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   requestPreview: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  requestRangePreview: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  getRangePreview: async (tenant, db) => ({ id: await documentIdIn(tenant, db), range: SESSION }),
+  refreshRangePreview: async (tenant, db) => ({
+    id: await documentIdIn(tenant, db),
+    range: SESSION,
+  }),
+  getRangePage: async (tenant, db) => ({
+    id: await documentIdIn(tenant, db),
+    range: SESSION,
+    page: '1',
+  }),
   getPublicationRequest: async (tenant, db) => ({ id: (await publicationIn(tenant, db)).request }),
   listPublications: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   getPublication: async (tenant, db) => ({ id: (await publicationIn(tenant, db)).publication }),
@@ -506,6 +517,9 @@ const VALID_INPUT: Readonly<
   takeLock: { payload: { session: SESSION } },
   requestPublication: { payload: { version: SESSION, formats: ['pdf'] } },
   requestPreview: { payload: { version: SESSION } },
+  requestRangePreview: {
+    payload: { version: SESSION, node: 'aaaaaaaaaaaaaaaaaaaaaaaaaa', session: SESSION },
+  },
   makeBaseline: { payload: { version: SESSION, name: 'Elsewhere' } },
   supersedeBaseline: { payload: { by: SESSION } },
   startComponentThread: {
