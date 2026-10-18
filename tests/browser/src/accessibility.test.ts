@@ -511,6 +511,22 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
             ),
         ],
       });
+      // The model endpoints and what each purpose uses, and the form an endpoint is added with (the
+      // G1 plan, G1-K).
+      await sections.getByRole('link', { name: /^Models/ }).click();
+      await check('Administration, Models', {
+        shows: [
+          heading('Models', 1),
+          administration.getByRole('table', { name: 'Model routes' }).getByRole('row').first(),
+        ],
+      });
+      await administration.getByRole('button', { name: 'Add an endpoint' }).click();
+      await check('Administration, adding a model endpoint', {
+        shows: administration
+          .getByRole('form', { name: 'Add an endpoint' })
+          .getByLabel('Data boundary'),
+      });
+      await administration.getByRole('button', { name: 'Cancel' }).click();
       // Each kind's workflow, its states and transitions edited in place (the WF1 plan, WF-J).
       await sections.getByRole('link', { name: /^Workflows/ }).click();
       await check('Administration, Workflows', {

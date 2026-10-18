@@ -190,15 +190,23 @@ export function createConnectorServer(options: {
       // writes it, the last `ended` or `failed`; the head goes once the call holds a child.
       const parsed = modelRequestSchema.safeParse(body);
       if (!parsed.success) return send(400, { code: 'request_invalid' });
+      // The head is written with the first event, which may come before `model` returns: a key that
+      // does not open fails at once (the final review).
+      const head = () => {
+        if (!response.headersSent) {
+          response.writeHead(200, { 'content-type': 'application/x-ndjson' });
+        }
+      };
       const call = supervisor.model(
         parsed.data,
         (event) => {
+          head();
           response.write(`${JSON.stringify(event)}\n`);
         },
         gone.signal,
       );
       if (call === 'busy') return send(503, { code: 'connector_busy' });
-      response.writeHead(200, { 'content-type': 'application/x-ndjson' });
+      head();
       await call;
       response.end();
       return { status: 200, stderrBytes: stderrBytes - before };
@@ -240,6 +248,7 @@ export function createConnectorServer(options: {
     handle(request, response)
       .catch(() => {
         if (!response.headersSent) response.writeHead(500, { 'content-length': '0' }).end();
+        else response.end();
         return { status: 500, stderrBytes: 0 };
       })
       .then(({ status, stderrBytes: written }) => {

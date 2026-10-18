@@ -91,6 +91,11 @@ export const documentationGroups = [
           'The pages of the occurrence being edited and one either side, drawn from its author’s saves as pictures within a second, untagged by design and saying so: the tagged PDF a preview makes is the accessible path.',
       },
       {
+        name: 'Model endpoints',
+        description:
+          'The model endpoints the environment calls, on its own provider accounts: their keys, which the connector seals and no route answers, whether each sits outside the data boundary, which purpose goes to which, and a test recorded as a run.',
+      },
+      {
         name: 'Tenant export',
         description:
           'The whole environment exported as a job: its content, versions, relationships, baselines and publication records as JSON Lines, the bytes they name by hash, and a manifest of what it leaves out. Kept seven days.',
@@ -354,6 +359,17 @@ const operationTags = {
     'getRangePreview',
     'refreshRangePreview',
     'getRangePage',
+  ],
+  'Model endpoints': [
+    'listModelEndpoints',
+    'makeModelEndpoint',
+    'getModelEndpoint',
+    'changeModelEndpoint',
+    'retireModelEndpoint',
+    'setModelEndpointKey',
+    'testModelEndpoint',
+    'listModelRoutes',
+    'setModelRoute',
   ],
   'Tenant export': [
     'requestTenantExport',
@@ -755,6 +771,24 @@ const descriptions: Readonly<Record<string, string>> = {
     'Asks for the range to be drawn again from the latest save its editing session recorded: call it after each save. The asker’s alone. Needs read on the document.',
   getRangePage:
     'Returns one page of a range preview as PNG, drawn again at each refresh. The asker’s alone. Needs read on the document.',
+  listModelEndpoints:
+    'Lists the environment’s model endpoints, those in use first: each with its protocol, base URL, model, context window, prices per million tokens, whether it sits outside the data boundary, and whether its key is set, never the key. Needs administer at the environment.',
+  makeModelEndpoint:
+    'Makes a model endpoint on one of two protocols, Anthropic’s Messages API or OpenAI’s chat completions, which self-hosted servers speak too. Whether it sits outside the data boundary is stated here, never inferred. Recorded as an endpoint made. Needs administer at the environment.',
+  getModelEndpoint:
+    'Returns a model endpoint, and whether its key is set and still for where it points. Needs administer at the environment.',
+  changeModelEndpoint:
+    'Replaces a model endpoint’s settings; its protocol never changes. Moving its base URL to another host leaves its key needing to be set again. Recorded as an endpoint changed, naming the settings that changed and none of their values. Needs administer at the environment.',
+  retireModelEndpoint:
+    'Retires a model endpoint: every purpose routed to it goes nowhere, and it takes no key or test. Kept, so the runs it made still name it. Needs administer at the environment.',
+  setModelEndpointKey:
+    'Sets or replaces a model endpoint’s key, the tenant’s own provider account. The connector seals it to the endpoint and its host; no route, log or error ever answers it. Recorded as a key set. Needs administer at the environment.',
+  testModelEndpoint:
+    'Calls a model endpoint once, through the connector, with a short fixed message, and answers its reply, the model it named, its tokens, cost and time, or how it failed. Never tries another endpoint. Recorded as a run, and as an endpoint tested. Needs administer at the environment.',
+  listModelRoutes:
+    'Lists each purpose - drafting, chat, summarising and embedding - and the endpoint it goes to, or none, which turns that capability off. Needs administer at the environment.',
+  setModelRoute:
+    'Sends a purpose to an endpoint in use with a key set for where it points, or to none. Recorded as a route set. Needs administer at the environment.',
   requestTenantExport:
     'Asks for an export of the whole environment as it stands now, written by a job into one ZIP archive: a JSON Lines file each for its artifacts, versions, relationships, baselines and publications, the bytes its assets and publications hold under objects/ by their SHA-256, and manifest.json saying what it holds and what it leaves out. Recorded as an export produced. Needs administer at the environment.',
   listTenantExports:

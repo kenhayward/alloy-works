@@ -2963,6 +2963,154 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/model-endpoints": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The environment's model endpoints, those in use first
+         * @description Lists the environment’s model endpoints, those in use first: each with its protocol, base URL, model, context window, prices per million tokens, whether it sits outside the data boundary, and whether its key is set, never the key. Needs administer at the environment.
+         */
+        get: operations["listModelEndpoints"];
+        put?: never;
+        /**
+         * Make a model endpoint, saying whether it sits outside the data boundary
+         * @description Makes a model endpoint on one of two protocols, Anthropic’s Messages API or OpenAI’s chat completions, which self-hosted servers speak too. Whether it sits outside the data boundary is stated here, never inferred. Recorded as an endpoint made. Needs administer at the environment.
+         */
+        post: operations["makeModelEndpoint"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/model-endpoints/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A model endpoint, and whether its key is set
+         * @description Returns a model endpoint, and whether its key is set and still for where it points. Needs administer at the environment.
+         */
+        get: operations["getModelEndpoint"];
+        /**
+         * Change a model endpoint's settings; its protocol stays
+         * @description Replaces a model endpoint’s settings; its protocol never changes. Moving its base URL to another host leaves its key needing to be set again. Recorded as an endpoint changed, naming the settings that changed and none of their values. Needs administer at the environment.
+         */
+        put: operations["changeModelEndpoint"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/model-endpoints/{id}/key": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set or replace a model endpoint's key, sealed by the connector and never answered
+         * @description Sets or replaces a model endpoint’s key, the tenant’s own provider account. The connector seals it to the endpoint and its host; no route, log or error ever answers it. Recorded as a key set. Needs administer at the environment.
+         */
+        put: operations["setModelEndpointKey"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/model-endpoints/{id}/retirement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retire a model endpoint: every purpose routed to it goes nowhere
+         * @description Retires a model endpoint: every purpose routed to it goes nowhere, and it takes no key or test. Kept, so the runs it made still name it. Needs administer at the environment.
+         */
+        post: operations["retireModelEndpoint"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/model-endpoints/{id}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Test a model endpoint with one short call, recorded as a run with its tokens and cost
+         * @description Calls a model endpoint once, through the connector, with a short fixed message, and answers its reply, the model it named, its tokens, cost and time, or how it failed. Never tries another endpoint. Recorded as a run, and as an endpoint tested. Needs administer at the environment.
+         */
+        post: operations["testModelEndpoint"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/model-routes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Which model endpoint each purpose goes to
+         * @description Lists each purpose - drafting, chat, summarising and embedding - and the endpoint it goes to, or none, which turns that capability off. Needs administer at the environment.
+         */
+        get: operations["listModelRoutes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/model-routes/{purpose}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Send a purpose to a model endpoint, or to none
+         * @description Sends a purpose to an endpoint in use with a key set for where it points, or to none. Recorded as a route set. Needs administer at the environment.
+         */
+        put: operations["setModelRoute"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/people": {
         parameters: {
             query?: never;
@@ -57148,6 +57296,1597 @@ export interface operations {
             };
             /** @description token_not_allowed: what waits is a signed-in person’s, never a token’s, whose scopes it could not keep */
             403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listModelEndpoints: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Every endpoint, each with whether its key is set */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": []
+                     *     }
+                     */
+                    "application/json": {
+                        items: {
+                            name: string;
+                            /** @enum {string} */
+                            protocol: "anthropic" | "openai";
+                            /** @example https://api.anthropic.com */
+                            baseUrl: string;
+                            /** @example claude-sonnet-5-5 */
+                            model: string;
+                            contextWindow: number;
+                            priceIn: number;
+                            priceOut: number;
+                            /** @example USD */
+                            currency: string;
+                            /** @enum {string} */
+                            boundary: "inside" | "outside";
+                            id: string;
+                            madeAt: string;
+                            changedAt: string;
+                            retiredAt: string | null;
+                            /** @description Whether a key is set, never the key */
+                            key: {
+                                /** @constant */
+                                set: false;
+                            } | {
+                                /** @constant */
+                                set: true;
+                                setBy: string | null;
+                                setAt: string;
+                                /** @description The base URL moved to another host after the key was set: set it again to use it */
+                                needsSetting: boolean;
+                            };
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not administer this environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    makeModelEndpoint: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "name": "example",
+                 *       "protocol": "anthropic",
+                 *       "baseUrl": "https://api.anthropic.com",
+                 *       "model": "claude-sonnet-5-5",
+                 *       "contextWindow": 1024,
+                 *       "priceIn": 0,
+                 *       "priceOut": 0,
+                 *       "currency": "USD",
+                 *       "boundary": "inside"
+                 *     }
+                 */
+                "application/json": {
+                    name: string;
+                    /** @enum {string} */
+                    protocol: "anthropic" | "openai";
+                    /** @example https://api.anthropic.com */
+                    baseUrl: string;
+                    /** @example claude-sonnet-5-5 */
+                    model: string;
+                    contextWindow: number;
+                    priceIn: number;
+                    priceOut: number;
+                    /** @example USD */
+                    currency: string;
+                    /** @enum {string} */
+                    boundary: "inside" | "outside";
+                };
+            };
+        };
+        responses: {
+            /** @description Made, with no key yet */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "endpoint": {
+                     *         "name": "example",
+                     *         "protocol": "anthropic",
+                     *         "baseUrl": "https://api.anthropic.com",
+                     *         "model": "claude-sonnet-5-5",
+                     *         "contextWindow": 1024,
+                     *         "priceIn": 0,
+                     *         "priceOut": 0,
+                     *         "currency": "USD",
+                     *         "boundary": "inside",
+                     *         "id": "example",
+                     *         "madeAt": "example",
+                     *         "changedAt": "example",
+                     *         "retiredAt": "example",
+                     *         "key": {
+                     *           "set": false
+                     *         }
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        endpoint: {
+                            name: string;
+                            /** @enum {string} */
+                            protocol: "anthropic" | "openai";
+                            /** @example https://api.anthropic.com */
+                            baseUrl: string;
+                            /** @example claude-sonnet-5-5 */
+                            model: string;
+                            contextWindow: number;
+                            priceIn: number;
+                            priceOut: number;
+                            /** @example USD */
+                            currency: string;
+                            /** @enum {string} */
+                            boundary: "inside" | "outside";
+                            id: string;
+                            madeAt: string;
+                            changedAt: string;
+                            retiredAt: string | null;
+                            /** @description Whether a key is set, never the key */
+                            key: {
+                                /** @constant */
+                                set: false;
+                            } | {
+                                /** @constant */
+                                set: true;
+                                setBy: string | null;
+                                setAt: string;
+                                /** @description The base URL moved to another host after the key was set: set it again to use it */
+                                needsSetting: boolean;
+                            };
+                        };
+                    };
+                };
+            };
+            /** @description Settings that are not valid */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not administer this environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `endpoint_name_taken`: another endpoint in use has this name */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getModelEndpoint: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The endpoint */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "endpoint": {
+                     *         "name": "example",
+                     *         "protocol": "anthropic",
+                     *         "baseUrl": "https://api.anthropic.com",
+                     *         "model": "claude-sonnet-5-5",
+                     *         "contextWindow": 1024,
+                     *         "priceIn": 0,
+                     *         "priceOut": 0,
+                     *         "currency": "USD",
+                     *         "boundary": "inside",
+                     *         "id": "example",
+                     *         "madeAt": "example",
+                     *         "changedAt": "example",
+                     *         "retiredAt": "example",
+                     *         "key": {
+                     *           "set": false
+                     *         }
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        endpoint: {
+                            name: string;
+                            /** @enum {string} */
+                            protocol: "anthropic" | "openai";
+                            /** @example https://api.anthropic.com */
+                            baseUrl: string;
+                            /** @example claude-sonnet-5-5 */
+                            model: string;
+                            contextWindow: number;
+                            priceIn: number;
+                            priceOut: number;
+                            /** @example USD */
+                            currency: string;
+                            /** @enum {string} */
+                            boundary: "inside" | "outside";
+                            id: string;
+                            madeAt: string;
+                            changedAt: string;
+                            retiredAt: string | null;
+                            /** @description Whether a key is set, never the key */
+                            key: {
+                                /** @constant */
+                                set: false;
+                            } | {
+                                /** @constant */
+                                set: true;
+                                setBy: string | null;
+                                setAt: string;
+                                /** @description The base URL moved to another host after the key was set: set it again to use it */
+                                needsSetting: boolean;
+                            };
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not administer this environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such endpoint in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    changeModelEndpoint: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "name": "example",
+                 *       "protocol": "anthropic",
+                 *       "baseUrl": "https://api.anthropic.com",
+                 *       "model": "claude-sonnet-5-5",
+                 *       "contextWindow": 1024,
+                 *       "priceIn": 0,
+                 *       "priceOut": 0,
+                 *       "currency": "USD",
+                 *       "boundary": "inside"
+                 *     }
+                 */
+                "application/json": {
+                    name: string;
+                    /** @enum {string} */
+                    protocol: "anthropic" | "openai";
+                    /** @example https://api.anthropic.com */
+                    baseUrl: string;
+                    /** @example claude-sonnet-5-5 */
+                    model: string;
+                    contextWindow: number;
+                    priceIn: number;
+                    priceOut: number;
+                    /** @example USD */
+                    currency: string;
+                    /** @enum {string} */
+                    boundary: "inside" | "outside";
+                };
+            };
+        };
+        responses: {
+            /** @description Changed */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "endpoint": {
+                     *         "name": "example",
+                     *         "protocol": "anthropic",
+                     *         "baseUrl": "https://api.anthropic.com",
+                     *         "model": "claude-sonnet-5-5",
+                     *         "contextWindow": 1024,
+                     *         "priceIn": 0,
+                     *         "priceOut": 0,
+                     *         "currency": "USD",
+                     *         "boundary": "inside",
+                     *         "id": "example",
+                     *         "madeAt": "example",
+                     *         "changedAt": "example",
+                     *         "retiredAt": "example",
+                     *         "key": {
+                     *           "set": false
+                     *         }
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        endpoint: {
+                            name: string;
+                            /** @enum {string} */
+                            protocol: "anthropic" | "openai";
+                            /** @example https://api.anthropic.com */
+                            baseUrl: string;
+                            /** @example claude-sonnet-5-5 */
+                            model: string;
+                            contextWindow: number;
+                            priceIn: number;
+                            priceOut: number;
+                            /** @example USD */
+                            currency: string;
+                            /** @enum {string} */
+                            boundary: "inside" | "outside";
+                            id: string;
+                            madeAt: string;
+                            changedAt: string;
+                            retiredAt: string | null;
+                            /** @description Whether a key is set, never the key */
+                            key: {
+                                /** @constant */
+                                set: false;
+                            } | {
+                                /** @constant */
+                                set: true;
+                                setBy: string | null;
+                                setAt: string;
+                                /** @description The base URL moved to another host after the key was set: set it again to use it */
+                                needsSetting: boolean;
+                            };
+                        };
+                    };
+                };
+            };
+            /** @description Settings that are not valid */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not administer this environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such endpoint in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `endpoint_name_taken`, `endpoint_retired`, or `endpoint_protocol_fixed`: a protocol never changes */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    setModelEndpointKey: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "key": "example"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The provider account's key: sent in the protocol's own header, sealed by the connector, and never answered by any route */
+                    key: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Set: who set it and when, never the key */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "endpoint": {
+                     *         "name": "example",
+                     *         "protocol": "anthropic",
+                     *         "baseUrl": "https://api.anthropic.com",
+                     *         "model": "claude-sonnet-5-5",
+                     *         "contextWindow": 1024,
+                     *         "priceIn": 0,
+                     *         "priceOut": 0,
+                     *         "currency": "USD",
+                     *         "boundary": "inside",
+                     *         "id": "example",
+                     *         "madeAt": "example",
+                     *         "changedAt": "example",
+                     *         "retiredAt": "example",
+                     *         "key": {
+                     *           "set": false
+                     *         }
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        endpoint: {
+                            name: string;
+                            /** @enum {string} */
+                            protocol: "anthropic" | "openai";
+                            /** @example https://api.anthropic.com */
+                            baseUrl: string;
+                            /** @example claude-sonnet-5-5 */
+                            model: string;
+                            contextWindow: number;
+                            priceIn: number;
+                            priceOut: number;
+                            /** @example USD */
+                            currency: string;
+                            /** @enum {string} */
+                            boundary: "inside" | "outside";
+                            id: string;
+                            madeAt: string;
+                            changedAt: string;
+                            retiredAt: string | null;
+                            /** @description Whether a key is set, never the key */
+                            key: {
+                                /** @constant */
+                                set: false;
+                            } | {
+                                /** @constant */
+                                set: true;
+                                setBy: string | null;
+                                setAt: string;
+                                /** @description The base URL moved to another host after the key was set: set it again to use it */
+                                needsSetting: boolean;
+                            };
+                        };
+                    };
+                };
+            };
+            /** @description A key that is not printable ASCII of up to 4,096 bytes */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not administer this environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such endpoint in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `endpoint_retired`: a retired endpoint takes none */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `connector_unavailable` or `connector_busy` */
+            503: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    retireModelEndpoint: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Retired; kept, so the runs it made still name it */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "endpoint": {
+                     *         "name": "example",
+                     *         "protocol": "anthropic",
+                     *         "baseUrl": "https://api.anthropic.com",
+                     *         "model": "claude-sonnet-5-5",
+                     *         "contextWindow": 1024,
+                     *         "priceIn": 0,
+                     *         "priceOut": 0,
+                     *         "currency": "USD",
+                     *         "boundary": "inside",
+                     *         "id": "example",
+                     *         "madeAt": "example",
+                     *         "changedAt": "example",
+                     *         "retiredAt": "example",
+                     *         "key": {
+                     *           "set": false
+                     *         }
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        endpoint: {
+                            name: string;
+                            /** @enum {string} */
+                            protocol: "anthropic" | "openai";
+                            /** @example https://api.anthropic.com */
+                            baseUrl: string;
+                            /** @example claude-sonnet-5-5 */
+                            model: string;
+                            contextWindow: number;
+                            priceIn: number;
+                            priceOut: number;
+                            /** @example USD */
+                            currency: string;
+                            /** @enum {string} */
+                            boundary: "inside" | "outside";
+                            id: string;
+                            madeAt: string;
+                            changedAt: string;
+                            retiredAt: string | null;
+                            /** @description Whether a key is set, never the key */
+                            key: {
+                                /** @constant */
+                                set: false;
+                            } | {
+                                /** @constant */
+                                set: true;
+                                setBy: string | null;
+                                setAt: string;
+                                /** @description The base URL moved to another host after the key was set: set it again to use it */
+                                needsSetting: boolean;
+                            };
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not administer this environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such endpoint in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    testModelEndpoint: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Its reply, the model it named, its tokens, cost and time; or how it failed: `model_unavailable` with a reason, `model_mismatch`, `context_too_large` or `timeout`, never another endpoint tried */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "run": "example",
+                     *       "outcome": "passed",
+                     *       "tokensIn": -9007199254740991,
+                     *       "tokensOut": -9007199254740991,
+                     *       "cost": "example",
+                     *       "ms": -9007199254740991
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description The run the test was recorded as */
+                        run: string;
+                        /** @enum {string} */
+                        outcome: "passed" | "failed";
+                        /** @description What the model answered, as it streamed */
+                        reply?: string;
+                        /** @description The model the reply named, with its release */
+                        model?: string;
+                        tokensIn: number | null;
+                        tokensOut: number | null;
+                        /** @description What it cost, in the endpoint's currency, to six places, or null where no tokens were reported */
+                        cost: string | null;
+                        ms: number;
+                        failure?: {
+                            /** @enum {string} */
+                            code: "model_unavailable" | "model_mismatch" | "context_too_large" | "timeout" | "connector_error" | "connector_busy" | "connector_unavailable";
+                            /** @enum {string} */
+                            reason?: "unreachable" | "key_refused" | "rate_limited" | "failed";
+                            message: string;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not administer this environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such endpoint in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `endpoint_unusable`: retired, or with no key set for where it points */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `connector_unavailable` or `connector_busy` */
+            503: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listModelRoutes: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Every purpose, and its endpoint or none */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": []
+                     *     }
+                     */
+                    "application/json": {
+                        items: {
+                            /** @enum {string} */
+                            purpose: "drafting" | "chat" | "summarising" | "embedding";
+                            endpoint: string | null;
+                            setBy: string | null;
+                            setAt: string | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not administer this environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    setModelRoute: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                purpose: "drafting" | "chat" | "summarising" | "embedding";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "endpoint": "00000000-0000-4000-8000-000000000001"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The endpoint this purpose goes to, or null for none */
+                    endpoint: (string & (unknown & unknown)) | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Every purpose, as now routed */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": []
+                     *     }
+                     */
+                    "application/json": {
+                        items: {
+                            /** @enum {string} */
+                            purpose: "drafting" | "chat" | "summarising" | "embedding";
+                            endpoint: string | null;
+                            setBy: string | null;
+                            setAt: string | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description A purpose or an endpoint that is not one */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not administer this environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The endpoint named is not one of this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `endpoint_unusable`: the endpoint is retired, or has no key set for where it points */
+            409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;

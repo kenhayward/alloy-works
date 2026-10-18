@@ -871,6 +871,6 @@ The reuse, a slice at a time ([R1](2026-10-15-r1-where-a-component-is-used.md) s
 
 The intelligence, a slice at a time ([generation.md](../design/generation.md) sketches the order).
 
-| #   | Plan                                                | Builds                                                                                                                                              | Status   |
-| --- | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| G1  | [Model endpoints](2026-10-18-g1-model-endpoints.md) | GEN-027 to GEN-032, GEN-046, IAM-076: endpoints across providers, their keys through the connector, routes by purpose, and a test recorded as a run | Building |
+| #   | Plan                                                | Builds                                                                                                                                     | Status                 |
+| --- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------- |
+| G1  | [Model endpoints](2026-10-18-g1-model-endpoints.md) | GEN-027 to GEN-032, IAM-076: endpoints across providers, their keys through the connector, routes by purpose, and a test recorded as a run | Built (PRs #708, #709) |

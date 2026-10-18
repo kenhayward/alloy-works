@@ -1,5 +1,10 @@
 import {
   CONNECTOR_ANSWER_MAX_BYTES,
+  MODEL_ANSWER_MAX_BYTES,
+  modelEventSchema,
+  type ModelEvent,
+  type ModelRequest,
+  type ModelSealRequest,
   dataFailure,
   describeAnswerSchema,
   describeSqlAnswerSchema,
@@ -58,6 +63,18 @@ export interface ConnectorClient {
   ): Promise<Answered<DescribeSqlAnswer>>;
   /** A definition run against values the service has checked (D2-I). */
   run(request: RunRequest, signal?: AbortSignal): Promise<Answered<RunAnswer>>;
+  /** Seals a model endpoint's key, bound to the endpoint and its origin (the G1 plan, G1-B). */
+  sealModel(request: ModelSealRequest): Promise<Answered<SealAnswer>>;
+  /**
+   * A model call (the G1 plan, G1-C): each event as the connector streams it, the last `ended` or
+   * `failed`, which is also answered. A connector that cannot be reached, is full, or ends without a
+   * last event answers its refusal; where `signal` aborts, the request is closed, and the call ends.
+   */
+  model(
+    request: ModelRequest,
+    onEvent: (event: ModelEvent) => void,
+    signal?: AbortSignal,
+  ): Promise<Answered<Extract<ModelEvent, { type: 'ended' | 'failed' }>>>;
 }
 
 /**
@@ -79,7 +96,8 @@ const unavailable = (): Refused => refusedFor('connector_unavailable');
 /**
  * The service's client of the connector (the D1 plan, task 5): HTTP and JSON on `connector-private`,
  * the shared key in a header, every answer parsed by the protocol's own schema. The one module that
- * reaches the connector, imported by the connection routes alone (DAT-089).
+ * reaches the connector, imported by the connection routes and the model endpoint routes alone
+ * (DAT-089; the G1 plan, G1-L).
  */
 export function createConnectorClient(options: {
   readonly url: string;
@@ -144,6 +162,69 @@ export function createConnectorClient(options: {
       ask('/v1/describe', request, describeSqlAnswerSchema, request.deadlineMs + SLACK_MS, signal),
     run: (request, signal) =>
       ask('/v1/run', request, runAnswerSchema, request.deadlineMs + SLACK_MS, signal),
+    sealModel: (request) => ask('/v1/model/seal', request, sealAnswerSchema, SEAL_MS),
+    model: async (request, onEvent, signal) => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), request.deadlineMs + SLACK_MS);
+      const abandon = () => controller.abort();
+      if (signal?.aborted) abandon();
+      else signal?.addEventListener('abort', abandon, { once: true });
+      try {
+        const response = await send(`${base}/v1/model`, {
+          method: 'POST',
+          headers: { authorization: `Bearer ${options.key}`, 'content-type': 'application/json' },
+          body: JSON.stringify(request),
+          signal: controller.signal,
+        });
+        if (response.status === 503) {
+          const busy = safeJson((await bounded(response, 1024, controller)) ?? '') as
+            { code?: unknown } | undefined;
+          return busy?.code === 'connector_busy' ? refusedFor('connector_busy') : unavailable();
+        }
+        if (response.status !== 200 || !response.body) {
+          await response.body?.cancel().catch(() => {});
+          return unavailable();
+        }
+        // Read a line at a time, each an event, no more than the connector's own cap of them.
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder('utf-8');
+        let partial = '';
+        let bytes = 0;
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          bytes += value.byteLength;
+          if (bytes > MODEL_ANSWER_MAX_BYTES * 2) {
+            controller.abort();
+            return unavailable();
+          }
+          partial += decoder.decode(value, { stream: true });
+          let newline = partial.indexOf('\n');
+          while (newline !== -1) {
+            const line = partial.slice(0, newline);
+            partial = partial.slice(newline + 1);
+            newline = partial.indexOf('\n');
+            if (line === '') continue;
+            const parsed = modelEventSchema.safeParse(safeJson(line));
+            if (!parsed.success) {
+              controller.abort();
+              return unavailable();
+            }
+            onEvent(parsed.data);
+            if (parsed.data.type === 'ended' || parsed.data.type === 'failed') {
+              await reader.cancel().catch(() => {});
+              return { answer: parsed.data };
+            }
+          }
+        }
+        return unavailable();
+      } catch {
+        return unavailable();
+      } finally {
+        clearTimeout(timer);
+        signal?.removeEventListener('abort', abandon);
+      }
+    },
   };
 }
 

@@ -6,6 +6,9 @@ import {
   bindFetch,
   describeRequestSchema,
   describeSqlRequestSchema,
+  modelRequestSchema,
+  modelSealRequestSchema,
+  type ModelEvent,
   runRequestSchema,
   testRequestSchema,
   type Parameter,
@@ -37,6 +40,8 @@ export interface FakeConnector {
   describeSql: DescribeSqlAnswer;
   /** A run (D2-I). */
   run: RunAnswer;
+  /** What a model call streams, a line an event (the G1 plan, G1-C). */
+  model: ModelEvent[];
   /** Where set, a run's answer by what it was sent, in place of `run`. */
   runFor?: ((body: { readonly values: Record<string, unknown> }) => RunAnswer) | undefined;
   /** Where set, a test and a describe wait for it before answering: a source that is slow. */
@@ -68,6 +73,11 @@ export function fakeConnector(): FakeConnector {
     describe: { relations: [], truncated: false, leftOut: { relations: 0, columns: 0 } },
     describeSql: { columns: [], parameters: [] },
     run: { outcome: 'failed', failure: { code: 'connector_error', attribution: 'connector' } },
+    model: [
+      { type: 'text', text: 'ready' },
+      { type: 'text', text: '.' },
+      { type: 'ended', model: 'stand-in-1-20260101', stop: 'end', usage: { in: 12, out: 2 } },
+    ],
     mostRunning: 0,
     closed: [],
     reached: [],
@@ -105,7 +115,11 @@ export function fakeConnector(): FakeConnector {
               ? 'sql' in body || 'builder' in body || 'http' in body || 'file' in body
                 ? describeSqlRequestSchema
                 : describeRequestSchema
-              : undefined;
+              : path === '/v1/model'
+                ? modelRequestSchema
+                : path === '/v1/model/seal'
+                  ? modelSealRequestSchema
+                  : undefined;
       if (door && !door.safeParse(body).success) {
         return Response.json({ code: 'request_invalid' }, { status: 400 });
       }
@@ -116,6 +130,16 @@ export function fakeConnector(): FakeConnector {
           sealed: sealSecret(
             sealingKey,
             'source-credential',
+            String(body.tenant),
+            String(body.secret),
+          ),
+        });
+      }
+      if (path === '/v1/model/seal') {
+        return Response.json({
+          sealed: sealSecret(
+            sealingKey,
+            'model-credential',
             String(body.tenant),
             String(body.secret),
           ),
@@ -139,6 +163,12 @@ export function fakeConnector(): FakeConnector {
         });
       }
       if (path === '/v1/test') return Response.json(fake.test);
+      if (path === '/v1/model') {
+        return new Response(fake.model.map((event) => `${JSON.stringify(event)}\n`).join(''), {
+          status: 200,
+          headers: { 'content-type': 'application/x-ndjson' },
+        });
+      }
       if (path === '/v1/describe') {
         // A built query is described as SQL is (D4-Q), its shape generated through the one function
         // the real connector binds by, so a tree it could not generate is answered as the real one does.

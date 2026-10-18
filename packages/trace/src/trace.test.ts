@@ -947,8 +947,8 @@ describe('the citations in the committed model', () => {
     // 1631 (2026-10-18): R21a's stored results as sources.
     // 1634 (2026-10-18): R21b's tenant export.
     // 1637 (2026-10-18): R22a's warm range preview.
-    // 1647 (2026-10-18): G1a's model calls. 1641 (2026-10-18): R22b's pages as you edit.
-    expect(model.citations).toHaveLength(1647);
+    // 1656 (2026-10-18): G1b's model endpoints and page. 1647 (2026-10-18): G1a's model calls. 1641 (2026-10-18): R22b's pages as you edit.
+    expect(model.citations).toHaveLength(1656);
   });
 
   it('cites no identifier the corpus does not hold', () => {
@@ -1056,6 +1056,7 @@ describe('scanning the repository for test files', () => {
     // 107, from 106 (2026-10-17): admin/QueryUsage.test.tsx, citing DAT-053 and DAT-071.
     // 108, from 107 (2026-10-18): admin/TenantExport.test.tsx, citing API-044.
     // 109, from 108 (2026-10-18): publishing/RangePreview.test.tsx, citing CNT-151 and PUB-080.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(109);
+    // 110, from 109 (2026-10-18): admin/Models.test.tsx, citing GEN-028, GEN-029 and GEN-031.
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(110);
   });
 });
