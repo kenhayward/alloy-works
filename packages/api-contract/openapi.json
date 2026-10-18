@@ -104,6 +104,10 @@
       "description": "Ask the assistant about the open document: it reads what you may read of it, shows each call it makes and what came back, cites what it read, and proposes edits that change nothing until you accept one, keep it as a suggestion or discard it."
     },
     {
+      "name": "Prompts",
+      "description": "Named, versioned prompts: the instructions, the context each declares and nothing beyond it, the text it writes and the models it accepts."
+    },
+    {
       "name": "Model endpoints",
       "description": "The model endpoints the environment calls, on its own provider accounts: their keys, which the connector seals and no route answers, whether each sits outside the data boundary, which purpose goes to which, and a test recorded as a run."
     },
@@ -238,6 +242,7 @@
         "Publications",
         "Range previews",
         "Assistant",
+        "Prompts",
         "Model endpoints",
         "Tenant export",
         "Stored results as sources",
@@ -182570,6 +182575,2257 @@
         }
       }
     },
+    "/v1/prompts": {
+      "get": {
+        "operationId": "listPrompts",
+        "summary": "The prompts the caller may read, each with its space and purpose",
+        "description": "Lists the prompts the caller may read, with the space and purpose of each, filtered by space.",
+        "tags": [
+          "Prompts"
+        ],
+        "x-alloy-token-enabled": true,
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Where the previous page ended, as that page gave it; absent for the first",
+              "type": "string",
+              "maxLength": 4000
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "At most this many, 50 when absent",
+              "type": "string",
+              "pattern": "^(?:[1-9]|[1-9][0-9]|100)$"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "What to sort by, title when absent",
+              "type": "string",
+              "enum": [
+                "title",
+                "changed"
+              ]
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Ascending or descending, the sort's own when absent",
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          },
+          {
+            "name": "spaces",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Only prompts in these spaces, by id",
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,49}$"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of prompts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "space": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ]
+                          },
+                          "purpose": {
+                            "type": "string",
+                            "description": "The purpose its runs are routed by"
+                          },
+                          "version": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "number": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "number"
+                            ]
+                          },
+                          "changedAt": {
+                            "type": "string",
+                            "description": "When its latest version was made"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "title",
+                          "space",
+                          "purpose",
+                          "version",
+                          "changedAt"
+                        ]
+                      }
+                    },
+                    "next": {
+                      "description": "The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "How many there are with the filters in force, as of the walk this page belongs to"
+                    },
+                    "facets": {
+                      "type": "object",
+                      "properties": {
+                        "spaces": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "value": {
+                                "type": "string",
+                                "description": "What to filter by to leave these"
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "value",
+                              "label",
+                              "count"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "spaces"
+                      ],
+                      "description": "Each filter the listing takes, counted with the others in force and its own left out"
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "next",
+                    "total",
+                    "facets"
+                  ]
+                },
+                "example": {
+                  "items": [],
+                  "next": "example",
+                  "total": -9007199254740991,
+                  "facets": {
+                    "spaces": []
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A cursor this listing did not give out, or a limit outside 1 to 100",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/prompts/{id}": {
+      "get": {
+        "operationId": "getPrompt",
+        "summary": "A prompt at its latest version",
+        "description": "Returns the latest prompt version and whether the caller may change it.",
+        "tags": [
+          "Prompts"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "read",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The prompt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "space": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ]
+                    },
+                    "version": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "number": {
+                          "type": "string",
+                          "description": "`revision.version`, as `0.2`"
+                        },
+                        "author": {
+                          "description": "The principal who cut it; null for a starter definition",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "note": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "number",
+                        "author",
+                        "createdAt",
+                        "note"
+                      ]
+                    },
+                    "prompt": {
+                      "type": "object",
+                      "properties": {
+                        "schemaVersion": {
+                          "type": "number",
+                          "const": 1
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "instructions": {
+                          "type": "string"
+                        },
+                        "context": {
+                          "minItems": 1,
+                          "maxItems": 16,
+                          "type": "array",
+                          "items": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "source": {
+                                    "type": "string",
+                                    "const": "outline"
+                                  },
+                                  "scope": {
+                                    "type": "string",
+                                    "enum": [
+                                      "part",
+                                      "section",
+                                      "document"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "source",
+                                  "scope"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "source": {
+                                    "type": "string",
+                                    "const": "related"
+                                  },
+                                  "type": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "direction": {
+                                    "type": "string",
+                                    "enum": [
+                                      "out",
+                                      "in"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "source",
+                                  "type",
+                                  "direction"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "source": {
+                                    "type": "string",
+                                    "const": "field"
+                                  },
+                                  "field": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "value": {
+                                    "type": [
+                                      "string",
+                                      "number",
+                                      "boolean"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "source",
+                                  "field",
+                                  "value"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "source": {
+                                    "type": "string",
+                                    "const": "parameters"
+                                  },
+                                  "names": {
+                                    "minItems": 1,
+                                    "maxItems": 50,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string",
+                                      "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "source",
+                                  "names"
+                                ]
+                              }
+                            ]
+                          }
+                        },
+                        "output": {
+                          "type": "object",
+                          "properties": {
+                            "componentType": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "componentType"
+                          ]
+                        },
+                        "models": {
+                          "type": "object",
+                          "properties": {
+                            "purpose": {
+                              "type": "string",
+                              "enum": [
+                                "drafting",
+                                "chat",
+                                "summarising"
+                              ]
+                            },
+                            "accepts": {
+                              "minItems": 1,
+                              "maxItems": 16,
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "pattern": "^[\\x21-\\x7e]{1,200}$"
+                              }
+                            }
+                          },
+                          "required": [
+                            "purpose",
+                            "accepts"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "schemaVersion",
+                        "title",
+                        "description",
+                        "instructions",
+                        "context",
+                        "output",
+                        "models"
+                      ]
+                    },
+                    "mayEdit": {
+                      "type": "boolean",
+                      "description": "Whether the caller may cut its next version: edit on it"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "space",
+                    "version",
+                    "prompt",
+                    "mayEdit"
+                  ]
+                },
+                "example": {
+                  "id": "example",
+                  "space": {
+                    "id": "example",
+                    "name": "example"
+                  },
+                  "version": {
+                    "id": "example",
+                    "number": "example",
+                    "author": "example",
+                    "createdAt": "example",
+                    "note": "example"
+                  },
+                  "prompt": {
+                    "schemaVersion": 1,
+                    "title": "example",
+                    "description": "example",
+                    "instructions": "example",
+                    "context": [
+                      {
+                        "source": "outline",
+                        "scope": "part"
+                      }
+                    ],
+                    "output": {
+                      "componentType": "00000000-0000-4000-8000-000000000001"
+                    },
+                    "models": {
+                      "purpose": "drafting",
+                      "accepts": [
+                        "example"
+                      ]
+                    }
+                  },
+                  "mayEdit": false
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Never answered: a prompt the caller may not read is not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such prompt in this environment, or none the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/prompts/{id}/versions": {
+      "post": {
+        "operationId": "recordPromptVersion",
+        "summary": "Cut a prompt's next version from the one the caller opened",
+        "description": "Records the next prompt version from the version the caller opened, checked as a new prompt is.",
+        "tags": [
+          "Prompts"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "edit",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "openedFrom": {
+                    "type": "string",
+                    "allOf": [
+                      {
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      {
+                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                      }
+                    ]
+                  },
+                  "prompt": {
+                    "type": "object",
+                    "properties": {
+                      "schemaVersion": {
+                        "type": "number",
+                        "const": 1
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "description": {
+                        "type": "string"
+                      },
+                      "instructions": {
+                        "type": "string"
+                      },
+                      "context": {
+                        "minItems": 1,
+                        "maxItems": 16,
+                        "type": "array",
+                        "items": {
+                          "oneOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "source": {
+                                  "type": "string",
+                                  "const": "outline"
+                                },
+                                "scope": {
+                                  "type": "string",
+                                  "enum": [
+                                    "part",
+                                    "section",
+                                    "document"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "source",
+                                "scope"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "source": {
+                                  "type": "string",
+                                  "const": "related"
+                                },
+                                "type": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "direction": {
+                                  "type": "string",
+                                  "enum": [
+                                    "out",
+                                    "in"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "source",
+                                "type",
+                                "direction"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "source": {
+                                  "type": "string",
+                                  "const": "field"
+                                },
+                                "field": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "value": {
+                                  "type": [
+                                    "string",
+                                    "number",
+                                    "boolean"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "source",
+                                "field",
+                                "value"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "source": {
+                                  "type": "string",
+                                  "const": "parameters"
+                                },
+                                "names": {
+                                  "minItems": 1,
+                                  "maxItems": 50,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                                  }
+                                }
+                              },
+                              "required": [
+                                "source",
+                                "names"
+                              ],
+                              "additionalProperties": false
+                            }
+                          ]
+                        }
+                      },
+                      "output": {
+                        "type": "object",
+                        "properties": {
+                          "componentType": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "componentType"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "models": {
+                        "type": "object",
+                        "properties": {
+                          "purpose": {
+                            "type": "string",
+                            "enum": [
+                              "drafting",
+                              "chat",
+                              "summarising"
+                            ]
+                          },
+                          "accepts": {
+                            "minItems": 1,
+                            "maxItems": 16,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "pattern": "^[\\x21-\\x7e]{1,200}$"
+                            }
+                          }
+                        },
+                        "required": [
+                          "purpose",
+                          "accepts"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "schemaVersion",
+                      "title",
+                      "description",
+                      "instructions",
+                      "context",
+                      "output",
+                      "models"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "openedFrom",
+                  "prompt"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "openedFrom": "00000000-0000-4000-8000-000000000001",
+                "prompt": {
+                  "schemaVersion": 1,
+                  "title": "example",
+                  "description": "example",
+                  "instructions": "example",
+                  "context": [
+                    {
+                      "source": "outline",
+                      "scope": "part"
+                    }
+                  ],
+                  "output": {
+                    "componentType": "00000000-0000-4000-8000-000000000001"
+                  },
+                  "models": {
+                    "purpose": "drafting",
+                    "accepts": [
+                      "example"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The prompt at its latest version: the one cut, or the one before where nothing changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "space": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ]
+                    },
+                    "version": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "number": {
+                          "type": "string",
+                          "description": "`revision.version`, as `0.2`"
+                        },
+                        "author": {
+                          "description": "The principal who cut it; null for a starter definition",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "note": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "number",
+                        "author",
+                        "createdAt",
+                        "note"
+                      ]
+                    },
+                    "prompt": {
+                      "type": "object",
+                      "properties": {
+                        "schemaVersion": {
+                          "type": "number",
+                          "const": 1
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "instructions": {
+                          "type": "string"
+                        },
+                        "context": {
+                          "minItems": 1,
+                          "maxItems": 16,
+                          "type": "array",
+                          "items": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "source": {
+                                    "type": "string",
+                                    "const": "outline"
+                                  },
+                                  "scope": {
+                                    "type": "string",
+                                    "enum": [
+                                      "part",
+                                      "section",
+                                      "document"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "source",
+                                  "scope"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "source": {
+                                    "type": "string",
+                                    "const": "related"
+                                  },
+                                  "type": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "direction": {
+                                    "type": "string",
+                                    "enum": [
+                                      "out",
+                                      "in"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "source",
+                                  "type",
+                                  "direction"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "source": {
+                                    "type": "string",
+                                    "const": "field"
+                                  },
+                                  "field": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "value": {
+                                    "type": [
+                                      "string",
+                                      "number",
+                                      "boolean"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "source",
+                                  "field",
+                                  "value"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "source": {
+                                    "type": "string",
+                                    "const": "parameters"
+                                  },
+                                  "names": {
+                                    "minItems": 1,
+                                    "maxItems": 50,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string",
+                                      "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "source",
+                                  "names"
+                                ]
+                              }
+                            ]
+                          }
+                        },
+                        "output": {
+                          "type": "object",
+                          "properties": {
+                            "componentType": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "componentType"
+                          ]
+                        },
+                        "models": {
+                          "type": "object",
+                          "properties": {
+                            "purpose": {
+                              "type": "string",
+                              "enum": [
+                                "drafting",
+                                "chat",
+                                "summarising"
+                              ]
+                            },
+                            "accepts": {
+                              "minItems": 1,
+                              "maxItems": 16,
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "pattern": "^[\\x21-\\x7e]{1,200}$"
+                              }
+                            }
+                          },
+                          "required": [
+                            "purpose",
+                            "accepts"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "schemaVersion",
+                        "title",
+                        "description",
+                        "instructions",
+                        "context",
+                        "output",
+                        "models"
+                      ]
+                    },
+                    "mayEdit": {
+                      "type": "boolean",
+                      "description": "Whether the caller may cut its next version: edit on it"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "space",
+                    "version",
+                    "prompt",
+                    "mayEdit"
+                  ]
+                },
+                "example": {
+                  "id": "example",
+                  "space": {
+                    "id": "example",
+                    "name": "example"
+                  },
+                  "version": {
+                    "id": "example",
+                    "number": "example",
+                    "author": "example",
+                    "createdAt": "example",
+                    "note": "example"
+                  },
+                  "prompt": {
+                    "schemaVersion": 1,
+                    "title": "example",
+                    "description": "example",
+                    "instructions": "example",
+                    "context": [
+                      {
+                        "source": "outline",
+                        "scope": "part"
+                      }
+                    ],
+                    "output": {
+                      "componentType": "00000000-0000-4000-8000-000000000001"
+                    },
+                    "models": {
+                      "purpose": "drafting",
+                      "accepts": [
+                        "example"
+                      ]
+                    }
+                  },
+                  "mayEdit": false
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`prompt_invalid`: the prompt fails a rule, each problem named: a parameter placed that its context does not declare, a source declared twice, or a definition it names that is not there",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    },
+                    "problems": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "rule": {
+                            "type": "string",
+                            "const": "prompt_invalid"
+                          },
+                          "path": {
+                            "type": "string",
+                            "description": "The member refused, dotted, as `context.2.field`"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "rule",
+                          "path",
+                          "message"
+                        ]
+                      }
+                    },
+                    "current": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "space": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ]
+                        },
+                        "version": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "number": {
+                              "type": "string",
+                              "description": "`revision.version`, as `0.2`"
+                            },
+                            "author": {
+                              "description": "The principal who cut it; null for a starter definition",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "createdAt": {
+                              "type": "string"
+                            },
+                            "note": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number",
+                            "author",
+                            "createdAt",
+                            "note"
+                          ]
+                        },
+                        "prompt": {
+                          "type": "object",
+                          "properties": {
+                            "schemaVersion": {
+                              "type": "number",
+                              "const": 1
+                            },
+                            "title": {
+                              "type": "string"
+                            },
+                            "description": {
+                              "type": "string"
+                            },
+                            "instructions": {
+                              "type": "string"
+                            },
+                            "context": {
+                              "minItems": 1,
+                              "maxItems": 16,
+                              "type": "array",
+                              "items": {
+                                "oneOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "source": {
+                                        "type": "string",
+                                        "const": "outline"
+                                      },
+                                      "scope": {
+                                        "type": "string",
+                                        "enum": [
+                                          "part",
+                                          "section",
+                                          "document"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "source",
+                                      "scope"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "source": {
+                                        "type": "string",
+                                        "const": "related"
+                                      },
+                                      "type": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "direction": {
+                                        "type": "string",
+                                        "enum": [
+                                          "out",
+                                          "in"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "source",
+                                      "type",
+                                      "direction"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "source": {
+                                        "type": "string",
+                                        "const": "field"
+                                      },
+                                      "field": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "value": {
+                                        "type": [
+                                          "string",
+                                          "number",
+                                          "boolean"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "source",
+                                      "field",
+                                      "value"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "source": {
+                                        "type": "string",
+                                        "const": "parameters"
+                                      },
+                                      "names": {
+                                        "minItems": 1,
+                                        "maxItems": 50,
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string",
+                                          "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                                        }
+                                      }
+                                    },
+                                    "required": [
+                                      "source",
+                                      "names"
+                                    ]
+                                  }
+                                ]
+                              }
+                            },
+                            "output": {
+                              "type": "object",
+                              "properties": {
+                                "componentType": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "componentType"
+                              ]
+                            },
+                            "models": {
+                              "type": "object",
+                              "properties": {
+                                "purpose": {
+                                  "type": "string",
+                                  "enum": [
+                                    "drafting",
+                                    "chat",
+                                    "summarising"
+                                  ]
+                                },
+                                "accepts": {
+                                  "minItems": 1,
+                                  "maxItems": 16,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "pattern": "^[\\x21-\\x7e]{1,200}$"
+                                  }
+                                }
+                              },
+                              "required": [
+                                "purpose",
+                                "accepts"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "schemaVersion",
+                            "title",
+                            "description",
+                            "instructions",
+                            "context",
+                            "output",
+                            "models"
+                          ]
+                        },
+                        "mayEdit": {
+                          "type": "boolean",
+                          "description": "Whether the caller may cut its next version: edit on it"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "space",
+                        "version",
+                        "prompt",
+                        "mayEdit"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may read the prompt but may not edit it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such prompt in this environment, or none the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`version_precondition`: the prompt has a newer version than the one named, answered with it; `space_archived`: the space is archived, and nothing new is made in it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    },
+                    "problems": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "rule": {
+                            "type": "string",
+                            "const": "prompt_invalid"
+                          },
+                          "path": {
+                            "type": "string",
+                            "description": "The member refused, dotted, as `context.2.field`"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "rule",
+                          "path",
+                          "message"
+                        ]
+                      }
+                    },
+                    "current": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "space": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ]
+                        },
+                        "version": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "number": {
+                              "type": "string",
+                              "description": "`revision.version`, as `0.2`"
+                            },
+                            "author": {
+                              "description": "The principal who cut it; null for a starter definition",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "createdAt": {
+                              "type": "string"
+                            },
+                            "note": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number",
+                            "author",
+                            "createdAt",
+                            "note"
+                          ]
+                        },
+                        "prompt": {
+                          "type": "object",
+                          "properties": {
+                            "schemaVersion": {
+                              "type": "number",
+                              "const": 1
+                            },
+                            "title": {
+                              "type": "string"
+                            },
+                            "description": {
+                              "type": "string"
+                            },
+                            "instructions": {
+                              "type": "string"
+                            },
+                            "context": {
+                              "minItems": 1,
+                              "maxItems": 16,
+                              "type": "array",
+                              "items": {
+                                "oneOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "source": {
+                                        "type": "string",
+                                        "const": "outline"
+                                      },
+                                      "scope": {
+                                        "type": "string",
+                                        "enum": [
+                                          "part",
+                                          "section",
+                                          "document"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "source",
+                                      "scope"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "source": {
+                                        "type": "string",
+                                        "const": "related"
+                                      },
+                                      "type": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "direction": {
+                                        "type": "string",
+                                        "enum": [
+                                          "out",
+                                          "in"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "source",
+                                      "type",
+                                      "direction"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "source": {
+                                        "type": "string",
+                                        "const": "field"
+                                      },
+                                      "field": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "value": {
+                                        "type": [
+                                          "string",
+                                          "number",
+                                          "boolean"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "source",
+                                      "field",
+                                      "value"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "source": {
+                                        "type": "string",
+                                        "const": "parameters"
+                                      },
+                                      "names": {
+                                        "minItems": 1,
+                                        "maxItems": 50,
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string",
+                                          "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                                        }
+                                      }
+                                    },
+                                    "required": [
+                                      "source",
+                                      "names"
+                                    ]
+                                  }
+                                ]
+                              }
+                            },
+                            "output": {
+                              "type": "object",
+                              "properties": {
+                                "componentType": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "componentType"
+                              ]
+                            },
+                            "models": {
+                              "type": "object",
+                              "properties": {
+                                "purpose": {
+                                  "type": "string",
+                                  "enum": [
+                                    "drafting",
+                                    "chat",
+                                    "summarising"
+                                  ]
+                                },
+                                "accepts": {
+                                  "minItems": 1,
+                                  "maxItems": 16,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "pattern": "^[\\x21-\\x7e]{1,200}$"
+                                  }
+                                }
+                              },
+                              "required": [
+                                "purpose",
+                                "accepts"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "schemaVersion",
+                            "title",
+                            "description",
+                            "instructions",
+                            "context",
+                            "output",
+                            "models"
+                          ]
+                        },
+                        "mayEdit": {
+                          "type": "boolean",
+                          "description": "Whether the caller may cut its next version: edit on it"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "space",
+                        "version",
+                        "prompt",
+                        "mayEdit"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/publication-requests/{id}": {
       "get": {
         "operationId": "getPublicationRequest",
@@ -215229,6 +217485,1110 @@
           },
           "503": {
             "description": "`connector_unavailable`: the template's required components run queries and no connector is reachable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/spaces/{space}/prompts": {
+      "post": {
+        "operationId": "createPrompt",
+        "summary": "Make a prompt in this space, at version 0.1",
+        "description": "Creates a prompt in the named space from a whole prompt: its instructions, which may place the document’s parameters as `{{name}}`, the context it declares (the part it runs on, its section or the whole document, components related to it, parts whose field holds a value, and named parameters), the component type whose text it writes, and the purpose it is routed by with the models it accepts. Nothing it does not declare reaches a model. It needs edit in the space.",
+        "tags": [
+          "Prompts"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "edit",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "space",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "prompt": {
+                    "type": "object",
+                    "properties": {
+                      "schemaVersion": {
+                        "type": "number",
+                        "const": 1
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "description": {
+                        "type": "string"
+                      },
+                      "instructions": {
+                        "type": "string"
+                      },
+                      "context": {
+                        "minItems": 1,
+                        "maxItems": 16,
+                        "type": "array",
+                        "items": {
+                          "oneOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "source": {
+                                  "type": "string",
+                                  "const": "outline"
+                                },
+                                "scope": {
+                                  "type": "string",
+                                  "enum": [
+                                    "part",
+                                    "section",
+                                    "document"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "source",
+                                "scope"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "source": {
+                                  "type": "string",
+                                  "const": "related"
+                                },
+                                "type": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "direction": {
+                                  "type": "string",
+                                  "enum": [
+                                    "out",
+                                    "in"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "source",
+                                "type",
+                                "direction"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "source": {
+                                  "type": "string",
+                                  "const": "field"
+                                },
+                                "field": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "value": {
+                                  "type": [
+                                    "string",
+                                    "number",
+                                    "boolean"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "source",
+                                "field",
+                                "value"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "source": {
+                                  "type": "string",
+                                  "const": "parameters"
+                                },
+                                "names": {
+                                  "minItems": 1,
+                                  "maxItems": 50,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                                  }
+                                }
+                              },
+                              "required": [
+                                "source",
+                                "names"
+                              ],
+                              "additionalProperties": false
+                            }
+                          ]
+                        }
+                      },
+                      "output": {
+                        "type": "object",
+                        "properties": {
+                          "componentType": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "componentType"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "models": {
+                        "type": "object",
+                        "properties": {
+                          "purpose": {
+                            "type": "string",
+                            "enum": [
+                              "drafting",
+                              "chat",
+                              "summarising"
+                            ]
+                          },
+                          "accepts": {
+                            "minItems": 1,
+                            "maxItems": 16,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "pattern": "^[\\x21-\\x7e]{1,200}$"
+                            }
+                          }
+                        },
+                        "required": [
+                          "purpose",
+                          "accepts"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "schemaVersion",
+                      "title",
+                      "description",
+                      "instructions",
+                      "context",
+                      "output",
+                      "models"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "prompt"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "prompt": {
+                  "schemaVersion": 1,
+                  "title": "example",
+                  "description": "example",
+                  "instructions": "example",
+                  "context": [
+                    {
+                      "source": "outline",
+                      "scope": "part"
+                    }
+                  ],
+                  "output": {
+                    "componentType": "00000000-0000-4000-8000-000000000001"
+                  },
+                  "models": {
+                    "purpose": "drafting",
+                    "accepts": [
+                      "example"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Made, at version 0.1",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "space": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ]
+                    },
+                    "version": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "number": {
+                          "type": "string",
+                          "description": "`revision.version`, as `0.2`"
+                        },
+                        "author": {
+                          "description": "The principal who cut it; null for a starter definition",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "note": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "number",
+                        "author",
+                        "createdAt",
+                        "note"
+                      ]
+                    },
+                    "prompt": {
+                      "type": "object",
+                      "properties": {
+                        "schemaVersion": {
+                          "type": "number",
+                          "const": 1
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "instructions": {
+                          "type": "string"
+                        },
+                        "context": {
+                          "minItems": 1,
+                          "maxItems": 16,
+                          "type": "array",
+                          "items": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "source": {
+                                    "type": "string",
+                                    "const": "outline"
+                                  },
+                                  "scope": {
+                                    "type": "string",
+                                    "enum": [
+                                      "part",
+                                      "section",
+                                      "document"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "source",
+                                  "scope"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "source": {
+                                    "type": "string",
+                                    "const": "related"
+                                  },
+                                  "type": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "direction": {
+                                    "type": "string",
+                                    "enum": [
+                                      "out",
+                                      "in"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "source",
+                                  "type",
+                                  "direction"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "source": {
+                                    "type": "string",
+                                    "const": "field"
+                                  },
+                                  "field": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "value": {
+                                    "type": [
+                                      "string",
+                                      "number",
+                                      "boolean"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "source",
+                                  "field",
+                                  "value"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "source": {
+                                    "type": "string",
+                                    "const": "parameters"
+                                  },
+                                  "names": {
+                                    "minItems": 1,
+                                    "maxItems": 50,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string",
+                                      "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "source",
+                                  "names"
+                                ]
+                              }
+                            ]
+                          }
+                        },
+                        "output": {
+                          "type": "object",
+                          "properties": {
+                            "componentType": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "componentType"
+                          ]
+                        },
+                        "models": {
+                          "type": "object",
+                          "properties": {
+                            "purpose": {
+                              "type": "string",
+                              "enum": [
+                                "drafting",
+                                "chat",
+                                "summarising"
+                              ]
+                            },
+                            "accepts": {
+                              "minItems": 1,
+                              "maxItems": 16,
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "pattern": "^[\\x21-\\x7e]{1,200}$"
+                              }
+                            }
+                          },
+                          "required": [
+                            "purpose",
+                            "accepts"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "schemaVersion",
+                        "title",
+                        "description",
+                        "instructions",
+                        "context",
+                        "output",
+                        "models"
+                      ]
+                    },
+                    "mayEdit": {
+                      "type": "boolean",
+                      "description": "Whether the caller may cut its next version: edit on it"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "space",
+                    "version",
+                    "prompt",
+                    "mayEdit"
+                  ]
+                },
+                "example": {
+                  "id": "example",
+                  "space": {
+                    "id": "example",
+                    "name": "example"
+                  },
+                  "version": {
+                    "id": "example",
+                    "number": "example",
+                    "author": "example",
+                    "createdAt": "example",
+                    "note": "example"
+                  },
+                  "prompt": {
+                    "schemaVersion": 1,
+                    "title": "example",
+                    "description": "example",
+                    "instructions": "example",
+                    "context": [
+                      {
+                        "source": "outline",
+                        "scope": "part"
+                      }
+                    ],
+                    "output": {
+                      "componentType": "00000000-0000-4000-8000-000000000001"
+                    },
+                    "models": {
+                      "purpose": "drafting",
+                      "accepts": [
+                        "example"
+                      ]
+                    }
+                  },
+                  "mayEdit": false
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`prompt_invalid`: the prompt fails a rule, each problem named: a parameter placed that its context does not declare, a source declared twice, or a definition it names that is not there",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    },
+                    "problems": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "rule": {
+                            "type": "string",
+                            "const": "prompt_invalid"
+                          },
+                          "path": {
+                            "type": "string",
+                            "description": "The member refused, dotted, as `context.2.field`"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "rule",
+                          "path",
+                          "message"
+                        ]
+                      }
+                    },
+                    "current": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "space": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ]
+                        },
+                        "version": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "number": {
+                              "type": "string",
+                              "description": "`revision.version`, as `0.2`"
+                            },
+                            "author": {
+                              "description": "The principal who cut it; null for a starter definition",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "createdAt": {
+                              "type": "string"
+                            },
+                            "note": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number",
+                            "author",
+                            "createdAt",
+                            "note"
+                          ]
+                        },
+                        "prompt": {
+                          "type": "object",
+                          "properties": {
+                            "schemaVersion": {
+                              "type": "number",
+                              "const": 1
+                            },
+                            "title": {
+                              "type": "string"
+                            },
+                            "description": {
+                              "type": "string"
+                            },
+                            "instructions": {
+                              "type": "string"
+                            },
+                            "context": {
+                              "minItems": 1,
+                              "maxItems": 16,
+                              "type": "array",
+                              "items": {
+                                "oneOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "source": {
+                                        "type": "string",
+                                        "const": "outline"
+                                      },
+                                      "scope": {
+                                        "type": "string",
+                                        "enum": [
+                                          "part",
+                                          "section",
+                                          "document"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "source",
+                                      "scope"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "source": {
+                                        "type": "string",
+                                        "const": "related"
+                                      },
+                                      "type": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "direction": {
+                                        "type": "string",
+                                        "enum": [
+                                          "out",
+                                          "in"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "source",
+                                      "type",
+                                      "direction"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "source": {
+                                        "type": "string",
+                                        "const": "field"
+                                      },
+                                      "field": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "value": {
+                                        "type": [
+                                          "string",
+                                          "number",
+                                          "boolean"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "source",
+                                      "field",
+                                      "value"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "source": {
+                                        "type": "string",
+                                        "const": "parameters"
+                                      },
+                                      "names": {
+                                        "minItems": 1,
+                                        "maxItems": 50,
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string",
+                                          "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                                        }
+                                      }
+                                    },
+                                    "required": [
+                                      "source",
+                                      "names"
+                                    ]
+                                  }
+                                ]
+                              }
+                            },
+                            "output": {
+                              "type": "object",
+                              "properties": {
+                                "componentType": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "componentType"
+                              ]
+                            },
+                            "models": {
+                              "type": "object",
+                              "properties": {
+                                "purpose": {
+                                  "type": "string",
+                                  "enum": [
+                                    "drafting",
+                                    "chat",
+                                    "summarising"
+                                  ]
+                                },
+                                "accepts": {
+                                  "minItems": 1,
+                                  "maxItems": 16,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "pattern": "^[\\x21-\\x7e]{1,200}$"
+                                  }
+                                }
+                              },
+                              "required": [
+                                "purpose",
+                                "accepts"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "schemaVersion",
+                            "title",
+                            "description",
+                            "instructions",
+                            "context",
+                            "output",
+                            "models"
+                          ]
+                        },
+                        "mayEdit": {
+                          "type": "boolean",
+                          "description": "Whether the caller may cut its next version: edit on it"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "space",
+                        "version",
+                        "prompt",
+                        "mayEdit"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may not edit in the space",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such space in this environment, or none the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`space_archived`: the space is archived, and nothing new is made in it",
             "content": {
               "application/json": {
                 "schema": {

@@ -18,6 +18,7 @@ import type { Catalogue, Catalogue1, Theme } from '../theme/schema.js';
 import type { ConnectionSettings } from '../data/connection.js';
 import type { QueryDefinition } from '../data/definition.js';
 import type { Provenance } from '../data/provenance.js';
+import type { Prompt } from '../generation/prompt.js';
 
 /**
  * What a component version says (ADR-0024): its content, its metadata values, the values it did not
@@ -118,11 +119,18 @@ export type QueryDefinitionSubstance = {
  */
 export type DatasetSubstance = { readonly kind: 'dataset'; readonly content: Provenance };
 
+/**
+ * A prompt version says its prompt, and nothing else (generation.md, "Prompts"; the G4 plan, G4-A).
+ * The shared rule: its context's sources and its models keep their order, and nothing in it is a set.
+ */
+export type PromptSubstance = { readonly kind: 'prompt'; readonly content: Prompt };
+
 export type VersionSubstance =
   | ComponentSubstance
   | DatasetSubstance
   | ConnectionSubstance
   | QueryDefinitionSubstance
+  | PromptSubstance
   | TemplateSubstance
   | DefinitionSubstance
   | DocumentSubstance

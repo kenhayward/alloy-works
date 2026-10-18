@@ -9,6 +9,7 @@ import {
   createDefinition,
   createGroup,
   createConnection,
+  createPrompt,
   createQueryDefinition,
   createTemplate,
   readConnection,
@@ -79,6 +80,16 @@ const SESSION = '11111111-1111-4111-8111-111111111111';
 const IN_A_MONTH = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
 /** A query definition's shape, naming a connection by id: what a route's shape needs. */
+const aPrompt = {
+  schemaVersion: 1,
+  title: 'Probe',
+  description: '',
+  instructions: 'Summarise.',
+  context: [{ source: 'outline', scope: 'part' }],
+  output: { componentType: null },
+  models: { purpose: 'drafting', accepts: ['m'] },
+};
+
 const aQueryDefinition = (connection: string) => ({
   schemaVersion: 1,
   title: 'Elsewhere',
@@ -388,6 +399,9 @@ const OTHER_TENANT_IDS: Readonly<
   sampleDataset: async (tenant, db) => ({ id: (await datasetIn(tenant, db)).dataset }),
   getPendingResult: async (tenant, db) => ({ id: await pendingIn(tenant, db) }),
   createQueryDefinition: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
+  createPrompt: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
+  getPrompt: async (tenant, db) => ({ id: await promptIdIn(tenant, db) }),
+  recordPromptVersion: async (tenant, db) => ({ id: await promptIdIn(tenant, db) }),
   getQueryDefinition: async (tenant, db) => ({ id: await queryDefinitionIdIn(tenant, db) }),
   transitionQueryDefinition: async (tenant, db) => ({ id: await queryDefinitionIdIn(tenant, db) }),
   decideQueryDefinitionGate: async (tenant, db) => ({ id: await queryDefinitionIdIn(tenant, db) }),
@@ -485,6 +499,8 @@ const VALID_INPUT: Readonly<
   recordQueryDefinitionVersion: {
     payload: { openedFrom: SESSION, definition: aQueryDefinition(SESSION) },
   },
+  createPrompt: { payload: { prompt: aPrompt } },
+  recordPromptVersion: { payload: { openedFrom: SESSION, prompt: aPrompt } },
   setDataSettings: { payload: { rows: 10 } },
   createDefinition: {
     payload: {
@@ -887,6 +903,33 @@ const queryDefinitionIdIn = async (tenant: Tenant, db: TenantDatabase) => {
     return made.definition.id;
   });
 };
+
+/** A prompt in environment B's General. */
+const promptIdIn = (tenant: Tenant, db: TenantDatabase) =>
+  db.withTenant(tenant, async (trx) => {
+    const general = await trx
+      .selectFrom('space')
+      .select('id')
+      .where('name', '=', 'General')
+      .executeTakeFirstOrThrow();
+    const author = await trx
+      .insertInto('principal')
+      .values({
+        issuer: 'https://idp.example',
+        subject: `ivy-${randomUUID()}`,
+        email: null,
+        display_name: null,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    const made = await createPrompt(trx, {
+      spaceId: general.id,
+      prompt: aPrompt,
+      author: author.id,
+    });
+    if (made.answer !== 'created') throw new Error(`refused: ${made.answer}`);
+    return made.prompt.id;
+  });
 
 /** A dataset in environment B, with one version: a result of a definition made there. */
 const datasetIn = async (tenant: Tenant, db: TenantDatabase) => {

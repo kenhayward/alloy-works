@@ -21,6 +21,10 @@ import {
   parseQueryDefinitionForWrite,
   parseProvenance,
   parseProvenanceForWrite,
+  parsePrompt,
+  parsePromptForWrite,
+  PromptRefused,
+  type Prompt,
   type CatalogueSubstance,
   type DefinitionRef,
   type DefinitionSubstance,
@@ -124,7 +128,14 @@ export type NewArtifact = Authorship &
 
 /** The kinds a version is written for in a space: every spaced kind but a publication, which has none. */
 type SpacedSubstanceKind =
-  'component' | 'document' | 'asset' | 'template' | 'connection' | 'queryDefinition' | 'dataset';
+  | 'component'
+  | 'document'
+  | 'asset'
+  | 'template'
+  | 'connection'
+  | 'queryDefinition'
+  | 'dataset'
+  | 'prompt';
 
 const spacedSubstanceKinds: readonly string[] = [
   'component',
@@ -134,6 +145,7 @@ const spacedSubstanceKinds: readonly string[] = [
   'connection',
   'queryDefinition',
   'dataset',
+  'prompt',
 ] satisfies readonly SpacedSubstanceKind[];
 
 /**
@@ -146,6 +158,7 @@ const archiveCheckedKinds: readonly string[] = [
   'template',
   'connection',
   'queryDefinition',
+  'prompt',
 ] satisfies readonly SpacedSubstanceKind[];
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -235,6 +248,11 @@ function prepare(substance: VersionSubstance): VersionSubstance {
     // every write, whatever the writer (the D2 plan's stored-shape check). The connection it names is
     // the writer's to check, with a transaction in hand.
     return { kind: 'queryDefinition', content: parseQueryDefinitionForWrite(substance.content) };
+  }
+  if (substance.kind === 'prompt') {
+    // Nor does a prompt: it is in a space. Its shape, then its checks, on every write (G4-A); the
+    // definitions it names are the writer's to check, with a transaction in hand.
+    return { kind: 'prompt', content: parsePromptForWrite(substance.content) };
   }
   if (substance.kind === 'dataset') {
     // Nor does a dataset version: it is in its definition's space. Its provenance record, strict, with
@@ -427,6 +445,8 @@ export async function createArtifact(
     }
     await checkNamedSource(trx, substance.content);
   }
+  // A prompt names definitions of the tenant's, on every path that makes one (G4-A).
+  if (substance.kind === 'prompt') await checkPromptNames(trx, substance.content);
   // A dataset version names a version of its definition and of its connection, on every path.
   if (substance.kind === 'dataset') await checkProvenanceNames(trx, substance.content);
   // Nothing new is made in an archived space (the SP1 plan, SP-C), checked here, where every artifact
@@ -730,6 +750,10 @@ export function substanceOf(stored: StoredVersion): VersionSubstance {
     // The shape alone, likewise: a check widened later never makes a stored version unreadable.
     return { kind: 'queryDefinition', content: parseQueryDefinition(stored.content) };
   }
+  if (stored.kind === 'prompt') {
+    // The shape alone, likewise.
+    return { kind: 'prompt', content: parsePrompt(stored.content) };
+  }
   if (stored.kind === 'dataset') {
     // The shape alone, likewise: an arm added later (D6's request, D7's identity) reads every one stored.
     return { kind: 'dataset', content: parseProvenance(stored.content) };
@@ -868,6 +892,7 @@ async function record(
     await checkNamedSource(trx, substance.content);
   }
   if (substance.kind === 'dataset') await checkProvenanceNames(trx, substance.content);
+  if (substance.kind === 'prompt') await checkPromptNames(trx, substance.content);
   if (
     substance.kind === 'connection' &&
     substance.content.retired &&
@@ -945,4 +970,44 @@ export async function versionTitles(
     .where('id', 'in', [...new Set(versions)])
     .execute();
   return new Map(rows.map((row) => [row.id, row.title ?? '']));
+}
+
+/**
+ * What a prompt names is the tenant's and of its kind (G4-A): the component type it writes, each
+ * relationship type and field its context names. A definition is in no space, so any reader of the
+ * prompt may read what it names; a missing one is refused by the path it is named at.
+ */
+async function checkPromptNames(trx: TenantTransaction, prompt: Prompt): Promise<void> {
+  const named: { readonly path: string; readonly id: string; readonly kind: string }[] = [];
+  if (prompt.output.componentType !== null) {
+    named.push({
+      path: 'output.componentType',
+      id: prompt.output.componentType,
+      kind: 'componentType',
+    });
+  }
+  prompt.context.forEach((each, at) => {
+    if (each.source === 'related') {
+      named.push({ path: `context.${at}.type`, id: each.type, kind: 'relationshipType' });
+    }
+    if (each.source === 'field')
+      named.push({ path: `context.${at}.field`, id: each.field, kind: 'field' });
+  });
+  if (named.length === 0) return;
+  const found = await trx
+    .selectFrom('artifact')
+    .select(['id', 'kind'])
+    .where('id', 'in', [...new Set(named.map((each) => each.id))])
+    .execute();
+  const kinds = new Map(found.map((row) => [row.id, row.kind as string]));
+  const missing = named.filter((each) => kinds.get(each.id) !== each.kind);
+  if (missing.length > 0) {
+    throw new PromptRefused(
+      missing.map((each) => ({
+        rule: 'prompt_invalid',
+        path: each.path,
+        message: `This names no ${each.kind === 'componentType' ? 'component type' : each.kind === 'field' ? 'field' : 'relationship type'} of the tenant's`,
+      })),
+    );
+  }
 }

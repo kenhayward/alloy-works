@@ -57,19 +57,25 @@ time (below); embeddings for meaning are [search.md](search.md)'s and
 | **ADM-010** | The same record                                                                                                        |
 | **GEN-035** | `model_rate_limited`, per user per hour (Cost)                                                                         |
 | **GEN-037** | The run's cost shown to its requester as it ends, and their month on the assistant panel (Cost)                        |
+| **GEN-001** | A prompt: an artifact kind in a space, versioned, listed by a library, the fourth workflow kind (Prompts)              |
+| **GEN-005** | `models`: a purpose and the models accepted; another fails `model_mismatch` before any call (Prompts)                  |
+| **GEN-045** | Approving a prompt version needs a finished trial run of it, which no tenant's workflow lifts (GN-F)                   |
+| **GEN-056** | `context`: the part, its section or the document; related components; a field's value; parameters                      |
+| **TPL-061** | A template names one library, `prompts`; a library is a versioned list of prompts by identity                          |
+| **TPL-071** | `prompt_library_default`, seeded empty, is the library of a template naming none                                       |
 
 ## What this document does not own
 
-| Left unclaimed                                                                     | Why                                                                                                    |
-| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| GEN-001, GEN-002, GEN-004, GEN-005, GEN-045, GEN-056, TPL-061, TPL-071             | Prompts and libraries: shaped below (GN-E, GN-F), designed in full when G4 is planned                  |
-| GEN-047 to GEN-054, GEN-021, GEN-049, GEN-050, GEN-055                             | The conversation (G5), resting on what G2 teaches                                                      |
-| GEN-034, GEN-036, GEN-044, ADM-013, ADM-014, ADM-033, ADM-034                      | Budgets, alerts, caching and trends (G6)                                                               |
-| ADM-048                                                                            | Translation, scanning, email and webhooks cost nothing yet; it is claimed when the last of them exists |
-| SCH-013, SCH-014, SCH-035, VER-039 (designed elsewhere), SCH-067, GEN-038, GEN-044 | Meaning (G7)                                                                                           |
-| API-019, API-021, API-023, API-052, REL-021, IAM-033, LIF-071                      | The MCP surface and service identities (G8), with the token design ([access.md](access.md))            |
-| API-028, API-029, API-046, API-055, API-060, COL-037                               | Webhooks: their own design (GN-D)                                                                      |
-| API-030, API-031, API-034, API-048, API-059, DAT-054, DAT-073, DAT-079             | Extensions: their own design (GN-D)                                                                    |
+| Left unclaimed                                                                     | Why                                                                                                                                                     |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GEN-002, GEN-004                                                                   | A prompt declares components, metadata and parameters, and writes a part's text: a query's results as context, and a field as output, are later slices' |
+| GEN-047 to GEN-054, GEN-021, GEN-049, GEN-050, GEN-055                             | The conversation (G5), resting on what G2 teaches                                                                                                       |
+| GEN-034, GEN-036, GEN-044, ADM-013, ADM-014, ADM-033, ADM-034                      | Budgets, alerts, caching and trends (G6)                                                                                                                |
+| ADM-048                                                                            | Translation, scanning, email and webhooks cost nothing yet; it is claimed when the last of them exists                                                  |
+| SCH-013, SCH-014, SCH-035, VER-039 (designed elsewhere), SCH-067, GEN-038, GEN-044 | Meaning (G7)                                                                                                                                            |
+| API-019, API-021, API-023, API-052, REL-021, IAM-033, LIF-071                      | The MCP surface and service identities (G8), with the token design ([access.md](access.md))                                                             |
+| API-028, API-029, API-046, API-055, API-060, COL-037                               | Webhooks: their own design (GN-D)                                                                                                                       |
+| API-030, API-031, API-034, API-048, API-059, DAT-054, DAT-073, DAT-079             | Extensions: their own design (GN-D)                                                                                                                     |
 
 ## Decisions
 
@@ -129,6 +135,15 @@ later content, and each is a recorded step.
 Size: the request is measured against the endpoint's declared window at three bytes a token, which
 overestimates for prose; above it the run fails `context_too_large`, naming both sizes, before any
 call (GEN-043). A provider's own refusal for length is the same code.
+
+## Prompts
+
+Built in G4 ([the plan](../plans/2026-10-18-g4-prompts-and-libraries.md)). A prompt version holds a
+title, a description, **instructions** placing the document's declared parameters as `{{name}}`,
+its **context** (G4-C), its **output** (a part's text, of a component type or any) and its
+**models** (a routed purpose and the model identifiers it accepts). Every write checks that each
+place names a declared parameter and that what it names is the tenant's: nothing undeclared reaches a
+model (GEN-003). A library lists prompts by identity, each at its latest approved version (G4-F).
 
 ## The assistant
 

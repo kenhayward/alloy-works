@@ -96,6 +96,11 @@ export const documentationGroups = [
           'Ask the assistant about the open document: it reads what you may read of it, shows each call it makes and what came back, cites what it read, and proposes edits that change nothing until you accept one, keep it as a suggestion or discard it.',
       },
       {
+        name: 'Prompts',
+        description:
+          'Named, versioned prompts: the instructions, the context each declares and nothing beyond it, the text it writes and the models it accepts.',
+      },
+      {
         name: 'Model endpoints',
         description:
           'The model endpoints the environment calls, on its own provider accounts: their keys, which the connector seals and no route answers, whether each sits outside the data boundary, which purpose goes to which, and a test recorded as a run.',
@@ -375,6 +380,7 @@ const operationTags = {
     'keepProposal',
     'discardProposal',
   ],
+  Prompts: ['listPrompts', 'createPrompt', 'getPrompt', 'recordPromptVersion'],
   'Model endpoints': [
     'listModelEndpoints',
     'makeModelEndpoint',
@@ -752,6 +758,13 @@ const descriptions: Readonly<Record<string, string>> = {
     'Returns the latest query definition version, the connection it names, and whether the caller may change it or run it.',
   recordQueryDefinitionVersion:
     "Records the next query definition version from the version the caller opened. What it needs is decided by the version's own query: use connection on its connection, and for SQL write SQL there as well, so somebody who may not write SQL can turn SQL into a built query but not back. Retiring and reinstating a definition are versions too; a retiring version is accepted whatever the connection last found.",
+  listPrompts:
+    'Lists the prompts the caller may read, with the space and purpose of each, filtered by space.',
+  createPrompt:
+    'Creates a prompt in the named space from a whole prompt: its instructions, which may place the document’s parameters as `{{name}}`, the context it declares (the part it runs on, its section or the whole document, components related to it, parts whose field holds a value, and named parameters), the component type whose text it writes, and the purpose it is routed by with the models it accepts. Nothing it does not declare reaches a model. It needs edit in the space.',
+  getPrompt: 'Returns the latest prompt version and whether the caller may change it.',
+  recordPromptVersion:
+    'Records the next prompt version from the version the caller opened, checked as a new prompt is.',
   createAssetUpload:
     'Starts an image upload in a space and records its description or decorative status. Upload bytes separately to finish it.',
   getAssetUpload:

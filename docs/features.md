@@ -188,6 +188,12 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   accepted, by whom, when and into which version, what waits, and what was rejected, withdrawn or
   discarded, with the model and the endpoint behind each. The API does the same
   (`GET /v1/documents/{id}/generated`, `GET /v1/publications/{id}/generated`).
+- **Prompts, through the API.** A prompt is a named, versioned artifact in a space: its
+  instructions, which may place the document's parameters, the context it declares (the part it runs
+  on, its section or the whole document, related components, parts whose field holds a value, named
+  parameters), the component type whose text it writes, and the purpose and models it accepts. Every
+  version is checked so nothing undeclared can reach a model (`/v1/prompts`). Reviewing, libraries
+  and running them are still to come.
 
 - **Groups, and your organisation's directory.** An administrator of the whole environment makes groups
   in Administration's **Groups** and grants a role to one as to a person, from any access page: everybody

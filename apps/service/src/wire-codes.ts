@@ -60,6 +60,7 @@ const WIRE_CODES = {
   'metadata.invalid': 'metadata_invalid',
   'definition.unresolved': 'definition_unresolved',
   'definition.invalid': 'definition_invalid',
+  'prompt.invalid': 'prompt_invalid',
   'definition.name_taken': 'definition_name_taken',
   'assignment.conflict': 'assignment_conflict',
   'schema.conflict': 'schema_conflict',
