@@ -1,6 +1,11 @@
 import { randomBytes } from 'node:crypto';
 
 import {
+  TRAY_PARTS_MOST,
+  addToTray,
+  latestVersion,
+  removeFromTray,
+  trayOf,
   CONVERSATION_TURNS_MOST,
   listGuardrails,
   listConversations,
@@ -34,6 +39,9 @@ import {
   ASSISTANT_INSTRUCTIONS,
   ASSISTANT_INSTRUCTIONS_VERSION,
   ASSISTANT_TOOLS,
+  CONVERSATION_TOOLS,
+  conversationToolInputSchemas,
+  isConversationTool,
   admit,
   applyEdits,
   asData,
@@ -330,6 +338,182 @@ export function assistantHandlers(
     };
   }
 
+  /**
+   * A conversation's tray as its person may read it now (G5-D; GEN-053): each part decided again,
+   * never trusted for having been read before; on a document, at the version placed there, else at
+   * its latest. A part they may no longer read is left out and named.
+   */
+  async function readTray(
+    trx: TenantTransaction,
+    request: FastifyRequest,
+    conversation: Conversation,
+    principal: string,
+  ) {
+    const parts = await trayOf(trx, conversation.id);
+    const found =
+      conversation.documentId === null
+        ? undefined
+        : await placed(trx, conversation.documentId, principal);
+    const read: { component: string; version: string; number: string; content: ContentDocument }[] =
+      [];
+    const dropped: string[] = [];
+    for (const part of parts) {
+      let version: string | undefined;
+      if (found) version = found.readable.get(part.component);
+      else {
+        try {
+          await authoriseAt(trx, callerOf(request), 'read', {
+            kind: 'artifact',
+            id: part.component,
+          });
+          const latest = await latestVersion(trx, part.component);
+          version = latest?.kind === 'component' ? latest.id : undefined;
+        } catch {
+          version = undefined;
+        }
+      }
+      const content =
+        version === undefined ? undefined : (await versionContents(trx, [version])).get(version);
+      if (version === undefined || !content) {
+        dropped.push(part.component);
+        continue;
+      }
+      read.push({
+        component: part.component,
+        version,
+        number: `${content.revision}.${content.version}`,
+        content: content.content as ContentDocument,
+      });
+    }
+    return { read, dropped };
+  }
+
+  /** A conversation's tools where it has no document (G5-D), each as its person, deciding again. */
+  function looseTools(request: FastifyRequest, principal: string, run: string) {
+    const tenant = tenantOf(request);
+    const caller = callerOf(request);
+    const context = contextOf(request);
+    const missing: ToolAnswer = {
+      ok: false,
+      content: 'There is no component by that identifier that you can read.',
+      summary: 'No such component',
+    };
+    const readable = async (trx: TenantTransaction, component: string) => {
+      try {
+        await authoriseAt(trx, caller, 'read', { kind: 'artifact', id: component });
+      } catch {
+        return undefined;
+      }
+      const latest = await latestVersion(trx, component);
+      return latest?.kind === 'component' ? latest : undefined;
+    };
+    return async (name: string, input: unknown): Promise<ToolAnswer> => {
+      if (!isConversationTool(name)) {
+        return { ok: false, content: `There is no tool ${name}.`, summary: 'No such tool' };
+      }
+      const parsed = conversationToolInputSchemas[name].safeParse(input);
+      if (!parsed.success) {
+        return {
+          ok: false,
+          content: 'The arguments are not what this tool takes.',
+          summary: 'Arguments refused',
+        };
+      }
+      return db.withTenant(
+        tenant,
+        async (trx): Promise<ToolAnswer> => {
+          switch (name) {
+            case 'search_components': {
+              const { query } = parsed.data as { query: string };
+              const answer = await searchWords(trx, principal, query, {
+                limit: 20,
+                filters: { kinds: ['component'] },
+              });
+              const hits =
+                typeof answer === 'object' && answer.outcome === 'results'
+                  ? answer.items.slice(0, 10)
+                  : [];
+              const text = hits
+                .map(
+                  (hit) =>
+                    `Component ${hit.artifactId}: ${hit.passage.map((piece) => piece.text).join('')}`,
+                )
+                .join('\n');
+              return {
+                ok: true,
+                content: asData('search', null, text === '' ? 'Nothing matched.' : capped(text)),
+                summary: `${hits.length} found`,
+              };
+            }
+            case 'read_component': {
+              const { component } = parsed.data as { component: string };
+              const latest = await readable(trx, component);
+              if (!latest) return missing;
+              const content = latest.content as ContentDocument;
+              const number = `${latest.revision}.${latest.version}`;
+              return {
+                ok: true,
+                content: asData(`component:${component}`, number, capped(componentAsText(content))),
+                summary: `${content.content.length} blocks, version ${number}`,
+                read: {
+                  component,
+                  version: latest.id,
+                  blocks: content.content.map((block) => block.id),
+                },
+              };
+            }
+            case 'propose_edit': {
+              const { component, edits } = parsed.data as {
+                component: string;
+                edits: Parameters<typeof applyEdits>[1];
+              };
+              const latest = await readable(trx, component);
+              if (!latest) return missing;
+              try {
+                await authoriseAt(trx, caller, 'suggest', { kind: 'artifact', id: component });
+              } catch {
+                return {
+                  ok: false,
+                  content: 'You may not suggest changes to this component.',
+                  summary: 'Not yours to change',
+                };
+              }
+              let content: ContentDocument;
+              try {
+                content = parseContentDocument(latest.content);
+              } catch {
+                return missing;
+              }
+              const outcome = applyEdits(content, edits, markdownReader(content));
+              if (!outcome.ok)
+                return { ok: false, content: outcome.problem, summary: 'Edit refused' };
+              if (JSON.stringify(outcome.content) === JSON.stringify(content)) {
+                return {
+                  ok: false,
+                  content: 'These edits change nothing.',
+                  summary: 'Changes nothing',
+                };
+              }
+              const proposal = await makeProposal(trx, {
+                run,
+                component,
+                against: latest.id,
+                proposed: outcome.content,
+              });
+              return {
+                ok: true,
+                content: `Proposal ${proposal.number} made. Nothing changes until the author accepts it.`,
+                summary: `Proposal ${proposal.number}`,
+                proposal,
+              };
+            }
+          }
+        },
+        context,
+      );
+    };
+  }
+
   return {
     startAssistantRun: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
       const { id } = request.params as { id: string };
@@ -361,9 +545,7 @@ export function assistantHandlers(
             text:
               component === undefined
                 ? ask
-                : `${ask}
-
-(The author has component ${component} open.)`,
+                : `${ask}\n\n(The author has component ${component} open.)`,
           },
         ],
       };
@@ -455,6 +637,46 @@ export function assistantHandlers(
         };
       }),
 
+    getConversationContext: (request: FastifyRequest) =>
+      asCaller(request, async (trx, principalId) => {
+        const conversation = await own(trx, request, principalId);
+        const tray = await readTray(trx, request, conversation, principalId);
+        return trayView(tray);
+      }),
+
+    addConversationContext: (request: FastifyRequest) =>
+      asCaller(request, async (trx, principalId) => {
+        const conversation = await own(trx, request, principalId);
+        const { component } = request.body as { component: string };
+        // Read as the person now, at the version they would be sent, or not added at all.
+        const before = await readTray(trx, request, conversation, principalId);
+        await authoriseAt(trx, callerOf(request), 'read', { kind: 'artifact', id: component });
+        const latest = await latestVersion(trx, component);
+        if (latest?.kind !== 'component') throw notFound();
+        if (conversation.documentId !== null) {
+          const found = await placed(trx, conversation.documentId, principalId);
+          if (!found?.readable.has(component)) throw notFound();
+        }
+        const added = await addToTray(trx, { conversation: conversation.id, component });
+        if (added === 'full') {
+          throw new AppError(
+            409,
+            'tray_full',
+            `A conversation reads ${TRAY_PARTS_MOST} parts at most.`,
+          );
+        }
+        void before;
+        return trayView(await readTray(trx, request, conversation, principalId));
+      }),
+
+    removeConversationContext: (request: FastifyRequest) =>
+      asCaller(request, async (trx, principalId) => {
+        const conversation = await own(trx, request, principalId);
+        const { component } = request.params as { component: string };
+        if (!(await removeFromTray(trx, conversation.id, component))) throw notFound();
+        return trayView(await readTray(trx, request, conversation, principalId));
+      }),
+
     takeTurn: async (request: FastifyRequest) => {
       const principalId = principalOf(request).principalId;
       const tenant = tenantOf(request);
@@ -483,14 +705,21 @@ export function assistantHandlers(
           if (sealed === undefined) {
             throw new AppError(409, 'endpoint_unusable', 'The endpoint has no key set.');
           }
-          return { conversation, turns, endpoint, sealed, guardrails: await listGuardrails(trx) };
+          return {
+            conversation,
+            turns,
+            endpoint,
+            sealed,
+            guardrails: await listGuardrails(trx),
+            tray: await readTray(trx, request, conversation, principalId),
+          };
         },
         contextOf(request),
       );
       if (!client) {
         throw new AppError(503, 'connector_unavailable', failureWords('connector_unavailable'));
       }
-      const { conversation, turns, endpoint, sealed, guardrails } = prepared;
+      const { conversation, turns, endpoint, sealed, guardrails, tray } = prepared;
       const document = conversation.documentId;
       // The earlier finished turns' words, never their tool results (G5-A).
       const earlier: ModelMessage[] = turns.flatMap((each): ModelMessage[] =>
@@ -501,12 +730,23 @@ export function assistantHandlers(
             ]
           : [],
       );
+      const asked =
+        component === undefined ? ask : `${ask}\n\n(The author has component ${component} open.)`;
+      // The tray's parts, as data, before the words (G5-D): re-read as the person this turn.
       const words =
-        component === undefined
-          ? ask
-          : `${ask}
-
-(The author has component ${component} open.)`;
+        tray.read.length === 0
+          ? asked
+          : [
+              'What you may read:',
+              ...tray.read.map((each) =>
+                asData(
+                  `component:${each.component}`,
+                  each.number,
+                  capped(componentAsText(each.content)),
+                ),
+              ),
+              asked,
+            ].join('\n\n');
       return streamedRun({
         guardrails,
         request,
@@ -527,19 +767,33 @@ export function assistantHandlers(
         conversationId: conversation.id,
         ask,
         system: ASSISTANT_INSTRUCTIONS,
-        // On a document, the assistant's tools, as the requester; with none, words alone (G5-D adds).
-        tools: document === null ? [] : ASSISTANT_TOOLS,
+        // On a document, the assistant's tools; with none, the person's own search, reads and proposals.
+        tools: document === null ? CONVERSATION_TOOLS : ASSISTANT_TOOLS,
         messages: [...earlier, { role: 'user', content: [{ type: 'text', text: words }] }],
         limits: ASSISTANT_LIMITS,
         tool: (run) =>
           document === null
-            ? async (name) => ({
-                ok: false,
-                content: `There is no tool ${name}.`,
-                summary: 'No such tool',
-              })
+            ? looseTools(request, principalId, run)
             : tools(request, document, principalId, run),
-        started: { conversation: conversation.id },
+        started: {
+          conversation: conversation.id,
+          tray: { read: tray.read.map((each) => each.component), dropped: tray.dropped },
+        },
+        context: tray.read.map((each) => ({
+          component: each.component,
+          version: each.version,
+          blocks: each.content.content.map((block) => block.id),
+        })),
+        // A tool's read joins the tray, so later turns read it again (G5-D).
+        onRead: (run, read) =>
+          db
+            .withTenant(
+              tenant,
+              (inner) =>
+                addToTray(inner, { conversation: conversation.id, component: read.component, run }),
+              contextOf(request),
+            )
+            .then(() => undefined),
         ended: (said, read) => {
           const cited = citationsIn(said);
           const kept = cited.filter((each) => read.get(each.component)?.has(each.block) === true);
@@ -792,5 +1046,22 @@ function conversationView(conversation: Conversation) {
     document: conversation.documentId,
     title: conversation.title,
     madeAt: conversation.madeAt.toISOString(),
+  };
+}
+
+/** A tray as the routes answer it: what is read, and what its person may no longer read. */
+function trayView(tray: {
+  readonly read: readonly { component: string; version: string; number: string }[];
+  readonly dropped: readonly string[];
+}) {
+  return {
+    items: [
+      ...tray.read.map((each) => ({
+        component: each.component,
+        version: each.number,
+        readable: true,
+      })),
+      ...tray.dropped.map((component) => ({ component, version: null, readable: false })),
+    ],
   };
 }

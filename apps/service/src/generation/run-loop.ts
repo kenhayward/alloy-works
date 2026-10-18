@@ -113,6 +113,13 @@ export function streamedRun(input: {
   readonly started?: Readonly<Record<string, unknown>>;
   /** The tenant's guardrails in force, checked on what is sent and what returns (G5-F). */
   readonly guardrails?: readonly GuardrailRule[];
+  /** What the run reads before any tool does: a conversation's tray, recorded as read (G5-D). */
+  readonly context?: readonly { component: string; version: string; blocks: readonly string[] }[];
+  /** Each read a tool made, as it is made: a conversation keeps it in its tray (G5-D). */
+  readonly onRead?: (
+    run: string,
+    read: { readonly component: string; readonly version: string },
+  ) => Promise<void>;
 }): Streamed {
   const { request, db, tenant, endpoint, sealed, limits } = input;
   const context = contextOf(request);
@@ -160,7 +167,10 @@ export function streamedRun(input: {
     const tool = input.tool(run);
     const usage = { in: 0, out: 0, reported: false };
     const read = new Map<string, Set<string>>();
-    const readContext: { component: string; version: string; blocks: readonly string[] }[] = [];
+    const readContext: { component: string; version: string; blocks: readonly string[] }[] = [
+      ...(input.context ?? []),
+    ];
+    for (const each of input.context ?? []) read.set(each.component, new Set(each.blocks));
     let said = '';
     let model: string | null = null;
     let calls = 0;
@@ -259,6 +269,7 @@ export function streamedRun(input: {
             for (const block of answered.read.blocks) blocks.add(block);
             read.set(answered.read.component, blocks);
             readContext.push(answered.read);
+            await input.onRead?.(run, answered.read);
           }
           await db.withTenant(
             tenant,

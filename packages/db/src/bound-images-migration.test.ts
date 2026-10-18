@@ -239,6 +239,7 @@ describe('migration 0052, which widens dataset_take to an image', () => {
       '0126_run_transcripts',
       '0127_conversations',
       '0128_guardrails',
+      '0129_conversation_context',
     ]);
     const kept = await queryAs(
       db.adminUrl,

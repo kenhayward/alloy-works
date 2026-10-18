@@ -38,6 +38,11 @@ export const MODULE_GROUPS: readonly ModuleGroup[] = [
         href: '#/prompts',
         about: 'Instructions a model runs on a part, declaring what it reads and writes.',
       },
+      {
+        name: 'Conversations',
+        href: '#/conversations',
+        about: 'Talk with a model in your own words, about what you may read.',
+      },
     ],
   },
   {

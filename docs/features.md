@@ -184,6 +184,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   carries the earlier turns' words, runs as the assistant does, and is kept with what it said. You
   choose the endpoint a turn runs on, and it says whether that sits outside your data boundary
   (`/v1/conversations`). Nothing is refused for being off the subject.
+  **Conversations** holds conversations on no document, its tools your own search, reads and
+  proposals. Each conversation shows **What it reads**: every part a turn read, or that you added,
+  read again as you each turn, a part you may no longer read left out and said so; remove a part, or
+  find one to add.
 - **Guardrails.** Administration's **Guardrails** lists phrases the environment forbids in what a
   model is sent, what it returns, or both, each with its reason. A turn, a run or a trial meeting one
   is refused before any call, or its reply withheld, saying which rule and why; where a rule watches

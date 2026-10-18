@@ -87,7 +87,7 @@ describe('Home', () => {
       within(group('Author'))
         .getAllByRole('link')
         .map((each) => each.getAttribute('href')),
-    ).toEqual(['#/components', '#/documents', '#/templates', '#/prompts']);
+    ).toEqual(['#/components', '#/documents', '#/templates', '#/prompts', '#/conversations']);
     expect(within(group('Publish')).getAllByRole('link')).toHaveLength(1);
     expect(
       within(group('Data'))

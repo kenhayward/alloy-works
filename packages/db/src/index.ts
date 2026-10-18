@@ -727,7 +727,12 @@ export {
   startConversation,
   titleFrom,
   turnsOf,
+  addToTray,
+  removeFromTray,
+  trayOf,
+  TRAY_PARTS_MOST,
   type Conversation,
+  type TrayPart,
   type Turn,
 } from './conversations.js';
 export {

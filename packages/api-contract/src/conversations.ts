@@ -59,6 +59,33 @@ export const ConversationListQuery = z.object({
   document: LowercaseUuid.optional().describe('Only those about this document'),
 });
 
+export const TrayParams = z.object({ id: LowercaseUuid, component: LowercaseUuid });
+
+export const TrayBody = z.strictObject({
+  component: LowercaseUuid.describe(
+    'A component the person may read, placed in the document where it has one',
+  ),
+});
+
+export const ConversationTray = z.object({
+  items: z
+    .array(
+      z.object({
+        component: z.string(),
+        version: z
+          .string()
+          .nullable()
+          .describe(
+            'The version the next turn reads, or null where the person may no longer read it',
+          ),
+        readable: z.boolean(),
+      }),
+    )
+    .describe(
+      'Each part the conversation reads, re-read as the person now: the oldest added first',
+    ),
+});
+
 export const ConversationEndpoints = z.object({
   items: z
     .array(
@@ -147,6 +174,57 @@ export const conversationRoutes = {
       401: unauthenticated,
       403: token,
       404: notFound,
+    },
+  },
+  getConversationContext: {
+    operationId: 'getConversationContext',
+    method: 'GET',
+    path: '/v1/conversations/{id}/context',
+    summary: 'What a conversation of the caller’s reads, as they may read it now',
+    tenantScoped: true,
+    access: SESSION,
+    params: ConversationParams,
+    responses: {
+      200: { description: 'Its tray', schema: ConversationTray },
+      401: unauthenticated,
+      403: token,
+      404: notFound,
+    },
+  },
+  addConversationContext: {
+    operationId: 'addConversationContext',
+    method: 'POST',
+    path: '/v1/conversations/{id}/context',
+    summary: 'Add a part to what a conversation reads',
+    tenantScoped: true,
+    access: SESSION,
+    params: ConversationParams,
+    body: TrayBody,
+    responses: {
+      200: { description: 'Its tray, with the part', schema: ConversationTray },
+      401: unauthenticated,
+      403: token,
+      404: {
+        description:
+          'No conversation of the caller’s by that id, or no component they may read by that id, placed in its document where it has one',
+        schema: ErrorBody,
+      },
+      409: { description: '`tray_full`: it reads as many parts as one may', schema: ErrorBody },
+    },
+  },
+  removeConversationContext: {
+    operationId: 'removeConversationContext',
+    method: 'POST',
+    path: '/v1/conversations/{id}/context/{component}/removal',
+    summary: 'Remove a part from what a conversation reads',
+    tenantScoped: true,
+    access: SESSION,
+    params: TrayParams,
+    responses: {
+      200: { description: 'Its tray, without the part', schema: ConversationTray },
+      401: unauthenticated,
+      403: token,
+      404: { description: 'No conversation of the caller’s holding that part', schema: ErrorBody },
     },
   },
   takeTurn: {

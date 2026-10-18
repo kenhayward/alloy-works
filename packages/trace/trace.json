@@ -17756,6 +17756,10 @@
         {
           "id": "GEN-049",
           "howItIsMet": "`guardrail`: phrases forbidden in what is sent and what returns, a reply held where one watches it, a refusal naming the rule and reason (G5-F)"
+        },
+        {
+          "id": "GEN-053",
+          "howItIsMet": "`conversation_context`: a tray each turn re-reads as the person, a part they no longer read left out and named; added and removed by them (G5-D)"
         }
       ]
     },
@@ -20628,13 +20632,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 522,
+      "line": 526,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 535,
+      "line": 539,
       "kind": "title"
     },
     {
@@ -20970,25 +20974,31 @@
     {
       "id": "GEN-047",
       "file": "apps/service/src/conversation-routes.test.ts",
-      "line": 83,
+      "line": 85,
       "kind": "title"
     },
     {
       "id": "GEN-048",
       "file": "apps/service/src/conversation-routes.test.ts",
-      "line": 110,
+      "line": 112,
       "kind": "title"
     },
     {
       "id": "GEN-050",
       "file": "apps/service/src/conversation-routes.test.ts",
-      "line": 128,
+      "line": 130,
       "kind": "title"
     },
     {
       "id": "GEN-051",
       "file": "apps/service/src/conversation-routes.test.ts",
-      "line": 136,
+      "line": 138,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-053",
+      "file": "apps/service/src/conversation-routes.test.ts",
+      "line": 185,
       "kind": "title"
     },
     {
@@ -21024,7 +21034,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1736,
+      "line": 1743,
       "kind": "title"
     },
     {
@@ -23934,37 +23944,43 @@
     {
       "id": "GEN-009",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 226,
+      "line": 263,
       "kind": "title"
     },
     {
       "id": "GEN-010",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 137,
+      "line": 174,
       "kind": "title"
     },
     {
       "id": "GEN-011",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 189,
+      "line": 226,
       "kind": "title"
     },
     {
       "id": "GEN-037",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 137,
+      "line": 174,
       "kind": "title"
     },
     {
       "id": "GEN-047",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 368,
+      "line": 405,
       "kind": "title"
     },
     {
       "id": "GEN-051",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 368,
+      "line": 405,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-053",
+      "file": "apps/web/src/structure/AssistantPanel.test.tsx",
+      "line": 441,
       "kind": "title"
     },
     {
@@ -28332,7 +28348,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 820,
+      "line": 823,
       "kind": "title"
     },
     {

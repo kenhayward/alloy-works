@@ -279,6 +279,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0126_run_transcripts',
       '0127_conversations',
       '0128_guardrails',
+      '0129_conversation_context',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,
