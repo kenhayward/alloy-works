@@ -53,3 +53,12 @@
   margin: 0;
   padding-inline-start: var(--space-16);
 }
+
+.output {
+  white-space: pre-wrap;
+  margin: 0;
+  padding: var(--space-12);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+  font: inherit;
+}

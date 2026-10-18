@@ -54,10 +54,16 @@ describe("a prompt run's call", () => {
     expect(call.tools).toEqual([]);
     expect(call.messages).toHaveLength(1);
     const sent = JSON.stringify(call.messages);
-    expect(sent).toContain('Rewrite for engineers.');
+    // A parameter placed is data where it stands, never instructions.
+    const [message] = call.messages;
+    const first = message?.content[0];
+    expect(first?.type === 'text' && first.text).toContain(
+      'Rewrite for <content source="parameter:audience">\nengineers\n</content>.',
+    );
     expect(sent).toContain('<content source=\\"component:a\\" version=\\"0.1\\">');
     expect(sent).toContain('<content source=\\"component:b\\" version=\\"0.1\\">');
-    expect(sent).toContain('audience: engineers');
+    // Declared and placed, it is not sent a second time.
+    expect(sent).not.toContain('audience: engineers');
     // The part written is sent once, not again among what is read beside it.
     expect(sent.split('The weir floods.').length).toBe(2);
   });

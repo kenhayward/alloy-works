@@ -36,6 +36,8 @@ interface Ended {
   readonly currency: string;
   readonly citations: readonly Citation[];
   readonly dropped: readonly Citation[];
+  /** A prompt run's reply that could not be proposed, and why (G4-I). */
+  readonly refused?: string;
 }
 
 const TOOL_WORDS: Readonly<Record<string, string>> = {
@@ -76,18 +78,26 @@ function proposedText(proposed: Proposal['proposed']): string {
     .join('\n\n');
 }
 
+/** A prompt the document's library runs, as the panel offers it. */
+interface RunnablePrompt {
+  readonly id: string;
+  readonly title: string;
+}
+
 const CITATION = /\[\[([0-9a-f-]{36})#([A-Za-z0-9_-]{1,64})\]\]/g;
 
 /**
  * The document page's **Assistant** (generation.md, "The assistant"; the G2 plan, G2-K): ask about
  * the open document; the answer as it streams; what it did, each call and what came back; each
  * proposal with **Accept**, **Keep as suggestion** and **Discard**; the citations it kept as links;
- * and what the run cost. Nothing it proposes changes the document until it is accepted.
+ * and what the run cost; and the prompts the document's library runs on the part open. Nothing it
+ * proposes changes the document until it is accepted.
  */
 export function AssistantPanel({
   client,
   document,
   component,
+  node = null,
   nameOf = () => undefined,
   onCite,
   stream = streamPost,
@@ -97,6 +107,8 @@ export function AssistantPanel({
   document: string;
   /** The component the author has open, if one is. */
   component: string | null;
+  /** Its node in the outline: the part a prompt runs on (the G4 plan, G4-I). */
+  node?: string | null;
   nameOf?: (component: string) => string | undefined;
   /** A kept citation followed: its component and block shown. */
   onCite: (component: string, block: string) => void;
@@ -114,8 +126,28 @@ export function AssistantPanel({
   const [said, setSaid] = useState('');
   const [month, setMonth] = useState<string>('');
   const stop = useRef<AbortController | null>(null);
+  const [prompts, setPrompts] = useState<readonly RunnablePrompt[]>([]);
 
   useEffect(() => () => stop.current?.abort(), []);
+
+  // The prompts this document's library lists that run, each at its approved revision (G4-F).
+  useEffect(() => {
+    let current = true;
+    void client
+      .GET('/v1/documents/{id}/prompts', { params: { path: { id: document } } })
+      .then(({ data }) => {
+        if (!current || !data) return;
+        setPrompts(
+          data.prompts.flatMap((each) =>
+            each.state === 'approved' ? [{ id: each.id, title: each.prompt.title }] : [],
+          ),
+        );
+      })
+      .catch(() => undefined);
+    return () => {
+      current = false;
+    };
+  }, [client, document]);
 
   const usage = async () => {
     const { data } = await client.GET('/v1/me/assistant-usage');
@@ -129,6 +161,14 @@ export function AssistantPanel({
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (ask.trim() === '' || running) return;
+    await run(`${origin}/v1/documents/${document}/assistant/runs`, {
+      ask: ask.trim(),
+      ...(component === null ? {} : { component }),
+    });
+  };
+
+  /** A run streamed: the assistant asked, or a prompt run on the part open (G4-I). */
+  const run = async (url: string, body: Record<string, unknown>) => {
     const controller = new AbortController();
     stop.current = controller;
     setRunning(true);
@@ -138,8 +178,8 @@ export function AssistantPanel({
     setEnded(null);
     setSaid('');
     const outcome = await stream({
-      url: `${origin}/v1/documents/${document}/assistant/runs`,
-      body: { ask: ask.trim(), ...(component === null ? {} : { component }) },
+      url,
+      body,
       signal: controller.signal,
       onEvent: (name, data) => {
         const frame = data as Record<string, unknown>;
@@ -271,6 +311,35 @@ export function AssistantPanel({
           )}
         </div>
       </form>
+      {prompts.length > 0 && (
+        <section aria-label="Prompts" className={styles['prompts']}>
+          <h3>Prompts</h3>
+          {node === null ? (
+            <p className={styles['muted']}>Open a part to run a prompt on it.</p>
+          ) : (
+            <ul>
+              {prompts.map((each) => (
+                <li key={each.id}>
+                  <span>{each.title}</span>{' '}
+                  <button
+                    type="button"
+                    disabled={running}
+                    aria-label={`Run ${each.title} on this part`}
+                    onClick={() =>
+                      void run(`${origin}/v1/documents/${document}/prompt-runs`, {
+                        prompt: each.id,
+                        node,
+                      })
+                    }
+                  >
+                    Run
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
       <div aria-live="polite" className={styles['answer']}>
         {shownAnswer}
       </div>
@@ -289,6 +358,7 @@ export function AssistantPanel({
           ))}
         </ol>
       )}
+      {ended?.refused !== undefined && <p role="status">{ended.refused}</p>}
       {ended !== null && ended.dropped.length > 0 && (
         <p className={styles['muted']}>
           {ended.dropped.length === 1

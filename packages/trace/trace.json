@@ -21640,7 +21640,7 @@
     {
       "id": "GEN-005",
       "file": "apps/service/src/prompt-run-routes.test.ts",
-      "line": 267,
+      "line": 270,
       "kind": "title"
     },
     {
@@ -21670,7 +21670,7 @@
     {
       "id": "GEN-059",
       "file": "apps/service/src/prompt-run-routes.test.ts",
-      "line": 247,
+      "line": 250,
       "kind": "title"
     },
     {
@@ -23878,25 +23878,25 @@
     {
       "id": "GEN-009",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 148,
+      "line": 172,
       "kind": "title"
     },
     {
       "id": "GEN-010",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 59,
+      "line": 83,
       "kind": "title"
     },
     {
       "id": "GEN-011",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 111,
+      "line": 135,
       "kind": "title"
     },
     {
       "id": "GEN-037",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 59,
+      "line": 83,
       "kind": "title"
     },
     {

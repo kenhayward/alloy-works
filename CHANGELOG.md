@@ -3,6 +3,20 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.197.0 - 2026-10-18 (PR #719)
+
+The intelligence's fourth slice: prompts and libraries (the G4 plan).
+
+### Added
+
+- **Prompts.** A prompt is a named, versioned artifact in a space: its instructions, the context it declares and nothing beyond it, the component type whose text it writes, and the purpose and models it accepts. The API makes, lists and changes them (`/v1/prompts`).
+- **Prompts pages and review.** A Prompts module lists your prompts, and a prompt's page writes and versions one. Prompts are reviewed through their own workflow, which Administration's Workflows can change: submitted, approved by somebody other than the author, and back to draft when saved.
+- **Prompt libraries.** A library lists prompts, each running at its latest approved revision, and every environment holds an empty default. A template names the library it binds, or binds the default. Prompts links to the libraries, where a designer adds and removes prompts.
+- **Running a prompt.** A prompt of a document's library runs on one of its parts: what it reads is gathered as you may read it and recorded, one call goes to the endpoint its purpose uses, and the reply is proposed as the part's text. It is refused before any call where the model is not one it accepts, it reads nothing, or it reads too much.
+- **Trials.** Any version of a prompt can be tried on a part, proposing nothing, and approving a prompt needs a finished trial of the version approved.
+- **Prompts in the Assistant tab.** With a part open, the document's Assistant tab lists the approved prompts of its template's library, and Run proposes the part's new text from one, accepted, kept or discarded as the assistant's proposals are.
+- **Try it.** A prompt's page tries the version shown on a part of a document you may read, showing what it wrote and changing nothing.
+
 ## 0.196.0 - 2026-10-18 (PR #714)
 
 The intelligence's third slice: generated content in publishing (the G3 plan).

@@ -234,6 +234,9 @@ describe('a prompt run through the service (the G4 plan, G4-H and G4-I)', () => 
     expect((await trial('grace', one, document.nodes[0]!)).statusCode).toBe(200);
     const sent = JSON.stringify(asked[before]!.call);
     expect(asked[before]!.call.tools).toEqual([]);
+    // One message: the instructions and the parts declared, as data; not even the document's title.
+    expect(asked[before]!.call.messages).toHaveLength(1);
+    expect(sent).not.toContain('The readings report');
     expect(sent).toContain('The north weir floods each spring.');
     expect(sent).not.toContain('A confidential finding.');
     // A part's context alone sends that part alone, to anybody.
@@ -293,5 +296,26 @@ describe('a prompt run through the service (the G4 plan, G4-H and G4-I)', () => 
         })
       ).statusCode,
     ).toBe(403);
+  });
+
+  it('proposes nothing from a blank reply, saying so, and never empties the part', async () => {
+    const one = await approved({ title: 'Says nothing' });
+    const report = await bound([one.id]);
+    const was = h.connector.modelFor;
+    h.connector.modelFor = (request) => {
+      asked.push(request);
+      return [text('   '), ended];
+    };
+    try {
+      const ran = await h.call('grace', 'POST', `/v1/documents/${report.id}/prompt-runs`, {
+        prompt: one.id,
+        node: report.nodes[0],
+      });
+      const frames = framesOf(ran.body);
+      expect(frames.map((frame) => frame.event)).toEqual(['run', 'text', 'ended']);
+      expect(frames.at(-1)!.data.refused).toBe('The model wrote nothing, so nothing is proposed.');
+    } finally {
+      h.connector.modelFor = was;
+    }
   });
 });

@@ -201,10 +201,12 @@ export function parsePromptForWrite(value: unknown): Prompt {
 export function placeParameters(
   text: string,
   values: Readonly<Record<string, string | boolean | readonly (string | boolean)[]>>,
+  /** How a value is written where it is placed: as itself, or wrapped as data by a run. */
+  written: (name: string, value: string) => string = (_, value) => value,
 ): string {
   return text.replace(PLACE, (_, name: string) => {
     const value = Object.hasOwn(values, name) ? values[name] : undefined;
     if (value === undefined) return '';
-    return Array.isArray(value) ? value.map(String).join(', ') : String(value);
+    return written(name, Array.isArray(value) ? value.map(String).join(', ') : String(value));
   });
 }

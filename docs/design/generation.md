@@ -154,6 +154,13 @@ prompt workflow's approving transition requires a finished trial of the version 
 prompt workflow saved without that requirement is refused (`trial_required`), so the statement holds
 for every tenant; who approves is the transition's permission.
 
+What a run reads (G4-H): an outline source always holds the part written, so `context_empty`
+(GEN-059) fires only where every source a prompt declares is a related, field or parameter source
+and each found nothing. A related component is read at the version its relationship pins, else at
+its latest, as a floating relationship reads (REL-043), not at its approved revision. A parameter's
+value is placed in the instructions wrapped as data: whoever sets a document's parameters is not the
+prompt's approver. A blank reply proposes nothing.
+
 ## The assistant
 
 **Drafting against the open document** (GEN-012), on the document page's **Assistant** panel. The

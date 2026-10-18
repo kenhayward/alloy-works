@@ -1,6 +1,6 @@
 import type { ContentDocument } from '../content/model/document.js';
 import { asData, componentAsText, type BlockEdit } from './assistant.js';
-import { placeParameters, type Prompt } from './prompt.js';
+import { placeParameters, placedParameters, type Prompt } from './prompt.js';
 import { canonicalCall, replyModelMatches, type ModelCall } from './request.js';
 
 /**
@@ -44,14 +44,19 @@ export function acceptsModel(prompt: Prompt, model: string): boolean {
 }
 
 /**
- * The one call a run makes (GEN-003): the product's instructions; then the prompt's, its parameters
- * placed; the part it writes and every part the context resolved, each wrapped as data; and the
- * parameters' values, wrapped too. Nothing else.
+ * The one call a run makes (GEN-003): the product's instructions; then the prompt's, each parameter
+ * placed wrapped as data, since whoever sets a document's parameters is no approver of the prompt;
+ * the part it writes and every part the context resolved, each wrapped as data; and the parameters
+ * declared but not placed, wrapped too. Nothing else.
  */
 export function promptCall(model: string, prompt: Prompt, context: ResolvedContext): ModelCall {
   const others = context.parts.filter((each) => each.component !== context.part.component);
+  const placed = new Set(placedParameters(prompt.instructions));
+  const unplaced = Object.entries(context.parameters).filter(([name]) => !placed.has(name));
   const pieces = [
-    placeParameters(prompt.instructions, context.parameters),
+    placeParameters(prompt.instructions, context.parameters, (name, value) =>
+      asData(`parameter:${name}`, null, value),
+    ),
     'The part you write:',
     asData(
       `component:${context.part.component}`,
@@ -66,14 +71,14 @@ export function promptCall(model: string, prompt: Prompt, context: ResolvedConte
             asData(`component:${each.component}`, each.number, componentAsText(each.content)),
           ),
         ]),
-    ...(Object.keys(context.parameters).length === 0
+    ...(unplaced.length === 0
       ? []
       : [
           'The document’s parameters:',
           asData(
             'parameters',
             null,
-            Object.entries(context.parameters)
+            unplaced
               .map(
                 ([name, value]) =>
                   `${name}: ${Array.isArray(value) ? value.join(', ') : String(value)}`,

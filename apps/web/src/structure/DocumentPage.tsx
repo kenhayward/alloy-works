@@ -2738,6 +2738,7 @@ export function DocumentPage({
                         client={client}
                         document={document.id}
                         component={editing === null ? null : (componentOfNode.get(editing) ?? null)}
+                        node={editing}
                         nameOf={(component) => names?.get(component)}
                         onCite={(component) => {
                           const node = [...componentOfNode].find(

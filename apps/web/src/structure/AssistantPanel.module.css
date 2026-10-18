@@ -76,3 +76,21 @@
   margin: 0 0 var(--space-8, 8px);
   font-size: 1em;
 }
+
+.prompts {
+  display: grid;
+  gap: var(--space-4, 4px);
+}
+
+.prompts h3 {
+  margin: 0;
+  font-size: inherit;
+}
+
+.prompts ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--space-4, 4px);
+}
