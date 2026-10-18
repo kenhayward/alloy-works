@@ -4,7 +4,14 @@ import { fileURLToPath } from 'node:url';
 
 import {
   CONNECTOR_ANSWER_MAX_BYTES,
+  MODEL_ANSWER_MAX_BYTES,
   credentialContext,
+  modelCredentialContext,
+  modelEventSchema,
+  type ChildModelRequest,
+  type GenerationFailure,
+  type ModelEvent,
+  type ModelRequest,
   dataFailure,
   describeAnswerSchema,
   describeSqlAnswerSchema,
@@ -178,6 +185,84 @@ export const runChild: SpawnChild = (spec, input, deadlineMs, stderr, signal) =>
     child.stdin.end(`${input}\n`);
   });
 
+/** How a streamed child ended: done writing, killed at its deadline, past its cap, or abandoned. */
+export type StreamOutcome = { readonly kind: 'ended' | 'timeout' | 'capped'; readonly pid: number };
+
+export type StreamChild = (
+  spec: ChildSpec,
+  input: string,
+  deadlineMs: number,
+  /** Each whole line as the child writes it; `false` ends the child, nothing more being wanted. */
+  onLine: (line: string) => boolean,
+  stderr?: (chunk: Buffer) => void,
+  signal?: AbortSignal,
+) => Promise<StreamOutcome>;
+
+/**
+ * Starts a child, writes it one line, and hands on each line it writes as it writes it (the G1 plan,
+ * G1-C): killed a second after the deadline, past `MODEL_ANSWER_MAX_BYTES`, where `onLine` says
+ * nothing more is wanted, or at once where `signal` aborts.
+ */
+export const streamChild: StreamChild = (spec, input, deadlineMs, onLine, stderr, signal) =>
+  new Promise((resolve) => {
+    let child;
+    try {
+      child = spawn(spec.file, [...spec.args], {
+        env: { ...spec.env },
+        stdio: ['pipe', 'pipe', 'pipe'],
+        windowsHide: true,
+        ...(spec.uid === undefined ? {} : { uid: spec.uid }),
+        ...(spec.gid === undefined ? {} : { gid: spec.gid }),
+      });
+    } catch {
+      resolve({ kind: 'ended', pid: -1 });
+      return;
+    }
+    const pid = child.pid ?? -1;
+    let ending: StreamOutcome['kind'] = 'ended';
+    let bytes = 0;
+    let partial = '';
+    let wanted = true;
+    const decoder = new TextDecoder('utf-8');
+    const timer = setTimeout(() => {
+      ending = 'timeout';
+      child.kill('SIGKILL');
+    }, deadlineMs + GRACE_MS);
+    const abandoned = () => child.kill('SIGKILL');
+    if (signal?.aborted) abandoned();
+    else signal?.addEventListener('abort', abandoned, { once: true });
+    child.stdout.on('data', (chunk: Buffer) => {
+      if (!wanted) return;
+      bytes += chunk.length;
+      if (bytes > MODEL_ANSWER_MAX_BYTES) {
+        ending = 'capped';
+        wanted = false;
+        child.kill('SIGKILL');
+        return;
+      }
+      partial += decoder.decode(chunk, { stream: true });
+      let newline = partial.indexOf('\n');
+      while (newline !== -1 && wanted) {
+        const line = partial.slice(0, newline);
+        partial = partial.slice(newline + 1);
+        if (line !== '' && !onLine(line)) {
+          wanted = false;
+          child.kill('SIGKILL');
+        }
+        newline = partial.indexOf('\n');
+      }
+    });
+    child.stderr.on('data', (chunk: Buffer) => stderr?.(chunk));
+    child.stdin.on('error', () => {});
+    child.on('error', () => {});
+    child.on('close', () => {
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', abandoned);
+      resolve({ kind: ending, pid });
+    });
+    child.stdin.end(`${input}\n`);
+  });
+
 export type RequestKind = 'test' | 'describe' | 'run' | 'describeSql';
 
 interface Kinds {
@@ -209,6 +294,12 @@ const answerSchemas = {
  */
 export const MAX_RUNS = 4;
 
+/**
+ * The most model calls at once (the G1 plan, G1-C): each may hold its child for minutes, so they
+ * never take every slot from the connections' tests, describes and runs.
+ */
+export const MAX_MODELS = 4;
+
 /** The connect timeout, and the least time a failure to reach or authenticate takes (D1-L). */
 export const CONNECT_TIMEOUT_MS = 5000;
 
@@ -222,6 +313,15 @@ export interface Supervisor {
     request: RequestOf<K>,
     signal?: AbortSignal,
   ): Promise<AnswerOf<K> | 'busy'>;
+  /**
+   * A model call (the G1 plan, G1-C): `busy` at once where its cap or the children's is reached;
+   * otherwise each event as the child writes it, the last `ended` or `failed`, and done once it is.
+   */
+  model(
+    request: ModelRequest,
+    onEvent: (event: ModelEvent) => void,
+    signal?: AbortSignal,
+  ): 'busy' | Promise<void>;
   /** How many children are running. */
   active(): number;
 }
@@ -242,9 +342,12 @@ export function createSupervisor(options: {
   readonly maxChildren: number;
   /** The most of those children that may be runs at once: `MAX_RUNS` unless a test says. */
   readonly maxRuns?: number;
+  /** The most of those children that may be model calls at once: `MAX_MODELS` unless a test says. */
+  readonly maxModels?: number;
   /** How a child is started, fixed or by its slot: production's own users unless a test says. */
   readonly spec?: ChildSpec | ((slot: number) => ChildSpec);
   readonly spawn?: SpawnChild;
+  readonly streamSpawn?: StreamChild;
   /** Ends whatever a child's user left running, before its slot is used again. */
   readonly sweep?: (uid: number) => Promise<void>;
   readonly connectTimeoutMs?: number;
@@ -262,6 +365,9 @@ export function createSupervisor(options: {
         ? given
         : () => given;
   const spawnChild = options.spawn ?? runChild;
+  const streamSpawn = options.streamSpawn ?? streamChild;
+  const maxModels = options.maxModels ?? MAX_MODELS;
+  let models = 0;
   const sweep = options.sweep ?? sweepUser;
   const connectTimeoutMs = options.connectTimeoutMs ?? CONNECT_TIMEOUT_MS;
   const failureFloorMs = options.failureFloorMs ?? CONNECT_TIMEOUT_MS;
@@ -331,7 +437,119 @@ export function createSupervisor(options: {
     return parsed.success ? (parsed.data as AnswerOf<K>) : failed(kind, 'connector_error');
   }
 
+  /** Holds a slot for `body`, sweeping its user before the slot is handed out again. */
+  function holding(
+    slot: number,
+    body: (sweeping: (done: Promise<void>) => void) => Promise<void>,
+  ): Promise<void> {
+    let swept: Promise<void> = Promise.resolve();
+    const done = body((sweep) => {
+      swept = sweep;
+    });
+    void done
+      .catch(() => {})
+      .then(() => swept)
+      .then(() => {
+        free.push(slot);
+        free.sort((a, b) => a - b);
+      });
+    return done;
+  }
+
+  async function modelWork(
+    request: ModelRequest,
+    slot: number,
+    onEvent: (event: ModelEvent) => void,
+    sweeping: (done: Promise<void>) => void,
+    signal: AbortSignal | undefined,
+  ): Promise<void> {
+    let last: ModelEvent | undefined;
+    const emit = (event: ModelEvent) => {
+      if (last !== undefined) return;
+      if (event.type === 'ended' || event.type === 'failed') last = event;
+      onEvent(event);
+    };
+    const fail = (failure: GenerationFailure) => emit({ type: 'failed', failure });
+    let secret: string;
+    try {
+      // Opened only for the endpoint and the origin it was sealed for (the G1 plan, G1-B): the key of
+      // an endpoint pointed elsewhere, or copied to another, opens nothing.
+      secret = openSecret(
+        options.sealingKey,
+        'model-credential',
+        request.tenant,
+        request.sealed,
+        modelCredentialContext(request.endpoint.id, request.endpoint),
+      );
+    } catch {
+      fail({ code: 'model_unavailable', reason: 'key_refused' });
+      return;
+    }
+    const input: ChildModelRequest = {
+      kind: 'model',
+      request,
+      secret,
+      deny: [...options.deny],
+      connectTimeoutMs,
+      ...(options.ca === undefined ? {} : { ca: options.ca }),
+    };
+    const spec = specFor(slot);
+    let stderrBytes = 0;
+    let outcome: StreamOutcome;
+    try {
+      outcome = await streamSpawn(
+        spec,
+        JSON.stringify(input),
+        request.deadlineMs,
+        (line) => {
+          let event: ModelEvent | undefined;
+          try {
+            const parsed = modelEventSchema.safeParse(JSON.parse(line));
+            if (parsed.success) event = parsed.data;
+          } catch {
+            // Not an event: the child is at fault, and ends.
+          }
+          if (event === undefined) {
+            fail({ code: 'connector_error' });
+            return false;
+          }
+          emit(event);
+          return last === undefined;
+        },
+        (chunk) => {
+          stderrBytes += chunk.length;
+        },
+        signal,
+      );
+    } finally {
+      if (spec.uid !== undefined) sweeping(sweep(spec.uid).catch(() => {}));
+    }
+    options.onStderrBytes?.(stderrBytes);
+    if (last === undefined) {
+      fail(
+        outcome.kind === 'timeout'
+          ? { code: 'timeout' }
+          : outcome.kind === 'capped'
+            ? { code: 'model_unavailable', reason: 'failed' }
+            : { code: 'connector_error' },
+      );
+    }
+  }
+
   return {
+    model(request, onEvent, signal) {
+      if (models >= maxModels) return 'busy';
+      const slot = free.shift();
+      if (slot === undefined) return 'busy';
+      active += 1;
+      models += 1;
+      return holding(slot, (sweeping) =>
+        modelWork(request, slot, onEvent, sweeping, signal).finally(() => {
+          active -= 1;
+          models -= 1;
+        }),
+      );
+    },
     run<K extends RequestKind>(
       kind: K,
       request: RequestOf<K>,

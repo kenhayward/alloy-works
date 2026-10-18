@@ -1,5 +1,5 @@
 import { createHash, timingSafeEqual, type Hash } from 'node:crypto';
-import { request as httpRequest, type IncomingHttpHeaders } from 'node:http';
+import { request as httpRequest, type ClientRequest, type IncomingHttpHeaders } from 'node:http';
 import { request as httpsRequest, type RequestOptions } from 'node:https';
 import { rootCertificates } from 'node:tls';
 import type { LookupFunction } from 'node:net';
@@ -102,50 +102,10 @@ function decoderFor(encoding: string | undefined): Transform | null | undefined 
  */
 export async function exchange(asked: Exchange, policy: ExchangePolicy): Promise<Exchanged> {
   const failed = (failure: DataFailure): Exchanged => ({ ok: false, failure });
-  const guarded = await guardedAddress(asked.host, {
-    deny: policy.deny,
-    ...(policy.lookup ? { lookup: policy.lookup } : {}),
-  });
-  if (guarded === 'refused') return failed(dataFailure('connection_failed'));
-  if (Date.now() >= policy.deadline) return failed(dataFailure('timeout'));
-  const byName = normaliseHost(asked.host).kind === 'name';
-  // The address checked is the only one the socket may reach, whatever a resolver would say now.
-  const pinned: LookupFunction = (_hostname, options, callback) => {
-    const all = (options as { all?: boolean } | undefined)?.all === true;
-    if (all) {
-      (callback as (error: null, addresses: { address: string; family: number }[]) => void)(null, [
-        { address: guarded.address, family: guarded.family },
-      ]);
-    } else callback(null, guarded.address, guarded.family);
-  };
-  const headers: Record<string, string> = {};
-  for (const [name, value] of asked.headers) headers[name] = value;
-  headers['accept-encoding'] = 'gzip, deflate, br';
-  if (asked.body !== undefined) {
-    headers['content-type'] = 'application/json';
-    headers['content-length'] = String(Buffer.byteLength(asked.body, 'utf8'));
-  }
-  const options: RequestOptions = {
-    host: byName ? asked.host : guarded.address,
-    port: asked.port,
-    path: asked.path,
-    method: asked.method,
-    headers,
-    // An agent of its own: no socket pooled from another request, and no proxy, which Node reads
-    // only through an agent configured for one.
-    agent: false,
-    lookup: pinned,
-    family: guarded.family,
-
-    maxHeaderSize: 16 * 1024,
-  };
-  const secure = asked.secure !== false;
-  const tls: RequestOptions = {
-    ...(byName ? { servername: asked.host } : {}),
-    ...(policy.ca === undefined ? {} : { ca: [...rootCertificates, policy.ca] }),
-    minVersion: 'TLSv1.2',
-    rejectUnauthorized: true,
-  };
+  const prepared = await prepare(asked, policy, 'gzip, deflate, br');
+  if (prepared === 'refused') return failed(dataFailure('connection_failed'));
+  if (prepared === 'late') return failed(dataFailure('timeout'));
+  const { secure, open } = prepared;
 
   return new Promise<Exchanged>((resolve) => {
     let settled = false;
@@ -158,7 +118,7 @@ export async function exchange(asked: Exchange, policy: ExchangePolicy): Promise
       if (!outcome.ok) request.destroy();
       resolve(outcome);
     };
-    const request = secure ? httpsRequest({ ...options, ...tls }) : httpRequest(options);
+    const request = open();
     timers.push(
       setTimeout(
         () => finish(failed(dataFailure('timeout'))),
@@ -301,6 +261,72 @@ export async function exchange(asked: Exchange, policy: ExchangePolicy): Promise
   });
 }
 
+/** The request a guarded exchange makes, opened once its host has passed the guard. */
+interface Prepared {
+  readonly secure: boolean;
+  readonly open: () => ClientRequest;
+}
+
+/**
+ * The host guarded and resolved once, the socket's lookup pinned to the address checked, an agent of
+ * its own and no proxy, and TLS held to the system's roots and the policy's: what `exchange` and
+ * `stream` share. `refused` where the guard refuses the host, `late` where the deadline has passed.
+ */
+async function prepare(
+  asked: Exchange,
+  policy: Pick<ExchangePolicy, 'deny' | 'lookup' | 'ca' | 'deadline'>,
+  acceptEncoding: string,
+): Promise<Prepared | 'refused' | 'late'> {
+  const guarded = await guardedAddress(asked.host, {
+    deny: policy.deny,
+    ...(policy.lookup ? { lookup: policy.lookup } : {}),
+  });
+  if (guarded === 'refused') return 'refused';
+  if (Date.now() >= policy.deadline) return 'late';
+  const byName = normaliseHost(asked.host).kind === 'name';
+  // The address checked is the only one the socket may reach, whatever a resolver would say now.
+  const pinned: LookupFunction = (_hostname, options, callback) => {
+    const all = (options as { all?: boolean } | undefined)?.all === true;
+    if (all) {
+      (callback as (error: null, addresses: { address: string; family: number }[]) => void)(null, [
+        { address: guarded.address, family: guarded.family },
+      ]);
+    } else callback(null, guarded.address, guarded.family);
+  };
+  const headers: Record<string, string> = {};
+  for (const [name, value] of asked.headers) headers[name] = value;
+  headers['accept-encoding'] = acceptEncoding;
+  if (asked.body !== undefined) {
+    headers['content-type'] = 'application/json';
+    headers['content-length'] = String(Buffer.byteLength(asked.body, 'utf8'));
+  }
+  const options: RequestOptions = {
+    host: byName ? asked.host : guarded.address,
+    port: asked.port,
+    path: asked.path,
+    method: asked.method,
+    headers,
+    // An agent of its own: no socket pooled from another request, and no proxy, which Node reads
+    // only through an agent configured for one.
+    agent: false,
+    lookup: pinned,
+    family: guarded.family,
+
+    maxHeaderSize: 16 * 1024,
+  };
+  const secure = asked.secure !== false;
+  const tls: RequestOptions = {
+    ...(byName ? { servername: asked.host } : {}),
+    ...(policy.ca === undefined ? {} : { ca: [...rootCertificates, policy.ca] }),
+    minVersion: 'TLSv1.2',
+    rejectUnauthorized: true,
+  };
+  return {
+    secure,
+    open: () => (secure ? httpsRequest({ ...options, ...tls }) : httpRequest(options)),
+  };
+}
+
 /**
  * A base URL's parts: its host as stored, its port, its path, empty or segments, and whether it is
  * reached over TLS - port 443, or 80 for plain `http`, unless it names one.
@@ -316,4 +342,139 @@ export function baseUrlParts(baseUrl: string): {
   const host = match[2]!.startsWith('[') ? match[2]!.slice(1, -1) : match[2]!;
   const port = match[3] === undefined ? (secure ? 443 : 80) : Number(match[3]);
   return { host, port, path: match[4] ?? '', secure };
+}
+
+export interface StreamPolicy extends Pick<
+  ExchangePolicy,
+  'deny' | 'lookup' | 'ca' | 'deadline' | 'connectTimeoutMs'
+> {
+  /** The most bytes the body may be as it arrives; none is held. */
+  readonly maxBytes: number;
+  /** Ends the request where it aborts: nobody is reading what it would hand on. */
+  readonly signal?: AbortSignal;
+}
+
+/**
+ * How a stream ended: to its end, or why not. A status that is not 2xx carries its status and at
+ * most `REFUSAL_BYTES` of its body, read to classify it and never repeated (the G1 plan, G1-D).
+ */
+export type Streamed =
+  | { readonly ok: true }
+  | {
+      readonly ok: false;
+      readonly why: 'unreached' | 'timeout' | 'cut' | 'too_large' | 'encoded' | 'abandoned';
+    }
+  | { readonly ok: false; readonly why: 'refused'; readonly status: number; readonly body: string };
+
+/** The most of a refusing response's body read, to tell a key refused from a context too long. */
+export const REFUSAL_BYTES = 16 * 1024;
+
+/**
+ * One request whose response is handed on as it arrives (the G1 plan, G1-D): `exchange`'s guard,
+ * pinned address, own agent, TLS, connect timeout, deadline and refused redirect, but the body never
+ * held, and asked for unencoded, so each chunk is the text the server sent. `onData` returning
+ * `false` ends it. A redirect, a refused host, port or TLS are `unreached`; a body that arrives
+ * encoded anyway is `encoded`.
+ */
+export async function stream(
+  asked: Exchange,
+  policy: StreamPolicy,
+  onData: (chunk: Buffer) => boolean | void,
+): Promise<Streamed> {
+  const prepared = await prepare(asked, policy, 'identity');
+  if (prepared === 'refused') return { ok: false, why: 'unreached' };
+  if (prepared === 'late') return { ok: false, why: 'timeout' };
+  if (policy.signal?.aborted) return { ok: false, why: 'abandoned' };
+  const { secure, open } = prepared;
+  return new Promise<Streamed>((resolve) => {
+    let settled = false;
+    let connected = false;
+    const timers: NodeJS.Timeout[] = [];
+    const finish = (outcome: Streamed) => {
+      if (settled) return;
+      settled = true;
+      for (const timer of timers) clearTimeout(timer);
+      policy.signal?.removeEventListener('abort', abandon);
+      // Ended early by its reader too: nothing more of it is wanted.
+      request.destroy();
+      resolve(outcome);
+    };
+    const abandon = () => finish({ ok: false, why: 'abandoned' });
+    policy.signal?.addEventListener('abort', abandon, { once: true });
+    const request = open();
+    timers.push(
+      setTimeout(
+        () => finish({ ok: false, why: 'timeout' }),
+        Math.max(0, policy.deadline - Date.now()),
+      ),
+      setTimeout(
+        () => {
+          if (!connected) finish({ ok: false, why: 'unreached' });
+        },
+        Math.max(0, Math.min(policy.connectTimeoutMs, policy.deadline - Date.now())),
+      ),
+    );
+    request.on('socket', (socket) => {
+      socket.once(secure ? 'secureConnect' : 'connect', () => {
+        connected = true;
+      });
+    });
+    request.on('error', () =>
+      finish({
+        ok: false,
+        why: Date.now() >= policy.deadline ? 'timeout' : connected ? 'cut' : 'unreached',
+      }),
+    );
+    request.on('response', (response) => {
+      const status = response.statusCode ?? 0;
+      if (status >= 300 && status < 400) {
+        finish({ ok: false, why: 'unreached' });
+        return;
+      }
+      if (status < 200 || status >= 300) {
+        const kept: Buffer[] = [];
+        let read = 0;
+        const refused = () =>
+          finish({
+            ok: false,
+            why: 'refused',
+            status,
+            body: Buffer.concat(kept).toString('utf8'),
+          });
+        response.on('data', (chunk: Buffer) => {
+          if (read >= REFUSAL_BYTES) return;
+          kept.push(chunk.subarray(0, REFUSAL_BYTES - read));
+          read += chunk.length;
+          if (read >= REFUSAL_BYTES) refused();
+        });
+        response.on('end', refused);
+        response.on('error', refused);
+        return;
+      }
+      if (decoderFor(response.headers['content-encoding']) !== null) {
+        finish({ ok: false, why: 'encoded' });
+        return;
+      }
+      let bytes = 0;
+      let ended = false;
+      response.on('data', (chunk: Buffer) => {
+        if (settled) return;
+        bytes += chunk.length;
+        if (bytes > policy.maxBytes) {
+          finish({ ok: false, why: 'too_large' });
+          return;
+        }
+        if (onData(chunk) === false) finish({ ok: true });
+      });
+      response.on('end', () => {
+        ended = true;
+        finish({ ok: true });
+      });
+      response.on('error', () => finish({ ok: false, why: 'cut' }));
+      response.on('close', () => {
+        if (!ended) finish({ ok: false, why: 'cut' });
+      });
+    });
+    request.end(asked.body);
+  });
 }
