@@ -26,3 +26,16 @@ page's range pane, PUB-080 on screen) with the close.
 
 - **R22a**: `warm.ts`; 0119; the range job and pool; the four routes; the CNT-151 budget and the REU-049 record. Tests: PUB-076 page for page and the PDF; the range around the occurrence, the saved edit shown; the budget; PUB-080's words.
 - **R22b**: the document page's range pane beside the text while editing, refreshed after each save; the browser walk; the final review; the close (0.193.0).
+
+## Built
+
+R22a #704 and R22b with the close (0.193.0) #705, as planned. Departures: `typst watch` rewrites pages
+whose pixels did not change and lays the whole document out again at every save, so the warm compile
+draws the occurrence's window alone (`--pages`), found once at the range's making; on CI's runner a
+save took 1.2 s against CNT-151's one, and Ken raised the budget to three seconds (CNT-186) until every
+budget is weighed at the end of the implementation. The final review found a failed range that never
+recovered on the page, a warm compile reused after a failed attempt, closes that could leak a process,
+a failure that swallowed a newer save, a stale page total, and the page asking for two ranges at once;
+all fixed. Left: the window stays where it was found; the page total is the one the range was made
+with; one job at a time per worker, so a publish delays a refresh; a range whose first job never runs is
+never swept; the page's follow and reading of the pictures are outside the measure.

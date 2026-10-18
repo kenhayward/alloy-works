@@ -44,7 +44,11 @@ export const RangePreviewView = z.object({
     .int()
     .nullable()
     .describe("The editing session's save the pages show, or null where they show the version"),
-  pages: z.number().int().nullable().describe('How many pages the document has'),
+  pages: z
+    .number()
+    .int()
+    .nullable()
+    .describe('How many pages the document had when the range was made'),
   images: z
     .array(
       z.object({

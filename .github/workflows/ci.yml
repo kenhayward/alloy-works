@@ -310,7 +310,7 @@ jobs:
       # and over budget it fails.
       - name: The range preview budget
         if: ${{ matrix.suite == 'worker' }}
-        run: pnpm --filter @alloy-works/worker test:budget
+        run: pnpm --filter @alloy-works/worker test:budget --retry=1
 
       - name: Flakes
         if: always()

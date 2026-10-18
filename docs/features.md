@@ -1729,6 +1729,12 @@ window.` and offers **Recover here** instead. Either starts editing, taking the 
   long as it stays open, and a download link lasts five minutes from when the publication's page was
   opened. In the desktop app, downloading has not been checked.
 
+- **Pages as you edit.** While a component is open in place in a document, **Pages as you edit** on
+  the document bar shows the pages of that part of the document and a page either side, beside the
+  text, drawn again from each save within a few seconds on a 300-page document. They are pictures of
+  the pages, untagged, and the pane says so, as does each page to assistive technology, naming
+  **Preview**, beside them, which makes the tagged PDF. They show your own saves alone, and are kept
+  an hour after your last.
 - **A preview, beside the text.** Anybody who may read a document - not only somebody who may publish
   it - can ask for a preview of its latest version, with **Preview** beside **Publish** on the
   document's page, in Reading and in Authoring, or through the API. It is made the way a publication of that version

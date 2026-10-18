@@ -3,6 +3,19 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.193.0 - 2026-10-18 (PR #705)
+
+Reuse's twenty-second slice: the warm range preview (the R22 plan).
+
+### Added
+
+- **Pages as you edit.** While a component is open in a document, Pages as you edit shows the pages of that part and one either side, drawn again within a few seconds of each save. They are untagged pictures and say so; Preview beside them makes the tagged PDF.
+- **Bulk generation's budget, stated.** Four hundred documents from one template within the hour, measured and recorded on the reference runner.
+
+### Changed
+
+- **The section preview's budget is three seconds for now.** A second was not met on the reference runner; every budget is weighed again at the end of the implementation.
+
 ## 0.192.0 - 2026-10-18 (PR #703)
 
 Reuse's twenty-first slice: stored results as sources, and the tenant export (the R21 plan).

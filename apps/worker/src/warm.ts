@@ -138,6 +138,12 @@ export async function startWarmCompile(options: {
     };
     started.stdout.on('data', hear);
     started.stderr.on('data', hear);
+    // A binary that would not start ends the compile waited for, as one that stopped does.
+    started.on('error', () => {
+      const done = waiting;
+      waiting = null;
+      done?.(new TypstFailed('The warm compile did not start.'));
+    });
     started.on('exit', () => {
       const done = waiting;
       waiting = null;
@@ -192,6 +198,9 @@ export async function startWarmCompile(options: {
       update: (data, images = []) =>
         compiled(async () => {
           await place(images);
+          // Written in place: a file moved over it is a new file, which the engine's watch on Linux
+          // does not follow, so every later save would go unseen. The watch waits a moment after a
+          // change before it compiles, which covers the write.
           await writeFile(join(root, 'data.json'), data);
         }),
       async page(number) {

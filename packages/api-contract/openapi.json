@@ -149934,7 +149934,7 @@
                           "type": "null"
                         }
                       ],
-                      "description": "How many pages the document has"
+                      "description": "How many pages the document had when the range was made"
                     },
                     "images": {
                       "type": "array",
@@ -150709,7 +150709,7 @@
                           "type": "null"
                         }
                       ],
-                      "description": "How many pages the document has"
+                      "description": "How many pages the document had when the range was made"
                     },
                     "images": {
                       "type": "array",
@@ -151310,7 +151310,7 @@
                           "type": "null"
                         }
                       ],
-                      "description": "How many pages the document has"
+                      "description": "How many pages the document had when the range was made"
                     },
                     "images": {
                       "type": "array",

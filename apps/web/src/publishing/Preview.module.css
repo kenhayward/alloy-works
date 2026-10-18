@@ -47,3 +47,13 @@
   background: var(--doc-page);
   box-shadow: var(--shadow-document);
 }
+
+/* A page of the pages as you edit (the R22 plan, R22b): a picture on the desk, one under another. */
+.page {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-block-end: var(--space-12);
+  background: var(--doc-page);
+  box-shadow: var(--shadow-document);
+}

@@ -31,6 +31,8 @@ export interface RangePreview {
   readonly pages: number | null;
   readonly range: { readonly from: number; readonly to: number } | null;
   readonly failure: string | null;
+  /** Whether its request failed: nothing can refresh it, and a new range is asked for. */
+  readonly ended: boolean;
   readonly changedAt: Date;
 }
 
@@ -50,6 +52,7 @@ interface Row {
   range_to: number | null;
   failure: string | null;
   changed_at: Date;
+  ended?: boolean;
 }
 
 const rangeOf = (row: Row): RangePreview => ({
@@ -69,6 +72,7 @@ const rangeOf = (row: Row): RangePreview => ({
       ? null
       : { from: row.range_from, to: row.range_to },
   failure: row.failure,
+  ended: row.ended === true,
   changedAt: row.changed_at,
 });
 
@@ -125,8 +129,9 @@ export async function readRangePreview(
   by?: string,
 ): Promise<RangePreview | undefined> {
   if (!UUID.test(id)) return undefined;
-  const { rows } = await sql<Row>`select * from range_preview where id = ${id}
-    ${by === undefined ? sql`` : sql`and requested_by = ${by}`}`.execute(trx);
+  const { rows } = await sql<Row>`select p.*, r.state = 'failed' as ended
+    from range_preview p join publication_request r on r.id = p.request_id
+    where p.id = ${id} ${by === undefined ? sql`` : sql`and p.requested_by = ${by}`}`.execute(trx);
   return rows[0] && rangeOf(rows[0]);
 }
 
@@ -148,12 +153,14 @@ export async function refreshRangePreview(
 ): Promise<RangePreview | undefined> {
   if (!UUID.test(id)) return undefined;
   const { rows } = await sql<Row>`
-    update range_preview set wanted = wanted + 1, changed_at = now()
-     where id = ${id} and requested_by = ${by}
-    returning *`.execute(trx);
+    update range_preview p set wanted = wanted + 1, changed_at = now()
+      from publication_request r
+     where p.id = ${id} and p.requested_by = ${by} and r.id = p.request_id and r.state <> 'failed'
+    returning p.*`.execute(trx);
   const range = rows[0] && rangeOf(rows[0]);
   if (range) await enqueueJob(trx, 'range', range.requestId);
-  return range;
+  // A range whose request failed is not refreshed: it is answered ended, and a new one asked for.
+  return range ?? (await readRangePreview(trx, id, by));
 }
 
 /** The session's latest iteration of the component, its author's, or undefined where it has none. */
@@ -206,17 +213,20 @@ export async function recordRangePages(
   return true;
 }
 
-/** A refresh that could not be made, by its code alone: the pages before it stay. */
+/**
+ * A refresh that could not be made, by its code alone: the pages before it stay, and it counts as made,
+ * so a later save asked for since is still drawn (the R22 final review).
+ */
 export async function failRangePreview(
   trx: TenantTransaction,
   requestId: string,
   code: string,
+  making: number,
 ): Promise<void> {
-  await sql`update range_preview set failure = ${code}, made = wanted where request_id = ${requestId}`.execute(
-    trx,
-  );
+  await sql`update range_preview set failure = ${code}, made = greatest(made, least(${making}, wanted))
+    where request_id = ${requestId}`.execute(trx);
   // A first refresh that failed leaves nothing to refresh from: its request is finished, failed, so
-  // the sweep takes it with the rest.
+  // the sweep takes it with the rest, and the page asks for a new range at the next save.
   await sql`update publication_request set state = 'failed', finished_at = now()
     where id = ${requestId} and kind = 'range' and state = 'queued'`.execute(trx);
 }
