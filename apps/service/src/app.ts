@@ -81,6 +81,7 @@ import { sendStreamed } from './streamed.js';
 import { groupHandlers } from './groups.js';
 import { auditHandlers, tenantExportHandlers } from './audit-log.js';
 import { assistantHandlers } from './generation/assistant.js';
+import { generatedHandlers } from './generation/generated.js';
 import { modelEndpointHandlers } from './generation/models.js';
 import { rangePreviewHandlers } from './range-previews.js';
 import { ownSessionHandlers } from './own-sessions.js';
@@ -566,6 +567,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...tenantExportHandlers(tenantOf, options.objects),
     ...rangePreviewHandlers(),
     ...modelEndpointHandlers(db, tenantOf, options.connector),
+    ...generatedHandlers(),
     ...assistantHandlers(
       db,
       tenantOf,

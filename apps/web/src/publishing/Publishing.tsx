@@ -7,6 +7,7 @@ import { failuresIn, isProductsOwn, type Failure } from './failures.js';
 import { FOLLOW_MS, refusedWords, useFollowing } from './following.js';
 import { formatsWords } from './formats.js';
 import { PreviewButton, PreviewSaid, profileOnTheWire, type Previewing } from './Preview.js';
+import { GeneratedContent } from './GeneratedContent.js';
 import styles from './Publishing.module.css';
 import { Waiting } from '../states/Waiting.js';
 import { everyPage } from '../paging.js';
@@ -332,6 +333,7 @@ export function Publishing({
           ))}
         </ul>
       )}
+      <GeneratedContent client={client} of={{ document }} placeOf={placeOf} />
     </section>
   );
 }

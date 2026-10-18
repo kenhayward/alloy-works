@@ -73,12 +73,15 @@ export const TRANSITION_CONDITIONS = [
   'components',
   // A complete profile: every axis the kept content is conditioned on set (LIF-065; R11-G).
   'profile',
+  // No generated suggestion waiting to be accepted or rejected (GEN-025; the G3 plan, G3-B): a part of
+  // `suggestions`, for a tenant that requires reviewed generated content and no more.
+  'generated',
 ] as const;
 export type TransitionCondition = (typeof TRANSITION_CONDITIONS)[number];
 
 /** The conditions each kind's transitions may require: a query definition has none to require. */
 export const CONDITIONS_BY_KIND: Readonly<Record<WorkflowKind, readonly TransitionCondition[]>> = {
-  component: ['suggestions', 'threads'],
+  component: ['suggestions', 'threads', 'generated'],
   document: TRANSITION_CONDITIONS,
   queryDefinition: [],
 };

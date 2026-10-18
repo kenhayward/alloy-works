@@ -6,6 +6,7 @@ import { baselineLink } from '../structure/links.js';
 import { Chip } from '../parts/Chip.js';
 import { reportIn, reportLines, type ReportEntry } from './formats.js';
 import { Shares } from './Shares.js';
+import { GeneratedContent } from './GeneratedContent.js';
 import styles from './PublicationPage.module.css';
 import { Waiting } from '../states/Waiting.js';
 
@@ -424,6 +425,7 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
             )}
           </section>
         )}
+        {!outside && <GeneratedContent client={client} of={{ publication: id }} />}
         {!outside && <Shares client={client} publication={id} />}
       </aside>
     </article>

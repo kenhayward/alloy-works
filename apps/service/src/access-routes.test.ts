@@ -815,6 +815,11 @@ describe('routes that check a permission', () => {
     getDocumentPresentation: () => ({ url: `/v1/documents/${report}/presentation`, status: 404 }),
     getContributions: () => ({ url: `/v1/documents/${report}/contributions`, status: 404 }),
     getDocumentTexts: () => ({ url: `/v1/documents/${report}/texts`, status: 404 }),
+    getDocumentGenerated: () => ({ url: `/v1/documents/${report}/generated`, status: 404 }),
+    getPublicationGenerated: () => ({
+      url: `/v1/publications/${reportPublication}/generated`,
+      status: 404,
+    }),
     startAssistantRun: () => ({
       url: `/v1/documents/${report}/assistant/runs`,
       status: 404,

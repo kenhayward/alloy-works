@@ -66,6 +66,8 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   setModelRoute: writes('model_route.set'),
   startAssistantRun: writes('generation.run'),
   getAssistantRun: read,
+  getDocumentGenerated: read,
+  getPublicationGenerated: read,
   getAssistantUsage: read,
   acceptProposal: writes(
     'suggestion.made',

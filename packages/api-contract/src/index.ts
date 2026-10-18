@@ -147,6 +147,7 @@ export {
   ProposalParams,
   assistantRoutes,
 } from './assistant.js';
+export { GeneratedParams, GeneratedReport, generatedRoutes } from './generated.js';
 export {
   RangePageParams,
   RangePreviewParams,

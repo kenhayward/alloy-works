@@ -281,6 +281,14 @@ export {
   type GenerationProposal,
   type ProposalState,
 } from './generation-proposals.js';
+export {
+  generatedReport,
+  publicationPlacements,
+  type GeneratedItem,
+  type GeneratedPlacement,
+  type GeneratedRun,
+  type Placement,
+} from './generated-report.js';
 export { sha256Hex, versionDigests, type VersionDigests } from './version-digest.js';
 export {
   archiveSpace,

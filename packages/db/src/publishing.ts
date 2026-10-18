@@ -405,6 +405,41 @@ export async function readResolved(
 }
 
 /**
+ * A failure for each resolved component with generated suggestions open (the G3 plan, G3-A; GEN-025,
+ * GEN-042): made from a run, neither accepted, rejected nor withdrawn, against any of its versions. A
+ * proposal not yet kept is its requester's draft and counts for nothing. The run is read through the
+ * row as JSON, so a schema before 0121 counts none.
+ */
+async function generatedFailures(
+  trx: TenantTransaction,
+  resolved: readonly { readonly node: string; readonly component: string }[],
+): Promise<PublishFailure[]> {
+  if (resolved.length === 0) return [];
+  const components = [...new Set(resolved.map((each) => each.component))];
+  const { rows } = await sql<{ component_id: string; waiting: string }>`
+    select g.component_id, count(*) as waiting from suggestion g
+     where g.component_id = any(${components}::uuid[])
+       and to_jsonb(g) ->> 'run_id' is not null
+       and not exists (select 1 from suggestion_resolution r where r.suggestion_id = g.id)
+     group by g.component_id`.execute(trx);
+  const waiting = new Map(rows.map((row) => [row.component_id, Number(row.waiting)]));
+  return resolved.flatMap(({ node, component }) => {
+    const count = waiting.get(component);
+    return count === undefined
+      ? []
+      : [
+          {
+            stage: 'resolve' as const,
+            code: 'generated_unaccepted' as const,
+            node,
+            block: null,
+            detail: String(count),
+          },
+        ];
+  });
+}
+
+/**
  * MET-023 (definitions.md, "Held at publication"): each resolved component version validated against
  * the definition versions **it recorded** (MET-017), never the current ones, each failure the
  * request's own against its node - the field's name and what is wrong, never a value. Only versions
@@ -888,6 +923,8 @@ export async function resolvePublishable(
   }
   const images = await resolveImages(trx, resolved, input.principal);
   const held = await componentFailures(trx, resolved);
+  // Generated content waiting to be accepted refuses a publish, never a preview (G3-A; GEN-025).
+  const generated = kind === 'publish' ? await generatedFailures(trx, resolved) : [];
   // Set from the document's theme - its template's (STY-025), or the environment's declared one - at
   // its latest version, recorded by its key beside the layout's (themes 1, ruling R5): the version
   // names its catalogues' versions, so the job sets the publication from exactly what was chosen now,
@@ -901,7 +938,7 @@ export async function resolvePublishable(
     layout,
     theme,
     resolved,
-    failures: [...failures, ...stale, ...held, ...images.failures],
+    failures: [...failures, ...stale, ...held, ...generated, ...images.failures],
     bindings: bindings.held,
     assets: images.assets,
   };

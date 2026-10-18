@@ -1,3 +1,4 @@
+import { sql } from 'kysely';
 import {
   missingSections,
   readOutline,
@@ -103,6 +104,9 @@ export async function unmetConditions(
     if (requires.includes('threads')) {
       found.set('threads', { ...none, count: await openThreads(trx, [input.artifactId]) });
     }
+    if (requires.includes('generated')) {
+      found.set('generated', { ...none, count: await openGenerated(trx, [input.artifactId]) });
+    }
   } else {
     const latest = await latestVersion(trx, input.artifactId);
     if (!latest) return [];
@@ -126,6 +130,9 @@ export async function unmetConditions(
         ...none,
         count: await openThreads(trx, [input.artifactId, ...components]),
       });
+    }
+    if (requires.includes('generated')) {
+      found.set('generated', { ...none, count: await openGenerated(trx, components) });
     }
     if (requires.includes('sections')) {
       const rules = await documentRules(trx, input.artifactId);
@@ -256,4 +263,23 @@ async function notApproved(
     count: failing.length,
     names: heads.map((row) => titles.get(row.id) ?? '').sort((a, b) => a.localeCompare(b)),
   };
+}
+
+/**
+ * Generated suggestions open on these components (the G3 plan, G3-B): made from a run and not yet
+ * resolved, whoever may read them, counted, never named. Read through the row as JSON, so a schema
+ * before 0121 counts none.
+ */
+async function openGenerated(
+  trx: TenantTransaction,
+  components: readonly string[],
+): Promise<number> {
+  if (components.length === 0) return 0;
+  const { rows } = await sql<{ open: string }>`select count(*) as open from suggestion g
+    where g.component_id = any(${[...components]}::uuid[])
+      and to_jsonb(g) ->> 'run_id' is not null
+      and not exists (select 1 from suggestion_resolution r where r.suggestion_id = g.id)`.execute(
+    trx,
+  );
+  return Number(rows[0]?.open ?? 0);
 }

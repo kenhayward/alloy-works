@@ -42,7 +42,14 @@ const NO_REVIEW: Review = { remind: 30, lapse: { kind: 'visibility' } };
 
 /** What a transition may require before it is taken (LIF-004; the WF3 plan, WF3-A). */
 type Condition =
-  'suggestions' | 'threads' | 'bindings' | 'sections' | 'revisions' | 'components' | 'profile';
+  | 'suggestions'
+  | 'threads'
+  | 'bindings'
+  | 'sections'
+  | 'revisions'
+  | 'components'
+  | 'profile'
+  | 'generated';
 
 /** Each condition, as a transition's row offers it: "Submit requires no open threads". */
 const CONDITIONS: Readonly<Record<Condition, string>> = {
@@ -54,11 +61,13 @@ const CONDITIONS: Readonly<Record<Condition, string>> = {
   components: 'every component approved',
   // LIF-065 (the R11 plan, R11-G): every axis what the document keeps depends on, set.
   profile: 'every condition set in the profile',
+  // GEN-025 (the G3 plan, G3-B): a part of "no unresolved suggestions", the generated ones alone.
+  generated: 'no generated content waiting to be accepted',
 };
 
 /** What each kind's transitions may require: a query definition has nothing to (WF3-A). */
 const CONDITIONS_OF: Readonly<Record<Kind, readonly Condition[]>> = {
-  component: ['suggestions', 'threads'],
+  component: ['suggestions', 'threads', 'generated'],
   document: [
     'suggestions',
     'threads',
@@ -67,6 +76,7 @@ const CONDITIONS_OF: Readonly<Record<Kind, readonly Condition[]>> = {
     'revisions',
     'components',
     'profile',
+    'generated',
   ],
   queryDefinition: [],
 };

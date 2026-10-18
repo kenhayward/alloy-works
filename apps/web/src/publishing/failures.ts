@@ -215,6 +215,9 @@ export function failureWords(failure: Failure, wordOffered = false): string {
     // REU-048: never published with excluded text in it, however it got there.
     case 'condition_leaked':
       return `Text this profile leaves out was found in the ${failure.detail === 'docx' ? 'Word document' : 'PDF'}, so nothing was published. Report this; it is a fault in publishing, not in the document.`;
+    // GEN-025 (the G3 plan, G3-F): generated content waits to be accepted or rejected.
+    case 'generated_unaccepted':
+      return `This part has ${failure.detail === '1' ? 'a generated suggestion' : `${failure.detail ?? 'some'} generated suggestions`} waiting to be accepted or rejected. Resolve ${failure.detail === '1' ? 'it' : 'them'} in Review, then publish.`;
     // REU-053: an unset axis leaves text out only where the document accepts it.
     case 'axis_unset':
       return `Content here depends on ${failure.detail ?? 'a condition'}, which the document's profile does not set. Set it in the profile, or accept that such text is left out.`;
@@ -517,6 +520,7 @@ export const FAILURE_SUMMARIES: Readonly<Record<PublishFailureCode, string>> = {
   variable_unresolved: 'A variable in it has no value for the document.',
   axis_unset: 'Content in it depends on a condition the document does not set.',
   condition_leaked: 'Text its profile leaves out was found in what was made.',
+  generated_unaccepted: 'Generated content in it waits to be accepted or rejected.',
   occurrence_unresolved: 'A reference in it waits on an approved version.',
   asset_unreadable: 'A figure in it shows an image you may not see.',
   component_metadata_invalid: 'A component in it has fields not filled in as its type asks.',
