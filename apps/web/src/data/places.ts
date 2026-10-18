@@ -1,4 +1,5 @@
 import type { createApiClient } from '@alloy-works/api-client';
+import type { ColumnType } from '@alloy-works/domain';
 import { useEffect, useState } from 'react';
 
 import { isAccessAnswers } from '../access/describe.js';
@@ -144,4 +145,47 @@ export function useDefinitionPlaces(client: Client): DefinitionPlaces | null {
     };
   }, [client]);
   return places;
+}
+
+/** A stored result a query may take as its source, with the columns it may select (DAT-094). */
+export interface StoredResult {
+  readonly id: string;
+  readonly name: string;
+  readonly columns: readonly { readonly name: string; readonly type: ColumnType }[];
+}
+
+/**
+ * The stored results the caller may read, to query as a source of their own (DAT-094; the R21 plan,
+ * R21-A). Null until read; empty where nothing could be.
+ */
+export function useStoredResults(client: Client): readonly StoredResult[] | null {
+  const [stored, setStored] = useState<readonly StoredResult[] | null>(null);
+  useEffect(() => {
+    let current = true;
+    void (async () => {
+      try {
+        const listed = await everyPage((cursor) =>
+          client.GET('/v1/datasets', {
+            params: { query: { limit: '100', ...(cursor === undefined ? {} : { cursor }) } },
+          }),
+        );
+        const items: readonly unknown[] = 'items' in listed ? listed.items : [];
+        const read = items.flatMap((item: unknown) =>
+          isRecord(item) &&
+          typeof item.id === 'string' &&
+          typeof item.name === 'string' &&
+          Array.isArray(item.columns)
+            ? [{ id: item.id, name: item.name, columns: item.columns as StoredResult['columns'] }]
+            : [],
+        );
+        if (current) setStored(read);
+      } catch {
+        if (current) setStored([]);
+      }
+    })();
+    return () => {
+      current = false;
+    };
+  }, [client]);
+  return stored;
 }

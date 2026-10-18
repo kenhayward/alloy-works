@@ -383,6 +383,7 @@ export const PublicationBindingView = z.object({
         z.object({ sql: z.string() }),
         z.object({ request: z.record(z.string(), z.unknown()) }),
         z.object({ object: z.record(z.string(), z.unknown()) }),
+        z.object({ dataset: z.record(z.string(), z.unknown()) }),
       ])
       .optional()
       .describe(

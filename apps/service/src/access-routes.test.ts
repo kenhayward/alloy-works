@@ -1064,6 +1064,33 @@ describe('routes that check a permission', () => {
       status: 404,
       payload: { name: 'Probe' },
     }),
+    sampleDataset: () => ({
+      url: `/v1/datasets/${dailyReadings}/sample`,
+      status: 404,
+      payload: {
+        definition: {
+          schemaVersion: 1,
+          parameters: [],
+          fetch: {
+            kind: 'dataset',
+            format: 1,
+            dataset: '00000000-0000-4000-8000-000000000001',
+            query: {
+              sources: [{ alias: 'd', table: { schema: 'dataset', name: 'rows' } }],
+              joins: [],
+              select: [{ name: 'id', of: { source: 'd', column: 'id' } }],
+              groupBy: [],
+            },
+          },
+          columns: [{ name: 'id', from: { column: 'id' }, type: { base: 'integer' } }],
+          key: [],
+          order: 'multiset',
+          empty: 'valid',
+          limits: { rows: 10, bytes: 1000, seconds: 5 },
+        },
+        values: {},
+      },
+    }),
     createQueryDefinition: () => ({
       url: `/v1/spaces/${clinical}/query-definitions`,
       status: 404,

@@ -76,7 +76,11 @@ async function stored(
     .executeTakeFirstOrThrow();
   // Read by the shape alone: a check widened later never makes a stored version unreadable.
   const definition = parseQueryDefinition(version.content);
-  const named = await latestVersion(trx, definition.connection);
+  // A stored result's query names no connection (R21-A).
+  const named =
+    definition.connection === undefined
+      ? undefined
+      : await latestVersion(trx, definition.connection);
   const content = named?.content as { readonly name?: unknown; readonly retired?: unknown };
   return {
     id: version.artifactId,
@@ -87,7 +91,7 @@ async function stored(
       named?.kind === 'connection' &&
       typeof content.name === 'string' &&
       typeof content.retired === 'boolean'
-        ? { id: definition.connection, name: content.name, retired: content.retired }
+        ? { id: definition.connection!, name: content.name, retired: content.retired }
         : null,
   };
 }

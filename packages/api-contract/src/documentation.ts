@@ -86,6 +86,11 @@ export const documentationGroups = [
       { name: 'Publication requests', description: 'Submit and follow publishing work.' },
       { name: 'Publications', description: 'List and retrieve completed publications.' },
       {
+        name: 'Stored results as sources',
+        description:
+          'A query result kept by the environment, queried as a source of its own through the query builder, never touching the source it came from.',
+      },
+      {
         name: 'Query usage',
         description:
           'What the environment’s query runs cost, by query and by document, and every run as CSV.',
@@ -333,6 +338,7 @@ const operationTags = {
     'getPublicationBindings',
   ],
   'Query usage': ['getQueryUsage', 'getQueryRunsCsv'],
+  'Stored results as sources': ['listDatasetSources', 'sampleDataset'],
   'Publication shares': [
     'listPublicationShares',
     'sharePublication',
@@ -715,6 +721,10 @@ const descriptions: Readonly<Record<string, string>> = {
   getPublication: 'Returns a completed publication’s immutable record and links to its outputs.',
   getPublicationBindings:
     'Returns each value a publication printed, by node and binding, with the dataset version and stored result it was taken from. Needs read on the publication. The SQL that ran, the connection and each column’s source column are included only where the caller may read the query definition; provenance.json, the publication’s own output, never holds them.',
+  listDatasetSources:
+    'Lists the stored results the caller may read, a page at a time, each by its name or its query definition’s title, with its latest version’s columns: what a query over it may select.',
+  sampleDataset:
+    'Runs a draft query definition over a stored result, as the query builder builds it - its columns, condition, grouping and aggregates - against sample values, storing nothing. The service evaluates it over the result’s kept rows; the source the result came from is never asked. Needs read on the stored result.',
   getQueryUsage:
     'Totals the environment’s query runs in a period - samples, resolves, checks and document creations - by query definition and by document: how many ran, failed or were throttled, their time, rows and bytes. Most time first. The last 30 days unless named, never more than 13 months. Needs administer at the environment.',
   getQueryRunsCsv:

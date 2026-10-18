@@ -1,6 +1,12 @@
 import { z } from 'zod';
 
-import { builderFetchSchema, checkBuilder, type BuilderFetch } from './builder.js';
+import {
+  BUILDER_FORMAT,
+  builderFetchSchema,
+  builderQuerySchema,
+  checkBuilder,
+  type BuilderFetch,
+} from './builder.js';
 import { valueProblem, compareCanonical, type CanonicalValue } from './canonical.js';
 import { columnTypeSchema, valueTypeSchema, type ValueType } from './columns.js';
 import { generatedLength } from './generate.js';
@@ -213,20 +219,37 @@ export const fileFetchSchema = z.strictObject({
 });
 export type FileFetch = z.infer<typeof fileFetchSchema>;
 
-// SQL as D2 wrote it, the builder's tree (D4-A), an HTTP request (D6-E) or a file (D6.2): each arm
-// added refuses nothing stored.
+/**
+ * A stored result queried as a source of its own (DAT-094; data.md, "A dataset as a source"; the R21
+ * plan, R21-A): a dataset, its latest version or the one pinned, and the builder's tree over its rows -
+ * one source, joined to nothing - evaluated by the service, never by the source it came from. Such a
+ * definition names no connection.
+ */
+export const datasetFetchSchema = z.strictObject({
+  kind: z.literal('dataset'),
+  format: z.literal(BUILDER_FORMAT),
+  dataset: z.uuid(),
+  version: z.uuid().optional(),
+  query: builderQuerySchema(),
+});
+export type DatasetFetch = z.infer<typeof datasetFetchSchema>;
+
+// SQL as D2 wrote it, the builder's tree (D4-A), an HTTP request (D6-E), a file (D6.2) or a stored
+// result (R21-A): each arm added refuses nothing stored.
 const fetchSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('sql'), text: sqlTextSchema }),
   builderFetchSchema,
   httpFetchSchema,
   fileFetchSchema,
+  datasetFetchSchema,
 ]);
 
 const limit = (ceiling: number) => z.number().int().min(1).max(ceiling);
 
 const members = {
   schemaVersion: z.literal(QUERY_DEFINITION_SCHEMA_VERSION),
-  connection: z.uuid(),
+  /** The connection it runs on: none for a stored result's query alone (R21-A). */
+  connection: z.uuid().optional(),
   parameters: z.array(parameterSchema).max(50),
   fetch: fetchSchema,
   columns: z.array(columnSchema).min(1).max(MAX_COLUMNS),
@@ -351,6 +374,14 @@ export function checkQueryDefinition(
     );
   }
   const { fetch } = definition;
+  if ((fetch.kind === 'dataset') !== (definition.connection === undefined)) {
+    problem(
+      'connection',
+      fetch.kind === 'dataset'
+        ? 'A stored result is queried on no connection'
+        : 'A query runs on a connection, which it names',
+    );
+  }
   if (fetch.kind === 'sql') {
     const longest = longestBinding({ parameters: definition.parameters, fetch });
     if (longest !== undefined && longest > RAN_MAX_CHARACTERS) {
@@ -430,6 +461,13 @@ export function checkQueryDefinition(
     const before = problems.length;
     checkBuilder({ ...definition, fetch }, problem);
     if (problems.length === before) checkGenerated({ ...definition, fetch }, problem);
+  } else if (fetch.kind === 'dataset') {
+    // A stored result's query: the builder's rules over its one source (R21-A); the result's own
+    // columns are the run's to hold it to, once the dataset is read.
+    checkBuilder(
+      { ...definition, fetch: { kind: 'builder', format: 1, query: fetch.query } },
+      problem,
+    );
   } else if (fetch.kind === 'http') {
     // An HTTP request: its template's rules against the parameters (D6-E).
     checkHttpTemplate(fetch.request, definition.parameters, problem);
@@ -510,7 +548,7 @@ export function checkQueryDefinition(
 
 /** Why a column cannot be read from where it says by its fetch, or undefined where it can. */
 function fromProblem(fetch: DraftDefinition['fetch'], from: Column['from']): string | undefined {
-  if (fetch.kind === 'sql' || fetch.kind === 'builder') {
+  if (fetch.kind === 'sql' || fetch.kind === 'builder' || fetch.kind === 'dataset') {
     return 'column' in from ? undefined : "A column of a query is read by the query's column name";
   }
   if (fetch.format.kind !== 'csv' && fetch.format.kind !== 'xlsx') {
@@ -694,6 +732,9 @@ export function connectionFetchProblems(
   const problem = (path: string, message: string): DefinitionProblem[] => [
     { rule: 'definition_invalid', path, message },
   ];
+  if (fetch.kind === 'dataset') {
+    return problem('fetch', 'A stored result is queried on no connection');
+  }
   if (fetch.kind === 'file') {
     return settings.type === 's3' ? [] : problem('fetch', 'A file is read on an S3 connection');
   }

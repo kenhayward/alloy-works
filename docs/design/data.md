@@ -102,6 +102,7 @@ checksummed result or one named failure.
 | **DAT-085** | A dataset version's content records the definition and connection with their versions, the canonical parameters, the SQL or request that ran, the identity, the time, the row count, `canonical: 1`, and the SHA-256 checksum; its own identifier is the dataset version                                                                                                                                                                                     |
 | **DAT-043** | A dataset version is an `artifact_version`, insert-only, which a baseline pins as it pins any version; its rows are an object nothing sweeps while anything names it                                                                                                                                                                                                                                                                                         |
 | **DAT-093** | Accepting adds a resolution row for that document's binding alone; another document holding the same dataset keeps its row, and its version, until somebody accepts there                                                                                                                                                                                                                                                                                    |
+| **DAT-094** | A query definition's fetch may be `dataset`: the builder's tree over one stored result, run in the service from the result's stored rows, never the source; `read` on the dataset governs listing, sampling and resolving one ([A dataset as a source](#a-dataset-as-a-source))                                                                                                                                                                              |
 | **DAT-084** | A check compares a fresh result with the one held only where the opener's identity key is the dataset's; a different checksum is recorded as a dataset version and answered as a waiting revision                                                                                                                                                                                                                                                            |
 | **DAT-037** | Accepting is its own route, and its resolution row names the version the binding held, the version it holds after, who and when                                                                                                                                                                                                                                                                                                                              |
 | **DAT-089** | Only the service calls the connector, only from a route a person calls - resolve, check, a sample run, describe and test - and neither the worker nor a publish nor a preview has a route to it                                                                                                                                                                                                                                                              |
@@ -133,7 +134,7 @@ checksummed result or one named failure.
 | DAT-088, DAT-046                   | Neither the worker nor a preview has a route to the connector, so neither can query a source; reading each binding's stored result, and never publishing a placeholder, are the publish's binding stage, `bindings.md`'s                                                                                                                                                                                            |
 | DAT-058, DAT-115, DAT-062, DAT-116 | A person's revision of a value and the concurrency of binding acts are `bindings.md`'s                                                                                                                                                                                                                                                                                                                              |
 | DAT-026, DAT-111                   | Nothing caches a result in T2 (ADR-0035), so neither has anything to apply to. A dataset reused is one the same identity key asked for, and is reused only after the source answered with its checksum                                                                                                                                                                                                              |
-| DAT-052, DAT-094, IAM-083, IAM-084 | A declared cache life is T7; querying a stored dataset is T4; a dataset's own read grant and publishing only by one who sees every value are T7                                                                                                                                                                                                                                                                     |
+| DAT-052, IAM-083, IAM-084          | A declared cache life is T7; a dataset's own read grant and publishing only by one who sees every value are T7                                                                                                                                                                                                                                                                                                      |
 | TPL-066, TPL-068                   | A template's parameters, and a document's feeding its bindings' `{ document }` arguments, are [templates.md](templates.md#parameters)'s; TPL-063 and TPL-065, bindings at creation, are T4's (ADR-0043)                                                                                                                                                                                                             |
 | CNT-039                            | `tables.md`'s                                                                                                                                                                                                                                                                                                                                                                                                       |
 | PUB-049, PUB-108                   | `bindings.md`'s                                                                                                                                                                                                                                                                                                                                                                                                     |
@@ -924,6 +925,7 @@ offered to anybody who may edit a space and use some connection.
 | Check                                                   | `read` on the document and `use_connection`; without it, nothing is checked for that person   |
 | Accept                                                  | `edit` on the document, `read` on the definition, `use_connection`                            |
 | Reading a stored result                                 | `read` on a document that resolves to it (DAT-090)                                            |
+| Querying a stored result as a source                    | `read` on the dataset (DAT-094)                                                               |
 
 **Using a connection is separate from reading a document that uses it** (DAT-025): a reader of the
 document reads its stored results and never needs `use_connection`, and the source's own rules
@@ -972,7 +974,7 @@ with its parameters, not a URL that could carry one, and a header by name alone.
   connection it ran on and the source's column each declared column reads are shown only to a caller
   who may also read the query definition**, `ran.sql`, `connection` and each column's `from` answered
   null otherwise, since each is the definition's to show and D2 shows a definition only to its
-  reader. The stored provenance is whole either way. Browsing datasets in their own right, and querying them, wait for T4 (DAT-094).
+  reader. The stored provenance is whole either way. Querying one as a source is [A dataset as a source](#a-dataset-as-a-source)'s (DAT-094).
 - **Nothing sweeps a dataset in T2.** An object is held while any dataset version, publication or
   baseline names it, as an asset's are.
 - **Images** (DAT-096): the connector reads each image cell from its declared encoding, admits only a
@@ -985,6 +987,27 @@ with its parameters, not a URL that could carry one, and a header by name alone.
   `image_refused`, naming its row and column. A dataset image is an asset only so the door can check
   it and the publisher embed it: it is read only through a document that holds it, as every returned
   value is, and never found in search (Ken, 2026-10-05).
+
+## A dataset as a source
+
+Built in R21 ([the R21 plan](../plans/2026-10-18-r21-stored-results-and-export.md), R21-A). A query
+definition's fetch may be `{ kind: 'dataset', format: 1, dataset, version?, query }` (DAT-094): the
+builder's tree (DAT-099) over **one** stored result, aliased as one source and joined to nothing,
+naming no `connection`. Its latest version is read unless the fetch pins one.
+
+- **Run in the service**, never the connector: the version's rows are read from the tenant's store by
+  their checksum and held to it, the tree evaluated over them (filters, grouping, count, sum, average
+  to its places rounded half away from zero, minimum, maximum), then held to the declared columns,
+  key, order, emptiness and limits as any run's result is. A failure is named as a source's would be.
+- **`read` on the dataset** governs it: `GET /v1/datasets` lists those the caller may read, each with
+  its latest columns (name and type only; its definition's title only to a reader of the definition);
+  `POST /v1/datasets/{id}/sample` samples a draft; resolving or checking a binding to one asks `read`
+  on the dataset where another asks `use_connection`.
+- **Provenance** names no connection and records `ran: { dataset: { artifact, version, checksum } }`.
+  The run is recorded in `query_run` (DAT-053) with no connection and takes no slot of the tenant's
+  runs at once, which meter the connector.
+- **Not offered**: an image column (an image stays with the document that admitted it) and joins.
+  There is no SQL to show: its reader is shown the columns it returns, grouped and filtered.
 
 ## Acts, revisions and failures
 

@@ -184,6 +184,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0114_publication_shares',
       '0115_query_limits',
       '0116_cohort_on_failure',
+      '0117_dataset_source',
     ]);
     expect(applied[own.id]).toEqual([
       '0058_query_roles',
@@ -245,6 +246,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0114_publication_shares',
       '0115_query_limits',
       '0116_cohort_on_failure',
+      '0117_dataset_source',
     ]);
 
     expect(await queryRoles(development)).toEqual([

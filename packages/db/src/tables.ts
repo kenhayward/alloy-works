@@ -916,7 +916,7 @@ export interface QueryRunTable {
   at: Generated<Date>;
   act: string;
   principal_id: string | null;
-  connection_id: string;
+  connection_id: string | null;
   query_definition_id: string | null;
   document_id: string | null;
   duration_ms: number;

@@ -14,9 +14,14 @@ export async function checkProvenanceNames(
   provenance: Provenance,
 ): Promise<void> {
   const contents = new Map<string, unknown>();
+  // What ran it: a connection, or the stored result a dataset query read (R21-A).
+  const read = 'dataset' in provenance.ran ? provenance.ran.dataset : undefined;
   for (const [kind, named] of [
     ['queryDefinition', provenance.queryDefinition],
-    ['connection', provenance.connection],
+    ...(provenance.connection === undefined
+      ? []
+      : [['connection', provenance.connection] as const]),
+    ...(read === undefined ? [] : [['dataset', read] as const]),
   ] as const) {
     const row = await trx
       .selectFrom('artifact_version')
@@ -34,9 +39,9 @@ export async function checkProvenanceNames(
   }
   // The connection a run ran on is the one its definition version names: no other ran it.
   const names = (contents.get('queryDefinition') as { connection?: unknown } | null)?.connection;
-  if (names !== provenance.connection.artifact) {
+  if (names !== provenance.connection?.artifact) {
     throw new Error(
-      `A dataset version's provenance names connection ${provenance.connection.artifact}, and its query definition version names another`,
+      `A dataset version's provenance names connection ${provenance.connection?.artifact ?? 'none'}, and its query definition version names another`,
     );
   }
   for (const [hash, version] of Object.entries(provenance.images)) {

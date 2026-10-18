@@ -44,6 +44,58 @@ export async function checkNamedConnection(trx: TenantTransaction, id: string): 
   if (latest.retired) throw refuse('The connection is retired: a definition names one in service');
 }
 
+/**
+ * What a definition runs on, checked as it is written: the connection it names, in service (D2-P), or
+ * the dataset a stored result's query reads (DAT-094; the R21 plan, R21-A), and the version it pins
+ * one of that dataset's.
+ */
+export async function checkNamedSource(
+  trx: TenantTransaction,
+  content: {
+    readonly connection?: string | undefined;
+    readonly fetch: {
+      readonly kind: string;
+      readonly dataset?: string | undefined;
+      readonly version?: string | undefined;
+    };
+  },
+): Promise<void> {
+  if (content.fetch.kind !== 'dataset') {
+    if (content.connection === undefined) {
+      throw new DefinitionRefused([
+        {
+          rule: 'definition_invalid',
+          path: 'connection',
+          message: 'A query runs on a connection, which it names',
+        },
+      ]);
+    }
+    await checkNamedConnection(trx, content.connection);
+    return;
+  }
+  const refuse = (message: string) =>
+    new DefinitionRefused([{ rule: 'definition_invalid', path: 'fetch.dataset', message }]);
+  const dataset = content.fetch.dataset ?? '';
+  if (!UUID.test(dataset)) throw refuse('A stored result is named by its identifier');
+  const held = await trx
+    .selectFrom('artifact')
+    .select('kind')
+    .where('id', '=', dataset)
+    .executeTakeFirst();
+  if (held?.kind !== 'dataset')
+    throw refuse('This environment holds no stored result by that identifier');
+  const { version } = content.fetch;
+  if (version !== undefined) {
+    const pinned = await trx
+      .selectFrom('artifact_version')
+      .select('id')
+      .where('id', '=', version)
+      .where('artifact_id', '=', dataset)
+      .executeTakeFirst();
+    if (!pinned) throw refuse('The version pinned is no version of that stored result');
+  }
+}
+
 /** A definition naming a connection, at its latest version. */
 export interface NamingDefinition {
   readonly id: string;

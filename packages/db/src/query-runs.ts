@@ -8,7 +8,8 @@ export type QueryAct = 'sample' | 'resolve' | 'check' | 'creation';
 export interface QueryRun {
   readonly act: QueryAct;
   readonly principal: string | null;
-  readonly connection: string;
+  /** The connection it ran on; none for a stored result queried as a source (0117; R21-A). */
+  readonly connection: string | null;
   /** The query definition it ran; none for a sample of a draft not yet saved. */
   readonly queryDefinition: string | null;
   /** The document it ran for; a creation's by the id it makes. */

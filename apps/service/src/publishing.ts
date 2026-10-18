@@ -596,7 +596,9 @@ export function publishingHandlers(
               type: { ...column.type },
               ...(disclosed ? { from: { ...column.from } } : {}),
             })),
-            ...(disclosed ? { ran: { ...p.ran }, connection: { ...p.connection } } : {}),
+            ...(disclosed ? { ran: { ...p.ran } } : {}),
+            // None for a stored result's query (R21-A).
+            ...(disclosed && p.connection ? { connection: { ...p.connection } } : {}),
             images: { ...p.images },
           },
           revisions: each.revisions.map((revision) => ({

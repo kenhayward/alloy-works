@@ -10,8 +10,12 @@ import {
   BASES,
   COLUMN_BASES,
   ENCODINGS,
+  NEW_BUILDER,
   NEW_PARAMETER,
   parameterSummary,
+  DATASET_BUILDER,
+  DATASET_TABLE,
+  datasetColumnsOf,
   definitionOf,
   draftOf,
   everyColumnConfirmed,
@@ -39,7 +43,7 @@ import { Act, FileFields, Section } from './FileFields.js';
 import { HttpFields } from './HttpFields.js';
 import { formatOf, partOf, requestText, templateOf } from './httpDraft.js';
 import { connectionLink, queryDefinitionLink } from './links.js';
-import { useDefinitionPlaces, type Place } from './places.js';
+import { useDefinitionPlaces, useStoredResults, type Place } from './places.js';
 import { Icon } from '../editor/Icon.js';
 import { Chip } from '../parts/Chip.js';
 import {
@@ -100,10 +104,15 @@ function isDefinitionView(value: unknown): value is DefinitionView {
     typeof version.number === 'string' &&
     isRecord(definition) &&
     typeof definition.title === 'string' &&
-    typeof definition.connection === 'string' &&
+    // A query over a stored result runs on no connection (R21-A).
+    (typeof definition.connection === 'string' ||
+      (definition.connection === undefined &&
+        isRecord(statement) &&
+        statement.kind === 'dataset')) &&
     isRecord(statement) &&
     (typeof statement.text === 'string' ||
-      (statement.kind === 'builder' && isRecord(statement.query)) ||
+      ((statement.kind === 'builder' || statement.kind === 'dataset') &&
+        isRecord(statement.query)) ||
       (statement.kind === 'http' && isRecord(statement.request) && isRecord(statement.format)) ||
       (statement.kind === 'file' && Array.isArray(statement.key) && isRecord(statement.format))) &&
     Array.isArray(definition.parameters) &&
@@ -136,7 +145,8 @@ type Sampled =
       readonly ran:
         | { readonly sql: string }
         | { readonly request: Record<string, unknown> }
-        | { readonly object: { readonly bucket: string; readonly key: string } };
+        | { readonly object: { readonly bucket: string; readonly key: string } }
+        | { readonly dataset: { readonly artifact: string; readonly version: string } };
       /** Each image in the rows, by its hash, as its header says (D8-G); none before D8. */
       readonly images?: Readonly<Record<string, SampledImage>>;
     }
@@ -188,6 +198,7 @@ function isSampled(value: unknown): value is Sampled {
     isRecord(value.ran) &&
     (typeof value.ran.sql === 'string' ||
       isRecord(value.ran.request) ||
+      (isRecord(value.ran.dataset) && typeof value.ran.dataset.artifact === 'string') ||
       (isRecord(value.ran.object) &&
         typeof value.ran.object.bucket === 'string' &&
         typeof value.ran.object.key === 'string'))
@@ -794,6 +805,7 @@ export function QueryDefinitionPage({
 }) {
   const isNew = id === 'new';
   const places = useDefinitionPlaces(client);
+  const stored = useStoredResults(client);
   const [view, setView] = useState<DefinitionView | 'missing' | 'failed' | null>(null);
   const [draft, setDraft] = useState<DefinitionDraft>(() => newDraft(defaultLimits));
   /** Which parameters show their fields under their line (QF-B). */
@@ -1015,6 +1027,29 @@ export function QueryDefinitionPage({
         setDescribed([parameters]);
         return;
       }
+      if (draft.mode === 'dataset') {
+        // A query over a stored result is described here, from the stored result's own columns.
+        const over = stored?.find((each) => each.id === draft.dataset);
+        const query = queryOf(draft.builder, draft.order);
+        if (over === undefined || typeof query === 'string') {
+          setDescribed([over === undefined ? 'Choose a stored result first.' : String(query)]);
+          return;
+        }
+        const proposed = proposedColumns(datasetColumnsOf(query, over.columns), draft.columns);
+        setDraft((held) => ({
+          ...held,
+          columns: proposed,
+          key: held.key.filter((name) => proposed.some((each) => each.name === name)),
+          order:
+            held.order === 'multiset'
+              ? 'multiset'
+              : held.order.filter((each) => proposed.some((column) => column.name === each.column)),
+        }));
+        setDescribed([
+          `${proposed.length} ${proposed.length === 1 ? 'column' : 'columns'} proposed. Confirm the type of each.`,
+        ]);
+        return;
+      }
       if (draft.connection === '') {
         setDescribed(['Choose a connection first.']);
         return;
@@ -1103,13 +1138,20 @@ export function QueryDefinitionPage({
         return;
       }
       try {
-        const { data, error, response } = await client.POST('/v1/connections/{id}/sample', {
-          params: { path: { id: draft.connection } },
-          body: {
-            definition: definition as never,
-            values: sampleValues(draft.parameters, typed),
-          },
-        });
+        const body = {
+          definition: definition as never,
+          values: sampleValues(draft.parameters, typed),
+        };
+        const { data, error, response } =
+          draft.mode === 'dataset'
+            ? await client.POST('/v1/datasets/{id}/sample', {
+                params: { path: { id: draft.dataset } },
+                body,
+              })
+            : await client.POST('/v1/connections/{id}/sample', {
+                params: { path: { id: draft.connection } },
+                body,
+              });
         if (isSampled(data)) {
           setSampled(data);
           return;
@@ -1211,6 +1253,11 @@ export function QueryDefinitionPage({
   const connectionName = connections.find((each) => each.id === draft.connection)?.name ?? null;
   const kind =
     draft.mode === 'http' ? 'an HTTP API' : draft.mode === 'file' ? 'an S3 bucket' : 'a PostgreSQL';
+  const storedName =
+    draft.mode === 'dataset'
+      ? (stored?.find((each) => each.id === draft.dataset)?.name ??
+        'A stored result you may not read')
+      : null;
   const usedBy =
     uses === null || uses === 'failed'
       ? null
@@ -1219,7 +1266,8 @@ export function QueryDefinitionPage({
           documents: uses.documents.readable.length + uses.documents.others,
         };
   // A new definition's other tabs wait for its connection (the DP plan, DP-I).
-  const waiting = isNew && draft.connection === '';
+  const waiting =
+    isNew && (draft.mode === 'dataset' ? draft.dataset === '' : draft.connection === '');
   const tabs: PanelTab[] = [
     { key: 'details', label: 'Details' },
     { key: 'query', label: 'Query', disabled: waiting },
@@ -1245,7 +1293,13 @@ export function QueryDefinitionPage({
         ]),
   ];
   const runsAgainst =
-    shown !== null && !editable ? (
+    storedName !== null ? (
+      draft.dataset === '' ? (
+        'No stored result chosen'
+      ) : (
+        storedName
+      )
+    ) : shown !== null && !editable ? (
       shown.connection === null ? (
         'a connection that is no longer there'
       ) : shown.connection.name === null ? (
@@ -1267,7 +1321,11 @@ export function QueryDefinitionPage({
       tone: 'muted',
       label: 'Runs against',
       value: runsAgainst,
-      ...(connectionName === null ? {} : { detail: `${kind} connection` }),
+      ...(storedName !== null
+        ? { detail: 'a stored result, queried in the service' }
+        : connectionName === null
+          ? {}
+          : { detail: `${kind} connection` }),
     },
     draft.columns.length === 0
       ? {
@@ -1463,43 +1521,96 @@ export function QueryDefinitionPage({
               )}
             </Choice>
           )}
-          <Choice label="Connection">
-            {(id) => (
-              <select
-                id={id}
-                value={draft.connection}
-                onChange={(event) => {
-                  setSource(null);
-                  setSourceLines(null);
-                  const chosen = event.target.value;
-                  // An HTTP connection's query is a request template, an S3 connection's a
-                  // file; a database's is built or written (the D6 plan).
-                  changeStatement({
-                    connection: chosen,
-                    mode:
-                      places?.http.has(chosen) === true
-                        ? 'http'
-                        : places?.s3.has(chosen) === true
-                          ? 'file'
-                          : draft.mode === 'http' || draft.mode === 'file'
-                            ? 'builder'
-                            : draft.mode,
-                  });
-                }}
-              >
-                {draft.connection === '' && <option value="">Choose a connection</option>}
-                {connections.map((each) => (
-                  <option key={each.id} value={each.id}>
-                    {each.name}
-                  </option>
-                ))}
-              </select>
-            )}
-          </Choice>
-          <p className={styles['hint']}>
-            Only connections you may use are offered. SQL is offered only on one you may write SQL
-            against, and runs only on one whose latest test found its account read-only.
-          </p>
+          {((stored?.length ?? 0) > 0 || draft.mode === 'dataset') && (
+            <Segmented
+              label="Runs against"
+              value={draft.mode === 'dataset' ? 'dataset' : 'connection'}
+              onChange={(chosen) => {
+                setSource(null);
+                setSourceLines(null);
+                changeStatement(
+                  chosen === 'dataset'
+                    ? { mode: 'dataset', connection: '', builder: DATASET_BUILDER }
+                    : {
+                        mode: 'builder',
+                        dataset: '',
+                        builder: NEW_BUILDER,
+                        connection: places?.connections[0]?.id ?? '',
+                      },
+                );
+              }}
+              options={[
+                { value: 'connection', label: 'A connection', name: 'A connection' },
+                { value: 'dataset', label: 'A stored result', name: 'A stored result' },
+              ]}
+            />
+          )}
+          {draft.mode === 'dataset' ? (
+            <>
+              <Choice label="Stored result">
+                {(id) => (
+                  <select
+                    id={id}
+                    value={draft.dataset}
+                    onChange={(event) =>
+                      changeStatement({ dataset: event.target.value, builder: DATASET_BUILDER })
+                    }
+                  >
+                    {draft.dataset === '' && <option value="">Choose a stored result</option>}
+                    {(stored ?? []).map((each) => (
+                      <option key={each.id} value={each.id}>
+                        {each.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </Choice>
+              <p className={styles['hint']}>
+                Only stored results you may read are offered. A query over one is built from its
+                columns and runs in the service: the source it came from is not asked again.
+              </p>
+            </>
+          ) : (
+            <>
+              <Choice label="Connection">
+                {(id) => (
+                  <select
+                    id={id}
+                    value={draft.connection}
+                    onChange={(event) => {
+                      setSource(null);
+                      setSourceLines(null);
+                      const chosen = event.target.value;
+                      // An HTTP connection's query is a request template, an S3 connection's a
+                      // file; a database's is built or written (the D6 plan).
+                      changeStatement({
+                        connection: chosen,
+                        mode:
+                          places?.http.has(chosen) === true
+                            ? 'http'
+                            : places?.s3.has(chosen) === true
+                              ? 'file'
+                              : draft.mode === 'http' || draft.mode === 'file'
+                                ? 'builder'
+                                : draft.mode,
+                      });
+                    }}
+                  >
+                    {draft.connection === '' && <option value="">Choose a connection</option>}
+                    {connections.map((each) => (
+                      <option key={each.id} value={each.id}>
+                        {each.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </Choice>
+              <p className={styles['hint']}>
+                Only connections you may use are offered. SQL is offered only on one you may write
+                SQL against, and runs only on one whose latest test found its account read-only.
+              </p>
+            </>
+          )}
           <label>
             Title
             <input
@@ -1535,6 +1646,53 @@ export function QueryDefinitionPage({
               return { name: column.name, type: typeof type === 'string' ? null : type };
             })}
             onChange={(file) => changeStatement({ file })}
+          />
+          <Section
+            heading="Parameters"
+            count={draft.parameters.length}
+            acts={<Act words="Add parameter" onClick={addParameter} />}
+          >
+            {parameterLines}
+          </Section>
+        </section>
+      );
+    }
+    // A stored result's query (R21-A): the builder over its one table, its columns the stored result's.
+    if (draft.mode === 'dataset') {
+      const over = stored?.find((each) => each.id === draft.dataset);
+      const described: Described | null =
+        over === undefined
+          ? null
+          : {
+              relations: [
+                {
+                  ...DATASET_TABLE,
+                  kind: 'table',
+                  columns: over.columns.map((each) => ({
+                    name: each.name,
+                    sourceType: each.type.base,
+                    proposed: each.type.base === 'image' ? null : each.type,
+                  })),
+                } as never,
+              ],
+              truncated: false,
+              leftOut: { relations: 0, columns: 0 },
+            };
+      return (
+        <section className={`${styles['card']} ${styles['fileCard']}`} aria-label="Query">
+          <BuilderFields
+            builder={draft.builder}
+            parameters={draft.parameters}
+            described={described}
+            describedLines={over === undefined ? ['Choose a stored result first.'] : null}
+            busy={busy !== null}
+            onDescribe={() => undefined}
+            onChange={(builder) => changeStatement({ builder })}
+            head={
+              <span className={styles['hint']}>
+                Built from the stored result&apos;s columns, one source joined to nothing.
+              </span>
+            }
           />
           <Section
             heading="Parameters"
@@ -1843,7 +2001,7 @@ export function QueryDefinitionPage({
                   })
                 }
               />
-              {draft.mode === 'builder' || draft.mode === 'file'
+              {draft.mode === 'builder' || draft.mode === 'dataset' || draft.mode === 'file'
                 ? 'Return the rows in a declared order'
                 : 'Check the rows are in the order the SQL sorts them'}
             </label>
@@ -1946,11 +2104,11 @@ export function QueryDefinitionPage({
                 </button>
               )}
               <p className={styles['hint']}>
-                {draft.mode === 'builder' || draft.mode === 'file'
+                {draft.mode === 'builder' || draft.mode === 'dataset' || draft.mode === 'file'
                   ? 'The order covers the whole key. Text is ordered by code point.'
                   : 'The order covers the whole key. Text is compared by code point, so order a text column with COLLATE "C" in the SQL.'}
               </p>
-              {draft.mode === 'builder' && (
+              {(draft.mode === 'builder' || draft.mode === 'dataset') && (
                 <label className={styles['field']}>
                   Return at most
                   <input
@@ -1964,7 +2122,7 @@ export function QueryDefinitionPage({
               )}
             </>
           )}
-          {draft.mode === 'builder' && declared === null && (
+          {(draft.mode === 'builder' || draft.mode === 'dataset') && declared === null && (
             <p className={styles['hint']}>
               Return at most is offered beside a declared order: over rows in no order it would
               choose them arbitrarily.
@@ -2093,17 +2251,21 @@ export function QueryDefinitionPage({
                 <h2 id={`${ids}-ran`}>
                   {'sql' in ok.ran
                     ? 'The SQL that ran'
-                    : 'object' in ok.ran
-                      ? 'The object that was read'
-                      : 'The request that was sent'}
+                    : 'dataset' in ok.ran
+                      ? 'The stored result that was read'
+                      : 'object' in ok.ran
+                        ? 'The object that was read'
+                        : 'The request that was sent'}
                 </h2>
               </div>
               <pre className={styles['sql']}>
                 {'sql' in ok.ran
                   ? ok.ran.sql
-                  : 'object' in ok.ran
-                    ? `${ok.ran.object.bucket}/${ok.ran.object.key}`
-                    : requestText(ok.ran.request as never)}
+                  : 'dataset' in ok.ran
+                    ? `${storedName ?? 'A stored result'}, version ${ok.ran.dataset.version}`
+                    : 'object' in ok.ran
+                      ? `${ok.ran.object.bucket}/${ok.ran.object.key}`
+                      : requestText(ok.ran.request as never)}
               </pre>
               {'sql' in ok.ran && draft.parameters.length > 0 && (
                 <p className={styles['hint']}>

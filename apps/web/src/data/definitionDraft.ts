@@ -184,11 +184,14 @@ export interface DefinitionDraft {
   readonly title: string;
   readonly description: string;
   readonly connection: string;
+  /** The stored result a query over one reads, or '' (DAT-094; the R21 plan, R21-A). */
+  readonly dataset: string;
   /**
    * Whether the query is built (D4) or written as SQL, which needs write_sql; or, on an HTTP
-   * connection, a request template, and on an S3 connection a file (the D6 plan).
+   * connection, a request template, and on an S3 connection a file (the D6 plan); or built over a
+   * stored result, on no connection (R21-A).
    */
-  readonly mode: 'builder' | 'sql' | 'http' | 'file';
+  readonly mode: 'builder' | 'sql' | 'http' | 'file' | 'dataset';
   readonly builder: BuilderDraft;
   readonly http: HttpDraft;
   readonly file: FileDraft;
@@ -245,6 +248,7 @@ export function newDraft(limits: {
     title: '',
     description: '',
     connection: '',
+    dataset: '',
     mode: 'builder',
     builder: NEW_BUILDER,
     http: NEW_HTTP,
@@ -644,7 +648,7 @@ export function unshownReason(definition: QueryDefinition): string | null {
     const held = fileDraftOf(statement);
     return 'reason' in held ? held.reason : null;
   }
-  if (statement.kind !== 'builder') return null;
+  if (statement.kind !== 'builder' && statement.kind !== 'dataset') return null;
   const draft = builderDraftOf(statement.query, definition.order);
   return 'reason' in draft ? draft.reason : null;
 }
@@ -759,7 +763,7 @@ function parts(draft: DefinitionDraft) {
     columns.push({ name: column.name, from, type });
   }
   if (columns.length === 0) {
-    return draft.mode === 'builder'
+    return draft.mode === 'builder' || draft.mode === 'dataset'
       ? 'Describe the query to propose its columns first.'
       : draft.mode === 'http'
         ? 'Sample the request to propose its columns first.'
@@ -767,8 +771,12 @@ function parts(draft: DefinitionDraft) {
           ? 'Sample the file to propose its columns first.'
           : 'Describe the statement to propose its columns first.';
   }
-  const query = draft.mode === 'builder' ? queryOf(draft.builder, draft.order) : null;
+  const query =
+    draft.mode === 'builder' || draft.mode === 'dataset'
+      ? queryOf(draft.builder, draft.order)
+      : null;
   if (typeof query === 'string') return query;
+  if (draft.mode === 'dataset' && draft.dataset === '') return 'Choose a stored result.';
   const limits = {
     rows: Number(draft.limits.rows),
     bytes: Number(draft.limits.bytes),
@@ -783,25 +791,28 @@ function parts(draft: DefinitionDraft) {
   if (typeof where === 'string') return where;
   return {
     schemaVersion: 1 as const,
-    connection: draft.connection,
+    // A query over a stored result runs on no connection (R21-A).
+    ...(draft.mode === 'dataset' ? {} : { connection: draft.connection }),
     parameters,
     fetch:
-      draft.mode === 'file'
-        ? {
-            kind: 'file' as const,
-            key: draft.file.key.map(partOf),
-            format: formatOf(draft.file),
-            ...(where === undefined ? {} : { where }),
-          }
-        : draft.mode === 'http'
+      draft.mode === 'dataset' && query !== null
+        ? { kind: 'dataset' as const, format: 1 as const, dataset: draft.dataset, query }
+        : draft.mode === 'file'
           ? {
-              kind: 'http' as const,
-              request: templateOf(draft.http),
-              format: formatOf(draft.http),
+              kind: 'file' as const,
+              key: draft.file.key.map(partOf),
+              format: formatOf(draft.file),
+              ...(where === undefined ? {} : { where }),
             }
-          : query === null
-            ? { kind: 'sql' as const, text: draft.sql }
-            : { kind: 'builder' as const, format: 1 as const, query },
+          : draft.mode === 'http'
+            ? {
+                kind: 'http' as const,
+                request: templateOf(draft.http),
+                format: formatOf(draft.http),
+              }
+            : query === null
+              ? { kind: 'sql' as const, text: draft.sql }
+              : { kind: 'builder' as const, format: 1 as const, query },
     columns,
     key: [...draft.key],
     order:
@@ -850,6 +861,7 @@ export function sqlOf(definition: QueryDefinition): string {
   const { fetch: statement } = definition;
   if (statement.kind === 'http') return requestText(statement.request);
   if (statement.kind === 'file') return fileText(statement);
+  if (statement.kind === 'dataset') return datasetText(statement.query);
   return statement.kind === 'sql' ? statement.text : generatePostgres(definition, {}, 'run').text;
 }
 
@@ -860,13 +872,16 @@ export function sqlOf(definition: QueryDefinition): string {
 export function draftOf(definition: QueryDefinition): DefinitionDraft {
   const { fetch: statement } = definition;
   const built =
-    statement.kind === 'builder' ? builderDraftOf(statement.query, definition.order) : null;
+    statement.kind === 'builder' || statement.kind === 'dataset'
+      ? builderDraftOf(statement.query, definition.order)
+      : null;
   const http = statement.kind === 'http' ? httpDraftOf(statement) : null;
   const file = statement.kind === 'file' ? fileDraftOf(statement) : null;
   return {
     title: definition.title,
     description: definition.description,
-    connection: definition.connection,
+    connection: definition.connection ?? '',
+    dataset: statement.kind === 'dataset' ? statement.dataset : '',
     mode: statement.kind,
     builder: built === null || 'reason' in built ? NEW_BUILDER : built,
     http: http === null || 'reason' in http ? NEW_HTTP : http,
@@ -951,11 +966,12 @@ export function unconfirmed(columns: readonly ColumnDraft[]): ColumnDraft[] {
 export function statementOf(
   draft: Pick<
     DefinitionDraft,
-    'connection' | 'mode' | 'builder' | 'sql' | 'http' | 'file' | 'parameters'
+    'connection' | 'dataset' | 'mode' | 'builder' | 'sql' | 'http' | 'file' | 'parameters'
   >,
 ) {
   return JSON.stringify([
     draft.connection,
+    draft.dataset,
     draft.mode,
     draft.mode === 'sql'
       ? draft.sql
@@ -972,7 +988,7 @@ export function statementOf(
 /** The parts of a draft its columns are confirmed for (DAT-105). */
 export type StatementParts = Pick<
   Partial<DefinitionDraft>,
-  'connection' | 'mode' | 'builder' | 'sql' | 'http' | 'file' | 'parameters'
+  'connection' | 'dataset' | 'mode' | 'builder' | 'sql' | 'http' | 'file' | 'parameters'
 >;
 
 /**
@@ -1088,4 +1104,67 @@ export function sampleValues(
       : canonical(parameter.type.base, parameter.type.base === 'text' ? text : text.trim());
   }
   return values;
+}
+
+/** Where a query over a stored result reads its rows from: the one table the builder offers (R21-A). */
+export const DATASET_TABLE = { schema: 'dataset', name: 'rows' } as const;
+
+/** A builder over a stored result: its one table chosen, nothing yet returned (R21-A). */
+export const DATASET_BUILDER: BuilderDraft = { ...NEW_BUILDER, alias: 'd', table: DATASET_TABLE };
+
+/**
+ * A query over a stored result in words, for its reader (DAT-094): the columns it returns, grouped and
+ * filtered as its tree says. It runs in the service, so there is no SQL to show.
+ */
+function datasetText(query: Query): string {
+  const returned = query.select.map((each) =>
+    'column' in each.of
+      ? each.name
+      : `${each.name} (${each.of.aggregate}${
+          'of' in each.of && each.of.of !== undefined ? ` of ${each.of.of.column}` : ''
+        })`,
+  );
+  const grouped = query.groupBy.map((each) => each.column);
+  return [
+    `Returns ${returned.join(', ')} from the stored result`,
+    ...(grouped.length === 0 ? [] : [`grouped by ${grouped.join(', ')}`]),
+    ...(query.where === undefined ? [] : ['filtered']),
+  ].join(', ');
+}
+
+/**
+ * The columns a query over a stored result returns, each with the type it is proposed from the stored
+ * result's own (R21-A), as Describe answers them for a source: a column as it is stored; a count a
+ * whole number; a minimum or maximum, and a sum of a whole number, as the column summed; a sum of a
+ * decimal to its places; an average to the places it is rounded to. An image is never queried.
+ */
+export function datasetColumnsOf(
+  query: Query,
+  columns: readonly { readonly name: string; readonly type: ColumnType }[],
+): { name: string; sourceType: string; proposed: ProposedType | null }[] {
+  const typeOf = (column: string) => columns.find((each) => each.name === column)?.type;
+  return query.select.map((each) => {
+    const of = each.of;
+    const stored =
+      'column' in of
+        ? typeOf(of.column)
+        : 'of' in of && of.of !== undefined
+          ? typeOf(of.of.column)
+          : undefined;
+    const proposed: ColumnType | undefined =
+      'column' in of
+        ? stored
+        : of.aggregate === 'count'
+          ? { base: 'integer' }
+          : of.aggregate === 'average'
+            ? { base: 'decimal', precision: 1000, scale: of.places ?? 0 }
+            : stored?.base === 'decimal' && of.aggregate === 'sum'
+              ? { ...stored, precision: 1000 }
+              : stored;
+    return {
+      name: each.name,
+      sourceType: proposed?.base ?? 'unknown',
+      proposed: proposed === undefined || proposed.base === 'image' ? null : proposed,
+    };
+  });
 }

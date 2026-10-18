@@ -159,7 +159,7 @@ export function checkFileCondition(
 type Truth = boolean | null;
 
 /** One comparison of a cell with a value of its column's type. */
-function compared(
+export function compared(
   type: ColumnType,
   is: Comparison,
   cell: CanonicalValue,

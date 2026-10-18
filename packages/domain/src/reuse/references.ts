@@ -6,7 +6,10 @@
 export interface IndexedReference {
   readonly node: string | null;
   readonly target:
-    | { readonly artifact: string; readonly kind: 'component' | 'queryDefinition' | 'connection' }
+    | {
+        readonly artifact: string;
+        readonly kind: 'component' | 'queryDefinition' | 'connection' | 'dataset';
+      }
     | { readonly version: string; readonly kind: 'asset' };
   /** `latest` follows each version, `approved` each approved revision, `pinned` one version. */
   readonly mode: 'latest' | 'approved' | 'pinned';
@@ -82,6 +85,20 @@ export function referencesIn(kind: string, content: unknown): IndexedReference[]
         target: { artifact: connection, kind: 'connection' },
         mode: 'latest',
       });
+    }
+    // A stored result it queries as its source (R21-A), at the version it pins or its latest.
+    const fetch = content['fetch'];
+    if (isObject(fetch) && fetch['kind'] === 'dataset') {
+      const dataset = text(fetch['dataset']);
+      const version = text(fetch['version']);
+      if (dataset !== undefined) {
+        found.push({
+          node: null,
+          target: { artifact: dataset, kind: 'dataset' },
+          mode: version === undefined ? 'latest' : 'pinned',
+          ...(version === undefined ? {} : { version }),
+        });
+      }
     }
   }
   return found;

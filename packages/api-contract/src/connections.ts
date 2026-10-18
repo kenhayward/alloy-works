@@ -5,6 +5,7 @@ import {
   dataFormatSchema,
   httpFetchSchema,
   objectKeySchema,
+  ranDatasetSchema,
   ranObjectSchema,
   s3KeyPairSchema,
   httpTemplateSchema,
@@ -395,9 +396,14 @@ export const SampleView = z.discriminatedUnion('outcome', [
             'The S3 object read: its bucket, its key as bound and its version where the store names one; never a URL',
           ),
         }),
+        z.object({
+          dataset: ranDatasetSchema.describe(
+            'The stored result a dataset query read: its dataset, version and checksum (DAT-094)',
+          ),
+        }),
       ])
       .describe(
-        'What ran: SQL for a database, the request template for an HTTP connection, the object for an S3 one',
+        'What ran: SQL for a database, the request template for an HTTP connection, the object for an S3 one, the stored result for a dataset query',
       ),
     durationMs: z.number().int(),
     images: z

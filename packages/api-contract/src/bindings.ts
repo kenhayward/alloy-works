@@ -4,6 +4,7 @@ import {
   imageColumnTypeSchema,
   MAX_COLUMNS,
   httpTemplateSchema,
+  ranDatasetSchema,
   ranObjectSchema,
   provenanceSchema,
   TAKE_FAILURES,
@@ -124,6 +125,13 @@ export const ProvenanceView = provenanceSchema.extend({
         .nullable()
         .describe(
           'The S3 object read - its bucket, its key as bound and its version - never a URL, or null where the caller may not read the query definition',
+        ),
+    }),
+    z.strictObject({
+      dataset: ranDatasetSchema
+        .nullable()
+        .describe(
+          'The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition',
         ),
     }),
   ]),

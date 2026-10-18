@@ -353,6 +353,14 @@ export const ranObjectSchema = z.strictObject({
 });
 export type RanObject = z.infer<typeof ranObjectSchema>;
 
+/** The stored result a dataset query read (R21-A): its dataset, its version and that version's checksum. */
+export const ranDatasetSchema = z.strictObject({
+  artifact: z.string().regex(/^[0-9a-f-]{36}$/),
+  version: z.string().regex(/^[0-9a-f-]{36}$/),
+  checksum: z.string().regex(/^[0-9a-f]{64}$/),
+});
+export type RanDataset = z.infer<typeof ranDatasetSchema>;
+
 /**
  * What a run reports it ran (D2-K; the D6 plan, D6-L): a database's SQL, its values bound apart from
  * it, or an HTTP request's template, its values placed apart from it. Never a composed URL, which no
@@ -363,6 +371,8 @@ export const ranSchema = z.union([
   z.strictObject({ request: httpTemplateSchema }),
   // An object read: its bucket, its key bound, and its version where the store names one (D6-L).
   z.strictObject({ object: ranObjectSchema }),
+  // A stored result queried as a source, in the service (R21-A): never a connector's answer.
+  z.strictObject({ dataset: ranDatasetSchema }),
 ]);
 export type Ran = z.infer<typeof ranSchema>;
 

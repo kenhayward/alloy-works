@@ -44,7 +44,7 @@ import {
   recordEvent,
 } from './audit.js';
 import { checkProvenanceNames } from './dataset-references.js';
-import { checkNamedConnection, checkNotInUse } from './definition-references.js';
+import { checkNamedSource, checkNotInUse } from './definition-references.js';
 import { isDeleted } from './deletion.js';
 import { checkedLimit } from './listing.js';
 import { indexVersion } from './search.js';
@@ -425,7 +425,7 @@ export async function createArtifact(
         },
       ]);
     }
-    await checkNamedConnection(trx, substance.content.connection);
+    await checkNamedSource(trx, substance.content);
   }
   // A dataset version names a version of its definition and of its connection, on every path.
   if (substance.kind === 'dataset') await checkProvenanceNames(trx, substance.content);
@@ -865,7 +865,7 @@ async function record(
   // A query definition names a connection in service at every version (D2-P); a connection is not
   // retired while a definition in service names it (DAT-065). Each under the connection's lock.
   if (substance.kind === 'queryDefinition') {
-    await checkNamedConnection(trx, substance.content.connection);
+    await checkNamedSource(trx, substance.content);
   }
   if (substance.kind === 'dataset') await checkProvenanceNames(trx, substance.content);
   if (
