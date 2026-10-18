@@ -11,6 +11,9 @@ const PROPOSAL = '2c4e6a8b-1d3f-4a5b-8c7d-9e0f1a2b3c4d';
 const PROMPT = '3d5f7b9c-2e4a-4b6c-9d8e-0f1a2b3c4d5e';
 const LIBRARY = '4e6a8c0d-3f5b-4c7d-8e9f-1a2b3c4d5e6f';
 const NODE = 'n1';
+const CONVERSATION = '5f7b9d1e-4a6c-4d8e-9f0a-2b3c4d5e6f7a';
+const ENDPOINT = '6a8c0e2f-5b7d-4e9f-8a1b-3c4d5e6f7a8b';
+const NOW = '2026-10-18T09:00:00.000Z';
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
@@ -22,6 +25,57 @@ function service() {
     const request = input instanceof Request ? input : new Request(String(input), init);
     const path = new URL(request.url).pathname;
     asked.push(`${request.method} ${path}`);
+    if (path === '/v1/conversation-endpoints') {
+      return json(200, {
+        items: [
+          {
+            id: ENDPOINT,
+            name: 'Drafting',
+            model: 'stand-in-1',
+            boundary: 'outside',
+            isDefault: true,
+          },
+          { id: SITES, name: 'Ours', model: 'stand-in-1', boundary: 'inside', isDefault: false },
+        ],
+      });
+    }
+    if (request.method === 'POST' && path === '/v1/conversations') {
+      return json(200, {
+        conversation: {
+          id: CONVERSATION,
+          document: DOCUMENT,
+          title: 'Asked',
+          madeAt: NOW,
+          turns: [],
+        },
+      });
+    }
+    if (path === '/v1/conversations') {
+      return json(200, {
+        items: [{ id: CONVERSATION, document: DOCUMENT, title: 'About the weir', madeAt: NOW }],
+      });
+    }
+    if (path === `/v1/conversations/${CONVERSATION}`) {
+      return json(200, {
+        conversation: {
+          id: CONVERSATION,
+          document: DOCUMENT,
+          title: 'About the weir',
+          madeAt: NOW,
+          turns: [
+            {
+              run: 'r0',
+              ask: 'What floods?',
+              reply: 'The north weir.',
+              outcome: 'finished',
+              endpoint: { name: 'Drafting', boundary: 'outside' },
+              model: 'stand-in-1',
+              startedAt: NOW,
+            },
+          ],
+        },
+      });
+    }
     if (path === `/v1/documents/${DOCUMENT}/prompts`) {
       return json(200, {
         library: { id: LIBRARY, isDefault: false },
@@ -115,7 +169,7 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
     await user.type(screen.getByLabelText('Ask the assistant'), 'What is here?');
     await user.click(screen.getByRole('button', { name: 'Ask' }));
     expect(stream.mock.calls[0]![0]).toMatchObject({
-      url: `http://doc.test/v1/documents/${DOCUMENT}/assistant/runs`,
+      url: `http://doc.test/v1/conversations/${CONVERSATION}/turns`,
       body: { ask: 'What is here?', component: SITES },
     });
     expect(await screen.findByText('It has two parts.')).toBeVisible();
@@ -309,5 +363,41 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
     const offered = await screen.findByRole('region', { name: 'Prompts' });
     expect(within(offered).getByText('Open a part to run a prompt on it.')).toBeInTheDocument();
     expect(within(offered).queryByRole('button')).toBeNull();
+  });
+
+  it('GEN-047 GEN-051 opens an earlier conversation with its turns, and runs the next turn on the endpoint chosen', async () => {
+    const user = userEvent.setup();
+    const { client } = service();
+    const stream = vi.fn(
+      running([['run', { run: 'r1', endpoint: { name: 'Ours', boundary: 'inside' } }], ended()]),
+    );
+    render(
+      <AssistantPanel
+        client={client}
+        document={DOCUMENT}
+        component={null}
+        onCite={() => {}}
+        stream={stream}
+        origin="http://doc.test"
+      />,
+    );
+    await user.selectOptions(
+      await screen.findByRole('combobox', { name: 'Conversation' }),
+      'About the weir',
+    );
+    const earlier = await screen.findByRole('list', { name: 'Earlier turns' });
+    expect(earlier).toHaveTextContent('What floods?');
+    expect(earlier).toHaveTextContent('The north weir.');
+    const endpoint = screen.getByRole('combobox', { name: 'Endpoint' });
+    expect(
+      within(endpoint).getByRole('option', { name: 'Drafting, outside your data boundary' }),
+    ).toBeInTheDocument();
+    await user.selectOptions(endpoint, 'Ours');
+    await user.type(screen.getByLabelText('Ask the assistant'), 'And when?');
+    await user.click(screen.getByRole('button', { name: 'Ask' }));
+    expect(stream.mock.calls[0]![0]).toMatchObject({
+      url: `http://doc.test/v1/conversations/${CONVERSATION}/turns`,
+      body: { ask: 'And when?', endpoint: SITES },
+    });
   });
 });

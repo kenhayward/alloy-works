@@ -91,6 +91,8 @@ export function streamedRun(input: {
   readonly documentId: string | null;
   /** The person's words, kept with the run (GN-I). */
   readonly ask: string;
+  /** The conversation it is a turn of, where it is one (G5-A). */
+  readonly conversationId?: string;
   readonly system: string;
   readonly tools: readonly ModelTool[];
   /** What the first call sends: the earlier turns' words, where there are any, then this one's. */
@@ -134,6 +136,7 @@ export function streamedRun(input: {
             by: input.principalId,
             documentId: input.documentId,
             ask: input.ask,
+            ...(input.conversationId === undefined ? {} : { conversationId: input.conversationId }),
           }),
         context,
       );

@@ -180,6 +180,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   is recorded. Each run says its tokens and cost, and your month's. A part holding a table, a figure, an
   equation, a footnote or a reference cannot be edited by a proposal. The API does the same
   (`POST /v1/documents/{id}/assistant/runs`, streamed).
+- **Conversations.** The Assistant tab holds your conversations about the document: each turn
+  carries the earlier turns' words, runs as the assistant does, and is kept with what it said. You
+  choose the endpoint a turn runs on, and it says whether that sits outside your data boundary
+  (`/v1/conversations`). Nothing is refused for being off the subject.
 - **Generated content waits for a person.** A document is not published, nor pinned as a baseline,
   while a suggestion the assistant made waits to be accepted or rejected in Review; a preview still
   shows it, and a baseline made before is published as it was pinned. A workflow step can require that

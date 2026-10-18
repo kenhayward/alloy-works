@@ -721,6 +721,16 @@ export {
 } from './prompt-libraries.js';
 export { CONTEXT_PARTS_MOST, resolveContext, type ContextAnswer } from './prompt-context.js';
 export {
+  CONVERSATION_TURNS_MOST,
+  listConversations,
+  readConversation,
+  startConversation,
+  titleFrom,
+  turnsOf,
+  type Conversation,
+  type Turn,
+} from './conversations.js';
+export {
   giveQuerySlot,
   QUERY_RUNS_MOST,
   queryRunsBetween,

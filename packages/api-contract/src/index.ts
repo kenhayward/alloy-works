@@ -177,6 +177,16 @@ export {
   promptRunRoutes,
 } from './prompt-runs.js';
 export {
+  ConversationEndpoints,
+  ConversationList,
+  ConversationListQuery,
+  ConversationParams,
+  ConversationView,
+  StartConversationBody,
+  TurnBody,
+  conversationRoutes,
+} from './conversations.js';
+export {
   RangePageParams,
   RangePreviewParams,
   RangePreviewView,

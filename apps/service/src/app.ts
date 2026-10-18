@@ -1025,7 +1025,12 @@ export function buildApp(options: AppOptions): FastifyInstance {
   ): (request: FastifyRequest, reply: FastifyReply) => Promise<unknown> {
     if (access.check !== 'permission') {
       const run = handler as (request: FastifyRequest, reply: FastifyReply) => Promise<unknown>;
-      return (request, reply) => run(request, reply);
+      // A session's route may stream too (a conversation's turn; the G5 plan), sent once its work
+      // has committed, as a permission's is.
+      return async (request, reply) => {
+        const body = await run(request, reply);
+        return body instanceof Streamed ? sendStreamed(request, reply, body) : body;
+      };
     }
     const run = handler as (request: FastifyRequest, authorised: Authorised) => Promise<unknown>;
     return async (request, reply) => {

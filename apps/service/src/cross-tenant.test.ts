@@ -11,6 +11,7 @@ import {
   createConnection,
   createLibrary,
   createPrompt,
+  startConversation,
   createQueryDefinition,
   readPrompt,
   createTemplate,
@@ -193,6 +194,8 @@ const OTHER_TENANT_IDS: Readonly<
   requestPreview: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   requestRangePreview: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   startAssistantRun: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  getConversation: async (tenant, db) => ({ id: await conversationIdIn(tenant, db) }),
+  takeTurn: async (tenant, db) => ({ id: await conversationIdIn(tenant, db) }),
   listDocumentPrompts: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   startPromptRun: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   startPromptTrial: async (tenant, db) => {
@@ -676,6 +679,8 @@ const VALID_INPUT: Readonly<
   requestAuditExport: { payload: {} },
   requestTenantExport: { payload: {} },
   startAssistantRun: { payload: { ask: 'Hello' } },
+  startConversation: { payload: { title: 'Hello' } },
+  takeTurn: { payload: { ask: 'Hello' } },
   startPromptRun: { payload: { prompt: SESSION, node: 'n1' } },
   startPromptTrial: { payload: { document: SESSION, node: 'n1' } },
   makeModelEndpoint: {
@@ -956,6 +961,23 @@ const promptIdIn = (tenant: Tenant, db: TenantDatabase) =>
     });
     if (made.answer !== 'created') throw new Error(`refused: ${made.answer}`);
     return made.prompt.id;
+  });
+
+/** A conversation in environment B, of a person there. */
+const conversationIdIn = (tenant: Tenant, db: TenantDatabase) =>
+  db.withTenant(tenant, async (trx) => {
+    const owner = await trx
+      .insertInto('principal')
+      .values({
+        issuer: 'https://idp.example',
+        subject: `ivy-${randomUUID()}`,
+        email: null,
+        display_name: null,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    return (await startConversation(trx, { owner: owner.id, documentId: null, title: 'Theirs' }))
+      .id;
   });
 
 /** A prompt library in environment B. */

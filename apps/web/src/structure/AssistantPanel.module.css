@@ -94,3 +94,15 @@
   display: grid;
   gap: var(--space-4, 4px);
 }
+
+.turns {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--space-8, 8px);
+}
+
+.turns p {
+  margin: 0;
+}
