@@ -196,6 +196,12 @@ const OTHER_TENANT_IDS: Readonly<
   requestRangePreview: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   startAssistantRun: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   getConversation: async (tenant, db) => ({ id: await conversationIdIn(tenant, db) }),
+  getConversationContext: async (tenant, db) => ({ id: await conversationIdIn(tenant, db) }),
+  addConversationContext: async (tenant, db) => ({ id: await conversationIdIn(tenant, db) }),
+  removeConversationContext: async (tenant, db) => ({
+    id: await conversationIdIn(tenant, db),
+    component: await componentIdIn(tenant, db),
+  }),
   retireGuardrail: async (tenant, db) =>
     db.withTenant(tenant, async (trx) => {
       const owner = await trx
@@ -701,6 +707,7 @@ const VALID_INPUT: Readonly<
   startConversation: { payload: { title: 'Hello' } },
   setGuardrail: { payload: { phrase: 'Probe', applies: 'sent', reason: 'Probe' } },
   takeTurn: { payload: { ask: 'Hello' } },
+  addConversationContext: { payload: { component: SESSION } },
   startPromptRun: { payload: { prompt: SESSION, node: 'n1' } },
   startPromptTrial: { payload: { document: SESSION, node: 'n1' } },
   makeModelEndpoint: {

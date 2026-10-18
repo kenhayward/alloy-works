@@ -16,6 +16,7 @@ import { CohortPage } from '../structure/CohortPage.js';
 import { cohortAddress } from '../structure/links.js';
 import { QueryDefinitionPage } from '../data/QueryDefinitionPage.js';
 import { QueryDefinitions } from '../data/QueryDefinitions.js';
+import { Conversations, CONVERSATIONS } from '../conversations/Conversations.js';
 import { LibraryPage, PromptLibraries } from '../prompts/Libraries.js';
 import { LIBRARIES, libraryAddress, promptAddress, PROMPTS } from '../prompts/links.js';
 import { PromptPage } from '../prompts/PromptPage.js';
@@ -436,6 +437,7 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
         />
       );
     }
+    if (hash === CONVERSATIONS) return <Conversations client={client} />;
     const library = libraryAddress(hash);
     if (library !== null) return <LibraryPage key={library} client={client} id={library} />;
     if (hash === LIBRARIES) return <PromptLibraries client={client} />;

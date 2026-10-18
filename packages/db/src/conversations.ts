@@ -117,3 +117,58 @@ export async function turnsOf(trx: TenantTransaction, conversation: string): Pro
     startedAt: new Date(row.started_at),
   }));
 }
+
+/** The most parts a conversation's tray holds (G5-D). */
+export const TRAY_PARTS_MOST = 50;
+
+/** A part in a tray: the component, and how it came there. */
+export interface TrayPart {
+  readonly component: string;
+  /** The run whose read added it, or null where the person did. */
+  readonly addedByRun: string | null;
+  readonly addedAt: Date;
+}
+
+/** A conversation's tray, the oldest added first. Whether its person may read each is decided again. */
+export async function trayOf(trx: TenantTransaction, conversation: string): Promise<TrayPart[]> {
+  const { rows } = await sql<{ component_id: string; added_by_run: string | null; added_at: Date }>`
+    select component_id, added_by_run, added_at from conversation_context
+     where conversation_id = ${conversation} and removed_at is null
+     order by id`.execute(trx);
+  return rows.map((row) => ({
+    component: row.component_id,
+    addedByRun: row.added_by_run,
+    addedAt: new Date(row.added_at),
+  }));
+}
+
+/**
+ * Adds a component to a tray, once: `added` where it was put there, `held` where it already was,
+ * `full` where the tray holds as many as it may. The caller decided its person may read it.
+ */
+export async function addToTray(
+  trx: TenantTransaction,
+  input: { readonly conversation: string; readonly component: string; readonly run?: string },
+): Promise<'added' | 'held' | 'full'> {
+  if (!UUID.test(input.component)) return 'held';
+  const held = await trayOf(trx, input.conversation);
+  if (held.some((each) => each.component === input.component)) return 'held';
+  if (held.length >= TRAY_PARTS_MOST) return 'full';
+  await sql`insert into conversation_context (conversation_id, component_id, added_by_run)
+    values (${input.conversation}, ${input.component}, ${input.run ?? null})
+    on conflict do nothing`.execute(trx);
+  return 'added';
+}
+
+/** Removes a component from a tray; false where it was not in it. */
+export async function removeFromTray(
+  trx: TenantTransaction,
+  conversation: string,
+  component: string,
+): Promise<boolean> {
+  if (!UUID.test(component)) return false;
+  const { rows } = await sql<{ id: string }>`update conversation_context set removed_at = now()
+     where conversation_id = ${conversation} and component_id = ${component} and removed_at is null
+     returning id`.execute(trx);
+  return rows.length > 0;
+}

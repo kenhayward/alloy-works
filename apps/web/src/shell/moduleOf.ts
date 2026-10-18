@@ -5,6 +5,7 @@ export type ModuleName =
   | 'Publications'
   | 'Templates'
   | 'Prompts'
+  | 'Conversations'
   | 'Connections'
   | 'Query definitions'
   | 'Search'
@@ -23,6 +24,7 @@ export function moduleOf(hash: string): ModuleName | null {
   // A cohort is generated from a template, and followed from Templates (the R7 plan, R7-G; R14-A).
   if (/^#\/cohorts(?:\/|$)/.test(hash)) return 'Templates';
   if (/^#\/prompts(?:\/|$)/.test(hash)) return 'Prompts';
+  if (/^#\/conversations(?:\/|$)/.test(hash)) return 'Conversations';
   if (/^#\/connections(?:\/|$)/.test(hash)) return 'Connections';
   if (/^#\/query-definitions(?:\/|$)/.test(hash)) return 'Query definitions';
   if (/^#\/search(?:\?|$)/.test(hash)) return 'Search';

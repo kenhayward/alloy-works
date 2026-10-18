@@ -18,6 +18,7 @@ const REASONS = {
   read: 'A read, which is not itself an event (audit.md, "Reading and export")',
   conversation:
     "A person's own conversation begun: each turn of it is a run, recorded as generation.run",
+  tray: "A person's own conversation's tray: identities alone, read again as them each turn, no content changed",
   attempt: 'Starts a sign-in: it names nobody, and the sign-in that finishes it is recorded',
   derived:
     "A write derived from what is already recorded, which changes none of the tenant's content",
@@ -74,6 +75,9 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   startConversation: { none: 'conversation' },
   listConversations: read,
   getConversation: read,
+  getConversationContext: read,
+  addConversationContext: { none: 'tray' },
+  removeConversationContext: { none: 'tray' },
   takeTurn: writes('generation.run'),
   listDocumentPrompts: read,
   startPromptRun: writes('generation.run'),

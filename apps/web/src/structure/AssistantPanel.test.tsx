@@ -55,6 +55,43 @@ function service() {
         items: [{ id: CONVERSATION, document: DOCUMENT, title: 'About the weir', madeAt: NOW }],
       });
     }
+    if (path === `/v1/conversations/${CONVERSATION}/context` && request.method === 'GET') {
+      return json(200, {
+        items: [
+          { component: SITES, version: '0.2', readable: true },
+          { component: PROPOSAL, version: null, readable: false },
+        ],
+      });
+    }
+    if (path === `/v1/conversations/${CONVERSATION}/context` && request.method === 'POST') {
+      return json(200, {
+        items: [
+          { component: SITES, version: '0.2', readable: true },
+          { component: LIBRARY, version: '0.1', readable: true },
+        ],
+      });
+    }
+    if (path === `/v1/conversations/${CONVERSATION}/context/${SITES}/removal`) {
+      return json(200, { items: [] });
+    }
+    if (path === '/v1/search') {
+      return json(200, {
+        outcome: 'results',
+        items: [
+          {
+            kind: 'component',
+            artifactId: LIBRARY,
+            node: null,
+            title: 'Weir levels',
+            space: null,
+            changedAt: NOW,
+            place: 'title',
+            passage: [],
+          },
+        ],
+        total: 1,
+      });
+    }
     if (path === `/v1/conversations/${CONVERSATION}`) {
       return json(200, {
         conversation: {
@@ -399,5 +436,35 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
       url: `http://doc.test/v1/conversations/${CONVERSATION}/turns`,
       body: { ask: 'And when?', endpoint: SITES },
     });
+  });
+
+  it('GEN-053 shows what the open conversation reads, a part no longer readable said so, and removes and adds parts', async () => {
+    const user = userEvent.setup();
+    const { client, asked } = service();
+    render(
+      <AssistantPanel
+        client={client}
+        document={DOCUMENT}
+        component={null}
+        nameOf={(id) => (id === SITES ? 'Sites' : undefined)}
+        onCite={() => {}}
+        origin="http://doc.test"
+      />,
+    );
+    await user.selectOptions(
+      await screen.findByRole('combobox', { name: 'Conversation' }),
+      'About the weir',
+    );
+    const reads = await screen.findByRole('region', { name: 'What it reads' });
+    expect(await within(reads).findByText('Sites')).toBeInTheDocument();
+    expect(
+      within(reads).getByText('A part you may no longer read, which is not sent'),
+    ).toBeInTheDocument();
+    await user.click(within(reads).getByRole('button', { name: 'Remove Sites' }));
+    expect(asked).toContain(`POST /v1/conversations/${CONVERSATION}/context/${SITES}/removal`);
+    await user.type(within(reads).getByRole('textbox', { name: 'Find a part to add' }), 'weir');
+    await user.click(within(reads).getByRole('button', { name: 'Find' }));
+    await user.click(await within(reads).findByRole('button', { name: 'Add Weir levels' }));
+    expect(await within(reads).findByText('Weir levels')).toBeInTheDocument();
   });
 });

@@ -396,6 +396,9 @@ const operationTags = {
     'startConversation',
     'listConversations',
     'getConversation',
+    'getConversationContext',
+    'addConversationContext',
+    'removeConversationContext',
     'takeTurn',
   ],
   Prompts: [
@@ -823,6 +826,12 @@ const descriptions: Readonly<Record<string, string>> = {
     'Lists your own conversations, the newest first, on one document where it is named, at most 200.',
   getConversation:
     'Returns a conversation of yours with each turn: what you said, what the model wrote, how it ended and the endpoint it ran on. Anybody else is told there is none.',
+  getConversationContext:
+    'Returns what a conversation of yours reads: each part in its tray, read again as you now, at the version its document places or else its latest; one you may no longer read is said so, and not sent.',
+  addConversationContext:
+    'Adds a part to what a conversation of yours reads: a component you may read, placed in its document where it has one, at most 50. A part a turn’s tool read is added on its own.',
+  removeConversationContext:
+    'Removes a part from what a conversation of yours reads, so the next turn does not send it.',
   takeTurn:
     "Says something in a conversation of yours, with a signed-in session alone, on the endpoint named or the default. The earlier turns' words are sent with it, never their tool results. On a document, it reads what you may read of it and proposes edits as the assistant does; nothing is refused for being off the subject. One turn at a time, at most 20. Answered as Server-Sent Events, and recorded as a run of the conversation.",
   getPrompt: 'Returns the latest prompt version and whether the caller may change it.',

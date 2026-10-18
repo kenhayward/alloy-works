@@ -178,6 +178,9 @@ export {
 } from './prompt-runs.js';
 export {
   ConversationEndpoints,
+  ConversationTray,
+  TrayBody,
+  TrayParams,
   ConversationList,
   ConversationListQuery,
   ConversationParams,

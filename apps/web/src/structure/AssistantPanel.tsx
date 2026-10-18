@@ -92,6 +92,13 @@ interface ConversationTurn {
   readonly outcome: string;
 }
 
+/** A part the open conversation reads (G5-D). */
+interface TrayItem {
+  readonly component: string;
+  readonly version: string | null;
+  readonly readable: boolean;
+}
+
 /** An endpoint a turn may run on (G5-C). */
 interface OfferedEndpoint {
   readonly id: string;
@@ -134,7 +141,8 @@ export function AssistantPanel({
   origin = window.location.origin,
 }: {
   client: Client;
-  document: string;
+  /** The document it is about, or null for conversations on none (the G5 plan, G5-D). */
+  document: string | null;
   /** The component the author has open, if one is. */
   component: string | null;
   /** Its node in the outline: the part a prompt runs on (the G4 plan, G4-I). */
@@ -165,17 +173,33 @@ export function AssistantPanel({
   // The endpoints a turn may run on, and the one chosen (G5-C).
   const [endpoints, setEndpoints] = useState<readonly OfferedEndpoint[]>([]);
   const [chosen, setChosen] = useState('');
+  // What the open conversation reads, as its person may now (G5-D), and parts found to add.
+  const [tray, setTray] = useState<readonly TrayItem[]>([]);
+  const [looking, setLooking] = useState('');
+  const [found, setFound] = useState<readonly { id: string; title: string }[]>([]);
+  const [titles, setTitles] = useState<ReadonlyMap<string, string>>(new Map());
+
+  const readTray = async (id: string) => {
+    const { data } = await client.GET('/v1/conversations/{id}/context', {
+      params: { path: { id } },
+    });
+    if (data) setTray(data.items);
+  };
 
   const readConversations = async () => {
     const { data } = await client.GET('/v1/conversations', {
-      params: { query: { document } },
+      params: { query: document === null ? {} : { document } },
     });
-    if (data) setConversations(data.items);
+    // Without a document, those on none: a document's own are on its page.
+    if (data) {
+      setConversations(data.items.filter((each) => document !== null || each.document === null));
+    }
   };
 
   const readTurns = async (id: string) => {
     const { data } = await client.GET('/v1/conversations/{id}', { params: { path: { id } } });
     if (data) setTurns(data.conversation.turns);
+    await readTray(id);
   };
 
   useEffect(() => {
@@ -196,6 +220,7 @@ export function AssistantPanel({
 
   // The prompts this document's library lists that run, each at its approved revision (G4-F).
   useEffect(() => {
+    if (document === null) return undefined;
     let current = true;
     void client
       .GET('/v1/documents/{id}/prompts', { params: { path: { id: document } } })
@@ -213,6 +238,39 @@ export function AssistantPanel({
     };
   }, [client, document]);
 
+  const removePart = async (component: string) => {
+    if (conversation === null) return;
+    const { data } = await client.POST('/v1/conversations/{id}/context/{component}/removal', {
+      params: { path: { id: conversation, component } },
+    });
+    if (data) setTray(data.items);
+  };
+
+  const look = async () => {
+    const { data } = await client.GET('/v1/search', {
+      params: { query: { q: looking.trim(), kind: 'component' } },
+    });
+    setFound(
+      data?.outcome === 'results'
+        ? data.items.map((each) => ({ id: each.artifactId, title: each.title }))
+        : [],
+    );
+  };
+
+  const addPart = async (component: string, title: string) => {
+    if (conversation === null) return;
+    const { data, error } = await client.POST('/v1/conversations/{id}/context', {
+      params: { path: { id: conversation } },
+      body: { component },
+    });
+    if (data) {
+      setTray(data.items);
+      setTitles((was) => new Map(was).set(component, title));
+      setFound([]);
+      setLooking('');
+    } else setSaid(refusalWords(error, 'That part could not be added.'));
+  };
+
   const usage = async () => {
     const { data } = await client.GET('/v1/me/assistant-usage');
     if (!data) return;
@@ -229,7 +287,7 @@ export function AssistantPanel({
     let id = conversation;
     if (id === null) {
       const { data, error } = await client.POST('/v1/conversations', {
-        body: { document, title: ask.trim() },
+        body: { ...(document === null ? {} : { document }), title: ask.trim() },
       });
       if (!data) {
         setSaid(refusalWords(error, 'The conversation could not be started.'));
@@ -392,6 +450,7 @@ export function AssistantPanel({
               setProposals([]);
               setSteps([]);
               setEnded(null);
+              setTray([]);
               if (id !== null) void readTurns(id).catch(() => undefined);
             }}
           >
@@ -439,6 +498,61 @@ export function AssistantPanel({
               </li>
             ))}
         </ol>
+      )}
+      {conversation !== null && (
+        <section aria-label="What it reads" className={styles['prompts']}>
+          <h3>What it reads</h3>
+          {tray.length === 0 ? (
+            <p className={styles['muted']}>
+              Nothing yet. A part the assistant reads, or one you add, is read again each turn.
+            </p>
+          ) : (
+            <ul>
+              {tray.map((each) => {
+                const title = nameOf(each.component) ?? titles.get(each.component) ?? 'A part';
+                return (
+                  <li key={each.component}>
+                    <span>
+                      {each.readable ? title : 'A part you may no longer read, which is not sent'}
+                    </span>{' '}
+                    <button
+                      type="button"
+                      aria-label={`Remove ${each.readable ? title : 'the part you may no longer read'}`}
+                      onClick={() => void removePart(each.component)}
+                    >
+                      Remove
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          <div className={styles['actions']}>
+            <label className={styles['ask']}>
+              Find a part to add
+              <input value={looking} onChange={(change) => setLooking(change.target.value)} />
+            </label>
+            <button type="button" disabled={looking.trim() === ''} onClick={() => void look()}>
+              Find
+            </button>
+          </div>
+          {found.length > 0 && (
+            <ul aria-label="Parts found">
+              {found.map((each) => (
+                <li key={each.id}>
+                  <span>{each.title}</span>{' '}
+                  <button
+                    type="button"
+                    aria-label={`Add ${each.title}`}
+                    onClick={() => void addPart(each.id, each.title)}
+                  >
+                    Add
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       )}
       <form onSubmit={(event) => void submit(event)}>
         <label className={styles['ask']}>

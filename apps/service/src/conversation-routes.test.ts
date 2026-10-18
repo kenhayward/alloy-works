@@ -1,4 +1,4 @@
-import { listModelEndpoints, readRun, startRun } from '@alloy-works/db';
+import { listModelEndpoints, readRun, removeGrant, startRun } from '@alloy-works/db';
 import type { ModelEvent, ModelRequest } from '@alloy-works/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
@@ -31,6 +31,7 @@ describe('conversations through the service (the G5 plan, G5-A to G5-C)', () => 
   let drafting: string;
   let inside: string;
   let document: { id: string; nodes: string[] };
+  let sitesId: string;
   /** What the connector was asked, each call in order. */
   const asked: ModelRequest[] = [];
 
@@ -60,9 +61,10 @@ describe('conversations through the service (the G5 plan, G5-A to G5-C)', () => 
       asked.push(request);
       return [text(`Answer ${asked.length}.`), ended];
     };
-    const sites = await h.component(h.general, 'Sites');
-    await h.place(sites, { type: 'text', value: 'The north weir floods each spring.', marks: [] });
-    document = await h.documentReferencing([sites.id]);
+    const made = await h.component(h.general, 'Sites');
+    sitesId = made.id;
+    await h.place(made, { type: 'text', value: 'The north weir floods each spring.', marks: [] });
+    document = await h.documentReferencing([made.id]);
   }, 120_000);
 
   afterAll(async () => {
@@ -178,5 +180,77 @@ describe('conversations through the service (the G5 plan, G5-A to G5-C)', () => 
       (await h.call('ivy', 'POST', '/v1/conversations', { title: 'Peek', document: document.id }))
         .statusCode,
     ).toBe(404);
+  });
+
+  it('GEN-053 reads what the tray holds, each part re-read as the person every turn: added, removed, and one no longer readable left out', async () => {
+    const id = await start('grace');
+    // Grace reads Quality for now, and its notes join the tray beside the weir's.
+    await h.allow(h.ids.ada!, h.roles.Author!, { kind: 'space', id: h.quality });
+    const notes = await h.component(h.quality, 'Quality notes');
+    await h.place(notes, { type: 'text', value: 'A confidential finding.', marks: [] });
+    const access = await h.allow(h.ids.grace!, h.roles.Reader!, { kind: 'space', id: h.quality });
+    const sites = sitesId;
+    for (const component of [sites, notes.id]) {
+      const added = await h.call('grace', 'POST', `/v1/conversations/${id}/context`, { component });
+      expect(added.statusCode, added.body).toBe(200);
+    }
+    const sentOf = () => JSON.stringify(asked.at(-1)!.call.messages);
+    await turn('grace', id, { ask: 'What do these say?' });
+    expect(sentOf()).toContain('The north weir floods each spring.');
+    expect(sentOf()).toContain('A confidential finding.');
+
+    // Her access to Quality ends: the next turn leaves its notes out, and says so.
+    await h.tenantDb.withTenant(h.tenant, (trx) => removeGrant(trx, access));
+    const after = framesOf((await turn('grace', id, { ask: 'And now?' })).body);
+    expect(sentOf()).toContain('The north weir floods each spring.');
+    expect(sentOf()).not.toContain('A confidential finding.');
+    expect(after[0]!.data).toMatchObject({ tray: { read: [sites], dropped: [notes.id] } });
+    const tray = (await h.call('grace', 'GET', `/v1/conversations/${id}/context`)).json<{
+      items: { component: string; readable: boolean }[];
+    }>().items;
+    expect(tray).toEqual([
+      expect.objectContaining({ component: sites, readable: true }),
+      expect.objectContaining({ component: notes.id, readable: false }),
+    ]);
+
+    // Removed, a part is sent no more; one she may not read is not added.
+    await h.call('grace', 'POST', `/v1/conversations/${id}/context/${sites}/removal`);
+    await turn('grace', id, { ask: 'Anything?' });
+    expect(sentOf()).not.toContain('The north weir floods each spring.');
+    expect(
+      (await h.call('grace', 'POST', `/v1/conversations/${id}/context`, { component: notes.id }))
+        .statusCode,
+    ).toBe(404);
+  });
+
+  it('gives a conversation with no document its own tools, and keeps what a tool read in its tray', async () => {
+    const id = await start('grace');
+    const sites = sitesId;
+    const was = h.connector.modelFor;
+    let calls = 0;
+    h.connector.modelFor = (request) => {
+      asked.push(request);
+      calls += 1;
+      return calls === 1
+        ? [
+            { type: 'tool_call', id: 't1', name: 'read_component', input: { component: sites } },
+            { type: 'ended', model: 'stand-in-1', stop: 'tool_use', usage: { in: 1, out: 1 } },
+          ]
+        : [text('It floods.'), ended];
+    };
+    try {
+      await turn('grace', id, { ask: 'Read the weir part.' });
+      expect((asked.at(-1)!.call.tools ?? []).map((each) => each.name)).toEqual([
+        'search_components',
+        'read_component',
+        'propose_edit',
+      ]);
+      const tray = (await h.call('grace', 'GET', `/v1/conversations/${id}/context`)).json<{
+        items: { component: string }[];
+      }>().items;
+      expect(tray.map((each) => each.component)).toEqual([sites]);
+    } finally {
+      h.connector.modelFor = was;
+    }
   });
 });

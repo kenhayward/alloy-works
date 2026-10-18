@@ -295,3 +295,50 @@ export function citationsIn(text: string): Citation[] {
   }
   return [...found.values()];
 }
+
+/**
+ * A conversation's tools where it has no document (the G5 plan, G5-D): the person's own search, a
+ * component they may read at its latest version, and a proposal against that version. Described for a
+ * model; each runs as the person, deciding `read` or `suggest` again.
+ */
+export const CONVERSATION_TOOLS: readonly ModelTool[] = [
+  {
+    name: 'search_components',
+    description:
+      'Searches the components you may read for words, answering each component and the passage that holds them, best first.',
+    inputSchema: {
+      type: 'object',
+      properties: { query: { type: 'string', description: 'The words to find' } },
+      required: ['query'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'read_component',
+    description:
+      "One component you may read, at its latest version, as numbered blocks: each block's identifier, its kind, and its text.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        component: {
+          type: 'string',
+          description: "A component's identifier, as a search names it",
+        },
+      },
+      required: ['component'],
+      additionalProperties: false,
+    },
+  },
+  ASSISTANT_TOOLS.find((tool) => tool.name === 'propose_edit')!,
+];
+
+export type ConversationToolName = 'search_components' | 'read_component' | 'propose_edit';
+
+export const isConversationTool = (name: string): name is ConversationToolName =>
+  CONVERSATION_TOOLS.some((tool) => tool.name === name);
+
+export const conversationToolInputSchemas = {
+  search_components: z.strictObject({ query: z.string().min(1).max(500) }),
+  read_component: toolInputSchemas.read_component,
+  propose_edit: toolInputSchemas.propose_edit,
+} as const;

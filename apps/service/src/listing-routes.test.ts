@@ -520,6 +520,8 @@ describe('the listings through the service', () => {
       'listConversationEndpoints',
       // And the guardrails: an environment's own short list (the G5 plan, G5-F).
       'listGuardrails',
+      // And a conversation's tray: at most 50 parts (G5-D).
+      'getConversationContext',
     ];
     const listings = allRoutes.filter(
       (route) =>
