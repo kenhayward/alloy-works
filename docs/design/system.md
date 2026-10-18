@@ -84,18 +84,19 @@ flowchart TB
     preview -- "fonts" --> objects
     service -- "one request, one answer;<br/>a private network" --> connector
     connector -- "its own network,<br/>no route to the platform" --> sources
+    connector -- "the same network;<br/>a streamed answer (ADR-0064)" --> models
 ```
 
-| Container          | Technology                                             | Does                                                                                                                     | Decided in                                                                                         |
-| ------------------ | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| Renderer           | React, TypeScript, Vite (`apps/web`)                   | The whole interface, in both deliveries                                                                                  | [ADR-0003](../decisions/0003-one-renderer-two-deliveries.md)                                       |
-| Desktop app        | Electron (`apps/desktop`)                              | Loads the renderer in a window; operating-system conveniences through the platform bridge                                | [ADR-0003](../decisions/0003-one-renderer-two-deliveries.md), scope §9 decision 2                  |
-| Web service        | TypeScript on Node LTS                                 | The system of record: the API (OpenAPI), realtime streams, the MCP facade, sign-in, every permission decision            | [ADR-0019](../decisions/0019-platform-typescript-service-publishing-workers-object-storage.md)     |
-| Publishing workers | TypeScript on Node, a pinned Typst binary              | Publishing jobs: resolve, project to Typst data and Word parts, render, store; other heavy or retried work as it arrives | [ADR-0013](../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md), ADR-0019  |
-| Preview workers    | The same image, running `typst watch`                  | T3's (ADR-0027). One warm compilation per open document, so an edit reuses the layout that did not change                | ADR-0013, ADR-0019, ADR-0027                                                                       |
-| PostgreSQL         | PostgreSQL with pgvector                               | Everything but binaries: versions, search, relationships, presence, locks, the job queue, the realtime fan-out           | [ADR-0008](../decisions/0008-schema-per-tenant-isolation.md), 0012, 0016, 0017, 0018               |
-| Object storage     | Any S3-compatible store; SeaweedFS in the compose file | Assets, pinned fonts, published PDF and Word files, keyed by content hash                                                | ADR-0019                                                                                           |
-| Connector          | TypeScript on Node (`apps/connector`), T2              | The only process that opens a source credential or reaches a tenant's source: one request, in a fresh process, at a time | [ADR-0035](../decisions/0035-bindings-hold-stored-results-and-a-publish-never-queries-a-source.md) |
+| Container          | Technology                                             | Does                                                                                                                                                           | Decided in                                                                                         |
+| ------------------ | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Renderer           | React, TypeScript, Vite (`apps/web`)                   | The whole interface, in both deliveries                                                                                                                        | [ADR-0003](../decisions/0003-one-renderer-two-deliveries.md)                                       |
+| Desktop app        | Electron (`apps/desktop`)                              | Loads the renderer in a window; operating-system conveniences through the platform bridge                                                                      | [ADR-0003](../decisions/0003-one-renderer-two-deliveries.md), scope §9 decision 2                  |
+| Web service        | TypeScript on Node LTS                                 | The system of record: the API (OpenAPI), realtime streams, the MCP facade, sign-in, every permission decision                                                  | [ADR-0019](../decisions/0019-platform-typescript-service-publishing-workers-object-storage.md)     |
+| Publishing workers | TypeScript on Node, a pinned Typst binary              | Publishing jobs: resolve, project to Typst data and Word parts, render, store; other heavy or retried work as it arrives                                       | [ADR-0013](../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md), ADR-0019  |
+| Preview workers    | The same image, running `typst watch`                  | T3's (ADR-0027). One warm compilation per open document, so an edit reuses the layout that did not change                                                      | ADR-0013, ADR-0019, ADR-0027                                                                       |
+| PostgreSQL         | PostgreSQL with pgvector                               | Everything but binaries: versions, search, relationships, presence, locks, the job queue, the realtime fan-out                                                 | [ADR-0008](../decisions/0008-schema-per-tenant-isolation.md), 0012, 0016, 0017, 0018               |
+| Object storage     | Any S3-compatible store; SeaweedFS in the compose file | Assets, pinned fonts, published PDF and Word files, keyed by content hash                                                                                      | ADR-0019                                                                                           |
+| Connector          | TypeScript on Node (`apps/connector`), T2              | The only process that opens a source or model credential or reaches a tenant's source or model endpoint (ADR-0064): one request, in a fresh process, at a time | [ADR-0035](../decisions/0035-bindings-hold-stored-results-and-a-publish-never-queries-a-source.md) |
 
 `packages/domain` is not a container but it is the reason there is one language: the content
 schema, the theme resolver and the Word writer are imported by the renderer, the service and the
@@ -120,6 +121,7 @@ sequenceDiagram
     participant S as Service
     participant D as PostgreSQL
     participant W as Worker
+    participant C as Connector
     participant M as Model endpoint
     R->>S: autosave (every few seconds)
     S->>D: insert iteration
@@ -127,7 +129,8 @@ sequenceDiagram
     S->>D: one transaction: version row, search entry,<br/>reference index, lock released, NOTIFY
     S->>D: enqueue embedding job
     W->>D: claim job
-    W->>M: embed changed blocks
+    W->>C: embed changed blocks
+    C->>M: the endpoint's request
     W->>D: embedding store, search passages
 ```
 
@@ -194,7 +197,8 @@ PDF (PUB-061, PUB-080). See [publishing.md](publishing.md).
 
 ### Model output
 
-A request for generation is answered with a stream: the service calls the tenant's model endpoint and
+A request for generation is answered with a stream: the service asks the connector to call the
+tenant's model endpoint ([ADR-0064](../decisions/0064-model-calls-leave-through-the-connector.md)) and
 passes the output on as it arrives. Closing the request cancels the generation. Anything too long to
 wait for becomes a job, and ends with a notification.
 
