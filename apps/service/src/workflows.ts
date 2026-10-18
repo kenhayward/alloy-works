@@ -59,6 +59,12 @@ export function unmetMessage(unmet: readonly UnmetCondition[]): string {
     const said = {
       suggestions: () => counted(each.count, 'unresolved suggestion', 'unresolved suggestions'),
       threads: () => counted(each.count, 'open thread', 'open threads'),
+      generated: () =>
+        counted(
+          each.count,
+          'generated suggestion waiting to be accepted',
+          'generated suggestions waiting to be accepted',
+        ),
       bindings: () =>
         counted(each.count, 'data binding not resolved', 'data bindings not resolved'),
       sections: () =>

@@ -3,6 +3,19 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.196.0 - 2026-10-18 (PR #714)
+
+The intelligence's third slice: generated content in publishing (the G3 plan).
+
+### Added
+
+- **Generated content waits for a person.** A document will not publish, nor be pinned as a baseline, while a suggestion the assistant made waits to be accepted or rejected; a preview still shows it. A workflow step can require that none waits.
+- **What came from a model.** A document's Publishing panel, and a publication's page, list each part with content the assistant made: what was accepted, by whom and when, what waits, and what was rejected or discarded, with the model and the run behind each.
+
+### Fixed
+
+- **The API contract's checks no longer time out on a busy machine.** Building the whole API description took longer than a test was allowed under load.
+
 ## 0.195.0 - 2026-10-18 (PR #712)
 
 The intelligence's second slice: the drafting assistant (the G2 plan).

@@ -180,6 +180,14 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   is recorded. Each run says its tokens and cost, and your month's. A part holding a table, a figure, an
   equation, a footnote or a reference cannot be edited by a proposal. The API does the same
   (`POST /v1/documents/{id}/assistant/runs`, streamed).
+- **Generated content waits for a person.** A document is not published, nor pinned as a baseline,
+  while a suggestion the assistant made waits to be accepted or rejected in Review; a preview still
+  shows it, and a baseline made before is published as it was pinned. A workflow step can require that
+  none waits (**No generated content waiting to be accepted**). The Publishing panel's **Generated
+  content**, and a publication's page, list each part with content the assistant made: what was
+  accepted, by whom, when and into which version, what waits, and what was rejected, withdrawn or
+  discarded, with the model and the endpoint behind each. The API does the same
+  (`GET /v1/documents/{id}/generated`, `GET /v1/publications/{id}/generated`).
 
 - **Groups, and your organisation's directory.** An administrator of the whole environment makes groups
   in Administration's **Groups** and grants a role to one as to a person, from any access page: everybody

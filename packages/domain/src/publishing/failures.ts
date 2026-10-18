@@ -230,6 +230,9 @@ export const publishFailureCodes = [
   // engine, from R6 (REU-048): a passage the conditions took out found in an output's text or its
   // metadata, naming in `detail` the format and never the text. Nothing is stored.
   'condition_leaked',
+  // resolve, from G3 (GEN-025): a component the version places with a generated suggestion waiting to be
+  // accepted or rejected, naming the node and in `detail` how many wait. A preview is never refused.
+  'generated_unaccepted',
 ] as const;
 
 export type PublishFailureCode = (typeof publishFailureCodes)[number];

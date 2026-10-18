@@ -366,6 +366,8 @@ const operationTags = {
     'getRangePage',
   ],
   Assistant: [
+    'getDocumentGenerated',
+    'getPublicationGenerated',
     'startAssistantRun',
     'getAssistantRun',
     'getAssistantUsage',
@@ -784,6 +786,10 @@ const descriptions: Readonly<Record<string, string>> = {
     'Asks for the range to be drawn again from the latest save its editing session recorded: call it after each save. The asker’s alone. Needs read on the document.',
   getRangePage:
     'Returns one page of a range preview as PNG, drawn again at each refresh. The asker’s alone. Needs read on the document.',
+  getDocumentGenerated:
+    'Returns, for a document you may read at its latest version, each placed component with content a model made: every suggestion a run of the assistant made on it, accepted, open, rejected or withdrawn, and every proposal discarded before it was suggested, with who asked, who acted and when, and the run\u2019s model, endpoint, instructions and digest. An accepted one names the version it went into and whether that version is in the one placed. Components you may not read are counted, never named.',
+  getPublicationGenerated:
+    'Returns the same for what a publication printed, as it recorded it: the versions it printed, and the generated content in them, never anything newer. Not answered to somebody the publication was shared with alone.',
   startAssistantRun:
     'Asks the assistant about a document you may read, with a signed-in session alone. It calls the model endpoint drafting is sent to, through the connector, and answers as Server-Sent Events: the run, the model’s text as it comes, each tool call and what came back, each proposal, and how it ended, with its tokens and cost. Its tools read only what you may read of this document; a proposal changes nothing. Closing the request ends the run. Recorded as a run.',
   getAssistantRun:

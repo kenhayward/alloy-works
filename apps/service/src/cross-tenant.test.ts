@@ -180,6 +180,10 @@ const OTHER_TENANT_IDS: Readonly<
   requestPreview: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   requestRangePreview: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   startAssistantRun: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  getDocumentGenerated: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  getPublicationGenerated: async (tenant, db) => ({
+    id: (await publicationIn(tenant, db)).publication,
+  }),
   getAssistantRun: async (tenant, db) => ({ id: (await assistantIn(tenant, db)).run }),
   acceptProposal: async (tenant, db) => ({ id: (await assistantIn(tenant, db)).proposal }),
   keepProposal: async (tenant, db) => ({ id: (await assistantIn(tenant, db)).proposal }),

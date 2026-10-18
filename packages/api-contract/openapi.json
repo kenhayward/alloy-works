@@ -24070,7 +24070,8 @@
                               "override_stale",
                               "variable_unresolved",
                               "axis_unset",
-                              "condition_leaked"
+                              "condition_leaked",
+                              "generated_unaccepted"
                             ]
                           },
                           "node": {
@@ -24476,7 +24477,8 @@
                               "override_stale",
                               "variable_unresolved",
                               "axis_unset",
-                              "condition_leaked"
+                              "condition_leaked",
+                              "generated_unaccepted"
                             ]
                           },
                           "node": {
@@ -33874,9 +33876,10 @@
                               "sections",
                               "revisions",
                               "components",
-                              "profile"
+                              "profile",
+                              "generated"
                             ],
-                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile"
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected"
                           },
                           "count": {
                             "type": "integer",
@@ -45221,9 +45224,10 @@
                               "sections",
                               "revisions",
                               "components",
-                              "profile"
+                              "profile",
+                              "generated"
                             ],
-                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile"
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected"
                           },
                           "count": {
                             "type": "integer",
@@ -68868,9 +68872,10 @@
                               "sections",
                               "revisions",
                               "components",
-                              "profile"
+                              "profile",
+                              "generated"
                             ],
-                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile"
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected"
                           },
                           "count": {
                             "type": "integer",
@@ -70490,7 +70495,8 @@
                               "override_stale",
                               "variable_unresolved",
                               "axis_unset",
-                              "condition_leaked"
+                              "condition_leaked",
+                              "generated_unaccepted"
                             ]
                           },
                           "node": {
@@ -70969,7 +70975,8 @@
                               "override_stale",
                               "variable_unresolved",
                               "axis_unset",
-                              "condition_leaked"
+                              "condition_leaked",
+                              "generated_unaccepted"
                             ]
                           },
                           "node": {
@@ -129859,6 +129866,466 @@
         }
       }
     },
+    "/v1/documents/{id}/generated": {
+      "get": {
+        "operationId": "getDocumentGenerated",
+        "summary": "Which of a document’s content came from a model, and who accepted it",
+        "description": "Returns, for a document you may read at its latest version, each placed component with content a model made: every suggestion a run of the assistant made on it, accepted, open, rejected or withdrawn, and every proposal discarded before it was suggested, with who asked, who acted and when, and the run’s model, endpoint, instructions and digest. An accepted one names the version it went into and whether that version is in the one placed. Components you may not read are counted, never named.",
+        "tags": [
+          "Assistant"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "read",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Each placed component with generated content, at the latest version",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "placements": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "node": {
+                            "type": "string"
+                          },
+                          "component": {
+                            "type": "string"
+                          },
+                          "version": {
+                            "type": "string"
+                          },
+                          "number": {
+                            "type": "string"
+                          },
+                          "restoredFrom": {
+                            "description": "The version the placed one was restored from, where it was: what was accepted may be gone",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "items": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "suggestion",
+                                    "proposal"
+                                  ]
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "state": {
+                                  "type": "string",
+                                  "enum": [
+                                    "accepted",
+                                    "open",
+                                    "rejected",
+                                    "withdrawn",
+                                    "discarded"
+                                  ],
+                                  "description": "A suggestion accepted, open, rejected or withdrawn; a proposal discarded before it was suggested"
+                                },
+                                "askedBy": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "name": {
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        },
+                                        "external": {
+                                          "type": "boolean",
+                                          "const": true
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "name"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "Who ran the assistant, or null where they have been erased"
+                                },
+                                "actedBy": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "name": {
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        },
+                                        "external": {
+                                          "type": "boolean",
+                                          "const": true
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "name"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "Who accepted, rejected, withdrew or discarded it, and null while it is open"
+                                },
+                                "actedAt": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "acceptedInto": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "version": {
+                                          "type": "string"
+                                        },
+                                        "number": {
+                                          "type": "string",
+                                          "description": "`revision.version`"
+                                        },
+                                        "inPlaced": {
+                                          "type": "boolean",
+                                          "description": "Whether that version is in the history of the one placed: same line at or before it, or the main line before where it diverged"
+                                        }
+                                      },
+                                      "required": [
+                                        "version",
+                                        "number",
+                                        "inPlaced"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "run": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "model": {
+                                      "description": "The model its reply named, with its release",
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    },
+                                    "endpoint": {
+                                      "type": "string"
+                                    },
+                                    "instructions": {
+                                      "description": "The assistant's instructions' version",
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    },
+                                    "promptVersion": {
+                                      "description": "A declared prompt's version; none for the assistant",
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    },
+                                    "contextDigest": {
+                                      "type": "string",
+                                      "description": "SHA-256 of what the model was last given"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "model",
+                                    "endpoint",
+                                    "instructions",
+                                    "promptVersion",
+                                    "contextDigest"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id",
+                                "state",
+                                "askedBy",
+                                "actedBy",
+                                "actedAt",
+                                "acceptedInto",
+                                "run"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "node",
+                          "component",
+                          "version",
+                          "number",
+                          "restoredFrom",
+                          "items"
+                        ]
+                      }
+                    },
+                    "unreadable": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "How many placed components the caller may not read: counted, never named"
+                    }
+                  },
+                  "required": [
+                    "placements",
+                    "unreadable"
+                  ]
+                },
+                "example": {
+                  "placements": [],
+                  "unreadable": -9007199254740991
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Never answered: a document the caller may read is one they may open",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such document in this environment, or none the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/documents/{id}/numbering": {
       "get": {
         "operationId": "getNumbering",
@@ -145729,7 +146196,8 @@
                               "override_stale",
                               "variable_unresolved",
                               "axis_unset",
-                              "condition_leaked"
+                              "condition_leaked",
+                              "generated_unaccepted"
                             ]
                           },
                           "node": {
@@ -150748,7 +151216,8 @@
                               "override_stale",
                               "variable_unresolved",
                               "axis_unset",
-                              "condition_leaked"
+                              "condition_leaked",
+                              "generated_unaccepted"
                             ]
                           },
                           "node": {
@@ -158911,9 +159380,10 @@
                               "sections",
                               "revisions",
                               "components",
-                              "profile"
+                              "profile",
+                              "generated"
                             ],
-                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile"
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected"
                           },
                           "count": {
                             "type": "integer",
@@ -182267,7 +182737,8 @@
                               "override_stale",
                               "variable_unresolved",
                               "axis_unset",
-                              "condition_leaked"
+                              "condition_leaked",
+                              "generated_unaccepted"
                             ]
                           },
                           "node": {
@@ -184638,6 +185109,466 @@
           },
           "404": {
             "description": "No such publication in this environment, or none the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/publications/{id}/generated": {
+      "get": {
+        "operationId": "getPublicationGenerated",
+        "summary": "Which of what a publication printed came from a model, and who accepted it",
+        "description": "Returns the same for what a publication printed, as it recorded it: the versions it printed, and the generated content in them, never anything newer. Not answered to somebody the publication was shared with alone.",
+        "tags": [
+          "Assistant"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "read",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Each component version it printed with generated content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "placements": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "node": {
+                            "type": "string"
+                          },
+                          "component": {
+                            "type": "string"
+                          },
+                          "version": {
+                            "type": "string"
+                          },
+                          "number": {
+                            "type": "string"
+                          },
+                          "restoredFrom": {
+                            "description": "The version the placed one was restored from, where it was: what was accepted may be gone",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "items": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "suggestion",
+                                    "proposal"
+                                  ]
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "state": {
+                                  "type": "string",
+                                  "enum": [
+                                    "accepted",
+                                    "open",
+                                    "rejected",
+                                    "withdrawn",
+                                    "discarded"
+                                  ],
+                                  "description": "A suggestion accepted, open, rejected or withdrawn; a proposal discarded before it was suggested"
+                                },
+                                "askedBy": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "name": {
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        },
+                                        "external": {
+                                          "type": "boolean",
+                                          "const": true
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "name"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "Who ran the assistant, or null where they have been erased"
+                                },
+                                "actedBy": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "name": {
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        },
+                                        "external": {
+                                          "type": "boolean",
+                                          "const": true
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "name"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "Who accepted, rejected, withdrew or discarded it, and null while it is open"
+                                },
+                                "actedAt": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "acceptedInto": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "version": {
+                                          "type": "string"
+                                        },
+                                        "number": {
+                                          "type": "string",
+                                          "description": "`revision.version`"
+                                        },
+                                        "inPlaced": {
+                                          "type": "boolean",
+                                          "description": "Whether that version is in the history of the one placed: same line at or before it, or the main line before where it diverged"
+                                        }
+                                      },
+                                      "required": [
+                                        "version",
+                                        "number",
+                                        "inPlaced"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "run": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "model": {
+                                      "description": "The model its reply named, with its release",
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    },
+                                    "endpoint": {
+                                      "type": "string"
+                                    },
+                                    "instructions": {
+                                      "description": "The assistant's instructions' version",
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    },
+                                    "promptVersion": {
+                                      "description": "A declared prompt's version; none for the assistant",
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    },
+                                    "contextDigest": {
+                                      "type": "string",
+                                      "description": "SHA-256 of what the model was last given"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "model",
+                                    "endpoint",
+                                    "instructions",
+                                    "promptVersion",
+                                    "contextDigest"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id",
+                                "state",
+                                "askedBy",
+                                "actedBy",
+                                "actedAt",
+                                "acceptedInto",
+                                "run"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "node",
+                          "component",
+                          "version",
+                          "number",
+                          "restoredFrom",
+                          "items"
+                        ]
+                      }
+                    },
+                    "unreadable": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "How many placed components the caller may not read: counted, never named"
+                    }
+                  },
+                  "required": [
+                    "placements",
+                    "unreadable"
+                  ]
+                },
+                "example": {
+                  "placements": [],
+                  "unreadable": -9007199254740991
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Never answered: a publication the caller may read is one they may open",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such publication in this environment, none the caller may read, or one shared with them alone",
             "content": {
               "application/json": {
                 "schema": {
@@ -189086,9 +190017,10 @@
                               "sections",
                               "revisions",
                               "components",
-                              "profile"
+                              "profile",
+                              "generated"
                             ],
-                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile"
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected"
                           },
                           "count": {
                             "type": "integer",
@@ -189740,9 +190672,10 @@
                               "sections",
                               "revisions",
                               "components",
-                              "profile"
+                              "profile",
+                              "generated"
                             ],
-                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile"
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected"
                           },
                           "count": {
                             "type": "integer",
@@ -231111,9 +232044,10 @@
                                               "sections",
                                               "revisions",
                                               "components",
-                                              "profile"
+                                              "profile",
+                                              "generated"
                                             ],
-                                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile"
+                                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected"
                                           }
                                         }
                                       },
@@ -231612,9 +232546,10 @@
                               "sections",
                               "revisions",
                               "components",
-                              "profile"
+                              "profile",
+                              "generated"
                             ],
-                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile"
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected"
                           }
                         }
                       },
@@ -231878,9 +232813,10 @@
                                     "sections",
                                     "revisions",
                                     "components",
-                                    "profile"
+                                    "profile",
+                                    "generated"
                                   ],
-                                  "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile"
+                                  "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected"
                                 }
                               }
                             },
@@ -232467,9 +233403,10 @@
                                     "sections",
                                     "revisions",
                                     "components",
-                                    "profile"
+                                    "profile",
+                                    "generated"
                                   ],
-                                  "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile"
+                                  "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected"
                                 }
                               }
                             },
