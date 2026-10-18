@@ -3,6 +3,18 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.194.0 - 2026-10-18 (PR #709)
+
+The intelligence's first slice: model endpoints (the G1 plan).
+
+### Added
+
+- **Model endpoints.** Administration's Models adds the model endpoints the environment calls, each on its own provider account: Anthropic's or OpenAI's protocol, self-hosted servers among them. Each says whether it sits outside your data boundary, as you set it. Its key is set once and never shown again. Each purpose goes to one endpoint or to none, and Test makes one short call, recorded with its tokens and cost. The API does the same.
+
+### Changed
+
+- **T4, the reuse, is complete.** Every T4 requirement is built and tested, and 0.193.0 is its close.
+
 ## 0.193.0 - 2026-10-18 (PR #705)
 
 Reuse's twenty-second slice: the warm range preview (the R22 plan).

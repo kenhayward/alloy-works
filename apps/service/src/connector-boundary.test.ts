@@ -24,12 +24,17 @@ function importsOf(path: string): string[] {
 }
 
 describe("the connector's one caller", () => {
-  it('DAT-089 calls the connector only from a route a person calls: nothing but the connection routes imports its client, and the worker has no address for it', () => {
-    // In the service, the client is imported by the connection routes alone (and its own test).
+  it('DAT-089 calls the connector only from a route a person calls: nothing but the connection and model endpoint routes imports its client, and the worker has no address for it', () => {
+    // In the service, the client is imported by the connection routes and the model endpoint routes
+    // alone (and its own test; the G1 plan, G1-L).
     const importers = sources(here).filter((file) =>
       importsOf(join(here, file)).some((spec) => /(^|\/)connector\.js$/.test(spec)),
     );
-    expect(importers.sort()).toEqual(['data/connections.ts', 'data/connector.test.ts']);
+    expect(importers.sort()).toEqual([
+      'data/connections.ts',
+      'data/connector.test.ts',
+      'generation/models.ts',
+    ]);
     // And those routes are the connection routes, each a person's request: nothing the service runs
     // on its own - no job, no timer, no stream - reaches them.
     const scheduled = sources(here).filter((file) =>
@@ -56,6 +61,16 @@ describe("the connector's one caller", () => {
       'setConnectionCredential',
       'testConnection',
     ]);
+    // Of the model endpoint routes, setting a key and a test: listing, making, changing, retiring and
+    // routing ask it nothing.
+    const modelsText = readFileSync(join(here, 'generation/models.ts'), 'utf8');
+    const modelHandlers = modelsText.split(/\n {4}(?=\w+: async \()/).slice(1);
+    expect(
+      modelHandlers
+        .filter((body) => /\bconnected\(\)/.test(body))
+        .map((body) => body.slice(0, body.indexOf(':')))
+        .sort(),
+    ).toEqual(['setModelEndpointKey', 'testModelEndpoint']);
 
     // The worker imports nothing of the connector's, names no connector in its configuration, and
     // is given no address for one.

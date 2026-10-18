@@ -79,6 +79,7 @@ import { admitGoogleAccount } from './google.js';
 import { createHttp, logFailure, type HttpOptions } from './http.js';
 import { groupHandlers } from './groups.js';
 import { auditHandlers, tenantExportHandlers } from './audit-log.js';
+import { modelEndpointHandlers } from './generation/models.js';
 import { rangePreviewHandlers } from './range-previews.js';
 import { ownSessionHandlers } from './own-sessions.js';
 import { presenceHandlers } from './presence.js';
@@ -560,6 +561,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...auditHandlers(tenantOf, options.objects),
     ...tenantExportHandlers(tenantOf, options.objects),
     ...rangePreviewHandlers(),
+    ...modelEndpointHandlers(db, tenantOf, options.connector),
     ...ownSessionHandlers(db, tenantOf, principalOf, { name: SESSION_COOKIE, options: COOKIE }),
     ...presenceHandlers(db, tenantOf, principalOf),
     ...baselineHandlers(tenantOf, options.objects),

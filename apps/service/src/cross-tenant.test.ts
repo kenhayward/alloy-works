@@ -38,6 +38,7 @@ import {
   type TenantDatabase,
   requestAuditExport,
   requestTenantExport,
+  makeModelEndpoint,
   submitImpactReport,
   makeRelationship,
 } from '@alloy-works/db';
@@ -336,6 +337,13 @@ const OTHER_TENANT_IDS: Readonly<
   downloadAuditExport: async (tenant, db) => ({ id: await auditExportIdIn(tenant, db) }),
   getTenantExport: async (tenant, db) => ({ id: await tenantExportIdIn(tenant, db) }),
   downloadTenantExport: async (tenant, db) => ({ id: await tenantExportIdIn(tenant, db) }),
+  getModelEndpoint: async (tenant, db) => ({ id: await modelEndpointIdIn(tenant, db) }),
+  changeModelEndpoint: async (tenant, db) => ({ id: await modelEndpointIdIn(tenant, db) }),
+  retireModelEndpoint: async (tenant, db) => ({ id: await modelEndpointIdIn(tenant, db) }),
+  setModelEndpointKey: async (tenant, db) => ({ id: await modelEndpointIdIn(tenant, db) }),
+  testModelEndpoint: async (tenant, db) => ({ id: await modelEndpointIdIn(tenant, db) }),
+  // A purpose is no artifact of either environment: the target is the endpoint its body names, B's.
+  setModelRoute: async () => ({ purpose: 'drafting' }),
   updateSpace: async (tenant, db) => ({ id: await spaceIdIn(tenant, db) }),
   createTemplate: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   getTemplate: async (tenant, db) => ({ id: await templateIdIn(tenant, db) }),
@@ -615,6 +623,36 @@ const VALID_INPUT: Readonly<
   },
   requestAuditExport: { payload: {} },
   requestTenantExport: { payload: {} },
+  makeModelEndpoint: {
+    payload: {
+      name: 'Elsewhere',
+      protocol: 'anthropic',
+      baseUrl: 'https://models.example.test',
+      model: 'claude-test',
+      contextWindow: 200000,
+      priceIn: 0,
+      priceOut: 0,
+      currency: 'USD',
+      boundary: 'outside',
+    },
+  },
+  changeModelEndpoint: {
+    payload: {
+      name: 'Elsewhere',
+      protocol: 'anthropic',
+      baseUrl: 'https://models.example.test',
+      model: 'claude-test',
+      contextWindow: 200000,
+      priceIn: 0,
+      priceOut: 0,
+      currency: 'USD',
+      boundary: 'outside',
+    },
+  },
+  setModelEndpointKey: { payload: { key: 'an-invented-key' } },
+  // The endpoint a route's body names is looked for in this environment alone: one not there, as
+  // another environment's is not, is not found.
+  setModelRoute: { payload: { endpoint: '7e1d0c5a-3b2f-4a6e-9d8c-1f0e2d3c4b5a' } },
   beatPresence: {
     payload: { viewer: SESSION, document: SESSION, component: null, mode: 'read' },
   },
@@ -1309,6 +1347,40 @@ const tenantExportIdIn = (tenant: Tenant, db: TenantDatabase) =>
       .returning('id')
       .executeTakeFirstOrThrow();
     return (await requestTenantExport(trx, asker.id)).id;
+  });
+
+const modelEndpointIdIn = (tenant: Tenant, db: TenantDatabase) =>
+  db.withTenant(tenant, async (trx) => {
+    const asker = await trx
+      .insertInto('principal')
+      .values({
+        issuer: 'https://idp.example',
+        subject: `ivy-${randomUUID()}`,
+        email: null,
+        display_name: null,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    const made = await makeModelEndpoint(
+      trx,
+      {
+        ...{
+          name: 'Elsewhere',
+          protocol: 'anthropic',
+          baseUrl: 'https://models.example.test',
+          model: 'claude-test',
+          contextWindow: 200000,
+          priceIn: 0,
+          priceOut: 0,
+          currency: 'USD',
+          boundary: 'outside',
+        },
+        name: `Theirs ${randomUUID()}`,
+      },
+      asker.id,
+    );
+    if (made.answer !== 'written') throw new Error(made.answer);
+    return made.endpoint.id;
   });
 
 const groupIdIn = (tenant: Tenant, db: TenantDatabase) =>

@@ -248,6 +248,27 @@ export {
   type RangePreview,
   type RangePreviewAnswer,
 } from './range-previews.js';
+export {
+  changeModelEndpoint,
+  endRun,
+  listModelEndpoints,
+  listModelRoutes,
+  makeModelEndpoint,
+  modelKeyState,
+  readModelEndpoint,
+  readRun,
+  recordEndpointTest,
+  retireModelEndpoint,
+  setModelCredential,
+  setModelRoute,
+  startRun,
+  usableModelKey,
+  type EndpointWritten,
+  type GenerationRun,
+  type ModelKeyState,
+  type ModelRoute,
+  type StoredModelEndpoint,
+} from './model-endpoints.js';
 export { sha256Hex, versionDigests, type VersionDigests } from './version-digest.js';
 export {
   archiveSpace,

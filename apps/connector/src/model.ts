@@ -170,7 +170,9 @@ function openaiCall(call: ModelCall, key: string): Spelled {
     ],
     body: JSON.stringify({
       model: call.model,
-      max_tokens: call.parameters.maxTokens,
+      // OpenAI's newer models take only this; servers that speak the protocol and know only
+      // `max_tokens` pass over it, as a field they do not know (the final review).
+      max_completion_tokens: call.parameters.maxTokens,
       ...(call.parameters.temperature === undefined
         ? {}
         : { temperature: call.parameters.temperature }),
@@ -293,6 +295,7 @@ function anthropicReader(
           return;
         }
         case 'message_stop':
+          if (model === undefined) return fail({ code: 'connector_error' });
           emit({
             type: 'ended',
             model: model!,

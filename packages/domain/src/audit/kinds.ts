@@ -159,6 +159,7 @@ const kind = (
 const SESSIONS = 'apps/service/src/sessions.ts';
 const AUDIT_LOG = 'apps/service/src/audit-log.ts';
 const LATER = null;
+const MODELS = 'packages/db/src/model-endpoints.ts';
 
 /** A relationship acted on: its type and itself, both by identifier (the R8 plan, R8-E). */
 const Related = z.strictObject({ type: z.uuid(), relationship: z.uuid() });
@@ -274,6 +275,25 @@ export const auditKindSpecs = {
     'packages/db/src/connections.ts',
   ),
   'connection.retired': kind(['DAT-007'], empty, 'packages/db/src/connections.ts'),
+  // A tenant's model endpoints (the G1 plan, G1-J): no detail holds a value, the key least of all.
+  'model_endpoint.made': kind(['LIF-067', 'GEN-027'], empty, MODELS),
+  'model_endpoint.changed': kind(
+    ['LIF-067', 'GEN-027'],
+    z.strictObject({ settings: z.array(AuditName).min(1) }),
+    MODELS,
+  ),
+  'model_endpoint.credential_set': kind(['LIF-067', 'GEN-029'], empty, MODELS),
+  'model_endpoint.tested': kind(
+    ['LIF-067', 'GEN-027'],
+    z.strictObject({ run: Id, outcome: AuditName }),
+    MODELS,
+  ),
+  'model_endpoint.retired': kind(['LIF-067', 'GEN-027'], empty, MODELS),
+  'model_route.set': kind(
+    ['LIF-067', 'GEN-028'],
+    z.strictObject({ purpose: AuditName, endpoint: Id.nullable() }),
+    MODELS,
+  ),
   'binding.resolved': kind(['LIF-067'], Binding, 'apps/service/src/data/bindings.ts'),
   'binding.checked': kind(['LIF-067'], Binding, 'apps/service/src/data/bindings.ts'),
   'binding.accepted': kind(['LIF-067', 'DAT-037'], Binding, 'apps/service/src/data/bindings.ts'),

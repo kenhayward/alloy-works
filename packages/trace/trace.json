@@ -20452,13 +20452,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 463,
+      "line": 472,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 476,
+      "line": 485,
       "kind": "title"
     },
     {
@@ -20824,7 +20824,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1468,
+      "line": 1540,
       "kind": "title"
     },
     {
@@ -21329,6 +21329,30 @@
       "id": "COL-067",
       "file": "apps/service/src/live-stream.test.ts",
       "line": 453,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-028",
+      "file": "apps/service/src/model-endpoint-routes.test.ts",
+      "line": 138,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-029",
+      "file": "apps/service/src/model-endpoint-routes.test.ts",
+      "line": 83,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-031",
+      "file": "apps/service/src/model-endpoint-routes.test.ts",
+      "line": 63,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-032",
+      "file": "apps/service/src/model-endpoint-routes.test.ts",
+      "line": 219,
       "kind": "title"
     },
     {
@@ -22397,6 +22421,24 @@
       "id": "LIF-022",
       "file": "apps/web/src/admin/Holds.test.tsx",
       "line": 63,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-028",
+      "file": "apps/web/src/admin/Models.test.tsx",
+      "line": 183,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-029",
+      "file": "apps/web/src/admin/Models.test.tsx",
+      "line": 141,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-031",
+      "file": "apps/web/src/admin/Models.test.tsx",
+      "line": 103,
       "kind": "title"
     },
     {
@@ -25958,6 +26000,24 @@
       "kind": "title"
     },
     {
+      "id": "GEN-027",
+      "file": "packages/db/src/model-endpoints.test.ts",
+      "line": 97,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-028",
+      "file": "packages/db/src/model-endpoints.test.ts",
+      "line": 182,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-076",
+      "file": "packages/db/src/model-endpoints.test.ts",
+      "line": 122,
+      "kind": "title"
+    },
+    {
       "id": "STR-036",
       "file": "packages/db/src/numbering.test.ts",
       "line": 245,
@@ -27094,13 +27154,13 @@
     {
       "id": "LIF-030",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 232,
+      "line": 238,
       "kind": "title"
     },
     {
       "id": "LIF-070",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 213,
+      "line": 219,
       "kind": "title"
     },
     {
@@ -27845,12 +27905,6 @@
       "id": "DAT-097",
       "file": "packages/domain/src/data/take.test.ts",
       "line": 153,
-      "kind": "title"
-    },
-    {
-      "id": "GEN-027",
-      "file": "packages/domain/src/generation/endpoint.test.ts",
-      "line": 27,
       "kind": "title"
     },
     {
@@ -29722,13 +29776,13 @@
     {
       "id": "CNT-155",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 908,
+      "line": 924,
       "kind": "title"
     },
     {
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 541,
+      "line": 557,
       "kind": "title"
     },
     {

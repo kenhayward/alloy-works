@@ -365,6 +365,22 @@ describe("the connector's model paths", () => {
     ).toBe(401);
   });
 
+  it('answers a call whose key will not open at once, its one event the failure', async () => {
+    const request = requestFor('anthropic', 'Hello', {
+      sealedFor: { id: randomUUID(), baseUrl: baseUrlOf('anthropic') },
+    });
+    const started = Date.now();
+    const response = await post('/v1/model', request);
+    expect(response.status).toBe(200);
+    expect(
+      (await response.text())
+        .trim()
+        .split('\n')
+        .map((line) => JSON.parse(line) as unknown),
+    ).toEqual([{ type: 'failed', failure: { code: 'model_unavailable', reason: 'key_refused' } }]);
+    expect(Date.now() - started).toBeLessThan(5_000);
+  });
+
   it('streams a call as lines of JSON, one an event, and logs neither the call nor its answer', async () => {
     const response = await post('/v1/model', requestFor('openai', 'Hello'));
     expect(response.status).toBe(200);

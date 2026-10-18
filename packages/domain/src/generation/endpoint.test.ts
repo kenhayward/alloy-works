@@ -24,7 +24,7 @@ const endpoint = {
 } as const;
 
 describe('a model endpoint', () => {
-  it('GEN-027 takes either protocol, a self-hosted one at a plain address among them', () => {
+  it('takes either protocol, a self-hosted one at a plain address among them', () => {
     expect(modelEndpointSchema.safeParse(endpoint).success).toBe(true);
     const selfHosted = {
       ...endpoint,

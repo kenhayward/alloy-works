@@ -209,6 +209,7 @@ describe('migration 0051, which keeps a result waiting on its images', () => {
       '0117_dataset_source',
       '0118_tenant_export',
       '0119_range_preview',
+      '0120_model_endpoints',
     ]);
     const kept = await queryAs(
       db.adminUrl,

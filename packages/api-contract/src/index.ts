@@ -126,6 +126,19 @@ export {
   exportRoutes,
 } from './exports.js';
 export {
+  ModelEndpointAnswer,
+  ModelEndpointBody,
+  ModelEndpointList,
+  ModelEndpointParams,
+  ModelEndpointView,
+  ModelKeyBody,
+  ModelRouteBody,
+  ModelRouteList,
+  ModelRouteParams,
+  ModelTestAnswer,
+  modelEndpointRoutes,
+} from './model-endpoints.js';
+export {
   RangePageParams,
   RangePreviewParams,
   RangePreviewView,

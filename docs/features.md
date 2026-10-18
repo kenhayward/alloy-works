@@ -162,6 +162,14 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   hold by their hash, and a manifest saying what it leaves out, such as people, credentials and the
   audit log. Past exports are listed, each downloadable for seven days; asking for one and each
   download are on the audit log. The API does the same (`POST /v1/exports`).
+- **Model endpoints.** An administrator adds the model endpoints the environment calls in
+  Administration's **Models**, each on the environment's own provider account: Anthropic's Messages API
+  or OpenAI's chat completions, which self-hosted servers speak too. Each says whether it sits outside
+  the data boundary, as the administrator set it, and whether its key is set; a key is sealed by the
+  connector, which alone calls an endpoint, and no page or route shows it again. **Test** makes one
+  short call and says what came back, as which model, how long it took and what it cost; every test is
+  recorded as a run with its tokens and cost. Each purpose (drafting, chat, summarising, embedding)
+  goes to one endpoint, or to none. Nothing calls a model yet but **Test**: the assistant comes next.
 
 - **Groups, and your organisation's directory.** An administrator of the whole environment makes groups
   in Administration's **Groups** and grants a role to one as to a person, from any access page: everybody
