@@ -1122,6 +1122,11 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       await check('the Lists panel', {
         shows: page.getByRole('tabpanel', { name: 'Lists' }),
       });
+      // The assistant, while authoring (the G2 plan, G2-K): asked nothing yet.
+      await documentPanels.getByRole('tab', { name: 'Assistant' }).click();
+      await check('the Assistant panel', {
+        shows: page.getByRole('region', { name: 'Assistant' }).getByLabel('Ask the assistant'),
+      });
       await documentPanels.getByRole('tab', { name: 'Publishing' }).click();
       await check('the Publishing panel', {
         shows: page.getByRole('button', { name: /^Publish as/ }).first(),

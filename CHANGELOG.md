@@ -3,6 +3,14 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.195.0 - 2026-10-18 (PR #712)
+
+The intelligence's second slice: the drafting assistant (the G2 plan).
+
+### Added
+
+- **The assistant.** While you author a document, its Assistant tab answers what you ask about it. It reads only what you may read of the document, says which endpoint it uses and whether that is outside your data boundary, shows each step it took and what came back, and links what it cites. Edits it proposes change nothing until you accept one, keep it as a suggestion marked generated, or discard it, and each act is recorded. Each run says its tokens and cost, and the API does the same.
+
 ## 0.194.0 - 2026-10-18 (PR #709)
 
 The intelligence's first slice: model endpoints (the G1 plan).

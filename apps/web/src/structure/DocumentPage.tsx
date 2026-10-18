@@ -62,6 +62,7 @@ import {
   useRangePreview,
 } from '../publishing/RangePreview.js';
 import { FOLLOW_MS, Publishing } from '../publishing/Publishing.js';
+import { AssistantPanel } from './AssistantPanel.js';
 import { DocumentVersions } from './DocumentVersions.js';
 import { Icon } from '../editor/Icon.js';
 import { IdleBand } from '../editor/IdleBand.js';
@@ -617,6 +618,8 @@ const DOCK_PANELS = [
   { key: 'suggestions', label: 'Suggestions' },
   // In Review (the RR plan, Task 4).
   { key: 'rounds', label: 'Rounds' },
+  // While authoring: the assistant drafting against the document (the G2 plan, G2-K).
+  { key: 'assistant', label: 'Assistant' },
 ] as const;
 
 type DockPanel = (typeof DOCK_PANELS)[number]['key'];
@@ -2140,7 +2143,8 @@ export function DocumentPage({
       (each.key !== 'document' || holdsOwn) &&
       (each.key !== 'table' || heldTable.holds) &&
       ((each.key !== 'threads' && each.key !== 'suggestions' && each.key !== 'rounds') ||
-        reviewing),
+        reviewing) &&
+      (each.key !== 'assistant' || authoring),
   );
   // A remembered Document panel on a document that has none shows the part instead.
   const shownDock: DockPanel = dockTabs.some((each) => each.key === dock) ? dock : 'part';
@@ -2713,6 +2717,31 @@ export function DocumentPage({
                             thread.anchor.kind === 'node'
                               ? thread.anchor.node
                               : thread.places?.find((each) => !each.orphaned)?.node;
+                          if (node === undefined) return;
+                          setMarked(node);
+                          textColumn.current
+                            ?.querySelector(`[data-node="${node}"]`)
+                            ?.scrollIntoView?.({ block: 'start' });
+                        }}
+                      />
+                    </div>
+                  )}
+                  {authoring && (
+                    <div
+                      id={dockIds('assistant').panel}
+                      role="tabpanel"
+                      aria-labelledby={dockIds('assistant').tab}
+                      hidden={shownDock !== 'assistant'}
+                    >
+                      <AssistantPanel
+                        client={client}
+                        document={document.id}
+                        component={editing === null ? null : (componentOfNode.get(editing) ?? null)}
+                        nameOf={(component) => names?.get(component)}
+                        onCite={(component) => {
+                          const node = [...componentOfNode].find(
+                            ([, each]) => each === component,
+                          )?.[0];
                           if (node === undefined) return;
                           setMarked(node);
                           textColumn.current

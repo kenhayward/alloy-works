@@ -169,7 +169,17 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   connector, which alone calls an endpoint, and no page or route shows it again. **Test** makes one
   short call and says what came back, as which model, how long it took and what it cost; every test is
   recorded as a run with its tokens and cost. Each purpose (drafting, chat, summarising, embedding)
-  goes to one endpoint, or to none. Nothing calls a model yet but **Test**: the assistant comes next.
+  goes to one endpoint, or to none.
+- **The assistant.** While you author a document, its **Assistant** tab answers what you ask about it,
+  through the endpoint drafting goes to, saying which one and whether it sits outside your data
+  boundary. It reads the outline, a part, a search of the document and its bound values, only what you
+  may read, and everything it reads is handed to the model as data, never as instructions. **What it
+  did** lists each step and what came back; what it cites links to the part. An edit it proposes changes
+  nothing until you **Accept** it (a new version, as yours, refused while somebody else holds the part),
+  **Keep as suggestion** (marked **Generated** in Review until it is resolved) or **Discard** it; each act
+  is recorded. Each run says its tokens and cost, and your month's. A part holding a table, a figure, an
+  equation, a footnote or a reference cannot be edited by a proposal. The API does the same
+  (`POST /v1/documents/{id}/assistant/runs`, streamed).
 
 - **Groups, and your organisation's directory.** An administrator of the whole environment makes groups
   in Administration's **Groups** and grants a role to one as to a person, from any access page: everybody

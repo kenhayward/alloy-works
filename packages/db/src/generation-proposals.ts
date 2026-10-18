@@ -27,6 +27,8 @@ export interface GenerationProposal {
   /** The run's requester, who alone acts on it, and its digest, which a suggestion copies. */
   readonly requestedBy: string | null;
   readonly contextDigest: string;
+  /** Its run's outcome: `running` until the run ends. */
+  readonly runOutcome: string;
 }
 
 interface Row {
@@ -43,6 +45,7 @@ interface Row {
   made_at: Date;
   requested_by: string | null;
   context_digest: string;
+  run_outcome: string;
 }
 
 const proposalOf = (row: Row): GenerationProposal => ({
@@ -59,9 +62,10 @@ const proposalOf = (row: Row): GenerationProposal => ({
   madeAt: row.made_at,
   requestedBy: row.requested_by,
   contextDigest: row.context_digest,
+  runOutcome: row.run_outcome,
 });
 
-const selected = sql`select p.*, r.requested_by, r.context_digest
+const selected = sql`select p.*, r.requested_by, r.context_digest, r.outcome as run_outcome
   from generation_proposal p join generation_run r on r.id = p.run_id`;
 
 /** A proposal made by a run while it runs, numbered in order. */

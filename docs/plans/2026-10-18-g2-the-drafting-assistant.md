@@ -37,3 +37,20 @@ reads one in G2, so it waits for the conversation (G5); the suite here covers th
 
 - **G2a**: 0121 (`generation_proposal`; `suggestion.run_id`, `context_digest`; the run's trigger letting digest and context be set as it ends); `packages/db/src/generation-proposals.ts`, `noteStep`, the sweep; the generation kinds emitted; `apps/service/src/generation/assistant.ts` (the route, the loop, the five tools, the block edits), `Streamed`; the proposal acts (`POST /v1/assistant/proposals/{id}/acceptance|keeping|discarding`), `GET /v1/assistant/runs/{id}`, `GET /v1/me/assistant-usage`; AsyncAPI's `assistantRun`; the stand-in's `turns` and `obey`. Tests: GEN-007 the five tools and no other; GEN-008 and GEN-014 a component the requester may not read answered not found; GEN-009 a proposal changes nothing; GEN-010 each call and result streamed and kept; GEN-011 citations kept and dropped; GEN-012 the run against the open document; GEN-013, GEN-015 search kept to the tenant's and the document's; GEN-016 a run read back by its requester alone; GEN-017 to GEN-019 the injection suite; GEN-022 a kept proposal marked generated until resolved; GEN-024 acceptance naming the person as the event's actor; GEN-039 one digest on run, proposal and suggestion; GEN-040, GEN-041 a discard recorded and the proposal kept, through the assistant and through Review; GEN-060 accepting with no lock, refused while another holds it, and `edits.pending`; GEN-033, ADM-010 the run's attribution; API-064 every frame parsed against AsyncAPI.
 - **G2b**: `apps/web/src/document/AssistantPanel.tsx`; `streamPost`; the walks; the final review, hunting a read past permission, a write without an act, and text the model can make the page run; the close.
+
+## Built
+
+G2a #711, and G2b with the page and the close (0.195.0) #712, as planned. Departures, from the
+pre-flight review: a proposal edits blocks, the Markdown read and admitted, not the whole component
+rewritten, since admission gives every block a fresh id; the digest is set as the run ends, over the
+last call; each step is kept as it is made, and a run left running an hour is swept; the stream is a
+`Streamed` result the route's wrapper sends after its commit; a kept proposal resolved in Review is
+recorded as a generation there. `read_values` answers a line a value. GEN-015 (no retrieval across
+tenants) holds by the run's one schema but no test here crosses tenants, and GEN-020 names a comment
+among its paths, which no tool reads yet; both wait. The final review found the save's checks skipped
+on a proposal's acceptance, a proposal acted on mid-run carrying an early digest, an error recorded as
+a finished run, a line or paragraph separator breaking the page's stream, a timer left polling where a
+run failed to start, tools still running after the caller went, a timed-out run's digest over a call
+never sent, a run read back after its document's read was lost, and a person's identical suggestion
+answering a generated one; all fixed. Left: a proposal's diff against its version is shown as text, not
+a redline; a run's turns are sequential, so a slow model takes the whole of a run's four minutes.

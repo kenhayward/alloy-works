@@ -119,7 +119,7 @@ describe("the assistant's terms", () => {
     });
   });
 
-  it('GEN-011 reads the citations a model made, each once', () => {
+  it('reads the citations a model made, each once', () => {
     const c = '0d6f3c1e-6a5b-4c1d-9e2f-3a4b5c6d7e8f';
     expect(citationsIn(`It floods [[${c}#p1]] and [[${c}#p1]], not [[nope#p2]].`)).toEqual([
       { component: c, block: 'p1' },

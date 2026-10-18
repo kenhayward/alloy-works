@@ -58,6 +58,7 @@ import { watchAuthority } from '../authority.js';
 import { createConnectorClient } from '../data/connector.js';
 import type { ConnectorOptions } from '../data/connections.js';
 import { liveBindingStates } from '../data/bindings.js';
+import { mayNameColumns, storableContent } from '../editing.js';
 import { AppError } from '../errors.js';
 import type { SessionPrincipal } from '../sessions.js';
 
@@ -101,6 +102,14 @@ const WORDS: Readonly<Record<GenerationFailure['code'], string>> = {
   connector_unavailable: 'The connector could not be reached.',
 };
 
+/** The most of one tool's answer the model is given, in characters: past it, cut and said so. */
+const TOOL_ANSWER_MAX = 40_000;
+
+const capped = (text: string) =>
+  text.length <= TOOL_ANSWER_MAX
+    ? text
+    : `${text.slice(0, TOOL_ANSWER_MAX)}\n[Cut short: the rest is not shown.]`;
+
 const sha256 = (text: string) => createHash('sha256').update(text, 'utf8').digest('hex');
 
 /** A component's latest blocks, as Markdown admitted into them (G2-D). */
@@ -118,7 +127,7 @@ function markdownReader(document: ContentDocument) {
 }
 
 /** The text a section title's inline content says. */
-const titleOf = (title: readonly unknown[]) =>
+const titleOf = (title: readonly unknown[]): string =>
   title
     .map((node) =>
       typeof node === 'object' && node !== null && (node as { type?: string }).type === 'text'
@@ -199,7 +208,9 @@ export function assistantHandlers(
                   };
                   const indent = '  '.repeat(depth);
                   if (node.type === 'section') {
-                    lines.push(`${indent}Section: ${titleOf(node.title ?? [])}`);
+                    lines.push(
+                      `${indent}Section: ${titleOf(node.title ?? []).replace(/\s+/g, ' ')}`,
+                    );
                   } else if (node.component !== undefined && found.readable.has(node.component)) {
                     lines.push(`${indent}Component ${node.component}`);
                   }
@@ -226,7 +237,7 @@ export function assistantHandlers(
               const number = `${read.revision}.${read.version}`;
               return {
                 ok: true,
-                content: asData(`component:${component}`, number, componentAsText(content)),
+                content: asData(`component:${component}`, number, capped(componentAsText(content))),
                 summary: `${content.content.length} blocks, version ${number}`,
                 read: { component, version, blocks: content.content.map((block) => block.id) },
               };
@@ -253,7 +264,7 @@ export function assistantHandlers(
                 content: asData(
                   `search:${document}`,
                   null,
-                  text === '' ? 'Nothing matched.' : text,
+                  text === '' ? 'Nothing matched.' : capped(text),
                 ),
                 summary: `${hits.length} found`,
               };
@@ -281,7 +292,7 @@ export function assistantHandlers(
                 content: asData(
                   `values:${document}`,
                   null,
-                  values.length === 0 ? 'The document binds no values.' : values.join('\n'),
+                  values.length === 0 ? 'The document binds no values.' : capped(values.join('\n')),
                 ),
                 summary: `${values.length} values`,
               };
@@ -394,22 +405,30 @@ export function assistantHandlers(
           tools: [...ASSISTANT_TOOLS],
           parameters: { maxTokens: ASSISTANT_LIMITS.maxTokens },
         });
-        const run = await db.withTenant(
-          tenant,
-          (inner) =>
-            startRun(inner, {
-              purpose: 'drafting',
-              endpoint,
-              parameters: {
-                maxTokens: ASSISTANT_LIMITS.maxTokens,
-                instructions: ASSISTANT_INSTRUCTIONS_VERSION,
-              },
-              contextDigest: sha256(canonicalCall(callOf())),
-              by: principalId,
-              documentId: id,
-            }),
-          context,
-        );
+        let run: string;
+        try {
+          run = await db.withTenant(
+            tenant,
+            (inner) =>
+              startRun(inner, {
+                purpose: 'drafting',
+                endpoint,
+                parameters: {
+                  maxTokens: ASSISTANT_LIMITS.maxTokens,
+                  instructions: ASSISTANT_INSTRUCTIONS_VERSION,
+                },
+                contextDigest: sha256(canonicalCall(callOf())),
+                by: principalId,
+                documentId: id,
+              }),
+            context,
+          );
+        } catch (error) {
+          authority.stop();
+          request.log.error({ err: error }, 'an assistant run could not start');
+          send('failed', { code: 'connector_error', message: 'The assistant could not start.' });
+          return;
+        }
         send('run', { run, endpoint: { name: endpoint.name, boundary: endpoint.boundary } });
         const tool = tools(request, id, principalId, run);
         const usage = { in: 0, out: 0, reported: false };
@@ -427,12 +446,13 @@ export function assistantHandlers(
               outcome = 'cancelled';
               break;
             }
-            last = callOf();
             const left = ASSISTANT_LIMITS.runMs - (Date.now() - started);
             if (left < 1000) {
               failure = { code: 'timeout' };
               break;
             }
+            // What this turn gives the model, which is what the run's digest is over if it is the last.
+            last = callOf();
             let text = '';
             const calledFor: { id: string; name: string; input: Record<string, unknown> }[] = [];
             const answer = await asking.model(
@@ -485,6 +505,8 @@ export function assistantHandlers(
             if (calledFor.length === 0 || ended.stop !== 'tool_use') break;
             const results: Extract<ModelMessage, { role: 'user' }>['content'] = [];
             for (const each of calledFor) {
+              // Nothing more is done for a caller who has gone, or whose authority ended.
+              if (stopped.aborted) break;
               calls += 1;
               send('tool_call', each);
               const answered: ToolAnswer =
@@ -535,9 +557,17 @@ export function assistantHandlers(
                 ...(answered.ok ? {} : { isError: true }),
               });
             }
+            if (stopped.aborted) {
+              outcome = 'cancelled';
+              break;
+            }
             messages.push({ role: 'user', content: results });
             if (turn === ASSISTANT_LIMITS.turns - 1) failure = { code: 'timeout' };
           }
+        } catch (error) {
+          // A failure of the product's own, never said as a finished run (the final review).
+          request.log.error({ err: error }, 'an assistant run failed');
+          failure = { code: 'connector_error' };
         } finally {
           authority.stop();
           const cited = citationsIn(said);
@@ -589,6 +619,18 @@ export function assistantHandlers(
         const run = await readRun(trx, id);
         // Its requester's alone (GEN-016): anybody else is told there is none.
         if (!run || run.requestedBy !== principalId || run.purpose === 'test') throw notFound();
+        // What it read is held back from a requester who may no longer read the document.
+        let mayRead = run.documentId !== null;
+        if (run.documentId !== null) {
+          try {
+            await authoriseAt(trx, callerOf(request), 'read', {
+              kind: 'artifact',
+              id: run.documentId,
+            });
+          } catch {
+            mayRead = false;
+          }
+        }
         const proposals = await proposalsOfRun(trx, id);
         return {
           run: {
@@ -607,8 +649,8 @@ export function assistantHandlers(
             cost: run.costMicros === null ? null : microsText(run.costMicros),
             currency: String(run.endpoint.currency ?? ''),
             contextDigest: run.contextDigest,
-            read: [...run.context],
-            steps: [...run.steps],
+            read: mayRead ? [...run.context] : [],
+            steps: mayRead ? [...run.steps] : [],
             proposals: proposals.map((each) => ({
               id: each.id,
               number: each.number,
@@ -679,14 +721,21 @@ export function assistantHandlers(
         'This proposal has been accepted, kept or discarded already.',
       );
     }
+    // Acted on once its run has ended, so what it carries is the run's last digest (the final review).
+    if (proposal.runOutcome === 'running') {
+      throw new AppError(409, 'run_running', 'The run that made this proposal has not ended yet.');
+    }
     if (act === 'discarded') {
       await actOnProposal(trx, { proposal, act, by: principalId });
       return { proposal: { id, state: 'discarded' as const, suggestion: null } };
     }
+    // The save's checks, as a person's suggestion meets them (SG-B; the final review).
+    const proposed = storableContent(proposal.proposed);
+    await mayNameColumns(trx, request, proposed, proposal.madeAgainst);
     const made = await makeSuggestion(trx, {
       component: proposal.componentId,
       version: proposal.madeAgainst,
-      proposed: proposal.proposed,
+      proposed,
       by: principalId,
       generated: { run: proposal.runId, digest: proposal.contextDigest },
     });
@@ -695,6 +744,10 @@ export function assistantHandlers(
       const accepted = await acceptSuggestion(trx, {
         suggestion: made.suggestion,
         by: principalId,
+        check: async (content, current) => {
+          storableContent(content);
+          await mayNameColumns(trx, request, content, current.id);
+        },
       });
       if (accepted.answer !== 'accepted') throw suggestionRefused(accepted.answer);
     }
