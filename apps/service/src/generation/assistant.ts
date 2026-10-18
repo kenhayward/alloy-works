@@ -636,6 +636,9 @@ export function assistantHandlers(
           run: {
             id: run.id,
             document: run.documentId,
+            purpose: run.purpose,
+            promptVersion: run.promptVersion,
+            parameters: { ...run.parameters },
             endpoint: {
               name: String(run.endpoint.name ?? ''),
               boundary: String(run.endpoint.boundary ?? ''),

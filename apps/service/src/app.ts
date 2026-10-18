@@ -84,6 +84,7 @@ import { assistantHandlers } from './generation/assistant.js';
 import { generatedHandlers } from './generation/generated.js';
 import { modelEndpointHandlers } from './generation/models.js';
 import { promptHandlers, promptLibraryHandlers } from './generation/prompts.js';
+import { promptRunHandlers } from './generation/prompt-runs.js';
 import { rangePreviewHandlers } from './range-previews.js';
 import { ownSessionHandlers } from './own-sessions.js';
 import { presenceHandlers } from './presence.js';
@@ -570,6 +571,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...modelEndpointHandlers(db, tenantOf, options.connector),
     ...promptHandlers(db, tenantOf, principalOf),
     ...promptLibraryHandlers(),
+    ...promptRunHandlers(db, tenantOf, options.connector, options.events),
     ...generatedHandlers(),
     ...assistantHandlers(
       db,

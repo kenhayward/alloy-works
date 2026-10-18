@@ -59,9 +59,10 @@ const TransitionCondition = z
     'components',
     'profile',
     'generated',
+    'trial',
   ])
   .describe(
-    'suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected',
+    'suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires',
   );
 
 const WorkflowTransitionBody = z.strictObject({
@@ -904,7 +905,7 @@ export const workflowRoutes = {
       },
       400: {
         description:
-          'workflow_invalid: a key used twice, not one initial state, a transition naming no state or moving to its own, or a state no transition reaches from the initial one; each problem named',
+          'workflow_invalid: a key used twice, not one initial state, a transition naming no state or moving to its own, or a state no transition reaches from the initial one; trial_required: a prompt workflow whose approving transition does not require a trial; each problem named',
         schema: WorkflowRefusal,
       },
       401: unauthenticated,

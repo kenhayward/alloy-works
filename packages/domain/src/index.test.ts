@@ -798,6 +798,15 @@ describe('the domain package', () => {
         'PROMPT_LIBRARY_SCHEMA_VERSION',
         'parsePromptLibrary',
         'promptLibrarySchema',
+        // G4: a prompt's run, its one call and its whole-text proposal; the prompt workflow's seed.
+        'PROMPT_RUN_INSTRUCTIONS',
+        'PROMPT_RUN_INSTRUCTIONS_VERSION',
+        'PROMPT_RUN_MAX_TOKENS',
+        'SEED_PROMPT_WORKFLOW',
+        'acceptsModel',
+        'promptCall',
+        'tooLarge',
+        'wholeText',
       ].sort(),
     );
   });

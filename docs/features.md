@@ -197,7 +197,13 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   to draft when saved (`/v1/prompts`). **Prompt libraries** list prompts by
   identity, each running at its latest approved revision, so a library follows its prompts as they
   are approved; every environment holds an empty default. A template names the library it binds
-  (`prompts`), or binds the default (`/v1/prompt-libraries`). Running a prompt is still to come.
+  (`prompts`), or binds the default (`/v1/prompt-libraries`). A prompt runs on one part of a document,
+  through the API: what it declares is gathered first, as you may read it, and recorded on the run;
+  it is refused before any call where the endpoint's model is not one it accepts, what it reads
+  resolved to nothing, or is more than the endpoint takes; its reply is proposed as the part's whole
+  text (`POST /v1/documents/{id}/prompt-runs`). A trial runs any version and proposes nothing
+  (`POST /v1/prompts/{id}/versions/{version}/trials`), and approving a prompt needs a finished trial of
+  the version approved, whatever a tenant's workflow says.
 - **Groups, and your organisation's directory.** An administrator of the whole environment makes groups
   in Administration's **Groups** and grants a role to one as to a person, from any access page: everybody
   in it holds that role there. Groups lists each group in a table you can search, with where its members come from and who

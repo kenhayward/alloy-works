@@ -2,6 +2,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import {
   blockIdentifierFrom,
   SEED_DOCUMENT_WORKFLOW,
+  SEED_PROMPT_WORKFLOW,
   SEED_WORKFLOW,
   SEED_WORKFLOW_1,
   type BlockNode,
@@ -209,11 +210,15 @@ describe('workflow states and transitions (workflow.md; the WF1 plan, Task 1)', 
       ['component', 2],
       ['document', 3],
       ['queryDefinition', 1],
-      ['prompt', 1],
+      ['prompt', 2],
     ]);
     for (const summary of definitions) {
       expect(summary.definition.body).toEqual(
-        summary.definition.kind === 'document' ? SEED_DOCUMENT_WORKFLOW : SEED_WORKFLOW,
+        summary.definition.kind === 'document'
+          ? SEED_DOCUMENT_WORKFLOW
+          : summary.definition.kind === 'prompt'
+            ? SEED_PROMPT_WORKFLOW
+            : SEED_WORKFLOW,
       );
       expect(summary.definition.by).toBeNull();
       // A query definition's and a prompt's workflows began at the gated seed (0098, 0123); the

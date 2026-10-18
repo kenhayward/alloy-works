@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import { grant } from './grants.js';
 import { migrate } from './migrate.js';
+import { endRun, listModelEndpoints, makeModelEndpoint, startRun } from './model-endpoints.js';
 import {
   createLibrary,
   defaultLibraryId,
@@ -77,6 +78,41 @@ describe('a prompt library', () => {
         may,
       });
       if (moved.answer !== 'moved') throw new Error(moved.answer);
+      // Tried, as approving needs (GN-F): a finished trial run of the version.
+      const endpoint =
+        (await listModelEndpoints(trx))[0] ??
+        (await (async () => {
+          const written = await makeModelEndpoint(
+            trx,
+            {
+              name: 'Drafting',
+              protocol: 'anthropic',
+              baseUrl: 'https://models.example.test',
+              model: 'claude-sonnet-5-5',
+              contextWindow: 200_000,
+              priceIn: 3,
+              priceOut: 15,
+              currency: 'USD',
+              boundary: 'outside',
+            },
+            ada,
+          );
+          if (written.answer !== 'written') throw new Error(written.answer);
+          return written.endpoint;
+        })());
+      const run = await startRun(trx, {
+        purpose: 'trial',
+        endpoint,
+        parameters: {},
+        contextDigest: 'd'.repeat(64),
+        by: grace,
+        promptVersion: stored.version.id,
+      });
+      await endRun(trx, run, {
+        outcome: 'finished',
+        model: 'claude-sonnet-5-5',
+        usage: { in: 1, out: 1 },
+      });
       const passed = await decideGate(trx, {
         artifactId: stored.id,
         kind: 'prompt',

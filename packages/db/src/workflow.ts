@@ -732,6 +732,7 @@ export async function moveArtifact(
     kind: standing.kind,
     requires: transition.requires ?? [],
     principal: input.by,
+    version: await latestVersionId(trx, input.artifactId, input.line),
   });
   if (unmet.length > 0) return { answer: 'conditions.unmet', unmet };
   await moved(trx, standing, {

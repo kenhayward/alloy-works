@@ -389,6 +389,9 @@ const operationTags = {
     'createPromptLibrary',
     'getPromptLibrary',
     'recordPromptLibraryVersion',
+    'listDocumentPrompts',
+    'startPromptRun',
+    'startPromptTrial',
   ],
   'Model endpoints': [
     'listModelEndpoints',
@@ -782,6 +785,12 @@ const descriptions: Readonly<Record<string, string>> = {
     'Returns a library at its latest version, with each prompt it lists at the revision a run of it runs: its latest approved one, or none where it was never approved. A prompt the caller may not read is counted, never named.',
   recordPromptLibraryVersion:
     'Records the next library version from the version the caller opened, checked as a new library is. It needs design here.',
+  listDocumentPrompts:
+    "Returns the prompts a document may run: its template's library, or the environment's empty default where it names none or the document was made blank, each prompt at the revision a run of it runs. A prompt the caller may not read is counted, never named.",
+  startPromptRun:
+    "Runs a prompt of the document's library on one of its parts, with a signed-in session alone, at the prompt's latest approved revision. Its context is resolved first, as the caller may read it, and recorded on the run; nothing it does not declare is sent. It calls the endpoint its purpose goes to, through the connector, once, with no tools, refused first where the endpoint's model is not one it accepts, the context resolved to nothing or is more than the endpoint takes. The reply, Markdown, is proposed as the part's whole text, a proposal that changes nothing until the caller accepts it. Answered as Server-Sent Events. Recorded as a run naming the prompt version.",
+  startPromptTrial:
+    'Tries a version of a prompt, approved or not, on a part of a document the caller may read, with a signed-in session alone: the same run, recorded as a trial of that version, its output kept on the run and proposed nowhere. Approving a prompt version needs a finished trial of it.',
   getPrompt: 'Returns the latest prompt version and whether the caller may change it.',
   recordPromptVersion:
     'Records the next prompt version from the version the caller opened, checked as a new prompt is.',

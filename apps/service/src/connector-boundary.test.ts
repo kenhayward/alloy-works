@@ -26,7 +26,8 @@ function importsOf(path: string): string[] {
 describe("the connector's one caller", () => {
   it('DAT-089 calls the connector only from a route a person calls: nothing but the connection, model endpoint and assistant routes imports its client, and the worker has no address for it', () => {
     // In the service, the client is imported by the connection routes, the model endpoint routes and
-    // the assistant's run, a person's ask (and its own test; the G1 plan, G1-L; the G2 plan).
+    // the assistant's run and a prompt's, each a person's ask (and its own test; the G1 plan, G1-L;
+    // the G2 plan; the G4 plan).
     const importers = sources(here).filter((file) =>
       importsOf(join(here, file)).some((spec) => /(^|\/)connector\.js$/.test(spec)),
     );
@@ -35,6 +36,7 @@ describe("the connector's one caller", () => {
       'data/connector.test.ts',
       'generation/assistant.ts',
       'generation/models.ts',
+      'generation/prompt-runs.ts',
     ]);
     // And those routes are the connection routes, each a person's request: nothing the service runs
     // on its own - no job, no timer, no stream - reaches them.

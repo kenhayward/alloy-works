@@ -238,6 +238,7 @@ describe('migration 0047, over an environment made before it', () => {
       '0122_prompts',
       '0123_workflow_prompts',
       '0124_prompt_libraries',
+      '0125_prompt_trials',
     ]);
     // Every row still there, and what 0048 seeds beside them: the value catalogue, its 0.1 and the
     // default theme's 0.6 (B1); and what 0055 seeds: the table catalogue's fifth version, the default

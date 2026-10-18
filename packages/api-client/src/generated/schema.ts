@@ -2223,6 +2223,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/documents/{id}/prompt-runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run a prompt of the document's library on one of its parts, its output a proposal
+         * @description Runs a prompt of the document's library on one of its parts, with a signed-in session alone, at the prompt's latest approved revision. Its context is resolved first, as the caller may read it, and recorded on the run; nothing it does not declare is sent. It calls the endpoint its purpose goes to, through the connector, once, with no tools, refused first where the endpoint's model is not one it accepts, the context resolved to nothing or is more than the endpoint takes. The reply, Markdown, is proposed as the part's whole text, a proposal that changes nothing until the caller accepts it. Answered as Server-Sent Events. Recorded as a run naming the prompt version.
+         */
+        post: operations["startPromptRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{id}/prompts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The prompts a document may run: its template's library, each at the revision it runs
+         * @description Returns the prompts a document may run: its template's library, or the environment's empty default where it names none or the document was made blank, each prompt at the revision a run of it runs. A prompt the caller may not read is counted, never named.
+         */
+        get: operations["listDocumentPrompts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/documents/{id}/publications": {
         parameters: {
             query?: never;
@@ -3593,6 +3633,26 @@ export interface paths {
          * @description Records the next prompt version from the version the caller opened, checked as a new prompt is.
          */
         post: operations["recordPromptVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/prompts/{id}/versions/{version}/trials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Try a version of a prompt on a part of a document, proposing nothing
+         * @description Tries a version of a prompt, approved or not, on a part of a document the caller may read, with a signed-in session alone: the same run, recorded as a trial of that version, its output kept on the run and proposed nowhere. Approving a prompt version needs a finished trial of it.
+         */
+        post: operations["startPromptTrial"];
         delete?: never;
         options?: never;
         head?: never;
@@ -9843,6 +9903,9 @@ export interface operations {
                      *       "run": {
                      *         "id": "example",
                      *         "document": "example",
+                     *         "purpose": "example",
+                     *         "promptVersion": "example",
+                     *         "parameters": {},
                      *         "endpoint": {
                      *           "name": "example",
                      *           "boundary": "example"
@@ -9866,6 +9929,14 @@ export interface operations {
                         run: {
                             id: string;
                             document: string | null;
+                            /** @description What it ran for: `drafting` for the assistant, a prompt’s purpose, or `trial` */
+                            purpose: string;
+                            /** @description The prompt version it ran, or null for the assistant (GEN-006) */
+                            promptVersion: string | null;
+                            /** @description What it was run with: its reply’s limit, and the instructions’ version */
+                            parameters: {
+                                [key: string]: unknown;
+                            };
                             endpoint: {
                                 name: string;
                                 boundary: string;
@@ -14518,10 +14589,10 @@ export interface operations {
                         /** @description conditions_unmet: each condition not met, in the order the transition names them */
                         unmet?: {
                             /**
-                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected
+                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires
                              * @enum {string}
                              */
-                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated";
+                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial";
                             /** @description How many stand in its way */
                             count: number;
                             /** @description The sections missing, or the components not approved, by title */
@@ -19055,10 +19126,10 @@ export interface operations {
                         /** @description conditions_unmet: each condition not met, in the order the transition names them */
                         unmet?: {
                             /**
-                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected
+                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires
                              * @enum {string}
                              */
-                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated";
+                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial";
                             /** @description How many stand in its way */
                             count: number;
                             /** @description The sections missing, or the components not approved, by title */
@@ -27333,10 +27404,10 @@ export interface operations {
                         /** @description conditions_unmet: each condition not met, in the order the transition names them */
                         unmet?: {
                             /**
-                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected
+                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires
                              * @enum {string}
                              */
-                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated";
+                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial";
                             /** @description How many stand in its way */
                             count: number;
                             /** @description The sections missing, or the components not approved, by title */
@@ -48792,6 +48863,361 @@ export interface operations {
             };
         };
     };
+    startPromptRun: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "prompt": "00000000-0000-4000-8000-000000000001",
+                 *       "node": "example"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description A prompt the document's template's library lists */
+                    prompt: string & (unknown & unknown);
+                    /** @description The part it writes, by its node in the outline */
+                    node: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Server-sent events, as the AsyncAPI document’s `assistantRun` channel declares them: `run`, then `text` as it comes, one `proposal` of the part’s whole text, and `ended` or `failed` */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": string;
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description A personal token, or the caller may not suggest on the part: a run takes a session, and proposes */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document you may read, no part you may read at that node, or no approved prompt its library lists by that id */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `model_unconfigured`: no endpoint is set up for its purpose; `endpoint_unusable`: it is retired or has no key; `model_mismatch`: the endpoint’s model is not one the prompt accepts; `context_empty`: its context resolved to nothing; `context_too_large`: more than the endpoint takes, both sizes named; `part_not_writable`: the part holds what a proposal cannot write. Each before any call */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `connector_unavailable` */
+            503: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listDocumentPrompts: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The library and its prompts */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "library": {
+                     *         "id": "example",
+                     *         "isDefault": false
+                     *       },
+                     *       "prompts": []
+                     *     }
+                     */
+                    "application/json": {
+                        library: {
+                            id: string;
+                            isDefault: boolean;
+                        };
+                        /** @description Each prompt the library lists, at the revision a run of it runs, as the caller reads it */
+                        prompts: ({
+                            id: string;
+                            /** @constant */
+                            state: "approved";
+                            /** @description Its latest approved revision: what a run of it runs */
+                            revision: {
+                                number: number;
+                                versionId: string;
+                            };
+                            prompt: {
+                                /** @constant */
+                                schemaVersion: 1;
+                                title: string;
+                                description: string;
+                                instructions: string;
+                                context: ({
+                                    /** @constant */
+                                    source: "outline";
+                                    /** @enum {string} */
+                                    scope: "part" | "section" | "document";
+                                } | {
+                                    /** @constant */
+                                    source: "related";
+                                    /** Format: uuid */
+                                    type: string;
+                                    /** @enum {string} */
+                                    direction: "out" | "in";
+                                } | {
+                                    /** @constant */
+                                    source: "field";
+                                    /** Format: uuid */
+                                    field: string;
+                                    value: string | number | boolean;
+                                } | {
+                                    /** @constant */
+                                    source: "parameters";
+                                    names: string[];
+                                })[];
+                                output: {
+                                    componentType: string | null;
+                                };
+                                models: {
+                                    /** @enum {string} */
+                                    purpose: "drafting" | "chat" | "summarising";
+                                    accepts: string[];
+                                };
+                            };
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                        } | {
+                            id: string;
+                            /**
+                             * @description Never approved: it runs nothing until it is
+                             * @constant
+                             */
+                            state: "unapproved";
+                            title: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                        } | {
+                            id: string;
+                            /**
+                             * @description One the caller may not read, or no prompt any more
+                             * @constant
+                             */
+                            state: "hidden";
+                        })[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a document the caller may not read is not found */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document you may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     listPublications: {
         parameters: {
             query?: {
@@ -52176,10 +52602,10 @@ export interface operations {
                         /** @description conditions_unmet: each condition not met, in the order the transition names them */
                         unmet?: {
                             /**
-                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected
+                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires
                              * @enum {string}
                              */
-                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated";
+                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial";
                             /** @description How many stand in its way */
                             count: number;
                             /** @description The sections missing, or the components not approved, by title */
@@ -63424,10 +63850,10 @@ export interface operations {
                         /** @description conditions_unmet: each condition not met, in the order the transition names them */
                         unmet?: {
                             /**
-                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected
+                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires
                              * @enum {string}
                              */
-                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated";
+                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial";
                             /** @description How many stand in its way */
                             count: number;
                             /** @description The sections missing, or the components not approved, by title */
@@ -63693,10 +64119,10 @@ export interface operations {
                         /** @description conditions_unmet: each condition not met, in the order the transition names them */
                         unmet?: {
                             /**
-                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected
+                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires
                              * @enum {string}
                              */
-                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated";
+                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial";
                             /** @description How many stand in its way */
                             count: number;
                             /** @description The sections missing, or the components not approved, by title */
@@ -64356,6 +64782,169 @@ export interface operations {
                                 at: string;
                             } | null;
                         };
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    startPromptTrial: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+                version: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "document": "00000000-0000-4000-8000-000000000001",
+                 *       "node": "example"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description A document the trial reads, as its runner may read it */
+                    document: string & (unknown & unknown);
+                    /** @description The part it would write, by its node in the outline */
+                    node: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Server-sent events, as the AsyncAPI document’s `assistantRun` channel declares them: `run`, then `text` as it comes, its output kept on the run, and proposed nowhere, and `ended` or `failed` */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": string;
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description A personal token: a trial takes a session */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such prompt version you may read, no such document you may read, or no part you may read at that node */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `model_unconfigured`: no endpoint is set up for its purpose; `endpoint_unusable`: it is retired or has no key; `model_mismatch`: the endpoint’s model is not one the prompt accepts; `context_empty`: its context resolved to nothing; `context_too_large`: more than the endpoint takes, both sizes named; `part_not_writable`: the part holds what a proposal cannot write. Each before any call */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `connector_unavailable` */
+            503: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
                     };
                 };
             };
@@ -67036,10 +67625,10 @@ export interface operations {
                         /** @description conditions_unmet: each condition not met, in the order the transition names them */
                         unmet?: {
                             /**
-                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected
+                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires
                              * @enum {string}
                              */
-                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated";
+                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial";
                             /** @description How many stand in its way */
                             count: number;
                             /** @description The sections missing, or the components not approved, by title */
@@ -67305,10 +67894,10 @@ export interface operations {
                         /** @description conditions_unmet: each condition not met, in the order the transition names them */
                         unmet?: {
                             /**
-                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected
+                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires
                              * @enum {string}
                              */
-                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated";
+                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial";
                             /** @description How many stand in its way */
                             count: number;
                             /** @description The sections missing, or the components not approved, by title */
@@ -82126,7 +82715,7 @@ export interface operations {
                                             /** @enum {string} */
                                             publication: "none" | "permitted" | "required";
                                         };
-                                        requires?: ("suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated")[];
+                                        requires?: ("suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial")[];
                                     }[];
                                     /** @description Absent: 30 days, and shown alone */
                                     review?: {
@@ -82327,7 +82916,7 @@ export interface operations {
                             publication?: "none" | "permitted" | "required";
                         };
                         /** @description What must be met to take it, or for each approval at a gate (LIF-004): a component's may require suggestions and threads, a document's any; each at most once */
-                        requires?: ("suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated")[];
+                        requires?: ("suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial")[];
                     }[];
                     /** @description Absent: 30 days, and shown alone */
                     review?: {
@@ -82420,7 +83009,7 @@ export interface operations {
                                     /** @enum {string} */
                                     publication: "none" | "permitted" | "required";
                                 };
-                                requires?: ("suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated")[];
+                                requires?: ("suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial")[];
                             }[];
                             /** @description Absent: 30 days, and shown alone */
                             review?: {
@@ -82457,7 +83046,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description workflow_invalid: a key used twice, not one initial state, a transition naming no state or moving to its own, or a state no transition reaches from the initial one; each problem named */
+            /** @description workflow_invalid: a key used twice, not one initial state, a transition naming no state or moving to its own, or a state no transition reaches from the initial one; trial_required: a prompt workflow whose approving transition does not require a trial; each problem named */
             400: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -82635,7 +83224,7 @@ export interface operations {
                                     /** @enum {string} */
                                     publication: "none" | "permitted" | "required";
                                 };
-                                requires?: ("suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated")[];
+                                requires?: ("suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial")[];
                             }[];
                             /** @description Absent: 30 days, and shown alone */
                             review?: {

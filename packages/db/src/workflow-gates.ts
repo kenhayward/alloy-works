@@ -176,6 +176,7 @@ export async function decideGate(
     kind: standing.kind,
     requires: transition.requires ?? [],
     principal: input.by,
+    version,
   });
   if (unmet.length > 0) return { answer: 'conditions.unmet', unmet };
   const passes = progress.count + 1 >= gate.approvals;

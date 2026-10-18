@@ -169,6 +169,14 @@ export {
   promptLibraryRoutes,
 } from './prompt-libraries.js';
 export {
+  DocumentPrompts,
+  PromptRunBody,
+  PromptRunParams,
+  PromptTrialBody,
+  PromptTrialParams,
+  promptRunRoutes,
+} from './prompt-runs.js';
+export {
   RangePageParams,
   RangePreviewParams,
   RangePreviewView,

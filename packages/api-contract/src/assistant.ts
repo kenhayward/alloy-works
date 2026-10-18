@@ -37,6 +37,16 @@ export const AssistantRunView = z.object({
   run: z.object({
     id: z.string(),
     document: z.string().nullable(),
+    purpose: z
+      .string()
+      .describe('What it ran for: `drafting` for the assistant, a prompt’s purpose, or `trial`'),
+    promptVersion: z
+      .string()
+      .nullable()
+      .describe('The prompt version it ran, or null for the assistant (GEN-006)'),
+    parameters: z
+      .record(z.string(), z.unknown())
+      .describe('What it was run with: its reply’s limit, and the instructions’ version'),
     endpoint: z.object({ name: z.string(), boundary: z.string() }),
     model: z.string().nullable(),
     outcome: z.string(),

@@ -15,7 +15,7 @@ export type ModelProtocol = (typeof MODEL_PROTOCOLS)[number];
 /** What a route is for (GN-B, GEN-028); a test is a run's purpose and routes nothing. */
 export const ROUTED_PURPOSES = ['drafting', 'chat', 'summarising', 'embedding'] as const;
 export type RoutedPurpose = (typeof ROUTED_PURPOSES)[number];
-export const RUN_PURPOSES = [...ROUTED_PURPOSES, 'test'] as const;
+export const RUN_PURPOSES = [...ROUTED_PURPOSES, 'test', 'trial'] as const;
 export type RunPurpose = (typeof RUN_PURPOSES)[number];
 
 export const BOUNDARIES = ['inside', 'outside'] as const;

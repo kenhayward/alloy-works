@@ -59,6 +59,7 @@ export function unmetMessage(unmet: readonly UnmetCondition[]): string {
     const said = {
       suggestions: () => counted(each.count, 'unresolved suggestion', 'unresolved suggestions'),
       threads: () => counted(each.count, 'open thread', 'open threads'),
+      trial: () => 'no finished trial run of this version',
       generated: () =>
         counted(
           each.count,

@@ -49,7 +49,8 @@ type Condition =
   | 'revisions'
   | 'components'
   | 'profile'
-  | 'generated';
+  | 'generated'
+  | 'trial';
 
 /** Each condition, as a transition's row offers it: "Submit requires no open threads". */
 const CONDITIONS: Readonly<Record<Condition, string>> = {
@@ -63,6 +64,8 @@ const CONDITIONS: Readonly<Record<Condition, string>> = {
   profile: 'every condition set in the profile',
   // GEN-025 (the G3 plan, G3-B): a part of "no unresolved suggestions", the generated ones alone.
   generated: 'no generated content waiting to be accepted',
+  // GEN-045 (the G4 plan, G4-E): a prompt's approval attests a trial of it.
+  trial: 'a finished trial run of the version',
 };
 
 /** What each kind's transitions may require: a query definition has nothing to (WF3-A). */
@@ -79,7 +82,7 @@ const CONDITIONS_OF: Readonly<Record<Kind, readonly Condition[]>> = {
     'generated',
   ],
   queryDefinition: [],
-  prompt: [],
+  prompt: ['trial'],
 };
 
 /** A transition that is a gate (the WF2 plan, WF2-A). */
