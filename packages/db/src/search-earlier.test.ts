@@ -727,6 +727,7 @@ describe('migration 0088, which keeps earlier versions searchable', () => {
         '0127_conversations',
         '0128_guardrails',
         '0129_conversation_context',
+        '0130_creation_proposals',
       ]);
       const kept = await service.withTenant(tenant, (trx) =>
         trx

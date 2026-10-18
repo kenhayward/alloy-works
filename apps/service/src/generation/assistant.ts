@@ -1,6 +1,9 @@
 import { randomBytes } from 'node:crypto';
 
 import {
+  createComponent,
+  makeCreationProposal,
+  type GenerationProposal,
   TRAY_PARTS_MOST,
   addToTray,
   latestVersion,
@@ -40,6 +43,8 @@ import {
   ASSISTANT_INSTRUCTIONS_VERSION,
   ASSISTANT_TOOLS,
   CONVERSATION_TOOLS,
+  DOCUMENT_CONVERSATION_TOOLS,
+  proposeComponentInputSchema,
   conversationToolInputSchemas,
   isConversationTool,
   admit,
@@ -388,6 +393,100 @@ export function assistantHandlers(
     return { read, dropped };
   }
 
+  /**
+   * A component proposed to be made (G5-E; GEN-052), as the person, where they may create now: its
+   * Markdown admitted as content is, its type one of the environment's. Nothing is made until they
+   * accept it.
+   */
+  async function proposeComponent(
+    trx: TenantTransaction,
+    request: FastifyRequest,
+    run: string,
+    input: { space: string; type?: string | undefined; title: string; markdown: string },
+    written: { language: string; direction: 'ltr' | 'rtl' },
+  ): Promise<ToolAnswer> {
+    try {
+      await authoriseAt(trx, callerOf(request), 'create', { kind: 'space', id: input.space });
+    } catch {
+      return {
+        ok: false,
+        content: 'You may not make a component in that space, or there is none by that identifier.',
+        summary: 'Not yours to make',
+      };
+    }
+    if (input.type !== undefined) {
+      const type = await latestVersion(trx, input.type);
+      if (type?.kind !== 'componentType') {
+        return {
+          ok: false,
+          content: 'There is no component type by that identifier.',
+          summary: 'No such type',
+        };
+      }
+    }
+    const blank: ContentDocument = {
+      schemaVersion: 1,
+      title: input.title,
+      language: written.language,
+      direction: written.direction,
+      content: [],
+    } as unknown as ContentDocument;
+    const blocks = markdownReader(blank)(input.markdown);
+    if (typeof blocks === 'string') return { ok: false, content: blocks, summary: 'Text refused' };
+    const proposal = await makeCreationProposal(trx, {
+      run,
+      creates: {
+        space: input.space,
+        ...(input.type === undefined ? {} : { componentType: input.type }),
+        title: input.title,
+        language: written.language,
+        direction: written.direction,
+      },
+      proposed: { ...blank, content: [...blocks] },
+    });
+    return {
+      ok: true,
+      content: `Proposal ${proposal.number} made. Nothing is made until the author accepts it.`,
+      summary: `Proposal ${proposal.number}`,
+      proposal,
+    };
+  }
+
+  /** A conversation's tools on a document: the assistant's, and proposing a component (G5-E). */
+  function documentTools(
+    request: FastifyRequest,
+    document: string,
+    principal: string,
+    run: string,
+  ) {
+    const assistant = tools(request, document, principal, run);
+    return async (name: string, input: unknown): Promise<ToolAnswer> => {
+      if (name !== 'propose_component') return assistant(name, input);
+      const parsed = proposeComponentInputSchema.safeParse(input);
+      if (!parsed.success) {
+        return {
+          ok: false,
+          content: 'The arguments are not what this tool takes.',
+          summary: 'Arguments refused',
+        };
+      }
+      return db.withTenant(
+        tenantOf(request),
+        async (trx) => {
+          await authoriseAt(trx, callerOf(request), 'read', { kind: 'artifact', id: document });
+          // Written in the document's language and direction.
+          const outline = (await readDocument(trx, document))?.version.content as
+            { language?: string; direction?: 'ltr' | 'rtl' } | undefined;
+          return proposeComponent(trx, request, run, parsed.data, {
+            language: outline?.language ?? 'en-GB',
+            direction: outline?.direction ?? 'ltr',
+          });
+        },
+        contextOf(request),
+      );
+    };
+  }
+
   /** A conversation's tools where it has no document (G5-D), each as its person, deciding again. */
   function looseTools(request: FastifyRequest, principal: string, run: string) {
     const tenant = tenantOf(request);
@@ -462,6 +561,14 @@ export function assistantHandlers(
                 },
               };
             }
+            case 'propose_component':
+              return proposeComponent(
+                trx,
+                request,
+                run,
+                parsed.data as { space: string; type?: string; title: string; markdown: string },
+                { language: 'en-GB', direction: 'ltr' },
+              );
             case 'propose_edit': {
               const { component, edits } = parsed.data as {
                 component: string;
@@ -768,13 +875,13 @@ export function assistantHandlers(
         ask,
         system: ASSISTANT_INSTRUCTIONS,
         // On a document, the assistant's tools; with none, the person's own search, reads and proposals.
-        tools: document === null ? CONVERSATION_TOOLS : ASSISTANT_TOOLS,
+        tools: document === null ? CONVERSATION_TOOLS : DOCUMENT_CONVERSATION_TOOLS,
         messages: [...earlier, { role: 'user', content: [{ type: 'text', text: words }] }],
         limits: ASSISTANT_LIMITS,
         tool: (run) =>
           document === null
             ? looseTools(request, principalId, run)
-            : tools(request, document, principalId, run),
+            : documentTools(request, document, principalId, run),
         started: {
           conversation: conversation.id,
           tray: { read: tray.read.map((each) => each.component), dropped: tray.dropped },
@@ -927,6 +1034,70 @@ export function assistantHandlers(
     return endpoint;
   }
 
+  /**
+   * An act on a proposal to make a component (G5-E; GEN-052): accepted, it is made at 0.1 as its
+   * requester, where they may create now, its text the proposal's; discarded, nothing is made. Never
+   * kept: a suggestion is against a component that exists.
+   */
+  async function actOnCreation(
+    request: FastifyRequest,
+    trx: TenantTransaction,
+    principalId: string,
+    proposal: GenerationProposal,
+    act: 'accepted' | 'kept' | 'discarded',
+  ) {
+    const creates = proposal.creates!;
+    if (proposal.state !== 'open') {
+      throw new AppError(
+        409,
+        'proposal_resolved',
+        'This proposal has been accepted or discarded already.',
+      );
+    }
+    if (proposal.runOutcome === 'running') {
+      throw new AppError(409, 'run_running', 'The run that made this proposal has not ended yet.');
+    }
+    if (act === 'kept') {
+      throw new AppError(
+        409,
+        'proposal_creates',
+        'A proposal to make a component is accepted or discarded: there is nothing yet to suggest on.',
+      );
+    }
+    if (act === 'discarded') {
+      await actOnProposal(trx, { proposal, act, by: principalId });
+      return { proposal: { id: proposal.id, state: 'discarded' as const, suggestion: null } };
+    }
+    await authoriseAt(trx, callerOf(request), 'create', { kind: 'space', id: creates.space });
+    const proposed = storableContent(proposal.proposed);
+    const made = await createComponent(trx, {
+      spaceId: creates.space,
+      ...(creates.componentType === undefined ? {} : { componentTypeId: creates.componentType }),
+      title: creates.title,
+      language: creates.language,
+      direction: creates.direction,
+      author: principalId,
+      blocks: proposed.content,
+    });
+    if (made.answer !== 'created') {
+      throw new AppError(409, made.answer.replace(/\./g, '_'), 'The component could not be made.');
+    }
+    await actOnProposal(trx, {
+      proposal,
+      act: 'accepted',
+      by: principalId,
+      made: { component: made.version.artifactId, version: made.version.id },
+    });
+    return {
+      proposal: {
+        id: proposal.id,
+        state: 'accepted' as const,
+        suggestion: null,
+        component: made.version.artifactId,
+      },
+    };
+  }
+
   /** A session-checked route's work, as the caller, in a transaction of its own. */
   function asCaller<T>(
     request: FastifyRequest,
@@ -950,13 +1121,14 @@ export function assistantHandlers(
     const proposal = await readProposal(trx, id, true);
     if (!proposal || proposal.requestedBy !== principalId) throw notFound();
     const caller = callerOf(request);
+    if (proposal.creates !== null) return actOnCreation(request, trx, principalId, proposal, act);
     await authoriseAt(
       trx,
       caller,
       act === 'accepted' ? 'edit' : act === 'kept' ? 'suggest' : 'read',
       {
         kind: 'artifact',
-        id: proposal.componentId,
+        id: proposal.componentId!,
       },
     );
     if (proposal.state !== 'open') {
@@ -976,10 +1148,10 @@ export function assistantHandlers(
     }
     // The save's checks, as a person's suggestion meets them (SG-B; the final review).
     const proposed = storableContent(proposal.proposed);
-    await mayNameColumns(trx, request, proposed, proposal.madeAgainst);
+    await mayNameColumns(trx, request, proposed, proposal.madeAgainst!);
     const made = await makeSuggestion(trx, {
-      component: proposal.componentId,
-      version: proposal.madeAgainst,
+      component: proposal.componentId!,
+      version: proposal.madeAgainst!,
       proposed,
       by: principalId,
       generated: { run: proposal.runId, digest: proposal.contextDigest },

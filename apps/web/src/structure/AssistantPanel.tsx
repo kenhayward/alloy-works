@@ -18,7 +18,10 @@ interface Step {
 interface Proposal {
   readonly id: string;
   readonly number: number;
-  readonly component: string;
+  /** The part edited; null for one proposed to be made (G5-E). */
+  readonly component: string | null;
+  /** Where and under what title a proposed part would be made. */
+  readonly creates: { readonly title: string } | null;
   readonly proposed: { readonly content?: readonly unknown[] };
   readonly state: 'open' | 'accepted' | 'kept' | 'discarded';
   readonly said?: string;
@@ -353,7 +356,11 @@ export function AssistantPanel({
               {
                 id: String(frame.id),
                 number: Number(frame.number),
-                component: String(frame.component),
+                component: typeof frame.component === 'string' ? frame.component : null,
+                creates:
+                  typeof frame.creates === 'object' && frame.creates !== null
+                    ? (frame.creates as { title: string })
+                    : null,
                 proposed: frame.proposed as Proposal['proposed'],
                 state: 'open',
               },
@@ -399,7 +406,9 @@ export function AssistantPanel({
                 state: data.proposal.state,
                 said:
                   data.proposal.state === 'accepted'
-                    ? 'Accepted: it is a new version of the part.'
+                    ? each.creates !== null
+                      ? 'Accepted: the part is made.'
+                      : 'Accepted: it is a new version of the part.'
                     : data.proposal.state === 'kept'
                       ? 'Kept as a suggestion, marked generated, for review.'
                       : 'Discarded.',
@@ -651,7 +660,11 @@ export function AssistantPanel({
           aria-label={`Proposal ${proposal.number}`}
         >
           <h3>
-            Proposal {proposal.number}: {nameOf(proposal.component) ?? 'a part'}
+            Proposal {proposal.number}:{' '}
+            {proposal.creates !== null
+              ? `a new part, ${proposal.creates.title}`
+              : ((proposal.component === null ? undefined : nameOf(proposal.component)) ??
+                'a part')}
           </h3>
           <pre className={styles['proposed']}>{proposedText(proposal.proposed)}</pre>
           {proposal.state === 'open' && running ? (
@@ -665,9 +678,11 @@ export function AssistantPanel({
               >
                 Accept
               </button>
-              <button type="button" onClick={() => void act(proposal, 'keeping')}>
-                Keep as suggestion
-              </button>
+              {proposal.creates === null && (
+                <button type="button" onClick={() => void act(proposal, 'keeping')}>
+                  Keep as suggestion
+                </button>
+              )}
               <button type="button" onClick={() => void act(proposal, 'discarding')}>
                 Discard
               </button>

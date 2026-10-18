@@ -275,11 +275,13 @@ export {
 } from './model-endpoints.js';
 export {
   actOnProposal,
+  makeCreationProposal,
   makeProposal,
   proposalsOfRun,
   readProposal,
   type GenerationProposal,
   type ProposalState,
+  type ProposedComponent,
 } from './generation-proposals.js';
 export {
   generatedReport,

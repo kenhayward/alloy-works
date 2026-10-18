@@ -810,6 +810,9 @@ describe('the domain package', () => {
         // G5: a guardrail, and how a phrase is matched.
         'GUARDRAIL_SIDES',
         'CONVERSATION_TOOLS',
+        'DOCUMENT_CONVERSATION_TOOLS',
+        'PROPOSE_COMPONENT',
+        'proposeComponentInputSchema',
         'conversationToolInputSchemas',
         'isConversationTool',
         'guardrailMatch',

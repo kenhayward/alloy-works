@@ -631,7 +631,11 @@ export const auditKindSpecs = {
   ),
   'generation.accepted': kind(
     ['LIF-071', 'GEN-024', 'LOC-041'],
-    z.strictObject({ run: Id, proposal: Id, suggestion: Id }),
+    // A suggestion accepted, or a component made from a proposal to make one (G5-E).
+    z.union([
+      z.strictObject({ run: Id, proposal: Id, suggestion: Id }),
+      z.strictObject({ run: Id, proposal: Id, created: z.literal(true) }),
+    ]),
     PROPOSALS,
   ),
   'generation.discarded': kind(

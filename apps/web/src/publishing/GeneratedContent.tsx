@@ -10,7 +10,7 @@ interface Report {
     readonly number: string;
     readonly restoredFrom: string | null;
     readonly items: readonly {
-      readonly kind: 'suggestion' | 'proposal';
+      readonly kind: 'suggestion' | 'proposal' | 'creation';
       readonly id: string;
       readonly state: 'accepted' | 'open' | 'rejected' | 'withdrawn' | 'discarded';
       readonly askedBy: { readonly name: string | null } | null;
@@ -31,6 +31,10 @@ const who = (person: { readonly name: string | null } | null) => person?.name ??
 function sentence(item: Report['placements'][number]['items'][number]): string {
   const by = `Asked of ${item.run.model ?? 'a model'} on ${item.run.endpoint} by ${who(item.askedBy)}.`;
   const on = item.actedAt === null ? '' : ` on ${day.format(new Date(item.actedAt))}`;
+  // A part a model wrote whole, made as the person accepted it (G5-E).
+  if (item.kind === 'creation') {
+    return `Made by ${who(item.actedBy)}${on} from a proposal to make it, as ${item.acceptedInto?.number ?? 'its first version'}. ${by}`;
+  }
   switch (item.state) {
     case 'accepted':
       return `Accepted by ${who(item.actedBy)}${on} into ${item.acceptedInto?.number ?? 'a version'}${

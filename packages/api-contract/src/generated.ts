@@ -18,7 +18,11 @@ const Person = z.object({
 });
 
 const GeneratedItemView = z.object({
-  kind: z.enum(['suggestion', 'proposal']),
+  kind: z
+    .enum(['suggestion', 'proposal', 'creation'])
+    .describe(
+      'A suggestion, a proposal discarded, or a component made from a proposal to make one',
+    ),
   id: z.string(),
   state: z
     .enum(['accepted', 'open', 'rejected', 'withdrawn', 'discarded'])
