@@ -610,6 +610,9 @@ const DOCK_PANELS = [
   { key: 'part', label: 'Part' },
   { key: 'document', label: 'Document' },
   { key: 'lists', label: 'Lists' },
+  // While authoring: the assistant drafting against the document (the G2 plan, G2-K); before
+  // Publishing, which stays last, where End reaches it.
+  { key: 'assistant', label: 'Assistant' },
   // A document's versions and their restore (the RS plan, RS-H); before Publishing, which End reaches.
   { key: 'versions', label: 'Versions' },
   { key: 'publishing', label: 'Publishing' },
@@ -618,8 +621,6 @@ const DOCK_PANELS = [
   { key: 'suggestions', label: 'Suggestions' },
   // In Review (the RR plan, Task 4).
   { key: 'rounds', label: 'Rounds' },
-  // While authoring: the assistant drafting against the document (the G2 plan, G2-K).
-  { key: 'assistant', label: 'Assistant' },
 ] as const;
 
 type DockPanel = (typeof DOCK_PANELS)[number]['key'];

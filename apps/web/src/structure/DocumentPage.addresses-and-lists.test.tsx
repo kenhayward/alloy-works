@@ -2335,7 +2335,7 @@ describe('the document page as the Ledger draws it (LG6c)', () => {
     expect(mode.parentElement).toContainElement(screen.getByRole('button', { name: 'Preview' }));
   });
 
-  it('sets the panels beside the text, named in words: the part, the lists, versions, publishing and the assistant', async () => {
+  it('sets the panels beside the text, named in words: the part, the lists, the assistant, versions and publishing', async () => {
     const fake = service(outline([section(METHOD, 'Method')]), { mayPublish: true });
     render(<DocumentPage client={client(fake.fetch)} id={DOCUMENT} followMs={0} />);
     await screen.findByRole('treeitem', { name: 'Method' });
@@ -2345,7 +2345,7 @@ describe('the document page as the Ledger draws it (LG6c)', () => {
       within(tabs)
         .getAllByRole('tab')
         .map((tab) => tab.textContent),
-    ).toEqual(['Part', 'Lists', 'Versions', 'Publishing', 'Assistant']);
+    ).toEqual(['Part', 'Lists', 'Assistant', 'Versions', 'Publishing']);
     expect(within(tabs).getByRole('tab', { name: 'Part' })).toHaveAttribute(
       'aria-selected',
       'true',
