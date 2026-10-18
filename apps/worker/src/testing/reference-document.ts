@@ -22,7 +22,7 @@ import type { ObjectStores } from '@alloy-works/objects';
 import sharp from 'sharp';
 
 /**
- * The reference document the publishing and preview budgets are measured on (PUB-102, CNT-151), and
+ * The reference document the publishing and preview budgets are measured on (PUB-102, CNT-186), and
  * its seeding through the store, not the editor: what is measured is publishing or previewing a
  * document this size, not building one.
  */

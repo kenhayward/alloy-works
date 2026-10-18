@@ -6,7 +6,7 @@ import { readPinnedFaces, type PinnedFonts } from './fonts.js';
 import { TypstFailed, TypstRefused, type RootImage } from './typst.js';
 
 /**
- * **The warm range preview's compile** (CNT-151, PUB-076; publishing.md, "The warm range preview";
+ * **The warm range preview's compile** (CNT-186, PUB-076; publishing.md, "The warm range preview";
  * the R22 plan, R22-A): one `typst watch` kept running over a compile root of its own, the template,
  * the pinned faces and the images, writing every page as a PNG. Each update writes the data, waits
  * for the compile it starts, and answers the pages it rewrote: the engine rewrites only the pages

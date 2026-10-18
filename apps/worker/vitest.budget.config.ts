@@ -1,7 +1,7 @@
 import { defineConfig } from 'vitest/config';
 
 /**
- * The warm range preview's budget alone (CNT-151; the R22 plan, R22-C): one file, on its own, so what
+ * The warm range preview's budget alone (CNT-186; the R22 plan, R22-C): one file, on its own, so what
  * it measures is the machine and not the suite beside it. CI runs it after the worker suite, on its
  * reference runner; `pnpm test` runs it with the rest elsewhere.
  */

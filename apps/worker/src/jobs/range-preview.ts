@@ -19,7 +19,7 @@ import type { JobHandler } from '../worker.js';
 import { assembleRequest, PublishRefused, rootImages } from './publish.js';
 
 /**
- * **The warm range preview's job** (CNT-151, PUB-080; publishing.md, "The warm range preview"; the R22
+ * **The warm range preview's job** (CNT-186, PUB-080; publishing.md, "The warm range preview"; the R22
  * plan, R22-B): each refresh a range preview asks for, its request's recorded inputs assembled as a
  * preview's are - the author's latest iteration of the component being edited in place of its version -
  * and compiled warm. The document's warm compile is held in this worker between refreshes, drawing the

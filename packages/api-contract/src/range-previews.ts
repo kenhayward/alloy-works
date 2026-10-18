@@ -5,7 +5,7 @@ import { PublicationRefusal } from './publishing.js';
 import { ErrorBody, LowercaseUuid } from './schemas.js';
 
 /**
- * **The warm range preview** (CNT-151, PUB-080; publishing.md, "The warm range preview"; the R22 plan):
+ * **The warm range preview** (CNT-186, PUB-080; publishing.md, "The warm range preview"; the R22 plan):
  * the occurrence being edited and a page either side, drawn as PNG images from its author's saved
  * edits, refreshed after each save. Untagged by design (PUB-061): every page says so, and names the
  * tagged PDF a preview makes.

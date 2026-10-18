@@ -486,7 +486,8 @@ where the platform lets it, and on macOS says that the system chooses.
 | **CNT-096** | Preview must be fast enough to use while writing rather than as a separate step, against the budget in CNT-151, tested                                                                                                                                                                                                                                                                                                                                                                               | T1      | Withdrawn             |
 | **CNT-114** | Preview must reflect an edit within one second, and never more than two, in a 300-page document - a provisional budget, to be confirmed against real content                                                                                                                                                                                                                                                                                                                                         | T1      | Superseded by CNT-136 |
 | **CNT-136** | Preview must reflect an edit within one second, and never more than two, in a 300-page document, measured on a declared reference configuration recorded alongside the budget - a provisional number, to be confirmed against real content (**CNT-Q13**)                                                                                                                                                                                                                                             | T1      | Superseded by CNT-151 |
-| **CNT-151** | Preview must reflect a saved edit within one second of the save being recorded, with no measured sample above two, in a 300-page document, measured on a declared reference configuration recorded alongside the budget - a provisional number, to be confirmed against real content (**CNT-Q13**)                                                                                                                                                                                                   | T4      | Specified             |
+| **CNT-151** | Preview must reflect a saved edit within one second of the save being recorded, with no measured sample above two, in a 300-page document, measured on a declared reference configuration recorded alongside the budget - a provisional number, to be confirmed against real content (**CNT-Q13**)                                                                                                                                                                                                   | T4      | Superseded by CNT-186 |
+| **CNT-186** | Preview must reflect a saved edit within three seconds of the save being recorded, at the 95th percentile, with no measured sample above six, in a 300-page document, measured on a declared reference configuration recorded alongside the budget - a provisional number, to be revisited with every budget at the end of the implementation (**CNT-Q13**)                                                                                                                                          | T4      | Specified             |
 
 **CNT-096 is withdrawn: a preview fast enough to use while writing is what CNT-151's budget measures.**
 Two rows saying one thing would be claimed and cited twice; ADR-0027 moved CNT-151 to T3.
@@ -1041,3 +1042,18 @@ the rest becomes rows of their own.
 | Counts       | Before                                      | After                                       |
 | ------------ | ------------------------------------------- | ------------------------------------------- |
 | Requirements | 183, of which 35 superseded and 1 withdrawn | 185, of which 36 superseded and 1 withdrawn |
+
+### Ken's answer on the range preview's budget, 2026-10-18
+
+Not a review. [The R22 plan](../../plans/2026-10-18-r22-the-warm-range-preview.md) measured CNT-151 on
+the reference configuration Ken chose for it, CI's `ubuntu-latest` runner (4 vCPU, 16 GB): a saved edit
+reached the range preview in 1.14 to 1.21 seconds, the 95th percentile 1.21, against one. Ken raised the
+budget to three seconds for now, every budget to be weighed together at the end of the implementation.
+
+| What was found                                                                                                                                                                               | Change                                                                                                                                    |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| One second is not met on the reference runner: `typst watch` waits about 0.1 s after a change and lays the document out again in about 0.4 s on a fast desktop, 1.7 times that on the runner | **CNT-151 superseded by CNT-186**: three seconds at the 95th percentile, no sample above six, provisional until every budget is revisited |
+
+| Counts       | Before                                      | After                                       |
+| ------------ | ------------------------------------------- | ------------------------------------------- |
+| Requirements | 185, of which 36 superseded and 1 withdrawn | 186, of which 37 superseded and 1 withdrawn |

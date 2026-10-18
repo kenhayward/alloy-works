@@ -2,7 +2,7 @@ import { arch, availableParallelism, cpus, loadavg, platform, release, totalmem 
 import { TYPST_RELEASE } from '../typst-release.js';
 
 /**
- * The machine a budget was measured on, recorded beside the result (CNT-151, REU-049): CI's reference
+ * The machine a budget was measured on, recorded beside the result (CNT-186, REU-049): CI's reference
  * runner where `CI` is `true` (the R22 plan, R22-C), a developer's machine otherwise.
  */
 export function machine() {

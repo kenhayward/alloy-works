@@ -47,7 +47,7 @@ export function rangeView(range: RangePreview): RangePreviewView {
 }
 
 /**
- * The warm range preview's routes (CNT-151, PUB-080; the R22 plan, R22-B): `read` on the document
+ * The warm range preview's routes (CNT-186, PUB-080; the R22 plan, R22-B): `read` on the document
  * decided by `authorise` at every one, as a preview's, and each range its asker's alone - anybody
  * else is answered as if there were none.
  */

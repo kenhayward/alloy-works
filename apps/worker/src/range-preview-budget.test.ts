@@ -30,12 +30,14 @@ import { typstBinaryPath } from './typst.js';
 import { processNext, type JobHandler, type WorkerLog } from './worker.js';
 
 /**
- * CNT-151's budget (the R22 plan, R22-C): a saved edit reflected in the range preview within one
- * second of the save being recorded, and no measured sample above two, in the 300-page reference
- * document - from the iteration's commit to the range's pages recorded, ready to read. Held on every
- * run, CI's reference runner among them, and recorded beside the machine it ran on.
+ * CNT-186's budget (the R22 plan, R22-C): a saved edit reflected in the range preview within three
+ * seconds of the save being recorded at the 95th percentile, and no measured sample above six, in the
+ * 300-page reference document - from the iteration's commit to the range's pages recorded, ready to
+ * read. Held on every run, CI's reference runner among them, and recorded beside the machine it ran
+ * on. Provisional: CNT-151's second was not met on the runner (1.2 s), and Ken raised it until every
+ * budget is weighed at the end of the implementation.
  */
-const BUDGET = { p95: 1_000, max: 2_000 } as const;
+const BUDGET = { p95: 3_000, max: 6_000 } as const;
 const SAMPLES = 10;
 const SESSION = '33333333-3333-4333-8333-333333333333';
 
@@ -203,7 +205,7 @@ describe('the warm range preview of the 300-page reference document (the R22 pla
     expect(next.range).toEqual(first.range);
   }, 120_000);
 
-  it('reflects a saved edit in the range preview within one second of the save, none above two, on the 300-page reference document', async ({
+  it('reflects a saved edit in the range preview within three seconds of the save, none above six, on the 300-page reference document', async ({
     task,
   }) => {
     const measured: number[] = [];
@@ -225,7 +227,7 @@ describe('the warm range preview of the 300-page reference document (the R22 pla
       max: Math.max(...measured),
     };
     Object.assign(task.meta, { rangePreviewBudget: { configuration, result } });
-    console.info(`CNT-151 range preview: ${JSON.stringify({ configuration, result })}`);
+    console.info(`CNT-186 range preview: ${JSON.stringify({ configuration, result })}`);
     expect(result.p95, JSON.stringify(result)).toBeLessThanOrEqual(BUDGET.p95);
     expect(result.max, JSON.stringify(result)).toBeLessThanOrEqual(BUDGET.max);
   }, 300_000);

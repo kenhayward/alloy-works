@@ -99,7 +99,8 @@ describe('the committed trace.json', () => {
     // 1588, from 1587 (2026-10-16): TPL-072, superseding TPL-064; REU-037 withdrawn (R10).
     // 1589, from 1588 (2026-10-16): TPL-073, superseding TPL-049 (#660).
     // 1590, from 1589 (2026-10-17): REU-055, superseding REU-006 (R20).
-    expect(model.requirements).toHaveLength(1590);
+    // 1591, from 1590 (2026-10-18): CNT-186, superseding CNT-151 (R22, Ken's budget).
+    expect(model.requirements).toHaveLength(1591);
     expect(model.nonRequirements).toHaveLength(118);
     expect(model.questions).toHaveLength(135);
     // 591, from 589 (2026-10-04): bindings.md claims DAT-116 and STY-082 on Ken's answers to its questions; DAT-115 (review is not designed) and PUB-108 are named gaps.

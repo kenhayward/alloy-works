@@ -5,7 +5,7 @@ import { enqueueJob } from './queue.js';
 import type { TenantTransaction } from './tables.js';
 
 /**
- * **The warm range preview** (CNT-151, PUB-080; publishing.md, "The warm range preview"; the R22 plan,
+ * **The warm range preview** (CNT-186, PUB-080; publishing.md, "The warm range preview"; the R22 plan,
  * R22-B): a request of kind `range` records the document's inputs once, as a preview's are, and a
  * range preview on it names the occurrence being edited and its author's editing session. Each save
  * the session records asks for a refresh; the worker shows the session's latest iteration of the
