@@ -756,7 +756,6 @@ export function assistantHandlers(
         const conversation = await own(trx, request, principalId);
         const { component } = request.body as { component: string };
         // Read as the person now, at the version they would be sent, or not added at all.
-        const before = await readTray(trx, request, conversation, principalId);
         await authoriseAt(trx, callerOf(request), 'read', { kind: 'artifact', id: component });
         const latest = await latestVersion(trx, component);
         if (latest?.kind !== 'component') throw notFound();
@@ -772,7 +771,6 @@ export function assistantHandlers(
             `A conversation reads ${TRAY_PARTS_MOST} parts at most.`,
           );
         }
-        void before;
         return trayView(await readTray(trx, request, conversation, principalId));
       }),
 
@@ -800,7 +798,10 @@ export function assistantHandlers(
               'A turn of this conversation has not ended yet.',
             );
           }
-          if (turns.length >= CONVERSATION_TURNS_MOST) {
+          // Only the turns that finished count: a refused or failed turn replays nothing.
+          if (
+            turns.filter((each) => each.outcome === 'finished').length >= CONVERSATION_TURNS_MOST
+          ) {
             throw new AppError(
               409,
               'conversation_too_long',
@@ -916,7 +917,8 @@ export function assistantHandlers(
         // Its requester's alone (GEN-016): anybody else is told there is none.
         if (!run || run.requestedBy !== principalId || run.purpose === 'test') throw notFound();
         // What it read is held back from a requester who may no longer read the document.
-        let mayRead = run.documentId !== null;
+        // On no document, a run is its requester's own; on one, while they may still read it.
+        let mayRead = true;
         if (run.documentId !== null) {
           try {
             await authoriseAt(trx, callerOf(request), 'read', {

@@ -101,6 +101,11 @@ export const documentationGroups = [
           'Hold a conversation with a model, on a document or on none: your own words, on an endpoint you choose, each turn governed as the assistant is and kept with its run.',
       },
       {
+        name: 'Personal prompts',
+        description:
+          'Your own saved prompts, which nobody else reads or runs and no template binds, and promoting one into a space as a shared prompt.',
+      },
+      {
         name: 'Guardrails',
         description:
           'Phrases your environment forbids in what a model is sent and what it returns, each with the reason a refusal says. A phrase, never a pattern; nothing here changes what the assistant may do.',
@@ -391,6 +396,13 @@ const operationTags = {
     'discardProposal',
   ],
   Guardrails: ['listGuardrails', 'setGuardrail', 'retireGuardrail'],
+  'Personal prompts': [
+    'listPersonalPrompts',
+    'savePersonalPrompt',
+    'changePersonalPrompt',
+    'removePersonalPrompt',
+    'promotePersonalPrompt',
+  ],
   Conversations: [
     'listConversationEndpoints',
     'startConversation',
@@ -812,6 +824,14 @@ const descriptions: Readonly<Record<string, string>> = {
     "Runs a prompt of the document's library on one of its parts, with a signed-in session alone, at the prompt's latest approved revision. Its context is resolved first, as the caller may read it, and recorded on the run; nothing it does not declare is sent. It calls the endpoint its purpose goes to, through the connector, once, with no tools, refused first where the endpoint's model is not one it accepts, the context resolved to nothing or is more than the endpoint takes. The reply, Markdown, is proposed as the part's whole text, a proposal that changes nothing until the caller accepts it. Answered as Server-Sent Events. Recorded as a run naming the prompt version.",
   startPromptTrial:
     'Tries a version of a prompt, approved or not, on a part of a document the caller may read, with a signed-in session alone: the same run, recorded as a trial of that version, its output kept on the run and proposed nowhere. Approving a prompt version needs a finished trial of it.',
+  listPersonalPrompts:
+    'Lists your own saved prompts, the latest changed first, with a signed-in session alone. Nobody else is told they exist.',
+  savePersonalPrompt:
+    'Saves a prompt of your own: a title and the words you would say in a conversation. It is no artifact: nobody else reads or runs it, and no template binds it.',
+  changePersonalPrompt: 'Changes a prompt of your own. Anybody else is told there is none.',
+  removePersonalPrompt: 'Deletes a prompt of your own. Anybody else is told there is none.',
+  promotePersonalPrompt:
+    'Promotes a prompt of your own into a space you may edit, as a new prompt at 0.1 and draft: its title and words yours, its context, output and models declared now. From then on it is reviewed and tried like any other, and goes its own way; your own stays as it is, recording what it became.',
   listGuardrails:
     'Lists the environment’s guardrails, those in force first, the retired too where asked. Needs administer.',
   setGuardrail:

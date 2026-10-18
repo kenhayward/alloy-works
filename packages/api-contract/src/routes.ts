@@ -18,6 +18,7 @@ import { promptLibraryRoutes } from './prompt-libraries.js';
 import { promptRunRoutes } from './prompt-runs.js';
 import { conversationRoutes } from './conversations.js';
 import { guardrailRoutes } from './guardrails.js';
+import { personalPromptRoutes } from './personal-prompts.js';
 import { rangePreviewRoutes } from './range-previews.js';
 import { erasureRoutes } from './erasure.js';
 import { retentionRoutes } from './retention.js';
@@ -390,6 +391,7 @@ type Routes = typeof ownRoutes &
   typeof promptRunRoutes &
   typeof conversationRoutes &
   typeof guardrailRoutes &
+  typeof personalPromptRoutes &
   typeof rangePreviewRoutes;
 
 export const routes: Routes = {
@@ -450,6 +452,7 @@ export const routes: Routes = {
   ...promptRunRoutes,
   ...conversationRoutes,
   ...guardrailRoutes,
+  ...personalPromptRoutes,
   ...rangePreviewRoutes,
 } as const satisfies Record<string, RouteContract>;
 

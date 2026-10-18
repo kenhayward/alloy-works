@@ -1,5 +1,6 @@
 import { sql } from 'kysely';
 import { lockAccessForChange } from './access-facts.js';
+import { erasePersonalPrompts } from './personal-prompts.js';
 import { revokeApiToken } from './api-tokens.js';
 import { eraseLabels, labels, principalLabel, recordEvent } from './audit.js';
 import { recordGrantsRevoked } from './grants.js';
@@ -181,6 +182,8 @@ export async function erasePerson(
   }
 
   await endAccess(trx, state.person.id);
+  // Their own saved words go: nobody else reads them (G5-G).
+  await erasePersonalPrompts(trx, state.person.id);
   // The accepted invitation's row holds their address; it records nothing anything reads after.
   if (state.invitationId !== null) {
     await trx.deleteFrom('invitation').where('id', '=', state.invitationId).execute();

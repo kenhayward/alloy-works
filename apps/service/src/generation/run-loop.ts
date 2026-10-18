@@ -249,6 +249,11 @@ export function streamedRun(input: {
         if (text !== '') content.push({ type: 'text', text });
         for (const each of calledFor) content.push({ type: 'tool_use', ...each });
         if (content.length > 0) messages.push({ role: 'assistant', content });
+        // What the model wrote into a tool's arguments returns from it too: a proposal's text, say.
+        refusedBy = calledFor
+          .map((each) => guardrailMatch(rules, 'returned', JSON.stringify(each.input)))
+          .find((each) => each !== undefined);
+        if (refusedBy) break;
         if (calledFor.length === 0 || ended.stop !== 'tool_use') break;
         const results: Extract<ModelMessage, { role: 'user' }>['content'] = [];
         for (const each of calledFor) {

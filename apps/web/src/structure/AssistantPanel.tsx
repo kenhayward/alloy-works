@@ -2,6 +2,7 @@ import { streamPost, type createApiClient, type StreamPostOptions } from '@alloy
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 
 import styles from './AssistantPanel.module.css';
+import { PersonalPrompts } from './PersonalPrompts.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -563,6 +564,7 @@ export function AssistantPanel({
           )}
         </section>
       )}
+      <PersonalPrompts client={client} asking={ask} onUse={setAsk} />
       <form onSubmit={(event) => void submit(event)}>
         <label className={styles['ask']}>
           Ask the assistant

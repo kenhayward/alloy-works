@@ -70,13 +70,15 @@ time (below); embeddings for meaning are [search.md](search.md)'s and
 | **GEN-049** | `guardrail`: phrases forbidden in what is sent and what returns, a reply held where one watches it, a refusal naming the rule and reason (G5-F)  |
 | **GEN-053** | `conversation_context`: a tray each turn re-reads as the person, a part they no longer read left out and named; added and removed by them (G5-D) |
 | **GEN-052** | `propose_component` in a conversation: made at 0.1 as the person only once accepted, never kept, reported as generated (G5-E)                    |
+| **GEN-054** | `personal_prompt`: its owner's alone, never an artifact, so no template binds one and nobody else reads or runs it (G5-G)                        |
+| **GEN-055** | Promotion, the one path: a new prompt at draft in a space its owner may edit, reviewed and tried like any other (G5-G)                           |
 
 ## What this document does not own
 
 | Left unclaimed                                                                     | Why                                                                                                                                                     |
 | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | GEN-002, GEN-004                                                                   | A prompt declares components, metadata and parameters, and writes a part's text: a query's results as context, and a field as output, are later slices' |
-| GEN-054, GEN-055, GEN-021                                                          | The conversation's tray, guardrails, new components and personal prompts: G5's later PRs; GEN-021 is the model's (G5-H)                                 |
+| GEN-021                                                                            | The conversation's tray, guardrails, new components and personal prompts: G5's later PRs; GEN-021 is the model's (G5-H)                                 |
 | GEN-034, GEN-036, GEN-044, ADM-013, ADM-014, ADM-033, ADM-034                      | Budgets, alerts, caching and trends (G6)                                                                                                                |
 | ADM-048                                                                            | Translation, scanning, email and webhooks cost nothing yet; it is claimed when the last of them exists                                                  |
 | SCH-013, SCH-014, SCH-035, VER-039 (designed elsewhere), SCH-067, GEN-038, GEN-044 | Meaning (G7)                                                                                                                                            |
@@ -167,6 +169,13 @@ and each found nothing. A related component is read at the version its relations
 its latest, as a floating relationship reads (REL-043), not at its approved revision. A parameter's
 value is placed in the instructions wrapped as data: whoever sets a document's parameters is not the
 prompt's approver. A blank reply proposes nothing.
+
+What a conversation sends (G5): each turn the earlier finished turns' asks and replies, and the tray,
+re-read part by part as the person. A reply is the person's own record, replayed as written: one that
+quoted a part they may no longer read is not re-filtered, as the tray is; where it was on a document
+they may no longer read, the whole conversation is closed to them. Erasing a person deletes their
+personal prompts and leaves their conversations and runs, which only they could read, with them.
+Two turns sent at once can both start: one turn at a time is checked, not locked.
 
 ## The assistant
 

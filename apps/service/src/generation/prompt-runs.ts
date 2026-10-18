@@ -345,11 +345,13 @@ export function promptRunHandlers(
                 outcome: ending,
                 model,
                 usage,
-                reply: said,
+                // A reply a guardrail refused is kept nowhere, so no read of the run shows it (G5-F).
+                reply: refusedBy ? '' : said,
                 // A trial's output is kept on the run (GN-F); a run's is its proposal.
                 steps: [
                   {
-                    output: said,
+                    output: refusedBy ? '' : said,
+                    ...(refusedBy ? { refused: 'guardrail', rule: refusedBy.id } : {}),
                     ...(proposal ? { proposal: proposal.id } : {}),
                     ...(problem ? { refused: problem } : {}),
                   },
