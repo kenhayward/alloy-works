@@ -7,8 +7,11 @@ import { z } from 'zod';
  * caller's.
  */
 
-/** The kinds a workflow is declared for, one each (WF-A); query definitions since WF2 (DAT-121). */
-export const WORKFLOW_KINDS = ['component', 'document', 'queryDefinition'] as const;
+/**
+ * The kinds a workflow is declared for, one each (WF-A); query definitions since WF2 (DAT-121), prompts
+ * since G4 (GEN-045).
+ */
+export const WORKFLOW_KINDS = ['component', 'document', 'queryDefinition', 'prompt'] as const;
 export type WorkflowKind = (typeof WORKFLOW_KINDS)[number];
 
 /** What a transition needs on the artifact: editing it, or approving it (WF-C). */
@@ -79,11 +82,12 @@ export const TRANSITION_CONDITIONS = [
 ] as const;
 export type TransitionCondition = (typeof TRANSITION_CONDITIONS)[number];
 
-/** The conditions each kind's transitions may require: a query definition has none to require. */
+/** The conditions each kind's transitions may require: a query definition and a prompt none yet. */
 export const CONDITIONS_BY_KIND: Readonly<Record<WorkflowKind, readonly TransitionCondition[]>> = {
   component: ['suggestions', 'threads', 'generated'],
   document: TRANSITION_CONDITIONS,
   queryDefinition: [],
+  prompt: [],
 };
 
 const Transition = z.strictObject({

@@ -20608,13 +20608,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 497,
+      "line": 505,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 510,
+      "line": 518,
       "kind": "title"
     },
     {
@@ -20980,7 +20980,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1646,
+      "line": 1653,
       "kind": "title"
     },
     {
@@ -21611,6 +21611,12 @@
       "id": "STY-035",
       "file": "apps/service/src/presentation-routes.test.ts",
       "line": 113,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-001",
+      "file": "apps/service/src/prompt-routes.test.ts",
+      "line": 112,
       "kind": "title"
     },
     {
@@ -22372,127 +22378,127 @@
     {
       "id": "LIF-004",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 873,
+      "line": 874,
       "kind": "rule"
     },
     {
       "id": "LIF-004",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 836,
+      "line": 837,
       "kind": "title"
     },
     {
       "id": "LIF-008",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 305,
+      "line": 306,
       "kind": "title"
     },
     {
       "id": "LIF-010",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 325,
+      "line": 326,
       "kind": "rule"
     },
     {
       "id": "LIF-010",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 305,
+      "line": 306,
       "kind": "title"
     },
     {
       "id": "LIF-015",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 783,
+      "line": 784,
       "kind": "title"
     },
     {
       "id": "LIF-016",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 783,
+      "line": 784,
       "kind": "title"
     },
     {
       "id": "LIF-018",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 783,
+      "line": 784,
       "kind": "title"
     },
     {
       "id": "LIF-042",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 428,
+      "line": 429,
       "kind": "title"
     },
     {
       "id": "LIF-043",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 428,
+      "line": 429,
       "kind": "title"
     },
     {
       "id": "LIF-044",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 541,
+      "line": 542,
       "kind": "title"
     },
     {
       "id": "LIF-045",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 696,
+      "line": 697,
       "kind": "title"
     },
     {
       "id": "LIF-046",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 541,
+      "line": 542,
       "kind": "title"
     },
     {
       "id": "LIF-047",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 428,
+      "line": 429,
       "kind": "title"
     },
     {
       "id": "LIF-050",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 348,
+      "line": 349,
       "kind": "title"
     },
     {
       "id": "LIF-051",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 397,
+      "line": 398,
       "kind": "title"
     },
     {
       "id": "LIF-052",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 397,
+      "line": 398,
       "kind": "title"
     },
     {
       "id": "LIF-054",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 175,
+      "line": 176,
       "kind": "title"
     },
     {
       "id": "LIF-061",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 280,
+      "line": 281,
       "kind": "rule"
     },
     {
       "id": "LIF-061",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 222,
+      "line": 223,
       "kind": "title"
     },
     {
       "id": "VER-059",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 348,
+      "line": 349,
       "kind": "title"
     },
     {
@@ -27244,7 +27250,7 @@
     {
       "id": "LIF-003",
       "file": "packages/db/src/workflow-migration.test.ts",
-      "line": 215,
+      "line": 216,
       "kind": "title"
     },
     {
@@ -27274,7 +27280,7 @@
     {
       "id": "LIF-007",
       "file": "packages/db/src/workflow.test.ts",
-      "line": 227,
+      "line": 231,
       "kind": "title"
     },
     {
@@ -27286,13 +27292,13 @@
     {
       "id": "LIF-061",
       "file": "packages/db/src/workflow.test.ts",
-      "line": 255,
+      "line": 259,
       "kind": "title"
     },
     {
       "id": "SCH-060",
       "file": "packages/db/src/workflow.test.ts",
-      "line": 622,
+      "line": 626,
       "kind": "title"
     },
     {

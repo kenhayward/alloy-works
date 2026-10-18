@@ -1,3 +1,4 @@
+import { findRole } from '@alloy-works/db';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { startHarness, type Harness } from './test/bindings-harness.js';
@@ -23,6 +24,9 @@ describe('the prompt routes (the G4 plan, G4-A)', () => {
 
   beforeAll(async () => {
     h = await startHarness();
+    // Ada approves in General.
+    const approver = await h.tenantDb.withTenant(h.tenant, (trx) => findRole(trx, 'Approver'));
+    await h.allow(h.ids.ada!, approver!.id, { kind: 'space', id: h.general });
   }, 120_000);
 
   afterAll(async () => {
@@ -103,6 +107,52 @@ describe('the prompt routes (the G4 plan, G4-A)', () => {
       prompt({ models: { purpose: 'embedding', accepts: ['m'] } }),
     );
     expect(embedding.statusCode).toBe(400);
+  });
+
+  it('GEN-001 reviews a prompt as a query definition is: submitted, approved at a gate by another, designated, and back to draft when saved', async () => {
+    const made = (await make('grace', prompt({ title: 'Reviewed prompt' }))).json<{
+      id: string;
+      version: { id: string };
+      state: { key: string };
+      transitions: { key: string }[];
+    }>();
+    expect(made.state.key).toBe('draft');
+    expect(made.transitions.map((each) => each.key)).toContain('submit');
+
+    const submitted = await h.call('grace', 'POST', `/v1/prompts/${made.id}/transitions`, {
+      transition: 'submit',
+      from: 'draft',
+    });
+    expect(submitted.statusCode, submitted.body).toBe(200);
+
+    // The gate is not an author's to pass.
+    const decision = { transition: 'approve', version: made.version.id, decision: 'approved' };
+    const byAuthor = await h.call('grace', 'POST', `/v1/prompts/${made.id}/approvals`, decision);
+    expect(byAuthor.statusCode).toBeGreaterThanOrEqual(400);
+    const byAda = await h.call('ada', 'POST', `/v1/prompts/${made.id}/approvals`, decision);
+    expect(byAda.statusCode, byAda.body).toBe(200);
+
+    const approved = (await h.call('alice', 'GET', `/v1/prompts/${made.id}`)).json<{
+      state: { key: string };
+      revision: { number: number } | null;
+      version: { id: string };
+    }>();
+    expect(approved.state.key).toBe('approved');
+    expect(approved.revision?.number).toBe(1);
+    const decided = await h.call('alice', 'GET', `/v1/prompts/${made.id}/approvals`);
+    expect(decided.json<{ approvals: { decision: string }[] }>().approvals).toEqual([
+      expect.objectContaining({ decision: 'approved' }),
+    ]);
+
+    // Saving the approved prompt starts a draft.
+    await h.call('grace', 'POST', `/v1/prompts/${made.id}/versions`, {
+      openedFrom: approved.version.id,
+      prompt: prompt({ title: 'Reviewed prompt, changed' }),
+    });
+    const changed = (await h.call('grace', 'GET', `/v1/prompts/${made.id}`)).json<{
+      state: { key: string };
+    }>();
+    expect(changed.state.key).toBe('draft');
   });
 
   it("answers another kind's id as no prompt", async () => {

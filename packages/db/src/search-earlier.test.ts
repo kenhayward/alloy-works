@@ -720,6 +720,7 @@ describe('migration 0088, which keeps earlier versions searchable', () => {
         '0120_model_endpoints',
         '0121_assistant',
         '0122_prompts',
+        '0123_workflow_prompts',
       ]);
       const kept = await service.withTenant(tenant, (trx) =>
         trx

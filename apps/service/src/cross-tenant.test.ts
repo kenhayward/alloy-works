@@ -408,6 +408,9 @@ const OTHER_TENANT_IDS: Readonly<
   listQueryDefinitionApprovals: async (tenant, db) => ({
     id: await queryDefinitionIdIn(tenant, db),
   }),
+  transitionPrompt: async (tenant, db) => ({ id: await promptIdIn(tenant, db) }),
+  decidePromptGate: async (tenant, db) => ({ id: await promptIdIn(tenant, db) }),
+  listPromptApprovals: async (tenant, db) => ({ id: await promptIdIn(tenant, db) }),
   recordQueryDefinitionVersion: async (tenant, db) => ({
     id: await queryDefinitionIdIn(tenant, db),
   }),
@@ -629,6 +632,7 @@ const VALID_INPUT: Readonly<
     payload: { transition: 'approve', version: SESSION, decision: 'approved' },
   },
   transitionQueryDefinition: { payload: { transition: 'submit', from: 'draft' } },
+  transitionPrompt: { payload: { transition: 'submit', from: 'draft' } },
   setComponentDates: { payload: { effectiveAt: null, reviewBy: '2030-01-01', owner: null } },
   moveDocumentTemplate: { payload: { latest: SESSION, to: SESSION } },
   setDocumentDates: { payload: { effectiveAt: null, reviewBy: '2030-01-01', owner: null } },
@@ -646,6 +650,9 @@ const VALID_INPUT: Readonly<
   },
   acceptDocumentRevision: { payload: { revision: 1, axis: 'market', value: 'us' } },
   decideQueryDefinitionGate: {
+    payload: { transition: 'approve', version: SESSION, decision: 'approved' },
+  },
+  decidePromptGate: {
     payload: { transition: 'approve', version: SESSION, decision: 'approved' },
   },
   requestAuditExport: { payload: {} },

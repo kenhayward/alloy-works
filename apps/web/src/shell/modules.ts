@@ -33,6 +33,11 @@ export const MODULE_GROUPS: readonly ModuleGroup[] = [
         href: '#/templates',
         about: 'Starting outlines, themes and parameters.',
       },
+      {
+        name: 'Prompts',
+        href: '#/prompts',
+        about: 'Instructions a model runs on a part, declaring what it reads and writes.',
+      },
     ],
   },
   {

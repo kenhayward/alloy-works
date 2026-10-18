@@ -15,32 +15,43 @@ import {
   type StoredPrompt,
   type Tenant,
   type TenantDatabase,
+  type TenantTransaction,
 } from '@alloy-works/db';
 import { decide, type AccessFacts } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from '../access.js';
 import { versionView } from '../components.js';
+import { workflowView } from '../workflows.js';
 import { cursorFor, pageAsked } from '../listing.js';
 import type { SessionPrincipal } from '../sessions.js';
 import { refused } from '../wire-codes.js';
 
 /** The prompt routes (generation.md, "Prompts"; the G4 plan, G4-A). None reaches a model. */
 
-function promptView(stored: StoredPrompt, facts: AccessFacts): PromptView {
+/** A prompt as the routes answer it, with what the caller may do and where it stands (GEN-045). */
+async function promptView(
+  trx: TenantTransaction,
+  principalId: string,
+  stored: StoredPrompt,
+  facts: AccessFacts,
+): Promise<PromptView> {
   return {
     id: stored.id,
     space: stored.space,
     version: versionView(stored.version),
     prompt: stored.prompt,
     mayEdit: decide('edit', facts).allowed,
+    ...(await workflowView(trx, stored.id, facts, principalId)),
   };
 }
 
 /** A writer's answer that is not a prompt: refused by name, or absent. */
-function refusedPrompt(
+async function refusedPrompt(
+  trx: TenantTransaction,
+  principalId: string,
   answer: Exclude<PromptAnswer, { prompt: StoredPrompt }>,
   facts: AccessFacts,
-): never {
+): Promise<never> {
   switch (answer.answer) {
     case 'prompt.refused':
       throw refused(400, 'prompt.invalid', 'The prompt is not valid.', {
@@ -51,7 +62,7 @@ function refusedPrompt(
         409,
         'version.precondition',
         'This prompt has a newer version than the one this page opened.',
-        { current: promptView(answer.current, facts) },
+        { current: await promptView(trx, principalId, answer.current, facts) },
       );
     case 'space.missing':
     case 'prompt.missing':
@@ -97,19 +108,24 @@ export function promptHandlers(
       const { prompt } = request.body as CreatePromptBody;
       const answer = await createPrompt(trx, { author: principalId, spaceId: space, prompt });
       if (answer.answer !== 'created') {
-        return refusedPrompt(answer as Exclude<PromptAnswer, { prompt: StoredPrompt }>, facts);
+        return refusedPrompt(
+          trx,
+          principalId,
+          answer as Exclude<PromptAnswer, { prompt: StoredPrompt }>,
+          facts,
+        );
       }
       // Decided at the space, which a new prompt inherits from.
-      return promptView(answer.prompt, facts);
+      return promptView(trx, principalId, answer.prompt, facts);
     },
 
     // `authorise` never looks at an artifact's kind, so another kind's id authorises cleanly here;
     // `readPrompt` answers nothing for it, and neither does this.
-    getPrompt: async (request: FastifyRequest, { trx, facts }: Authorised) => {
+    getPrompt: async (request: FastifyRequest, { trx, principalId, facts }: Authorised) => {
       const { id } = request.params as PromptParams;
       const stored = await readPrompt(trx, id);
       if (!stored) throw notFound();
-      return promptView(stored, facts);
+      return promptView(trx, principalId, stored, facts);
     },
 
     recordPromptVersion: async (
@@ -125,9 +141,14 @@ export function promptHandlers(
         prompt: body.prompt,
       });
       if (answer.answer === 'recorded' || answer.answer === 'version.unchanged') {
-        return promptView(answer.prompt, facts);
+        return promptView(trx, principalId, answer.prompt, facts);
       }
-      return refusedPrompt(answer as Exclude<PromptAnswer, { prompt: StoredPrompt }>, facts);
+      return refusedPrompt(
+        trx,
+        principalId,
+        answer as Exclude<PromptAnswer, { prompt: StoredPrompt }>,
+        facts,
+      );
     },
   };
 }
