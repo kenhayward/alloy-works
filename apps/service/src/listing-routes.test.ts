@@ -10,6 +10,7 @@ import {
   grant,
   migrate,
   recordDatasetVersion,
+  requestTenantExport,
   recordPublication,
   requestPublication,
   seedDevelopmentContent,
@@ -446,6 +447,11 @@ describe('the listings through the service', () => {
         })
         .execute(),
     );
+    // Two exports, so the exports listing has pages to turn (the R21 plan, R21-B).
+    await tenantDb.withTenant(tenant, async (trx) => {
+      await requestTenantExport(trx, asker);
+      await requestTenantExport(trx, asker);
+    });
     const addressed: Record<string, string> = {
       listComponents: '/v1/components',
       listComponentVersions: `/v1/components/${component}/versions`,
@@ -467,6 +473,7 @@ describe('the listings through the service', () => {
       listAuditEvents: '/v1/audit?kind=group.made',
       listTemplates: '/v1/templates',
       listConnections: '/v1/connections',
+      listTenantExports: '/v1/exports',
       listDatasetSources: '/v1/datasets',
       listQueryDefinitions: '/v1/query-definitions',
       listDefinitions: '/v1/definitions',

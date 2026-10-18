@@ -116,6 +116,15 @@ export {
   DatasetSourceView,
   datasetSourceRoutes,
 } from './dataset-sources.js';
+export {
+  TenantExportDownload,
+  TenantExportList,
+  TenantExportMade,
+  TenantExportParams,
+  TenantExportQuery,
+  TenantExportView,
+  exportRoutes,
+} from './exports.js';
 export { KeepView, RetentionBody, RetentionView, retentionRoutes } from './retention.js';
 export {
   ApprovalBody,

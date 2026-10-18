@@ -51,6 +51,8 @@ export const listingSorts = {
   people: { joined: { types: ['timestamptz'], order: 'asc' } },
   // The stored results a reader may query as a source, by name (DAT-094; the R21 plan, R21-A).
   datasets: { name: { types: ['text'], order: 'asc' } },
+  // The tenant's exports, the newest first (API-044; the R21 plan, R21-B).
+  tenantExports: { requested: { types: ['timestamptz'], order: 'desc' } },
   // An author's own iterations of one component, the newest first (component-editor.md, "Recovery,
   // as W11 builds it"): what the Recovery panel lists.
   iterations: { saved: { types: ['timestamptz'], order: 'desc' } },

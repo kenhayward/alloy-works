@@ -220,6 +220,20 @@ export {
   type AuditExport,
   type KeptExport,
 } from './audit-export.js';
+export {
+  EXPORT_KEPT_DAYS,
+  EXPORT_PARTS,
+  exportPage,
+  failTenantExport,
+  finishTenantExport,
+  listTenantExports,
+  readTenantExport,
+  requestTenantExport,
+  expireTenantExport,
+  tenantExportsDue,
+  type ExportPart,
+  type TenantExport,
+} from './tenant-export.js';
 export { sha256Hex, versionDigests, type VersionDigests } from './version-digest.js';
 export {
   archiveSpace,

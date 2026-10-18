@@ -99,12 +99,18 @@ export function answerDataset(
   if (draft.fetch.kind !== 'dataset') throw new Error('Not a stored result’s query');
   const { query } = draft.fetch;
   const types = source.provenance.columns.map((each) => [each.name, each.type] as const);
-  const answered = evaluateDatasetQuery(
-    query,
-    { columns: types, rows: rows.rows },
-    draft.parameters,
-    values,
-  );
+  let answered: ReturnType<typeof evaluateDatasetQuery>;
+  try {
+    answered = evaluateDatasetQuery(
+      query,
+      { columns: types, rows: rows.rows },
+      draft.parameters,
+      values,
+    );
+  } catch {
+    // A value the checks let through that cannot be compared: a failure, never a crash.
+    return { outcome: 'failed', failure: dataFailure('result_mismatch') };
+  }
   const at = new Map(answered.columns.map((name, index) => [name, index]));
   const declared = draft.columns.map((column) => ({
     column,

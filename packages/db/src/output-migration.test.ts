@@ -268,6 +268,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0115_query_limits',
       '0116_cohort_on_failure',
       '0117_dataset_source',
+      '0118_tenant_export',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,

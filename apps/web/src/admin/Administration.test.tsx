@@ -719,6 +719,7 @@ describe("Administration's menu", () => {
       '#/admin/retention',
       '#/admin/queries',
       '#/admin/audit',
+      '#/admin/export',
       '#/admin/about',
     ]);
   });

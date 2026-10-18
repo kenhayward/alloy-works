@@ -13,6 +13,8 @@ import {
   sweepPresence,
   sweepPreviews,
   sweepQueryRuns,
+  expireTenantExport,
+  tenantExportsDue,
   type JobQueue,
   type TenantDatabase,
 } from '@alloy-works/db';
@@ -299,6 +301,42 @@ export async function sweepOldNotifications(
       removed += await db.withTenant(tenant, (trx) => sweepNotifications(trx, now));
     } catch (error) {
       log.error({ tenant: tenant.id, err: error }, 'the old notifications were not swept');
+    }
+  }
+  return removed;
+}
+
+/**
+ * Tenant exports written more than seven days ago, in every tenant, and their archives (the R21 plan,
+ * R21-B): each archive removed first, then its export marked `expired`, so one a removal missed is
+ * named still and swept again; each row kept, so the list of past exports says it was made.
+ */
+export async function sweepExpiredTenantExports(
+  db: TenantDatabase,
+  stores: ObjectStores,
+  log: WorkerLog,
+  now: Date = new Date(),
+): Promise<number> {
+  let removed = 0;
+  for (const tenant of await db.tenants()) {
+    try {
+      const due = await db.withTenant(tenant, (trx) => tenantExportsDue(trx, now));
+      if (due.length === 0) continue;
+      const store = await db.withTenant(tenant, (trx) => stores.forTenant(trx, tenant));
+      for (const { id, key } of due) {
+        try {
+          await store.remove(key);
+          await db.withTenant(tenant, (trx) => expireTenantExport(trx, id));
+          removed += 1;
+        } catch (error) {
+          log.error(
+            { tenant: tenant.id, key, err: error },
+            "an expired export's archive was not removed",
+          );
+        }
+      }
+    } catch (error) {
+      log.error({ tenant: tenant.id, err: error }, 'the export sweep failed for a tenant');
     }
   }
   return removed;

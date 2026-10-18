@@ -86,6 +86,11 @@ export const documentationGroups = [
       { name: 'Publication requests', description: 'Submit and follow publishing work.' },
       { name: 'Publications', description: 'List and retrieve completed publications.' },
       {
+        name: 'Tenant export',
+        description:
+          'The whole environment exported as a job: its content, versions, relationships, baselines and publication records as JSON Lines, the bytes they name by hash, and a manifest of what it leaves out. Kept seven days.',
+      },
+      {
         name: 'Stored results as sources',
         description:
           'A query result kept by the environment, queried as a source of its own through the query builder, never touching the source it came from.',
@@ -339,6 +344,12 @@ const operationTags = {
   ],
   'Query usage': ['getQueryUsage', 'getQueryRunsCsv'],
   'Stored results as sources': ['listDatasetSources', 'sampleDataset'],
+  'Tenant export': [
+    'requestTenantExport',
+    'listTenantExports',
+    'getTenantExport',
+    'downloadTenantExport',
+  ],
   'Publication shares': [
     'listPublicationShares',
     'sharePublication',
@@ -725,6 +736,14 @@ const descriptions: Readonly<Record<string, string>> = {
     'Lists the stored results the caller may read, a page at a time, each by its name or its query definition’s title, with its latest version’s columns: what a query over it may select.',
   sampleDataset:
     'Runs a draft query definition over a stored result, as the query builder builds it - its columns, condition, grouping and aggregates - against sample values, storing nothing. The service evaluates it over the result’s kept rows; the source the result came from is never asked. Needs read on the stored result.',
+  requestTenantExport:
+    'Asks for an export of the whole environment as it stands now, written by a job into one ZIP archive: a JSON Lines file each for its artifacts, versions, relationships, baselines and publications, the bytes its assets and publications hold under objects/ by their SHA-256, and manifest.json saying what it holds and what it leaves out. Recorded as an export produced. Needs administer at the environment.',
+  listTenantExports:
+    'Lists the environment’s exports, the newest first, a page at a time: each queued, done, failed or expired, with its size and when its archive is removed. Needs administer at the environment.',
+  getTenantExport:
+    'Returns an export of the environment: whether its job has written it, how many of each part it holds, and when its archive is removed, seven days after it was written. Needs administer at the environment.',
+  downloadTenantExport:
+    'Returns a link to an export’s archive, signed for five minutes; each one handed out is recorded as an export downloaded. Refused export_not_ready until it is written, and once it has failed or expired. Needs administer at the environment.',
   getQueryUsage:
     'Totals the environment’s query runs in a period - samples, resolves, checks and document creations - by query definition and by document: how many ran, failed or were throttled, their time, rows and bytes. Most time first. The last 30 days unless named, never more than 13 months. Needs administer at the environment.',
   getQueryRunsCsv:
