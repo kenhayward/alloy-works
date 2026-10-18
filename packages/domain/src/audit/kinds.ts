@@ -140,7 +140,7 @@ const Revised = z.strictObject({
 });
 
 /** An export, and what of. */
-const Exported = z.strictObject({ export: Id, of: z.enum(['audit']) });
+const Exported = z.strictObject({ export: Id, of: z.enum(['audit', 'tenant']) });
 
 interface KindSpec {
   /** The requirements it answers (LIF-063). */
@@ -306,7 +306,7 @@ export const auditKindSpecs = {
     'apps/worker/src/jobs/publish.ts',
   ),
   // An export asked for and each download of it handed out (the AU2 plan, AU-N): the audit log's
-  // today, a document's when IMP builds one, told apart by `of`.
+  // today, the tenant's (the R21 plan, R21-B), a document's when IMP builds one, told apart by `of`.
   'export.produced': kind(['LIF-067', 'LIF-028', 'ADM-039', 'IMP-023'], Exported, AUDIT_LOG),
   'export.downloaded': kind(['LIF-067', 'LIF-028', 'ADM-039', 'IMP-044'], Exported, AUDIT_LOG),
   'audit.label_erased': kind(

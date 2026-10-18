@@ -1,4 +1,6 @@
 import { createHash } from 'node:crypto';
+import { createReadStream } from 'node:fs';
+import { stat } from 'node:fs/promises';
 import type { Tenant, TenantTransaction } from '@alloy-works/db';
 import {
   DeleteObjectCommand,
@@ -14,6 +16,11 @@ import type { StoredObject, StoreSettings } from './settings.js';
 export interface TenantStore {
   /** Keeps the bytes under their own hash, and says where. The caller never chooses a key. */
   put(body: Uint8Array, contentType: string): Promise<StoredObject>;
+  /**
+   * Keeps a file's bytes under their own hash, read from disk twice - once to hash, once to send - so
+   * a large one is never held in memory (the R21 plan, R21-B).
+   */
+  putFile(path: string, contentType: string): Promise<StoredObject>;
   get(key: string): Promise<Buffer>;
   /**
    * Removes the object under this key; removing one already gone is not an error. The caller decides
@@ -100,6 +107,24 @@ export function createObjectStores(settings: StoreSettings, sealingKey: Buffer):
             }),
           );
           return { key, sha256, size: body.byteLength };
+        },
+
+        async putFile(path, contentType) {
+          const hash = createHash('sha256');
+          for await (const chunk of createReadStream(path)) hash.update(chunk as Buffer);
+          const sha256 = hash.digest('hex');
+          const { size } = await stat(path);
+          const key = `${tenantPrefix(tenant)}sha256/${sha256}`;
+          await client.send(
+            new PutObjectCommand({
+              Bucket: bucket,
+              Key: key,
+              Body: createReadStream(path),
+              ContentLength: size,
+              ContentType: contentType,
+            }),
+          );
+          return { key, sha256, size };
         },
 
         async get(key) {

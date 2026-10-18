@@ -152,6 +152,7 @@ describe("migration 0056, which gives the default layout the word a table's note
       '0115_query_limits',
       '0116_cohort_on_failure',
       '0117_dataset_source',
+      '0118_tenant_export',
     ]);
     expect((await layoutChain(tenant)).at(-1)).toMatchObject({
       version_no: 9,

@@ -19,7 +19,8 @@ export type JobKind =
   | 'check_pdf'
   | 'audit_export'
   | 'impact_report'
-  | 'cohort';
+  | 'cohort'
+  | 'tenant_export';
 
 /** What a worker is told: whose work, of what kind, about which id. Never any content. */
 export interface Job {

@@ -18540,6 +18540,10 @@
           "howItIsMet": "A submit route takes an `Idempotency-Key` as every permission-checked mutating route does (API-008): a retry answers the job the first made"
         },
         {
+          "id": "API-044",
+          "howItIsMet": "The whole tenant is exported as a job, `POST /v1/exports`, never assembled by paging: one ZIP archive of JSON Lines parts, the bytes they name by hash and a manifest, kept seven days ([The tenant export](#the-tenant-export))"
+        },
+        {
           "id": "SCH-022",
           "howItIsMet": "Every listing pages by keyset over its sort key and then the artifact's id, a total order, and is read as of its first page's snapshot - each version and publication knowing the transaction that wrote it - so a walk is over one set no later write moves, and never repeats or skips ([Listings and idempotency, in T1](#listings-and-idempotency-in-t1))"
         },
@@ -20222,13 +20226,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 451,
+      "line": 457,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 464,
+      "line": 470,
       "kind": "title"
     },
     {
@@ -20438,7 +20442,7 @@
     {
       "id": "TAB-008",
       "file": "apps/service/src/bound-table-rows.test.ts",
-      "line": 135,
+      "line": 136,
       "kind": "title"
     },
     {
@@ -20594,7 +20598,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1435,
+      "line": 1454,
       "kind": "title"
     },
     {
@@ -21050,7 +21054,7 @@
     {
       "id": "API-007",
       "file": "apps/service/src/listing-routes.test.ts",
-      "line": 324,
+      "line": 325,
       "kind": "title"
     },
     {
@@ -21786,6 +21790,12 @@
       "kind": "title"
     },
     {
+      "id": "API-044",
+      "file": "apps/service/src/tenant-export-routes.test.ts",
+      "line": 23,
+      "kind": "title"
+    },
+    {
       "id": "IAM-075",
       "file": "apps/service/src/tenants.test.ts",
       "line": 37,
@@ -22106,13 +22116,13 @@
     {
       "id": "ADM-049",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1369,
+      "line": 1370,
       "kind": "title"
     },
     {
       "id": "LIF-022",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1511,
+      "line": 1512,
       "kind": "title"
     },
     {
@@ -22185,6 +22195,12 @@
       "id": "LIF-019",
       "file": "apps/web/src/admin/Retention.test.tsx",
       "line": 67,
+      "kind": "title"
+    },
+    {
+      "id": "API-044",
+      "file": "apps/web/src/admin/TenantExport.test.tsx",
+      "line": 59,
       "kind": "title"
     },
     {
@@ -24627,6 +24643,12 @@
       "id": "TAB-050",
       "file": "apps/worker/src/tables.test.ts",
       "line": 151,
+      "kind": "title"
+    },
+    {
+      "id": "API-044",
+      "file": "apps/worker/src/tenant-export.test.ts",
+      "line": 97,
       "kind": "title"
     },
     {

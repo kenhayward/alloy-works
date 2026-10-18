@@ -6,6 +6,7 @@ import { everyPage } from '../paging.js';
 import styles from './Administration.module.css';
 import { About } from './About.js';
 import { AuditLog } from './AuditLog.js';
+import { TenantExport } from './TenantExport.js';
 import { Editing } from './Editing.js';
 import { Groups } from './Groups.js';
 import { Holds } from './Holds.js';
@@ -42,6 +43,8 @@ const SECTIONS = [
   // How many queries run at once, and what they cost (DAT-053, DAT-071; the R18 plan).
   { slug: 'queries', title: 'Query usage', group: 'System' },
   { slug: 'audit', title: 'Audit log', group: 'System' },
+  // The whole environment exported as a job, each kept seven days (API-044; the R21 plan, R21-B).
+  { slug: 'export', title: 'Export', group: 'System' },
   { slug: 'about', title: 'About and release notes', group: 'System' },
 ] as const;
 type Section = (typeof SECTIONS)[number]['slug'];
@@ -275,6 +278,7 @@ export function Administration({
           <QueryUsage client={client} mayChange={administers.get('tenant') === true} />
         )}
         {shown === 'audit' && <AuditLog client={client} />}
+        {shown === 'export' && <TenantExport client={client} />}
         {shown === 'about' && <About about={about} />}
       </div>
     </section>

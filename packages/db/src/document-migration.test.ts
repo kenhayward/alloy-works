@@ -190,6 +190,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0115_query_limits',
       '0116_cohort_on_failure',
       '0117_dataset_source',
+      '0118_tenant_export',
     ]);
 
     // The component and its version are as they were.
@@ -371,6 +372,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0115_query_limits',
       '0116_cohort_on_failure',
       '0117_dataset_source',
+      '0118_tenant_export',
     ]);
 
     const { rows } = await queryAs(

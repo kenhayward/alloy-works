@@ -30,7 +30,7 @@ const NUMBERS = new Set(['integer', 'decimal']);
 export function checkDatasetQuery(
   query: Query,
   columns: DatasetSource['columns'],
-  _parameters: readonly Parameter[],
+  parameters: readonly Parameter[],
   problem: Problem,
 ): void {
   const [source] = query.sources;
@@ -70,9 +70,35 @@ export function checkDatasetQuery(
     else if ('or' in condition) condition.or.forEach((each, at) => walk(each, `${path}.or.${at}`));
     else if ('not' in condition) walk(condition.not, `${path}.not`);
     else {
-      named(condition.column, `${path}.column`);
-      if (condition.to !== undefined && 'column' in condition.to) {
-        named(condition.to.column, `${path}.to.column`);
+      const type = named(condition.column, `${path}.column`);
+      const { to } = condition;
+      const against =
+        to === undefined
+          ? undefined
+          : 'column' in to
+            ? named(to.column, `${path}.to.column`)
+            : 'parameter' in to
+              ? parameters.find((each) => each.name === to.parameter)?.type
+              : to.type;
+      if (type === undefined) return;
+      if ((condition.is === 'contains' || condition.is === 'startsWith') && type.base !== 'text') {
+        problem(
+          `${path}.is`,
+          `Only text is searched for contained text: ${condition.column.column} is ${type.base}`,
+        );
+        return;
+      }
+      // Held to the column's own type, as a source's cast would hold it: a whole number may stand
+      // for a decimal, and nothing else for anything but its own (the R21 final review).
+      if (
+        against !== undefined &&
+        against.base !== type.base &&
+        !(type.base === 'decimal' && against.base === 'integer')
+      ) {
+        problem(
+          `${path}.to`,
+          `${condition.column.column} is ${type.base}, compared only with ${type.base}`,
+        );
       }
     }
   };

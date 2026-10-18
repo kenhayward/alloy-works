@@ -7,6 +7,7 @@ import pino from 'pino';
 import { describeWorkerConfig, loadWorkerConfig } from './config.js';
 import { loadPinnedFonts, PINNED_FONT_FILES } from './fonts.js';
 import { auditExportJob } from './jobs/audit-export.js';
+import { tenantExportJob } from './jobs/tenant-export.js';
 import { impactReportJob } from './jobs/impact-report.js';
 import { cohortJob } from './jobs/cohort.js';
 import { checkJob } from './jobs/check.js';
@@ -18,6 +19,7 @@ import {
   sweepExpiredIterations,
   sweepExpiredQueryRuns,
   sweepExpiredPreviews,
+  sweepExpiredTenantExports,
   sweepExpiredSignIns,
   sweepOldNotifications,
   sweepDates,
@@ -62,6 +64,7 @@ const handlers: Record<string, JobHandler> = {
   audit_export: auditExportJob({ db, stores }),
   impact_report: impactReportJob({ db, stores }),
   cohort: cohortJob({ db, stores }),
+  tenant_export: tenantExportJob({ db, stores }),
 };
 
 // A connection of its own, held open: NOTIFY wakes the worker between polls.
@@ -80,6 +83,10 @@ const sweep = setInterval(() => {
   void sweepExpiredPreviews(db, stores, log)
     .then((removed) => removed > 0 && log.info({ removed }, 'swept expired previews'))
     .catch((error: unknown) => log.error({ err: error }, 'preview sweep failed'));
+  // Tenant exports seven days after they were written, and their archives (the R21 plan, R21-B).
+  void sweepExpiredTenantExports(db, stores, log)
+    .then((removed) => removed > 0 && log.info({ removed }, 'swept expired exports'))
+    .catch((error: unknown) => log.error({ err: error }, 'export sweep failed'));
   // Presence past a minute, which no stream shows already (the PL plan, PL-C).
   void sweepStalePresence(db, log)
     .then((removed) => removed > 0 && log.info({ removed }, 'swept stale presence'))

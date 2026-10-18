@@ -37,6 +37,7 @@ import {
   type Tenant,
   type TenantDatabase,
   requestAuditExport,
+  requestTenantExport,
   submitImpactReport,
   makeRelationship,
 } from '@alloy-works/db';
@@ -322,6 +323,8 @@ const OTHER_TENANT_IDS: Readonly<
   releaseHold: async (tenant, db) => ({ id: await holdIdIn(tenant, db) }),
   getAuditExport: async (tenant, db) => ({ id: await auditExportIdIn(tenant, db) }),
   downloadAuditExport: async (tenant, db) => ({ id: await auditExportIdIn(tenant, db) }),
+  getTenantExport: async (tenant, db) => ({ id: await tenantExportIdIn(tenant, db) }),
+  downloadTenantExport: async (tenant, db) => ({ id: await tenantExportIdIn(tenant, db) }),
   updateSpace: async (tenant, db) => ({ id: await spaceIdIn(tenant, db) }),
   createTemplate: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   getTemplate: async (tenant, db) => ({ id: await templateIdIn(tenant, db) }),
@@ -597,6 +600,7 @@ const VALID_INPUT: Readonly<
     payload: { transition: 'approve', version: SESSION, decision: 'approved' },
   },
   requestAuditExport: { payload: {} },
+  requestTenantExport: { payload: {} },
   beatPresence: {
     payload: { viewer: SESSION, document: SESSION, component: null, mode: 'read' },
   },
@@ -1276,6 +1280,21 @@ const auditExportIdIn = (tenant: Tenant, db: TenantDatabase) =>
       .returning('id')
       .executeTakeFirstOrThrow();
     return (await requestAuditExport(trx, asker.id, {})).id;
+  });
+
+const tenantExportIdIn = (tenant: Tenant, db: TenantDatabase) =>
+  db.withTenant(tenant, async (trx) => {
+    const asker = await trx
+      .insertInto('principal')
+      .values({
+        issuer: 'https://idp.example',
+        subject: `ivy-${randomUUID()}`,
+        email: null,
+        display_name: null,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    return (await requestTenantExport(trx, asker.id)).id;
   });
 
 const groupIdIn = (tenant: Tenant, db: TenantDatabase) =>

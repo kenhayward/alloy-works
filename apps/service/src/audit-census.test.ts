@@ -51,6 +51,10 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   requestAuditExport: writes('export.produced'),
   getAuditExport: read,
   downloadAuditExport: writes('export.downloaded'),
+  requestTenantExport: writes('export.produced'),
+  listTenantExports: read,
+  getTenantExport: read,
+  downloadTenantExport: writes('export.downloaded'),
   getTenant: read,
   startOrganisationSignIn: { none: 'attempt' },
   finishOrganisationSignIn: writes(
@@ -373,6 +377,7 @@ const WRITERS: Readonly<Record<string, Readonly<Record<string, Entry>>>> = {
     audit_export: { none: 'derived' },
     // A report of what is recorded, kept for its requester alone (the R3 plan, R3-F).
     impact_report: { none: 'derived' },
+    tenant_export: { none: 'derived' },
     // Each row's document cut at 0.1, as a document made by hand is (the R7 plan, R7-E).
     cohort: writes('content.version_cut'),
   },
@@ -383,6 +388,7 @@ const WRITERS: Readonly<Record<string, Readonly<Record<string, Entry>>>> = {
     sweepExpiredQueryRuns: { none: 'metering' },
     sweepUncheckedPublications: { none: 'derived' },
     sweepExpiredPreviews: { none: 'preview' },
+    sweepExpiredTenantExports: { none: 'derived' },
     sweepStalePresence: { none: 'presence' },
     foldNotificationDigests: { none: 'inbox' },
     sweepOldNotifications: { none: 'inbox' },

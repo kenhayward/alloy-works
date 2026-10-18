@@ -176,4 +176,39 @@ describe('a stored result queried as a source of its own (DAT-094; the R21 plan,
       problems(query({ select: [{ name: 'x', of: { aggregate: 'sum', of: ref('site') } }] })),
     ).toEqual(['fetch.query.select.0.of: Only a number is summed or averaged: site is text']);
   });
+
+  it('DAT-094 refuses a comparison whose operand is not of the column it is compared with, before it runs', () => {
+    const problems: string[] = [];
+    const check = (where: Query['where'], parameters: Parameter[] = []) => {
+      problems.length = 0;
+      checkDatasetQuery(query({ where }), readings.columns, parameters, (path, message) =>
+        problems.push(`${path}: ${message}`),
+      );
+      return [...problems];
+    };
+    expect(
+      check({ column: ref('visits'), is: 'equal', to: { literal: 'abc', type: { base: 'text' } } }),
+    ).toEqual(['fetch.query.where.to: visits is integer, compared only with integer']);
+    expect(
+      check({ column: ref('visits'), is: 'equal', to: { parameter: 'who' } }, [
+        { name: 'who', type: { base: 'text' }, required: true, list: false },
+      ]),
+    ).toEqual(['fetch.query.where.to: visits is integer, compared only with integer']);
+    expect(check({ column: ref('visits'), is: 'equal', to: { column: ref('site') } })).toEqual([
+      'fetch.query.where.to: visits is integer, compared only with integer',
+    ]);
+    expect(
+      check({
+        column: ref('visits'),
+        is: 'contains',
+        to: { literal: '1', type: { base: 'text' } },
+      }),
+    ).toEqual([
+      'fetch.query.where.is: Only text is searched for contained text: visits is integer',
+    ]);
+    // A whole number is compared with a decimal as the database would.
+    expect(
+      check({ column: ref('reading'), is: 'greater', to: { literal: '10', type: integer } }),
+    ).toEqual([]);
+  });
 });

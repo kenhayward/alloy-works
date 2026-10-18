@@ -3,6 +3,15 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.192.0 - 2026-10-18 (PR #703)
+
+Reuse's twenty-first slice: stored results as sources, and the tenant export (the R21 plan).
+
+### Added
+
+- **A stored result as a source.** A query definition can be built over a stored result you may read, choosing A stored result under Runs against: filters, grouping and summaries over its columns, run from the stored rows without asking the source again.
+- **Export the whole environment.** Administration > Export makes one archive of everything the environment holds: its content and every version, relationships, baselines and publications, with their images and PDFs, and a manifest of what it leaves out. Each export is listed and kept seven days.
+
 ## 0.191.0 - 2026-10-18 (PR #701)
 
 Reuse's twentieth slice: T4 tidy (the R20 plan).

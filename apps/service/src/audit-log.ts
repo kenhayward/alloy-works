@@ -7,6 +7,12 @@ import type {
   AuditExportView,
   AuditList,
   AuditListQuery,
+  TenantExportDownload,
+  TenantExportList,
+  TenantExportMade,
+  TenantExportParams,
+  TenantExportQuery,
+  TenantExportView,
 } from '@alloy-works/api-contract';
 import {
   auditEntryJson,
@@ -15,7 +21,11 @@ import {
   readAuditExport,
   recordEvent,
   requestAuditExport,
+  listTenantExports,
+  readTenantExport,
+  requestTenantExport,
   type AuditEntry,
+  type TenantExport,
   type AuditExport,
   type Tenant,
 } from '@alloy-works/db';
@@ -25,6 +35,7 @@ import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
 import { pageLimit } from './components.js';
 import { AppError, storageUnavailable } from './errors.js';
+import { cursorFor, pageAsked } from './listing.js';
 import { DOWNLOAD_SECONDS } from './publishing.js';
 
 /**
@@ -183,6 +194,91 @@ export function auditHandlers(
         kind: 'export.downloaded',
         subject: { kind: 'audit_export', id },
         detail: { export: id, of: 'audit' },
+      });
+      return { download };
+    },
+  };
+}
+
+function tenantExportView(made: TenantExport): TenantExportView {
+  return {
+    id: made.id,
+    state: made.state,
+    requestedAt: made.requestedAt.toISOString(),
+    requestedBy: made.requestedBy,
+    finishedAt: made.finishedAt?.toISOString() ?? null,
+    expiresAt: made.expiresAt?.toISOString() ?? null,
+    bytes: made.bytes,
+    sha256: made.sha256,
+    counts: made.counts && { ...made.counts },
+  };
+}
+
+/**
+ * The tenant's export (API-044; the R21 plan, R21-B), run where `administer` was decided: asking for
+ * one and each download handed out are events, as an audit export's are; reading and listing are not.
+ */
+export function tenantExportHandlers(
+  tenantOf: (request: FastifyRequest) => Tenant,
+  objects: ObjectStores | undefined,
+) {
+  return {
+    requestTenantExport: async (
+      _request: FastifyRequest,
+      { trx, principalId }: Authorised,
+    ): Promise<TenantExportMade> => {
+      const made = await requestTenantExport(trx, principalId);
+      await recordEvent(trx, {
+        kind: 'export.produced',
+        subject: { kind: 'tenant_export', id: made.id },
+        detail: { export: made.id, of: 'tenant' },
+      });
+      return { export: tenantExportView(made) };
+    },
+
+    listTenantExports: async (
+      request: FastifyRequest,
+      { trx }: Authorised,
+    ): Promise<TenantExportList> => {
+      const asked = pageAsked('tenantExports', request.query as TenantExportQuery);
+      const listed = await listTenantExports(trx, asked);
+      return {
+        items: listed.items.map(tenantExportView),
+        next: cursorFor('tenantExports', asked.sort, asked.order, listed.snapshot, listed.next),
+      };
+    },
+
+    getTenantExport: async (
+      request: FastifyRequest,
+      { trx }: Authorised,
+    ): Promise<TenantExportMade> => {
+      const { id } = request.params as TenantExportParams;
+      const made = await readTenantExport(trx, id);
+      if (!made) throw notFound();
+      return { export: tenantExportView(made) };
+    },
+
+    downloadTenantExport: async (
+      request: FastifyRequest,
+      { trx }: Authorised,
+    ): Promise<TenantExportDownload> => {
+      const { id } = request.params as TenantExportParams;
+      const made = await readTenantExport(trx, id);
+      if (!made) throw notFound();
+      if (made.state !== 'done' || made.key === null) {
+        throw new AppError(
+          409,
+          'export_not_ready',
+          'The export is not written yet, failed, or has expired.',
+        );
+      }
+      if (!objects) throw storageUnavailable();
+      const store = await objects.forTenant(trx, tenantOf(request));
+      const download = await store.signedLink(made.key, DOWNLOAD_SECONDS, `export-${id}.zip`);
+      await recordEvent(trx, {
+        kind: 'export.downloaded',
+        subject: { kind: 'tenant_export', id },
+        detail: { export: id, of: 'tenant' },
       });
       return { download };
     },
