@@ -1,15 +1,5 @@
 import { spawn, type ChildProcess } from 'node:child_process';
-import {
-  copyFile,
-  mkdir,
-  mkdtemp,
-  readdir,
-  readFile,
-  rename,
-  rm,
-  stat,
-  writeFile,
-} from 'node:fs/promises';
+import { copyFile, mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { readPinnedFaces, type PinnedFonts } from './fonts.js';
@@ -208,9 +198,10 @@ export async function startWarmCompile(options: {
       update: (data, images = []) =>
         compiled(async () => {
           await place(images);
-          // Written beside it and moved into place, so the engine never reads it half written.
-          await writeFile(join(root, 'data.next'), data);
-          await rename(join(root, 'data.next'), join(root, 'data.json'));
+          // Written in place: a file moved over it is a new file, which the engine's watch on Linux
+          // does not follow, so every later save would go unseen. The watch waits a moment after a
+          // change before it compiles, which covers the write.
+          await writeFile(join(root, 'data.json'), data);
         }),
       async page(number) {
         if (!Number.isInteger(number) || number < 1 || number > pages) {
