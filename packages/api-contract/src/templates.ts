@@ -109,6 +109,7 @@ export const TemplateRefusal = ErrorBody.extend({
         reference: z.enum([
           'theme',
           'layout',
+          'library',
           'schema',
           'field',
           'requires',

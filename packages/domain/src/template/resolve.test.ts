@@ -6,6 +6,7 @@ import { metadataSchemaDefinitionSchema } from '../metadata/schema.js';
 
 import { TEMPLATE_SCHEMA_VERSION, templateDefinitionSchema } from './definition.js';
 import { resolveTemplate, type TemplateReferences } from './resolve.js';
+import { DEFAULT_PROMPT_LIBRARY_ID } from '../generation/library.js';
 
 const THEME = '4ae73bd5-0000-4000-8000-000000002866';
 const LAYOUT = '1a7e0a2b-0000-4000-8000-00000000f501';
@@ -66,6 +67,21 @@ const found = (over: Partial<TemplateReferences> = {}): TemplateReferences => ({
 });
 
 describe('resolving a template', () => {
+  it('TPL-071 binds the empty default library where it names none, and TPL-061 the one it names', () => {
+    const none = resolveTemplate(template([]), found());
+    expect(none.ok && none.library).toBe(DEFAULT_PROMPT_LIBRARY_ID);
+    const LIBRARY = '9b1b0000-0000-4000-8000-000000000001';
+    const named = { ...template([]), prompts: LIBRARY };
+    const kinds = new Map(found().kinds).set(LIBRARY, 'promptLibrary');
+    const bound = resolveTemplate(named, found({ kinds }));
+    expect(bound.ok && bound.library).toBe(LIBRARY);
+    // One that is no library is named, never replaced by the default.
+    expect(resolveTemplate(named, found())).toEqual({
+      ok: false,
+      unresolved: [{ reference: 'library', id: LIBRARY }],
+    });
+  });
+
   it('TPL-053 owns its outline and references its theme, layout and schemas, resolved where used', () => {
     const definition = template(
       [

@@ -160,6 +160,15 @@ export {
   promptRoutes,
 } from './prompts.js';
 export {
+  CreateLibraryBody,
+  LibraryList,
+  LibraryParams,
+  LibraryVersionBody,
+  LibraryView,
+  ListedPromptView,
+  promptLibraryRoutes,
+} from './prompt-libraries.js';
+export {
   RangePageParams,
   RangePreviewParams,
   RangePreviewView,

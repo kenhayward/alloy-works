@@ -1,4 +1,5 @@
-import { findRole } from '@alloy-works/db';
+import { DEFAULT_LAYOUT_ID, DEFAULT_THEME_ID, findRole } from '@alloy-works/db';
+import { DEFAULT_PROMPT_LIBRARY_ID } from '@alloy-works/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { startHarness, type Harness } from './test/bindings-harness.js';
@@ -27,6 +28,9 @@ describe('the prompt routes (the G4 plan, G4-A)', () => {
     // Ada approves in General.
     const approver = await h.tenantDb.withTenant(h.tenant, (trx) => findRole(trx, 'Approver'));
     await h.allow(h.ids.ada!, approver!.id, { kind: 'space', id: h.general });
+    // And designs across the environment: libraries and templates.
+    const designer = await h.tenantDb.withTenant(h.tenant, (trx) => findRole(trx, 'Designer'));
+    await h.allow(h.ids.ada!, designer!.id, { kind: 'tenant' });
   }, 120_000);
 
   afterAll(async () => {
@@ -158,5 +162,75 @@ describe('the prompt routes (the G4 plan, G4-A)', () => {
   it("answers another kind's id as no prompt", async () => {
     const component = await h.component(h.general, 'Not a prompt');
     expect((await h.call('ada', 'GET', `/v1/prompts/${component.id}`)).statusCode).toBe(404);
+  });
+  const library = (name: string, prompts: string[]) => ({ schemaVersion: 1, name, prompts });
+  const template = (over: Json = {}) => ({
+    schemaVersion: 1,
+    name: 'Report',
+    theme: DEFAULT_THEME_ID,
+    layout: DEFAULT_LAYOUT_ID,
+    schemas: [],
+    outline: { sections: [] },
+    changes: { add: true, remove: true, reorder: true },
+    ...over,
+  });
+
+  it('keeps libraries the environment designs, each listing prompts at the revision they run', async () => {
+    const listed = (await h.call('ada', 'GET', '/v1/prompt-libraries')).json<{
+      items: { id: string; name: string; isDefault: boolean; prompts: number }[];
+    }>();
+    expect(listed.items[0]).toMatchObject({
+      id: DEFAULT_PROMPT_LIBRARY_ID,
+      name: 'No prompts',
+      isDefault: true,
+      prompts: 0,
+    });
+    const one = (await make('grace', prompt({ title: 'Listed prompt' }))).json<{ id: string }>();
+    expect(
+      (await h.call('grace', 'POST', '/v1/prompt-libraries', { library: library('Ours', []) }))
+        .statusCode,
+    ).toBe(403);
+    const made = await h.call('ada', 'POST', '/v1/prompt-libraries', {
+      library: library('Ours', [one.id]),
+    });
+    expect(made.statusCode, made.body).toBe(200);
+    const view = made.json<{ id: string; version: { id: string } }>();
+    const read = await h.call('ada', 'GET', `/v1/prompt-libraries/${view.id}`);
+    expect(read.json<{ mayEdit: boolean; prompts: unknown[] }>()).toMatchObject({
+      mayEdit: true,
+      prompts: [{ id: one.id, state: 'unapproved', title: 'Listed prompt' }],
+    });
+    // A library is the environment's: read by those who read it, not by a reader of one space.
+    expect((await h.call('grace', 'GET', `/v1/prompt-libraries/${view.id}`)).statusCode).toBe(403);
+    const wrong = await h.call('ada', 'POST', `/v1/prompt-libraries/${view.id}/versions`, {
+      openedFrom: view.version.id,
+      library: library('Ours', [one.id, DEFAULT_THEME_ID]),
+    });
+    expect(wrong.statusCode).toBe(400);
+    expect(wrong.json<{ code: string; problems: { path: string }[] }>()).toMatchObject({
+      code: 'library_invalid',
+      problems: [{ path: 'prompts.1' }],
+    });
+  });
+
+  it('TPL-061 TPL-004 a template binds one library, refused naming another kind or none there', async () => {
+    const ours = (
+      await h.call('ada', 'POST', '/v1/prompt-libraries', { library: library('For reports', []) })
+    ).json<{ id: string }>();
+    const bound = await h.call('ada', 'POST', `/v1/spaces/${h.general}/templates`, {
+      definition: template({ prompts: ours.id }),
+    });
+    expect(bound.statusCode, bound.body).toBe(200);
+    expect(bound.json<{ definition: { prompts: string } }>().definition.prompts).toBe(ours.id);
+    for (const named of [DEFAULT_THEME_ID, '0b6f6a4e-8f4e-4c2b-9a51-3a3b1d1f2c09']) {
+      const refused = await h.call('ada', 'POST', `/v1/spaces/${h.general}/templates`, {
+        definition: template({ prompts: named }),
+      });
+      expect(refused.statusCode).toBe(400);
+      expect(refused.json<{ code: string; unresolved: unknown[] }>()).toMatchObject({
+        code: 'template_unresolved',
+        unresolved: [{ reference: 'library', id: named }],
+      });
+    }
   });
 });

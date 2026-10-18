@@ -5,6 +5,7 @@ import {
   type EffectiveField,
 } from '../metadata/resolve.js';
 import type { MetadataSchemaDefinition } from '../metadata/schema.js';
+import { DEFAULT_PROMPT_LIBRARY_ID } from '../generation/library.js';
 
 import type { TemplateComponent, TemplateDefinition } from './definition.js';
 
@@ -48,7 +49,10 @@ export interface TemplateReferences {
 
 /** A reference that does not resolve, by what it is (TPL-004). */
 export type UnresolvedReference =
-  | { readonly reference: 'theme' | 'layout' | 'schema' | 'field'; readonly id: string }
+  | {
+      readonly reference: 'theme' | 'layout' | 'library' | 'schema' | 'field';
+      readonly id: string;
+    }
   | { readonly reference: 'requires'; readonly id: string; readonly field: string }
   | {
       readonly reference: 'component';
@@ -69,6 +73,8 @@ export type ResolvedTemplate =
       readonly ok: true;
       readonly theme: string;
       readonly layout: string;
+      /** The prompt library it binds: the one it names, or the tenant's empty default (TPL-071). */
+      readonly library: string;
       readonly outline: TemplateDefinition['outline'];
       readonly changes: TemplateDefinition['changes'];
       /** The fields that apply to a document made from it, and to each of its sections (TPL-054). */
@@ -99,6 +105,10 @@ export function resolveTemplate(
   }
   if (found.kinds.get(definition.layout) !== 'layout') {
     unresolved.push({ reference: 'layout', id: definition.layout });
+  }
+  // One it names must be a library; none named is the default, which every tenant holds (TPL-071).
+  if (definition.prompts !== undefined && found.kinds.get(definition.prompts) !== 'promptLibrary') {
+    unresolved.push({ reference: 'library', id: definition.prompts });
   }
   const schemaById = new Map(found.schemas.map((schema) => [schema.id, schema]));
   const fieldIds = new Set(found.fields.map((field) => field.id));
@@ -170,6 +180,7 @@ export function resolveTemplate(
     ok: true,
     theme: definition.theme,
     layout: definition.layout,
+    library: definition.prompts ?? DEFAULT_PROMPT_LIBRARY_ID,
     outline: definition.outline,
     changes: definition.changes,
     document: document as EffectiveField[],

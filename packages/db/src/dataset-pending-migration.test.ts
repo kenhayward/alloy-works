@@ -213,6 +213,7 @@ describe('migration 0051, which keeps a result waiting on its images', () => {
       '0121_assistant',
       '0122_prompts',
       '0123_workflow_prompts',
+      '0124_prompt_libraries',
     ]);
     const kept = await queryAs(
       db.adminUrl,

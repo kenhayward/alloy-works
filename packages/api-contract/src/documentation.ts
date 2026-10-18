@@ -98,7 +98,7 @@ export const documentationGroups = [
       {
         name: 'Prompts',
         description:
-          'Named, versioned prompts: the instructions, the context each declares and nothing beyond it, the text it writes and the models it accepts.',
+          'Named, versioned prompts: the instructions, the context each declares and nothing beyond it, the text it writes and the models it accepts; and the libraries that list them, one bound by each template.',
       },
       {
         name: 'Model endpoints',
@@ -380,7 +380,16 @@ const operationTags = {
     'keepProposal',
     'discardProposal',
   ],
-  Prompts: ['listPrompts', 'createPrompt', 'getPrompt', 'recordPromptVersion'],
+  Prompts: [
+    'listPrompts',
+    'createPrompt',
+    'getPrompt',
+    'recordPromptVersion',
+    'listPromptLibraries',
+    'createPromptLibrary',
+    'getPromptLibrary',
+    'recordPromptLibraryVersion',
+  ],
   'Model endpoints': [
     'listModelEndpoints',
     'makeModelEndpoint',
@@ -765,6 +774,14 @@ const descriptions: Readonly<Record<string, string>> = {
     'Lists the prompts the caller may read, with the space and purpose of each, filtered by space.',
   createPrompt:
     'Creates a prompt in the named space from a whole prompt: its instructions, which may place the document’s parameters as `{{name}}`, the context it declares (the part it runs on, its section or the whole document, components related to it, parts whose field holds a value, and named parameters), the component type whose text it writes, and the purpose it is routed by with the models it accepts. Nothing it does not declare reaches a model. It needs edit in the space.',
+  listPromptLibraries:
+    "Lists the environment's prompt libraries: the default first, which a template naming none binds and which lists nothing, then the rest by name.",
+  createPromptLibrary:
+    'Creates a prompt library: a name and the prompts it lists, by identity, each once. Each runs at its latest approved revision, so a library follows its prompts as they are approved. It needs design here.',
+  getPromptLibrary:
+    'Returns a library at its latest version, with each prompt it lists at the revision a run of it runs: its latest approved one, or none where it was never approved. A prompt the caller may not read is counted, never named.',
+  recordPromptLibraryVersion:
+    'Records the next library version from the version the caller opened, checked as a new library is. It needs design here.',
   getPrompt: 'Returns the latest prompt version and whether the caller may change it.',
   recordPromptVersion:
     'Records the next prompt version from the version the caller opened, checked as a new prompt is.',

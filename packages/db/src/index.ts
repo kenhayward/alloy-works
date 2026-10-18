@@ -707,6 +707,18 @@ export {
   type StoredPrompt,
 } from './prompts.js';
 export {
+  createLibrary,
+  defaultLibraryId,
+  LIBRARIES_LISTED_MOST,
+  libraryPrompts,
+  listLibraries,
+  readLibrary,
+  recordLibraryVersion,
+  type LibraryAnswer,
+  type ListedPrompt,
+  type StoredLibrary,
+} from './prompt-libraries.js';
+export {
   giveQuerySlot,
   QUERY_RUNS_MOST,
   queryRunsBetween,

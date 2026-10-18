@@ -12,7 +12,9 @@ import { definitionKinds } from '@alloy-works/domain';
  * 0046, lives in one space and is authored, `edit` in its space making and changing it (data.md). A
  * dataset, added by 0047, lives in its definition's space; each version is a stored result, recorded by
  * a person's act of resolving or checking a binding (the D3 plan, D3-A). A prompt, added by 0122, lives
- * in one space and is authored, `edit` in its space making and changing it (the G4 plan, G4-A).
+ * in one space and is authored, `edit` in its space making and changing it (the G4 plan, G4-A). A
+ * prompt library, added by 0124, is the tenant's, as a theme is, `design` at the tenant making and
+ * changing it (G4-F).
  */
 export const artifactKinds = [
   'component',
@@ -28,6 +30,7 @@ export const artifactKinds = [
   'queryDefinition',
   'dataset',
   'prompt',
+  'promptLibrary',
 ] as const;
 
 export type ArtifactKind = (typeof artifactKinds)[number];

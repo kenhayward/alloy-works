@@ -15,3 +15,18 @@ export function promptAddress(hash: string): string | null {
 export function promptLink(prompt: string): string {
   return `#/prompts/${prompt}`;
 }
+
+/** Where the environment's prompt libraries are listed (G4-F). */
+export const LIBRARIES = '#/prompts/libraries';
+
+const LIBRARY = /^#\/prompts\/libraries\/(new|[0-9a-f-]{36})$/;
+
+/** What a `#/prompts/libraries/...` address names: a library by id, or `new`; null otherwise. */
+export function libraryAddress(hash: string): string | null {
+  return LIBRARY.exec(hash)?.[1] ?? null;
+}
+
+/** The address of a library's own page. */
+export function libraryLink(library: string): string {
+  return `#/prompts/libraries/${library}`;
+}

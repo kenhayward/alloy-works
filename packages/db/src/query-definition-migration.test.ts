@@ -211,6 +211,7 @@ describe('migration 0046, over an environment made before it', () => {
       '0121_assistant',
       '0122_prompts',
       '0123_workflow_prompts',
+      '0124_prompt_libraries',
     ]);
     // Every row still there, and what 0048 seeds beside them: the value catalogue, its 0.1 and the
     // default theme's 0.6 (B1); and what 0055 seeds: the table catalogue's fifth version, the default
@@ -218,8 +219,9 @@ describe('migration 0046, over an environment made before it', () => {
     // two query roles; and 0064's table catalogue's sixth version and the theme's 0.8 (TG3).
     expect(await countRows(upgraded.schema)).toEqual({
       ...counts,
-      artifact: counts.artifact! + 1,
-      artifact_version: counts.artifact_version! + 8,
+      // And 0124's default prompt library at its 0.1 (the G4 plan, G4-G).
+      artifact: counts.artifact! + 2,
+      artifact_version: counts.artifact_version! + 9,
       // And 0114's shared reader (the R17 plan, R17-B).
       role: counts.role! + 3,
     });

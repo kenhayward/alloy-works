@@ -83,7 +83,7 @@ import { auditHandlers, tenantExportHandlers } from './audit-log.js';
 import { assistantHandlers } from './generation/assistant.js';
 import { generatedHandlers } from './generation/generated.js';
 import { modelEndpointHandlers } from './generation/models.js';
-import { promptHandlers } from './generation/prompts.js';
+import { promptHandlers, promptLibraryHandlers } from './generation/prompts.js';
 import { rangePreviewHandlers } from './range-previews.js';
 import { ownSessionHandlers } from './own-sessions.js';
 import { presenceHandlers } from './presence.js';
@@ -569,6 +569,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...rangePreviewHandlers(),
     ...modelEndpointHandlers(db, tenantOf, options.connector),
     ...promptHandlers(db, tenantOf, principalOf),
+    ...promptLibraryHandlers(),
     ...generatedHandlers(),
     ...assistantHandlers(
       db,

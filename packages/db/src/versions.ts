@@ -23,6 +23,9 @@ import {
   parseProvenanceForWrite,
   parsePrompt,
   parsePromptForWrite,
+  parsePromptLibrary,
+  LibraryRefused,
+  type PromptLibrary,
   PromptRefused,
   type Prompt,
   type CatalogueSubstance,
@@ -254,6 +257,10 @@ function prepare(substance: VersionSubstance): VersionSubstance {
     // definitions it names are the writer's to check, with a transaction in hand.
     return { kind: 'prompt', content: parsePromptForWrite(substance.content) };
   }
+  if (substance.kind === 'promptLibrary') {
+    // Nor does a library: it is the tenant's, identified by its artifact row (G4-F).
+    return { kind: 'promptLibrary', content: parsePromptLibrary(substance.content) };
+  }
   if (substance.kind === 'dataset') {
     // Nor does a dataset version: it is in its definition's space. Its provenance record, strict, with
     // every string in NFC, on every write (the D3 plan's stored-shape check, row 8); what it names is
@@ -447,6 +454,7 @@ export async function createArtifact(
   }
   // A prompt names definitions of the tenant's, on every path that makes one (G4-A).
   if (substance.kind === 'prompt') await checkPromptNames(trx, substance.content);
+  if (substance.kind === 'promptLibrary') await checkLibraryNames(trx, substance.content);
   // A dataset version names a version of its definition and of its connection, on every path.
   if (substance.kind === 'dataset') await checkProvenanceNames(trx, substance.content);
   // Nothing new is made in an archived space (the SP1 plan, SP-C), checked here, where every artifact
@@ -457,7 +465,8 @@ export async function createArtifact(
   const artifact = await trx
     .insertInto('artifact')
     .values(
-      spacedSubstanceKinds.includes(substance.kind)
+      // A library is in no space, and carries no identity of its own, as a template carries none.
+      spacedSubstanceKinds.includes(substance.kind) || substance.kind === 'promptLibrary'
         ? {
             ...('artifactId' in input && input.artifactId !== undefined
               ? { id: input.artifactId }
@@ -754,6 +763,9 @@ export function substanceOf(stored: StoredVersion): VersionSubstance {
     // The shape alone, likewise.
     return { kind: 'prompt', content: parsePrompt(stored.content) };
   }
+  if (stored.kind === 'promptLibrary') {
+    return { kind: 'promptLibrary', content: parsePromptLibrary(stored.content) };
+  }
   if (stored.kind === 'dataset') {
     // The shape alone, likewise: an arm added later (D6's request, D7's identity) reads every one stored.
     return { kind: 'dataset', content: parseProvenance(stored.content) };
@@ -893,6 +905,7 @@ async function record(
   }
   if (substance.kind === 'dataset') await checkProvenanceNames(trx, substance.content);
   if (substance.kind === 'prompt') await checkPromptNames(trx, substance.content);
+  if (substance.kind === 'promptLibrary') await checkLibraryNames(trx, substance.content);
   if (
     substance.kind === 'connection' &&
     substance.content.retired &&
@@ -1008,6 +1021,28 @@ async function checkPromptNames(trx: TenantTransaction, prompt: Prompt): Promise
         rule: 'prompt_invalid',
         path: each.path,
         message: `This names no ${each.kind === 'componentType' ? 'component type' : each.kind === 'field' ? 'field' : 'relationship type'} of the tenant's`,
+      })),
+    );
+  }
+}
+
+/** Every prompt a library lists is one of the tenant's (G4-F), on every path a version is written by. */
+async function checkLibraryNames(trx: TenantTransaction, library: PromptLibrary): Promise<void> {
+  if (library.prompts.length === 0) return;
+  const found = await trx
+    .selectFrom('artifact')
+    .select('id')
+    .where('id', 'in', [...library.prompts])
+    .where('kind', '=', 'prompt')
+    .execute();
+  const held = new Set(found.map((row) => row.id));
+  const missing = library.prompts.flatMap((id, at) => (held.has(id) ? [] : [at]));
+  if (missing.length > 0) {
+    throw new LibraryRefused(
+      missing.map((at) => ({
+        rule: 'library_invalid',
+        path: `prompts.${at}`,
+        message: 'This names no prompt you may read',
       })),
     );
   }

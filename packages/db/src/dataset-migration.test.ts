@@ -237,14 +237,16 @@ describe('migration 0047, over an environment made before it', () => {
       '0121_assistant',
       '0122_prompts',
       '0123_workflow_prompts',
+      '0124_prompt_libraries',
     ]);
     // Every row still there, and what 0048 seeds beside them: the value catalogue, its 0.1 and the
     // default theme's 0.6 (B1); and what 0055 seeds: the table catalogue's fifth version, the default
     // theme's 0.7 and the default layout's 0.8 (TB1); and what 0056 seeds, its 0.9 (TB3).
     expect(await countRows(upgraded.schema)).toEqual({
       ...counts,
-      artifact: counts.artifact! + 1,
-      artifact_version: counts.artifact_version! + 8,
+      // And 0124's default prompt library at its 0.1 (the G4 plan, G4-G).
+      artifact: counts.artifact! + 2,
+      artifact_version: counts.artifact_version! + 9,
     });
 
     fresh = await createTenant(db.adminUrl, db.migratorUrl, {

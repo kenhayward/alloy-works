@@ -9,6 +9,7 @@ import {
   createDefinition,
   createGroup,
   createConnection,
+  createLibrary,
   createPrompt,
   createQueryDefinition,
   createTemplate,
@@ -402,6 +403,8 @@ const OTHER_TENANT_IDS: Readonly<
   createPrompt: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   getPrompt: async (tenant, db) => ({ id: await promptIdIn(tenant, db) }),
   recordPromptVersion: async (tenant, db) => ({ id: await promptIdIn(tenant, db) }),
+  getPromptLibrary: async (tenant, db) => ({ id: await libraryIdIn(tenant, db) }),
+  recordPromptLibraryVersion: async (tenant, db) => ({ id: await libraryIdIn(tenant, db) }),
   getQueryDefinition: async (tenant, db) => ({ id: await queryDefinitionIdIn(tenant, db) }),
   transitionQueryDefinition: async (tenant, db) => ({ id: await queryDefinitionIdIn(tenant, db) }),
   decideQueryDefinitionGate: async (tenant, db) => ({ id: await queryDefinitionIdIn(tenant, db) }),
@@ -504,6 +507,10 @@ const VALID_INPUT: Readonly<
   },
   createPrompt: { payload: { prompt: aPrompt } },
   recordPromptVersion: { payload: { openedFrom: SESSION, prompt: aPrompt } },
+  createPromptLibrary: { payload: { library: { schemaVersion: 1, name: 'Probe', prompts: [] } } },
+  recordPromptLibraryVersion: {
+    payload: { openedFrom: SESSION, library: { schemaVersion: 1, name: 'Probe', prompts: [] } },
+  },
   setDataSettings: { payload: { rows: 10 } },
   createDefinition: {
     payload: {
@@ -936,6 +943,27 @@ const promptIdIn = (tenant: Tenant, db: TenantDatabase) =>
     });
     if (made.answer !== 'created') throw new Error(`refused: ${made.answer}`);
     return made.prompt.id;
+  });
+
+/** A prompt library in environment B. */
+const libraryIdIn = (tenant: Tenant, db: TenantDatabase) =>
+  db.withTenant(tenant, async (trx) => {
+    const author = await trx
+      .insertInto('principal')
+      .values({
+        issuer: 'https://idp.example',
+        subject: `ivy-${randomUUID()}`,
+        email: null,
+        display_name: null,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    const made = await createLibrary(trx, {
+      library: { schemaVersion: 1, name: 'Probe', prompts: [] },
+      author: author.id,
+    });
+    if (made.answer !== 'created') throw new Error(`refused: ${made.answer}`);
+    return made.library.id;
   });
 
 /** A dataset in environment B, with one version: a result of a definition made there. */
@@ -1706,18 +1734,20 @@ describe("no environment accepts another environment's session (IAM-004)", () =>
     for (const route of withParameters) {
       othersIds[route.operationId] = await OTHER_TENANT_IDS[route.operationId]!(b, tenantDb);
     }
-    // Ada administers environment A, so a refusal below is the other environment's, not her own lack.
+    // Ada administers and designs environment A, so a refusal below is the other environment's, not
+    // her own lack.
     const me = await app.inject({ url: '/v1/me', headers: { host: A, cookie: fromA } });
     const ada = me.json<{ id: string }>().id;
     await tenantDb.withTenant(a, async (trx) => {
-      const administrator = await findRole(trx, 'Administrator');
-      await grant(trx, {
-        roleId: administrator!.id,
-        subject: { principal: ada },
-        level: { kind: 'tenant' },
-        effect: 'allow',
-        grantedBy: ada,
-      });
+      for (const name of ['Administrator', 'Designer']) {
+        await grant(trx, {
+          roleId: (await findRole(trx, name))!.id,
+          subject: { principal: ada },
+          level: { kind: 'tenant' },
+          effect: 'allow',
+          grantedBy: ada,
+        });
+      }
     });
     const issued = await app.inject({
       method: 'POST',

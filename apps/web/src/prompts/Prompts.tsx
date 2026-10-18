@@ -10,7 +10,7 @@ import { usePagedListing } from '../listing/usePagedListing.js';
 import { Empty } from '../states/Empty.js';
 import { Notice } from '../states/Notice.js';
 import styles from '../structure/DocumentList.module.css';
-import { NEW_PROMPT, promptLink } from './links.js';
+import { LIBRARIES, NEW_PROMPT, promptLink } from './links.js';
 import { PURPOSES } from './shape.js';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -138,6 +138,9 @@ export function Prompts({ client }: { readonly client: Client }) {
             </button>
           )}
         </div>
+        <p>
+          <a href={LIBRARIES}>Prompt libraries</a>
+        </p>
         <SortChooser options={SORTS} chosen={sort} onChoose={setSort} />
         <p className={styles['summary']}>
           <span>

@@ -314,6 +314,13 @@ export interface ThemeDefaultTable {
   set_at: ColumnType<Date, never, Date>;
 }
 
+/** The tenant's declared default prompt library (0124): read, never written. */
+export interface PromptLibraryDefaultTable {
+  singleton: ColumnType<boolean, never, never>;
+  library_id: ColumnType<string, never, never>;
+  library_kind: ColumnType<'promptLibrary', never, never>;
+}
+
 /** The tenant's one editing policy (0037): read, and its window changed, never inserted or removed. */
 export interface EditingPolicyTable {
   singleton: ColumnType<boolean, never, never>;
@@ -1084,6 +1091,7 @@ export interface TenantTables {
   component_type_default: ComponentTypeDefaultTable;
   layout_default: LayoutDefaultTable;
   theme_default: ThemeDefaultTable;
+  prompt_library_default: PromptLibraryDefaultTable;
   publication_request: PublicationRequestTable;
   publication_request_occurrence: PublicationRequestOccurrenceTable;
   publication: PublicationTable;

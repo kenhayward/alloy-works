@@ -1,4 +1,8 @@
 import type {
+  CreateLibraryBody,
+  LibraryParams,
+  LibraryVersionBody,
+  LibraryView,
   CreatePromptBody,
   PromptListQuery,
   PromptParams,
@@ -7,6 +11,13 @@ import type {
   SpaceParams,
 } from '@alloy-works/api-contract';
 import {
+  createLibrary,
+  libraryPrompts,
+  listLibraries,
+  readLibrary,
+  recordLibraryVersion,
+  type LibraryAnswer,
+  type StoredLibrary,
   createPrompt,
   listReadablePrompts,
   readPrompt,
@@ -147,6 +158,108 @@ export function promptHandlers(
         trx,
         principalId,
         answer as Exclude<PromptAnswer, { prompt: StoredPrompt }>,
+        facts,
+      );
+    },
+  };
+}
+
+/** A library as the routes answer it, each prompt at the revision it runs, as the caller reads it. */
+async function libraryView(
+  trx: TenantTransaction,
+  principalId: string,
+  stored: StoredLibrary,
+  facts: AccessFacts,
+): Promise<LibraryView> {
+  return {
+    id: stored.id,
+    version: versionView(stored.version),
+    library: stored.library,
+    isDefault: stored.isDefault,
+    prompts: await libraryPrompts(trx, principalId, stored.library),
+    mayEdit: decide('design', facts).allowed,
+  };
+}
+
+async function refusedLibrary(
+  trx: TenantTransaction,
+  principalId: string,
+  answer: Exclude<LibraryAnswer, { library: StoredLibrary }>,
+  facts: AccessFacts,
+): Promise<never> {
+  switch (answer.answer) {
+    case 'library.refused':
+      throw refused(400, 'library.invalid', 'The library is not valid.', {
+        problems: answer.problems,
+      });
+    case 'version.precondition':
+      throw refused(
+        409,
+        'version.precondition',
+        'This library has a newer version than the one this page opened.',
+        { current: await libraryView(trx, principalId, answer.current, facts) },
+      );
+    case 'library.missing':
+      throw notFound();
+  }
+}
+
+/** The prompt library routes (the G4 plan, G4-F): the environment's, `design` here changing one. */
+export function promptLibraryHandlers() {
+  return {
+    listPromptLibraries: async (_request: FastifyRequest, { trx }: Authorised) => ({
+      items: (await listLibraries(trx)).map((each) => ({
+        id: each.id,
+        name: each.library.name,
+        isDefault: each.isDefault,
+        prompts: each.library.prompts.length,
+        version: { id: each.version.id, number: versionView(each.version).number },
+      })),
+    }),
+
+    createPromptLibrary: async (
+      request: FastifyRequest,
+      { trx, principalId, facts }: Authorised,
+    ) => {
+      const { library } = request.body as CreateLibraryBody;
+      const answer = await createLibrary(trx, { author: principalId, library });
+      if (answer.answer !== 'created') {
+        return refusedLibrary(
+          trx,
+          principalId,
+          answer as Exclude<LibraryAnswer, { library: StoredLibrary }>,
+          facts,
+        );
+      }
+      return libraryView(trx, principalId, answer.library, facts);
+    },
+
+    getPromptLibrary: async (request: FastifyRequest, { trx, principalId, facts }: Authorised) => {
+      const { id } = request.params as LibraryParams;
+      const stored = await readLibrary(trx, id);
+      if (!stored) throw notFound();
+      return libraryView(trx, principalId, stored, facts);
+    },
+
+    recordPromptLibraryVersion: async (
+      request: FastifyRequest,
+      { trx, principalId, facts }: Authorised,
+    ) => {
+      const { id } = request.params as LibraryParams;
+      const body = request.body as LibraryVersionBody;
+      const answer = await recordLibraryVersion(trx, {
+        author: principalId,
+        id,
+        openedFrom: body.openedFrom,
+        library: body.library,
+      });
+      if (answer.answer === 'recorded' || answer.answer === 'version.unchanged') {
+        return libraryView(trx, principalId, answer.library, facts);
+      }
+      return refusedLibrary(
+        trx,
+        principalId,
+        answer as Exclude<LibraryAnswer, { library: StoredLibrary }>,
         facts,
       );
     },

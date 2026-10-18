@@ -18,6 +18,7 @@ import type { Catalogue, Catalogue1, Theme } from '../theme/schema.js';
 import type { ConnectionSettings } from '../data/connection.js';
 import type { QueryDefinition } from '../data/definition.js';
 import type { Provenance } from '../data/provenance.js';
+import type { PromptLibrary } from '../generation/library.js';
 import type { Prompt } from '../generation/prompt.js';
 
 /**
@@ -125,12 +126,19 @@ export type DatasetSubstance = { readonly kind: 'dataset'; readonly content: Pro
  */
 export type PromptSubstance = { readonly kind: 'prompt'; readonly content: Prompt };
 
+/** A prompt library version says its name and its prompts, in their order (G4-F). */
+export type PromptLibrarySubstance = {
+  readonly kind: 'promptLibrary';
+  readonly content: PromptLibrary;
+};
+
 export type VersionSubstance =
   | ComponentSubstance
   | DatasetSubstance
   | ConnectionSubstance
   | QueryDefinitionSubstance
   | PromptSubstance
+  | PromptLibrarySubstance
   | TemplateSubstance
   | DefinitionSubstance
   | DocumentSubstance
