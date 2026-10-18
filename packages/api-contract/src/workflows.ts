@@ -3,7 +3,7 @@ import type { RouteContract } from './contract.js';
 import { ErrorBody } from './schemas.js';
 
 /** A workflow's kind: one for components, one for documents (the WF1 plan, WF-A). */
-export const WorkflowKindParam = z.enum(['component', 'document', 'queryDefinition']);
+export const WorkflowKindParam = z.enum(['component', 'document', 'queryDefinition', 'prompt']);
 
 const Key = z
   .string()
@@ -576,7 +576,7 @@ const forbidden = {
   schema: ErrorBody,
 } as const;
 
-const approvalResponses = (kind: 'component' | 'document' | 'query definition') =>
+const approvalResponses = (kind: 'component' | 'document' | 'query definition' | 'prompt') =>
   ({
     200: { description: 'Decided; where it stands now', schema: TransitionAnswer },
     400: {
@@ -600,7 +600,7 @@ const approvalResponses = (kind: 'component' | 'document' | 'query definition') 
     },
   }) as const;
 
-const transitionResponses = (kind: 'component' | 'document' | 'query definition') =>
+const transitionResponses = (kind: 'component' | 'document' | 'query definition' | 'prompt') =>
   ({
     200: { description: 'Moved; where it stands now', schema: TransitionAnswer },
     400: {
@@ -1013,6 +1013,43 @@ export const workflowRoutes = {
       401: unauthenticated,
       403: { description: 'The caller may not read this query definition', schema: ErrorBody },
       404: { description: 'No such query definition the caller may read', schema: ErrorBody },
+    },
+  },
+  transitionPrompt: {
+    operationId: 'transitionPrompt',
+    method: 'POST',
+    path: '/v1/prompts/{id}/transitions',
+    summary: 'Move a prompt along a workflow transition',
+    tenantScoped: true,
+    access: read,
+    params: TransitionParams,
+    body: TransitionBody,
+    responses: transitionResponses('prompt'),
+  },
+  decidePromptGate: {
+    operationId: 'decidePromptGate',
+    method: 'POST',
+    path: '/v1/prompts/{id}/approvals',
+    summary: 'Approve or reject a prompt at a gate',
+    tenantScoped: true,
+    access: read,
+    params: TransitionParams,
+    body: ApprovalBody,
+    responses: approvalResponses('prompt'),
+  },
+  listPromptApprovals: {
+    operationId: 'listPromptApprovals',
+    method: 'GET',
+    path: '/v1/prompts/{id}/approvals',
+    summary: "List a prompt's approvals and rejections",
+    tenantScoped: true,
+    access: read,
+    params: TransitionParams,
+    responses: {
+      200: { description: 'Every decision at its gates, newest first', schema: ApprovalsView },
+      401: unauthenticated,
+      403: { description: 'The caller may not read this prompt', schema: ErrorBody },
+      404: { description: 'No such prompt the caller may read', schema: ErrorBody },
     },
   },
   transitionDocument: {

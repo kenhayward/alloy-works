@@ -94,7 +94,7 @@ export async function unmetConditions(
   const none = { count: 0, names: [], unreadable: 0 };
 
   if (input.kind !== 'document') {
-    // A component's own; a query definition's transitions require nothing (WF3-A).
+    // A component's own; a query definition's and a prompt's transitions require nothing (WF3-A).
     if (requires.includes('suggestions')) {
       found.set('suggestions', {
         ...none,

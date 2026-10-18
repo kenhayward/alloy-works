@@ -341,7 +341,7 @@ export const auditKindSpecs = {
   'workflow.transitioned': kind(
     ['LIF-075', 'LIF-061'],
     z.strictObject({
-      kind: z.enum(['component', 'document', 'queryDefinition']),
+      kind: z.enum(['component', 'document', 'queryDefinition', 'prompt']),
       transition: AuditName.nullable(),
       from: AuditName,
       to: AuditName,
@@ -355,7 +355,7 @@ export const auditKindSpecs = {
   'workflow.defined': kind(
     ['LIF-007', 'LIF-067'],
     z.strictObject({
-      kind: z.enum(['component', 'document', 'queryDefinition']),
+      kind: z.enum(['component', 'document', 'queryDefinition', 'prompt']),
       version: z.int().positive(),
     }),
     'packages/db/src/workflow.ts',
@@ -365,7 +365,7 @@ export const auditKindSpecs = {
   'approval.given': kind(
     ['LIF-075', 'LIF-008'],
     z.strictObject({
-      kind: z.enum(['component', 'document', 'queryDefinition']),
+      kind: z.enum(['component', 'document', 'queryDefinition', 'prompt']),
       transition: AuditName,
       count: z.int().positive(),
       required: z.int().positive(),
@@ -377,7 +377,7 @@ export const auditKindSpecs = {
   'gate.rejected': kind(
     ['LIF-074', 'LIF-053', 'LIF-051'],
     z.strictObject({
-      kind: z.enum(['component', 'document', 'queryDefinition']),
+      kind: z.enum(['component', 'document', 'queryDefinition', 'prompt']),
       transition: AuditName,
       to: AuditName,
     }),
@@ -387,7 +387,7 @@ export const auditKindSpecs = {
   'revision.designated': kind(
     ['LIF-013', 'VER-014'],
     z.strictObject({
-      kind: z.enum(['component', 'document', 'queryDefinition']),
+      kind: z.enum(['component', 'document', 'queryDefinition', 'prompt']),
       transition: AuditName,
       revision: z.int().positive(),
       // The axis values it is effective for, fixed as it was designated (LIF-042; the R15 plan, R15-B);

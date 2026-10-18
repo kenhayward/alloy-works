@@ -190,6 +190,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0120_model_endpoints',
       '0121_assistant',
       '0122_prompts',
+      '0123_workflow_prompts',
     ]);
     expect(applied[own.id]).toEqual([
       '0058_query_roles',
@@ -257,6 +258,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0120_model_endpoints',
       '0121_assistant',
       '0122_prompts',
+      '0123_workflow_prompts',
     ]);
 
     expect(await queryRoles(development)).toEqual([

@@ -1155,6 +1155,17 @@ describe('routes that check a permission', () => {
       },
     }),
     getPrompt: () => ({ url: `/v1/prompts/${MISSING}`, status: 404 }),
+    listPromptApprovals: () => ({ url: `/v1/prompts/${MISSING}/approvals`, status: 404 }),
+    transitionPrompt: () => ({
+      url: `/v1/prompts/${MISSING}/transitions`,
+      status: 404,
+      payload: { transition: 'submit', from: 'draft' },
+    }),
+    decidePromptGate: () => ({
+      url: `/v1/prompts/${MISSING}/approvals`,
+      status: 404,
+      payload: { transition: 'approve', version: MISSING, decision: 'approved' },
+    }),
     recordPromptVersion: () => ({
       url: `/v1/prompts/${MISSING}/versions`,
       status: 404,

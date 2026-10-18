@@ -7,7 +7,7 @@ import { Shown, useListing } from './listing.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
-type Kind = 'component' | 'document' | 'queryDefinition';
+type Kind = 'component' | 'document' | 'queryDefinition' | 'prompt';
 type Permission = 'edit' | 'approve';
 
 interface State {
@@ -79,6 +79,7 @@ const CONDITIONS_OF: Readonly<Record<Kind, readonly Condition[]>> = {
     'generated',
   ],
   queryDefinition: [],
+  prompt: [],
 };
 
 /** A transition that is a gate (the WF2 plan, WF2-A). */
@@ -114,6 +115,7 @@ const KINDS: Readonly<Record<Kind, { heading: string; one: string }>> = {
   component: { heading: 'Components', one: 'Component' },
   document: { heading: 'Documents', one: 'Document' },
   queryDefinition: { heading: 'Query definitions', one: 'Query definition' },
+  prompt: { heading: 'Prompts', one: 'Prompt' },
 };
 
 const PERMISSIONS: Readonly<Record<Permission, string>> = { edit: 'Edit', approve: 'Approve' };
@@ -501,7 +503,7 @@ function KindWorkflow({
           Add transition
         </button>
       </div>
-      {kind !== 'queryDefinition' && (
+      {kind !== 'queryDefinition' && kind !== 'prompt' && (
         <ReviewPolicy
           one={one}
           review={review ?? NO_REVIEW}

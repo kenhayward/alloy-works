@@ -940,7 +940,8 @@ async function record(
   if (
     substance.kind === 'component' ||
     substance.kind === 'document' ||
-    substance.kind === 'queryDefinition'
+    substance.kind === 'queryDefinition' ||
+    substance.kind === 'prompt'
   ) {
     await draftOnSave(trx, version, current.id);
   }

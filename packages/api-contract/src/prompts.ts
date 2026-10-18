@@ -1,6 +1,12 @@
 import { promptSchema } from '@alloy-works/domain';
 import { z } from 'zod';
 import { SpaceParams, VersionSummary } from './components.js';
+import {
+  GateView,
+  TransitionView,
+  WorkflowRevisionView,
+  WorkflowStandingView,
+} from './workflows.js';
 import type { RouteContract } from './contract.js';
 import { FacetCountView, idsFilter, listingQuery, listingTotal, nextCursor } from './listing.js';
 import { ErrorBody, LowercaseUuid, SPACE_ARCHIVED } from './schemas.js';
@@ -28,6 +34,12 @@ export const PromptView = z.object({
   version: VersionSummary,
   prompt: promptSchema,
   mayEdit: z.boolean().describe('Whether the caller may cut its next version: edit on it'),
+  state: WorkflowStandingView,
+  transitions: z
+    .array(TransitionView)
+    .describe('The workflow transitions the caller may take from its state now, in order'),
+  gates: z.array(GateView).describe('Each gate from its state, decided by its approvers (GEN-045)'),
+  revision: WorkflowRevisionView,
 });
 export type PromptView = z.infer<typeof PromptView>;
 

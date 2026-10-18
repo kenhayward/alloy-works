@@ -455,6 +455,9 @@ const operationTags = {
     'transitionQueryDefinition',
     'decideQueryDefinitionGate',
     'listQueryDefinitionApprovals',
+    'transitionPrompt',
+    'decidePromptGate',
+    'listPromptApprovals',
     'setComponentDates',
     'setDocumentDates',
     'setComponentScope',
@@ -932,6 +935,12 @@ const descriptions: Readonly<Record<string, string>> = {
     'Approves or rejects a query definition at a gate from its state, against the version the approver saw, needing approve on the definition, so that a change to a query is reviewed as content is. The gate passes once enough distinct approvers approve, none of them an author where the gate says so, and designates a revision; a rejection needs a reason. Audited.',
   listQueryDefinitionApprovals:
     'Lists every approval and rejection of a query definition at its gates, newest first: the gate, the decision, who, when, the version decided and a rejection’s reason. Needs read on the definition.',
+  transitionPrompt:
+    "Moves a prompt along a transition from its state, named as the caller saw it, needing the transition's permission on the prompt and a reason where the transition asks for one. Saving an approved prompt moves it back to the initial state on its own. Audited.",
+  decidePromptGate:
+    'Approves or rejects a prompt at a gate from its state, against the version the approver saw, needing approve on the prompt. The gate passes once enough distinct approvers approve, none of them an author where the gate says so, and designates a revision, the version a library runs; a rejection needs a reason. Audited.',
+  listPromptApprovals:
+    'Lists every approval and rejection of a prompt at its gates, newest first: the gate, the decision, who, when, the version decided and a rejection’s reason. Needs read on the prompt.',
   setRetention:
     'Sets or clears one retention keep, for a kind, a space, or a kind in a space; null days clears it. Setting what is in force changes nothing. Undeleting is never refused by a keep. Needs administer at the environment. Audited.',
   listHolds:

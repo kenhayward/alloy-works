@@ -209,14 +209,18 @@ describe('workflow states and transitions (workflow.md; the WF1 plan, Task 1)', 
       ['component', 2],
       ['document', 3],
       ['queryDefinition', 1],
+      ['prompt', 1],
     ]);
     for (const summary of definitions) {
       expect(summary.definition.body).toEqual(
         summary.definition.kind === 'document' ? SEED_DOCUMENT_WORKFLOW : SEED_WORKFLOW,
       );
       expect(summary.definition.by).toBeNull();
-      // A query definition's workflow began at the gated seed (0098); the others at WF1's.
-      if (summary.definition.kind === 'queryDefinition') continue;
+      // A query definition's and a prompt's workflows began at the gated seed (0098, 0123); the
+      // others at WF1's.
+      if (summary.definition.kind === 'queryDefinition' || summary.definition.kind === 'prompt') {
+        continue;
+      }
       const first = await service.withTenant(other, (trx) =>
         workflowVersion(trx, summary.definition.kind, 1),
       );

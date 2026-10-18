@@ -947,8 +947,8 @@ describe('the citations in the committed model', () => {
     // 1631 (2026-10-18): R21a's stored results as sources.
     // 1634 (2026-10-18): R21b's tenant export.
     // 1637 (2026-10-18): R22a's warm range preview.
-    // 1694 (2026-10-18): G4a1's prompt shape. 1693 (2026-10-18): G3's generated content in publishing. 1687 (2026-10-18): G2b's Assistant panel and the final review's titles. 1685 (2026-10-18): G2a's assistant. 1656 (2026-10-18): G1b's model endpoints and page. 1647 (2026-10-18): G1a's model calls. 1641 (2026-10-18): R22b's pages as you edit.
-    expect(model.citations).toHaveLength(1694);
+    // 1695 (2026-10-18): G4a2's prompt review. 1694 (2026-10-18): G4a1's prompt shape. 1693 (2026-10-18): G3's generated content in publishing. 1687 (2026-10-18): G2b's Assistant panel and the final review's titles. 1685 (2026-10-18): G2a's assistant. 1656 (2026-10-18): G1b's model endpoints and page. 1647 (2026-10-18): G1a's model calls. 1641 (2026-10-18): R22b's pages as you edit.
+    expect(model.citations).toHaveLength(1695);
   });
 
   it('cites no identifier the corpus does not hold', () => {
@@ -1059,6 +1059,7 @@ describe('scanning the repository for test files', () => {
     // 110, from 109 (2026-10-18): admin/Models.test.tsx, citing GEN-028, GEN-029 and GEN-031.
     // 111, from 110 (2026-10-18): structure/AssistantPanel.test.tsx, citing GEN-009 to GEN-011 and GEN-037.
     // 112, from 111 (2026-10-18): publishing/GeneratedContent.test.tsx, citing GEN-026.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(112);
+    // 113, from 112 (2026-10-18): prompts/prompts.test.tsx, citing nothing yet.
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(113);
   });
 });
