@@ -20608,13 +20608,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 509,
+      "line": 512,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 522,
+      "line": 525,
       "kind": "title"
     },
     {
@@ -20980,7 +20980,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1681,
+      "line": 1694,
       "kind": "title"
     },
     {
@@ -21616,19 +21616,61 @@
     {
       "id": "GEN-001",
       "file": "apps/service/src/prompt-routes.test.ts",
-      "line": 116,
+      "line": 143,
       "kind": "title"
     },
     {
       "id": "TPL-004",
       "file": "apps/service/src/prompt-routes.test.ts",
-      "line": 216,
+      "line": 254,
       "kind": "title"
     },
     {
       "id": "TPL-061",
       "file": "apps/service/src/prompt-routes.test.ts",
-      "line": 216,
+      "line": 254,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-003",
+      "file": "apps/service/src/prompt-run-routes.test.ts",
+      "line": 231,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-005",
+      "file": "apps/service/src/prompt-run-routes.test.ts",
+      "line": 267,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-006",
+      "file": "apps/service/src/prompt-run-routes.test.ts",
+      "line": 190,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-045",
+      "file": "apps/service/src/prompt-run-routes.test.ts",
+      "line": 153,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-057",
+      "file": "apps/service/src/prompt-run-routes.test.ts",
+      "line": 190,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-058",
+      "file": "apps/service/src/prompt-run-routes.test.ts",
+      "line": 231,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-059",
+      "file": "apps/service/src/prompt-run-routes.test.ts",
+      "line": 247,
       "kind": "title"
     },
     {
@@ -26324,15 +26366,39 @@
       "kind": "title"
     },
     {
+      "id": "GEN-056",
+      "file": "packages/db/src/prompt-context.test.ts",
+      "line": 224,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-057",
+      "file": "packages/db/src/prompt-context.test.ts",
+      "line": 267,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-058",
+      "file": "packages/db/src/prompt-context.test.ts",
+      "line": 249,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-059",
+      "file": "packages/db/src/prompt-context.test.ts",
+      "line": 267,
+      "kind": "title"
+    },
+    {
       "id": "GEN-001",
       "file": "packages/db/src/prompt-libraries.test.ts",
-      "line": 200,
+      "line": 236,
       "kind": "title"
     },
     {
       "id": "TPL-071",
       "file": "packages/db/src/prompt-libraries.test.ts",
-      "line": 136,
+      "line": 172,
       "kind": "title"
     },
     {
@@ -27274,55 +27340,55 @@
     {
       "id": "LIF-003",
       "file": "packages/db/src/workflow-migration.test.ts",
-      "line": 216,
+      "line": 217,
       "kind": "title"
     },
     {
       "id": "LIF-007",
       "file": "packages/db/src/workflow-migration.test.ts",
-      "line": 60,
+      "line": 61,
       "kind": "title"
     },
     {
       "id": "SCH-060",
       "file": "packages/db/src/workflow-migration.test.ts",
-      "line": 60,
+      "line": 61,
       "kind": "title"
     },
     {
       "id": "LIF-001",
       "file": "packages/db/src/workflow.test.ts",
-      "line": 204,
+      "line": 205,
       "kind": "title"
     },
     {
       "id": "LIF-002",
       "file": "packages/db/src/workflow.test.ts",
-      "line": 204,
+      "line": 205,
       "kind": "title"
     },
     {
       "id": "LIF-007",
       "file": "packages/db/src/workflow.test.ts",
-      "line": 231,
+      "line": 236,
       "kind": "title"
     },
     {
       "id": "LIF-054",
       "file": "packages/db/src/workflow.test.ts",
-      "line": 204,
+      "line": 205,
       "kind": "title"
     },
     {
       "id": "LIF-061",
       "file": "packages/db/src/workflow.test.ts",
-      "line": 259,
+      "line": 264,
       "kind": "title"
     },
     {
       "id": "SCH-060",
       "file": "packages/db/src/workflow.test.ts",
-      "line": 626,
+      "line": 631,
       "kind": "title"
     },
     {
@@ -28198,7 +28264,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 805,
+      "line": 814,
       "kind": "title"
     },
     {

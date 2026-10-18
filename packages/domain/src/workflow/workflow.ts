@@ -79,15 +79,29 @@ export const TRANSITION_CONDITIONS = [
   // No generated suggestion waiting to be accepted or rejected (GEN-025; the G3 plan, G3-B): a part of
   // `suggestions`, for a tenant that requires reviewed generated content and no more.
   'generated',
+  // A finished trial run of the version taken through (GEN-045, GN-F; the G4 plan, G4-E): a prompt's.
+  'trial',
 ] as const;
 export type TransitionCondition = (typeof TRANSITION_CONDITIONS)[number];
 
-/** The conditions each kind's transitions may require: a query definition and a prompt none yet. */
+/**
+ * The conditions each kind's transitions may require, each listed, so a condition added for one kind
+ * is offered to no other: a query definition has none to require, a prompt its trial alone.
+ */
 export const CONDITIONS_BY_KIND: Readonly<Record<WorkflowKind, readonly TransitionCondition[]>> = {
   component: ['suggestions', 'threads', 'generated'],
-  document: TRANSITION_CONDITIONS,
+  document: [
+    'suggestions',
+    'threads',
+    'bindings',
+    'sections',
+    'revisions',
+    'components',
+    'profile',
+    'generated',
+  ],
   queryDefinition: [],
-  prompt: [],
+  prompt: ['trial'],
 };
 
 const Transition = z.strictObject({
@@ -144,7 +158,8 @@ export type WorkflowRule =
   | 'gate_kind'
   | 'gate_publication'
   | 'condition_kind'
-  | 'condition_duplicate';
+  | 'condition_duplicate'
+  | 'trial_required';
 
 export interface WorkflowProblem {
   readonly rule: WorkflowRule;
@@ -242,6 +257,18 @@ export function parseWorkflowBody(
         });
       }
     });
+    // Approving a prompt attests a trial of it (GN-F): no tenant's workflow lifts that (GEN-045).
+    if (
+      kind === 'prompt' &&
+      each.permission === 'approve' &&
+      !(each.requires ?? []).includes('trial')
+    ) {
+      problems.push({
+        rule: 'trial_required',
+        path: `${at}.requires`,
+        message: 'Approving a prompt requires a finished trial run of the version approved',
+      });
+    }
     const gate = each.gate;
     if (gate === undefined) return;
     if (each.permission !== 'approve') {
@@ -389,6 +416,17 @@ export const SEED_DOCUMENT_WORKFLOW: WorkflowBody = {
     each.gate === undefined
       ? each
       : { ...each, gate: { ...each.gate, baseline: true, publication: 'permitted' as const } },
+  ),
+};
+
+/**
+ * The prompt seed's version 2 (0125; the G4 plan, G4-E): the gated seed, its Approve requiring a
+ * finished trial run of the version approved (GN-F).
+ */
+export const SEED_PROMPT_WORKFLOW: WorkflowBody = {
+  ...SEED_WORKFLOW,
+  transitions: SEED_WORKFLOW.transitions.map((each) =>
+    each.gate === undefined ? each : { ...each, requires: ['trial' as const] },
   ),
 };
 

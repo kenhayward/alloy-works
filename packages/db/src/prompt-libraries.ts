@@ -10,7 +10,14 @@ import {
 import { loadReadableSet } from './access-facts.js';
 import { mayReadArtifact } from './queryDefinitions.js';
 import type { TenantTransaction } from './tables.js';
-import { createArtifact, latestVersion, recordVersion, type StoredVersion } from './versions.js';
+import { documentTemplate } from './templates.js';
+import {
+  createArtifact,
+  latestVersion,
+  readVersion,
+  recordVersion,
+  type StoredVersion,
+} from './versions.js';
 import { latestRevisionsOf } from './workflow.js';
 
 /**
@@ -283,4 +290,15 @@ export async function libraryPrompts(
     });
   }
   return listed;
+}
+
+/**
+ * The library a document's prompts come from (TPL-061, TPL-071): the one its template's version names,
+ * or the environment's default for a template naming none and for a document made blank.
+ */
+export async function documentLibrary(trx: TenantTransaction, documentId: string): Promise<string> {
+  const bound = await documentTemplate(trx, documentId);
+  const version = bound && (await readVersion(trx, bound.version));
+  const named = (version?.content as { readonly prompts?: unknown } | undefined)?.prompts;
+  return typeof named === 'string' && UUID.test(named) ? named : defaultLibraryId(trx);
 }

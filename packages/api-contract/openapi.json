@@ -20070,6 +20070,25 @@
                             "null"
                           ]
                         },
+                        "purpose": {
+                          "type": "string",
+                          "description": "What it ran for: `drafting` for the assistant, a prompt’s purpose, or `trial`"
+                        },
+                        "promptVersion": {
+                          "description": "The prompt version it ran, or null for the assistant (GEN-006)",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "parameters": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {},
+                          "description": "What it was run with: its reply’s limit, and the instructions’ version"
+                        },
                         "endpoint": {
                           "type": "object",
                           "properties": {
@@ -20196,6 +20215,9 @@
                       "required": [
                         "id",
                         "document",
+                        "purpose",
+                        "promptVersion",
+                        "parameters",
                         "endpoint",
                         "model",
                         "outcome",
@@ -20220,6 +20242,9 @@
                   "run": {
                     "id": "example",
                     "document": "example",
+                    "purpose": "example",
+                    "promptVersion": "example",
+                    "parameters": {},
                     "endpoint": {
                       "name": "example",
                       "boundary": "example"
@@ -33882,9 +33907,10 @@
                               "revisions",
                               "components",
                               "profile",
-                              "generated"
+                              "generated",
+                              "trial"
                             ],
-                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected"
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires"
                           },
                           "count": {
                             "type": "integer",
@@ -45230,9 +45256,10 @@
                               "revisions",
                               "components",
                               "profile",
-                              "generated"
+                              "generated",
+                              "trial"
                             ],
-                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected"
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires"
                           },
                           "count": {
                             "type": "integer",
@@ -68878,9 +68905,10 @@
                               "revisions",
                               "components",
                               "profile",
-                              "generated"
+                              "generated",
+                              "trial"
                             ],
-                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected"
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires"
                           },
                           "count": {
                             "type": "integer",
@@ -150464,6 +150492,907 @@
         }
       }
     },
+    "/v1/documents/{id}/prompt-runs": {
+      "post": {
+        "operationId": "startPromptRun",
+        "summary": "Run a prompt of the document's library on one of its parts, its output a proposal",
+        "description": "Runs a prompt of the document's library on one of its parts, with a signed-in session alone, at the prompt's latest approved revision. Its context is resolved first, as the caller may read it, and recorded on the run; nothing it does not declare is sent. It calls the endpoint its purpose goes to, through the connector, once, with no tools, refused first where the endpoint's model is not one it accepts, the context resolved to nothing or is more than the endpoint takes. The reply, Markdown, is proposed as the part's whole text, a proposal that changes nothing until the caller accepts it. Answered as Server-Sent Events. Recorded as a run naming the prompt version.",
+        "tags": [
+          "Prompts"
+        ],
+        "x-alloy-token-enabled": false,
+        "x-alloy-permission": "read",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "prompt": {
+                    "type": "string",
+                    "allOf": [
+                      {
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      {
+                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                      }
+                    ],
+                    "description": "A prompt the document's template's library lists"
+                  },
+                  "node": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64,
+                    "description": "The part it writes, by its node in the outline"
+                  }
+                },
+                "required": [
+                  "prompt",
+                  "node"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "prompt": "00000000-0000-4000-8000-000000000001",
+                "node": "example"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Server-sent events, as the AsyncAPI document’s `assistantRun` channel declares them: `run`, then `text` as it comes, one `proposal` of the part’s whole text, and `ended` or `failed`",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A personal token, or the caller may not suggest on the part: a run takes a session, and proposes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such document you may read, no part you may read at that node, or no approved prompt its library lists by that id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`model_unconfigured`: no endpoint is set up for its purpose; `endpoint_unusable`: it is retired or has no key; `model_mismatch`: the endpoint’s model is not one the prompt accepts; `context_empty`: its context resolved to nothing; `context_too_large`: more than the endpoint takes, both sizes named; `part_not_writable`: the part holds what a proposal cannot write. Each before any call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`connector_unavailable`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/documents/{id}/prompts": {
+      "get": {
+        "operationId": "listDocumentPrompts",
+        "summary": "The prompts a document may run: its template's library, each at the revision it runs",
+        "description": "Returns the prompts a document may run: its template's library, or the environment's empty default where it names none or the document was made blank, each prompt at the revision a run of it runs. A prompt the caller may not read is counted, never named.",
+        "tags": [
+          "Prompts"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "read",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The library and its prompts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "library": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "isDefault": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "isDefault"
+                      ]
+                    },
+                    "prompts": {
+                      "type": "array",
+                      "items": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "state": {
+                                "type": "string",
+                                "const": "approved"
+                              },
+                              "revision": {
+                                "type": "object",
+                                "properties": {
+                                  "number": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "versionId": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "number",
+                                  "versionId"
+                                ],
+                                "description": "Its latest approved revision: what a run of it runs"
+                              },
+                              "prompt": {
+                                "type": "object",
+                                "properties": {
+                                  "schemaVersion": {
+                                    "type": "number",
+                                    "const": 1
+                                  },
+                                  "title": {
+                                    "type": "string"
+                                  },
+                                  "description": {
+                                    "type": "string"
+                                  },
+                                  "instructions": {
+                                    "type": "string"
+                                  },
+                                  "context": {
+                                    "minItems": 1,
+                                    "maxItems": 16,
+                                    "type": "array",
+                                    "items": {
+                                      "oneOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "source": {
+                                              "type": "string",
+                                              "const": "outline"
+                                            },
+                                            "scope": {
+                                              "type": "string",
+                                              "enum": [
+                                                "part",
+                                                "section",
+                                                "document"
+                                              ]
+                                            }
+                                          },
+                                          "required": [
+                                            "source",
+                                            "scope"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "source": {
+                                              "type": "string",
+                                              "const": "related"
+                                            },
+                                            "type": {
+                                              "type": "string",
+                                              "format": "uuid",
+                                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                            },
+                                            "direction": {
+                                              "type": "string",
+                                              "enum": [
+                                                "out",
+                                                "in"
+                                              ]
+                                            }
+                                          },
+                                          "required": [
+                                            "source",
+                                            "type",
+                                            "direction"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "source": {
+                                              "type": "string",
+                                              "const": "field"
+                                            },
+                                            "field": {
+                                              "type": "string",
+                                              "format": "uuid",
+                                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                            },
+                                            "value": {
+                                              "type": [
+                                                "string",
+                                                "number",
+                                                "boolean"
+                                              ]
+                                            }
+                                          },
+                                          "required": [
+                                            "source",
+                                            "field",
+                                            "value"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "source": {
+                                              "type": "string",
+                                              "const": "parameters"
+                                            },
+                                            "names": {
+                                              "minItems": 1,
+                                              "maxItems": 50,
+                                              "type": "array",
+                                              "items": {
+                                                "type": "string",
+                                                "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                                              }
+                                            }
+                                          },
+                                          "required": [
+                                            "source",
+                                            "names"
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "output": {
+                                    "type": "object",
+                                    "properties": {
+                                      "componentType": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "format": "uuid",
+                                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "componentType"
+                                    ]
+                                  },
+                                  "models": {
+                                    "type": "object",
+                                    "properties": {
+                                      "purpose": {
+                                        "type": "string",
+                                        "enum": [
+                                          "drafting",
+                                          "chat",
+                                          "summarising"
+                                        ]
+                                      },
+                                      "accepts": {
+                                        "minItems": 1,
+                                        "maxItems": 16,
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string",
+                                          "pattern": "^[\\x21-\\x7e]{1,200}$"
+                                        }
+                                      }
+                                    },
+                                    "required": [
+                                      "purpose",
+                                      "accepts"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "schemaVersion",
+                                  "title",
+                                  "description",
+                                  "instructions",
+                                  "context",
+                                  "output",
+                                  "models"
+                                ]
+                              },
+                              "space": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "state",
+                              "revision",
+                              "prompt",
+                              "space"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "state": {
+                                "type": "string",
+                                "const": "unapproved",
+                                "description": "Never approved: it runs nothing until it is"
+                              },
+                              "title": {
+                                "type": "string"
+                              },
+                              "space": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "state",
+                              "title",
+                              "space"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "state": {
+                                "type": "string",
+                                "const": "hidden",
+                                "description": "One the caller may not read, or no prompt any more"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "state"
+                            ]
+                          }
+                        ]
+                      },
+                      "description": "Each prompt the library lists, at the revision a run of it runs, as the caller reads it"
+                    }
+                  },
+                  "required": [
+                    "library",
+                    "prompts"
+                  ]
+                },
+                "example": {
+                  "library": {
+                    "id": "example",
+                    "isDefault": false
+                  },
+                  "prompts": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Never answered: a document the caller may not read is not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such document you may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/documents/{id}/publications": {
       "get": {
         "operationId": "listPublications",
@@ -159394,9 +160323,10 @@
                               "revisions",
                               "components",
                               "profile",
-                              "generated"
+                              "generated",
+                              "trial"
                             ],
-                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected"
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires"
                           },
                           "count": {
                             "type": "integer",
@@ -188046,9 +188976,10 @@
                               "revisions",
                               "components",
                               "profile",
-                              "generated"
+                              "generated",
+                              "trial"
                             ],
-                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected"
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires"
                           },
                           "count": {
                             "type": "integer",
@@ -188701,9 +189632,10 @@
                               "revisions",
                               "components",
                               "profile",
-                              "generated"
+                              "generated",
+                              "trial"
                             ],
-                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected"
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires"
                           },
                           "count": {
                             "type": "integer",
@@ -190781,6 +191713,372 @@
                         "gates",
                         "revision"
                       ]
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/prompts/{id}/versions/{version}/trials": {
+      "post": {
+        "operationId": "startPromptTrial",
+        "summary": "Try a version of a prompt on a part of a document, proposing nothing",
+        "description": "Tries a version of a prompt, approved or not, on a part of a document the caller may read, with a signed-in session alone: the same run, recorded as a trial of that version, its output kept on the run and proposed nowhere. Approving a prompt version needs a finished trial of it.",
+        "tags": [
+          "Prompts"
+        ],
+        "x-alloy-token-enabled": false,
+        "x-alloy-permission": "read",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "document": {
+                    "type": "string",
+                    "allOf": [
+                      {
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      {
+                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                      }
+                    ],
+                    "description": "A document the trial reads, as its runner may read it"
+                  },
+                  "node": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64,
+                    "description": "The part it would write, by its node in the outline"
+                  }
+                },
+                "required": [
+                  "document",
+                  "node"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "document": "00000000-0000-4000-8000-000000000001",
+                "node": "example"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Server-sent events, as the AsyncAPI document’s `assistantRun` channel declares them: `run`, then `text` as it comes, its output kept on the run, and proposed nowhere, and `ended` or `failed`",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A personal token: a trial takes a session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such prompt version you may read, no such document you may read, or no part you may read at that node",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`model_unconfigured`: no endpoint is set up for its purpose; `endpoint_unusable`: it is retired or has no key; `model_mismatch`: the endpoint’s model is not one the prompt accepts; `context_empty`: its context resolved to nothing; `context_too_large`: more than the endpoint takes, both sizes named; `part_not_writable`: the part holds what a proposal cannot write. Each before any call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`connector_unavailable`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
                     }
                   },
                   "required": [
@@ -198292,9 +199590,10 @@
                               "revisions",
                               "components",
                               "profile",
-                              "generated"
+                              "generated",
+                              "trial"
                             ],
-                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected"
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires"
                           },
                           "count": {
                             "type": "integer",
@@ -198947,9 +200246,10 @@
                               "revisions",
                               "components",
                               "profile",
-                              "generated"
+                              "generated",
+                              "trial"
                             ],
-                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected"
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires"
                           },
                           "count": {
                             "type": "integer",
@@ -241856,9 +243156,10 @@
                                               "revisions",
                                               "components",
                                               "profile",
-                                              "generated"
+                                              "generated",
+                                              "trial"
                                             ],
-                                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected"
+                                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires"
                                           }
                                         }
                                       },
@@ -242358,9 +243659,10 @@
                               "revisions",
                               "components",
                               "profile",
-                              "generated"
+                              "generated",
+                              "trial"
                             ],
-                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected"
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires"
                           }
                         }
                       },
@@ -242627,9 +243929,10 @@
                                     "revisions",
                                     "components",
                                     "profile",
-                                    "generated"
+                                    "generated",
+                                    "trial"
                                   ],
-                                  "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected"
+                                  "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires"
                                 }
                               }
                             },
@@ -242794,7 +244097,7 @@
             }
           },
           "400": {
-            "description": "workflow_invalid: a key used twice, not one initial state, a transition naming no state or moving to its own, or a state no transition reaches from the initial one; each problem named",
+            "description": "workflow_invalid: a key used twice, not one initial state, a transition naming no state or moving to its own, or a state no transition reaches from the initial one; trial_required: a prompt workflow whose approving transition does not require a trial; each problem named",
             "content": {
               "application/json": {
                 "schema": {
@@ -243219,9 +244522,10 @@
                                     "revisions",
                                     "components",
                                     "profile",
-                                    "generated"
+                                    "generated",
+                                    "trial"
                                   ],
-                                  "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected"
+                                  "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires"
                                 }
                               }
                             },

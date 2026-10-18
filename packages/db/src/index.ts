@@ -709,6 +709,7 @@ export {
 export {
   createLibrary,
   defaultLibraryId,
+  documentLibrary,
   LIBRARIES_LISTED_MOST,
   libraryPrompts,
   listLibraries,
@@ -718,6 +719,7 @@ export {
   type ListedPrompt,
   type StoredLibrary,
 } from './prompt-libraries.js';
+export { CONTEXT_PARTS_MOST, resolveContext, type ContextAnswer } from './prompt-context.js';
 export {
   giveQuerySlot,
   QUERY_RUNS_MOST,

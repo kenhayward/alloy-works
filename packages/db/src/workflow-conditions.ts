@@ -86,6 +86,8 @@ export async function unmetConditions(
     readonly kind: WorkflowKind;
     readonly requires: readonly TransitionCondition[];
     readonly principal: string;
+    /** The version taken through: what a prompt's trial must have run (GEN-045). */
+    readonly version?: string;
   },
 ): Promise<UnmetCondition[]> {
   const requires = TRANSITION_CONDITIONS.filter((each) => input.requires.includes(each));
@@ -94,7 +96,13 @@ export async function unmetConditions(
   const none = { count: 0, names: [], unreadable: 0 };
 
   if (input.kind !== 'document') {
-    // A component's own; a query definition's and a prompt's transitions require nothing (WF3-A).
+    // A component's own, and a prompt's trial; a query definition's transitions require nothing (WF3-A).
+    if (requires.includes('trial')) {
+      found.set('trial', {
+        ...none,
+        count: input.version !== undefined && (await trialRun(trx, input.version)) ? 0 : 1,
+      });
+    }
     if (requires.includes('suggestions')) {
       found.set('suggestions', {
         ...none,
@@ -282,4 +290,14 @@ async function openGenerated(
     trx,
   );
   return Number(rows[0]?.open ?? 0);
+}
+
+/** Whether a prompt version has a finished trial run (GN-F): one ended as the model finished. */
+async function trialRun(trx: TenantTransaction, version: string): Promise<boolean> {
+  const { rows } = await sql<{ found: boolean }>`
+    select exists (
+      select 1 from generation_run
+       where purpose = 'trial' and prompt_version = ${version} and outcome = 'finished'
+    ) as found`.execute(trx);
+  return rows[0]?.found === true;
 }

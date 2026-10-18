@@ -92,6 +92,8 @@ describe('what each route checks', () => {
         'getAssistantUsage',
         'keepProposal',
         'startAssistantRun',
+        'startPromptRun',
+        'startPromptTrial',
         'deleteNotification',
         'endOtherSessions',
         'endSession',

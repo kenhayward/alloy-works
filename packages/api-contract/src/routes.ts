@@ -15,6 +15,7 @@ import { assistantRoutes } from './assistant.js';
 import { generatedRoutes } from './generated.js';
 import { promptRoutes } from './prompts.js';
 import { promptLibraryRoutes } from './prompt-libraries.js';
+import { promptRunRoutes } from './prompt-runs.js';
 import { rangePreviewRoutes } from './range-previews.js';
 import { erasureRoutes } from './erasure.js';
 import { retentionRoutes } from './retention.js';
@@ -384,6 +385,7 @@ type Routes = typeof ownRoutes &
   typeof generatedRoutes &
   typeof promptRoutes &
   typeof promptLibraryRoutes &
+  typeof promptRunRoutes &
   typeof rangePreviewRoutes;
 
 export const routes: Routes = {
@@ -441,6 +443,7 @@ export const routes: Routes = {
   ...generatedRoutes,
   ...promptRoutes,
   ...promptLibraryRoutes,
+  ...promptRunRoutes,
   ...rangePreviewRoutes,
 } as const satisfies Record<string, RouteContract>;
 

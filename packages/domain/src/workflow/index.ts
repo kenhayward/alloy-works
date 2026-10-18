@@ -6,6 +6,7 @@ export {
   parseWorkflowBody,
   reviewPolicy,
   SEED_DOCUMENT_WORKFLOW,
+  SEED_PROMPT_WORKFLOW,
   SEED_WORKFLOW,
   SEED_WORKFLOW_1,
   TRANSITION_CONDITIONS,

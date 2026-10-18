@@ -825,6 +825,17 @@ describe('routes that check a permission', () => {
       status: 404,
       payload: { ask: 'Hello' },
     }),
+    listDocumentPrompts: () => ({ url: `/v1/documents/${report}/prompts`, status: 404 }),
+    startPromptRun: () => ({
+      url: `/v1/documents/${report}/prompt-runs`,
+      status: 404,
+      payload: { prompt: MISSING, node: 'n1' },
+    }),
+    startPromptTrial: () => ({
+      url: `/v1/prompts/${MISSING}/versions/${MISSING}/trials`,
+      status: 404,
+      payload: { document: MISSING, node: 'n1' },
+    }),
     editOutline: () => ({
       url: `/v1/documents/${report}/outline`,
       status: 404,

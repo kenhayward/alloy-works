@@ -275,6 +275,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0122_prompts',
       '0123_workflow_prompts',
       '0124_prompt_libraries',
+      '0125_prompt_trials',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,

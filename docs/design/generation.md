@@ -145,6 +145,15 @@ its **context** (G4-C), its **output** (a part's text, of a component type or an
 place names a declared parameter and that what it names is the tenant's: nothing undeclared reaches a
 model (GEN-003). A library lists prompts by identity, each at its latest approved version (G4-F).
 
+A run of a prompt is on a part of a document, the prompt one its template's library lists at its
+latest approved revision: the context resolved first, as the requester reads it, and recorded; the
+endpoint its purpose routes to refused where its model is not one the prompt accepts; one call, no
+tools; the reply the part's whole text, a proposal. A **trial** is the same run of any version,
+recorded with purpose `trial`, its output kept on the run. **What approval means** (GEN-045): the
+prompt workflow's approving transition requires a finished trial of the version approved, and a
+prompt workflow saved without that requirement is refused (`trial_required`), so the statement holds
+for every tenant; who approves is the transition's permission.
+
 ## The assistant
 
 **Drafting against the open document** (GEN-012), on the document page's **Assistant** panel. The

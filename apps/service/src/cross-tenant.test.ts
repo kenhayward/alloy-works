@@ -12,6 +12,7 @@ import {
   createLibrary,
   createPrompt,
   createQueryDefinition,
+  readPrompt,
   createTemplate,
   readConnection,
   readQueryDefinition,
@@ -192,6 +193,16 @@ const OTHER_TENANT_IDS: Readonly<
   requestPreview: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   requestRangePreview: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   startAssistantRun: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  listDocumentPrompts: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  startPromptRun: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  startPromptTrial: async (tenant, db) => {
+    const id = await promptIdIn(tenant, db);
+    const version = await db.withTenant(
+      tenant,
+      async (trx) => (await readPrompt(trx, id))!.version.id,
+    );
+    return { id, version };
+  },
   getDocumentGenerated: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   getPublicationGenerated: async (tenant, db) => ({
     id: (await publicationIn(tenant, db)).publication,
@@ -665,6 +676,8 @@ const VALID_INPUT: Readonly<
   requestAuditExport: { payload: {} },
   requestTenantExport: { payload: {} },
   startAssistantRun: { payload: { ask: 'Hello' } },
+  startPromptRun: { payload: { prompt: SESSION, node: 'n1' } },
+  startPromptTrial: { payload: { document: SESSION, node: 'n1' } },
   makeModelEndpoint: {
     payload: {
       name: 'Elsewhere',

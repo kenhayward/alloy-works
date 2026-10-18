@@ -134,6 +134,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0122_prompts',
       '0123_workflow_prompts',
       '0124_prompt_libraries',
+      '0125_prompt_trials',
     ]);
 
     const read = async () =>
