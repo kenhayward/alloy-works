@@ -199,6 +199,35 @@ describe('model endpoints', () => {
     });
   });
 
+  it("keeps a run's transcript: the ask as it starts, the reply once as it ends, neither changed after", async () => {
+    const id = await service.withTenant(production, async (trx) =>
+      startRun(trx, {
+        purpose: 'drafting',
+        endpoint: await made(trx, { ...drafting, name: 'Transcript' }),
+        parameters: {},
+        contextDigest: 'e'.repeat(64),
+        by: ada,
+        ask: 'What floods?',
+      }),
+    );
+    const refused = (statement: ReturnType<typeof sql>) =>
+      expect(service.withTenant(production, (trx) => statement.execute(trx))).rejects.toThrow(
+        /ended once/,
+      );
+    // While it runs, its words stay as asked, and its reply is set only by its ending.
+    await refused(sql`update generation_run set ask = 'Something else' where id = ${id}`);
+    await refused(sql`update generation_run set reply = 'Early' where id = ${id}`);
+    const ended = await service.withTenant(production, (trx) =>
+      endRun(trx, id, { outcome: 'finished', model: 'claude-test', reply: 'The north weir.' }),
+    );
+    expect(ended).toMatchObject({ ask: 'What floods?', reply: 'The north weir.' });
+    await refused(sql`update generation_run set reply = 'Rewritten' where id = ${id}`);
+    expect(await service.withTenant(production, (trx) => readRun(trx, id))).toMatchObject({
+      ask: 'What floods?',
+      reply: 'The north weir.',
+    });
+  });
+
   it('keeps a run whole: ended once, never changed after, never deleted', async () => {
     await service.withTenant(production, async (trx) => {
       const endpoint = await made(trx, { ...drafting, name: 'Run' });

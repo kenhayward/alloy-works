@@ -48,6 +48,11 @@ export const AssistantRunView = z.object({
       .record(z.string(), z.unknown())
       .describe('What it was run with: its reply’s limit, and the instructions’ version'),
     endpoint: z.object({ name: z.string(), boundary: z.string() }),
+    ask: z.string().nullable().describe('What the person asked, or null for a prompt run (GN-I)'),
+    reply: z
+      .string()
+      .nullable()
+      .describe('What the model wrote, set as the run ended; null while it runs (GN-I)'),
     model: z.string().nullable(),
     outcome: z.string(),
     startedAt: z.string(),

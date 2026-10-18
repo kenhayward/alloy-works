@@ -1,26 +1,21 @@
-import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 
 import {
   actOnProposal,
   acceptSuggestion,
-  endRun,
   listModelRoutes,
   makeProposal,
   makeSuggestion,
-  noteStep,
   proposalsOfRun,
   readDocument,
   readModelEndpoint,
   readProposal,
   readRun,
-  recordGenerationRun,
   resolveOccurrences,
   runsThisMonth,
   searchWords,
-  startRun,
   usableModelKey,
   versionContents,
-  type GenerationProposal,
   type Tenant,
   type TenantDatabase,
   type TenantListener,
@@ -34,7 +29,6 @@ import {
   applyEdits,
   asData,
   blockIdentifierFrom,
-  canonicalCall,
   citationsIn,
   componentAsText,
   isAssistantTool,
@@ -42,8 +36,6 @@ import {
   toolInputSchemas,
   type BlockNode,
   type ContentDocument,
-  type GenerationFailure,
-  type ModelCall,
   type ModelMessage,
   type OutlineDocument,
 } from '@alloy-works/domain';
@@ -52,15 +44,14 @@ import { readMarkdown } from '@alloy-works/readers/markdown';
 import type { FastifyRequest } from 'fastify';
 
 import { authoriseAt, callerOf, notFound, type Authorised } from '../access.js';
-import { Streamed } from '../after-commit.js';
 import { contextOf } from '../audit.js';
-import { watchAuthority } from '../authority.js';
 import { createConnectorClient } from '../data/connector.js';
 import type { ConnectorOptions } from '../data/connections.js';
 import { liveBindingStates } from '../data/bindings.js';
 import { mayNameColumns, storableContent } from '../editing.js';
 import { AppError } from '../errors.js';
 import type { SessionPrincipal } from '../sessions.js';
+import { failureWords, microsText, streamedRun, type ToolAnswer } from './run-loop.js';
 
 /**
  * The drafting assistant (generation.md, "The assistant"; the G2 plan): a run against the open
@@ -78,30 +69,6 @@ export const ASSISTANT_LIMITS = {
   maxTokens: 4096,
 } as const;
 
-/** What a tool answers the model, the step it records, and a short summary for the page. */
-interface ToolAnswer {
-  readonly ok: boolean;
-  readonly content: string;
-  readonly summary: string;
-  /** The blocks a `read_component` answered, which a citation may name (G2-G). */
-  readonly read?: {
-    readonly component: string;
-    readonly version: string;
-    readonly blocks: readonly string[];
-  };
-  readonly proposal?: GenerationProposal;
-}
-
-const WORDS: Readonly<Record<GenerationFailure['code'], string>> = {
-  model_unavailable: 'The model endpoint did not answer, refused its key, or failed.',
-  model_mismatch: 'The endpoint answered as a model other than the one it names.',
-  context_too_large: 'The endpoint said what it was sent is more than the model accepts.',
-  timeout: 'The assistant did not finish in time.',
-  connector_error: 'The connector failed while it called the endpoint.',
-  connector_busy: 'The connector is calling as many models as it may at once. Try again shortly.',
-  connector_unavailable: 'The connector could not be reached.',
-};
-
 /** The most of one tool's answer the model is given, in characters: past it, cut and said so. */
 const TOOL_ANSWER_MAX = 40_000;
 
@@ -109,8 +76,6 @@ const capped = (text: string) =>
   text.length <= TOOL_ANSWER_MAX
     ? text
     : `${text.slice(0, TOOL_ANSWER_MAX)}\n[Cut short: the rest is not shown.]`;
-
-const sha256 = (text: string) => createHash('sha256').update(text, 'utf8').digest('hex');
 
 /** A component's latest blocks, as Markdown admitted into them (G2-D). */
 function markdownReader(document: ContentDocument) {
@@ -375,241 +340,49 @@ export function assistantHandlers(
           'The drafting endpoint is retired, or has no key set.',
         );
       }
-      if (!client) throw new AppError(503, 'connector_unavailable', WORDS.connector_unavailable);
-      const asking = client;
-      const tenant = tenantOf(request);
-      const context = contextOf(request);
-      const credential = request.credential ?? null;
+      if (!client) {
+        throw new AppError(503, 'connector_unavailable', failureWords('connector_unavailable'));
+      }
+      const first: ModelMessage = {
+        role: 'user',
+        content: [
+          {
+            type: 'text',
+            text:
+              component === undefined
+                ? ask
+                : `${ask}
 
-      return new Streamed(async (send, closed) => {
-        const authority = watchAuthority({ db, tenant, credential, events });
-        const stopped = AbortSignal.any([closed, authority.signal]);
-        const started = Date.now();
-        const first: ModelMessage = {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text:
-                component === undefined
-                  ? ask
-                  : `${ask}\n\n(The author has component ${component} open.)`,
-            },
-          ],
-        };
-        const messages: ModelMessage[] = [first];
-        const callOf = (): ModelCall => ({
-          model: endpoint.model,
-          system: ASSISTANT_INSTRUCTIONS,
-          messages: [...messages],
-          tools: [...ASSISTANT_TOOLS],
-          parameters: { maxTokens: ASSISTANT_LIMITS.maxTokens },
-        });
-        let run: string;
-        try {
-          run = await db.withTenant(
-            tenant,
-            (inner) =>
-              startRun(inner, {
-                purpose: 'drafting',
-                endpoint,
-                parameters: {
-                  maxTokens: ASSISTANT_LIMITS.maxTokens,
-                  instructions: ASSISTANT_INSTRUCTIONS_VERSION,
-                },
-                contextDigest: sha256(canonicalCall(callOf())),
-                by: principalId,
-                documentId: id,
-              }),
-            context,
-          );
-        } catch (error) {
-          authority.stop();
-          request.log.error({ err: error }, 'an assistant run could not start');
-          send('failed', { code: 'connector_error', message: 'The assistant could not start.' });
-          return;
-        }
-        send('run', { run, endpoint: { name: endpoint.name, boundary: endpoint.boundary } });
-        const tool = tools(request, id, principalId, run);
-        const usage = { in: 0, out: 0, reported: false };
-        const read = new Map<string, Set<string>>();
-        const context_: { component: string; version: string; blocks: readonly string[] }[] = [];
-        let said = '';
-        let model: string | null = null;
-        let calls = 0;
-        let outcome = 'finished';
-        let failure: GenerationFailure | undefined;
-        let last = callOf();
-        try {
-          for (let turn = 0; turn < ASSISTANT_LIMITS.turns; turn += 1) {
-            if (stopped.aborted) {
-              outcome = 'cancelled';
-              break;
-            }
-            const left = ASSISTANT_LIMITS.runMs - (Date.now() - started);
-            if (left < 1000) {
-              failure = { code: 'timeout' };
-              break;
-            }
-            // What this turn gives the model, which is what the run's digest is over if it is the last.
-            last = callOf();
-            let text = '';
-            const calledFor: { id: string; name: string; input: Record<string, unknown> }[] = [];
-            const answer = await asking.model(
-              {
-                requestId: randomUUID(),
-                tenant: tenant.id,
-                endpoint: {
-                  id: endpoint.id,
-                  protocol: endpoint.protocol,
-                  baseUrl: endpoint.baseUrl,
-                },
-                sealed,
-                call: last,
-                deadlineMs: Math.min(ASSISTANT_LIMITS.turnMs, left),
-              },
-              (event) => {
-                if (event.type === 'text') {
-                  text += event.text;
-                  send('text', { text: event.text });
-                } else if (event.type === 'tool_call') {
-                  calledFor.push({ id: event.id, name: event.name, input: event.input });
-                }
-              },
-              stopped,
-            );
-            if (stopped.aborted) {
-              outcome = 'cancelled';
-              break;
-            }
-            if ('refused' in answer) {
-              failure = { code: answer.refused.code };
-              break;
-            }
-            if (answer.answer.type === 'failed') {
-              failure = answer.answer.failure;
-              break;
-            }
-            const ended = answer.answer;
-            model = ended.model;
-            if (ended.usage) {
-              usage.in += ended.usage.in;
-              usage.out += ended.usage.out;
-              usage.reported = true;
-            }
-            said += text;
-            const content: Extract<ModelMessage, { role: 'assistant' }>['content'] = [];
-            if (text !== '') content.push({ type: 'text', text });
-            for (const each of calledFor) content.push({ type: 'tool_use', ...each });
-            if (content.length > 0) messages.push({ role: 'assistant', content });
-            if (calledFor.length === 0 || ended.stop !== 'tool_use') break;
-            const results: Extract<ModelMessage, { role: 'user' }>['content'] = [];
-            for (const each of calledFor) {
-              // Nothing more is done for a caller who has gone, or whose authority ended.
-              if (stopped.aborted) break;
-              calls += 1;
-              send('tool_call', each);
-              const answered: ToolAnswer =
-                calls > ASSISTANT_LIMITS.toolCalls
-                  ? {
-                      ok: false,
-                      content: 'This run has made all the tool calls it may.',
-                      summary: 'Too many calls',
-                    }
-                  : await tool(each.name, each.input);
-              if (answered.read) {
-                const blocks = read.get(answered.read.component) ?? new Set<string>();
-                for (const block of answered.read.blocks) blocks.add(block);
-                read.set(answered.read.component, blocks);
-                context_.push(answered.read);
-              }
-              await db.withTenant(
-                tenant,
-                (inner) =>
-                  noteStep(inner, run, {
-                    tool: each.name,
-                    arguments: each.input,
-                    ok: answered.ok,
-                    result: answered.content,
-                  }),
-                context,
-              );
-              send('tool_result', {
-                id: each.id,
-                name: each.name,
-                ok: answered.ok,
-                summary: answered.summary,
-                result: answered.content,
-              });
-              if (answered.proposal) {
-                send('proposal', {
-                  id: answered.proposal.id,
-                  number: answered.proposal.number,
-                  component: answered.proposal.componentId,
-                  against: answered.proposal.madeAgainst,
-                  proposed: answered.proposal.proposed,
-                });
-              }
-              results.push({
-                type: 'tool_result',
-                toolUseId: each.id,
-                content: answered.content,
-                ...(answered.ok ? {} : { isError: true }),
-              });
-            }
-            if (stopped.aborted) {
-              outcome = 'cancelled';
-              break;
-            }
-            messages.push({ role: 'user', content: results });
-            if (turn === ASSISTANT_LIMITS.turns - 1) failure = { code: 'timeout' };
-          }
-        } catch (error) {
-          // A failure of the product's own, never said as a finished run (the final review).
-          request.log.error({ err: error }, 'an assistant run failed');
-          failure = { code: 'connector_error' };
-        } finally {
-          authority.stop();
+(The author has component ${component} open.)`,
+          },
+        ],
+      };
+      return streamedRun({
+        request,
+        db,
+        tenant: tenantOf(request),
+        events,
+        asking: client,
+        endpoint,
+        sealed,
+        principalId,
+        purpose: 'drafting',
+        parameters: {
+          maxTokens: ASSISTANT_LIMITS.maxTokens,
+          instructions: ASSISTANT_INSTRUCTIONS_VERSION,
+        },
+        documentId: id,
+        ask,
+        system: ASSISTANT_INSTRUCTIONS,
+        tools: ASSISTANT_TOOLS,
+        messages: [first],
+        limits: ASSISTANT_LIMITS,
+        tool: (run) => tools(request, id, principalId, run),
+        ended: (said, read) => {
           const cited = citationsIn(said);
           const kept = cited.filter((each) => read.get(each.component)?.has(each.block) === true);
-          const dropped = cited.filter((each) => !kept.includes(each));
-          const ending = failure?.code ?? outcome;
-          const recorded = await db
-            .withTenant(
-              tenant,
-              async (inner) => {
-                const ended = await endRun(inner, run, {
-                  outcome: ending,
-                  model,
-                  usage: usage.reported ? { in: usage.in, out: usage.out } : null,
-                  contextDigest: sha256(canonicalCall(last)),
-                  context: context_,
-                });
-                await recordGenerationRun(inner, ended);
-                return ended;
-              },
-              context,
-            )
-            .catch(() => undefined);
-          if (failure) {
-            send('failed', {
-              code: failure.code,
-              ...(failure.reason ? { reason: failure.reason } : {}),
-              message: WORDS[failure.code],
-            });
-          } else {
-            send('ended', {
-              outcome: ending,
-              model,
-              tokensIn: recorded?.tokensIn ?? null,
-              tokensOut: recorded?.tokensOut ?? null,
-              cost: recorded?.costMicros == null ? null : microsText(recorded.costMicros),
-              currency: endpoint.currency,
-              citations: kept,
-              dropped,
-            });
-          }
-        }
+          return { citations: kept, dropped: cited.filter((each) => !kept.includes(each)) };
+        },
       });
     },
 
@@ -643,6 +416,8 @@ export function assistantHandlers(
               name: String(run.endpoint.name ?? ''),
               boundary: String(run.endpoint.boundary ?? ''),
             },
+            ask: run.ask,
+            reply: mayRead ? run.reply : null,
             model: run.model,
             outcome: run.outcome,
             startedAt: run.startedAt.toISOString(),
@@ -757,13 +532,6 @@ export function assistantHandlers(
     await actOnProposal(trx, { proposal, act, suggestion: made.suggestion, by: principalId });
     return { proposal: { id, state: act, suggestion: made.suggestion } };
   }
-}
-
-/** Millionths of a currency's unit, written to six places. */
-function microsText(micros: bigint): string {
-  const whole = micros / 1_000_000n;
-  const part = (micros % 1_000_000n).toString().padStart(6, '0');
-  return `${whole}.${part}`;
 }
 
 /** A suggestion's refusal, said for a proposal (G2-E). */

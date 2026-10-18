@@ -314,6 +314,9 @@ export interface GenerationRun {
   readonly steps: readonly unknown[];
   readonly requestedBy: string | null;
   readonly documentId: string | null;
+  /** The person's words and the model's (GN-I): null for a run made before 0126, or without them. */
+  readonly ask: string | null;
+  readonly reply: string | null;
   readonly startedAt: Date;
   readonly outcome: string;
   readonly model: string | null;
@@ -335,6 +338,8 @@ interface RunRow {
   steps: unknown[];
   requested_by: string | null;
   document_id: string | null;
+  ask?: string | null;
+  reply?: string | null;
   started_at: Date;
   outcome: string;
   model: string | null;
@@ -356,6 +361,8 @@ const runOf = (row: RunRow): GenerationRun => ({
   steps: row.steps,
   requestedBy: row.requested_by,
   documentId: row.document_id,
+  ask: row.ask ?? null,
+  reply: row.reply ?? null,
   startedAt: row.started_at,
   outcome: row.outcome,
   model: row.model,
@@ -377,6 +384,8 @@ export async function startRun(
     readonly by: string;
     readonly documentId?: string | null;
     readonly promptVersion?: string | null;
+    /** The person's words, kept with the run (GN-I). */
+    readonly ask?: string;
   },
 ): Promise<string> {
   const e = input.endpoint;
@@ -391,13 +400,16 @@ export async function startRun(
     currency: e.currency,
     boundary: e.boundary,
   };
+  // The ask only where one is given, so a schema before 0126 still takes a run without one.
+  const ask = input.ask === undefined ? sql`` : sql`, ask`;
+  const asked = input.ask === undefined ? sql`` : sql`, ${input.ask}`;
   const { rows } = await sql<{ id: string }>`insert into generation_run
       (purpose, endpoint_id, endpoint, prompt_version, parameters, context_digest, context,
-       requested_by, document_id)
+       requested_by, document_id${ask})
     values (${input.purpose}, ${input.endpoint.id}, ${JSON.stringify(settings)}::jsonb,
       ${input.promptVersion ?? null}, ${JSON.stringify(input.parameters)}::jsonb,
       ${input.contextDigest}, ${JSON.stringify(input.context ?? [])}::jsonb, ${input.by},
-      ${input.documentId ?? null})
+      ${input.documentId ?? null}${asked})
     returning id`.execute(trx);
   return rows[0]!.id;
 }
@@ -417,6 +429,8 @@ export async function endRun(
     /** What the model was last given, as it ends (the G2 plan, G2-J): its digest, and what it read. */
     readonly contextDigest?: string;
     readonly context?: readonly unknown[];
+    /** The model's words, kept with the run (GN-I). */
+    readonly reply?: string;
   },
 ): Promise<GenerationRun> {
   const { rows: started } =
@@ -432,6 +446,7 @@ export async function endRun(
       steps = ${JSON.stringify(ended.steps ?? run.steps)}::jsonb,
       context_digest = ${ended.contextDigest ?? run.context_digest},
       context = ${JSON.stringify(ended.context ?? run.context)}::jsonb, finished_at = now()
+      ${ended.reply === undefined ? sql`` : sql`, reply = ${ended.reply}`}
     where id = ${id} returning *`.execute(trx);
   return runOf(rows[0]!);
 }

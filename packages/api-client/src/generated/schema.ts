@@ -9910,6 +9910,8 @@ export interface operations {
                      *           "name": "example",
                      *           "boundary": "example"
                      *         },
+                     *         "ask": "example",
+                     *         "reply": "example",
                      *         "model": "example",
                      *         "outcome": "example",
                      *         "startedAt": "example",
@@ -9941,6 +9943,10 @@ export interface operations {
                                 name: string;
                                 boundary: string;
                             };
+                            /** @description What the person asked, or null for a prompt run (GN-I) */
+                            ask: string | null;
+                            /** @description What the model wrote, set as the run ended; null while it runs (GN-I) */
+                            reply: string | null;
                             model: string | null;
                             outcome: string;
                             startedAt: string;

@@ -322,6 +322,7 @@ export function promptRunHandlers(
                 outcome: ending,
                 model,
                 usage,
+                reply: said,
                 // A trial's output is kept on the run (GN-F); a run's is its proposal.
                 steps: [
                   {
