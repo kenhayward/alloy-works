@@ -1,6 +1,14 @@
 import { randomBytes } from 'node:crypto';
 
 import {
+  CONVERSATION_TURNS_MOST,
+  listConversations,
+  listModelEndpoints,
+  readConversation,
+  startConversation,
+  turnsOf,
+  type Conversation,
+  type StoredModelEndpoint,
   actOnProposal,
   acceptSuggestion,
   listModelRoutes,
@@ -41,6 +49,7 @@ import {
 } from '@alloy-works/domain';
 import type { ObjectStores } from '@alloy-works/objects';
 import { readMarkdown } from '@alloy-works/readers/markdown';
+import type { StartConversationBody, TurnBody } from '@alloy-works/api-contract';
 import type { FastifyRequest } from 'fastify';
 
 import { authoriseAt, callerOf, notFound, type Authorised } from '../access.js';
@@ -386,6 +395,155 @@ export function assistantHandlers(
       });
     },
 
+    listConversationEndpoints: (request: FastifyRequest) =>
+      asCaller(request, async (trx) => {
+        const fallback = await defaultEndpoint(trx);
+        const items = [];
+        for (const each of await listModelEndpoints(trx)) {
+          if (each.retiredAt !== null || (await usableModelKey(trx, each)) === undefined) continue;
+          items.push({
+            id: each.id,
+            name: each.name,
+            model: each.model,
+            boundary: each.boundary,
+            isDefault: each.id === fallback,
+          });
+        }
+        return { items };
+      }),
+
+    startConversation: (request: FastifyRequest) =>
+      asCaller(request, async (trx, principalId) => {
+        const { document, title } = request.body as StartConversationBody;
+        if (document !== undefined) {
+          await authoriseAt(trx, callerOf(request), 'read', { kind: 'artifact', id: document });
+          if (!(await readDocument(trx, document))) throw notFound();
+        }
+        const made = await startConversation(trx, {
+          owner: principalId,
+          documentId: document ?? null,
+          title,
+        });
+        return { conversation: { ...conversationView(made), turns: [] } };
+      }),
+
+    listConversations: (request: FastifyRequest) =>
+      asCaller(request, async (trx, principalId) => {
+        const { document } = request.query as { document?: string };
+        const items = await listConversations(
+          trx,
+          principalId,
+          document === undefined ? {} : { documentId: document },
+        );
+        return { items: items.map(conversationView) };
+      }),
+
+    getConversation: (request: FastifyRequest) =>
+      asCaller(request, async (trx, principalId) => {
+        const conversation = await own(trx, request, principalId);
+        return {
+          conversation: {
+            ...conversationView(conversation),
+            turns: (await turnsOf(trx, conversation.id)).map((each) => ({
+              ...each,
+              startedAt: each.startedAt.toISOString(),
+            })),
+          },
+        };
+      }),
+
+    takeTurn: async (request: FastifyRequest) => {
+      const principalId = principalOf(request).principalId;
+      const tenant = tenantOf(request);
+      const { ask, endpoint: named, component } = request.body as TurnBody;
+      const prepared = await db.withTenant(
+        tenant,
+        async (trx) => {
+          const conversation = await own(trx, request, principalId);
+          const turns = await turnsOf(trx, conversation.id);
+          if (turns.some((each) => each.outcome === 'running')) {
+            throw new AppError(
+              409,
+              'turn_running',
+              'A turn of this conversation has not ended yet.',
+            );
+          }
+          if (turns.length >= CONVERSATION_TURNS_MOST) {
+            throw new AppError(
+              409,
+              'conversation_too_long',
+              `A conversation takes ${CONVERSATION_TURNS_MOST} turns. Start another to go on.`,
+            );
+          }
+          const endpoint = await endpointFor(trx, named);
+          const sealed = await usableModelKey(trx, endpoint);
+          if (sealed === undefined) {
+            throw new AppError(409, 'endpoint_unusable', 'The endpoint has no key set.');
+          }
+          return { conversation, turns, endpoint, sealed };
+        },
+        contextOf(request),
+      );
+      if (!client) {
+        throw new AppError(503, 'connector_unavailable', failureWords('connector_unavailable'));
+      }
+      const { conversation, turns, endpoint, sealed } = prepared;
+      const document = conversation.documentId;
+      // The earlier finished turns' words, never their tool results (G5-A).
+      const earlier: ModelMessage[] = turns.flatMap((each): ModelMessage[] =>
+        each.outcome === 'finished' && each.ask !== null && each.reply !== null && each.reply !== ''
+          ? [
+              { role: 'user', content: [{ type: 'text', text: each.ask }] },
+              { role: 'assistant', content: [{ type: 'text', text: each.reply }] },
+            ]
+          : [],
+      );
+      const words =
+        component === undefined
+          ? ask
+          : `${ask}
+
+(The author has component ${component} open.)`;
+      return streamedRun({
+        request,
+        db,
+        tenant,
+        events,
+        asking: client,
+        endpoint,
+        sealed,
+        principalId,
+        purpose: 'chat',
+        parameters: {
+          maxTokens: ASSISTANT_LIMITS.maxTokens,
+          instructions: ASSISTANT_INSTRUCTIONS_VERSION,
+          turn: turns.length + 1,
+        },
+        documentId: document,
+        conversationId: conversation.id,
+        ask,
+        system: ASSISTANT_INSTRUCTIONS,
+        // On a document, the assistant's tools, as the requester; with none, words alone (G5-D adds).
+        tools: document === null ? [] : ASSISTANT_TOOLS,
+        messages: [...earlier, { role: 'user', content: [{ type: 'text', text: words }] }],
+        limits: ASSISTANT_LIMITS,
+        tool: (run) =>
+          document === null
+            ? async (name) => ({
+                ok: false,
+                content: `There is no tool ${name}.`,
+                summary: 'No such tool',
+              })
+            : tools(request, document, principalId, run),
+        started: { conversation: conversation.id },
+        ended: (said, read) => {
+          const cited = citationsIn(said);
+          const kept = cited.filter((each) => read.get(each.component)?.has(each.block) === true);
+          return { citations: kept, dropped: cited.filter((each) => !kept.includes(each)) };
+        },
+      });
+    },
+
     getAssistantRun: (request: FastifyRequest) =>
       asCaller(request, async (trx, principalId) => {
         const { id } = request.params as { id: string };
@@ -459,6 +617,57 @@ export function assistantHandlers(
     discardProposal: (request: FastifyRequest) =>
       asCaller(request, (trx, principalId) => actOn(request, trx, principalId, 'discarded')),
   };
+
+  /** A conversation of the caller's, whose document they may still read; anybody else's is not found. */
+  async function own(
+    trx: TenantTransaction,
+    request: FastifyRequest,
+    principalId: string,
+  ): Promise<Conversation> {
+    const { id } = request.params as { id: string };
+    const conversation = await readConversation(trx, id);
+    if (!conversation || conversation.owner !== principalId) throw notFound();
+    if (conversation.documentId !== null) {
+      await authoriseAt(trx, callerOf(request), 'read', {
+        kind: 'artifact',
+        id: conversation.documentId,
+      });
+    }
+    return conversation;
+  }
+
+  /** The endpoint a turn naming none runs on (G5-C): the chat route's, else drafting's. */
+  async function defaultEndpoint(trx: TenantTransaction): Promise<string | undefined> {
+    const routes = await listModelRoutes(trx);
+    return (
+      routes.find((each) => each.purpose === 'chat') ??
+      routes.find((each) => each.purpose === 'drafting')
+    )?.endpointId;
+  }
+
+  /** The endpoint a turn runs on: the one named, in use, or the default (G5-C; GEN-051). */
+  async function endpointFor(
+    trx: TenantTransaction,
+    named: string | undefined,
+  ): Promise<StoredModelEndpoint> {
+    const id = named ?? (await defaultEndpoint(trx));
+    if (id === undefined) {
+      throw new AppError(
+        409,
+        'model_unconfigured',
+        'No model endpoint is set up for a conversation.',
+      );
+    }
+    const endpoint = await readModelEndpoint(trx, id);
+    if (!endpoint || endpoint.retiredAt !== null) {
+      throw new AppError(
+        409,
+        'endpoint_unusable',
+        'That endpoint is retired, or is not one of this environment’s.',
+      );
+    }
+    return endpoint;
+  }
 
   /** A session-checked route's work, as the caller, in a transaction of its own. */
   function asCaller<T>(
@@ -570,4 +779,14 @@ function suggestionRefused(answer: string): AppError {
     default:
       return new AppError(409, answer.replace(/\./g, '_'), 'The proposal could not be acted on.');
   }
+}
+
+/** A conversation as the routes answer it, without its turns. */
+function conversationView(conversation: Conversation) {
+  return {
+    id: conversation.id,
+    document: conversation.documentId,
+    title: conversation.title,
+    madeAt: conversation.madeAt.toISOString(),
+  };
 }

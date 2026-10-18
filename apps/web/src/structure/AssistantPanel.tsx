@@ -78,6 +78,36 @@ function proposedText(proposed: Proposal['proposed']): string {
     .join('\n\n');
 }
 
+/** A conversation of the person's on this document, as the panel lists it (G5-A). */
+interface ConversationItem {
+  readonly id: string;
+  readonly title: string;
+}
+
+/** A turn of the open conversation, as the service keeps it. */
+interface ConversationTurn {
+  readonly run: string;
+  readonly ask: string | null;
+  readonly reply: string | null;
+  readonly outcome: string;
+}
+
+/** An endpoint a turn may run on (G5-C). */
+interface OfferedEndpoint {
+  readonly id: string;
+  readonly name: string;
+  readonly boundary: string;
+  readonly isDefault: boolean;
+}
+
+/** A refusal's words, or the fallback where it says none. */
+const refusalWords = (error: unknown, fallback: string): string =>
+  typeof error === 'object' &&
+  error !== null &&
+  typeof (error as { message?: unknown }).message === 'string'
+    ? (error as { message: string }).message
+    : fallback;
+
 /** A prompt the document's library runs, as the panel offers it. */
 interface RunnablePrompt {
   readonly id: string;
@@ -127,6 +157,40 @@ export function AssistantPanel({
   const [month, setMonth] = useState<string>('');
   const stop = useRef<AbortController | null>(null);
   const [prompts, setPrompts] = useState<readonly RunnablePrompt[]>([]);
+  // This document's conversations of the person's, the one open and its turns (G5-A).
+  const [conversations, setConversations] = useState<readonly ConversationItem[]>([]);
+  const [conversation, setConversation] = useState<string | null>(null);
+  const [turns, setTurns] = useState<readonly ConversationTurn[]>([]);
+  const [current, setCurrent] = useState<string | null>(null);
+  // The endpoints a turn may run on, and the one chosen (G5-C).
+  const [endpoints, setEndpoints] = useState<readonly OfferedEndpoint[]>([]);
+  const [chosen, setChosen] = useState('');
+
+  const readConversations = async () => {
+    const { data } = await client.GET('/v1/conversations', {
+      params: { query: { document } },
+    });
+    if (data) setConversations(data.items);
+  };
+
+  const readTurns = async (id: string) => {
+    const { data } = await client.GET('/v1/conversations/{id}', { params: { path: { id } } });
+    if (data) setTurns(data.conversation.turns);
+  };
+
+  useEffect(() => {
+    void readConversations().catch(() => undefined);
+    void client
+      .GET('/v1/conversation-endpoints')
+      .then(({ data }) => {
+        if (!data) return;
+        setEndpoints(data.items);
+        setChosen(data.items.find((each) => each.isDefault)?.id ?? data.items[0]?.id ?? '');
+      })
+      .catch(() => undefined);
+    // Read once a document; `readConversations` reads the props it closes over.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [client, document]);
 
   useEffect(() => () => stop.current?.abort(), []);
 
@@ -161,10 +225,27 @@ export function AssistantPanel({
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (ask.trim() === '' || running) return;
-    await run(`${origin}/v1/documents/${document}/assistant/runs`, {
+    // A first ask starts a conversation of this document's, named by its words (G5-A).
+    let id = conversation;
+    if (id === null) {
+      const { data, error } = await client.POST('/v1/conversations', {
+        body: { document, title: ask.trim() },
+      });
+      if (!data) {
+        setSaid(refusalWords(error, 'The conversation could not be started.'));
+        return;
+      }
+      id = data.conversation.id;
+      setConversation(id);
+      setTurns([]);
+    }
+    await run(`${origin}/v1/conversations/${id}/turns`, {
       ask: ask.trim(),
+      ...(chosen === '' ? {} : { endpoint: chosen }),
       ...(component === null ? {} : { component }),
     });
+    setAsk('');
+    await Promise.all([readTurns(id), readConversations()]).catch(() => undefined);
   };
 
   /** A run streamed: the assistant asked, or a prompt run on the part open (G4-I). */
@@ -186,6 +267,7 @@ export function AssistantPanel({
         switch (name) {
           case 'run':
             setEndpoint(frame.endpoint as { name: string; boundary: string });
+            setCurrent(String(frame.run));
             break;
           case 'text':
             setAnswer((was) => was + String(frame.text));
@@ -295,6 +377,69 @@ export function AssistantPanel({
           ? 'The assistant reads what you may read of this document. Nothing it proposes changes the document until you accept it.'
           : `Using ${endpoint.name}${endpoint.boundary === 'outside' ? ', which is outside your data boundary' : ''}.`}
       </p>
+      <div className={styles['actions']}>
+        <label className={styles['ask']}>
+          Conversation
+          <select
+            value={conversation ?? ''}
+            disabled={running}
+            onChange={(change) => {
+              const id = change.target.value === '' ? null : change.target.value;
+              setConversation(id);
+              setTurns([]);
+              setCurrent(null);
+              setAnswer('');
+              setProposals([]);
+              setSteps([]);
+              setEnded(null);
+              if (id !== null) void readTurns(id).catch(() => undefined);
+            }}
+          >
+            <option value="">A new conversation</option>
+            {conversations.map((each) => (
+              <option key={each.id} value={each.id}>
+                {each.title}
+              </option>
+            ))}
+          </select>
+        </label>
+        {endpoints.length > 0 && (
+          <label className={styles['ask']}>
+            Endpoint
+            <select
+              value={chosen}
+              disabled={running}
+              onChange={(change) => setChosen(change.target.value)}
+            >
+              {endpoints.map((each) => (
+                <option key={each.id} value={each.id}>
+                  {each.boundary === 'outside'
+                    ? `${each.name}, outside your data boundary`
+                    : each.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+      </div>
+      {turns.filter((each) => each.run !== current).length > 0 && (
+        <ol aria-label="Earlier turns" className={styles['turns']}>
+          {turns
+            .filter((each) => each.run !== current)
+            .map((each) => (
+              <li key={each.run}>
+                <p className={styles['strong']}>{each.ask}</p>
+                <p>
+                  {each.outcome === 'finished'
+                    ? (each.reply ?? '')
+                    : each.outcome === 'running'
+                      ? 'Still answering.'
+                      : 'This turn did not finish.'}
+                </p>
+              </li>
+            ))}
+        </ol>
+      )}
       <form onSubmit={(event) => void submit(event)}>
         <label className={styles['ask']}>
           Ask the assistant

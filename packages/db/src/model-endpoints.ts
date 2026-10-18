@@ -386,6 +386,8 @@ export async function startRun(
     readonly promptVersion?: string | null;
     /** The person's words, kept with the run (GN-I). */
     readonly ask?: string;
+    /** The conversation it is a turn of (G5-A). */
+    readonly conversationId?: string;
   },
 ): Promise<string> {
   const e = input.endpoint;
@@ -403,13 +405,15 @@ export async function startRun(
   // The ask only where one is given, so a schema before 0126 still takes a run without one.
   const ask = input.ask === undefined ? sql`` : sql`, ask`;
   const asked = input.ask === undefined ? sql`` : sql`, ${input.ask}`;
+  const on = input.conversationId === undefined ? sql`` : sql`, conversation_id`;
+  const conversation = input.conversationId === undefined ? sql`` : sql`, ${input.conversationId}`;
   const { rows } = await sql<{ id: string }>`insert into generation_run
       (purpose, endpoint_id, endpoint, prompt_version, parameters, context_digest, context,
-       requested_by, document_id${ask})
+       requested_by, document_id${ask}${on})
     values (${input.purpose}, ${input.endpoint.id}, ${JSON.stringify(settings)}::jsonb,
       ${input.promptVersion ?? null}, ${JSON.stringify(input.parameters)}::jsonb,
       ${input.contextDigest}, ${JSON.stringify(input.context ?? [])}::jsonb, ${input.by},
-      ${input.documentId ?? null}${asked})
+      ${input.documentId ?? null}${asked}${conversation})
     returning id`.execute(trx);
   return rows[0]!.id;
 }

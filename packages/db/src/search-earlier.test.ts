@@ -724,6 +724,7 @@ describe('migration 0088, which keeps earlier versions searchable', () => {
         '0124_prompt_libraries',
         '0125_prompt_trials',
         '0126_run_transcripts',
+        '0127_conversations',
       ]);
       const kept = await service.withTenant(tenant, (trx) =>
         trx

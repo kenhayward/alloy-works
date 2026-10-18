@@ -63,13 +63,17 @@ time (below); embeddings for meaning are [search.md](search.md)'s and
 | **GEN-056** | `context`: the part, its section or the document; related components; a field's value; parameters                      |
 | **TPL-061** | A template names one library, `prompts`; a library is a versioned list of prompts by identity                          |
 | **TPL-071** | `prompt_library_default`, seeded empty, is the library of a template naming none                                       |
+| **GEN-047** | A conversation: a person's turns, each a run, the earlier turns' words sent with the next (G5-A)                       |
+| **GEN-048** | A turn runs the assistant's loop: its instructions, tools as the requester, proposals, a run (G5-B)                    |
+| **GEN-050** | Nothing filters a turn on its subject; only a guardrail refuses (G5-B, G5-F)                                           |
+| **GEN-051** | A turn names an endpoint in use, the chat route's by default, its name and boundary shown (G5-C)                       |
 
 ## What this document does not own
 
 | Left unclaimed                                                                     | Why                                                                                                                                                     |
 | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | GEN-002, GEN-004                                                                   | A prompt declares components, metadata and parameters, and writes a part's text: a query's results as context, and a field as output, are later slices' |
-| GEN-047 to GEN-054, GEN-021, GEN-049, GEN-050, GEN-055                             | The conversation (G5), resting on what G2 teaches                                                                                                       |
+| GEN-049, GEN-052 to GEN-055, GEN-021                                               | The conversation's tray, guardrails, new components and personal prompts: G5's later PRs; GEN-021 is the model's (G5-H)                                 |
 | GEN-034, GEN-036, GEN-044, ADM-013, ADM-014, ADM-033, ADM-034                      | Budgets, alerts, caching and trends (G6)                                                                                                                |
 | ADM-048                                                                            | Translation, scanning, email and webhooks cost nothing yet; it is claimed when the last of them exists                                                  |
 | SCH-013, SCH-014, SCH-035, VER-039 (designed elsewhere), SCH-067, GEN-038, GEN-044 | Meaning (G7)                                                                                                                                            |

@@ -17736,6 +17736,22 @@
         {
           "id": "TPL-071",
           "howItIsMet": "`prompt_library_default`, seeded empty, is the library of a template naming none"
+        },
+        {
+          "id": "GEN-047",
+          "howItIsMet": "A conversation: a person's turns, each a run, the earlier turns' words sent with the next (G5-A)"
+        },
+        {
+          "id": "GEN-048",
+          "howItIsMet": "A turn runs the assistant's loop: its instructions, tools as the requester, proposals, a run (G5-B)"
+        },
+        {
+          "id": "GEN-050",
+          "howItIsMet": "Nothing filters a turn on its subject; only a guardrail refuses (G5-B, G5-F)"
+        },
+        {
+          "id": "GEN-051",
+          "howItIsMet": "A turn names an endpoint in use, the chat route's by default, its name and boundary shown (G5-C)"
         }
       ]
     },
@@ -20608,13 +20624,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 512,
+      "line": 519,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 525,
+      "line": 532,
       "kind": "title"
     },
     {
@@ -20948,6 +20964,30 @@
       "kind": "title"
     },
     {
+      "id": "GEN-047",
+      "file": "apps/service/src/conversation-routes.test.ts",
+      "line": 83,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-048",
+      "file": "apps/service/src/conversation-routes.test.ts",
+      "line": 110,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-050",
+      "file": "apps/service/src/conversation-routes.test.ts",
+      "line": 128,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-051",
+      "file": "apps/service/src/conversation-routes.test.ts",
+      "line": 136,
+      "kind": "title"
+    },
+    {
       "id": "API-008",
       "file": "apps/service/src/creation-bindings.test.ts",
       "line": 131,
@@ -20980,7 +21020,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1694,
+      "line": 1716,
       "kind": "title"
     },
     {
@@ -23878,25 +23918,37 @@
     {
       "id": "GEN-009",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 172,
+      "line": 226,
       "kind": "title"
     },
     {
       "id": "GEN-010",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 83,
+      "line": 137,
       "kind": "title"
     },
     {
       "id": "GEN-011",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 135,
+      "line": 189,
       "kind": "title"
     },
     {
       "id": "GEN-037",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 83,
+      "line": 137,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-047",
+      "file": "apps/web/src/structure/AssistantPanel.test.tsx",
+      "line": 368,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-051",
+      "file": "apps/web/src/structure/AssistantPanel.test.tsx",
+      "line": 368,
       "kind": "title"
     },
     {

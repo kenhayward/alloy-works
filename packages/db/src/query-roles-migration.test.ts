@@ -194,6 +194,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0124_prompt_libraries',
       '0125_prompt_trials',
       '0126_run_transcripts',
+      '0127_conversations',
     ]);
     expect(applied[own.id]).toEqual([
       '0058_query_roles',
@@ -265,6 +266,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0124_prompt_libraries',
       '0125_prompt_trials',
       '0126_run_transcripts',
+      '0127_conversations',
     ]);
 
     expect(await queryRoles(development)).toEqual([

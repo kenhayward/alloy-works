@@ -514,6 +514,10 @@ describe('the listings through the service', () => {
       'listModelEndpoints',
       'listModelRoutes',
       'listPromptLibraries',
+      // And a person's conversations, at most 200, the newest first (the G5 plan).
+      'listConversations',
+      // And the endpoints a turn may run on: the tenant's handful in use, as the endpoints are.
+      'listConversationEndpoints',
     ];
     const listings = allRoutes.filter(
       (route) =>
