@@ -131,6 +131,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0119_range_preview',
       '0120_model_endpoints',
       '0121_assistant',
+      '0122_prompts',
     ]);
 
     const read = async () =>

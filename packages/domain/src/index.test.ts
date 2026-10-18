@@ -779,6 +779,18 @@ describe('the domain package', () => {
         'editableProblem',
         'isAssistantTool',
         'toolInputSchemas',
+        // G4: a prompt's shape, its checks and its parameters placed.
+        'INSTRUCTIONS_MAX',
+        'PROMPT_SCHEMA_VERSION',
+        'PromptRefused',
+        'checkPrompt',
+        'contextSourceSchema',
+        'declaredParameters',
+        'parsePrompt',
+        'parsePromptForWrite',
+        'placeParameters',
+        'placedParameters',
+        'promptSchema',
       ].sort(),
     );
   });

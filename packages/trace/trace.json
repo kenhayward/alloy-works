@@ -17712,6 +17712,30 @@
         {
           "id": "GEN-037",
           "howItIsMet": "The run's cost shown to its requester as it ends, and their month on the assistant panel (Cost)"
+        },
+        {
+          "id": "GEN-001",
+          "howItIsMet": "A prompt: an artifact kind in a space, versioned, listed by a library, the fourth workflow kind (Prompts)"
+        },
+        {
+          "id": "GEN-005",
+          "howItIsMet": "`models`: a purpose and the models accepted; another fails `model_mismatch` before any call (Prompts)"
+        },
+        {
+          "id": "GEN-045",
+          "howItIsMet": "Approving a prompt version needs a finished trial run of it, which no tenant's workflow lifts (GN-F)"
+        },
+        {
+          "id": "GEN-056",
+          "howItIsMet": "`context`: the part, its section or the document; related components; a field's value; parameters"
+        },
+        {
+          "id": "TPL-061",
+          "howItIsMet": "A template names one library, `prompts`; a library is a versioned list of prompts by identity"
+        },
+        {
+          "id": "TPL-071",
+          "howItIsMet": "`prompt_library_default`, seeded empty, is the library of a template naming none"
         }
       ]
     },
@@ -20584,13 +20608,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 493,
+      "line": 497,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 506,
+      "line": 510,
       "kind": "title"
     },
     {
@@ -20956,7 +20980,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1603,
+      "line": 1646,
       "kind": "title"
     },
     {
@@ -21442,7 +21466,7 @@
     {
       "id": "API-007",
       "file": "apps/service/src/listing-routes.test.ts",
-      "line": 325,
+      "line": 344,
       "kind": "title"
     },
     {
@@ -28136,9 +28160,15 @@
       "kind": "title"
     },
     {
+      "id": "GEN-056",
+      "file": "packages/domain/src/generation/prompt.test.ts",
+      "line": 39,
+      "kind": "title"
+    },
+    {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 786,
+      "line": 798,
       "kind": "title"
     },
     {

@@ -149,6 +149,17 @@ export {
 } from './assistant.js';
 export { GeneratedParams, GeneratedReport, generatedRoutes } from './generated.js';
 export {
+  CreatePromptBody,
+  PromptList,
+  PromptListQuery,
+  PromptParams,
+  PromptRefusal,
+  PromptSummary,
+  PromptVersionBody,
+  PromptView,
+  promptRoutes,
+} from './prompts.js';
+export {
   RangePageParams,
   RangePreviewParams,
   RangePreviewView,

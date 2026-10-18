@@ -698,6 +698,15 @@ export {
   type StoredQueryDefinition,
 } from './queryDefinitions.js';
 export {
+  createPrompt,
+  listReadablePrompts,
+  readPrompt,
+  recordPromptVersion,
+  type PromptAnswer,
+  type PromptSummary,
+  type StoredPrompt,
+} from './prompts.js';
+export {
   giveQuerySlot,
   QUERY_RUNS_MOST,
   queryRunsBetween,

@@ -3431,6 +3431,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/prompts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The prompts the caller may read, each with its space and purpose
+         * @description Lists the prompts the caller may read, with the space and purpose of each, filtered by space.
+         */
+        get: operations["listPrompts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/prompts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A prompt at its latest version
+         * @description Returns the latest prompt version and whether the caller may change it.
+         */
+        get: operations["getPrompt"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/prompts/{id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cut a prompt's next version from the one the caller opened
+         * @description Records the next prompt version from the version the caller opened, checked as a new prompt is.
+         */
+        post: operations["recordPromptVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/publication-requests/{id}": {
         parameters: {
             query?: never;
@@ -4341,6 +4401,26 @@ export interface paths {
          * @description Creates a document at version 0.1 in the named space, either empty or from a template’s starting outline.
          */
         post: operations["createDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/spaces/{space}/prompts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Make a prompt in this space, at version 0.1
+         * @description Creates a prompt in the named space from a whole prompt: its instructions, which may place the document’s parameters as `{{name}}`, the context it declares (the part it runs on, its section or the whole document, components related to it, parts whose field holds a value, and named parameters), the component type whose text it writes, and the purpose it is routed by with the models it accepts. Nothing it does not declare reaches a model. It needs edit in the space.
+         */
+        post: operations["createPrompt"];
         delete?: never;
         options?: never;
         head?: never;
@@ -61305,6 +61385,777 @@ export interface operations {
             };
         };
     };
+    listPrompts: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: string;
+                sort?: "title" | "changed";
+                order?: "asc" | "desc";
+                spaces?: string;
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of prompts */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "next": "example",
+                     *       "total": -9007199254740991,
+                     *       "facets": {
+                     *         "spaces": []
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        items: {
+                            id: string;
+                            title: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            /** @description The purpose its runs are routed by */
+                            purpose: string;
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            /** @description When its latest version was made */
+                            changedAt: string;
+                        }[];
+                        /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
+                        next: string | null;
+                        /** @description How many there are with the filters in force, as of the walk this page belongs to */
+                        total: number;
+                        /** @description Each filter the listing takes, counted with the others in force and its own left out */
+                        facets: {
+                            spaces: {
+                                /** @description What to filter by to leave these */
+                                value: string;
+                                label: string;
+                                count: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getPrompt: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The prompt */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "prompt": {
+                     *         "schemaVersion": 1,
+                     *         "title": "example",
+                     *         "description": "example",
+                     *         "instructions": "example",
+                     *         "context": [
+                     *           {
+                     *             "source": "outline",
+                     *             "scope": "part"
+                     *           }
+                     *         ],
+                     *         "output": {
+                     *           "componentType": "00000000-0000-4000-8000-000000000001"
+                     *         },
+                     *         "models": {
+                     *           "purpose": "drafting",
+                     *           "accepts": [
+                     *             "example"
+                     *           ]
+                     *         }
+                     *       },
+                     *       "mayEdit": false
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        space: {
+                            id: string;
+                            name: string;
+                        };
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        prompt: {
+                            /** @constant */
+                            schemaVersion: 1;
+                            title: string;
+                            description: string;
+                            instructions: string;
+                            context: ({
+                                /** @constant */
+                                source: "outline";
+                                /** @enum {string} */
+                                scope: "part" | "section" | "document";
+                            } | {
+                                /** @constant */
+                                source: "related";
+                                /** Format: uuid */
+                                type: string;
+                                /** @enum {string} */
+                                direction: "out" | "in";
+                            } | {
+                                /** @constant */
+                                source: "field";
+                                /** Format: uuid */
+                                field: string;
+                                value: string | number | boolean;
+                            } | {
+                                /** @constant */
+                                source: "parameters";
+                                names: string[];
+                            })[];
+                            output: {
+                                componentType: string | null;
+                            };
+                            models: {
+                                /** @enum {string} */
+                                purpose: "drafting" | "chat" | "summarising";
+                                accepts: string[];
+                            };
+                        };
+                        /** @description Whether the caller may cut its next version: edit on it */
+                        mayEdit: boolean;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a prompt the caller may not read is not found */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such prompt in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    recordPromptVersion: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "openedFrom": "00000000-0000-4000-8000-000000000001",
+                 *       "prompt": {
+                 *         "schemaVersion": 1,
+                 *         "title": "example",
+                 *         "description": "example",
+                 *         "instructions": "example",
+                 *         "context": [
+                 *           {
+                 *             "source": "outline",
+                 *             "scope": "part"
+                 *           }
+                 *         ],
+                 *         "output": {
+                 *           "componentType": "00000000-0000-4000-8000-000000000001"
+                 *         },
+                 *         "models": {
+                 *           "purpose": "drafting",
+                 *           "accepts": [
+                 *             "example"
+                 *           ]
+                 *         }
+                 *       }
+                 *     }
+                 */
+                "application/json": {
+                    openedFrom: string & (unknown & unknown);
+                    prompt: {
+                        /** @constant */
+                        schemaVersion: 1;
+                        title: string;
+                        description: string;
+                        instructions: string;
+                        context: ({
+                            /** @constant */
+                            source: "outline";
+                            /** @enum {string} */
+                            scope: "part" | "section" | "document";
+                        } | {
+                            /** @constant */
+                            source: "related";
+                            /** Format: uuid */
+                            type: string;
+                            /** @enum {string} */
+                            direction: "out" | "in";
+                        } | {
+                            /** @constant */
+                            source: "field";
+                            /** Format: uuid */
+                            field: string;
+                            value: string | number | boolean;
+                        } | {
+                            /** @constant */
+                            source: "parameters";
+                            names: string[];
+                        })[];
+                        output: {
+                            componentType: string | null;
+                        };
+                        models: {
+                            /** @enum {string} */
+                            purpose: "drafting" | "chat" | "summarising";
+                            accepts: string[];
+                        };
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description The prompt at its latest version: the one cut, or the one before where nothing changed */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "prompt": {
+                     *         "schemaVersion": 1,
+                     *         "title": "example",
+                     *         "description": "example",
+                     *         "instructions": "example",
+                     *         "context": [
+                     *           {
+                     *             "source": "outline",
+                     *             "scope": "part"
+                     *           }
+                     *         ],
+                     *         "output": {
+                     *           "componentType": "00000000-0000-4000-8000-000000000001"
+                     *         },
+                     *         "models": {
+                     *           "purpose": "drafting",
+                     *           "accepts": [
+                     *             "example"
+                     *           ]
+                     *         }
+                     *       },
+                     *       "mayEdit": false
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        space: {
+                            id: string;
+                            name: string;
+                        };
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        prompt: {
+                            /** @constant */
+                            schemaVersion: 1;
+                            title: string;
+                            description: string;
+                            instructions: string;
+                            context: ({
+                                /** @constant */
+                                source: "outline";
+                                /** @enum {string} */
+                                scope: "part" | "section" | "document";
+                            } | {
+                                /** @constant */
+                                source: "related";
+                                /** Format: uuid */
+                                type: string;
+                                /** @enum {string} */
+                                direction: "out" | "in";
+                            } | {
+                                /** @constant */
+                                source: "field";
+                                /** Format: uuid */
+                                field: string;
+                                value: string | number | boolean;
+                            } | {
+                                /** @constant */
+                                source: "parameters";
+                                names: string[];
+                            })[];
+                            output: {
+                                componentType: string | null;
+                            };
+                            models: {
+                                /** @enum {string} */
+                                purpose: "drafting" | "chat" | "summarising";
+                                accepts: string[];
+                            };
+                        };
+                        /** @description Whether the caller may cut its next version: edit on it */
+                        mayEdit: boolean;
+                    };
+                };
+            };
+            /** @description `prompt_invalid`: the prompt fails a rule, each problem named: a parameter placed that its context does not declare, a source declared twice, or a definition it names that is not there */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        problems?: {
+                            /** @constant */
+                            rule: "prompt_invalid";
+                            /** @description The member refused, dotted, as `context.2.field` */
+                            path: string;
+                            message: string;
+                        }[];
+                        current?: {
+                            id: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            prompt: {
+                                /** @constant */
+                                schemaVersion: 1;
+                                title: string;
+                                description: string;
+                                instructions: string;
+                                context: ({
+                                    /** @constant */
+                                    source: "outline";
+                                    /** @enum {string} */
+                                    scope: "part" | "section" | "document";
+                                } | {
+                                    /** @constant */
+                                    source: "related";
+                                    /** Format: uuid */
+                                    type: string;
+                                    /** @enum {string} */
+                                    direction: "out" | "in";
+                                } | {
+                                    /** @constant */
+                                    source: "field";
+                                    /** Format: uuid */
+                                    field: string;
+                                    value: string | number | boolean;
+                                } | {
+                                    /** @constant */
+                                    source: "parameters";
+                                    names: string[];
+                                })[];
+                                output: {
+                                    componentType: string | null;
+                                };
+                                models: {
+                                    /** @enum {string} */
+                                    purpose: "drafting" | "chat" | "summarising";
+                                    accepts: string[];
+                                };
+                            };
+                            /** @description Whether the caller may cut its next version: edit on it */
+                            mayEdit: boolean;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the prompt but may not edit it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such prompt in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `version_precondition`: the prompt has a newer version than the one named, answered with it; `space_archived`: the space is archived, and nothing new is made in it */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        problems?: {
+                            /** @constant */
+                            rule: "prompt_invalid";
+                            /** @description The member refused, dotted, as `context.2.field` */
+                            path: string;
+                            message: string;
+                        }[];
+                        current?: {
+                            id: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            prompt: {
+                                /** @constant */
+                                schemaVersion: 1;
+                                title: string;
+                                description: string;
+                                instructions: string;
+                                context: ({
+                                    /** @constant */
+                                    source: "outline";
+                                    /** @enum {string} */
+                                    scope: "part" | "section" | "document";
+                                } | {
+                                    /** @constant */
+                                    source: "related";
+                                    /** Format: uuid */
+                                    type: string;
+                                    /** @enum {string} */
+                                    direction: "out" | "in";
+                                } | {
+                                    /** @constant */
+                                    source: "field";
+                                    /** Format: uuid */
+                                    field: string;
+                                    value: string | number | boolean;
+                                } | {
+                                    /** @constant */
+                                    source: "parameters";
+                                    names: string[];
+                                })[];
+                                output: {
+                                    componentType: string | null;
+                                };
+                                models: {
+                                    /** @enum {string} */
+                                    purpose: "drafting" | "chat" | "summarising";
+                                    accepts: string[];
+                                };
+                            };
+                            /** @description Whether the caller may cut its next version: edit on it */
+                            mayEdit: boolean;
+                        };
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     getPublicationRequest: {
         parameters: {
             query?: never;
@@ -72926,6 +73777,381 @@ export interface operations {
             };
             /** @description `connector_unavailable`: the template's required components run queries and no connector is reachable */
             503: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    createPrompt: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                space: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "prompt": {
+                 *         "schemaVersion": 1,
+                 *         "title": "example",
+                 *         "description": "example",
+                 *         "instructions": "example",
+                 *         "context": [
+                 *           {
+                 *             "source": "outline",
+                 *             "scope": "part"
+                 *           }
+                 *         ],
+                 *         "output": {
+                 *           "componentType": "00000000-0000-4000-8000-000000000001"
+                 *         },
+                 *         "models": {
+                 *           "purpose": "drafting",
+                 *           "accepts": [
+                 *             "example"
+                 *           ]
+                 *         }
+                 *       }
+                 *     }
+                 */
+                "application/json": {
+                    prompt: {
+                        /** @constant */
+                        schemaVersion: 1;
+                        title: string;
+                        description: string;
+                        instructions: string;
+                        context: ({
+                            /** @constant */
+                            source: "outline";
+                            /** @enum {string} */
+                            scope: "part" | "section" | "document";
+                        } | {
+                            /** @constant */
+                            source: "related";
+                            /** Format: uuid */
+                            type: string;
+                            /** @enum {string} */
+                            direction: "out" | "in";
+                        } | {
+                            /** @constant */
+                            source: "field";
+                            /** Format: uuid */
+                            field: string;
+                            value: string | number | boolean;
+                        } | {
+                            /** @constant */
+                            source: "parameters";
+                            names: string[];
+                        })[];
+                        output: {
+                            componentType: string | null;
+                        };
+                        models: {
+                            /** @enum {string} */
+                            purpose: "drafting" | "chat" | "summarising";
+                            accepts: string[];
+                        };
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Made, at version 0.1 */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "prompt": {
+                     *         "schemaVersion": 1,
+                     *         "title": "example",
+                     *         "description": "example",
+                     *         "instructions": "example",
+                     *         "context": [
+                     *           {
+                     *             "source": "outline",
+                     *             "scope": "part"
+                     *           }
+                     *         ],
+                     *         "output": {
+                     *           "componentType": "00000000-0000-4000-8000-000000000001"
+                     *         },
+                     *         "models": {
+                     *           "purpose": "drafting",
+                     *           "accepts": [
+                     *             "example"
+                     *           ]
+                     *         }
+                     *       },
+                     *       "mayEdit": false
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        space: {
+                            id: string;
+                            name: string;
+                        };
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        prompt: {
+                            /** @constant */
+                            schemaVersion: 1;
+                            title: string;
+                            description: string;
+                            instructions: string;
+                            context: ({
+                                /** @constant */
+                                source: "outline";
+                                /** @enum {string} */
+                                scope: "part" | "section" | "document";
+                            } | {
+                                /** @constant */
+                                source: "related";
+                                /** Format: uuid */
+                                type: string;
+                                /** @enum {string} */
+                                direction: "out" | "in";
+                            } | {
+                                /** @constant */
+                                source: "field";
+                                /** Format: uuid */
+                                field: string;
+                                value: string | number | boolean;
+                            } | {
+                                /** @constant */
+                                source: "parameters";
+                                names: string[];
+                            })[];
+                            output: {
+                                componentType: string | null;
+                            };
+                            models: {
+                                /** @enum {string} */
+                                purpose: "drafting" | "chat" | "summarising";
+                                accepts: string[];
+                            };
+                        };
+                        /** @description Whether the caller may cut its next version: edit on it */
+                        mayEdit: boolean;
+                    };
+                };
+            };
+            /** @description `prompt_invalid`: the prompt fails a rule, each problem named: a parameter placed that its context does not declare, a source declared twice, or a definition it names that is not there */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        problems?: {
+                            /** @constant */
+                            rule: "prompt_invalid";
+                            /** @description The member refused, dotted, as `context.2.field` */
+                            path: string;
+                            message: string;
+                        }[];
+                        current?: {
+                            id: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            prompt: {
+                                /** @constant */
+                                schemaVersion: 1;
+                                title: string;
+                                description: string;
+                                instructions: string;
+                                context: ({
+                                    /** @constant */
+                                    source: "outline";
+                                    /** @enum {string} */
+                                    scope: "part" | "section" | "document";
+                                } | {
+                                    /** @constant */
+                                    source: "related";
+                                    /** Format: uuid */
+                                    type: string;
+                                    /** @enum {string} */
+                                    direction: "out" | "in";
+                                } | {
+                                    /** @constant */
+                                    source: "field";
+                                    /** Format: uuid */
+                                    field: string;
+                                    value: string | number | boolean;
+                                } | {
+                                    /** @constant */
+                                    source: "parameters";
+                                    names: string[];
+                                })[];
+                                output: {
+                                    componentType: string | null;
+                                };
+                                models: {
+                                    /** @enum {string} */
+                                    purpose: "drafting" | "chat" | "summarising";
+                                    accepts: string[];
+                                };
+                            };
+                            /** @description Whether the caller may cut its next version: edit on it */
+                            mayEdit: boolean;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not edit in the space */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such space in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `space_archived`: the space is archived, and nothing new is made in it */
+            409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;

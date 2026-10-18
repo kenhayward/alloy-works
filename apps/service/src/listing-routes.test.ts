@@ -3,6 +3,7 @@ import {
   bootstrapCluster,
   createComponent,
   createConnection,
+  createPrompt,
   createQueryDefinition,
   createDocument,
   createTenant,
@@ -141,6 +142,24 @@ describe('the listings through the service', () => {
           },
         });
         if (defined.answer !== 'created') throw new Error(defined.answer);
+        // And a prompt beside each, so the prompts' listing has pages to turn.
+        const prompted = await createPrompt(trx, {
+          spaceId: general.id,
+          author: grace,
+          prompt: {
+            ...{
+              schemaVersion: 1,
+              title: 'Probe',
+              description: '',
+              instructions: 'Summarise.',
+              context: [{ source: 'outline', scope: 'part' }],
+              output: { componentType: null },
+              models: { purpose: 'drafting', accepts: ['m'] },
+            },
+            title: `${name} summary`,
+          },
+        });
+        if (prompted.answer !== 'created') throw new Error(prompted.answer);
         // And a stored result of each, so the stored results a query may take have pages too.
         await recordDatasetVersion(trx, {
           author: grace,
@@ -476,6 +495,7 @@ describe('the listings through the service', () => {
       listTenantExports: '/v1/exports',
       listDatasetSources: '/v1/datasets',
       listQueryDefinitions: '/v1/query-definitions',
+      listPrompts: '/v1/prompts',
       listDefinitions: '/v1/definitions',
       listPeople: '/v1/people',
       listTokens: '/v1/tokens',

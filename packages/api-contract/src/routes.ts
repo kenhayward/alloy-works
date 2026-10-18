@@ -13,6 +13,7 @@ import { exportRoutes } from './exports.js';
 import { modelEndpointRoutes } from './model-endpoints.js';
 import { assistantRoutes } from './assistant.js';
 import { generatedRoutes } from './generated.js';
+import { promptRoutes } from './prompts.js';
 import { rangePreviewRoutes } from './range-previews.js';
 import { erasureRoutes } from './erasure.js';
 import { retentionRoutes } from './retention.js';
@@ -380,6 +381,7 @@ type Routes = typeof ownRoutes &
   typeof modelEndpointRoutes &
   typeof assistantRoutes &
   typeof generatedRoutes &
+  typeof promptRoutes &
   typeof rangePreviewRoutes;
 
 export const routes: Routes = {
@@ -435,6 +437,7 @@ export const routes: Routes = {
   ...modelEndpointRoutes,
   ...assistantRoutes,
   ...generatedRoutes,
+  ...promptRoutes,
   ...rangePreviewRoutes,
 } as const satisfies Record<string, RouteContract>;
 

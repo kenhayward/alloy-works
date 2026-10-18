@@ -1139,6 +1139,38 @@ describe('routes that check a permission', () => {
       status: 404,
       payload: { transition: 'approve', version: MISSING, decision: 'approved' },
     }),
+    createPrompt: () => ({
+      url: `/v1/spaces/${clinical}/prompts`,
+      status: 404,
+      payload: {
+        prompt: {
+          schemaVersion: 1,
+          title: 'Probe',
+          description: '',
+          instructions: 'Summarise.',
+          context: [{ source: 'outline', scope: 'part' }],
+          output: { componentType: null },
+          models: { purpose: 'drafting', accepts: ['m'] },
+        },
+      },
+    }),
+    getPrompt: () => ({ url: `/v1/prompts/${MISSING}`, status: 404 }),
+    recordPromptVersion: () => ({
+      url: `/v1/prompts/${MISSING}/versions`,
+      status: 404,
+      payload: {
+        openedFrom: MISSING,
+        prompt: {
+          schemaVersion: 1,
+          title: 'Probe',
+          description: '',
+          instructions: 'Summarise.',
+          context: [{ source: 'outline', scope: 'part' }],
+          output: { componentType: null },
+          models: { purpose: 'drafting', accepts: ['m'] },
+        },
+      },
+    }),
     recordQueryDefinitionVersion: () => ({
       url: `/v1/query-definitions/${dailyReadings}/versions`,
       status: 404,

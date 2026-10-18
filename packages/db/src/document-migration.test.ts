@@ -194,6 +194,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0119_range_preview',
       '0120_model_endpoints',
       '0121_assistant',
+      '0122_prompts',
     ]);
 
     // The component and its version are as they were.
@@ -379,6 +380,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0119_range_preview',
       '0120_model_endpoints',
       '0121_assistant',
+      '0122_prompts',
     ]);
 
     const { rows } = await queryAs(
