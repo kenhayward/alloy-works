@@ -157,6 +157,12 @@ export async function makeSuggestion(
     .where('g.made_by', '=', input.by)
     .where('g.made_against', '=', input.version)
     .where('g.proposed_digest', '=', digest)
+    // A run's suggestion is its own: a person's identical draft answers it nothing (the G2 review).
+    .where(
+      sql<string | null>`to_jsonb(g) ->> 'run_id'`,
+      'is not distinct from',
+      input.generated?.run ?? null,
+    )
     .executeTakeFirst();
   if (again) {
     return again.act === null

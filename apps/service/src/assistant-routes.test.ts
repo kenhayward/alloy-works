@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 
 import { assistantEvents } from '@alloy-works/api-contract';
-import { readRun } from '@alloy-works/db';
+import { listModelEndpoints, makeProposal, readRun, startRun } from '@alloy-works/db';
 import {
   ASSISTANT_TOOLS,
   canonicalCall,
@@ -182,6 +182,19 @@ describe('the drafting assistant through the service (the G2 plan)', () => {
   });
 
   it('API-064 sends every frame as a message of the AsyncAPI document’s assistant channel', async () => {
+    const conforms = (frames: { event: string; data: Json }[]) => {
+      for (const frame of frames) {
+        const declared = assistantEvents[frame.event as keyof typeof assistantEvents];
+        expect(declared, frame.event).toBeDefined();
+        expect(declared.schema.safeParse(frame.data).success, frame.event).toBe(true);
+      }
+    };
+    h.connector.modelFor = turns([
+      { type: 'failed', failure: { code: 'model_unavailable', reason: 'rate_limited' } },
+    ]);
+    const failing = await ask('ada', 'Hello');
+    expect(failing.map((frame) => frame.event)).toEqual(['run', 'failed']);
+    conforms(failing);
     h.connector.modelFor = turns(
       [tool('t1', 'read_component', { component: sites.id }), ended('tool_use')],
       [
@@ -197,11 +210,7 @@ describe('the drafting assistant through the service (the G2 plan)', () => {
     expect(new Set(frames.map((frame) => frame.event))).toEqual(
       new Set(['run', 'tool_call', 'tool_result', 'proposal', 'text', 'ended']),
     );
-    for (const frame of frames) {
-      const declared = assistantEvents[frame.event as keyof typeof assistantEvents];
-      expect(declared, frame.event).toBeDefined();
-      expect(declared.schema.safeParse(frame.data).success, frame.event).toBe(true);
-    }
+    conforms(frames);
   });
 
   it('GEN-007 GEN-010 offers the model the five tools alone, and streams each call and what came back, kept on the run', async () => {
@@ -260,7 +269,7 @@ describe('the drafting assistant through the service (the G2 plan)', () => {
     );
   });
 
-  it('GEN-013 GEN-015 keeps a search to the document’s components the requester may read', async () => {
+  it('GEN-013 keeps a search to the document’s components the requester may read', async () => {
     h.connector.modelFor = turns(
       [tool('t1', 'search_document', { query: 'north weir' }), ended('tool_use')],
       [text('Found.'), ended()],
@@ -341,6 +350,40 @@ describe('the drafting assistant through the service (the G2 plan)', () => {
     expect(refused.json()).toMatchObject({ code: 'lock.held' });
   });
 
+  it('GEN-060 refuses a proposal the component has changed under since it was read, as any edit is refused', async () => {
+    const stale = await h.component(h.general, 'Stale');
+    await h.place(stale, { type: 'text', value: 'The south weir is dry.', marks: [] });
+    const staleDocument = await h.documentReferencing([stale.id]);
+    h.connector.modelFor = turns(
+      [tool('t1', 'read_component', { component: stale.id }), ended('tool_use')],
+      [
+        tool('t2', 'propose_edit', {
+          component: stale.id,
+          edits: [{ replace: 'p1', markdown: 'The south weir is wet.' }],
+        }),
+        ended('tool_use'),
+      ],
+      [text('Proposed.'), ended()],
+    );
+    const frames = framesOf(
+      (
+        await h.call('ada', 'POST', `/v1/documents/${staleDocument.id}/assistant/runs`, {
+          ask: 'Fix it.',
+        })
+      ).body,
+    );
+    const proposal = frames.find((frame) => frame.event === 'proposal')!.data as { id: string };
+    // The paragraph changes since the version the run read.
+    await h.place(stale, { type: 'text', value: 'The south weir flooded.', marks: [] });
+    const refused = await h.call(
+      'ada',
+      'POST',
+      `/v1/assistant/proposals/${proposal.id}/acceptance`,
+    );
+    expect(refused.statusCode).toBe(409);
+    expect(refused.json()).toMatchObject({ code: 'suggestion.stale' });
+  });
+
   it('GEN-022 GEN-040 keeps a proposal as a suggestion marked generated, and rejecting it in Review records it discarded', async () => {
     const { proposal } = await propose('The north weir floods in spring.');
     const kept = await h.call('ada', 'POST', `/v1/assistant/proposals/${proposal.id}/keeping`);
@@ -403,6 +446,64 @@ describe('the drafting assistant through the service (the G2 plan)', () => {
         .executeTakeFirstOrThrow(),
     );
     expect(stored).toEqual({ context_digest: run?.contextDigest, run_id: run?.id });
+  });
+
+  it('refuses an act on a proposal while its run is still running, so it carries the run\u2019s last digest', async () => {
+    const proposal = await h.tenantDb.withTenant(h.tenant, async (trx) => {
+      const endpoints = await listModelEndpoints(trx);
+      const run = await startRun(trx, {
+        purpose: 'drafting',
+        endpoint: endpoints.find((each) => each.name === 'Drafting')!,
+        parameters: {},
+        contextDigest: '0'.repeat(64),
+        by: h.ids.ada!,
+        documentId: document.id,
+      });
+      return makeProposal(trx, {
+        run,
+        component: sites.id,
+        against: sites.version,
+        proposed: {
+          schemaVersion: 1,
+          title: 'Sites',
+          language: 'en-GB',
+          direction: 'ltr',
+          content: [],
+        } as never,
+      });
+    });
+    const refused = await h.call(
+      'ada',
+      'POST',
+      `/v1/assistant/proposals/${proposal.id}/acceptance`,
+    );
+    expect(refused.statusCode).toBe(409);
+    expect(refused.json()).toMatchObject({ code: 'run_running' });
+  });
+
+  it('sends text holding a line or paragraph separator whole, as one frame', async () => {
+    const separated = await h.component(h.general, 'Separated');
+    await h.place(separated, {
+      type: 'text',
+      value: 'One line\u2028and the next\u2029and more.',
+      marks: [],
+    });
+    const separatedDocument = await h.documentReferencing([separated.id]);
+    h.connector.modelFor = turns(
+      [tool('t1', 'read_component', { component: separated.id }), ended('tool_use')],
+      [text('Read.'), ended()],
+    );
+    const response = await h.call(
+      'ada',
+      'POST',
+      `/v1/documents/${separatedDocument.id}/assistant/runs`,
+      {
+        ask: 'Read it.',
+      },
+    );
+    expect(response.body).not.toMatch(/[\u2028\u2029]/);
+    const result = framesOf(response.body).find((frame) => frame.event === 'tool_result')!.data;
+    expect(String(result.result)).toContain('One line\u2028and the next\u2029and more.');
   });
 
   it('GEN-016 lets its requester alone read a run back: each call, what it read and what came back', async () => {

@@ -36,13 +36,13 @@ export const ASSISTANT_TOOLS: readonly ModelTool[] = [
   {
     name: 'read_outline',
     description:
-      "The open document's outline: its sections, and each component they place, by identifier, with its title. Read this first to find what to read.",
+      "The open document's outline: its sections by title, and each component they place, by identifier. Read this first to find what to read.",
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
   },
   {
     name: 'read_component',
     description:
-      "One component of the open document, its latest version, as numbered blocks: each block's identifier, its kind, and its text.",
+      "One component of the open document, at the version the document shows, as numbered blocks: each block's identifier, its kind, and its text.",
     inputSchema: {
       type: 'object',
       properties: { component: COMPONENT },

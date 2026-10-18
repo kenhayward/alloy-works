@@ -33,7 +33,11 @@ export async function sendStreamed(
   const alive = setInterval(() => raw.write(': alive\n\n'), ALIVE_MS);
   try {
     await body.run((event, data) => {
-      if (!closed.signal.aborted) raw.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+      // U+2028 and U+2029 escaped: JSON allows them raw, and a reader splitting lines would not.
+      const text = JSON.stringify(data)
+        .replace(/\u2028/g, '\\u2028')
+        .replace(/\u2029/g, '\\u2029');
+      if (!closed.signal.aborted) raw.write(`event: ${event}\ndata: ${text}\n\n`);
     }, closed.signal);
   } catch (error) {
     request.log.error({ err: error }, 'a streamed answer failed');

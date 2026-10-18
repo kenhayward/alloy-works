@@ -4,6 +4,8 @@ import type { paths } from './generated/schema.js';
 export type { paths } from './generated/schema.js';
 export { followStream } from './stream.js';
 export type { FollowOptions, StreamSample, StreamSnapshot } from './stream.js';
+export { streamPost } from './stream-post.js';
+export type { StreamPostOptions, StreamPostOutcome } from './stream-post.js';
 
 /** What the service answers with, named from the document rather than written out again. */
 export type Me = paths['/v1/me']['get']['responses']['200']['content']['application/json'];

@@ -1,0 +1,78 @@
+.assistant {
+  display: grid;
+  gap: var(--space-12, 12px);
+  padding: var(--space-12, 12px);
+}
+
+.muted {
+  color: var(--muted);
+  margin: 0;
+}
+
+.ask {
+  display: grid;
+  gap: var(--space-4, 4px);
+}
+
+.ask textarea {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8, 8px);
+  margin-top: var(--space-8, 8px);
+}
+
+.answer {
+  white-space: pre-wrap;
+}
+
+.sources {
+  margin: 0;
+  padding-inline-start: 1.5em;
+}
+
+.link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent-text);
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+  min-height: 24px;
+}
+
+.steps ol {
+  padding-inline-start: 1.5em;
+}
+
+.strong {
+  font-weight: 600;
+}
+
+.result,
+.proposed {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 16em;
+  overflow: auto;
+  background: var(--sunken);
+  border: 1px solid var(--border);
+  padding: var(--space-8, 8px);
+  font-size: 0.875em;
+}
+
+.proposal {
+  border: 1px solid var(--border);
+  padding: var(--space-12, 12px);
+}
+
+.proposal h3 {
+  margin: 0 0 var(--space-8, 8px);
+  font-size: 1em;
+}
