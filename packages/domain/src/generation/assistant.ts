@@ -297,6 +297,38 @@ export function citationsIn(text: string): Citation[] {
 }
 
 /**
+ * Proposing a component to be made (the G5 plan, G5-E; GEN-052): where, of what type, under what
+ * title, and its text as Markdown. Nothing is made until the person accepts it. A conversation's
+ * alone: the assistant on a document proposes edits.
+ */
+export const PROPOSE_COMPONENT: ModelTool = {
+  name: 'propose_component',
+  description:
+    'Proposes a new component: the space it would be made in, its type (or the default), its title, and its text as Markdown. Nothing is made until the author accepts.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      space: { type: 'string', description: "A space's identifier" },
+      type: {
+        type: 'string',
+        description: "A component type's identifier, or none for the default",
+      },
+      title: { type: 'string', description: 'Its title' },
+      markdown: { type: 'string', description: 'Its text' },
+    },
+    required: ['space', 'title', 'markdown'],
+    additionalProperties: false,
+  },
+};
+
+export const proposeComponentInputSchema = z.strictObject({
+  space: id,
+  type: id.optional(),
+  title: z.string().trim().min(1).max(200),
+  markdown,
+});
+
+/**
  * A conversation's tools where it has no document (the G5 plan, G5-D): the person's own search, a
  * component they may read at its latest version, and a proposal against that version. Described for a
  * model; each runs as the person, deciding `read` or `suggest` again.
@@ -330,9 +362,17 @@ export const CONVERSATION_TOOLS: readonly ModelTool[] = [
     },
   },
   ASSISTANT_TOOLS.find((tool) => tool.name === 'propose_edit')!,
+  PROPOSE_COMPONENT,
 ];
 
-export type ConversationToolName = 'search_components' | 'read_component' | 'propose_edit';
+/** A conversation's tools on a document: the assistant's five, and proposing a component (G5-E). */
+export const DOCUMENT_CONVERSATION_TOOLS: readonly ModelTool[] = [
+  ...ASSISTANT_TOOLS,
+  PROPOSE_COMPONENT,
+];
+
+export type ConversationToolName =
+  'search_components' | 'read_component' | 'propose_edit' | 'propose_component';
 
 export const isConversationTool = (name: string): name is ConversationToolName =>
   CONVERSATION_TOOLS.some((tool) => tool.name === name);
@@ -341,4 +381,5 @@ export const conversationToolInputSchemas = {
   search_components: z.strictObject({ query: z.string().min(1).max(500) }),
   read_component: toolInputSchemas.read_component,
   propose_edit: toolInputSchemas.propose_edit,
+  propose_component: proposeComponentInputSchema,
 } as const;

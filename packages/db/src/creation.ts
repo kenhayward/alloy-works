@@ -8,6 +8,7 @@ import {
   readDefinition,
   resolveComponentFields,
   type ComponentTypeDefinition,
+  type BlockNode,
   type ContentDocument,
   type DefinitionKind,
   type DefinitionOf,
@@ -180,6 +181,8 @@ export interface NewComponent {
   readonly language: string;
   readonly direction: 'ltr' | 'rtl';
   readonly author: string;
+  /** Its first blocks, checked as content is; one empty paragraph where absent (CNT-124). */
+  readonly blocks?: readonly BlockNode[];
 }
 
 export type CreateComponentAnswer =
@@ -248,14 +251,17 @@ export async function createComponent(
     title,
     language: input.language,
     direction: input.direction,
-    content: [
-      {
-        type: 'paragraph',
-        id: blockIdentifierFrom(randomBytes(16)),
-        style: 'body',
-        content: [],
-      },
-    ],
+    content:
+      input.blocks !== undefined && input.blocks.length > 0
+        ? [...input.blocks]
+        : [
+            {
+              type: 'paragraph',
+              id: blockIdentifierFrom(randomBytes(16)),
+              style: 'body',
+              content: [],
+            },
+          ],
   };
   const version = await createArtifact(trx, {
     author: input.author,

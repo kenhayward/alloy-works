@@ -30,7 +30,7 @@ export interface GeneratedRun {
 }
 
 export interface GeneratedItem {
-  readonly kind: 'suggestion' | 'proposal';
+  readonly kind: 'suggestion' | 'proposal' | 'creation';
   readonly id: string;
   readonly state: 'accepted' | 'open' | 'rejected' | 'withdrawn' | 'discarded';
   readonly askedBy: PersonView | null;
@@ -53,7 +53,7 @@ export interface GeneratedPlacement extends Placement {
 }
 
 interface Row {
-  kind: 'suggestion' | 'proposal';
+  kind: 'suggestion' | 'proposal' | 'creation';
   id: string;
   component_id: string;
   placed: string;
@@ -143,6 +143,22 @@ export async function generatedReport(
       join generation_run run on run.id = o.run_id
       left join principal m on m.id = run.requested_by
       left join principal ap on ap.id = o.acted_by
+    union all
+    -- A component made from a proposal to make one (G5-E): its first version is the model's text,
+    -- accepted as it was made.
+    select 'creation', o.id, o.component_id, p.placed, 'accepted',
+           run.requested_by, m.display_name, m.kind,
+           o.acted_by, ap.display_name, ap.kind, o.acted_at,
+           a.id, a.revision_no || '.' || a.version_no, ${inHistory('a', 'p')},
+           run.id, run.model, run.endpoint, run.parameters, run.prompt_version, run.context_digest
+      from p
+      join generation_proposal o on o.component_id = p.artifact_id and o.state = 'accepted'
+        and (to_jsonb(o) ->> 'creates') is not null
+      join generation_run run on run.id = o.run_id
+      left join principal m on m.id = run.requested_by
+      left join principal ap on ap.id = o.acted_by
+      join artifact_version a on a.artifact_id = o.component_id and a.revision_no = 0
+        and a.version_no = 1 and (to_jsonb(a) ->> 'line_id') is null
     order by acted_at nulls first, id`.execute(trx);
 
   const person = (id: string | null, name: string | null, kind: string | null) =>

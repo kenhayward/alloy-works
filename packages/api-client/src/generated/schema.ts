@@ -9654,6 +9654,8 @@ export interface operations {
                             state: "accepted" | "kept" | "discarded";
                             /** @description The suggestion made from it: accepted at once, or kept for review */
                             suggestion: string | null;
+                            /** @description A proposal to make a component, accepted: the component made, at 0.1 */
+                            component?: string;
                         };
                     };
                 };
@@ -9798,6 +9800,8 @@ export interface operations {
                             state: "accepted" | "kept" | "discarded";
                             /** @description The suggestion made from it: accepted at once, or kept for review */
                             suggestion: string | null;
+                            /** @description A proposal to make a component, accepted: the component made, at 0.1 */
+                            component?: string;
                         };
                     };
                 };
@@ -9942,6 +9946,8 @@ export interface operations {
                             state: "accepted" | "kept" | "discarded";
                             /** @description The suggestion made from it: accepted at once, or kept for review */
                             suggestion: string | null;
+                            /** @description A proposal to make a component, accepted: the component made, at 0.1 */
+                            component?: string;
                         };
                     };
                 };
@@ -10136,7 +10142,7 @@ export interface operations {
                             proposals: {
                                 id: string;
                                 number: number;
-                                component: string;
+                                component: string | null;
                                 /** @enum {string} */
                                 state: "open" | "accepted" | "kept" | "discarded" | "resolved";
                                 suggestion: string | null;
@@ -43865,8 +43871,11 @@ export interface operations {
                             /** @description The version the placed one was restored from, where it was: what was accepted may be gone */
                             restoredFrom: string | null;
                             items: {
-                                /** @enum {string} */
-                                kind: "suggestion" | "proposal";
+                                /**
+                                 * @description A suggestion, a proposal discarded, or a component made from a proposal to make one
+                                 * @enum {string}
+                                 */
+                                kind: "suggestion" | "proposal" | "creation";
                                 id: string;
                                 /**
                                  * @description A suggestion accepted, open, rejected or withdrawn; a proposal discarded before it was suggested
@@ -67481,8 +67490,11 @@ export interface operations {
                             /** @description The version the placed one was restored from, where it was: what was accepted may be gone */
                             restoredFrom: string | null;
                             items: {
-                                /** @enum {string} */
-                                kind: "suggestion" | "proposal";
+                                /**
+                                 * @description A suggestion, a proposal discarded, or a component made from a proposal to make one
+                                 * @enum {string}
+                                 */
+                                kind: "suggestion" | "proposal" | "creation";
                                 id: string;
                                 /**
                                  * @description A suggestion accepted, open, rejected or withdrawn; a proposal discarded before it was suggested

@@ -183,12 +183,18 @@ export const assistantEvents = {
   },
   proposal: {
     summary:
-      'An edit proposed to a component, which changes nothing until its requester acts on it',
+      'An edit proposed to a component, or a component proposed to be made, which changes nothing until its requester acts on it',
     schema: z.object({
       id: Id,
       number: z.number().int(),
-      component: Id,
-      against: Id,
+      component: Id.nullable().describe('The component edited; null for one proposed to be made'),
+      against: Id.nullable().describe('The version edited; null for one proposed to be made'),
+      creates: z
+        .object({ space: Id, title: z.string() })
+        .passthrough()
+        .nullable()
+        .optional()
+        .describe('Where, and under what title, a proposed component would be made'),
       proposed: z.record(z.string(), z.unknown()),
     }),
   },

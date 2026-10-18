@@ -244,11 +244,98 @@ describe('conversations through the service (the G5 plan, G5-A to G5-C)', () => 
         'search_components',
         'read_component',
         'propose_edit',
+        'propose_component',
       ]);
       const tray = (await h.call('grace', 'GET', `/v1/conversations/${id}/context`)).json<{
         items: { component: string }[];
       }>().items;
       expect(tray.map((each) => each.component)).toEqual([sites]);
+    } finally {
+      h.connector.modelFor = was;
+    }
+  });
+
+  it('GEN-052 proposes a component to be made, made at 0.1 only once accepted, and reported as generated once placed', async () => {
+    const id = await start('grace');
+    const was = h.connector.modelFor;
+    let calls = 0;
+    const proposing = (title: string) => (request: ModelRequest) => {
+      asked.push(request);
+      calls += 1;
+      return calls % 2 === 1
+        ? [
+            {
+              type: 'tool_call' as const,
+              id: `p${calls}`,
+              name: 'propose_component',
+              input: { space: h.general, title, markdown: 'The south weir holds.' },
+            },
+            {
+              type: 'ended' as const,
+              model: 'stand-in-1',
+              stop: 'tool_use' as const,
+              usage: { in: 1, out: 1 },
+            },
+          ]
+        : [text('Proposed.'), ended];
+    };
+    try {
+      h.connector.modelFor = proposing('South weir');
+      const frames = framesOf(
+        (await turn('grace', id, { ask: 'Write a part on the south weir.' })).body,
+      );
+      const proposed = frames.find((frame) => frame.event === 'proposal')!.data;
+      expect(proposed).toMatchObject({
+        component: null,
+        against: null,
+        creates: { space: h.general, title: 'South weir' },
+      });
+      // Nothing is made yet, and a proposal to make a component is never kept as a suggestion.
+      const kept = await h.call(
+        'grace',
+        'POST',
+        `/v1/assistant/proposals/${String(proposed.id)}/keeping`,
+      );
+      expect(kept.statusCode).toBe(409);
+      expect(kept.json<{ code: string }>().code).toBe('proposal_creates');
+      const accepted = await h.call(
+        'grace',
+        'POST',
+        `/v1/assistant/proposals/${String(proposed.id)}/acceptance`,
+      );
+      expect(accepted.statusCode, accepted.body).toBe(200);
+      const made = accepted.json<{ proposal: { state: string; component: string } }>().proposal;
+      expect(made.state).toBe('accepted');
+      const component = (await h.call('grace', 'GET', `/v1/components/${made.component}`)).json<{
+        version: { number: string };
+        content: { title: string; content: { content: { value: string }[] }[] };
+      }>();
+      expect(component.version.number).toBe('0.1');
+      expect(JSON.stringify(component.content)).toContain('The south weir holds.');
+
+      // Placed in a document, the report says a model made it, and who accepted it.
+      const placed = await h.documentReferencing([made.component]);
+      const report = (await h.call('ada', 'GET', `/v1/documents/${placed.id}/generated`)).json<{
+        placements: { items: { kind: string; state: string; actedBy: { name: string } }[] }[];
+      }>();
+      expect(report.placements[0]!.items).toEqual([
+        expect.objectContaining({
+          kind: 'creation',
+          state: 'accepted',
+          actedBy: expect.objectContaining({ name: 'Grace' }),
+        }),
+      ]);
+
+      // Alice may not make a component in General: her proposal is refused to the model.
+      const theirs = await start('alice');
+      calls = 0;
+      h.connector.modelFor = proposing('Not hers');
+      const refused = framesOf((await turn('alice', theirs, { ask: 'Write one.' })).body);
+      expect(refused.find((frame) => frame.event === 'tool_result')!.data).toMatchObject({
+        ok: false,
+        summary: 'Not yours to make',
+      });
+      expect(refused.map((frame) => frame.event)).not.toContain('proposal');
     } finally {
       h.connector.modelFor = was;
     }

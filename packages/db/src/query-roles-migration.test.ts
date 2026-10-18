@@ -197,6 +197,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0127_conversations',
       '0128_guardrails',
       '0129_conversation_context',
+      '0130_creation_proposals',
     ]);
     expect(applied[own.id]).toEqual([
       '0058_query_roles',
@@ -271,6 +272,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0127_conversations',
       '0128_guardrails',
       '0129_conversation_context',
+      '0130_creation_proposals',
     ]);
 
     expect(await queryRoles(development)).toEqual([

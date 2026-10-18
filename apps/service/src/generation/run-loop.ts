@@ -296,6 +296,7 @@ export function streamedRun(input: {
               number: answered.proposal.number,
               component: answered.proposal.componentId,
               against: answered.proposal.madeAgainst,
+              creates: answered.proposal.creates,
               proposed: answered.proposal.proposed,
             });
           }

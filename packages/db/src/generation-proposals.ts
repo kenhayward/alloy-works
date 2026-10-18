@@ -16,8 +16,12 @@ export interface GenerationProposal {
   readonly id: string;
   readonly runId: string;
   readonly number: number;
-  readonly componentId: string;
-  readonly madeAgainst: string;
+  /** The component it edits; for a creation, the one made once it is accepted, else null. */
+  readonly componentId: string | null;
+  /** The version it is against; null for a creation, which is against none. */
+  readonly madeAgainst: string | null;
+  /** Where and what a creation would make (G5-E); null for an edit. */
+  readonly creates: ProposedComponent | null;
   readonly proposed: ContentDocument;
   readonly state: ProposalState;
   readonly suggestionId: string | null;
@@ -35,8 +39,9 @@ interface Row {
   id: string;
   run_id: string;
   number: number;
-  component_id: string;
-  made_against: string;
+  component_id: string | null;
+  made_against: string | null;
+  creates?: ProposedComponent | null;
   proposed: ContentDocument;
   state: ProposalState;
   suggestion_id: string | null;
@@ -54,6 +59,7 @@ const proposalOf = (row: Row): GenerationProposal => ({
   number: row.number,
   componentId: row.component_id,
   madeAgainst: row.made_against,
+  creates: row.creates ?? null,
   proposed: row.proposed,
   state: row.state,
   suggestionId: row.suggestion_id,
@@ -67,6 +73,34 @@ const proposalOf = (row: Row): GenerationProposal => ({
 
 const selected = sql`select p.*, r.requested_by, r.context_digest, r.outcome as run_outcome
   from generation_proposal p join generation_run r on r.id = p.run_id`;
+
+/** Where and what a proposed component would be made (G5-E). */
+export interface ProposedComponent {
+  readonly space: string;
+  /** Absent: the environment's default type. */
+  readonly componentType?: string;
+  readonly title: string;
+  readonly language: string;
+  readonly direction: 'ltr' | 'rtl';
+}
+
+/** A proposal to make a component, made by a run while it runs, numbered with its edits (G5-E). */
+export async function makeCreationProposal(
+  trx: TenantTransaction,
+  input: {
+    readonly run: string;
+    readonly creates: ProposedComponent;
+    readonly proposed: ContentDocument;
+  },
+): Promise<GenerationProposal> {
+  const { rows } = await sql<{ id: string }>`insert into generation_proposal
+      (run_id, number, creates, proposed)
+    values (${input.run},
+      (select coalesce(max(number), 0) + 1 from generation_proposal where run_id = ${input.run}),
+      ${JSON.stringify(input.creates)}::jsonb, ${JSON.stringify(input.proposed)}::jsonb)
+    returning id`.execute(trx);
+  return (await readProposal(trx, rows[0]!.id))!;
+}
 
 /** A proposal made by a run while it runs, numbered in order. */
 export async function makeProposal(
@@ -112,10 +146,18 @@ async function generationEvent(
   kind: 'generation.accepted' | 'generation.discarded',
   proposal: GenerationProposal,
   detail: Readonly<Record<string, unknown>>,
+  made?: { readonly component: string; readonly version: string },
 ): Promise<void> {
+  // An edit is the component's; a creation the component it made, or where it would have been.
+  const subject =
+    made !== undefined
+      ? { kind: 'component', id: made.component, version: made.version }
+      : proposal.creates !== null
+        ? { kind: 'space', id: proposal.creates.space }
+        : { kind: 'component', id: proposal.componentId!, version: proposal.madeAgainst! };
   await recordEvent(trx, {
     kind,
-    subject: { kind: 'component', id: proposal.componentId, version: proposal.madeAgainst },
+    subject,
     detail: { run: proposal.runId, proposal: proposal.id, ...detail },
   });
 }
@@ -131,13 +173,24 @@ export async function actOnProposal(
     readonly proposal: GenerationProposal;
     readonly act: 'accepted' | 'kept' | 'discarded';
     readonly suggestion?: string;
+    /** A creation accepted: the component it made, at its first version (G5-E). */
+    readonly made?: { readonly component: string; readonly version: string };
     readonly by: string;
   },
 ): Promise<void> {
   await sql`update generation_proposal set state = ${input.act},
       suggestion_id = ${input.suggestion ?? null}, acted_by = ${input.by}, acted_at = now()
+      ${input.made === undefined ? sql`` : sql`, component_id = ${input.made.component}`}
     where id = ${input.proposal.id}`.execute(trx);
-  if (input.act === 'accepted') {
+  if (input.act === 'accepted' && input.made !== undefined) {
+    await generationEvent(
+      trx,
+      'generation.accepted',
+      input.proposal,
+      { created: true },
+      input.made,
+    );
+  } else if (input.act === 'accepted') {
     await generationEvent(trx, 'generation.accepted', input.proposal, {
       suggestion: input.suggestion!,
     });

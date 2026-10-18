@@ -17760,6 +17760,10 @@
         {
           "id": "GEN-053",
           "howItIsMet": "`conversation_context`: a tray each turn re-reads as the person, a part they no longer read left out and named; added and removed by them (G5-D)"
+        },
+        {
+          "id": "GEN-052",
+          "howItIsMet": "`propose_component` in a conversation: made at 0.1 as the person only once accepted, never kept, reported as generated (G5-E)"
         }
       ]
     },
@@ -20993,6 +20997,12 @@
       "id": "GEN-051",
       "file": "apps/service/src/conversation-routes.test.ts",
       "line": 138,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-052",
+      "file": "apps/service/src/conversation-routes.test.ts",
+      "line": 258,
       "kind": "title"
     },
     {
@@ -28348,7 +28358,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 823,
+      "line": 826,
       "kind": "title"
     },
     {

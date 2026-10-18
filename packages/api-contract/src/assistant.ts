@@ -29,6 +29,10 @@ export const ProposalActed = z.object({
       .string()
       .nullable()
       .describe('The suggestion made from it: accepted at once, or kept for review'),
+    component: z
+      .string()
+      .optional()
+      .describe('A proposal to make a component, accepted: the component made, at 0.1'),
   }),
 });
 export type ProposalActed = z.infer<typeof ProposalActed>;
@@ -72,7 +76,7 @@ export const AssistantRunView = z.object({
       z.object({
         id: z.string(),
         number: z.number().int(),
-        component: z.string(),
+        component: z.string().nullable(),
         state: z.enum(['open', 'accepted', 'kept', 'discarded', 'resolved']),
         suggestion: z.string().nullable(),
       }),

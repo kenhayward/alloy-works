@@ -727,7 +727,7 @@
       },
       "assistant_proposal": {
         "name": "proposal",
-        "summary": "An edit proposed to a component, which changes nothing until its requester acts on it",
+        "summary": "An edit proposed to a component, or a component proposed to be made, which changes nothing until its requester acts on it",
         "contentType": "application/json",
         "payload": {
           "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -743,12 +743,53 @@
               "maximum": 9007199254740991
             },
             "component": {
-              "type": "string",
-              "description": "An id, as the API names the thing elsewhere"
+              "anyOf": [
+                {
+                  "type": "string",
+                  "description": "An id, as the API names the thing elsewhere"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The component edited; null for one proposed to be made"
             },
             "against": {
-              "type": "string",
-              "description": "An id, as the API names the thing elsewhere"
+              "anyOf": [
+                {
+                  "type": "string",
+                  "description": "An id, as the API names the thing elsewhere"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The version edited; null for one proposed to be made"
+            },
+            "creates": {
+              "description": "Where, and under what title, a proposed component would be made",
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "space": {
+                      "type": "string",
+                      "description": "An id, as the API names the thing elsewhere"
+                    },
+                    "title": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "space",
+                    "title"
+                  ],
+                  "additionalProperties": {}
+                },
+                {
+                  "type": "null"
+                }
+              ]
             },
             "proposed": {
               "type": "object",

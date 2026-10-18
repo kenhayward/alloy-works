@@ -139,6 +139,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0127_conversations',
       '0128_guardrails',
       '0129_conversation_context',
+      '0130_creation_proposals',
     ]);
 
     const read = async () =>

@@ -69,13 +69,14 @@ time (below); embeddings for meaning are [search.md](search.md)'s and
 | **GEN-051** | A turn names an endpoint in use, the chat route's by default, its name and boundary shown (G5-C)                                                 |
 | **GEN-049** | `guardrail`: phrases forbidden in what is sent and what returns, a reply held where one watches it, a refusal naming the rule and reason (G5-F)  |
 | **GEN-053** | `conversation_context`: a tray each turn re-reads as the person, a part they no longer read left out and named; added and removed by them (G5-D) |
+| **GEN-052** | `propose_component` in a conversation: made at 0.1 as the person only once accepted, never kept, reported as generated (G5-E)                    |
 
 ## What this document does not own
 
 | Left unclaimed                                                                     | Why                                                                                                                                                     |
 | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | GEN-002, GEN-004                                                                   | A prompt declares components, metadata and parameters, and writes a part's text: a query's results as context, and a field as output, are later slices' |
-| GEN-052, GEN-054, GEN-055, GEN-021                                                 | The conversation's tray, guardrails, new components and personal prompts: G5's later PRs; GEN-021 is the model's (G5-H)                                 |
+| GEN-054, GEN-055, GEN-021                                                          | The conversation's tray, guardrails, new components and personal prompts: G5's later PRs; GEN-021 is the model's (G5-H)                                 |
 | GEN-034, GEN-036, GEN-044, ADM-013, ADM-014, ADM-033, ADM-034                      | Budgets, alerts, caching and trends (G6)                                                                                                                |
 | ADM-048                                                                            | Translation, scanning, email and webhooks cost nothing yet; it is claimed when the last of them exists                                                  |
 | SCH-013, SCH-014, SCH-035, VER-039 (designed elsewhere), SCH-067, GEN-038, GEN-044 | Meaning (G7)                                                                                                                                            |

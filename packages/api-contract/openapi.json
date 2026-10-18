@@ -19161,6 +19161,10 @@
                             "string",
                             "null"
                           ]
+                        },
+                        "component": {
+                          "description": "A proposal to make a component, accepted: the component made, at 0.1",
+                          "type": "string"
                         }
                       },
                       "required": [
@@ -19470,6 +19474,10 @@
                             "string",
                             "null"
                           ]
+                        },
+                        "component": {
+                          "description": "A proposal to make a component, accepted: the component made, at 0.1",
+                          "type": "string"
                         }
                       },
                       "required": [
@@ -19779,6 +19787,10 @@
                             "string",
                             "null"
                           ]
+                        },
+                        "component": {
+                          "description": "A proposal to make a component, accepted: the component made, at 0.1",
+                          "type": "string"
                         }
                       },
                       "required": [
@@ -20207,7 +20219,10 @@
                                 "maximum": 9007199254740991
                               },
                               "component": {
-                                "type": "string"
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
                               },
                               "state": {
                                 "type": "string",
@@ -132365,8 +132380,10 @@
                                   "type": "string",
                                   "enum": [
                                     "suggestion",
-                                    "proposal"
-                                  ]
+                                    "proposal",
+                                    "creation"
+                                  ],
+                                  "description": "A suggestion, a proposal discarded, or a component made from a proposal to make one"
                                 },
                                 "id": {
                                   "type": "string"
@@ -198076,8 +198093,10 @@
                                   "type": "string",
                                   "enum": [
                                     "suggestion",
-                                    "proposal"
-                                  ]
+                                    "proposal",
+                                    "creation"
+                                  ],
+                                  "description": "A suggestion, a proposal discarded, or a component made from a proposal to make one"
                                 },
                                 "id": {
                                   "type": "string"
