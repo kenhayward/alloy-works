@@ -55,6 +55,12 @@ import {
   profileOnTheWire,
   usePreview,
 } from '../publishing/Preview.js';
+import {
+  RANGE_FOLLOW_MS,
+  RangePreviewButton,
+  RangePreviewPane,
+  useRangePreview,
+} from '../publishing/RangePreview.js';
 import { FOLLOW_MS, Publishing } from '../publishing/Publishing.js';
 import { DocumentVersions } from './DocumentVersions.js';
 import { Icon } from '../editor/Icon.js';
@@ -1373,6 +1379,15 @@ export function DocumentPage({
     title: opened?.outline.title ?? '',
     followMs,
   });
+  // The pages of the occurrence open in place, drawn from each save (CNT-151; the R22 plan, R22b).
+  const rangePreview = useRangePreview({
+    client,
+    document: id,
+    version: opened?.version.id ?? null,
+    node: editing,
+    saved: editorSaved,
+    followMs: Math.min(followMs, RANGE_FOLLOW_MS),
+  });
   // Who a `user` field may name, read only where a field of the document or its sections is one.
   const [people, setPeople] = useState<readonly { id: string; name: string }[]>([]);
   const wantsPeople =
@@ -2172,6 +2187,9 @@ export function DocumentPage({
               <p className={styles['modeShown']}>Reading</p>
             )}
             <PreviewButton preview={preview} />
+            {editing !== null && (
+              <RangePreviewButton range={rangePreview} className={styles['toggle']} />
+            )}
             <button
               type="button"
               className={styles['toggle']}
@@ -2962,6 +2980,11 @@ export function DocumentPage({
                     })}
               />
             </div>
+            <RangePreviewPane
+              range={rangePreview}
+              onPreview={() => void preview.ask()}
+              className={styles['preview']}
+            />
             <PreviewPane
               preview={preview}
               className={styles['preview']}

@@ -47956,7 +47956,7 @@ export interface operations {
                         node: string;
                         /** @description The editing session's save the pages show, or null where they show the version */
                         sequence: number | null;
-                        /** @description How many pages the document has */
+                        /** @description How many pages the document had when the range was made */
                         pages: number | null;
                         /** @description The pages drawn, in order: the occurrence and one either side */
                         images: {
@@ -48243,7 +48243,7 @@ export interface operations {
                         node: string;
                         /** @description The editing session's save the pages show, or null where they show the version */
                         sequence: number | null;
-                        /** @description How many pages the document has */
+                        /** @description How many pages the document had when the range was made */
                         pages: number | null;
                         /** @description The pages drawn, in order: the occurrence and one either side */
                         images: {
@@ -48493,7 +48493,7 @@ export interface operations {
                         node: string;
                         /** @description The editing session's save the pages show, or null where they show the version */
                         sequence: number | null;
-                        /** @description How many pages the document has */
+                        /** @description How many pages the document had when the range was made */
                         pages: number | null;
                         /** @description The pages drawn, in order: the occurrence and one either side */
                         images: {

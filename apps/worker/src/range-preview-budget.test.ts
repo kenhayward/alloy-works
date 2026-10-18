@@ -38,7 +38,11 @@ import { processNext, type JobHandler, type WorkerLog } from './worker.js';
  * budget is weighed at the end of the implementation.
  */
 const BUDGET = { p95: 3_000, max: 6_000 } as const;
-const SAMPLES = 10;
+/**
+ * Twenty measured, so the nearest-rank 95th percentile is the nineteenth and the slowest is held to the
+ * maximum alone (the R22 final review).
+ */
+const SAMPLES = 20;
 const SESSION = '33333333-3333-4333-8333-333333333333';
 
 const percentile = (samples: readonly number[], p: number) => {
@@ -151,7 +155,7 @@ describe('the warm range preview of the 300-page reference document (the R22 pla
     });
   };
 
-  it('shows the occurrence being edited and a page either side, as PNG images, its author’s saved edit among them', async () => {
+  it('CNT-186 shows the occurrence being edited and a page either side, as PNG images, its author’s saved edit among them', async () => {
     await service.withTenant(tenant, async (trx) => {
       const claimed = await claimLock(trx, {
         artifactId: chapter().component,
@@ -205,13 +209,18 @@ describe('the warm range preview of the 300-page reference document (the R22 pla
     expect(next.range).toEqual(first.range);
   }, 120_000);
 
-  it('reflects a saved edit in the range preview within three seconds of the save, none above six, on the 300-page reference document', async ({
+  it('CNT-186 reflects a saved edit in the range preview within three seconds of the save, none above six, on the 300-page reference document', async ({
     task,
   }) => {
     const measured: number[] = [];
     // One more than measured, to warm what a long-lived worker already holds warm.
     for (let at = 0; at <= SAMPLES; at += 1) {
-      await save(`Reading ${at} taken again.`);
+      // Each save one, two or three sentences of a line and more, so it reflows the pages after it.
+      await save(
+        `Reading ${at} was taken again at the inlet and the outlet, and Grace signed the sheet once the two readings agreed with each other. `.repeat(
+          (at % 3) + 1,
+        ),
+      );
       const saved = performance.now();
       await service.withTenant(tenant, (trx) => refreshRangePreview(trx, range, seeded.ada));
       await work();

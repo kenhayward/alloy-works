@@ -1,4 +1,4 @@
-import { readRangePreview, recordRangePages } from '@alloy-works/db';
+import { failRangePreview, readRangePreview, recordRangePages } from '@alloy-works/db';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { startHarness, type Harness } from './test/bindings-harness.js';
 
@@ -78,7 +78,7 @@ describe('the warm range preview through the service (the R22 plan)', () => {
     expect(page.rawPayload.equals(PNG)).toBe(true);
   });
 
-  it('refreshes a range preview after each save, for its asker alone', async () => {
+  it('CNT-186 refreshes a range preview after each save, for its asker alone', async () => {
     const refreshed = await h.call(
       'ada',
       'POST',
@@ -100,5 +100,34 @@ describe('the warm range preview through the service (the R22 plan)', () => {
     });
     expect(nowhere.statusCode).toBe(400);
     expect(nowhere.json()).toMatchObject({ code: 'node_missing' });
+  });
+
+  it('CNT-186 draws a save asked for after one that failed, and says it failed only when none is waiting', async () => {
+    const refresh = () =>
+      h.call('ada', 'POST', `/v1/documents/${document.id}/range-previews/${range}/refresh`);
+    await refresh();
+    const asked = (await h.tenantDb.withTenant(h.tenant, (trx) => readRangePreview(trx, range)))!;
+    // The refresh before this one's last attempt failed: this one still waits, and then is drawn.
+    await h.tenantDb.withTenant(h.tenant, (trx) =>
+      failRangePreview(trx, asked.requestId, 'failed', asked.wanted - 1),
+    );
+    expect((await view()).json()).toMatchObject({ state: 'waiting' });
+    await h.tenantDb.withTenant(h.tenant, (trx) =>
+      failRangePreview(trx, asked.requestId, 'failed', asked.wanted),
+    );
+    expect((await view()).json()).toMatchObject({ state: 'failed' });
+    await refresh();
+    const again = (await h.tenantDb.withTenant(h.tenant, (trx) => readRangePreview(trx, range)))!;
+    await h.tenantDb.withTenant(h.tenant, (trx) =>
+      recordRangePages(trx, {
+        id: range,
+        made: again.wanted,
+        sequence: 2,
+        pages: 2,
+        range: { from: 1, to: 2 },
+        images: [{ page: 1, png: PNG }],
+      }),
+    );
+    expect((await view()).json()).toMatchObject({ state: 'ready', sequence: 2, failure: null });
   });
 });

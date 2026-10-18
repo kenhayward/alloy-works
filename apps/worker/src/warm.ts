@@ -1,5 +1,15 @@
 import { spawn, type ChildProcess } from 'node:child_process';
-import { copyFile, mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import {
+  copyFile,
+  mkdir,
+  mkdtemp,
+  readdir,
+  readFile,
+  rename,
+  rm,
+  stat,
+  writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { readPinnedFaces, type PinnedFonts } from './fonts.js';
@@ -138,6 +148,12 @@ export async function startWarmCompile(options: {
     };
     started.stdout.on('data', hear);
     started.stderr.on('data', hear);
+    // A binary that would not start ends the compile waited for, as one that stopped does.
+    started.on('error', () => {
+      const done = waiting;
+      waiting = null;
+      done?.(new TypstFailed('The warm compile did not start.'));
+    });
     started.on('exit', () => {
       const done = waiting;
       waiting = null;
@@ -192,7 +208,9 @@ export async function startWarmCompile(options: {
       update: (data, images = []) =>
         compiled(async () => {
           await place(images);
-          await writeFile(join(root, 'data.json'), data);
+          // Written beside it and moved into place, so the engine never reads it half written.
+          await writeFile(join(root, 'data.next'), data);
+          await rename(join(root, 'data.next'), join(root, 'data.json'));
         }),
       async page(number) {
         if (!Number.isInteger(number) || number < 1 || number > pages) {

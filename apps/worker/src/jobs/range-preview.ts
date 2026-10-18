@@ -40,6 +40,7 @@ interface Held {
   readonly store: TenantStore;
   readonly images: Set<string>;
   readonly window: { readonly from: number; readonly to: number };
+  /** How many pages the document had when the range was made: the window draws no more. */
   readonly pages: number;
   usedAt: number;
 }
@@ -95,6 +96,8 @@ export function rangePreviewJob(deps: {
   readonly pool: WarmPool;
   readonly conditionContent?: (node: string, content: ContentDocument) => ContentDocument;
 }): JobHandler {
+  /** The refresh each request's attempt is making, by request: what a last attempt that fails records. */
+  const making = new Map<string, number>();
   /** The document's data, `content` in place of each occurrence of the component it edits. */
   const assembled = async (
     tenant: Parameters<JobHandler['run']>[0],
@@ -209,33 +212,41 @@ export function rangePreviewJob(deps: {
       // Nothing to do: swept, or every refresh asked for already made.
       if (!read || read.range.made >= read.range.wanted) return;
       const { range, iteration } = read;
-      const making = range.wanted;
       const content = iteration && parseContentDocument(iteration.content);
 
+      // What this attempt makes, so a last attempt that fails records it and no later save.
+      making.set(requestId, range.wanted);
       let held = deps.pool.held.get(range.id);
-      if (held) {
-        const next = await assembled(tenant, held.inputs, held.store, range.componentId, content);
-        await held.warm.update(next.data, await imagesFor(held, next.placed));
-      } else {
-        held = await open(tenant, range.id, requestId, range.node, range.componentId, content);
-        if (!held) return;
+      const images: { page: number; png: Uint8Array }[] = [];
+      try {
+        if (held) {
+          const next = await assembled(tenant, held.inputs, held.store, range.componentId, content);
+          await held.warm.update(next.data, await imagesFor(held, next.placed));
+        } else {
+          held = await open(tenant, range.id, requestId, range.node, range.componentId, content);
+          if (!held) return;
+        }
+        for (let page = held.window.from; page <= held.window.to; page += 1) {
+          images.push({ page, png: await held.warm.page(page) });
+        }
+      } catch (error) {
+        // A compile that failed may still be running, or gone: never reused by the next attempt.
+        await release(range.id);
+        throw error;
       }
       held.usedAt = Date.now();
       const shown = held;
-      const images: { page: number; png: Uint8Array }[] = [];
-      for (let page = shown.window.from; page <= shown.window.to; page += 1) {
-        images.push({ page, png: await shown.warm.page(page) });
-      }
       await deps.db.withTenant(tenant, (trx) =>
         recordRangePages(trx, {
           id: range.id,
-          made: making,
+          made: making.get(requestId)!,
           sequence: iteration?.sequence ?? null,
           pages: shown.pages,
           range: shown.window,
           images,
         }),
       );
+      making.delete(requestId);
     },
 
     async failed(tenant, job, cause) {
@@ -246,12 +257,14 @@ export function rangePreviewJob(deps: {
           : cause instanceof PublishRefused
             ? 'refused'
             : 'failed';
-      const range = await deps.db.withTenant(tenant, (trx) => rangePreviewOf(trx, job.subjectId!));
-      if (range) {
-        await deps.pool.held.get(range.id)?.warm.close();
-        deps.pool.held.delete(range.id);
-      }
-      await deps.db.withTenant(tenant, (trx) => failRangePreview(trx, job.subjectId!, code));
+      const requestId = job.subjectId;
+      const range = await deps.db.withTenant(tenant, (trx) => rangePreviewOf(trx, requestId));
+      // The refresh this attempt was making, and no later one a save has asked for since.
+      await deps.db.withTenant(tenant, (trx) =>
+        failRangePreview(trx, requestId, code, making.get(requestId) ?? range?.wanted ?? 1),
+      );
+      making.delete(requestId);
+      if (range) await release(range.id);
     },
   };
 
@@ -260,10 +273,16 @@ export function rangePreviewJob(deps: {
     while (deps.pool.held.size >= deps.pool.most) {
       const [oldest] = [...deps.pool.held.entries()].sort((a, b) => a[1].usedAt - b[1].usedAt);
       if (!oldest) break;
-      deps.pool.held.delete(oldest[0]);
-      await oldest[1].warm.close();
+      await release(oldest[0]);
     }
     deps.pool.held.set(id, held);
+  }
+
+  /** A warm document let go: out of the pool first, then closed, a close that fails no reason to stop. */
+  async function release(id: string) {
+    const held = deps.pool.held.get(id);
+    deps.pool.held.delete(id);
+    await held?.warm.close().catch(() => {});
   }
 
   /** The images the data places that the warm root does not hold yet. */

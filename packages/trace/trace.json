@@ -17801,6 +17801,10 @@
           "howItIsMet": "A warm compile, `typst watch` over the document's own root, and a clean compile of the same input make the same bytes - every PNG page, and the tagged PDF with the creation time pinned as every compile pins it ([The warm range preview](#the-warm-range-preview))"
         },
         {
+          "id": "CNT-186",
+          "howItIsMet": "A save the editing session records is reflected in the range preview's pages within three seconds at the 95th percentile of twenty, none above six, on the 300-page reference document, measured on CI's runner from the save's commit to its pages recorded, each save reflowing the pages after it, and recorded beside the machine. The page's follow of it - asked every 150 ms - and its reading the pictures are not in the measure ([The warm range preview](#the-warm-range-preview))"
+        },
+        {
           "id": "PUB-007",
           "howItIsMet": "A layout's paged format declares page size, orientation, margins as top, bottom, inside and outside, and a gutter"
         },
@@ -21315,6 +21319,12 @@
       "kind": "title"
     },
     {
+      "id": "CNT-186",
+      "file": "apps/service/src/range-preview-routes.test.ts",
+      "line": 81,
+      "kind": "title"
+    },
+    {
       "id": "PUB-080",
       "file": "apps/service/src/range-preview-routes.test.ts",
       "line": 30,
@@ -23091,6 +23101,18 @@
       "kind": "title"
     },
     {
+      "id": "CNT-186",
+      "file": "apps/web/src/publishing/RangePreview.test.tsx",
+      "line": 138,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-080",
+      "file": "apps/web/src/publishing/RangePreview.test.tsx",
+      "line": 117,
+      "kind": "title"
+    },
+    {
       "id": "PUB-057",
       "file": "apps/web/src/publishing/Shares.test.tsx",
       "line": 54,
@@ -24546,6 +24568,12 @@
       "id": "CNT-018",
       "file": "apps/worker/src/quotations.test.ts",
       "line": 157,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-186",
+      "file": "apps/worker/src/range-preview-budget.test.ts",
+      "line": 158,
       "kind": "title"
     },
     {

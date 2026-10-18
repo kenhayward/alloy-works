@@ -23,8 +23,8 @@ import { refusePublish } from './publishing.js';
  */
 export const UNTAGGED =
   'These pages are pictures drawn as you edit, untagged, so assistive technology cannot read them. For an accessible copy, choose Preview, which makes the tagged PDF.';
-const alternative = (page: number, pages: number | null) =>
-  `Page ${page}${pages === null ? '' : ` of ${pages}`}, an untagged picture of the preview. For assistive technology, choose Preview, which makes the tagged PDF.`;
+const alternative = (page: number) =>
+  `Page ${page}, an untagged picture of the preview. For assistive technology, choose Preview, which makes the tagged PDF.`;
 
 export function rangeView(range: RangePreview): RangePreviewView {
   const images =
@@ -32,11 +32,19 @@ export function rangeView(range: RangePreview): RangePreviewView {
       ? []
       : Array.from({ length: range.range.to - range.range.from + 1 }, (_, at) => {
           const page = range.range!.from + at;
-          return { page, alternative: alternative(page, range.pages) };
+          return { page, alternative: alternative(page) };
         });
   return {
     id: range.id,
-    state: range.failure !== null ? 'failed' : range.made >= range.wanted ? 'ready' : 'waiting',
+    // Waiting while a refresh asked for is not drawn; failed only once none is and the last failed, or
+    // where nothing can refresh it (the R22 final review).
+    state: range.ended
+      ? 'failed'
+      : range.made < range.wanted
+        ? 'waiting'
+        : range.failure !== null
+          ? 'failed'
+          : 'ready',
     node: range.node,
     sequence: range.sequence,
     pages: range.pages,
