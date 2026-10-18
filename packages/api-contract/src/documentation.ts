@@ -101,6 +101,11 @@ export const documentationGroups = [
           'Hold a conversation with a model, on a document or on none: your own words, on an endpoint you choose, each turn governed as the assistant is and kept with its run.',
       },
       {
+        name: 'Guardrails',
+        description:
+          'Phrases your environment forbids in what a model is sent and what it returns, each with the reason a refusal says. A phrase, never a pattern; nothing here changes what the assistant may do.',
+      },
+      {
         name: 'Prompts',
         description:
           'Named, versioned prompts: the instructions, the context each declares and nothing beyond it, the text it writes and the models it accepts; and the libraries that list them, one bound by each template.',
@@ -385,6 +390,7 @@ const operationTags = {
     'keepProposal',
     'discardProposal',
   ],
+  Guardrails: ['listGuardrails', 'setGuardrail', 'retireGuardrail'],
   Conversations: [
     'listConversationEndpoints',
     'startConversation',
@@ -803,6 +809,12 @@ const descriptions: Readonly<Record<string, string>> = {
     "Runs a prompt of the document's library on one of its parts, with a signed-in session alone, at the prompt's latest approved revision. Its context is resolved first, as the caller may read it, and recorded on the run; nothing it does not declare is sent. It calls the endpoint its purpose goes to, through the connector, once, with no tools, refused first where the endpoint's model is not one it accepts, the context resolved to nothing or is more than the endpoint takes. The reply, Markdown, is proposed as the part's whole text, a proposal that changes nothing until the caller accepts it. Answered as Server-Sent Events. Recorded as a run naming the prompt version.",
   startPromptTrial:
     'Tries a version of a prompt, approved or not, on a part of a document the caller may read, with a signed-in session alone: the same run, recorded as a trial of that version, its output kept on the run and proposed nowhere. Approving a prompt version needs a finished trial of it.',
+  listGuardrails:
+    'Lists the environment’s guardrails, those in force first, the retired too where asked. Needs administer.',
+  setGuardrail:
+    'Forbids a phrase in what a model is sent, what it returns, or both, matched in any case and spacing, with the reason a refusal gives. A turn, a run or a trial meeting it is refused, naming the rule and its reason; a reply is held until checked wherever a rule watches replies. Needs administer, and is audited.',
+  retireGuardrail:
+    'Retires a guardrail in force, kept as the reason any run it refused was. Needs administer, and is audited.',
   listConversationEndpoints:
     'Lists the endpoints a conversation may run on, with a signed-in session alone: every one in use with its key set, its model and whether it sits outside the data boundary, the one a turn naming none runs on marked.',
   startConversation:

@@ -17752,6 +17752,10 @@
         {
           "id": "GEN-051",
           "howItIsMet": "A turn names an endpoint in use, the chat route's by default, its name and boundary shown (G5-C)"
+        },
+        {
+          "id": "GEN-049",
+          "howItIsMet": "`guardrail`: phrases forbidden in what is sent and what returns, a reply held where one watches it, a refusal naming the rule and reason (G5-F)"
         }
       ]
     },
@@ -20624,13 +20628,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 519,
+      "line": 522,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 532,
+      "line": 535,
       "kind": "title"
     },
     {
@@ -21020,7 +21024,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1716,
+      "line": 1736,
       "kind": "title"
     },
     {
@@ -21363,6 +21367,12 @@
       "id": "IAM-009",
       "file": "apps/service/src/group-routes.test.ts",
       "line": 154,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-049",
+      "file": "apps/service/src/guardrail-routes.test.ts",
+      "line": 82,
       "kind": "title"
     },
     {
@@ -22701,6 +22711,12 @@
       "id": "COL-046",
       "file": "apps/web/src/admin/Editing.test.tsx",
       "line": 27,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-049",
+      "file": "apps/web/src/admin/Guardrails.test.tsx",
+      "line": 47,
       "kind": "title"
     },
     {
@@ -27536,13 +27552,13 @@
     {
       "id": "LIF-030",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 238,
+      "line": 240,
       "kind": "title"
     },
     {
       "id": "LIF-070",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 219,
+      "line": 221,
       "kind": "title"
     },
     {
@@ -28316,7 +28332,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 814,
+      "line": 820,
       "kind": "title"
     },
     {

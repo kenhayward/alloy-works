@@ -12,6 +12,7 @@ import {
   createLibrary,
   createPrompt,
   startConversation,
+  setGuardrail,
   createQueryDefinition,
   readPrompt,
   createTemplate,
@@ -195,6 +196,24 @@ const OTHER_TENANT_IDS: Readonly<
   requestRangePreview: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   startAssistantRun: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   getConversation: async (tenant, db) => ({ id: await conversationIdIn(tenant, db) }),
+  retireGuardrail: async (tenant, db) =>
+    db.withTenant(tenant, async (trx) => {
+      const owner = await trx
+        .insertInto('principal')
+        .values({
+          issuer: 'https://idp.example',
+          subject: `ivy-${randomUUID()}`,
+          email: null,
+          display_name: null,
+        })
+        .returning('id')
+        .executeTakeFirstOrThrow();
+      return {
+        id: (
+          await setGuardrail(trx, { phrase: 'Theirs', applies: 'sent', reason: 'Theirs' }, owner.id)
+        ).id,
+      };
+    }),
   takeTurn: async (tenant, db) => ({ id: await conversationIdIn(tenant, db) }),
   listDocumentPrompts: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   startPromptRun: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
@@ -680,6 +699,7 @@ const VALID_INPUT: Readonly<
   requestTenantExport: { payload: {} },
   startAssistantRun: { payload: { ask: 'Hello' } },
   startConversation: { payload: { title: 'Hello' } },
+  setGuardrail: { payload: { phrase: 'Probe', applies: 'sent', reason: 'Probe' } },
   takeTurn: { payload: { ask: 'Hello' } },
   startPromptRun: { payload: { prompt: SESSION, node: 'n1' } },
   startPromptTrial: { payload: { document: SESSION, node: 'n1' } },

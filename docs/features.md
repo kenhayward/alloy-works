@@ -184,6 +184,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   carries the earlier turns' words, runs as the assistant does, and is kept with what it said. You
   choose the endpoint a turn runs on, and it says whether that sits outside your data boundary
   (`/v1/conversations`). Nothing is refused for being off the subject.
+- **Guardrails.** Administration's **Guardrails** lists phrases the environment forbids in what a
+  model is sent, what it returns, or both, each with its reason. A turn, a run or a trial meeting one
+  is refused before any call, or its reply withheld, saying which rule and why; where a rule watches
+  replies, a reply is shown once checked. A phrase, never a pattern (`/v1/guardrails`).
 - **Generated content waits for a person.** A document is not published, nor pinned as a baseline,
   while a suggestion the assistant made waits to be accepted or rejected in Review; a preview still
   shows it, and a baseline made before is published as it was pinned. A workflow step can require that

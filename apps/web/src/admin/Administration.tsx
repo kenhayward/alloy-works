@@ -6,6 +6,7 @@ import { everyPage } from '../paging.js';
 import styles from './Administration.module.css';
 import { About } from './About.js';
 import { AuditLog } from './AuditLog.js';
+import { Guardrails } from './Guardrails.js';
 import { Models } from './Models.js';
 import { TenantExport } from './TenantExport.js';
 import { Editing } from './Editing.js';
@@ -36,6 +37,8 @@ const SECTIONS = [
   { slug: 'workflows', title: 'Workflows', group: 'Environment' },
   // The model endpoints the environment calls, and what each purpose uses (GEN-027; the G1 plan).
   { slug: 'models', title: 'Models', group: 'Environment' },
+  // Phrases forbidden in what a model is sent and returns (GEN-049; the G5 plan, G5-F).
+  { slug: 'guardrails', title: 'Guardrails', group: 'Environment' },
   { slug: 'people', title: 'People', group: 'People and access' },
   { slug: 'groups', title: 'Groups', group: 'People and access' },
   { slug: 'roles', title: 'Roles', group: 'People and access' },
@@ -283,6 +286,7 @@ export function Administration({
         {shown === 'audit' && <AuditLog client={client} />}
         {shown === 'export' && <TenantExport client={client} />}
         {shown === 'models' && <Models client={client} />}
+        {shown === 'guardrails' && <Guardrails client={client} />}
         {shown === 'about' && <About about={about} />}
       </div>
     </section>

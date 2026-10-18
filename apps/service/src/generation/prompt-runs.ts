@@ -2,6 +2,7 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 
 import type { PromptRunBody, PromptTrialBody } from '@alloy-works/api-contract';
 import {
+  listGuardrails,
   documentLibrary,
   endRun,
   libraryPrompts,
@@ -25,6 +26,9 @@ import {
   PROMPT_RUN_INSTRUCTIONS_VERSION,
   PROMPT_RUN_MAX_TOKENS,
   acceptsModel,
+  guardrailMatch,
+  watchesReplies,
+  type GuardrailRule,
   admit,
   applyEdits,
   blockIdentifierFrom,
@@ -180,7 +184,21 @@ export function promptRunHandlers(
         id: context.part.component,
       });
     }
-    return { endpoint, sealed, context, call, record: resolved.record };
+    // What it sends, checked against the tenant's guardrails before any call (G5-F).
+    const guardrails = await listGuardrails(trx);
+    const sentRule = guardrailMatch(
+      guardrails,
+      'sent',
+      call.messages
+        .flatMap((message) =>
+          message.content.map((block) => (block.type === 'text' ? block.text : '')),
+        )
+        .join(' '),
+    );
+    if (sentRule) {
+      throw new AppError(409, 'guardrail_refused', `A guardrail refused this: ${sentRule.reason}`);
+    }
+    return { endpoint, sealed, context, call, record: resolved.record, guardrails };
   }
 
   /** The run itself, streamed after the route's transaction commits (G2-B's machinery, one turn). */
@@ -201,7 +219,9 @@ export function promptRunHandlers(
     const context = contextOf(request);
     const credential = request.credential ?? null;
     const caller = callerOf(request);
-    const { endpoint, sealed, call, record } = input.prepared;
+    const { endpoint, sealed, call, record, guardrails } = input.prepared;
+    // Where a rule watches replies, the reply is held until it is checked (G5-F).
+    const holding = watchesReplies(guardrails);
     const part = input.prepared.context.part;
     return new Streamed(async (send, closed) => {
       const authority = watchAuthority({ db, tenant, credential, events });
@@ -243,6 +263,7 @@ export function promptRunHandlers(
       let usage: { in: number; out: number } | null = null;
       let outcome = 'finished';
       let failure: GenerationFailure | undefined;
+      let refusedBy: GuardrailRule | undefined;
       let proposal: GenerationProposal | undefined;
       let problem: string | undefined;
       try {
@@ -258,7 +279,7 @@ export function promptRunHandlers(
           (event) => {
             if (event.type === 'text') {
               said += event.text;
-              send('text', { text: event.text });
+              if (!holding) send('text', { text: event.text });
             }
           },
           stopped,
@@ -269,7 +290,9 @@ export function promptRunHandlers(
         else {
           model = answer.answer.model;
           usage = answer.answer.usage ?? null;
-          if (!input.trial) {
+          refusedBy = guardrailMatch(guardrails, 'returned', said);
+          if (holding && !refusedBy && said !== '') send('text', { text: said });
+          if (!input.trial && !refusedBy) {
             // The part's whole text, proposed against the version the context read, as the
             // requester, who must still read the document and suggest on the part.
             const made =
@@ -313,7 +336,7 @@ export function promptRunHandlers(
         failure = { code: 'connector_error' };
       } finally {
         authority.stop();
-        const ending = failure?.code ?? outcome;
+        const ending = refusedBy ? 'guardrail_refused' : (failure?.code ?? outcome);
         const recorded = await db
           .withTenant(
             tenant,
@@ -352,7 +375,14 @@ export function promptRunHandlers(
             proposed: proposal.proposed,
           });
         }
-        if (failure) {
+        if (refusedBy) {
+          send('failed', {
+            code: 'guardrail_refused',
+            reason: refusedBy.reason,
+            rule: refusedBy.id,
+            message: `A guardrail refused this: ${refusedBy.reason}`,
+          });
+        } else if (failure) {
           send('failed', {
             code: failure.code,
             ...(failure.reason ? { reason: failure.reason } : {}),
