@@ -43,6 +43,7 @@ understand the storage layer, rather than something to be thrown away.
 | [home.md](home.md)                                     | What waits on the person signed in that they may resolve, each with its one action, and nothing they may not read                                              |
 | [lifecycle.md](lifecycle.md)                           | Archival out of ordinary listings and search; legal holds; deletion as a tombstone, refused while anything depends on it; retention keeps; erasure of a person |
 | [workflow.md](workflow.md)                             | Each kind's workflow, declared and versioned per tenant; every component and document in one state, moved along a transition by whoever it permits             |
+| [generation.md](generation.md)                         | A model as a governed contributor: endpoints, runs, the assistant drafting against a document, and every output a proposal                                     |
 
 ## Why these are not one per requirement area
 

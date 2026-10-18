@@ -17535,6 +17535,187 @@
       ]
     },
     {
+      "document": "generation.md",
+      "owns": [
+        {
+          "id": "GEN-027",
+          "howItIsMet": "`model_endpoint`, any number, each speaking one of two protocols (GN-B)"
+        },
+        {
+          "id": "GEN-028",
+          "howItIsMet": "`model_route`: each purpose names one endpoint (GN-B)"
+        },
+        {
+          "id": "GEN-029",
+          "howItIsMet": "The endpoint's key sealed and opened by the connector alone, write-only from the renderer, as a connection's is (GN-A)"
+        },
+        {
+          "id": "GEN-030",
+          "howItIsMet": "Every endpoint is the tenant's own account; no platform key (GN-C)"
+        },
+        {
+          "id": "GEN-031",
+          "howItIsMet": "`boundary` is required when an endpoint is made, and shown wherever the endpoint is named (GN-B)"
+        },
+        {
+          "id": "GEN-032",
+          "howItIsMet": "`model_unavailable`, never another endpoint (Failures)"
+        },
+        {
+          "id": "IAM-076",
+          "howItIsMet": "Endpoints, routes and runs are tenant schema tables"
+        },
+        {
+          "id": "GEN-006",
+          "howItIsMet": "`generation_run` (The run)"
+        },
+        {
+          "id": "GEN-023",
+          "howItIsMet": "A generated suggestion names its run, which holds the model, its version, the prompt version and the digest"
+        },
+        {
+          "id": "GEN-039",
+          "howItIsMet": "One digest, over the request as sent, canonical (The run)"
+        },
+        {
+          "id": "GEN-046",
+          "howItIsMet": "A run is kept while anything it produced is, and never by a sweep (The run)"
+        },
+        {
+          "id": "GEN-043",
+          "howItIsMet": "`context_too_large` before the call, and the same code where the provider refuses for length (The context)"
+        },
+        {
+          "id": "GEN-003",
+          "howItIsMet": "The request is assembled from the resolved declaration alone; nothing is added after (The context)"
+        },
+        {
+          "id": "GEN-057",
+          "howItIsMet": "The resolved set, by artifact, version and block, is recorded on the run and read back (The context)"
+        },
+        {
+          "id": "GEN-058",
+          "howItIsMet": "Resolution reads as the requester (The context)"
+        },
+        {
+          "id": "GEN-059",
+          "howItIsMet": "Nothing resolved fails `context_empty`; too much, `context_too_large` (The context)"
+        },
+        {
+          "id": "GEN-007",
+          "howItIsMet": "The assistant's tools are four product reads and one proposal (The assistant)"
+        },
+        {
+          "id": "GEN-008",
+          "howItIsMet": "Each tool runs in the service as the requester, through the route's own authorisation"
+        },
+        {
+          "id": "GEN-009",
+          "howItIsMet": "A proposal changes nothing until the requester accepts or keeps it (Proposals)"
+        },
+        {
+          "id": "GEN-010",
+          "howItIsMet": "Every tool call, its arguments and its result are events of the run's stream, and kept on the run"
+        },
+        {
+          "id": "GEN-011",
+          "howItIsMet": "Citations by component and block, checked against what the run retrieved (The assistant)"
+        },
+        {
+          "id": "GEN-012",
+          "howItIsMet": "G2 is drafting against the open document, before prompts, chat or retrieval at large (The order)"
+        },
+        {
+          "id": "GEN-013",
+          "howItIsMet": "Retrieval is the tenant's own search and reads, filtered by them"
+        },
+        {
+          "id": "GEN-014",
+          "howItIsMet": "Every read a tool makes is the requester's read"
+        },
+        {
+          "id": "GEN-015",
+          "howItIsMet": "A run lives in one tenant's schema and reads through `withTenant`"
+        },
+        {
+          "id": "GEN-016",
+          "howItIsMet": "The run's page lists what was retrieved, by version"
+        },
+        {
+          "id": "GEN-017",
+          "howItIsMet": "Content reaches the model only inside tool results and context blocks marked as data (Injection)"
+        },
+        {
+          "id": "GEN-018",
+          "howItIsMet": "What content says changes no tool, permission or confirmation (Injection)"
+        },
+        {
+          "id": "GEN-019",
+          "howItIsMet": "Authority comes from the requester's session alone (Injection)"
+        },
+        {
+          "id": "GEN-020",
+          "howItIsMet": "The compliant stand-in model, through each of the four paths (Injection)"
+        },
+        {
+          "id": "GEN-022",
+          "howItIsMet": "A generated suggestion is marked until accepted (Proposals)"
+        },
+        {
+          "id": "GEN-024",
+          "howItIsMet": "A suggestion made from a run; acceptance is `suggestion.accepted`, naming the person (Proposals)"
+        },
+        {
+          "id": "GEN-040",
+          "howItIsMet": "Discarding is a rejection, recorded with who and when"
+        },
+        {
+          "id": "GEN-041",
+          "howItIsMet": "Suggestions and runs are insert-only; a discard purges nothing"
+        },
+        {
+          "id": "GEN-042",
+          "howItIsMet": "Only an open generated suggestion blocks a publish (Proposals)"
+        },
+        {
+          "id": "GEN-025",
+          "howItIsMet": "`generated_unaccepted` at publish, and a gate condition requiring none (Proposals)"
+        },
+        {
+          "id": "GEN-026",
+          "howItIsMet": "`GET /v1/documents/{id}/generated`: each version a run produced and who accepted it (Proposals)"
+        },
+        {
+          "id": "GEN-060",
+          "howItIsMet": "Acceptance is `acceptSuggestion`, which writes as any edit does, the lock first"
+        },
+        {
+          "id": "PUB-082",
+          "howItIsMet": "A publication's record lists the accepted runs its versions came from (Proposals)"
+        },
+        {
+          "id": "API-064",
+          "howItIsMet": "The run's stream is a message set of the AsyncAPI document, apart from OpenAPI (The assistant)"
+        },
+        {
+          "id": "GEN-033",
+          "howItIsMet": "Each run records tokens with tenant, user, purpose and document (Cost)"
+        },
+        {
+          "id": "ADM-010",
+          "howItIsMet": "The same record"
+        },
+        {
+          "id": "GEN-035",
+          "howItIsMet": "`model_rate_limited`, per user per hour (Cost)"
+        },
+        {
+          "id": "GEN-037",
+          "howItIsMet": "The run's cost shown to its requester as it ends, and their month on the assistant panel (Cost)"
+        }
+      ]
+    },
+    {
       "document": "home.md",
       "owns": [
         {
