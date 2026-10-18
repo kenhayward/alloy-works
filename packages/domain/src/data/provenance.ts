@@ -6,7 +6,13 @@ import { canonicalValueSchema, columnSchema, PARAMETER_NAME, type Column } from 
 import { MAX_LIST_ITEMS, type ParameterValues } from './parameters.js';
 import { RAN_MAX_CHARACTERS } from './sql.js';
 import { httpTemplateSchema, type HttpTemplate } from './http-template.js';
-import { ranObjectSchema, sourceNameSchema, type RanObject } from './protocol.js';
+import {
+  ranDatasetSchema,
+  ranObjectSchema,
+  sourceNameSchema,
+  type RanDataset,
+  type RanObject,
+} from './protocol.js';
 
 /**
  * A dataset version's content: its provenance record (data.md, "Storage of results and provenance";
@@ -52,7 +58,8 @@ export type ProvenanceIdentity =
 export const provenanceSchema = z.strictObject({
   schemaVersion: z.literal(PROVENANCE_SCHEMA_VERSION),
   queryDefinition: versioned,
-  connection: versioned,
+  // The connection it ran on; none where a stored result was queried (the R21 plan, R21-A).
+  connection: versioned.optional(),
   // The values that ran, by the definition's parameter names, as D2 checked them (D2-R).
   parameters: z.record(
     z.string().regex(PARAMETER_NAME),
@@ -71,6 +78,8 @@ export const provenanceSchema = z.strictObject({
     z.strictObject({ sql: z.string().min(1).max(RAN_MAX_CHARACTERS) }),
     z.strictObject({ request: httpTemplateSchema }),
     z.strictObject({ object: ranObjectSchema }),
+    // A stored result queried as a source (R21-A): the dataset version, by its checksum too.
+    z.strictObject({ dataset: ranDatasetSchema }),
   ]),
   identity: z.union([
     z.strictObject({ kind: z.literal('service') }),
@@ -97,10 +106,13 @@ export const provenanceSchema = z.strictObject({
 export type Provenance = {
   readonly schemaVersion: 1;
   readonly queryDefinition: { readonly artifact: string; readonly version: string };
-  readonly connection: { readonly artifact: string; readonly version: string };
+  readonly connection?: { readonly artifact: string; readonly version: string };
   readonly parameters: ParameterValues;
   readonly ran:
-    { readonly sql: string } | { readonly request: HttpTemplate } | { readonly object: RanObject };
+    | { readonly sql: string }
+    | { readonly request: HttpTemplate }
+    | { readonly object: RanObject }
+    | { readonly dataset: RanDataset };
   readonly identity: ProvenanceIdentity;
   readonly at: string;
   readonly durationMs: number;
@@ -113,7 +125,14 @@ export type Provenance = {
 
 /** The shape alone: what a stored version is read back by. Throws on a record that is not one. */
 export function parseProvenance(value: unknown): Provenance {
-  return provenanceSchema.parse(value) as Provenance;
+  const provenance = provenanceSchema.parse(value) as Provenance;
+  // A record names the connection it ran on, unless it queried a stored result (the R21 plan, R21-A).
+  if ('dataset' in provenance.ran !== (provenance.connection === undefined)) {
+    throw new Error(
+      'A provenance record names the connection it ran on, unless it queried a stored result',
+    );
+  }
+  return provenance;
 }
 
 /** Every string a value holds, its members' names among them. */

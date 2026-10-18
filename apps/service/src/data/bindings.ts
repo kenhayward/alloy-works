@@ -155,6 +155,7 @@ import { actingKey, ownViewOf, provenanceIdentity, runIdentity, type Acting } fr
 import { failureViewFor, type FailureIn } from './failure-words.js';
 import { carryRevisions, keptProblem, recordRevisionEvent, revisionsDecided } from './revisions.js';
 import { connectionFacts, requireSqlPermitted } from './sql-access.js';
+import { datasetOf, datasetProblems, type ReadSource } from './dataset-source.js';
 
 /**
  * Bindings and datasets (data.md, "Acts, revisions and failures"; the D3 plan, task 3). Reading what a
@@ -186,7 +187,9 @@ const provenanceView = (provenance: Provenance, readsDefinition: boolean, erased
             ? { sql: null }
             : 'request' in provenance.ran
               ? { request: null }
-              : { object: null },
+              : 'dataset' in provenance.ran
+                ? { dataset: null }
+                : { object: null },
         columns: provenance.columns.map((column) => ({ ...column, from: null })),
       }) as unknown as z.infer<typeof ProvenanceView>;
 
@@ -264,6 +267,17 @@ export interface RunsThrough {
     request: RunRequest,
     signal: AbortSignal,
     queryDefinition: string | null,
+  ) => Promise<RunAsked>;
+  /**
+   * A stored result's query, run here and recorded as a run (DAT-094, DAT-053; R21-A): no connector,
+   * so no slot of the tenant's runs at once.
+   */
+  readonly runDataset: (
+    source: ReadSource,
+    draft: DraftDefinition,
+    values: ParameterValues,
+    limits: Limits,
+    queryDefinition: string,
   ) => Promise<RunAsked>;
   readonly runnable: (trx: TenantTransaction, id: string) => Promise<StoredConnection>;
   readonly usableSealed: (
@@ -611,6 +625,29 @@ const bindingChanged = (naming: Naming) =>
     naming,
   );
 
+/**
+ * What a run's source asks of whoever runs it: `use_connection` on its connection, or `read` on the
+ * stored result a dataset query reads (DAT-094; the R21 plan, R21-A).
+ */
+function sourceOf(ran: Provenance): {
+  readonly artifact: string;
+  readonly permission: 'use_connection' | 'read';
+} {
+  if (ran.connection) return { artifact: ran.connection.artifact, permission: 'use_connection' };
+  return {
+    artifact: (ran.ran as { dataset: { artifact: string } }).dataset.artifact,
+    permission: 'read',
+  };
+}
+function definitionSource(definition: QueryDefinition): {
+  readonly artifact: string;
+  readonly permission: 'use_connection' | 'read';
+} {
+  return definition.fetch.kind === 'dataset'
+    ? { artifact: definition.fetch.dataset, permission: 'read' }
+    : { artifact: definition.connection!, permission: 'use_connection' };
+}
+
 /** A definition as a run takes it: the whole shape but its title, description and retired. */
 function draftOf(definition: QueryDefinition): DraftDefinition {
   return {
@@ -658,8 +695,11 @@ async function argumentProblems(
 interface Prepared {
   readonly placed: Placed;
   readonly definition: { readonly id: string; readonly version: string };
-  readonly connection: StoredConnection;
-  readonly sealed: string;
+  /** The connection it runs on, and its sealed credential; none for a stored result's query (R21-A). */
+  readonly connection: StoredConnection | null;
+  readonly sealed: string | null;
+  /** The stored result a dataset query reads (DAT-094; R21-A). */
+  readonly source?: ReadSource;
   readonly draft: DraftDefinition;
   readonly values: ParameterValues;
   readonly limits: Limits;
@@ -766,7 +806,46 @@ async function prepare(
         problems,
       });
     }
-    const connection = await through.runnable(trx, definition.connection);
+    if (definition.fetch.kind === 'dataset') {
+      // A stored result's query (R21-A): `read` on the dataset, its tree held to its own columns,
+      // run here on no connection, as the service.
+      const atDataset = await connectionFacts(trx, caller, definition.fetch.dataset);
+      const reads = atDataset && decide('read', atDataset);
+      if (!reads?.allowed) {
+        throw new AppError(
+          403,
+          'forbidden',
+          `This needs read on the stored result the binding ${binding.id} queries.`,
+        );
+      }
+      const source = await datasetOf(trx, definition.fetch);
+      if (!source) {
+        throw bindingMissing(
+          naming,
+          `The binding ${binding.id} queries a stored result this environment no longer holds.`,
+        );
+      }
+      const wrong = datasetProblems(draftOf(definition), source);
+      if (wrong.length > 0) {
+        throw refused(400, 'definition.invalid', 'The query definition is not valid.', {
+          problems: wrong,
+        });
+      }
+      const acting: Acting = { kind: 'service' };
+      return {
+        placed,
+        definition: { id: stored.id, version },
+        connection: null,
+        sealed: null,
+        source,
+        draft: draftOf(definition),
+        values: literal.values,
+        limits: effectiveLimits(definition.limits, await dataPolicy(trx)),
+        acting,
+        question: `${stored.id} ${version} ${sha256(parametersDigestInput(literal.values))} dataset:${source.version}`,
+      };
+    }
+    const connection = await through.runnable(trx, definition.connection!);
     const atConnection = await connectionFacts(trx, caller, connection.id);
     const using = atConnection && decide('use_connection', atConnection);
     if (!using?.allowed) {
@@ -892,22 +971,30 @@ async function runOnce(
   }>,
   signal: AbortSignal,
 ): Promise<Ran> {
-  const asked = await through.run(
-    {
-      requestId: randomUUID(),
-      tenant: tenant.id,
-      connection: { id: prepared.connection.id, version: prepared.connection.version.id },
-      settings: prepared.connection.settings,
-      sealed: prepared.sealed,
-      definition: prepared.draft,
-      values: prepared.values as RunRequest['values'],
-      limits: prepared.limits,
-      deadlineMs: prepared.limits.seconds * 1000,
-      ...runIdentity(prepared.acting),
-    },
-    signal,
-    prepared.definition.id,
-  );
+  const asked = prepared.source
+    ? await through.runDataset(
+        prepared.source,
+        prepared.draft,
+        prepared.values,
+        prepared.limits,
+        prepared.definition.id,
+      )
+    : await through.run(
+        {
+          requestId: randomUUID(),
+          tenant: tenant.id,
+          connection: { id: prepared.connection!.id, version: prepared.connection!.version.id },
+          settings: prepared.connection!.settings,
+          sealed: prepared.sealed!,
+          definition: prepared.draft,
+          values: prepared.values as RunRequest['values'],
+          limits: prepared.limits,
+          deadlineMs: prepared.limits.seconds * 1000,
+          ...runIdentity(prepared.acting),
+        },
+        signal,
+        prepared.definition.id,
+      );
   // Nothing of a run whose authority ended is kept, its rows among them (IAM-082).
   if (signal.aborted) throw signal.reason;
   if ('refused' in asked) return { ok: false, failure: { code: asked.refused.code } };
@@ -955,7 +1042,14 @@ async function runOnce(
     provenance: {
       schemaVersion: 1,
       queryDefinition: { artifact: prepared.definition.id, version: prepared.definition.version },
-      connection: { artifact: prepared.connection.id, version: prepared.connection.version.id },
+      ...(prepared.connection === null
+        ? {}
+        : {
+            connection: {
+              artifact: prepared.connection.id,
+              version: prepared.connection.version.id,
+            },
+          }),
       parameters: prepared.values,
       ran: ran.ran,
       identity: provenanceIdentity(prepared.acting, ran.asSeen ?? ''),
@@ -1144,12 +1238,16 @@ async function decideAgain(
   }
   for (const each of runs) {
     const definition = await connectionFacts(trx, caller, each.definition.id);
-    const connection = await connectionFacts(trx, caller, each.connection.id);
+    // Its source as it asks: the connection's use, or a stored result's read (R21-A).
+    const [at, permission] = each.connection
+      ? [each.connection.id, 'use_connection' as const]
+      : [each.source!.dataset, 'read' as const];
+    const source = await connectionFacts(trx, caller, at);
     if (
       !definition ||
       !decide('read', definition).allowed ||
-      !connection ||
-      !decide('use_connection', connection).allowed
+      !source ||
+      !decide(permission, source).allowed
     ) {
       throw accessChanged();
     }
@@ -1168,11 +1266,12 @@ async function seeingSourceNow(
 ): Promise<(run: Prepared) => boolean> {
   const sees = new Map<string, boolean>();
   for (const { connection } of runs) {
-    if (sees.has(connection.id)) continue;
+    // A stored result's query has no source to say anything (R21-A).
+    if (connection === null || sees.has(connection.id)) continue;
     const facts = await connectionFacts(trx, caller, connection.id);
     sees.set(connection.id, facts !== undefined && decide('write_sql', facts).allowed);
   }
-  return (run) => sees.get(run.connection.id) === true;
+  return (run) => run.connection !== null && sees.get(run.connection.id) === true;
 }
 
 /** Each run that answered, by its question, for its images to be admitted. */
@@ -1276,22 +1375,19 @@ async function mayTakeResult(
       true,
     );
   }
-  const connection = await connectionFacts(trx, caller, provenance.connection.artifact);
-  const using = connection && decide('use_connection', connection);
+  const runsOn = sourceOf(provenance);
+  const connection = await connectionFacts(trx, caller, runsOn.artifact);
+  const using = connection && decide(runsOn.permission, connection);
   if (!using?.allowed) {
     const error = new AppError(
       403,
       'forbidden',
-      `This needs the use connection permission on the connection the binding ${naming.binding} runs on.`,
+      runsOn.permission === 'read'
+        ? `This needs read on the stored result the binding ${naming.binding} queries.`
+        : `This needs the use connection permission on the connection the binding ${naming.binding} runs on.`,
     );
     throw connection && using
-      ? refusedBy(
-          error,
-          using,
-          connection,
-          { kind: 'artifact', id: provenance.connection.artifact },
-          false,
-        )
+      ? refusedBy(error, using, connection, { kind: 'artifact', id: runsOn.artifact }, false)
       : error;
   }
 }
@@ -1519,7 +1615,7 @@ function viewer(
   const erased = erasedViewer(trx);
   const facts = new Map<string, Promise<boolean>>();
   /** Whether the caller holds a permission on an artifact, each asked once. */
-  const may = (permission: 'edit' | 'use_connection', artifact: string) => {
+  const may = (permission: 'edit' | 'use_connection' | 'read', artifact: string) => {
     let allowed = facts.get(`${permission} ${artifact}`);
     if (!allowed) {
       allowed = connectionFacts(trx, caller, artifact).then(
@@ -1582,18 +1678,21 @@ function viewer(
       held.digest === placed.digest &&
       // Another person's own view is checked by them alone (DAT-084, D7-H).
       (whose === undefined || whose === caller.principalId) &&
-      (await may('use_connection', held.held.provenance.connection.artifact));
+      (await may(
+        sourceOf(held.held.provenance).permission,
+        sourceOf(held.held.provenance).artifact,
+      ));
     let mayResolve = false;
     if (asked !== undefined && (await reads(placed.binding.query))) {
       const version = await readVersion(trx, asked);
-      const connection =
+      const runsOn =
         version?.kind === 'queryDefinition'
-          ? parseQueryDefinition(version.content).connection
+          ? definitionSource(parseQueryDefinition(version.content))
           : undefined;
       mayResolve =
-        connection !== undefined &&
+        runsOn !== undefined &&
         (await may('edit', documentId)) &&
-        (await may('use_connection', connection));
+        (await may(runsOn.permission, runsOn.artifact));
     }
     return { definitionChanged, sincePublished, mayCheck, mayResolve };
   }
@@ -1653,6 +1752,8 @@ function viewer(
   async function connectionOf(held: HeldResolution | undefined) {
     if (!held) return null;
     const { queryDefinition, connection } = held.held.provenance;
+    // A stored result's query ran on no connection (R21-A).
+    if (connection === undefined) return null;
     if (!(await reads(queryDefinition.artifact)) || !(await reads(connection.artifact))) {
       return null;
     }
@@ -3246,12 +3347,13 @@ async function mayStillAct(
     caller,
     pending.provenance.queryDefinition.artifact,
   );
-  const connection = await connectionFacts(trx, caller, pending.provenance.connection.artifact);
+  const runsOn = sourceOf(pending.provenance);
+  const connection = await connectionFacts(trx, caller, runsOn.artifact);
   if (
     !definition ||
     !decide('read', definition).allowed ||
     !connection ||
-    !decide('use_connection', connection).allowed
+    !decide(runsOn.permission, connection).allowed
   ) {
     throw accessChanged();
   }

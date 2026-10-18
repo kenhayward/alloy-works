@@ -49,6 +49,8 @@ export const listingSorts = {
   componentTypes: { name: { types: ['text'], order: 'asc' } },
   definitions: { name: { types: ['text'], order: 'asc' } },
   people: { joined: { types: ['timestamptz'], order: 'asc' } },
+  // The stored results a reader may query as a source, by name (DAT-094; the R21 plan, R21-A).
+  datasets: { name: { types: ['text'], order: 'asc' } },
   // An author's own iterations of one component, the newest first (component-editor.md, "Recovery,
   // as W11 builds it"): what the Recovery panel lists.
   iterations: { saved: { types: ['timestamptz'], order: 'desc' } },

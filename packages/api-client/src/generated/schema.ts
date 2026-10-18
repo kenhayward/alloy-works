@@ -1403,6 +1403,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/datasets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The stored results the caller may read, to query as a source of their own
+         * @description Lists the stored results the caller may read, a page at a time, each by its name or its query definition’s title, with its latest version’s columns: what a query over it may select.
+         */
+        get: operations["listDatasetSources"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/datasets/{id}/name": {
         parameters: {
             query?: never;
@@ -1417,6 +1437,26 @@ export interface paths {
          */
         put: operations["nameDataset"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/datasets/{id}/sample": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run a draft query over a stored result against sample values, storing nothing
+         * @description Runs a draft query definition over a stored result, as the query builder builds it - its columns, condition, grouping and aggregates - against sample values, storing nothing. The service evaluates it over the result’s kept rows; the source the result came from is never asked. Needs read on the stored result.
+         */
+        post: operations["sampleDataset"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4559,6 +4599,177 @@ export interface components {
             or: components["schemas"]["sampleConnectionBody_schema3"][];
         } | {
             not: components["schemas"]["sampleConnectionBody_schema3"];
+        } | {
+            column: string;
+            /** @enum {string} */
+            is: "equal" | "notEqual" | "less" | "lessOrEqual" | "greater" | "greaterOrEqual" | "in" | "contains" | "startsWith" | "isNull" | "isNotNull";
+            to?: {
+                parameter: string;
+            } | {
+                literal: (string | boolean | null) | (string | boolean | null)[];
+                type: {
+                    /** @constant */
+                    base: "text";
+                } | {
+                    /** @constant */
+                    base: "integer";
+                } | {
+                    /** @constant */
+                    base: "decimal";
+                    precision: number;
+                    scale: number;
+                } | {
+                    /** @constant */
+                    base: "date";
+                } | {
+                    /** @constant */
+                    base: "time";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "localDateTime";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "instant";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "boolean";
+                };
+            };
+            /** @constant */
+            ignoreCase?: true;
+        };
+        sampleDataset200_schema0: {
+            fixed: string | boolean | null;
+        } | {
+            number: string;
+        } | {
+            parameter: string;
+        } | {
+            object: {
+                name: string;
+                value: components["schemas"]["sampleDataset200_schema0"];
+            }[];
+        } | {
+            array: components["schemas"]["sampleDataset200_schema0"][];
+        };
+        sampleDatasetBody_schema0: {
+            sources: ({
+                alias: string;
+                table: {
+                    schema: string;
+                    name: string;
+                };
+            } | {
+                alias: string;
+                query: components["schemas"]["sampleDatasetBody_schema0"];
+            })[];
+            joins: {
+                /** @enum {string} */
+                kind: "inner" | "left";
+                source: string;
+                on: components["schemas"]["sampleDatasetBody_schema1"];
+            }[];
+            select: {
+                name: string;
+                of: {
+                    source: string;
+                    column: string;
+                } | {
+                    /** @enum {string} */
+                    aggregate: "count" | "sum" | "average" | "minimum" | "maximum";
+                    of?: {
+                        source: string;
+                        column: string;
+                    };
+                    places?: number;
+                };
+            }[];
+            where?: components["schemas"]["sampleDatasetBody_schema1"];
+            groupBy: {
+                source: string;
+                column: string;
+            }[];
+            limit?: number;
+        };
+        sampleDatasetBody_schema1: {
+            and: components["schemas"]["sampleDatasetBody_schema1"][];
+        } | {
+            or: components["schemas"]["sampleDatasetBody_schema1"][];
+        } | {
+            not: components["schemas"]["sampleDatasetBody_schema1"];
+        } | {
+            column: {
+                source: string;
+                column: string;
+            };
+            /** @enum {string} */
+            is: "equal" | "notEqual" | "less" | "lessOrEqual" | "greater" | "greaterOrEqual" | "in" | "contains" | "startsWith" | "isNull" | "isNotNull";
+            to?: {
+                parameter: string;
+            } | {
+                literal: (string | boolean | null) | (string | boolean | null)[];
+                type: {
+                    /** @constant */
+                    base: "text";
+                } | {
+                    /** @constant */
+                    base: "integer";
+                } | {
+                    /** @constant */
+                    base: "decimal";
+                    precision: number;
+                    scale: number;
+                } | {
+                    /** @constant */
+                    base: "date";
+                } | {
+                    /** @constant */
+                    base: "time";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "localDateTime";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "instant";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "boolean";
+                };
+            } | {
+                column: {
+                    source: string;
+                    column: string;
+                };
+            };
+            /** @constant */
+            ignoreCase?: true;
+        };
+        sampleDatasetBody_schema2: {
+            fixed: string | boolean | null;
+        } | {
+            number: string;
+        } | {
+            parameter: string;
+        } | {
+            object: {
+                name: string;
+                value: components["schemas"]["sampleDatasetBody_schema2"];
+            }[];
+        } | {
+            array: components["schemas"]["sampleDatasetBody_schema2"][];
+        };
+        sampleDatasetBody_schema3: {
+            and: components["schemas"]["sampleDatasetBody_schema3"][];
+        } | {
+            or: components["schemas"]["sampleDatasetBody_schema3"][];
+        } | {
+            not: components["schemas"]["sampleDatasetBody_schema3"];
         } | {
             column: string;
             /** @enum {string} */
@@ -10626,7 +10837,7 @@ export interface operations {
                                         version: string;
                                     };
                                     /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                    connection: {
+                                    connection?: {
                                         artifact: string;
                                         version: string;
                                     } | null;
@@ -10670,6 +10881,13 @@ export interface operations {
                                             bucket: string;
                                             key: string;
                                             versionId?: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                        dataset: {
+                                            artifact: string;
+                                            version: string;
+                                            checksum: string;
                                         } | null;
                                     };
                                     identity: {
@@ -10864,7 +11082,7 @@ export interface operations {
                                         version: string;
                                     };
                                     /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                    connection: {
+                                    connection?: {
                                         artifact: string;
                                         version: string;
                                     } | null;
@@ -10908,6 +11126,13 @@ export interface operations {
                                             bucket: string;
                                             key: string;
                                             versionId?: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                        dataset: {
+                                            artifact: string;
+                                            version: string;
+                                            checksum: string;
                                         } | null;
                                     };
                                     identity: {
@@ -20663,7 +20888,6 @@ export interface operations {
                  * @example {
                  *       "definition": {
                  *         "schemaVersion": 1,
-                 *         "connection": "00000000-0000-4000-8000-000000000001",
                  *         "parameters": [],
                  *         "fetch": {
                  *           "kind": "sql",
@@ -20697,7 +20921,7 @@ export interface operations {
                         /** @constant */
                         schemaVersion: 1;
                         /** Format: uuid */
-                        connection: string;
+                        connection?: string;
                         parameters: {
                             name: string;
                             type: {
@@ -20835,6 +21059,16 @@ export interface operations {
                                 headerRow: boolean;
                             };
                             where?: components["schemas"]["sampleConnectionBody_schema3"];
+                        } | {
+                            /** @constant */
+                            kind: "dataset";
+                            /** @constant */
+                            format: 1;
+                            /** Format: uuid */
+                            dataset: string;
+                            /** Format: uuid */
+                            version?: string;
+                            query: components["schemas"]["sampleConnectionBody_schema0"];
                         };
                         columns: {
                             name: string;
@@ -20944,7 +21178,7 @@ export interface operations {
                         rowCount: number;
                         /** @description The SHA-256 of the whole result in canonical form, in hexadecimal */
                         checksum: string;
-                        /** @description What ran: SQL for a database, the request template for an HTTP connection, the object for an S3 one */
+                        /** @description What ran: SQL for a database, the request template for an HTTP connection, the object for an S3 one, the stored result for a dataset query */
                         ran: {
                             /** @description The SQL that ran, each value a bound parameter */
                             sql: string;
@@ -20982,6 +21216,13 @@ export interface operations {
                                 bucket: string;
                                 key: string;
                                 versionId?: string;
+                            };
+                        } | {
+                            /** @description The stored result a dataset query read: its dataset, version and checksum (DAT-094) */
+                            dataset: {
+                                artifact: string;
+                                version: string;
+                                checksum: string;
                             };
                         };
                         durationMs: number;
@@ -22750,6 +22991,160 @@ export interface operations {
             };
         };
     };
+    listDatasetSources: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: string;
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of stored results, by name */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "next": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        items: {
+                            id: string;
+                            /** @description Its name, or its query definition's title where nobody named it and the caller may read the definition */
+                            name: string;
+                            /** @description Its query definition, or null where the caller may not read it */
+                            definition: {
+                                id: string;
+                                title: string;
+                            } | null;
+                            latest: {
+                                id: string;
+                                at: string;
+                                rowCount: number;
+                            };
+                            /** @description Its latest version's columns, each its name and type: what a query over it may select */
+                            columns: {
+                                name: string;
+                                type: {
+                                    /** @constant */
+                                    base: "text";
+                                } | {
+                                    /** @constant */
+                                    base: "integer";
+                                } | {
+                                    /** @constant */
+                                    base: "decimal";
+                                    precision: number;
+                                    scale: number;
+                                } | {
+                                    /** @constant */
+                                    base: "date";
+                                } | {
+                                    /** @constant */
+                                    base: "time";
+                                    fraction: number;
+                                } | {
+                                    /** @constant */
+                                    base: "localDateTime";
+                                    fraction: number;
+                                } | {
+                                    /** @constant */
+                                    base: "instant";
+                                    fraction: number;
+                                } | {
+                                    /** @constant */
+                                    base: "boolean";
+                                } | {
+                                    /** @constant */
+                                    base: "image";
+                                    /** @enum {string} */
+                                    encoding: "base64" | "binary";
+                                    description: {
+                                        column: string;
+                                    } | "decorative";
+                                };
+                            }[];
+                        }[];
+                        /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
+                        next: string | null;
+                    };
+                };
+            };
+            /** @description A limit or a cursor that is not one */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     nameDataset: {
         parameters: {
             query?: never;
@@ -22863,6 +23258,534 @@ export interface operations {
                 };
             };
             /** @description No such dataset in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    sampleDataset: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "definition": {
+                 *         "schemaVersion": 1,
+                 *         "parameters": [],
+                 *         "fetch": {
+                 *           "kind": "sql",
+                 *           "text": "example"
+                 *         },
+                 *         "columns": [
+                 *           {
+                 *             "name": "example",
+                 *             "from": {
+                 *               "column": "example"
+                 *             },
+                 *             "type": {
+                 *               "base": "text"
+                 *             }
+                 *           }
+                 *         ],
+                 *         "key": [],
+                 *         "order": "multiset",
+                 *         "empty": "valid",
+                 *         "limits": {
+                 *           "rows": 1,
+                 *           "bytes": 1,
+                 *           "seconds": 1
+                 *         }
+                 *       },
+                 *       "values": {}
+                 *     }
+                 */
+                "application/json": {
+                    definition: {
+                        /** @constant */
+                        schemaVersion: 1;
+                        /** Format: uuid */
+                        connection?: string;
+                        parameters: {
+                            name: string;
+                            type: {
+                                /** @constant */
+                                base: "text";
+                            } | {
+                                /** @constant */
+                                base: "integer";
+                            } | {
+                                /** @constant */
+                                base: "decimal";
+                                precision: number;
+                                scale: number;
+                            } | {
+                                /** @constant */
+                                base: "date";
+                            } | {
+                                /** @constant */
+                                base: "time";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "localDateTime";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "instant";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "boolean";
+                            };
+                            required: boolean;
+                            list: boolean;
+                            permitted?: {
+                                values: (string | boolean | null)[];
+                            } | {
+                                minimum?: string | boolean | null;
+                                maximum?: string | boolean | null;
+                            };
+                            variation?: {
+                                key: string;
+                                sql: string;
+                            }[];
+                        }[];
+                        fetch: {
+                            /** @constant */
+                            kind: "sql";
+                            text: string;
+                        } | {
+                            /** @constant */
+                            kind: "builder";
+                            /** @constant */
+                            format: 1;
+                            query: components["schemas"]["sampleDatasetBody_schema0"];
+                        } | {
+                            /** @constant */
+                            kind: "http";
+                            request: {
+                                /** @enum {string} */
+                                method: "GET" | "POST";
+                                path: ({
+                                    fixed: string;
+                                } | {
+                                    parameter: string;
+                                })[];
+                                query: {
+                                    name: string;
+                                    value: {
+                                        fixed: string;
+                                    } | {
+                                        parameter: string;
+                                    };
+                                }[];
+                                headers: {
+                                    name: string;
+                                    value: {
+                                        fixed: string;
+                                    } | {
+                                        parameter: string;
+                                    };
+                                }[];
+                                body?: components["schemas"]["sampleDatasetBody_schema2"];
+                            };
+                            format: {
+                                /** @constant */
+                                kind: "json";
+                                rows: string;
+                                count?: string;
+                            } | {
+                                /** @constant */
+                                kind: "jsonLines";
+                            } | {
+                                /** @constant */
+                                kind: "csv";
+                                /** @enum {string} */
+                                delimiter: "comma" | "semicolon" | "tab" | "pipe";
+                                headerRow: boolean;
+                                /** @enum {string} */
+                                null: "empty" | "never";
+                            } | {
+                                /** @constant */
+                                kind: "xlsx";
+                                sheet: string;
+                                headerRow: boolean;
+                            };
+                        } | {
+                            /** @constant */
+                            kind: "file";
+                            key: ({
+                                fixed: string;
+                            } | {
+                                parameter: string;
+                            })[];
+                            format: {
+                                /** @constant */
+                                kind: "json";
+                                rows: string;
+                                count?: string;
+                            } | {
+                                /** @constant */
+                                kind: "jsonLines";
+                            } | {
+                                /** @constant */
+                                kind: "csv";
+                                /** @enum {string} */
+                                delimiter: "comma" | "semicolon" | "tab" | "pipe";
+                                headerRow: boolean;
+                                /** @enum {string} */
+                                null: "empty" | "never";
+                            } | {
+                                /** @constant */
+                                kind: "xlsx";
+                                sheet: string;
+                                headerRow: boolean;
+                            };
+                            where?: components["schemas"]["sampleDatasetBody_schema3"];
+                        } | {
+                            /** @constant */
+                            kind: "dataset";
+                            /** @constant */
+                            format: 1;
+                            /** Format: uuid */
+                            dataset: string;
+                            /** Format: uuid */
+                            version?: string;
+                            query: components["schemas"]["sampleDatasetBody_schema0"];
+                        };
+                        columns: {
+                            name: string;
+                            from: {
+                                column: string;
+                            } | {
+                                pointer: string;
+                            } | {
+                                header: string;
+                            } | {
+                                letter: string;
+                            };
+                            type: {
+                                /** @constant */
+                                base: "text";
+                            } | {
+                                /** @constant */
+                                base: "integer";
+                            } | {
+                                /** @constant */
+                                base: "decimal";
+                                precision: number;
+                                scale: number;
+                            } | {
+                                /** @constant */
+                                base: "date";
+                            } | {
+                                /** @constant */
+                                base: "time";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "localDateTime";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "instant";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "boolean";
+                            } | {
+                                /** @constant */
+                                base: "image";
+                                /** @enum {string} */
+                                encoding: "base64" | "binary";
+                                description: {
+                                    column: string;
+                                } | "decorative";
+                            };
+                        }[];
+                        key: string[];
+                        order: "multiset" | {
+                            column: string;
+                            /** @enum {string} */
+                            direction: "ascending" | "descending";
+                        }[];
+                        /** @enum {string} */
+                        empty: "valid" | "invalid";
+                        limits: {
+                            rows: number;
+                            bytes: number;
+                            seconds: number;
+                        };
+                    };
+                    /** @description Each parameter's value by name, in its type's canonical form, or a list of them for a list parameter */
+                    values: {
+                        [key: string]: (string | boolean | null) | (string | boolean | null)[];
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Run: the first 100 rows, how many there were, the checksum and the stored result read, or one named failure with its attribution */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "outcome": "ok",
+                     *       "columns": [],
+                     *       "rows": [],
+                     *       "rowCount": -9007199254740991,
+                     *       "checksum": "example",
+                     *       "ran": {
+                     *         "sql": "example"
+                     *       },
+                     *       "durationMs": -9007199254740991,
+                     *       "images": {}
+                     *     }
+                     */
+                    "application/json": {
+                        /** @constant */
+                        outcome: "ok";
+                        /** @description Each column's name and its type's base */
+                        columns: [
+                            string,
+                            string
+                        ][];
+                        /** @description The first 100 rows, each value in its canonical form */
+                        rows: (string | boolean | null)[][];
+                        /** @description How many rows the whole result holds */
+                        rowCount: number;
+                        /** @description The SHA-256 of the whole result in canonical form, in hexadecimal */
+                        checksum: string;
+                        /** @description What ran: SQL for a database, the request template for an HTTP connection, the object for an S3 one, the stored result for a dataset query */
+                        ran: {
+                            /** @description The SQL that ran, each value a bound parameter */
+                            sql: string;
+                        } | {
+                            /** @description The HTTP request template that was sent, each value placed by position; never its URL */
+                            request: {
+                                /** @enum {string} */
+                                method: "GET" | "POST";
+                                path: ({
+                                    fixed: string;
+                                } | {
+                                    parameter: string;
+                                })[];
+                                query: {
+                                    name: string;
+                                    value: {
+                                        fixed: string;
+                                    } | {
+                                        parameter: string;
+                                    };
+                                }[];
+                                headers: {
+                                    name: string;
+                                    value: {
+                                        fixed: string;
+                                    } | {
+                                        parameter: string;
+                                    };
+                                }[];
+                                body?: components["schemas"]["sampleDataset200_schema0"];
+                            };
+                        } | {
+                            /** @description The S3 object read: its bucket, its key as bound and its version where the store names one; never a URL */
+                            object: {
+                                bucket: string;
+                                key: string;
+                                versionId?: string;
+                            };
+                        } | {
+                            /** @description The stored result a dataset query read: its dataset, version and checksum (DAT-094) */
+                            dataset: {
+                                artifact: string;
+                                version: string;
+                                checksum: string;
+                            };
+                        };
+                        durationMs: number;
+                        /** @description Each image in the first rows, by the hash its cell holds: its format, size and pixels, read from its header. A sample stores no image and makes no asset of one */
+                        images: {
+                            [key: string]: {
+                                /** @enum {string} */
+                                format: "png" | "jpeg";
+                                /** @description Its size in bytes */
+                                bytes: number;
+                                /** @description Its width in pixels, as displayed */
+                                width: number;
+                                /** @description Its height in pixels, as displayed */
+                                height: number;
+                            };
+                        };
+                    } | {
+                        /** @constant */
+                        outcome: "failed";
+                        failure: {
+                            /** @description Stable and machine-readable */
+                            code: string;
+                            /**
+                             * @description Whose failure it is: the source's side, the query's author, or the product
+                             * @enum {string}
+                             */
+                            attribution: "connector" | "query" | "product";
+                            message: string;
+                            /** @description What the source said, where it refused the statement: `source_refused` alone */
+                            source?: {
+                                /** @description The source's five-character SQLSTATE */
+                                sqlstate: string;
+                                /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                                message?: string;
+                            };
+                            /** @description The column the failure names, where it names one */
+                            column?: string;
+                            /** @description The row the failure names, counted from 1 */
+                            row?: number;
+                            /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
+                            status?: number;
+                            /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                            retryAfter?: number;
+                        };
+                    };
+                };
+            };
+            /** @description `definition_invalid`: the draft fails a rule, each problem named, or queries another stored result; `parameter_invalid`: a value fails its declaration */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @enum {string} */
+                        attribution?: "connector" | "query" | "product";
+                        /** @description What the source said, where it refused the statement: `source_refused` alone */
+                        source?: {
+                            /** @description The source's five-character SQLSTATE */
+                            sqlstate: string;
+                            /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                            message?: string;
+                        };
+                        column?: string;
+                        row?: number;
+                        /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                        retryAfter?: number;
+                        problems?: ({
+                            /** @constant */
+                            rule: "definition_invalid";
+                            /** @description The member refused, dotted, as `columns.2.name` */
+                            path: string;
+                            message: string;
+                        } | {
+                            parameter: string;
+                            /** @enum {string} */
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position" | "feeds";
+                            /** @description The value as sent, cut to 1,000 characters */
+                            value: string;
+                        })[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a stored result the caller may not read is not found */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such stored result the caller may read */
             404: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -25898,7 +26821,7 @@ export interface operations {
                                         version: string;
                                     };
                                     /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                    connection: {
+                                    connection?: {
                                         artifact: string;
                                         version: string;
                                     } | null;
@@ -25942,6 +26865,13 @@ export interface operations {
                                             bucket: string;
                                             key: string;
                                             versionId?: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                        dataset: {
+                                            artifact: string;
+                                            version: string;
+                                            checksum: string;
                                         } | null;
                                     };
                                     identity: {
@@ -26136,7 +27066,7 @@ export interface operations {
                                         version: string;
                                     };
                                     /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                    connection: {
+                                    connection?: {
                                         artifact: string;
                                         version: string;
                                     } | null;
@@ -26180,6 +27110,13 @@ export interface operations {
                                             bucket: string;
                                             key: string;
                                             versionId?: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                        dataset: {
+                                            artifact: string;
+                                            version: string;
+                                            checksum: string;
                                         } | null;
                                     };
                                     identity: {
@@ -26655,7 +27592,7 @@ export interface operations {
                                         version: string;
                                     };
                                     /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                    connection: {
+                                    connection?: {
                                         artifact: string;
                                         version: string;
                                     } | null;
@@ -26699,6 +27636,13 @@ export interface operations {
                                             bucket: string;
                                             key: string;
                                             versionId?: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                        dataset: {
+                                            artifact: string;
+                                            version: string;
+                                            checksum: string;
                                         } | null;
                                     };
                                     identity: {
@@ -26893,7 +27837,7 @@ export interface operations {
                                         version: string;
                                     };
                                     /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                    connection: {
+                                    connection?: {
                                         artifact: string;
                                         version: string;
                                     } | null;
@@ -26937,6 +27881,13 @@ export interface operations {
                                             bucket: string;
                                             key: string;
                                             versionId?: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                        dataset: {
+                                            artifact: string;
+                                            version: string;
+                                            checksum: string;
                                         } | null;
                                     };
                                     identity: {
@@ -27327,7 +28278,7 @@ export interface operations {
                                         version: string;
                                     };
                                     /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                    connection: {
+                                    connection?: {
                                         artifact: string;
                                         version: string;
                                     } | null;
@@ -27371,6 +28322,13 @@ export interface operations {
                                             bucket: string;
                                             key: string;
                                             versionId?: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                        dataset: {
+                                            artifact: string;
+                                            version: string;
+                                            checksum: string;
                                         } | null;
                                     };
                                     identity: {
@@ -27565,7 +28523,7 @@ export interface operations {
                                         version: string;
                                     };
                                     /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                    connection: {
+                                    connection?: {
                                         artifact: string;
                                         version: string;
                                     } | null;
@@ -27609,6 +28567,13 @@ export interface operations {
                                             bucket: string;
                                             key: string;
                                             versionId?: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                        dataset: {
+                                            artifact: string;
+                                            version: string;
+                                            checksum: string;
                                         } | null;
                                     };
                                     identity: {
@@ -27952,10 +28917,6 @@ export interface operations {
                      *             "artifact": "00000000-0000-4000-8000-000000000001",
                      *             "version": "00000000-0000-4000-8000-000000000001"
                      *           },
-                     *           "connection": {
-                     *             "artifact": "00000000-0000-4000-8000-000000000001",
-                     *             "version": "00000000-0000-4000-8000-000000000001"
-                     *           },
                      *           "parameters": {},
                      *           "ran": {
                      *             "sql": "example"
@@ -28006,10 +28967,6 @@ export interface operations {
                      *         "provenance": {
                      *           "schemaVersion": 1,
                      *           "queryDefinition": {
-                     *             "artifact": "00000000-0000-4000-8000-000000000001",
-                     *             "version": "00000000-0000-4000-8000-000000000001"
-                     *           },
-                     *           "connection": {
                      *             "artifact": "00000000-0000-4000-8000-000000000001",
                      *             "version": "00000000-0000-4000-8000-000000000001"
                      *           },
@@ -28121,7 +29078,7 @@ export interface operations {
                                     version: string;
                                 };
                                 /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                connection: {
+                                connection?: {
                                     artifact: string;
                                     version: string;
                                 } | null;
@@ -28165,6 +29122,13 @@ export interface operations {
                                         bucket: string;
                                         key: string;
                                         versionId?: string;
+                                    } | null;
+                                } | {
+                                    /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                    dataset: {
+                                        artifact: string;
+                                        version: string;
+                                        checksum: string;
                                     } | null;
                                 };
                                 identity: {
@@ -28359,7 +29323,7 @@ export interface operations {
                                     version: string;
                                 };
                                 /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                connection: {
+                                connection?: {
                                     artifact: string;
                                     version: string;
                                 } | null;
@@ -28403,6 +29367,13 @@ export interface operations {
                                         bucket: string;
                                         key: string;
                                         versionId?: string;
+                                    } | null;
+                                } | {
+                                    /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                    dataset: {
+                                        artifact: string;
+                                        version: string;
+                                        checksum: string;
                                     } | null;
                                 };
                                 identity: {
@@ -28720,7 +29691,7 @@ export interface operations {
                                         version: string;
                                     };
                                     /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                    connection: {
+                                    connection?: {
                                         artifact: string;
                                         version: string;
                                     } | null;
@@ -28764,6 +29735,13 @@ export interface operations {
                                             bucket: string;
                                             key: string;
                                             versionId?: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                        dataset: {
+                                            artifact: string;
+                                            version: string;
+                                            checksum: string;
                                         } | null;
                                     };
                                     identity: {
@@ -28958,7 +29936,7 @@ export interface operations {
                                         version: string;
                                     };
                                     /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                    connection: {
+                                    connection?: {
                                         artifact: string;
                                         version: string;
                                     } | null;
@@ -29002,6 +29980,13 @@ export interface operations {
                                             bucket: string;
                                             key: string;
                                             versionId?: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                        dataset: {
+                                            artifact: string;
+                                            version: string;
+                                            checksum: string;
                                         } | null;
                                     };
                                     identity: {
@@ -29352,7 +30337,7 @@ export interface operations {
                                         version: string;
                                     };
                                     /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                    connection: {
+                                    connection?: {
                                         artifact: string;
                                         version: string;
                                     } | null;
@@ -29396,6 +30381,13 @@ export interface operations {
                                             bucket: string;
                                             key: string;
                                             versionId?: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                        dataset: {
+                                            artifact: string;
+                                            version: string;
+                                            checksum: string;
                                         } | null;
                                     };
                                     identity: {
@@ -29590,7 +30582,7 @@ export interface operations {
                                         version: string;
                                     };
                                     /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                    connection: {
+                                    connection?: {
                                         artifact: string;
                                         version: string;
                                     } | null;
@@ -29634,6 +30626,13 @@ export interface operations {
                                             bucket: string;
                                             key: string;
                                             versionId?: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                        dataset: {
+                                            artifact: string;
+                                            version: string;
+                                            checksum: string;
                                         } | null;
                                     };
                                     identity: {
@@ -29984,7 +30983,7 @@ export interface operations {
                                         version: string;
                                     };
                                     /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                    connection: {
+                                    connection?: {
                                         artifact: string;
                                         version: string;
                                     } | null;
@@ -30028,6 +31027,13 @@ export interface operations {
                                             bucket: string;
                                             key: string;
                                             versionId?: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                        dataset: {
+                                            artifact: string;
+                                            version: string;
+                                            checksum: string;
                                         } | null;
                                     };
                                     identity: {
@@ -30222,7 +31228,7 @@ export interface operations {
                                         version: string;
                                     };
                                     /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                    connection: {
+                                    connection?: {
                                         artifact: string;
                                         version: string;
                                     } | null;
@@ -30266,6 +31272,13 @@ export interface operations {
                                             bucket: string;
                                             key: string;
                                             versionId?: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                        dataset: {
+                                            artifact: string;
+                                            version: string;
+                                            checksum: string;
                                         } | null;
                                     };
                                     identity: {
@@ -30863,7 +31876,7 @@ export interface operations {
                                         version: string;
                                     };
                                     /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                    connection: {
+                                    connection?: {
                                         artifact: string;
                                         version: string;
                                     } | null;
@@ -30907,6 +31920,13 @@ export interface operations {
                                             bucket: string;
                                             key: string;
                                             versionId?: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                        dataset: {
+                                            artifact: string;
+                                            version: string;
+                                            checksum: string;
                                         } | null;
                                     };
                                     identity: {
@@ -31101,7 +32121,7 @@ export interface operations {
                                         version: string;
                                     };
                                     /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                    connection: {
+                                    connection?: {
                                         artifact: string;
                                         version: string;
                                     } | null;
@@ -31145,6 +32165,13 @@ export interface operations {
                                             bucket: string;
                                             key: string;
                                             versionId?: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                        dataset: {
+                                            artifact: string;
+                                            version: string;
+                                            checksum: string;
                                         } | null;
                                     };
                                     identity: {
@@ -31475,7 +32502,7 @@ export interface operations {
                                         version: string;
                                     };
                                     /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                    connection: {
+                                    connection?: {
                                         artifact: string;
                                         version: string;
                                     } | null;
@@ -31519,6 +32546,13 @@ export interface operations {
                                             bucket: string;
                                             key: string;
                                             versionId?: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                        dataset: {
+                                            artifact: string;
+                                            version: string;
+                                            checksum: string;
                                         } | null;
                                     };
                                     identity: {
@@ -31713,7 +32747,7 @@ export interface operations {
                                         version: string;
                                     };
                                     /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                    connection: {
+                                    connection?: {
                                         artifact: string;
                                         version: string;
                                     } | null;
@@ -31757,6 +32791,13 @@ export interface operations {
                                             bucket: string;
                                             key: string;
                                             versionId?: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                        dataset: {
+                                            artifact: string;
+                                            version: string;
+                                            checksum: string;
                                         } | null;
                                     };
                                     identity: {
@@ -32082,10 +33123,6 @@ export interface operations {
                      *             "artifact": "00000000-0000-4000-8000-000000000001",
                      *             "version": "00000000-0000-4000-8000-000000000001"
                      *           },
-                     *           "connection": {
-                     *             "artifact": "00000000-0000-4000-8000-000000000001",
-                     *             "version": "00000000-0000-4000-8000-000000000001"
-                     *           },
                      *           "parameters": {},
                      *           "ran": {
                      *             "sql": "example"
@@ -32136,10 +33173,6 @@ export interface operations {
                      *         "provenance": {
                      *           "schemaVersion": 1,
                      *           "queryDefinition": {
-                     *             "artifact": "00000000-0000-4000-8000-000000000001",
-                     *             "version": "00000000-0000-4000-8000-000000000001"
-                     *           },
-                     *           "connection": {
                      *             "artifact": "00000000-0000-4000-8000-000000000001",
                      *             "version": "00000000-0000-4000-8000-000000000001"
                      *           },
@@ -32251,7 +33284,7 @@ export interface operations {
                                     version: string;
                                 };
                                 /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                connection: {
+                                connection?: {
                                     artifact: string;
                                     version: string;
                                 } | null;
@@ -32295,6 +33328,13 @@ export interface operations {
                                         bucket: string;
                                         key: string;
                                         versionId?: string;
+                                    } | null;
+                                } | {
+                                    /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                    dataset: {
+                                        artifact: string;
+                                        version: string;
+                                        checksum: string;
                                     } | null;
                                 };
                                 identity: {
@@ -32489,7 +33529,7 @@ export interface operations {
                                     version: string;
                                 };
                                 /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                connection: {
+                                connection?: {
                                     artifact: string;
                                     version: string;
                                 } | null;
@@ -32533,6 +33573,13 @@ export interface operations {
                                         bucket: string;
                                         key: string;
                                         versionId?: string;
+                                    } | null;
+                                } | {
+                                    /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                    dataset: {
+                                        artifact: string;
+                                        version: string;
+                                        checksum: string;
                                     } | null;
                                 };
                                 identity: {
@@ -32850,7 +33897,7 @@ export interface operations {
                                         version: string;
                                     };
                                     /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                    connection: {
+                                    connection?: {
                                         artifact: string;
                                         version: string;
                                     } | null;
@@ -32894,6 +33941,13 @@ export interface operations {
                                             bucket: string;
                                             key: string;
                                             versionId?: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                        dataset: {
+                                            artifact: string;
+                                            version: string;
+                                            checksum: string;
                                         } | null;
                                     };
                                     identity: {
@@ -33088,7 +34142,7 @@ export interface operations {
                                         version: string;
                                     };
                                     /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                    connection: {
+                                    connection?: {
                                         artifact: string;
                                         version: string;
                                     } | null;
@@ -33132,6 +34186,13 @@ export interface operations {
                                             bucket: string;
                                             key: string;
                                             versionId?: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                        dataset: {
+                                            artifact: string;
+                                            version: string;
+                                            checksum: string;
                                         } | null;
                                     };
                                     identity: {
@@ -33522,7 +34583,7 @@ export interface operations {
                                         version: string;
                                     };
                                     /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                    connection: {
+                                    connection?: {
                                         artifact: string;
                                         version: string;
                                     } | null;
@@ -33566,6 +34627,13 @@ export interface operations {
                                             bucket: string;
                                             key: string;
                                             versionId?: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                        dataset: {
+                                            artifact: string;
+                                            version: string;
+                                            checksum: string;
                                         } | null;
                                     };
                                     identity: {
@@ -33760,7 +34828,7 @@ export interface operations {
                                         version: string;
                                     };
                                     /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                    connection: {
+                                    connection?: {
                                         artifact: string;
                                         version: string;
                                     } | null;
@@ -33804,6 +34872,13 @@ export interface operations {
                                             bucket: string;
                                             key: string;
                                             versionId?: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                        dataset: {
+                                            artifact: string;
+                                            version: string;
+                                            checksum: string;
                                         } | null;
                                     };
                                     identity: {
@@ -34340,7 +35415,7 @@ export interface operations {
                                         version: string;
                                     };
                                     /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                    connection: {
+                                    connection?: {
                                         artifact: string;
                                         version: string;
                                     } | null;
@@ -34384,6 +35459,13 @@ export interface operations {
                                             bucket: string;
                                             key: string;
                                             versionId?: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                        dataset: {
+                                            artifact: string;
+                                            version: string;
+                                            checksum: string;
                                         } | null;
                                     };
                                     identity: {
@@ -34578,7 +35660,7 @@ export interface operations {
                                         version: string;
                                     };
                                     /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                    connection: {
+                                    connection?: {
                                         artifact: string;
                                         version: string;
                                     } | null;
@@ -34622,6 +35704,13 @@ export interface operations {
                                             bucket: string;
                                             key: string;
                                             versionId?: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                        dataset: {
+                                            artifact: string;
+                                            version: string;
+                                            checksum: string;
                                         } | null;
                                     };
                                     identity: {
@@ -34974,7 +36063,7 @@ export interface operations {
                                         version: string;
                                     };
                                     /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                    connection: {
+                                    connection?: {
                                         artifact: string;
                                         version: string;
                                     } | null;
@@ -35018,6 +36107,13 @@ export interface operations {
                                             bucket: string;
                                             key: string;
                                             versionId?: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                        dataset: {
+                                            artifact: string;
+                                            version: string;
+                                            checksum: string;
                                         } | null;
                                     };
                                     identity: {
@@ -35212,7 +36308,7 @@ export interface operations {
                                         version: string;
                                     };
                                     /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                    connection: {
+                                    connection?: {
                                         artifact: string;
                                         version: string;
                                     } | null;
@@ -35256,6 +36352,13 @@ export interface operations {
                                             bucket: string;
                                             key: string;
                                             versionId?: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                        dataset: {
+                                            artifact: string;
+                                            version: string;
+                                            checksum: string;
                                         } | null;
                                     };
                                     identity: {
@@ -35606,7 +36709,7 @@ export interface operations {
                                         version: string;
                                     };
                                     /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                    connection: {
+                                    connection?: {
                                         artifact: string;
                                         version: string;
                                     } | null;
@@ -35650,6 +36753,13 @@ export interface operations {
                                             bucket: string;
                                             key: string;
                                             versionId?: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                        dataset: {
+                                            artifact: string;
+                                            version: string;
+                                            checksum: string;
                                         } | null;
                                     };
                                     identity: {
@@ -35844,7 +36954,7 @@ export interface operations {
                                         version: string;
                                     };
                                     /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                    connection: {
+                                    connection?: {
                                         artifact: string;
                                         version: string;
                                     } | null;
@@ -35888,6 +36998,13 @@ export interface operations {
                                             bucket: string;
                                             key: string;
                                             versionId?: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                        dataset: {
+                                            artifact: string;
+                                            version: string;
+                                            checksum: string;
                                         } | null;
                                     };
                                     identity: {
@@ -36218,7 +37335,7 @@ export interface operations {
                                         version: string;
                                     };
                                     /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                    connection: {
+                                    connection?: {
                                         artifact: string;
                                         version: string;
                                     } | null;
@@ -36262,6 +37379,13 @@ export interface operations {
                                             bucket: string;
                                             key: string;
                                             versionId?: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                        dataset: {
+                                            artifact: string;
+                                            version: string;
+                                            checksum: string;
                                         } | null;
                                     };
                                     identity: {
@@ -36456,7 +37580,7 @@ export interface operations {
                                         version: string;
                                     };
                                     /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                    connection: {
+                                    connection?: {
                                         artifact: string;
                                         version: string;
                                     } | null;
@@ -36500,6 +37624,13 @@ export interface operations {
                                             bucket: string;
                                             key: string;
                                             versionId?: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                        dataset: {
+                                            artifact: string;
+                                            version: string;
+                                            checksum: string;
                                         } | null;
                                     };
                                     identity: {
@@ -36831,10 +37962,6 @@ export interface operations {
                      *             "artifact": "00000000-0000-4000-8000-000000000001",
                      *             "version": "00000000-0000-4000-8000-000000000001"
                      *           },
-                     *           "connection": {
-                     *             "artifact": "00000000-0000-4000-8000-000000000001",
-                     *             "version": "00000000-0000-4000-8000-000000000001"
-                     *           },
                      *           "parameters": {},
                      *           "ran": {
                      *             "sql": "example"
@@ -36885,10 +38012,6 @@ export interface operations {
                      *         "provenance": {
                      *           "schemaVersion": 1,
                      *           "queryDefinition": {
-                     *             "artifact": "00000000-0000-4000-8000-000000000001",
-                     *             "version": "00000000-0000-4000-8000-000000000001"
-                     *           },
-                     *           "connection": {
                      *             "artifact": "00000000-0000-4000-8000-000000000001",
                      *             "version": "00000000-0000-4000-8000-000000000001"
                      *           },
@@ -37000,7 +38123,7 @@ export interface operations {
                                     version: string;
                                 };
                                 /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                connection: {
+                                connection?: {
                                     artifact: string;
                                     version: string;
                                 } | null;
@@ -37044,6 +38167,13 @@ export interface operations {
                                         bucket: string;
                                         key: string;
                                         versionId?: string;
+                                    } | null;
+                                } | {
+                                    /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                    dataset: {
+                                        artifact: string;
+                                        version: string;
+                                        checksum: string;
                                     } | null;
                                 };
                                 identity: {
@@ -37238,7 +38368,7 @@ export interface operations {
                                     version: string;
                                 };
                                 /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                connection: {
+                                connection?: {
                                     artifact: string;
                                     version: string;
                                 } | null;
@@ -37282,6 +38412,13 @@ export interface operations {
                                         bucket: string;
                                         key: string;
                                         versionId?: string;
+                                    } | null;
+                                } | {
+                                    /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                    dataset: {
+                                        artifact: string;
+                                        version: string;
+                                        checksum: string;
                                     } | null;
                                 };
                                 identity: {
@@ -37599,7 +38736,7 @@ export interface operations {
                                         version: string;
                                     };
                                     /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                    connection: {
+                                    connection?: {
                                         artifact: string;
                                         version: string;
                                     } | null;
@@ -37643,6 +38780,13 @@ export interface operations {
                                             bucket: string;
                                             key: string;
                                             versionId?: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                        dataset: {
+                                            artifact: string;
+                                            version: string;
+                                            checksum: string;
                                         } | null;
                                     };
                                     identity: {
@@ -37837,7 +38981,7 @@ export interface operations {
                                         version: string;
                                     };
                                     /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                    connection: {
+                                    connection?: {
                                         artifact: string;
                                         version: string;
                                     } | null;
@@ -37881,6 +39025,13 @@ export interface operations {
                                             bucket: string;
                                             key: string;
                                             versionId?: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                        dataset: {
+                                            artifact: string;
+                                            version: string;
+                                            checksum: string;
                                         } | null;
                                     };
                                     identity: {
@@ -38271,7 +39422,7 @@ export interface operations {
                                         version: string;
                                     };
                                     /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                    connection: {
+                                    connection?: {
                                         artifact: string;
                                         version: string;
                                     } | null;
@@ -38315,6 +39466,13 @@ export interface operations {
                                             bucket: string;
                                             key: string;
                                             versionId?: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                        dataset: {
+                                            artifact: string;
+                                            version: string;
+                                            checksum: string;
                                         } | null;
                                     };
                                     identity: {
@@ -38509,7 +39667,7 @@ export interface operations {
                                         version: string;
                                     };
                                     /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                                    connection: {
+                                    connection?: {
                                         artifact: string;
                                         version: string;
                                     } | null;
@@ -38553,6 +39711,13 @@ export interface operations {
                                             bucket: string;
                                             key: string;
                                             versionId?: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                        dataset: {
+                                            artifact: string;
+                                            version: string;
+                                            checksum: string;
                                         } | null;
                                     };
                                     identity: {
@@ -38970,10 +40135,6 @@ export interface operations {
                      *           "artifact": "00000000-0000-4000-8000-000000000001",
                      *           "version": "00000000-0000-4000-8000-000000000001"
                      *         },
-                     *         "connection": {
-                     *           "artifact": "00000000-0000-4000-8000-000000000001",
-                     *           "version": "00000000-0000-4000-8000-000000000001"
-                     *         },
                      *         "parameters": {},
                      *         "ran": {
                      *           "sql": "example"
@@ -39017,7 +40178,7 @@ export interface operations {
                                 version: string;
                             };
                             /** @description The connection version it ran on, or null where the caller may not read the query definition */
-                            connection: {
+                            connection?: {
                                 artifact: string;
                                 version: string;
                             } | null;
@@ -39061,6 +40222,13 @@ export interface operations {
                                     bucket: string;
                                     key: string;
                                     versionId?: string;
+                                } | null;
+                            } | {
+                                /** @description The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition */
+                                dataset: {
+                                    artifact: string;
+                                    version: string;
+                                    checksum: string;
                                 } | null;
                             };
                             identity: {
@@ -56582,6 +57750,10 @@ export interface operations {
                                     object: {
                                         [key: string]: unknown;
                                     };
+                                } | {
+                                    dataset: {
+                                        [key: string]: unknown;
+                                    };
                                 };
                                 /** @description The connection it ran on: to a reader of the query definition alone */
                                 connection?: {
@@ -57486,7 +58658,6 @@ export interface operations {
                      *       },
                      *       "definition": {
                      *         "schemaVersion": 1,
-                     *         "connection": "00000000-0000-4000-8000-000000000001",
                      *         "parameters": [],
                      *         "fetch": {
                      *           "kind": "sql",
@@ -57557,7 +58728,7 @@ export interface operations {
                             /** @constant */
                             schemaVersion: 1;
                             /** Format: uuid */
-                            connection: string;
+                            connection?: string;
                             parameters: {
                                 name: string;
                                 type: {
@@ -57695,6 +58866,16 @@ export interface operations {
                                     headerRow: boolean;
                                 };
                                 where?: components["schemas"]["getQueryDefinition200_schema3"];
+                            } | {
+                                /** @constant */
+                                kind: "dataset";
+                                /** @constant */
+                                format: 1;
+                                /** Format: uuid */
+                                dataset: string;
+                                /** Format: uuid */
+                                version?: string;
+                                query: components["schemas"]["getQueryDefinition200_schema0"];
                             };
                             columns: {
                                 name: string;
@@ -58784,7 +59965,6 @@ export interface operations {
                  *       "openedFrom": "00000000-0000-4000-8000-000000000001",
                  *       "definition": {
                  *         "schemaVersion": 1,
-                 *         "connection": "00000000-0000-4000-8000-000000000001",
                  *         "parameters": [],
                  *         "fetch": {
                  *           "kind": "sql",
@@ -58821,7 +60001,7 @@ export interface operations {
                         /** @constant */
                         schemaVersion: 1;
                         /** Format: uuid */
-                        connection: string;
+                        connection?: string;
                         parameters: {
                             name: string;
                             type: {
@@ -58959,6 +60139,16 @@ export interface operations {
                                 headerRow: boolean;
                             };
                             where?: components["schemas"]["recordQueryDefinitionVersionBody_schema3"];
+                        } | {
+                            /** @constant */
+                            kind: "dataset";
+                            /** @constant */
+                            format: 1;
+                            /** Format: uuid */
+                            dataset: string;
+                            /** Format: uuid */
+                            version?: string;
+                            query: components["schemas"]["recordQueryDefinitionVersionBody_schema0"];
                         };
                         columns: {
                             name: string;
@@ -59057,7 +60247,6 @@ export interface operations {
                      *       },
                      *       "definition": {
                      *         "schemaVersion": 1,
-                     *         "connection": "00000000-0000-4000-8000-000000000001",
                      *         "parameters": [],
                      *         "fetch": {
                      *           "kind": "sql",
@@ -59128,7 +60317,7 @@ export interface operations {
                             /** @constant */
                             schemaVersion: 1;
                             /** Format: uuid */
-                            connection: string;
+                            connection?: string;
                             parameters: {
                                 name: string;
                                 type: {
@@ -59266,6 +60455,16 @@ export interface operations {
                                     headerRow: boolean;
                                 };
                                 where?: components["schemas"]["recordQueryDefinitionVersion200_schema3"];
+                            } | {
+                                /** @constant */
+                                kind: "dataset";
+                                /** @constant */
+                                format: 1;
+                                /** Format: uuid */
+                                dataset: string;
+                                /** Format: uuid */
+                                version?: string;
+                                query: components["schemas"]["recordQueryDefinitionVersion200_schema0"];
                             };
                             columns: {
                                 name: string;
@@ -59473,7 +60672,7 @@ export interface operations {
                                 /** @constant */
                                 schemaVersion: 1;
                                 /** Format: uuid */
-                                connection: string;
+                                connection?: string;
                                 parameters: {
                                     name: string;
                                     type: {
@@ -59611,6 +60810,16 @@ export interface operations {
                                         headerRow: boolean;
                                     };
                                     where?: components["schemas"]["recordQueryDefinitionVersion400_schema3"];
+                                } | {
+                                    /** @constant */
+                                    kind: "dataset";
+                                    /** @constant */
+                                    format: 1;
+                                    /** Format: uuid */
+                                    dataset: string;
+                                    /** Format: uuid */
+                                    version?: string;
+                                    query: components["schemas"]["recordQueryDefinitionVersion400_schema0"];
                                 };
                                 columns: {
                                     name: string;
@@ -59879,7 +61088,7 @@ export interface operations {
                                 /** @constant */
                                 schemaVersion: 1;
                                 /** Format: uuid */
-                                connection: string;
+                                connection?: string;
                                 parameters: {
                                     name: string;
                                     type: {
@@ -60017,6 +61226,16 @@ export interface operations {
                                         headerRow: boolean;
                                     };
                                     where?: components["schemas"]["recordQueryDefinitionVersion409_schema3"];
+                                } | {
+                                    /** @constant */
+                                    kind: "dataset";
+                                    /** @constant */
+                                    format: 1;
+                                    /** Format: uuid */
+                                    dataset: string;
+                                    /** Format: uuid */
+                                    version?: string;
+                                    query: components["schemas"]["recordQueryDefinitionVersion409_schema0"];
                                 };
                                 columns: {
                                     name: string;
@@ -67288,7 +68507,6 @@ export interface operations {
                  * @example {
                  *       "definition": {
                  *         "schemaVersion": 1,
-                 *         "connection": "00000000-0000-4000-8000-000000000001",
                  *         "parameters": [],
                  *         "fetch": {
                  *           "kind": "sql",
@@ -67324,7 +68542,7 @@ export interface operations {
                         /** @constant */
                         schemaVersion: 1;
                         /** Format: uuid */
-                        connection: string;
+                        connection?: string;
                         parameters: {
                             name: string;
                             type: {
@@ -67462,6 +68680,16 @@ export interface operations {
                                 headerRow: boolean;
                             };
                             where?: components["schemas"]["createQueryDefinitionBody_schema3"];
+                        } | {
+                            /** @constant */
+                            kind: "dataset";
+                            /** @constant */
+                            format: 1;
+                            /** Format: uuid */
+                            dataset: string;
+                            /** Format: uuid */
+                            version?: string;
+                            query: components["schemas"]["createQueryDefinitionBody_schema0"];
                         };
                         columns: {
                             name: string;
@@ -67560,7 +68788,6 @@ export interface operations {
                      *       },
                      *       "definition": {
                      *         "schemaVersion": 1,
-                     *         "connection": "00000000-0000-4000-8000-000000000001",
                      *         "parameters": [],
                      *         "fetch": {
                      *           "kind": "sql",
@@ -67631,7 +68858,7 @@ export interface operations {
                             /** @constant */
                             schemaVersion: 1;
                             /** Format: uuid */
-                            connection: string;
+                            connection?: string;
                             parameters: {
                                 name: string;
                                 type: {
@@ -67769,6 +68996,16 @@ export interface operations {
                                     headerRow: boolean;
                                 };
                                 where?: components["schemas"]["createQueryDefinition200_schema3"];
+                            } | {
+                                /** @constant */
+                                kind: "dataset";
+                                /** @constant */
+                                format: 1;
+                                /** Format: uuid */
+                                dataset: string;
+                                /** Format: uuid */
+                                version?: string;
+                                query: components["schemas"]["createQueryDefinition200_schema0"];
                             };
                             columns: {
                                 name: string;
@@ -67976,7 +69213,7 @@ export interface operations {
                                 /** @constant */
                                 schemaVersion: 1;
                                 /** Format: uuid */
-                                connection: string;
+                                connection?: string;
                                 parameters: {
                                     name: string;
                                     type: {
@@ -68114,6 +69351,16 @@ export interface operations {
                                         headerRow: boolean;
                                     };
                                     where?: components["schemas"]["createQueryDefinition400_schema3"];
+                                } | {
+                                    /** @constant */
+                                    kind: "dataset";
+                                    /** @constant */
+                                    format: 1;
+                                    /** Format: uuid */
+                                    dataset: string;
+                                    /** Format: uuid */
+                                    version?: string;
+                                    query: components["schemas"]["createQueryDefinition400_schema0"];
                                 };
                                 columns: {
                                     name: string;
@@ -68382,7 +69629,7 @@ export interface operations {
                                 /** @constant */
                                 schemaVersion: 1;
                                 /** Format: uuid */
-                                connection: string;
+                                connection?: string;
                                 parameters: {
                                     name: string;
                                     type: {
@@ -68520,6 +69767,16 @@ export interface operations {
                                         headerRow: boolean;
                                     };
                                     where?: components["schemas"]["createQueryDefinition409_schema3"];
+                                } | {
+                                    /** @constant */
+                                    kind: "dataset";
+                                    /** @constant */
+                                    format: 1;
+                                    /** Format: uuid */
+                                    dataset: string;
+                                    /** Format: uuid */
+                                    version?: string;
+                                    query: components["schemas"]["createQueryDefinition409_schema0"];
                                 };
                                 columns: {
                                     name: string;

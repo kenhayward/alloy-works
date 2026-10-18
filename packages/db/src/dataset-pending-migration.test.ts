@@ -206,6 +206,7 @@ describe('migration 0051, which keeps a result waiting on its images', () => {
       '0114_publication_shares',
       '0115_query_limits',
       '0116_cohort_on_failure',
+      '0117_dataset_source',
     ]);
     const kept = await queryAs(
       db.adminUrl,
@@ -437,7 +438,7 @@ describe('migration 0051, which keeps a result waiting on its images', () => {
                 definition_id: provenance.queryDefinition.artifact,
                 definition_version:
                   column === 'definition_version'
-                    ? provenance.connection.version
+                    ? provenance.connection!.version
                     : provenance.queryDefinition.version,
                 checksum: column === 'checksum' ? 'f'.repeat(64) : provenance.checksum,
                 provenance: JSON.stringify(provenance),

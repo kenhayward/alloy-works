@@ -908,3 +908,8 @@ export {
   type Neighbour,
   type PathStep,
 } from './traversal.js';
+export {
+  listDatasetSources,
+  readDatasetSource,
+  type DatasetSourceSummary,
+} from './dataset-sources.js';

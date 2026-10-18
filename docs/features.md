@@ -821,7 +821,11 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   accepting one, need what running the query would - read on the query definition and use of the
   connection it ran on - and accepting needs edit on the document too. The SQL that ran, the
   connection it ran on and the database's own column names are shown only to somebody who may also
-  read the query definition. A dataset can be named.
+  read the query definition. A dataset can be named. **A stored result can be queried as a source of
+  its own**: on a new query definition's Details, **Runs against** offers **A stored result** where
+  you may read one, and the builder then builds from its columns - filters, grouping and summaries,
+  one source joined to nothing, no image - and runs it in the product from the stored rows, never
+  asking the database again. Who may query one is whoever may read it.
 - **Values shown in a document.** In a document's text, and in a component opened in place, each
   binding shows the one value the document holds, formatted by the document's theme - its digits
   grouped, its decimals at their declared places, a date, a time or a yes or no as the theme's value

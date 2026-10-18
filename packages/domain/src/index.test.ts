@@ -636,6 +636,11 @@ describe('the domain package', () => {
         'endpointHost',
         'dataFormatSchema',
         'fileFetchSchema',
+        // A stored result queried as a source (the R21 plan, R21-A).
+        'datasetFetchSchema',
+        'ranDatasetSchema',
+        'checkDatasetQuery',
+        'evaluateDatasetQuery',
         'indexLetter',
         'letterIndex',
         'sampleDraft',

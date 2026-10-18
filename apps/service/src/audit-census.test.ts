@@ -318,6 +318,9 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   getDocumentDataset: read,
   getBoundTableRows: read,
   nameDataset: writes('dataset.named'),
+  listDatasetSources: read,
+  // A stored result queried as a source: nothing kept, the run metered (R21-A).
+  sampleDataset: { none: 'metering' },
   // A GET that writes: it finishes a pending result as the act that ran it would have.
   getPendingResult: writes(
     'content.version_cut',

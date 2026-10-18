@@ -23,8 +23,10 @@ import {
   connectionFetchProblems,
   decide,
   type AccessFacts,
+  type DefinitionProblem,
   type QueryDefinition,
 } from '@alloy-works/domain';
+import { datasetOf, datasetProblems } from './dataset-source.js';
 import type { FastifyRequest } from 'fastify';
 import { callerOf, notFound, type Authorised, type Caller } from '../access.js';
 import { workflowView } from '../workflows.js';
@@ -52,8 +54,24 @@ async function definitionView(
   stored: StoredQueryDefinition,
   facts: AccessFacts,
 ): Promise<QueryDefinitionView> {
-  const connection = await readConnection(trx, stored.definition.connection);
-  const atConnection = await connectionFacts(trx, caller, stored.definition.connection);
+  // A stored result's query runs on no connection: whoever may read its dataset may run it (R21-A).
+  if (stored.definition.fetch.kind === 'dataset') {
+    const atDataset = await connectionFacts(trx, caller, stored.definition.fetch.dataset);
+    const reads = atDataset !== undefined && decide('read', atDataset).allowed;
+    return {
+      id: stored.id,
+      space: stored.space,
+      version: versionView(stored.version),
+      definition: stored.definition,
+      connection: null,
+      mayEdit: decide('edit', facts).allowed && reads,
+      mayRun: reads,
+      mayUse: reads,
+      ...(await workflowView(trx, stored.id, facts, caller.principalId)),
+    };
+  }
+  const connection = await readConnection(trx, stored.definition.connection!);
+  const atConnection = await connectionFacts(trx, caller, stored.definition.connection!);
   // Decided by the latest version's own fetch: a built query needs no write_sql (D4-J).
   const mayRun = atConnection !== undefined && mayRunFetch(atConnection, stored.definition.fetch);
   const mayReadConnection = atConnection !== undefined && decide('read', atConnection).allowed;
@@ -91,9 +109,13 @@ async function connectionFor(
   trx: TenantTransaction,
   caller: Caller,
   definition: QueryDefinition,
-): Promise<StoredConnection> {
-  await decideFetchAt(trx, caller, definition.connection, definition.fetch);
-  const connection = await readConnection(trx, definition.connection);
+): Promise<StoredConnection | null> {
+  if (definition.fetch.kind === 'dataset') {
+    await datasetFor(trx, caller, definition);
+    return null;
+  }
+  await decideFetchAt(trx, caller, definition.connection!, definition.fetch);
+  const connection = await readConnection(trx, definition.connection!);
   if (!connection) {
     throw refused(400, 'definition.invalid', 'The query definition is not valid.', {
       problems: [
@@ -117,6 +139,37 @@ async function connectionFor(
   }
   if (!definition.retired) await requireSqlPermitted(trx, connection, definition.fetch);
   return connection;
+}
+
+/**
+ * What a stored result's query must find before a version is written (DAT-094; R21-A): `read` on the
+ * dataset it names - one the writer may not read refused as one that is not there - and its tree held
+ * to that dataset's own columns, at the version it pins or its latest.
+ */
+async function datasetFor(
+  trx: TenantTransaction,
+  caller: Caller,
+  definition: QueryDefinition,
+): Promise<void> {
+  if (definition.fetch.kind !== 'dataset') return;
+  const invalid = (problems: readonly DefinitionProblem[]) =>
+    refused(400, 'definition.invalid', 'The query definition is not valid.', { problems });
+  const facts = await connectionFacts(trx, caller, definition.fetch.dataset);
+  const source =
+    facts !== undefined && decide('read', facts).allowed
+      ? await datasetOf(trx, definition.fetch)
+      : undefined;
+  if (!source) {
+    throw invalid([
+      {
+        rule: 'definition_invalid',
+        path: 'fetch.dataset',
+        message: 'There is no stored result you may read by that identifier, at that version',
+      },
+    ]);
+  }
+  const problems = datasetProblems(definition, source);
+  if (problems.length > 0) throw invalid(problems);
 }
 
 export function queryDefinitionHandlers(

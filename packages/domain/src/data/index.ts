@@ -53,6 +53,8 @@ export {
   dataFormatSchema,
   draftDefinitionSchema,
   fileFetchSchema,
+  datasetFetchSchema,
+  type DatasetFetch,
   httpFetchSchema,
   indexLetter,
   letterIndex,
@@ -126,6 +128,8 @@ export {
   canonicalResultSchema,
   ranSchema,
   ranObjectSchema,
+  ranDatasetSchema,
+  type RanDataset,
   childRequestSchema,
   describeAnswerSchema,
   describeRequestSchema,
@@ -260,3 +264,4 @@ export { checkFileCondition, fileConditionSchema, fileFilter, sortRows } from '.
 export type { FileCondition, FileOperand } from './file-filter.js';
 export { cellRevisable, revisionCellKey, revisionRecord } from './revision.js';
 export type { RevisionCell, RevisionRecord, StandingRevision } from './revision.js';
+export { checkDatasetQuery, evaluateDatasetQuery, type DatasetSource } from './dataset-query.js';

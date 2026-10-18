@@ -110,6 +110,12 @@ export {
   shareRoutes,
 } from './shares.js';
 export { QueryUsageQuery, QueryUsageView, queryUsageRoutes } from './query-usage.js';
+export {
+  DatasetSourceList,
+  DatasetSourceQuery,
+  DatasetSourceView,
+  datasetSourceRoutes,
+} from './dataset-sources.js';
 export { KeepView, RetentionBody, RetentionView, retentionRoutes } from './retention.js';
 export {
   ApprovalBody,

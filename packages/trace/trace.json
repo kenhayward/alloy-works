@@ -17386,6 +17386,10 @@
           "howItIsMet": "Accepting adds a resolution row for that document's binding alone; another document holding the same dataset keeps its row, and its version, until somebody accepts there"
         },
         {
+          "id": "DAT-094",
+          "howItIsMet": "A query definition's fetch may be `dataset`: the builder's tree over one stored result, run in the service from the result's stored rows, never the source; `read` on the dataset governs listing, sampling and resolving one ([A dataset as a source](#a-dataset-as-a-source))"
+        },
+        {
           "id": "DAT-084",
           "howItIsMet": "A check compares a fresh result with the one held only where the opener's identity key is the dataset's; a different checksum is recorded as a dataset version and answered as a waiting revision"
         },
@@ -20218,13 +20222,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 448,
+      "line": 451,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 461,
+      "line": 464,
       "kind": "title"
     },
     {
@@ -20590,7 +20594,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1409,
+      "line": 1435,
       "kind": "title"
     },
     {
@@ -20621,6 +20625,12 @@
       "id": "TPL-024",
       "file": "apps/service/src/dataset-images.test.ts",
       "line": 801,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-094",
+      "file": "apps/service/src/dataset-source-routes.test.ts",
+      "line": 101,
       "kind": "title"
     },
     {
@@ -21040,7 +21050,7 @@
     {
       "id": "API-007",
       "file": "apps/service/src/listing-routes.test.ts",
-      "line": 301,
+      "line": 324,
       "kind": "title"
     },
     {
@@ -22312,31 +22322,37 @@
     {
       "id": "DAT-014",
       "file": "apps/web/src/data/query-definitions.test.tsx",
-      "line": 539,
+      "line": 579,
       "kind": "title"
     },
     {
       "id": "DAT-016",
       "file": "apps/web/src/data/query-definitions.test.tsx",
-      "line": 1093,
+      "line": 1133,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-094",
+      "file": "apps/web/src/data/query-definitions.test.tsx",
+      "line": 1941,
       "kind": "title"
     },
     {
       "id": "DAT-105",
       "file": "apps/web/src/data/query-definitions.test.tsx",
-      "line": 464,
+      "line": 504,
       "kind": "title"
     },
     {
       "id": "DAT-119",
       "file": "apps/web/src/data/query-definitions.test.tsx",
-      "line": 1817,
+      "line": 1857,
       "kind": "title"
     },
     {
       "id": "DAT-121",
       "file": "apps/web/src/data/query-definitions.test.tsx",
-      "line": 693,
+      "line": 733,
       "kind": "title"
     },
     {
@@ -27278,6 +27294,12 @@
       "kind": "title"
     },
     {
+      "id": "DAT-094",
+      "file": "packages/domain/src/data/dataset-query.test.ts",
+      "line": 41,
+      "kind": "title"
+    },
+    {
       "id": "DAT-010",
       "file": "packages/domain/src/data/definition.test.ts",
       "line": 89,
@@ -27538,7 +27560,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 742,
+      "line": 747,
       "kind": "title"
     },
     {

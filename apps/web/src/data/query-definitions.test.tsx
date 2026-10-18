@@ -18,6 +18,7 @@ const API = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const BUCKET = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const COMPONENT = '88888888-8888-4888-8888-888888888888';
 const DOCUMENT = '99999999-9999-4999-8999-999999999999';
+const STORED = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
@@ -140,6 +141,8 @@ function service(
     version?: (body: { openedFrom: string; definition: Record<string, unknown> }) => Response;
     /** Where the definition is used (D3-M); used nowhere unless told. */
     uses?: unknown;
+    /** A stored result the person may read, Every site, to query as a source (DAT-094). */
+    stored?: boolean;
   } = {},
 ) {
   const asked: Asked[] = [];
@@ -349,6 +352,43 @@ function service(
           durationMs: 12,
         })
       );
+    }
+    if (request.method === 'GET' && path === '/v1/datasets') {
+      return json(200, {
+        items: options.stored
+          ? [
+              {
+                id: STORED,
+                name: 'Every site',
+                definition: null,
+                latest: { id: FIRST, at: '2026-10-18T09:00:00.000Z', rowCount: 3 },
+                columns: [
+                  { name: 'id', type: { base: 'integer' } },
+                  { name: 'region', type: { base: 'text' } },
+                  { name: 'depth', type: { base: 'decimal', precision: 8, scale: 2 } },
+                ],
+              },
+            ]
+          : [],
+        next: null,
+      });
+    }
+    if (request.method === 'POST' && path === `/v1/datasets/${STORED}/sample`) {
+      return json(200, {
+        outcome: 'ok',
+        columns: [
+          ['region', 'text'],
+          ['sites', 'integer'],
+        ],
+        rows: [
+          ['North', '2'],
+          ['South', '1'],
+        ],
+        rowCount: 2,
+        checksum: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+        ran: { dataset: { artifact: STORED, version: FIRST, checksum: 'a'.repeat(64) } },
+        durationMs: 3,
+      });
     }
     return json(404, { code: 'not_found', message: 'There is nothing at this address.' });
   }) as unknown as typeof fetch;
@@ -1894,6 +1934,80 @@ describe('the builder (D4)', () => {
         `Not offered, as its name is not in the composed form a query definition holds: sample.${DECOMPOSED}. A view at the source under a composed name reaches it.`,
       ),
     ).toBeInTheDocument();
+  });
+});
+
+describe('a query over a stored result (the R21 plan, R21-A)', () => {
+  it('DAT-094 builds a query over a stored result from its columns, samples it there, and saves it on no connection', async () => {
+    const user = userEvent.setup();
+    const { client, asked } = service({ stored: true });
+    render(<QueryDefinitionPage client={client} id="new" />);
+    await connectionOffered('Readings');
+    await user.click(await screen.findByRole('radio', { name: 'A stored result' }));
+    expect(screen.queryByLabelText('Connection')).toBeNull();
+    await user.selectOptions(screen.getByLabelText('Stored result'), STORED);
+    await user.type(screen.getByLabelText('Title'), 'Sites by region');
+
+    // The builder offers the stored result's own columns, its one table already chosen.
+    await tab(user, 'Query');
+    const columns = screen.getByRole('region', { name: 'Columns to return' });
+    for (const name of ['id', 'region', 'depth']) {
+      expect(within(columns).getByRole('checkbox', { name })).toBeVisible();
+    }
+    await user.click(within(columns).getByRole('checkbox', { name: 'region' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Group and summarise' }));
+    await user.click(screen.getByRole('button', { name: 'Add a summary' }));
+    await user.clear(screen.getByLabelText('Name of summary 1'));
+    await user.type(screen.getByLabelText('Name of summary 1'), 'sites');
+    expect(screen.queryByRole('figure', { name: 'The SQL it runs' })).toBeNull();
+
+    // Described here, from the stored result's columns: nothing asks a source.
+    await tab(user, 'Columns');
+    await user.click(screen.getByRole('button', { name: 'Describe' }));
+    const table = await screen.findByRole('table', { name: 'Columns' });
+    const [, region, sites] = within(table).getAllByRole('row');
+    expect(within(region!).getByLabelText('Type of region')).toHaveValue('text');
+    expect(within(sites!).getByLabelText('Type of sites')).toHaveValue('integer');
+    expect(asked.some((each) => each.path.endsWith('/describe'))).toBe(false);
+    await user.click(screen.getByRole('button', { name: /^Confirm all/ }));
+
+    await tab(user, 'Sample');
+    await user.click(screen.getByRole('button', { name: 'Run sample' }));
+    expect(
+      await screen.findByRole('heading', { name: 'The stored result that was read' }),
+    ).toBeVisible();
+    const query = {
+      sources: [{ alias: 'd', table: { schema: 'dataset', name: 'rows' } }],
+      joins: [],
+      select: [
+        { name: 'region', of: { source: 'd', column: 'region' } },
+        { name: 'sites', of: { aggregate: 'count' } },
+      ],
+      groupBy: [{ source: 'd', column: 'region' }],
+    };
+    expect(asked.find((each) => each.path === `/v1/datasets/${STORED}/sample`)?.body).toMatchObject(
+      {
+        definition: { fetch: { kind: 'dataset', format: 1, dataset: STORED, query } },
+      },
+    );
+
+    await user.click(saveVersion());
+    await waitFor(() => expect(window.location.hash).toBe(`#/query-definitions/${DEFINITION}`));
+    const made = asked.find((each) => each.path.endsWith('/query-definitions'))?.body as {
+      definition: Record<string, unknown>;
+    };
+    expect(made.definition).toMatchObject({
+      title: 'Sites by region',
+      fetch: { kind: 'dataset', format: 1, dataset: STORED, query },
+    });
+    expect(made.definition).not.toHaveProperty('connection');
+  });
+
+  it('offers no stored result to somebody who may read none', async () => {
+    const { client } = service();
+    render(<QueryDefinitionPage client={client} id="new" />);
+    await connectionOffered('Readings');
+    expect(screen.queryByRole('radio', { name: 'A stored result' })).toBeNull();
   });
 });
 

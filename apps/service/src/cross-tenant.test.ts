@@ -352,6 +352,7 @@ const OTHER_TENANT_IDS: Readonly<
     binding: 'b1',
   }),
   nameDataset: async (tenant, db) => ({ id: (await datasetIn(tenant, db)).dataset }),
+  sampleDataset: async (tenant, db) => ({ id: (await datasetIn(tenant, db)).dataset }),
   getPendingResult: async (tenant, db) => ({ id: await pendingIn(tenant, db) }),
   createQueryDefinition: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   getQueryDefinition: async (tenant, db) => ({ id: await queryDefinitionIdIn(tenant, db) }),
@@ -423,6 +424,31 @@ const VALID_INPUT: Readonly<
     },
   },
   nameDataset: { payload: { name: 'Elsewhere' } },
+  sampleDataset: {
+    payload: {
+      definition: {
+        schemaVersion: 1,
+        parameters: [],
+        fetch: {
+          kind: 'dataset',
+          format: 1,
+          dataset: '00000000-0000-4000-8000-000000000001',
+          query: {
+            sources: [{ alias: 'd', table: { schema: 'dataset', name: 'rows' } }],
+            joins: [],
+            select: [{ name: 'id', of: { source: 'd', column: 'id' } }],
+            groupBy: [],
+          },
+        },
+        columns: [{ name: 'id', from: { column: 'id' }, type: { base: 'integer' } }],
+        key: [],
+        order: 'multiset',
+        empty: 'valid',
+        limits: { rows: 10, bytes: 1000, seconds: 5 },
+      },
+      values: {},
+    },
+  },
   recordQueryDefinitionVersion: {
     payload: { openedFrom: SESSION, definition: aQueryDefinition(SESSION) },
   },
@@ -799,7 +825,7 @@ const datasetIn = async (tenant: Tenant, db: TenantDatabase) => {
   const definition = await queryDefinitionIdIn(tenant, db);
   return db.withTenant(tenant, async (trx) => {
     const stored = (await readQueryDefinition(trx, definition))!;
-    const connection = (await readConnection(trx, stored.definition.connection))!;
+    const connection = (await readConnection(trx, stored.definition.connection!))!;
     const recorded = await recordDatasetVersion(trx, {
       author: stored.version.author!,
       provenance: {
@@ -828,7 +854,7 @@ const pendingIn = async (tenant: Tenant, db: TenantDatabase) => {
   const document = await documentIdIn(tenant, db);
   return db.withTenant(tenant, async (trx) => {
     const stored = (await readQueryDefinition(trx, definition))!;
-    const connection = (await readConnection(trx, stored.definition.connection))!;
+    const connection = (await readConnection(trx, stored.definition.connection!))!;
     const { upload } = await uploadForDatasetImage(trx, {
       spaceId: stored.space.id,
       uploader: stored.version.author!,

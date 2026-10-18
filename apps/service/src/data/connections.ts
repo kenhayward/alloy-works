@@ -3,6 +3,9 @@ import type {
   ConnectionListQuery,
   ConnectionParams,
   ConnectionVersionBody,
+  DatasetParams,
+  DatasetSourceList,
+  DatasetSourceQuery,
   ConnectionView,
   CreateConnectionBody,
   CredentialBody,
@@ -19,6 +22,7 @@ import {
   credentialOf,
   dataPolicy,
   definitionsNaming,
+  listDatasetSources,
   giveQuerySlot,
   recordQueryRun,
   takeQuerySlot,
@@ -70,8 +74,11 @@ import {
   type Parameter,
   type Query,
   type ParameterValues,
+  type Limits,
+  type RunAnswer,
   type RunRequest,
   type TestAnswer,
+  dataFailure,
   runsAtOnce,
 } from '@alloy-works/domain';
 import type { ObjectStores } from '@alloy-works/objects';
@@ -95,6 +102,13 @@ import {
   type RunsThrough,
 } from './bindings.js';
 import { createConnectorClient } from './connector.js';
+import {
+  answerDataset,
+  datasetOf,
+  datasetProblems,
+  readRows,
+  type ReadSource,
+} from './dataset-source.js';
 import { failureView, failureViewFor, type FailureIn } from './failure-words.js';
 import { fetchRefused, mayRunFetch, maySqlWith, requireSqlPermitted } from './sql-access.js';
 
@@ -522,6 +536,53 @@ export function connectionHandlers(
    * What a resolve and a check run through: this connector, these routes' own refusals, who the
    * caller runs as on a connection, and the watch on their authority.
    */
+  /**
+   * A stored result's query, run here (DAT-094; R21-A): its rows read from the tenant's store by their
+   * checksum, the tree evaluated over them, and the run recorded as any is (DAT-053) - on no connection,
+   * so taking no slot of the tenant's runs at once, which meter the connector.
+   */
+  function datasetRun(request: FastifyRequest, act: QueryAct, document: string | null) {
+    const tenant = tenantOf(request);
+    const principal = principalOf(request).principalId;
+    return async (
+      source: ReadSource,
+      draft: DraftDefinition,
+      values: ParameterValues,
+      limits: Limits,
+      queryDefinition: string | null,
+    ): Promise<RunAsked> => {
+      const began = Date.now();
+      if (!objects) return { refused: { code: 'connector_unavailable' } };
+      const store = await db.withTenant(tenant, (trx) => objects.forTenant(trx, tenant));
+      const rows = await readRows(tenant, store, source);
+      const answer: RunAnswer = rows
+        ? answerDataset(draft, values, limits, source, rows, began)
+        : { outcome: 'failed', failure: dataFailure('connector_error') };
+      try {
+        await db.withTenant(tenant, (trx) =>
+          recordQueryRun(trx, {
+            act,
+            principal,
+            connection: null,
+            queryDefinition,
+            document,
+            durationMs: Date.now() - began,
+            rows: answer.outcome === 'ok' ? answer.rowCount : null,
+            bytes:
+              answer.outcome === 'ok'
+                ? Buffer.byteLength(canonicalResultBytes(answer.result), 'utf8')
+                : null,
+            outcome: answer.outcome === 'ok' ? 'ran' : 'failed',
+            failure: answer.outcome === 'ok' ? null : answer.failure.code,
+          }),
+        );
+      } catch (error) {
+        request.log.warn({ err: error }, 'a query run was not recorded');
+      }
+      return { answer };
+    };
+  }
+
   function runsThrough(
     request: FastifyRequest,
     act: QueryAct,
@@ -530,6 +591,7 @@ export function connectionHandlers(
     connected();
     return {
       run: metered(request, act, document),
+      runDataset: datasetRun(request, act, document),
       runnable,
       usableSealed,
       acting: (trx, connection) => actingOn(trx, request, connection),
@@ -976,6 +1038,81 @@ export function connectionHandlers(
           return described;
         }),
       );
+    },
+
+    /** The stored results the caller may read, to query as sources (DAT-094; R21-A). */
+    listDatasetSources: async (request: FastifyRequest): Promise<DatasetSourceList> => {
+      const asked = pageAsked('datasets', request.query as DatasetSourceQuery);
+      const listed = await db.withTenant(tenantOf(request), (trx) =>
+        listDatasetSources(trx, principalOf(request).principalId, asked),
+      );
+      if (!listed) throw new Error('A signed-in principal is not in its own tenant');
+      return {
+        items: listed.items.map((each) => ({
+          id: each.id,
+          name: each.name,
+          definition: each.definition && { ...each.definition },
+          latest: { ...each.latest, at: each.latest.at.toISOString() },
+          columns: each.columns.map((column) => ({ ...column })),
+        })),
+        next: cursorFor('datasets', asked.sort, asked.order, listed.snapshot, listed.next),
+      };
+    },
+
+    /**
+     * A draft query over a stored result, run here against sample values, storing nothing (DAT-094;
+     * R21-A): `read` on the dataset is the route's; the draft's tree is held to the result's columns,
+     * evaluated once this transaction commits, and recorded as a run on no connection.
+     */
+    sampleDataset: async (request: FastifyRequest, { trx }: Authorised) => {
+      const { id } = request.params as DatasetParams;
+      const body = request.body as SampleBody;
+      let draft: DraftDefinition;
+      try {
+        draft = parseDraftDefinition(body.definition);
+      } catch (error) {
+        if (error instanceof DefinitionRefused) throw definitionRefused(error.problems);
+        throw error;
+      }
+      if (draft.fetch.kind !== 'dataset' || draft.fetch.dataset !== id) {
+        throw definitionRefused([
+          {
+            rule: 'definition_invalid',
+            path: 'fetch',
+            message: 'A sample runs a query over the stored result it is sent to',
+          },
+        ]);
+      }
+      const source = await datasetOf(trx, draft.fetch);
+      if (!source) throw notFound();
+      const wrong = datasetProblems(draft, source);
+      if (wrong.length > 0) throw definitionRefused(wrong);
+      const values = body.values as ParameterValues;
+      const problems = checkParameterValues(draft.parameters, values);
+      if (problems.length > 0) {
+        throw refused(400, 'parameter.invalid', 'A value does not fit its parameter.', {
+          attribution: 'product',
+          problems,
+        });
+      }
+      const limits = effectiveLimits(draft.limits, await dataPolicy(trx));
+      const run = datasetRun(request, 'sample', null);
+      return new AfterCommit(async (): Promise<SampleView> => {
+        const ran = answered(await run(source, draft, values, limits, null));
+        if (ran.outcome === 'failed') {
+          return { outcome: 'failed', failure: failureViewFor(ran.failure, true, true) };
+        }
+        return {
+          outcome: 'ok',
+          columns: ran.result.columns.map(([name, base]) => [name, base] as [string, string]),
+          rows: ran.result.rows.slice(0, SAMPLE_ROWS).map((row) => [...row]),
+          rowCount: ran.rowCount,
+          checksum: ran.checksum,
+          ran: ran.ran,
+          durationMs: ran.durationMs,
+          images: {},
+        };
+      });
     },
 
     sampleConnection: async (request: FastifyRequest, { trx, facts }: Authorised) => {

@@ -9,6 +9,7 @@ import {
   findRole,
   grant,
   migrate,
+  recordDatasetVersion,
   recordPublication,
   requestPublication,
   seedDevelopmentContent,
@@ -139,6 +140,28 @@ describe('the listings through the service', () => {
           },
         });
         if (defined.answer !== 'created') throw new Error(defined.answer);
+        // And a stored result of each, so the stored results a query may take have pages too.
+        await recordDatasetVersion(trx, {
+          author: grace,
+          provenance: {
+            schemaVersion: 1,
+            queryDefinition: {
+              artifact: defined.definition.id,
+              version: defined.definition.version.id,
+            },
+            connection: { artifact: made.connection.id, version: made.connection.version.id },
+            parameters: {},
+            ran: { sql: 'select 1 as one' },
+            identity: { kind: 'service' },
+            at: '2026-10-18T09:00:00.000Z',
+            durationMs: 1,
+            rowCount: 1,
+            columns: [{ name: 'one', from: { column: 'one' }, type: { base: 'integer' } }],
+            canonical: 1,
+            checksum: 'a'.repeat(64),
+            images: {},
+          },
+        });
       }
       for (const title of ['Pump manual', 'Valve manual']) {
         const made = await createDocument(trx, {
@@ -444,6 +467,7 @@ describe('the listings through the service', () => {
       listAuditEvents: '/v1/audit?kind=group.made',
       listTemplates: '/v1/templates',
       listConnections: '/v1/connections',
+      listDatasetSources: '/v1/datasets',
       listQueryDefinitions: '/v1/query-definitions',
       listDefinitions: '/v1/definitions',
       listPeople: '/v1/people',
