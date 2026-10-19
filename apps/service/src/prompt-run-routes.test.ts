@@ -298,6 +298,81 @@ describe('a prompt run through the service (the G4 plan, G4-H and G4-I)', () => 
     ).toBe(403);
   });
 
+  it("GEN-036 reuses the runner's own identical run at no cost, never another person's, and calls afresh when asked, after a repointing, or for a trial", async () => {
+    const one = await approved({ title: 'Reused' });
+    const report = await bound([one.id]);
+    const run = async (as: string, fresh?: boolean) => {
+      const before = asked.length;
+      const frames = framesOf(
+        (
+          await h.call(as, 'POST', `/v1/documents/${report.id}/prompt-runs`, {
+            prompt: one.id,
+            node: report.nodes[0],
+            ...(fresh === undefined ? {} : { fresh }),
+          })
+        ).body,
+      );
+      return { frames, called: asked.length - before };
+    };
+    const first = await run('grace');
+    expect(first.called).toBe(1);
+    expect(first.frames.at(-1)!.data.cost).not.toBe('0.000000');
+    // Again: her own run's words, checked again and proposed anew, calling nothing and costing nothing.
+    const again = await run('grace');
+    expect(again.called).toBe(0);
+    expect(again.frames.map((frame) => frame.event)).toEqual(['run', 'text', 'proposal', 'ended']);
+    expect(again.frames[0]!.data.cachedFrom).toBe(first.frames[0]!.data.run);
+    expect(again.frames[1]!.data.text).toBe('The north weir floods every spring.');
+    expect(again.frames.at(-1)!.data).toMatchObject({
+      tokensIn: 0,
+      tokensOut: 0,
+      cost: '0.000000',
+    });
+    // Asked afresh, it calls.
+    expect((await run('grace', true)).called).toBe(1);
+    // Ada's identical run is hers alone to reuse: Grace's is never served to her.
+    const hers = await run('ada');
+    expect(hers.called).toBe(1);
+    expect(hers.frames[0]!.data.cachedFrom).toBeUndefined();
+    // The endpoint pointed elsewhere: nothing run before it is reused.
+    const endpoints = (await h.call('ada', 'GET', '/v1/model-endpoints')).json<{
+      items: { id: string; name: string }[];
+    }>().items;
+    const drafting = endpoints.find((each) => each.name === 'Drafting')!;
+    const moved = await h.call('ada', 'PUT', `/v1/model-endpoints/${drafting.id}`, {
+      name: 'Drafting',
+      protocol: 'anthropic',
+      baseUrl: 'https://models.example.test/v2',
+      model: 'stand-in-1',
+      contextWindow: 200_000,
+      priceIn: 3,
+      priceOut: 15,
+      currency: 'USD',
+      boundary: 'outside',
+    });
+    expect(moved.statusCode, moved.body).toBe(200);
+    try {
+      expect((await run('grace')).called).toBe(1);
+    } finally {
+      await h.call('ada', 'PUT', `/v1/model-endpoints/${drafting.id}`, {
+        name: 'Drafting',
+        protocol: 'anthropic',
+        baseUrl: 'https://models.example.test',
+        model: 'stand-in-1',
+        contextWindow: 200_000,
+        priceIn: 3,
+        priceOut: 15,
+        currency: 'USD',
+        boundary: 'outside',
+      });
+    }
+    // A trial is run to be seen again: never reused.
+    const tried = asked.length;
+    await trial('grace', one, document.nodes[0]!);
+    await trial('grace', one, document.nodes[0]!);
+    expect(asked.length - tried).toBe(2);
+  });
+
   it('proposes nothing from a blank reply, saying so, and never empties the part', async () => {
     const one = await approved({ title: 'Says nothing' });
     const report = await bound([one.id]);

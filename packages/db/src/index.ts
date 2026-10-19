@@ -267,6 +267,8 @@ export {
   sweepAbandonedRuns,
   recordGenerationRun,
   runsThisMonth,
+  reusableRun,
+  RESULT_REUSED_HOURS,
   type EndpointWritten,
   type GenerationRun,
   type ModelKeyState,

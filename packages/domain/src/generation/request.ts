@@ -137,6 +137,8 @@ export type GenerationFailure = z.infer<typeof generationFailureSchema>;
 const usage = z.strictObject({
   in: z.number().int().min(0),
   out: z.number().int().min(0),
+  /** Of those in, how many the provider read from its prompt cache (G6-E). */
+  cached: z.number().int().min(0).optional(),
 });
 
 /** One line of a model call's answer; the last is `ended` or `failed`. */

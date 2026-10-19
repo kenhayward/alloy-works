@@ -134,6 +134,7 @@ export async function rateRefusal(
   const counted = await sql<{ started_at: Date }>`
     select started_at from generation_run
      where requested_by = ${principal} and purpose <> 'test'
+       and (to_jsonb(generation_run) ->> 'cached_from') is null
        and started_at > now() - interval '1 hour'
      order by started_at`.execute(trx);
   const count = counted.rows.length;

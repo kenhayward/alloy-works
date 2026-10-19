@@ -8,7 +8,9 @@
 //     "status": 400, "body": "...", "model": "...", "stop": "max_tokens", "usage": false }
 //
 // `status` answers that status and `body` instead of a stream; `model` names another model in the
-// reply; `cut` ends the stream there, without its end; `usage: false` reports no tokens.
+// reply; `cut` ends the stream there, without its end; `usage: false` reports no tokens; `cached`
+// reports that many of the tokens in as read from a prompt cache (the G6 plan, G6-E): on Anthropic's
+// only where the call marked a cache breakpoint, as the provider caches only what is marked.
 import { Buffer } from 'node:buffer';
 import { setTimeout as sleep } from 'node:timers/promises';
 
@@ -136,6 +138,11 @@ export async function answerModel(request, url, body, response) {
   const tokensIn = tokensOf(body);
   let tokensOut = 0;
   const usage = script.usage !== false;
+  const marked = /"cache_control"/.test(body);
+  const cached =
+    typeof script.cached === 'number' && (protocol === 'openai' || marked)
+      ? Math.min(script.cached, tokensIn)
+      : 0;
   const send = (event, data) =>
     new Promise((resolve) =>
       response.write(`${event ? `event: ${event}\n` : ''}data: ${data}\n\n`, () => resolve()),
@@ -154,7 +161,13 @@ export async function answerModel(request, url, body, response) {
           role: 'assistant',
           model,
           content: [],
-          usage: usage ? { input_tokens: tokensIn, output_tokens: 1 } : {},
+          usage: usage
+            ? {
+                input_tokens: tokensIn - cached,
+                cache_read_input_tokens: cached,
+                output_tokens: 1,
+              }
+            : {},
         },
       }),
     );
@@ -270,7 +283,11 @@ export async function answerModel(request, url, body, response) {
         object: 'chat.completion.chunk',
         model,
         choices: [],
-        usage: { prompt_tokens: tokensIn, completion_tokens: tokensOut },
+        usage: {
+          prompt_tokens: tokensIn,
+          completion_tokens: tokensOut,
+          prompt_tokens_details: { cached_tokens: cached },
+        },
       }),
     );
   }

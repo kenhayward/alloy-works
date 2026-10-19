@@ -85,7 +85,14 @@ interface Spelled {
   readonly body: string;
 }
 
-/** The call as Anthropic's Messages API takes it. */
+/** A prompt-cache breakpoint (G6-E): what comes before it, and it, may be read from the cache. */
+const CACHED = { cache_control: { type: 'ephemeral' } } as const;
+
+/**
+ * The call as Anthropic's Messages API takes it. The instructions, with the tools before them, and the
+ * first message, which carries the context, are marked cacheable, so a repeated prefix is read from
+ * the provider's cache (G6-E); the provider caches only a prefix above its minimum length.
+ */
 function anthropicCall(call: ModelCall, key: string): Spelled {
   return {
     path: '/v1/messages',
@@ -100,12 +107,18 @@ function anthropicCall(call: ModelCall, key: string): Spelled {
       ...(call.parameters.temperature === undefined
         ? {}
         : { temperature: call.parameters.temperature }),
-      ...(call.system === undefined ? {} : { system: call.system }),
-      messages: call.messages.map((message) => ({
+      ...(call.system === undefined
+        ? {}
+        : { system: [{ type: 'text', text: call.system, ...CACHED }] }),
+      messages: call.messages.map((message, at) => ({
         role: message.role,
-        content: message.content.map((block) =>
+        content: message.content.map((block, place) =>
           block.type === 'text'
-            ? { type: 'text', text: block.text }
+            ? {
+                type: 'text',
+                text: block.text,
+                ...(at === 0 && place === message.content.length - 1 ? CACHED : {}),
+              }
             : block.type === 'tool_use'
               ? { type: 'tool_use', id: block.id, name: block.name, input: block.input }
               : {
@@ -229,6 +242,7 @@ function anthropicReader(
   let model: string | undefined;
   let tokensIn: number | undefined;
   let tokensOut: number | undefined;
+  let tokensCached = 0;
   let stop: 'end' | 'tool_use' | 'max_tokens' = 'end';
   const tools = new Map<number, { id: string; name: string; input: string }>();
   const reader: Reader = {
@@ -248,6 +262,7 @@ function anthropicReader(
               count(usage.input_tokens) +
               count(usage.cache_creation_input_tokens) +
               count(usage.cache_read_input_tokens);
+            tokensCached = count(usage.cache_read_input_tokens);
           }
           return;
         }
@@ -303,7 +318,11 @@ function anthropicReader(
             usage:
               tokensIn === undefined || tokensOut === undefined
                 ? null
-                : { in: tokensIn, out: tokensOut },
+                : {
+                    in: tokensIn,
+                    out: tokensOut,
+                    ...(tokensCached > 0 ? { cached: tokensCached } : {}),
+                  },
           });
           return;
         case 'error':
@@ -322,7 +341,7 @@ function openaiReader(
   fail: (failure: GenerationFailure) => void,
 ): Reader {
   let model: string | undefined;
-  let usage: { in: number; out: number } | null = null;
+  let usage: { in: number; out: number; cached?: number } | null = null;
   let stop: 'end' | 'tool_use' | 'max_tokens' = 'end';
   const tools = new Map<number, { id: string; name: string; input: string }>();
   const reader: Reader = {
@@ -345,7 +364,14 @@ function openaiReader(
       }
       const reported = value.usage as Record<string, unknown> | undefined | null;
       if (reported && typeof reported.prompt_tokens === 'number') {
-        usage = { in: count(reported.prompt_tokens), out: count(reported.completion_tokens) };
+        const details = reported.prompt_tokens_details as
+          Record<string, unknown> | undefined | null;
+        const cached = Math.min(count(details?.cached_tokens), count(reported.prompt_tokens));
+        usage = {
+          in: count(reported.prompt_tokens),
+          out: count(reported.completion_tokens),
+          ...(cached > 0 ? { cached } : {}),
+        };
       }
       const choices = Array.isArray(value.choices)
         ? (value.choices as Record<string, unknown>[])

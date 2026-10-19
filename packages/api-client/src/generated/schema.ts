@@ -2362,7 +2362,7 @@ export interface paths {
         put?: never;
         /**
          * Run a prompt of the document's library on one of its parts, its output a proposal
-         * @description Runs a prompt of the document's library on one of its parts, with a signed-in session alone, at the prompt's latest approved revision. Its context is resolved first, as the caller may read it, and recorded on the run; nothing it does not declare is sent. It calls the endpoint its purpose goes to, through the connector, once, with no tools, refused first where the endpoint's model is not one it accepts, the context resolved to nothing or is more than the endpoint takes. The reply, Markdown, is proposed as the part's whole text, a proposal that changes nothing until the caller accepts it. Answered as Server-Sent Events. Recorded as a run naming the prompt version.
+         * @description Runs a prompt of the document's library on one of its parts, with a signed-in session alone, at the prompt's latest approved revision. Its context is resolved first, as the caller may read it, and recorded on the run; nothing it does not declare is sent. It calls the endpoint its purpose goes to, through the connector, once, with no tools, refused first where the endpoint's model is not one it accepts, the context resolved to nothing or is more than the endpoint takes. The reply, Markdown, is proposed as the part's whole text, a proposal that changes nothing until the caller accepts it. Answered as Server-Sent Events. Recorded as a run naming the prompt version. Your own identical run of the last 24 hours, the same prompt version, context, parameters and endpoint, is reused: its words checked again and proposed anew, calling nothing and costing nothing, the run naming what it reused. Nobody else's is ever reused; `fresh` calls the model regardless.
          */
         post: operations["startPromptRun"];
         delete?: never;
@@ -50338,6 +50338,8 @@ export interface operations {
                     prompt: string & (unknown & unknown);
                     /** @description The part it writes, by its node in the outline */
                     node: string;
+                    /** @description True calls the model, never reusing your own identical run of the last 24 hours (GEN-036) */
+                    fresh?: boolean;
                 };
             };
         };
@@ -62363,6 +62365,7 @@ export interface operations {
                             contextWindow: number;
                             priceIn: number;
                             priceOut: number;
+                            priceCached?: number;
                             /** @example USD */
                             currency: string;
                             /** @enum {string} */
@@ -62487,6 +62490,7 @@ export interface operations {
                     contextWindow: number;
                     priceIn: number;
                     priceOut: number;
+                    priceCached?: number;
                     /** @example USD */
                     currency: string;
                     /** @enum {string} */
@@ -62539,6 +62543,7 @@ export interface operations {
                             contextWindow: number;
                             priceIn: number;
                             priceOut: number;
+                            priceCached?: number;
                             /** @example USD */
                             currency: string;
                             /** @enum {string} */
@@ -62721,6 +62726,7 @@ export interface operations {
                             contextWindow: number;
                             priceIn: number;
                             priceOut: number;
+                            priceCached?: number;
                             /** @example USD */
                             currency: string;
                             /** @enum {string} */
@@ -62867,6 +62873,7 @@ export interface operations {
                     contextWindow: number;
                     priceIn: number;
                     priceOut: number;
+                    priceCached?: number;
                     /** @example USD */
                     currency: string;
                     /** @enum {string} */
@@ -62919,6 +62926,7 @@ export interface operations {
                             contextWindow: number;
                             priceIn: number;
                             priceOut: number;
+                            priceCached?: number;
                             /** @example USD */
                             currency: string;
                             /** @enum {string} */
@@ -63133,6 +63141,7 @@ export interface operations {
                             contextWindow: number;
                             priceIn: number;
                             priceOut: number;
+                            priceCached?: number;
                             /** @example USD */
                             currency: string;
                             /** @enum {string} */
@@ -63359,6 +63368,7 @@ export interface operations {
                             contextWindow: number;
                             priceIn: number;
                             priceOut: number;
+                            priceCached?: number;
                             /** @example USD */
                             currency: string;
                             /** @enum {string} */

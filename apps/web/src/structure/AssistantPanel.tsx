@@ -165,6 +165,8 @@ export function AssistantPanel({
   const [steps, setSteps] = useState<readonly Step[]>([]);
   const [proposals, setProposals] = useState<readonly Proposal[]>([]);
   const [ended, setEnded] = useState<Ended | null>(null);
+  // A prompt run that reused the requester's own earlier one, and how to run it afresh (G6-E).
+  const [reused, setReused] = useState<Record<string, unknown> | null>(null);
   const [said, setSaid] = useState('');
   const [month, setMonth] = useState<string>('');
   const stop = useRef<AbortController | null>(null);
@@ -320,6 +322,7 @@ export function AssistantPanel({
     setProposals([]);
     setEnded(null);
     setSaid('');
+    setReused(null);
     const outcome = await stream({
       url,
       body,
@@ -330,6 +333,7 @@ export function AssistantPanel({
           case 'run':
             setEndpoint(frame.endpoint as { name: string; boundary: string });
             setCurrent(String(frame.run));
+            if (typeof frame.cachedFrom === 'string') setReused(body);
             break;
           case 'text':
             setAnswer((was) => was + String(frame.text));
@@ -609,6 +613,23 @@ export function AssistantPanel({
             </ul>
           )}
         </section>
+      )}
+      {reused && (
+        <p className={styles['muted']}>
+          From your earlier run of this prompt on this part, at no cost.{' '}
+          <button
+            type="button"
+            disabled={running}
+            onClick={() =>
+              void run(`${origin}/v1/documents/${document}/prompt-runs`, {
+                ...reused,
+                fresh: true,
+              })
+            }
+          >
+            Run afresh
+          </button>
+        </p>
       )}
       <div aria-live="polite" className={styles['answer']}>
         {shownAnswer}

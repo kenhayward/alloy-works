@@ -386,6 +386,52 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
     expect(within(proposal).getByRole('button', { name: 'Accept' })).toBeInTheDocument();
   });
 
+  it('GEN-036 says a prompt run reused your own earlier one at no cost, and runs it afresh when asked', async () => {
+    const user = userEvent.setup();
+    const { client } = service();
+    const stream = vi.fn(
+      running([
+        [
+          'run',
+          {
+            run: 'r3',
+            endpoint: { name: 'Drafting', boundary: 'inside' },
+            trial: false,
+            cachedFrom: 'r2',
+          },
+        ],
+        ['text', { text: 'Plainly put.' }],
+        ended({ tokensIn: 0, tokensOut: 0, cost: '0.000000' }),
+      ]),
+    );
+    render(
+      <AssistantPanel
+        client={client}
+        document={DOCUMENT}
+        component={SITES}
+        node={NODE}
+        nameOf={() => 'Sites'}
+        onCite={() => {}}
+        stream={stream}
+        origin="http://doc.test"
+      />,
+    );
+    const offered = await screen.findByRole('region', { name: 'Prompts' });
+    await user.click(
+      within(offered).getByRole('button', { name: 'Run Say it plainly on this part' }),
+    );
+    expect(
+      await screen.findByText(/From your earlier run of this prompt on this part, at no cost\./),
+    ).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Run afresh' }));
+    expect(stream).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        url: `http://doc.test/v1/documents/${DOCUMENT}/prompt-runs`,
+        body: { prompt: PROMPT, node: NODE, fresh: true },
+      }),
+    );
+  });
+
   it('asks for a part to be opened before a prompt runs', async () => {
     const { client } = service();
     render(

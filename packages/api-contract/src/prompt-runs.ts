@@ -8,6 +8,12 @@ export const PromptRunParams = z.object({ id: LowercaseUuid });
 export const PromptRunBody = z.strictObject({
   prompt: LowercaseUuid.describe("A prompt the document's template's library lists"),
   node: z.string().min(1).max(64).describe('The part it writes, by its node in the outline'),
+  fresh: z
+    .boolean()
+    .optional()
+    .describe(
+      'True calls the model, never reusing your own identical run of the last 24 hours (GEN-036)',
+    ),
 });
 export type PromptRunBody = z.infer<typeof PromptRunBody>;
 

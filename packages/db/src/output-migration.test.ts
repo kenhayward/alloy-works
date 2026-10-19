@@ -284,6 +284,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0131_personal_prompts',
       '0132_generation_limits',
       '0133_generation_budget',
+      '0134_caching',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,

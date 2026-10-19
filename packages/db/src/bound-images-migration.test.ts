@@ -244,6 +244,7 @@ describe('migration 0052, which widens dataset_take to an image', () => {
       '0131_personal_prompts',
       '0132_generation_limits',
       '0133_generation_budget',
+      '0134_caching',
     ]);
     const kept = await queryAs(
       db.adminUrl,

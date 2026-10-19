@@ -111,6 +111,7 @@ async function endpointView(
     contextWindow: endpoint.contextWindow,
     priceIn: endpoint.priceIn,
     priceOut: endpoint.priceOut,
+    ...(endpoint.priceCached === undefined ? {} : { priceCached: endpoint.priceCached }),
     currency: endpoint.currency,
     boundary: endpoint.boundary,
     id: endpoint.id,

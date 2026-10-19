@@ -51,6 +51,8 @@ export const modelEndpointSchema = z.strictObject({
   contextWindow: z.number().int().min(CONTEXT_WINDOW.least).max(CONTEXT_WINDOW.most),
   priceIn: price,
   priceOut: price,
+  /** What a token read from the provider's prompt cache costs, a million; the input price if unset. */
+  priceCached: price.optional(),
   currency: z.string().regex(/^[A-Z]{3}$/, { message: 'A currency is its ISO 4217 code' }),
   boundary: z.enum(BOUNDARIES),
 });
@@ -78,10 +80,15 @@ const micros = (price: number): bigint => BigInt(Math.round(price * 1e6));
  * tokens times the price in millionths, over a million, rounded half up.
  */
 export function costMicros(
-  tokens: { readonly in: number; readonly out: number },
-  prices: Pick<ModelEndpoint, 'priceIn' | 'priceOut'>,
+  tokens: { readonly in: number; readonly out: number; readonly cached?: number | undefined },
+  prices: Pick<ModelEndpoint, 'priceIn' | 'priceOut' | 'priceCached'>,
 ): bigint {
+  // Tokens read from the provider's cache are among those in, priced at the cached price where one
+  // is set (G6-E); a cache write is priced as any input, an approximation the design names.
+  const cached = BigInt(Math.min(tokens.cached ?? 0, tokens.in));
   const total =
-    BigInt(tokens.in) * micros(prices.priceIn) + BigInt(tokens.out) * micros(prices.priceOut);
+    (BigInt(tokens.in) - cached) * micros(prices.priceIn) +
+    cached * micros(prices.priceCached ?? prices.priceIn) +
+    BigInt(tokens.out) * micros(prices.priceOut);
   return (total + 500_000n) / 1_000_000n;
 }

@@ -291,6 +291,16 @@ describe('a model call through the connector', () => {
     await first;
   });
 
+  it('GEN-036 marks the instructions and the context cacheable, and reports the tokens either provider read from its cache', async () => {
+    for (const protocol of ['anthropic', 'openai'] as const) {
+      const last = lastOf(
+        await called(requestFor(protocol, script({ items: [{ text: 'Hi' }], cached: 5 }))),
+      );
+      expect(last, protocol).toMatchObject({ type: 'ended', usage: { cached: 5 } });
+      expect(last?.type === 'ended' && last.usage!.in, protocol).toBeGreaterThanOrEqual(5);
+    }
+  });
+
   it('records no tokens where the provider reports none, rather than guessing', async () => {
     const events = await called(
       requestFor('openai', script({ items: [{ text: 'Hi' }], usage: false })),

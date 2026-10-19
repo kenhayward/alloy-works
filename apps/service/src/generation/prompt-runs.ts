@@ -12,6 +12,7 @@ import {
   readLibrary,
   readModelEndpoint,
   readVersion,
+  reusableRun,
   recordGenerationRun,
   resolveContext,
   startRun,
@@ -107,6 +108,13 @@ export function promptRunHandlers(
 ) {
   const client = connector ? createConnectorClient(connector) : undefined;
 
+  /** What a run of a prompt on a part is called with, recorded on it and matched to reuse one. */
+  const parametersOf = (node: string) => ({
+    maxTokens: PROMPT_RUN_MAX_TOKENS,
+    instructions: PROMPT_RUN_INSTRUCTIONS_VERSION,
+    node,
+  });
+
   /**
    * Everything decided before a run starts, in the route's transaction (G4-I): the endpoint its
    * purpose goes to and that it accepts that endpoint's model (GEN-005), its context resolved as the
@@ -122,10 +130,11 @@ export function promptRunHandlers(
       readonly node: string;
       readonly prompt: Prompt;
       readonly proposes: boolean;
+      /** The version run, and whether the requester's own identical run may stand for it (G6-E). */
+      readonly promptVersion?: string;
+      readonly reuse?: boolean;
     },
   ) {
-    // Over the hourly limit, nothing is resolved or called (GEN-035).
-    await refuseOverLimit(trx, input.principalId);
     const route = (await listModelRoutes(trx)).find(
       (each) => each.purpose === input.prompt.models.purpose,
     );
@@ -201,7 +210,21 @@ export function promptRunHandlers(
     if (sentRule) {
       throw new AppError(409, 'guardrail_refused', `A guardrail refused this: ${sentRule.reason}`);
     }
-    return { endpoint, sealed, context, call, record: resolved.record, guardrails };
+    // The requester's own identical run, reused where they did not ask afresh (G6-E; GEN-036).
+    const reused =
+      input.reuse === true && input.promptVersion !== undefined
+        ? await reusableRun(trx, {
+            by: input.principalId,
+            purpose: input.prompt.models.purpose,
+            promptVersion: input.promptVersion,
+            contextDigest: sha256(canonicalCall(call)),
+            parameters: parametersOf(context.part.component),
+            endpoint,
+          })
+        : undefined;
+    // Over the hourly limit, nothing is called; a reused run calls nothing (GEN-035).
+    if (!reused) await refuseOverLimit(trx, input.principalId);
+    return { endpoint, sealed, context, call, record: resolved.record, guardrails, reused };
   }
 
   /** The run itself, streamed after the route's transaction commits (G2-B's machinery, one turn). */
@@ -222,7 +245,7 @@ export function promptRunHandlers(
     const context = contextOf(request);
     const credential = request.credential ?? null;
     const caller = callerOf(request);
-    const { endpoint, sealed, call, record, guardrails } = input.prepared;
+    const { endpoint, sealed, call, record, guardrails, reused } = input.prepared;
     // Where a rule watches replies, the reply is held until it is checked (G5-F).
     const holding = watchesReplies(guardrails);
     const part = input.prepared.context.part;
@@ -234,21 +257,21 @@ export function promptRunHandlers(
         run = await db.withTenant(
           tenant,
           (inner) =>
-            startLimited(inner, input.principalId, () =>
-              startRun(inner, {
-                purpose: input.trial ? 'trial' : input.prompt.models.purpose,
-                endpoint,
-                parameters: {
-                  maxTokens: PROMPT_RUN_MAX_TOKENS,
-                  instructions: PROMPT_RUN_INSTRUCTIONS_VERSION,
-                  node: part.component,
-                },
-                contextDigest: sha256(canonicalCall(call)),
-                context: record,
-                by: input.principalId,
-                documentId: input.document,
-                promptVersion: input.promptVersion,
-              }),
+            (reused
+              ? (start: () => Promise<string>) => start()
+              : (start: () => Promise<string>) => startLimited(inner, input.principalId, start))(
+              () =>
+                startRun(inner, {
+                  purpose: input.trial ? 'trial' : input.prompt.models.purpose,
+                  endpoint,
+                  parameters: parametersOf(part.component),
+                  ...(reused ? { cachedFrom: reused.id } : {}),
+                  contextDigest: sha256(canonicalCall(call)),
+                  context: record,
+                  by: input.principalId,
+                  documentId: input.document,
+                  promptVersion: input.promptVersion,
+                }),
             ),
           context,
         );
@@ -270,33 +293,48 @@ export function promptRunHandlers(
         run,
         endpoint: { name: endpoint.name, boundary: endpoint.boundary },
         trial: input.trial,
+        ...(reused ? { cachedFrom: reused.id } : {}),
       });
       let said = '';
       let model: string | null = null;
-      let usage: { in: number; out: number } | null = null;
+      let usage: { in: number; out: number; cached?: number | undefined } | null = null;
       let outcome = 'finished';
       let failure: GenerationFailure | undefined;
       let refusedBy: GuardrailRule | undefined;
       let proposal: GenerationProposal | undefined;
       let problem: string | undefined;
       try {
-        const answer = await asking.model(
-          {
-            requestId: randomUUID(),
-            tenant: tenant.id,
-            endpoint: { id: endpoint.id, protocol: endpoint.protocol, baseUrl: endpoint.baseUrl },
-            sealed,
-            call,
-            deadlineMs: RUN_MS,
-          },
-          (event) => {
-            if (event.type === 'text') {
-              said += event.text;
-              if (!holding) send('text', { text: event.text });
-            }
-          },
-          stopped,
-        );
+        // A reused run's words are its earlier run's, checked again; it calls nothing (G6-E).
+        const answer = reused
+          ? ({
+              answer: {
+                type: 'ended',
+                model: reused.model ?? endpoint.model,
+                usage: { in: 0, out: 0 },
+              },
+            } as const)
+          : await asking.model(
+              {
+                requestId: randomUUID(),
+                tenant: tenant.id,
+                endpoint: {
+                  id: endpoint.id,
+                  protocol: endpoint.protocol,
+                  baseUrl: endpoint.baseUrl,
+                },
+                sealed,
+                call,
+                deadlineMs: RUN_MS,
+              },
+              (event) => {
+                if (event.type === 'text') {
+                  said += event.text;
+                  if (!holding) send('text', { text: event.text });
+                }
+              },
+              stopped,
+            );
+        if (reused) said = reused.reply;
         if (stopped.aborted) outcome = 'cancelled';
         else if ('refused' in answer) failure = { code: answer.refused.code };
         else if (answer.answer.type === 'failed') failure = answer.answer.failure;
@@ -304,7 +342,7 @@ export function promptRunHandlers(
           model = answer.answer.model;
           usage = answer.answer.usage ?? null;
           refusedBy = guardrailMatch(guardrails, 'returned', said);
-          if (holding && !refusedBy && said !== '') send('text', { text: said });
+          if ((holding || reused) && !refusedBy && said !== '') send('text', { text: said });
           if (!input.trial && !refusedBy) {
             // The part's whole text, proposed against the version the context read, as the
             // requester, who must still read the document and suggest on the part.
@@ -451,6 +489,9 @@ export function promptRunHandlers(
         node: body.node,
         prompt: listed.prompt,
         proposes: true,
+        promptVersion: listed.revision.versionId,
+        // Trials never reuse: they are run to be seen again.
+        reuse: body.fresh !== true,
       });
       return streamed(request, {
         principalId,
