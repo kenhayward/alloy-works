@@ -9,7 +9,7 @@ const Budget = z.object({
     .describe('The currency runs are counted in, as their endpoints price them'),
   limit: z
     .number()
-    .positive()
+    .min(0.000001)
     .max(1_000_000_000)
     .describe('What the environment means to spend on models a month, in that currency'),
   thresholds: z

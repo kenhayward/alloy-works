@@ -20,6 +20,7 @@ import { conversationRoutes } from './conversations.js';
 import { guardrailRoutes } from './guardrails.js';
 import { modelLimitRoutes } from './model-limits.js';
 import { modelBudgetRoutes } from './model-budget.js';
+import { modelUsageRoutes } from './model-usage.js';
 import { personalPromptRoutes } from './personal-prompts.js';
 import { rangePreviewRoutes } from './range-previews.js';
 import { erasureRoutes } from './erasure.js';
@@ -395,6 +396,7 @@ type Routes = typeof ownRoutes &
   typeof guardrailRoutes &
   typeof modelLimitRoutes &
   typeof modelBudgetRoutes &
+  typeof modelUsageRoutes &
   typeof personalPromptRoutes &
   typeof rangePreviewRoutes;
 
@@ -458,6 +460,7 @@ export const routes: Routes = {
   ...guardrailRoutes,
   ...modelLimitRoutes,
   ...modelBudgetRoutes,
+  ...modelUsageRoutes,
   ...personalPromptRoutes,
   ...rangePreviewRoutes,
 } as const satisfies Record<string, RouteContract>;

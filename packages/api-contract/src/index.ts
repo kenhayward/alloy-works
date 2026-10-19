@@ -212,6 +212,7 @@ export {
   ModelBudgetView,
   modelBudgetRoutes,
 } from './model-budget.js';
+export { ModelUsageQuery, ModelUsageView, modelUsageRoutes } from './model-usage.js';
 export {
   PersonalPromptBody,
   PersonalPromptList,

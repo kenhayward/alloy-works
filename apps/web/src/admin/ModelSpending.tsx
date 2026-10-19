@@ -65,6 +65,7 @@ export function ModelSpending({ client }: { client: Client }) {
   return (
     <>
       <MonthlyBudget client={client} people={people} />
+      <Trend client={client} />
       <RateLimits client={client} people={people} />
     </>
   );
@@ -86,14 +87,14 @@ function MonthlyBudget({ client, people }: { client: Client; people: readonly Sh
   const [told, setTold] = useState<ReadonlySet<string>>(new Set());
   const [said, setSaid] = useState('');
 
-  const shown = (answer: Budget) => {
+  const shown = (answer: Budget, recipientsToo = true) => {
     setRead(answer);
     if (answer.budget) {
       setCurrency(answer.budget.currency);
       setLimit(String(answer.budget.limit));
       setThresholds(answer.budget.thresholds.join(', '));
     }
-    setTold(new Set(answer.recipients.map((each) => each.id)));
+    if (recipientsToo) setTold(new Set(answer.recipients.map((each) => each.id)));
   };
 
   useEffect(() => {
@@ -126,7 +127,7 @@ function MonthlyBudget({ client, people }: { client: Client; people: readonly Sh
       },
     });
     if (data) {
-      shown(data);
+      shown(data, false);
       setSaid('The budget is set, counting from this month.');
     } else setSaid(refusal(error, 'The budget could not be set.'));
   };
@@ -134,7 +135,7 @@ function MonthlyBudget({ client, people }: { client: Client; people: readonly Sh
   const lift = async () => {
     const { data, error } = await client.PUT('/v1/model-budget', { body: { budget: null } });
     if (data) {
-      shown(data);
+      shown(data, false);
       setSaid('There is no budget now.');
     } else setSaid(refusal(error, 'The budget could not be lifted.'));
   };
@@ -232,6 +233,120 @@ function MonthlyBudget({ client, people }: { client: Client; people: readonly Sh
   );
 }
 
+interface Usage {
+  readonly months: readonly string[];
+  readonly models: readonly {
+    readonly month: string;
+    readonly purpose: string;
+    readonly runs: number;
+    readonly tokensIn: number;
+    readonly tokensOut: number;
+    readonly tokensCached: number;
+    readonly costs: readonly { readonly currency: string; readonly cost: string }[];
+  }[];
+  readonly queries: readonly {
+    readonly month: string;
+    readonly runs: number;
+    readonly rows: number;
+    readonly bytes: number;
+  }[];
+}
+
+const PURPOSES: Readonly<Record<string, string>> = {
+  drafting: 'Drafting',
+  chat: 'Conversations',
+  summarising: 'Summarising',
+  embedding: 'Embedding',
+  trial: 'Prompt trials',
+  test: 'Endpoint tests',
+};
+
+/** Twelve months of use, by month and purpose, the oldest first (G6-F). */
+function Trend({ client }: { client: Client }) {
+  const [usage, setUsage] = useState<Usage | 'failed' | null>(null);
+  useEffect(() => {
+    let current = true;
+    client
+      .GET('/v1/model-usage')
+      .then(({ data }) => {
+        if (current) setUsage(data ?? 'failed');
+      })
+      .catch(() => {
+        if (current) setUsage('failed');
+      });
+    return () => {
+      current = false;
+    };
+  }, [client]);
+  const count = (value: number) => value.toLocaleString('en-GB');
+  return (
+    <section aria-label="Twelve months">
+      <h2>Twelve months</h2>
+      {usage === 'failed' && <p>The months could not be loaded.</p>}
+      {usage !== null && usage !== 'failed' && (
+        <>
+          {usage.models.length === 0 ? (
+            <p className={styles['muted']}>No model has been called in these months.</p>
+          ) : (
+            <table aria-label="Model use by month" className={styles['table']}>
+              <thead>
+                <tr>
+                  <th scope="col">Month</th>
+                  <th scope="col">For</th>
+                  <th scope="col">Runs</th>
+                  <th scope="col">Tokens in</th>
+                  <th scope="col">From the cache</th>
+                  <th scope="col">Tokens out</th>
+                  <th scope="col">Cost</th>
+                </tr>
+              </thead>
+              <tbody>
+                {usage.models.map((row) => (
+                  <tr key={`${row.month} ${row.purpose}`}>
+                    <td>{row.month}</td>
+                    <td>{PURPOSES[row.purpose] ?? row.purpose}</td>
+                    <td>{count(row.runs)}</td>
+                    <td>{count(row.tokensIn)}</td>
+                    <td>{count(row.tokensCached)}</td>
+                    <td>{count(row.tokensOut)}</td>
+                    <td>
+                      {row.costs
+                        .map((each) => `${each.currency} ${Number(each.cost).toFixed(2)}`)
+                        .join(', ')}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          {usage.queries.length > 0 && (
+            <table aria-label="Query runs by month" className={styles['table']}>
+              <thead>
+                <tr>
+                  <th scope="col">Month</th>
+                  <th scope="col">Query runs</th>
+                  <th scope="col">Rows</th>
+                  <th scope="col">Bytes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {usage.queries.map((row) => (
+                  <tr key={row.month}>
+                    <td>{row.month}</td>
+                    <td>{count(row.runs)}</td>
+                    <td>{count(row.rows)}</td>
+                    <td>{count(row.bytes)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </>
+      )}
+    </section>
+  );
+}
+
 /** How many runs each person may start an hour, and a person's own in place of it (G6-A). */
 function RateLimits({ client, people }: { client: Client; people: readonly ShownPerson[] }) {
   const [limits, setLimits] = useState<Limits | 'failed' | null>(null);
@@ -266,6 +381,11 @@ function RateLimits({ client, people }: { client: Client; people: readonly Shown
   const save = async (event: FormEvent) => {
     event.preventDefault();
     const perHour = runsOf(each);
+    // Only an empty box lifts the limit: anything else not a whole number of runs is said so.
+    if (perHour === null && each.trim() !== '') {
+      setSaid('A limit is a whole number of runs, 1 or more. Leave it empty for none.');
+      return;
+    }
     const { data, error } = await client.PUT('/v1/model-limits', { body: { perHour } });
     if (data) {
       shown(data);

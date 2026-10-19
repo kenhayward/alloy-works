@@ -1,5 +1,5 @@
 import { personView } from './person-view.js';
-import type { BudgetCounts } from './generation-budget.js';
+import { mayBeToldOfSpend, type BudgetCounts } from './generation-budget.js';
 import { internalHeld } from './internal-held.js';
 import { labelFor } from '@alloy-works/domain';
 import { sql } from 'kysely';
@@ -234,6 +234,9 @@ export async function listInbox(
     ])
     .where('n.recipient', '=', recipient);
   if (outside) query = query.where(sql<boolean>`not (${keptFromOutside})`);
+  // A budget's alerts say what the environment spends: shown only while its reader may be told (G6-D).
+  const spendHidden = !(await mayBeToldOfSpend(trx, recipient));
+  if (spendHidden) query = query.where('n.kind', '<>', 'budget');
   if (input.unread) query = query.where('n.read_at', 'is', null);
   if (input.after !== undefined) {
     query = query.where(sql<boolean>`(${at}, n.id) < (${input.after.at}, ${input.after.id}::uuid)`);
@@ -245,6 +248,7 @@ export async function listInbox(
     .where('n.recipient', '=', recipient)
     .where('n.read_at', 'is', null)
     .$if(outside, (counted) => counted.where(sql<boolean>`not (${keptFromOutside})`))
+    .$if(spendHidden, (counted) => counted.where('n.kind', '<>', 'budget'))
     .executeTakeFirstOrThrow();
   return {
     notifications: rows.map((row) => ({

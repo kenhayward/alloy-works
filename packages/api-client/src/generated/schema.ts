@@ -3635,6 +3635,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/model-usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What models and queries were used and cost, month by month
+         * @description Returns what models and queries were used, month by month, UTC, the oldest first, twelve months where none is said and at most thirteen: model runs ended by purpose, with their tokens, those read from the provider cache, and their cost by currency; and query runs with the rows and bytes they returned. Needs administer.
+         */
+        get: operations["getModelUsage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/people": {
         parameters: {
             query?: never;
@@ -61872,7 +61892,7 @@ export interface operations {
                      * @example {
                      *       "budget": {
                      *         "currency": "USD",
-                     *         "limit": 1,
+                     *         "limit": 0.000001,
                      *         "thresholds": [
                      *           1
                      *         ]
@@ -61997,7 +62017,7 @@ export interface operations {
                  * @example {
                  *       "budget": {
                  *         "currency": "USD",
-                 *         "limit": 1,
+                 *         "limit": 0.000001,
                  *         "thresholds": [
                  *           1
                  *         ]
@@ -62032,7 +62052,7 @@ export interface operations {
                      * @example {
                      *       "budget": {
                      *         "currency": "USD",
-                     *         "limit": 1,
+                     *         "limit": 0.000001,
                      *         "thresholds": [
                      *           1
                      *         ]
@@ -62199,7 +62219,7 @@ export interface operations {
                      * @example {
                      *       "budget": {
                      *         "currency": "USD",
-                     *         "limit": 1,
+                     *         "limit": 0.000001,
                      *         "thresholds": [
                      *           1
                      *         ]
@@ -64302,6 +64322,146 @@ export interface operations {
             };
             /** @description `endpoint_unusable`: the endpoint is retired, or has no key set for where it points */
             409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getModelUsage: {
+        parameters: {
+            query?: {
+                months?: string;
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The months */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "months": [],
+                     *       "models": [],
+                     *       "queries": []
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Each month shown, `YYYY-MM`, UTC, the oldest first */
+                        months: string[];
+                        /** @description Model runs ended, by month and purpose */
+                        models: {
+                            month: string;
+                            /** @description What the runs were for: drafting, chat, a trial, a test */
+                            purpose: string;
+                            runs: number;
+                            tokensIn: number;
+                            tokensOut: number;
+                            /** @description Of those in, how many the provider read from its cache */
+                            tokensCached: number;
+                            /** @description What they cost, by currency, to six places */
+                            costs: {
+                                currency: string;
+                                cost: string;
+                            }[];
+                        }[];
+                        /** @description Query runs by month, kept 13 months */
+                        queries: {
+                            month: string;
+                            runs: number;
+                            rows: number;
+                            bytes: number;
+                        }[];
+                    };
+                };
+            };
+            /** @description Months not a whole number from 1 to 13 */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller does not administer this environment */
+            403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;

@@ -1,4 +1,5 @@
 import type { ModelEvent } from '@alloy-works/domain';
+import { removeGrant } from '@alloy-works/db';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { startHarness, type Harness } from './test/bindings-harness.js';
@@ -136,6 +137,45 @@ describe('the model budget through the service (the G6 plan, G6-B to G6-D)', () 
       items: { detail: { limit: string | null; recipients: number } }[];
     }>().items;
     expect(events.map((each) => each.detail.limit)).toContain('9000');
+  });
+
+  it('shows twelve months of model use by month and purpose, ending with this one, to an administrator alone', async () => {
+    await turn('grace');
+    expect((await h.call('grace', 'GET', '/v1/model-usage')).statusCode).toBe(403);
+    expect((await h.call('ada', 'GET', '/v1/model-usage?months=14')).statusCode).toBe(400);
+    const usage = (await h.call('ada', 'GET', '/v1/model-usage')).json<{
+      months: string[];
+      models: { month: string; purpose: string; runs: number; costs: { cost: string }[] }[];
+    }>();
+    const now = new Date().toISOString().slice(0, 7);
+    expect(usage.months).toHaveLength(12);
+    expect(usage.months.at(-1)).toBe(now);
+    // A conversation's turns are chat's.
+    expect(
+      usage.models.find((each) => each.month === now && each.purpose === 'chat')?.runs,
+    ).toBeGreaterThan(0);
+  });
+
+  it('ADM-034 spends no alert on nobody, tells one named later, and shows spend only while its reader administers', async () => {
+    await h.call('ada', 'PUT', '/v1/model-budget/recipients', { principals: [] });
+    // A fresh limit, already half spent: crossed with nobody named, nothing is used up.
+    const spent = Number(
+      (await h.call('ada', 'GET', '/v1/model-budget')).json<{ spent: string }>().spent,
+    );
+    await budget(spent * 2 + 0.0001, [50]);
+    await turn('grace');
+    const ivyAdministers = await h.allow(h.ids.ivy!, h.roles.Administrator!, { kind: 'tenant' });
+    const named = await h.call('ada', 'PUT', '/v1/model-budget/recipients', {
+      principals: [h.ids.ivy],
+    });
+    expect(named.statusCode, named.body).toBe(200);
+    await turn('grace');
+    expect(await alerts('ivy')).toEqual([50]);
+    // No longer administering, she is shown none of it.
+    await h.tenantDb.withTenant(h.tenant, (trx) => removeGrant(trx, ivyAdministers));
+    expect(await alerts('ivy')).toEqual([]);
+    expect((await h.call('ivy', 'GET', '/v1/inbox')).json<{ unread: number }>().unread).toBe(0);
+    await h.call('ada', 'PUT', '/v1/model-budget/recipients', { principals: [h.ids.ada] });
   });
 
   it('GEN-034 counts what testing an endpoint costs towards the budget', async () => {

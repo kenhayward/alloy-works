@@ -20670,13 +20670,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 539,
+      "line": 540,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 552,
+      "line": 553,
       "kind": "title"
     },
     {
@@ -21624,25 +21624,25 @@
     {
       "id": "ADM-013",
       "file": "apps/service/src/model-budget-routes.test.ts",
-      "line": 105,
+      "line": 106,
       "kind": "title"
     },
     {
       "id": "ADM-014",
       "file": "apps/service/src/model-budget-routes.test.ts",
-      "line": 105,
+      "line": 106,
       "kind": "title"
     },
     {
       "id": "ADM-034",
       "file": "apps/service/src/model-budget-routes.test.ts",
-      "line": 80,
+      "line": 81,
       "kind": "title"
     },
     {
       "id": "GEN-034",
       "file": "apps/service/src/model-budget-routes.test.ts",
-      "line": 105,
+      "line": 106,
       "kind": "title"
     },
     {
@@ -22842,25 +22842,25 @@
     {
       "id": "ADM-013",
       "file": "apps/web/src/admin/ModelSpending.test.tsx",
-      "line": 90,
+      "line": 139,
       "kind": "title"
     },
     {
       "id": "ADM-014",
       "file": "apps/web/src/admin/ModelSpending.test.tsx",
-      "line": 90,
+      "line": 139,
       "kind": "title"
     },
     {
       "id": "GEN-034",
       "file": "apps/web/src/admin/ModelSpending.test.tsx",
-      "line": 90,
+      "line": 139,
       "kind": "title"
     },
     {
       "id": "GEN-035",
       "file": "apps/web/src/admin/ModelSpending.test.tsx",
-      "line": 125,
+      "line": 174,
       "kind": "title"
     },
     {
@@ -24102,19 +24102,19 @@
     {
       "id": "GEN-047",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 451,
+      "line": 459,
       "kind": "title"
     },
     {
       "id": "GEN-051",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 451,
+      "line": 459,
       "kind": "title"
     },
     {
       "id": "GEN-053",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 487,
+      "line": 495,
       "kind": "title"
     },
     {
@@ -26514,19 +26514,19 @@
     {
       "id": "GEN-027",
       "file": "packages/db/src/model-endpoints.test.ts",
-      "line": 99,
+      "line": 102,
       "kind": "title"
     },
     {
       "id": "GEN-028",
       "file": "packages/db/src/model-endpoints.test.ts",
-      "line": 184,
+      "line": 187,
       "kind": "title"
     },
     {
       "id": "IAM-076",
       "file": "packages/db/src/model-endpoints.test.ts",
-      "line": 124,
+      "line": 127,
       "kind": "title"
     },
     {

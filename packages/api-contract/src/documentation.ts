@@ -407,7 +407,7 @@ const operationTags = {
   ],
   Guardrails: ['listGuardrails', 'setGuardrail', 'retireGuardrail'],
   'Model limits': ['getModelLimits', 'setModelLimit', 'setPersonLimit'],
-  'Model budget': ['getModelBudget', 'setModelBudget', 'setBudgetRecipients'],
+  'Model budget': ['getModelBudget', 'setModelBudget', 'setBudgetRecipients', 'getModelUsage'],
   'Personal prompts': [
     'listPersonalPrompts',
     'savePersonalPrompt',
@@ -862,6 +862,8 @@ const descriptions: Readonly<Record<string, string>> = {
     'Sets the monthly model budget: a currency, a limit and up to five rising percents of it, at least one below 100, each alerting once a month as the spend crosses it; null lifts it. A changed limit may alert again. Nothing stops when it is spent. Needs administer, and is audited.',
   setBudgetRecipients:
     'Names who is told, through the inbox, as the month’s spend crosses a threshold, in place of who was: each from inside the organisation and administering the environment, decided again when told. Needs administer, and is audited.',
+  getModelUsage:
+    'Returns what models and queries were used, month by month, UTC, the oldest first, twelve months where none is said and at most thirteen: model runs ended by purpose, with their tokens, those read from the provider cache, and their cost by currency; and query runs with the rows and bytes they returned. Needs administer.',
   listConversationEndpoints:
     'Lists the endpoints a conversation may run on, with a signed-in session alone: every one in use with its key set, its model and whether it sits outside the data boundary, the one a turn naming none runs on marked.',
   startConversation:

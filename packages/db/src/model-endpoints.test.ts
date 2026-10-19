@@ -5,6 +5,9 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { bootstrapCluster } from './bootstrap.js';
 import { setBudget } from './generation-budget.js';
+import { grant } from './grants.js';
+import { findRole } from './roles.js';
+import { usageByMonth } from './model-usage.js';
 import { migrate } from './migrate.js';
 import {
   changeModelEndpoint,
@@ -236,6 +239,18 @@ describe('model endpoints', () => {
     try {
       await service.withTenant(production, async (trx) => {
         await setBudget(trx, { currency: 'USD', limitMicros: 1n, thresholds: [50] }, ada);
+        // Somebody to tell: Ada, administering the environment.
+        const answer = await grant(trx, {
+          roleId: (await findRole(trx, 'Administrator'))!.id,
+          subject: { principal: ada },
+          level: { kind: 'tenant' },
+          effect: 'allow',
+          grantedBy: ada,
+        });
+        if ('refused' in answer) throw new Error(answer.refused);
+        await sql`insert into generation_budget_recipient (principal_id) values (${ada})`.execute(
+          trx,
+        );
       });
       // Any alert's record refused, as a failing store would.
       await admin.query(
@@ -266,6 +281,41 @@ describe('model endpoints', () => {
       await service.withTenant(production, (trx) => setBudget(trx, null, ada));
       await admin.end();
     }
+  });
+
+  it('totals model runs by UTC month and purpose over the months asked, a month long past among them (the G6 plan, G6-F)', async () => {
+    await service.withTenant(production, async (trx) => {
+      const endpoint = await made(trx, { ...drafting, name: 'Trend' });
+      for (const back of [5, 5, 12]) {
+        await sql`insert into generation_run (purpose, endpoint_id, endpoint, parameters,
+              context_digest, requested_by, started_at, outcome, tokens_in, tokens_out,
+              cost_micros, finished_at)
+            values ('summarising', ${endpoint.id}, ${JSON.stringify({ ...drafting })}::jsonb,
+              '{}'::jsonb, ${'a'.repeat(64)}, ${ada},
+              date_trunc('month', now()) - make_interval(months => ${back}), 'finished', 40, 10, 270,
+              date_trunc('month', now()) - make_interval(months => ${back}))`.execute(trx);
+      }
+      const { rows } = await sql<{ month: string }>`
+        select to_char((date_trunc('month', now() at time zone 'utc')
+          - interval '5 months'), 'YYYY-MM') as month`.execute(trx);
+      const usage = await usageByMonth(trx, 12);
+      const summarising = usage.models.filter((each) => each.purpose === 'summarising');
+      // Twelve months back is outside twelve months, and inside thirteen.
+      expect(summarising).toEqual([
+        {
+          month: rows[0]!.month,
+          purpose: 'summarising',
+          runs: 2,
+          tokensIn: 80,
+          tokensOut: 20,
+          tokensCached: 0,
+          costs: [{ currency: 'USD', micros: 540n }],
+        },
+      ]);
+      expect(
+        (await usageByMonth(trx, 13)).models.filter((each) => each.purpose === 'summarising'),
+      ).toHaveLength(2);
+    });
   });
 
   it('keeps a run whole: ended once, never changed after, never deleted', async () => {

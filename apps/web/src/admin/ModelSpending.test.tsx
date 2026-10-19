@@ -29,6 +29,32 @@ function service() {
     const request = input instanceof Request ? input : new Request(String(input), init);
     const path = new URL(request.url).pathname;
     if (path === '/v1/model-limits' && request.method === 'GET') return json(200, limits);
+    if (path === '/v1/model-usage') {
+      return json(200, {
+        months: ['2026-09', '2026-10'],
+        models: [
+          {
+            month: '2026-09',
+            purpose: 'chat',
+            runs: 40,
+            tokensIn: 120000,
+            tokensOut: 9000,
+            tokensCached: 80000,
+            costs: [{ currency: 'USD', cost: '0.531000' }],
+          },
+          {
+            month: '2026-10',
+            purpose: 'drafting',
+            runs: 12,
+            tokensIn: 30000,
+            tokensOut: 2000,
+            tokensCached: 0,
+            costs: [{ currency: 'USD', cost: '0.120000' }],
+          },
+        ],
+        queries: [{ month: '2026-10', runs: 5, rows: 1200, bytes: 48000 }],
+      });
+    }
     if (path.startsWith('/v1/model-budget')) {
       if (request.method === 'PUT') {
         const body = (await request.json()) as Record<string, unknown>;
@@ -87,6 +113,29 @@ function service() {
 }
 
 describe("Administration's Model spending", () => {
+  it('shows model use by month and purpose, the oldest first, with what came from the cache, and query runs by month', async () => {
+    const { client } = service();
+    render(<ModelSpending client={client} />);
+    const months = await screen.findByRole('region', { name: 'Twelve months' });
+    const table = await within(months).findByRole('table', { name: 'Model use by month' });
+    expect(
+      within(table)
+        .getAllByRole('row')
+        .slice(1)
+        .map((row) =>
+          within(row)
+            .getAllByRole('cell')
+            .map((cell) => cell.textContent),
+        ),
+    ).toEqual([
+      ['2026-09', 'Conversations', '40', '120,000', '80,000', '9,000', 'USD 0.53'],
+      ['2026-10', 'Drafting', '12', '30,000', '0', '2,000', 'USD 0.12'],
+    ]);
+    expect(within(months).getByRole('table', { name: 'Query runs by month' })).toHaveTextContent(
+      '1,200',
+    );
+  });
+
   it('GEN-034 ADM-013 ADM-014 sets a monthly budget with alerts before it, declares that nothing stops when it is spent, and names who is told', async () => {
     const user = userEvent.setup();
     const { client, sent } = service();
@@ -133,6 +182,17 @@ describe("Administration's Model spending", () => {
     await user.type(each, '30');
     await user.click(within(limits).getByRole('button', { name: 'Save limit' }));
     expect(sent).toContainEqual({ method: 'PUT', path: '/v1/model-limits', body: { perHour: 30 } });
+    // Nought is no limit lifted: only an empty box lifts it.
+    const sending = sent.length;
+    await user.clear(each);
+    await user.type(each, '0');
+    await user.click(within(limits).getByRole('button', { name: 'Save limit' }));
+    expect(sent).toHaveLength(sending);
+    expect(
+      within(limits).getByText(
+        'A limit is a whole number of runs, 1 or more. Leave it empty for none.',
+      ),
+    ).toBeInTheDocument();
 
     const table = within(limits).getByRole('table', { name: 'People with their own limit' });
     expect(within(table).getByText('Grace Hopper')).toBeInTheDocument();
