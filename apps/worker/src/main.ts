@@ -11,6 +11,8 @@ import { tenantExportJob } from './jobs/tenant-export.js';
 import { createWarmPool, rangePreviewJob } from './jobs/range-preview.js';
 import { impactReportJob } from './jobs/impact-report.js';
 import { cohortJob } from './jobs/cohort.js';
+import { embedJob } from './jobs/embed.js';
+import { connectorEmbedder } from './embedder.js';
 import { checkJob } from './jobs/check.js';
 import { ingestJob } from './jobs/ingest.js';
 import { publishJob } from './jobs/publish.js';
@@ -60,6 +62,10 @@ const checker = startLocalVeraPdf({
 });
 // The warm range previews this worker holds between refreshes (the R22 plan, R22-B).
 const warmPool = createWarmPool();
+// Embedding through the connector's embed route alone (the G7 plan, G7-E); none configured, none.
+const embedder =
+  config.connector &&
+  connectorEmbedder({ url: config.connector.url, key: config.connector.embedKey });
 const handlers: Record<string, JobHandler> = {
   sample_pdf: sampleJob({ db, stores, typst }),
   publish,
@@ -71,6 +77,7 @@ const handlers: Record<string, JobHandler> = {
   cohort: cohortJob({ db, stores }),
   tenant_export: tenantExportJob({ db, stores }),
   range: rangePreviewJob({ db, stores, fonts, binary: config.typstBinary, pool: warmPool }),
+  embed: embedJob({ db, embedder }),
 };
 
 // A connection of its own, held open: NOTIFY wakes the worker between polls.

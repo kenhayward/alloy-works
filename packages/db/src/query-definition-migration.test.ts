@@ -223,6 +223,7 @@ describe('migration 0046, over an environment made before it', () => {
       '0133_generation_budget',
       '0134_caching',
       '0135_embeddings',
+      '0136_embedding_queue',
     ]);
     // Every row still there, and what 0048 seeds beside them: the value catalogue, its 0.1 and the
     // default theme's 0.6 (B1); and what 0055 seeds: the table catalogue's fifth version, the default

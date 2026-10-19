@@ -23,6 +23,7 @@ import { earlierStored } from './search-earlier.js';
 import { relationsHeld, storedValues } from './search-relations.js';
 import { foldHistory, rebuildHistory } from './search-history.js';
 import { indexEveryThread, vectorStored } from './search-threads.js';
+import { embedIndexed } from './embeddings.js';
 import type { TenantTransaction } from './tables.js';
 import { latestVersion, lockArtifact, readVersion, type StoredVersion } from './versions.js';
 import { stateKey, workflowStored } from './workflow.js';
@@ -495,6 +496,8 @@ export async function indexVersion(
   const facts = await artifactFacts(trx, version.artifactId, version.kind);
   if (kept.has(version.kind) && (await earlierStored(trx))) await moveEarlier(trx, version);
   await write(trx, placingOf(version, facts), await draftsOf(trx, version, facts));
+  // Its blocks' meaning: copied where their words' vectors exist, the rest queued (the G7 plan, G7-C).
+  await embedIndexed(trx, version.artifactId, { queue: options.fold !== false });
   // Each place's words over every version, folded under the lock its writer holds (SV3-K).
   if (options.fold !== false && (version.kind === 'component' || version.kind === 'document')) {
     await foldHistory(trx, version.artifactId, version.id);

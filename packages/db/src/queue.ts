@@ -10,6 +10,8 @@ import type { PlatformTables, TenantTransaction } from './tables.js';
  * An `audit_export` writes an export of the audit log, its subject the export (the AU2 plan, AU-N).
  * An `impact_report` walks what a change reaches, uncapped, its subject the job (the R3 plan, R3-F).
  * A `cohort` makes a cohort's pending rows into documents, its subject the job (the R7 plan, R7-E).
+ * An `embed` embeds an artifact's blocks its latest version lacks vectors for, its subject the artifact
+ * (the G7 plan, G7-F).
  */
 export type JobKind =
   | 'sample_pdf'
@@ -21,7 +23,8 @@ export type JobKind =
   | 'impact_report'
   | 'cohort'
   | 'tenant_export'
-  | 'range';
+  | 'range'
+  | 'embed';
 
 /** What a worker is told: whose work, of what kind, about which id. Never any content. */
 export interface Job {

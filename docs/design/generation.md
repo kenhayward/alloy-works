@@ -285,7 +285,12 @@ its boundary or has no meaning search (GEN-038); routing embedding to another en
 `embedding_unsupported`. The connector's `/v1/embed` takes the endpoint's sealed key as `/v1/model`
 does, and a second key, `CONNECTOR_EMBED_KEY`, opens that route alone, for the worker. Vectors are
 kept in `embedding` by the hash of a block's words, the model and the model version the reply named,
-written once (VER-039); [search.md](search.md) finds by them.
+written once (VER-039); [search.md](search.md) finds by them. Indexing a latest version copies a
+passage for each block whose words' vector the serving (or a confirmed pending) model holds, and
+queues the artifact (`embedding_queued`, once however often it is saved) for the rest; the worker's
+`embed` job embeds them in batches of at most 96, each batch a run of the version's author on its
+document, in the budget and in no rate limit, and writes the passages. A block's text past 8,000
+characters is embedded from its first 8,000.
 
 ## Failures
 
