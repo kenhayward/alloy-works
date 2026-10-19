@@ -2,7 +2,9 @@ import { createHash, timingSafeEqual } from 'node:crypto';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 
 import {
+  EMBED_REQUEST_MAX_BYTES,
   MODEL_REQUEST_MAX_BYTES,
+  embedRequestSchema,
   RUN_REQUEST_MAX_BYTES,
   credentialContext,
   modelCredentialContext,
@@ -41,6 +43,8 @@ const bodyLimits: Readonly<Record<string, number>> = {
   // A model's key, and a model call, which holds a whole conversation (the G1 plan, G1-C).
   '/v1/model/seal': MAX_BODY_BYTES,
   '/v1/model': MODEL_REQUEST_MAX_BYTES,
+  // An embedding call: up to 96 texts (the G7 plan, G7-E).
+  '/v1/embed': EMBED_REQUEST_MAX_BYTES,
 };
 
 class TooLarge extends Error {}
@@ -134,7 +138,14 @@ export function createConnectorServer(options: {
         ? bodyLimits[path ?? '']
         : undefined;
     if (limit === undefined) return send(404);
-    if (!authenticated(request, config.keyDigest)) {
+    // The service's key opens every path; the embed key, which the worker holds, `/v1/embed` alone
+    // (the G7 plan, G7-E).
+    const opened =
+      authenticated(request, config.keyDigest) ||
+      (path === '/v1/embed' &&
+        config.embedKeyDigest !== undefined &&
+        authenticated(request, config.embedKeyDigest));
+    if (!opened) {
       // Drain and drop the body unread, so the answer is not written under an unread upload.
       request.resume();
       return send(401);
@@ -185,6 +196,15 @@ export function createConnectorServer(options: {
     response.on('close', () => {
       if (!response.writableFinished) gone.abort();
     });
+    if (path === '/v1/embed') {
+      const parsed = embedRequestSchema.safeParse(body);
+      if (!parsed.success) return send(400, { code: 'request_invalid' });
+      const call = supervisor.embed(parsed.data, gone.signal);
+      if (call === 'busy') return send(503, { code: 'connector_busy' });
+      const answer = await call;
+      send(200, answer);
+      return { status: 200, stderrBytes: stderrBytes - before };
+    }
     if (path === '/v1/model') {
       // A model call (the G1 plan, G1-C): its events as lines of JSON, each written as the child
       // writes it, the last `ended` or `failed`; the head goes once the call holds a child.

@@ -764,6 +764,17 @@ export {
   type GenerationBudget,
 } from './generation-budget.js';
 export {
+  embeddedHashes,
+  embeddingsStored,
+  isDimensions,
+  readEmbeddings,
+  storeEmbeddings,
+  textHash,
+  vectorLiteral,
+  type Dimensions,
+  type StoredEmbedding,
+} from './embeddings.js';
+export {
   USAGE_MONTHS_MOST,
   usageByMonth,
   type ModelMonth,

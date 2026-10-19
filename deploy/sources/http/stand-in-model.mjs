@@ -19,9 +19,68 @@ export const MODEL_KEY = 'stand-in-model-dev-key';
 
 const ANTHROPIC = /^\/models\/anthropic(?:\/.*)?\/v1\/messages$/;
 const OPENAI = /^\/models\/openai(?:\/.*)?\/chat\/completions$/;
+const EMBEDDINGS = /^\/models\/openai(?:\/.*)?\/embeddings$/;
 
 /** Whether a path is the stand-in model's, which `fake-api.mjs` asks before its own routes. */
-export const isModelPath = (pathname) => ANTHROPIC.test(pathname) || OPENAI.test(pathname);
+export const isModelPath = (pathname) =>
+  ANTHROPIC.test(pathname) || OPENAI.test(pathname) || EMBEDDINGS.test(pathname);
+
+/**
+ * Words the stand-in takes as meaning the same (the G7 plan): enough that a search by meaning finds a
+ * passage holding none of the words asked, which a search by words cannot. Invented, and small.
+ */
+const SAME = {
+  dam: 'weir',
+  dams: 'weir',
+  weirs: 'weir',
+  inundation: 'flood',
+  inundates: 'flood',
+  floods: 'flood',
+  flooding: 'flood',
+  deluge: 'flood',
+  river: 'stream',
+  rivers: 'stream',
+  streams: 'stream',
+  spring: 'spring',
+};
+
+/**
+ * A text's vector (the G7 plan): its words, each read as the word it means the same as, counted into
+ * as many places as the model's name ends with (384 where it names none), and of length one. Texts
+ * sharing words, or words meaning the same, lie near each other; nothing else is modelled.
+ */
+function vectorOf(text, dims) {
+  const vector = new Array(dims).fill(0);
+  for (const raw of text.toLowerCase().match(/[a-z0-9]+/g) ?? []) {
+    const word = SAME[raw] ?? raw;
+    let hash = 2166136261;
+    for (const char of word) hash = Math.imul(hash ^ char.charCodeAt(0), 16777619) >>> 0;
+    vector[hash % dims] += 1;
+  }
+  const length = Math.hypot(...vector) || 1;
+  return vector.map((each) => each / length);
+}
+
+/** Answers `/embeddings`, as OpenAI's API does: `script:` in an input scripts a failure, as a call's. */
+function answerEmbeddings(call, response, send) {
+  const inputs = Array.isArray(call.input) ? call.input : [call.input];
+  const failing = inputs.find((each) => typeof each === 'string' && each.startsWith('script:'));
+  if (failing) {
+    const script = JSON.parse(failing.slice('script:'.length));
+    if (script.status !== undefined) return send(script.status, JSON.parse(script.body ?? '{}'));
+  }
+  const dims = Number(/-(\d+)$/.exec(call.model ?? '')?.[1] ?? 384);
+  return send(200, {
+    object: 'list',
+    model: call.model,
+    data: inputs.map((each, index) => ({
+      object: 'embedding',
+      index,
+      embedding: vectorOf(String(each), dims),
+    })),
+    usage: { prompt_tokens: tokensOf(inputs.join(' ')), total_tokens: tokensOf(inputs.join(' ')) },
+  });
+}
 
 /** The text of a message, in either protocol's spelling. */
 const textOf = (message) => {
@@ -122,6 +181,7 @@ export async function answerModel(request, url, body, response) {
   } catch {
     return refuse(400, { error: { type: 'invalid_request_error' } });
   }
+  if (EMBEDDINGS.test(url.pathname)) return answerEmbeddings(call, response, refuse);
   const script = scriptOf(call, protocol);
   if (script.status !== undefined) {
     const bytes = Buffer.from(script.body ?? '{}');

@@ -55,15 +55,15 @@ worker run from source. [`docs/development.md`](../docs/development.md) is that 
 
 ## What it starts
 
-| Service        | Image or target            | Where                 | For                                                            |
-| -------------- | -------------------------- | --------------------- | -------------------------------------------------------------- |
-| `postgres`     | `pgvector/pgvector:pg17`   | `127.0.0.1:5432`      | Every environment's schema, and the job queue                  |
-| `seaweedfs`    | `chrislusf/seaweedfs:4.46` | `127.0.0.1:8333`      | Documents, by content hash under a prefix per environment      |
-| `stand-in-idp` | `tools`                    | `127.0.0.1:9090`      | Signing in, as an organisation's provider and as Google        |
-| `setup`        | `tools`                    | runs once, then exits | Migrations, two invented environments, a store credential each |
-| `service`      | `service`                  | `127.0.0.1:8088`      | The API, and the renderer beside it                            |
-| `worker`       | `worker`                   | no port               | Claims jobs and runs them, carrying Typst and veraPDF          |
-| `connector`    | `connector`                | no port               | Reaches a tenant's own data sources, and nothing else          |
+| Service        | Image or target            | Where                 | For                                                                             |
+| -------------- | -------------------------- | --------------------- | ------------------------------------------------------------------------------- |
+| `postgres`     | `pgvector/pgvector:pg17`   | `127.0.0.1:5432`      | Every environment's schema, and the job queue; pgvector 0.8.6, pinned by digest |
+| `seaweedfs`    | `chrislusf/seaweedfs:4.46` | `127.0.0.1:8333`      | Documents, by content hash under a prefix per environment                       |
+| `stand-in-idp` | `tools`                    | `127.0.0.1:9090`      | Signing in, as an organisation's provider and as Google                         |
+| `setup`        | `tools`                    | runs once, then exits | Migrations, two invented environments, a store credential each                  |
+| `service`      | `service`                  | `127.0.0.1:8088`      | The API, and the renderer beside it                                             |
+| `worker`       | `worker`                   | no port               | Claims jobs and runs them, carrying Typst and veraPDF                           |
+| `connector`    | `connector`                | no port               | Reaches a tenant's own data sources, and nothing else                           |
 
 `service` and `worker` wait for `setup` to finish, and `setup` waits for the database and the store
 to be healthy, so one `up` is enough from nothing.

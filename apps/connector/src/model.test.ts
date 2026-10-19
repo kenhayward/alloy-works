@@ -3,8 +3,10 @@ import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
 
 import {
+  embedAnswerSchema,
   modelCredentialContext,
   modelEventSchema,
+  type EmbedRequest,
   type ModelEvent,
   type ModelProtocol,
   type ModelRequest,
@@ -76,6 +78,23 @@ function requestFor(
 }
 
 const script = (value: unknown) => `script:${JSON.stringify(value)}`;
+
+/** An embedding call to the stand-in, as `requestFor` makes a model call. */
+function embedFor(
+  inputs: string[],
+  model = 'stand-in-embed-768',
+  protocol: ModelProtocol = 'openai',
+): EmbedRequest {
+  const request = requestFor(protocol, 'unused');
+  return {
+    requestId: request.requestId,
+    tenant: request.tenant,
+    endpoint: request.endpoint,
+    sealed: request.sealed,
+    call: { model, inputs },
+    deadlineMs: 30_000,
+  };
+}
 
 async function called(
   request: ModelRequest,
@@ -301,6 +320,31 @@ describe('a model call through the connector', () => {
     }
   });
 
+  it('VER-039 embeds texts through an OpenAI endpoint, a vector each in order, naming the model that made them', async () => {
+    const answer = await supervisor.embed(
+      embedFor(['The north weir floods each spring.', 'A dam on the river.']),
+    );
+    if (answer === 'busy') throw new Error('busy');
+    expect(answer).toMatchObject({ type: 'embedded', model: 'stand-in-embed-768' });
+    if (answer.type !== 'embedded') return;
+    expect(answer.vectors).toHaveLength(2);
+    expect(answer.vectors.every((vector) => vector.length === 768)).toBe(true);
+    expect(answer.usage?.in).toBeGreaterThan(0);
+    expect(embedAnswerSchema.safeParse(answer).success).toBe(true);
+    // Its key refused, or its endpoint not OpenAI's: a failure by code alone.
+    const refused = await supervisor.embed({
+      ...embedFor(['Hello']),
+      sealed: requestFor('openai', 'x', { key: 'another-key' }).sealed,
+    });
+    expect(refused).toEqual({
+      type: 'failed',
+      failure: { code: 'model_unavailable', reason: 'key_refused' },
+    });
+    expect(await supervisor.embed(embedFor(['Hello'], 'stand-in-1', 'anthropic'))).toMatchObject({
+      type: 'failed',
+    });
+  });
+
   it('records no tokens where the provider reports none, rather than guessing', async () => {
     const events = await called(
       requestFor('openai', script({ items: [{ text: 'Hi' }], usage: false })),
@@ -322,8 +366,10 @@ describe('a model call through the connector', () => {
 
 describe("the connector's model paths", () => {
   const KEY = Buffer.alloc(32, 3).toString('base64');
+  const EMBED_KEY = Buffer.alloc(32, 5).toString('base64');
   const config = loadConnectorConfig({
     CONNECTOR_KEY: KEY,
+    CONNECTOR_EMBED_KEY: EMBED_KEY,
     CONNECTOR_SEALING_KEY: SEALING_KEY.toString('base64'),
     CONNECTOR_DENY: 'none',
     CONNECTOR_HOST: '127.0.0.1',
@@ -373,6 +419,23 @@ describe("the connector's model paths", () => {
         )
       ).status,
     ).toBe(401);
+  });
+
+  it('opens embedding alone to the embed key, which the worker holds, and every path to the service key', async () => {
+    const embedded = await post('/v1/embed', embedFor(['The north weir.']), EMBED_KEY);
+    expect(embedded.status).toBe(200);
+    expect(embedAnswerSchema.parse(await embedded.json())).toMatchObject({ type: 'embedded' });
+    expect((await post('/v1/embed', embedFor(['The north weir.']))).status).toBe(200);
+    for (const path of [
+      '/v1/model',
+      '/v1/model/seal',
+      '/v1/seal',
+      '/v1/test',
+      '/v1/run',
+      '/v1/describe',
+    ]) {
+      expect((await post(path, { tenant: TENANT }, EMBED_KEY)).status, path).toBe(401);
+    }
   });
 
   it('answers a call whose key will not open at once, its one event the failure', async () => {

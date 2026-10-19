@@ -209,3 +209,55 @@ export const childModelRequestSchema = z.strictObject({
   connectTimeoutMs: z.number().int().min(1).max(60_000),
 });
 export type ChildModelRequest = z.infer<typeof childModelRequestSchema>;
+
+/** The most inputs one embedding call carries, and the longest each may be (the G7 plan, G7-F). */
+export const EMBED_INPUTS_MOST = 96;
+export const EMBED_INPUT_CHARS_MOST = 8000;
+/** The dimensions a vector may have: each has its own index (G7-D). */
+export const EMBEDDING_DIMENSIONS = [384, 768, 1024, 1536, 3072] as const;
+/** The most an embedding answer may be: 96 vectors of 3,072 numbers, written out, as a model's. */
+export const EMBED_ANSWER_MAX_BYTES = MODEL_ANSWER_MAX_BYTES;
+export const EMBED_REQUEST_MAX_BYTES = 4 * 1024 * 1024;
+
+/** What an embedding call gives the model (G7-A): its texts, in order. */
+export const embedCallSchema = z.strictObject({
+  model: modelEndpointSchema.shape.model,
+  inputs: z.array(z.string().min(1).max(EMBED_INPUT_CHARS_MOST)).min(1).max(EMBED_INPUTS_MOST),
+});
+export type EmbedCall = z.infer<typeof embedCallSchema>;
+
+export const embedRequestSchema = z.strictObject({
+  requestId: z.uuid(),
+  tenant,
+  endpoint: modelRequestSchema.shape.endpoint,
+  sealed,
+  call: embedCallSchema,
+  deadlineMs: modelRequestSchema.shape.deadlineMs,
+});
+export type EmbedRequest = z.infer<typeof embedRequestSchema>;
+
+/** An embedding call's answer: a vector an input, in order, the model the reply named, and its tokens. */
+export const embedAnswerSchema = z.discriminatedUnion('type', [
+  z.strictObject({
+    type: z.literal('embedded'),
+    model: z.string().min(1).max(200),
+    vectors: z.array(z.array(z.number())).min(1).max(EMBED_INPUTS_MOST),
+    usage: z.strictObject({ in: z.number().int().min(0) }).nullable(),
+  }),
+  z.strictObject({ type: z.literal('failed'), failure: generationFailureSchema }),
+]);
+export type EmbedAnswer = z.infer<typeof embedAnswerSchema>;
+
+/** The line the supervisor writes to an embedding call's child, as a model call's (G1-C). */
+export const childEmbedRequestSchema = z.strictObject({
+  kind: z.literal('embed'),
+  request: embedRequestSchema,
+  secret: modelKeySchema,
+  ca: z
+    .string()
+    .max(256 * 1024)
+    .optional(),
+  deny: z.array(z.string()),
+  connectTimeoutMs: z.number().int().min(1).max(60_000),
+});
+export type ChildEmbedRequest = z.infer<typeof childEmbedRequestSchema>;

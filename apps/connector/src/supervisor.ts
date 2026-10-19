@@ -7,8 +7,12 @@ import {
   MODEL_ANSWER_MAX_BYTES,
   credentialContext,
   modelCredentialContext,
+  embedAnswerSchema,
   modelEventSchema,
+  type ChildEmbedRequest,
   type ChildModelRequest,
+  type EmbedAnswer,
+  type EmbedRequest,
   type GenerationFailure,
   type ModelEvent,
   type ModelRequest,
@@ -322,6 +326,8 @@ export interface Supervisor {
     onEvent: (event: ModelEvent) => void,
     signal?: AbortSignal,
   ): 'busy' | Promise<void>;
+  /** An embedding call (the G7 plan, G7-A): `busy` as a model call is, else its one answer. */
+  embed(request: EmbedRequest, signal?: AbortSignal): 'busy' | Promise<EmbedAnswer>;
   /** How many children are running. */
   active(): number;
 }
@@ -536,7 +542,92 @@ export function createSupervisor(options: {
     }
   }
 
+  /** An embedding call's child: the key opened as a model call's, one line in and one answer out. */
+  async function embedWork(
+    request: EmbedRequest,
+    slot: number,
+    sweeping: (done: Promise<void>) => void,
+    signal: AbortSignal | undefined,
+  ): Promise<EmbedAnswer> {
+    let secret: string;
+    try {
+      secret = openSecret(
+        options.sealingKey,
+        'model-credential',
+        request.tenant,
+        request.sealed,
+        modelCredentialContext(request.endpoint.id, request.endpoint),
+      );
+    } catch {
+      return { type: 'failed', failure: { code: 'model_unavailable', reason: 'key_refused' } };
+    }
+    const input: ChildEmbedRequest = {
+      kind: 'embed',
+      request,
+      secret,
+      deny: [...options.deny],
+      connectTimeoutMs,
+      ...(options.ca === undefined ? {} : { ca: options.ca }),
+    };
+    const spec = specFor(slot);
+    let stderrBytes = 0;
+    let answer: EmbedAnswer | undefined;
+    let outcome: StreamOutcome;
+    try {
+      outcome = await streamSpawn(
+        spec,
+        JSON.stringify(input),
+        request.deadlineMs,
+        (line) => {
+          try {
+            const parsed = embedAnswerSchema.safeParse(JSON.parse(line));
+            if (parsed.success) answer = parsed.data;
+          } catch {
+            // Not an answer: the child is at fault.
+          }
+          return false;
+        },
+        (chunk) => {
+          stderrBytes += chunk.length;
+        },
+        signal,
+      );
+    } finally {
+      if (spec.uid !== undefined) sweeping(sweep(spec.uid).catch(() => {}));
+    }
+    options.onStderrBytes?.(stderrBytes);
+    return (
+      answer ?? {
+        type: 'failed',
+        failure:
+          outcome.kind === 'timeout'
+            ? { code: 'timeout' }
+            : outcome.kind === 'capped'
+              ? { code: 'model_unavailable', reason: 'failed' }
+              : { code: 'connector_error' },
+      }
+    );
+  }
+
   return {
+    embed(request, signal) {
+      if (models >= maxModels) return 'busy';
+      const slot = free.shift();
+      if (slot === undefined) return 'busy';
+      active += 1;
+      models += 1;
+      let answer: EmbedAnswer | undefined;
+      return holding(slot, (sweeping) =>
+        embedWork(request, slot, sweeping, signal)
+          .then((each) => {
+            answer = each;
+          })
+          .finally(() => {
+            active -= 1;
+            models -= 1;
+          }),
+      ).then(() => answer!);
+    },
     model(request, onEvent, signal) {
       if (models >= maxModels) return 'busy';
       const slot = free.shift();

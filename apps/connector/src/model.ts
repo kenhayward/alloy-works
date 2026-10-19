@@ -1,7 +1,10 @@
 import {
+  EMBED_ANSWER_MAX_BYTES,
   MODEL_ANSWER_MAX_BYTES,
   replyModelMatches,
+  type ChildEmbedRequest,
   type ChildModelRequest,
+  type EmbedAnswer,
   type GenerationFailure,
   type ModelCall,
   type ModelEvent,
@@ -458,4 +461,87 @@ export async function answerModel(
     fail(outcome.ok ? unavailable('failed') : streamFailure(outcome));
   }
   await written;
+}
+
+/**
+ * An embedding call in the child (the G7 plan, G7-A): OpenAI's `/embeddings`, which Azure OpenAI and
+ * self-hosted servers speak too, posted through the guarded client and read whole; one answer, a
+ * vector an input in order, or a failure by its code. Nothing the provider sends is repeated.
+ */
+export async function answerEmbed(
+  input: ChildEmbedRequest,
+  options: { readonly lookup?: Lookup } = {},
+): Promise<EmbedAnswer> {
+  const { request } = input;
+  const failed = (failure: GenerationFailure): EmbedAnswer => ({ type: 'failed', failure });
+  // Only the OpenAI protocol embeds (G7-A); the service refuses another before any call.
+  if (request.endpoint.protocol !== 'openai') return failed(unavailable('failed'));
+  const { host, port, path, secure } = baseUrlParts(request.endpoint.baseUrl);
+  const chunks: Buffer[] = [];
+  const outcome = await stream(
+    {
+      host,
+      port,
+      path: `${path}/embeddings`,
+      method: 'POST',
+      headers: [
+        ['authorization', `Bearer ${input.secret}`],
+        ['content-type', 'application/json'],
+      ],
+      body: JSON.stringify({
+        model: request.call.model,
+        input: request.call.inputs,
+        encoding_format: 'float',
+      }),
+      secure,
+    },
+    {
+      deny: input.deny,
+      ...(options.lookup ? { lookup: options.lookup } : {}),
+      ...(input.ca === undefined ? {} : { ca: input.ca }),
+      deadline: Date.now() + request.deadlineMs,
+      connectTimeoutMs: input.connectTimeoutMs,
+      // A provider's JSON, spaced as it likes, around what the answer carries.
+      maxBytes: 4 * EMBED_ANSWER_MAX_BYTES,
+    },
+    (chunk) => {
+      chunks.push(chunk);
+    },
+  );
+  if (!outcome.ok) return failed(streamFailure(outcome));
+  const value = parse(Buffer.concat(chunks).toString('utf8'));
+  const model = typeof value?.model === 'string' ? value.model : undefined;
+  if (model === undefined) return failed(unavailable('failed'));
+  if (!replyModelMatches(request.call.model, model)) return failed({ code: 'model_mismatch' });
+  const data = Array.isArray(value?.data) ? (value.data as unknown[]) : [];
+  const vectors: number[][] = [];
+  for (const [at, each] of data.entries()) {
+    const item = each as Record<string, unknown> | null;
+    const embedding = item?.embedding;
+    const index = typeof item?.index === 'number' ? item.index : at;
+    if (
+      !Array.isArray(embedding) ||
+      !embedding.every((number) => typeof number === 'number' && Number.isFinite(number))
+    ) {
+      return failed(unavailable('failed'));
+    }
+    vectors[index] = embedding as number[];
+  }
+  // A vector an input, in their order, each as long as the first.
+  const dims = vectors[0]?.length ?? 0;
+  if (
+    vectors.length !== request.call.inputs.length ||
+    vectors.some((vector) => vector === undefined || vector.length !== dims) ||
+    dims === 0
+  ) {
+    return failed(unavailable('failed'));
+  }
+  const usage = value?.usage as Record<string, unknown> | undefined | null;
+  return {
+    type: 'embedded',
+    model,
+    vectors,
+    usage:
+      usage && typeof usage.prompt_tokens === 'number' ? { in: count(usage.prompt_tokens) } : null,
+  };
 }
