@@ -97,9 +97,14 @@ export async function insideTransaction(
  * Waits until at least `count` connections to the test database are waiting on a lock, so a test can
  * release what they wait behind knowing each has reached its wait rather than guessing with a sleep.
  * Reads `pg_stat_activity` as an administrator of the database, since the runtime role cannot see
- * another session's wait; fails after five seconds rather than hanging the suite.
+ * another session's wait; fails after five seconds rather than hanging the suite. With `advisory`,
+ * only waits on an advisory lock count: a test holding one is not fooled by another wait on the way.
  */
-export async function untilWaitingOnLocks(adminUrl: string, count: number): Promise<void> {
+export async function untilWaitingOnLocks(
+  adminUrl: string,
+  count: number,
+  options: { readonly advisory?: boolean } = {},
+): Promise<void> {
   const client = new pg.Client({ connectionString: adminUrl });
   await client.connect();
   try {
@@ -110,7 +115,8 @@ export async function untilWaitingOnLocks(adminUrl: string, count: number): Prom
          where datname = current_database()
            and backend_type = 'client backend'
            and pid <> pg_backend_pid()
-           and wait_event_type = 'Lock'`,
+           and wait_event_type = 'Lock'
+           ${options.advisory === true ? "and wait_event = 'advisory'" : ''}`,
       );
       if ((rows[0]?.waiting ?? 0) >= count) return;
       if (Date.now() > deadline) {

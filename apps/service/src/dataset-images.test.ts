@@ -556,7 +556,8 @@ describe("a result's images, admitted before it is kept (the D8 plan, D8-D and D
       }),
     );
     try {
-      await untilWaitingOnLocks(h.db.adminUrl, 2);
+      // On the image locks themselves: another wait on the way would release them too soon.
+      await untilWaitingOnLocks(h.db.adminUrl, 2, { advisory: true });
     } finally {
       h.connector.runFor = undefined;
       for (const release of releases) await release();
