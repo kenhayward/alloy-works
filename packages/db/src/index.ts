@@ -764,8 +764,22 @@ export {
   type GenerationBudget,
 } from './generation-budget.js';
 export {
+  EXACT_BELOW,
+  MEANING_DISTANCE_MOST,
+  MEANING_HITS,
+  searchMeaning,
+  type MeaningFilters,
+  type MeaningHit,
+  type MeaningRoad,
+} from './search-meaning.js';
+export {
   copyPassages,
+  eraseQueryEmbeddings,
+  keepQueryEmbedding,
   passageBlocks,
+  readQueryEmbedding,
+  servingEmbedding,
+  sweepQueryEmbeddings,
   embedIndexed,
   embeddedHashes,
   embeddingModels,

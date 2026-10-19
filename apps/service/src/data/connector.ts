@@ -1,7 +1,10 @@
 import {
   CONNECTOR_ANSWER_MAX_BYTES,
   MODEL_ANSWER_MAX_BYTES,
+  embedAnswerSchema,
   modelEventSchema,
+  type EmbedAnswer,
+  type EmbedRequest,
   type ModelEvent,
   type ModelRequest,
   type ModelSealRequest,
@@ -75,6 +78,8 @@ export interface ConnectorClient {
     onEvent: (event: ModelEvent) => void,
     signal?: AbortSignal,
   ): Promise<Answered<Extract<ModelEvent, { type: 'ended' | 'failed' }>>>;
+  /** An embedding call (the G7 plan, G7-G): a search's words, embedded by the serving model. */
+  embed(request: EmbedRequest, signal?: AbortSignal): Promise<Answered<EmbedAnswer>>;
 }
 
 /**
@@ -163,6 +168,8 @@ export function createConnectorClient(options: {
     run: (request, signal) =>
       ask('/v1/run', request, runAnswerSchema, request.deadlineMs + SLACK_MS, signal),
     sealModel: (request) => ask('/v1/model/seal', request, sealAnswerSchema, SEAL_MS),
+    embed: (request, signal) =>
+      ask('/v1/embed', request, embedAnswerSchema, request.deadlineMs + SLACK_MS, signal),
     model: async (request, onEvent, signal) => {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), request.deadlineMs + SLACK_MS);

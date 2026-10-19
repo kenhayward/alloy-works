@@ -267,3 +267,63 @@ export async function passageBlocks(
      order by p.block_id`.execute(trx);
   return rows.map((row) => row.block_id);
 }
+
+/** The model meaning is searched by, where one serves and its endpoint is set (G7-G). */
+export async function servingEmbedding(
+  trx: TenantTransaction,
+): Promise<EmbeddingModel | undefined> {
+  const models = await embeddingModels(trx);
+  const { rows } = await sql<{ serving_model: string | null }>`
+    select serving_model from embedding_state`.execute(trx);
+  return models.find((each) => each.model === rows[0]?.serving_model);
+}
+
+/** A searcher's own vector for these words, by a model: theirs alone (G7-G). */
+export async function readQueryEmbedding(
+  trx: TenantTransaction,
+  requester: string,
+  hash: string,
+  model: string,
+): Promise<number[] | undefined> {
+  if (!(await embeddingsStored(trx))) return undefined;
+  const { rows } = await sql<{ vector: string }>`
+    select vector::text as vector from query_embedding
+     where requester = ${requester} and text_hash = ${hash} and model = ${model}
+       and made_at > now() - interval '1 day'`.execute(trx);
+  return rows[0] ? (JSON.parse(rows[0].vector) as number[]) : undefined;
+}
+
+export async function keepQueryEmbedding(
+  trx: TenantTransaction,
+  input: {
+    readonly requester: string;
+    readonly hash: string;
+    readonly model: string;
+    readonly dims: Dimensions;
+    readonly vector: readonly number[];
+  },
+): Promise<void> {
+  await sql`insert into query_embedding (requester, text_hash, model, dims, vector)
+    values (${input.requester}, ${input.hash}, ${input.model}, ${input.dims},
+      ${vectorLiteral(input.vector)}::extensions.halfvec)
+    on conflict (requester, text_hash, model) do update set vector = excluded.vector,
+      made_at = now()`.execute(trx);
+}
+
+/** Query vectors a day old and more go (G7-G). */
+export async function sweepQueryEmbeddings(trx: TenantTransaction): Promise<number> {
+  if (!(await embeddingsStored(trx))) return 0;
+  const { rows } = await sql<{ n: string }>`
+    with gone as (delete from query_embedding where made_at <= now() - interval '1 day' returning 1)
+    select count(*) as n from gone`.execute(trx);
+  return Number(rows[0]?.n ?? 0);
+}
+
+/** A person's query vectors, as they are erased: what they searched for is theirs. */
+export async function eraseQueryEmbeddings(
+  trx: TenantTransaction,
+  principal: string,
+): Promise<void> {
+  if (!(await embeddingsStored(trx))) return;
+  await sql`delete from query_embedding where requester = ${principal}`.execute(trx);
+}

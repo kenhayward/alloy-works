@@ -558,7 +558,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...bindingHandlers(tenantOf, options.objects),
     ...pendingHandlers(db, tenantOf, options.objects),
     ...definitionHandlers(db, tenantOf, principalOf),
-    ...searchHandlers(db, tenantOf, principalOf),
+    ...searchHandlers(db, tenantOf, principalOf, options.connector),
     ...presentationHandlers(db, tenantOf),
     ...publishingHandlers(db, tenantOf, principalOf, options.objects),
     ...assetHandlers(db, tenantOf, principalOf, options.objects),

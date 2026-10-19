@@ -113,6 +113,38 @@ describe('the search page', () => {
     expect(marked.closest('p')).toHaveTextContent('Hold the lever until it clicks.');
   });
 
+  it('SCH-014 says which results meaning found, alone or with the words, and when meaning is unavailable', async () => {
+    const [guide, findings] = results.items;
+    const { client } = service(() =>
+      json(200, {
+        ...results,
+        meaning: 'used',
+        items: [
+          { ...guide, found: 'both' },
+          { ...findings, found: 'meaning' },
+        ],
+      }),
+    );
+    const { unmount } = render(
+      <SearchPage client={client} query="lever" onSearch={() => undefined} />,
+    );
+    const [both, meant] = await screen.findAllByRole('article');
+    expect(within(both!).getByText('Found by words and meaning')).toBeInTheDocument();
+    expect(within(meant!).getByText('Found by meaning')).toBeInTheDocument();
+    unmount();
+
+    const words = service(() =>
+      json(200, { ...results, meaning: 'unavailable', items: [{ ...guide, found: 'words' }] }),
+    );
+    render(<SearchPage client={words.client} query="lever" onSearch={() => undefined} />);
+    expect(
+      await screen.findByText(
+        'Searching by meaning is unavailable just now: these are found by their words alone.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Found by/)).toBeNull();
+  });
+
   it('SCH-053 shows a section with its document and the components it places, and offers to place it in a document', async () => {
     const PUMP = 'cccccccc-0000-4000-8000-0000000000aa';
     const { client } = service(() =>

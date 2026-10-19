@@ -15,6 +15,7 @@ import {
   sweepQueryRuns,
   sweepRangePreviews,
   sweepAbandonedRuns,
+  sweepQueryEmbeddings,
   expireTenantExport,
   tenantExportsDue,
   type JobQueue,
@@ -140,6 +141,22 @@ export async function sweepAbandonedGenerationRuns(
     }
   }
   return ended;
+}
+
+/** A searcher's query vectors a day old and more, in every tenant (the G7 plan, G7-G). */
+export async function sweepQueryEmbeddingsEverywhere(
+  db: TenantDatabase,
+  log: WorkerLog,
+): Promise<number> {
+  let removed = 0;
+  for (const tenant of await db.tenants()) {
+    try {
+      removed += await db.withTenant(tenant, (trx) => sweepQueryEmbeddings(trx));
+    } catch (error) {
+      log.error({ tenant: tenant.id, err: error }, 'the query vector sweep failed in a tenant');
+    }
+  }
+  return removed;
 }
 
 /**

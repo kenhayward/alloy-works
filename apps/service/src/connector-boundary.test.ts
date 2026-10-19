@@ -35,6 +35,8 @@ describe("the connector's one caller", () => {
       'data/connections.ts',
       'data/connector.test.ts',
       'generation/assistant.ts',
+      // A search's words embedded as the person searches (the G7 plan, G7-G).
+      'generation/meaning.ts',
       'generation/models.ts',
       'generation/prompt-runs.ts',
       // The loop both runs share, which a route hands the client (the G5 plan, G5-A).

@@ -76043,6 +76043,11 @@ export interface operations {
                                     title: string;
                                 }[];
                             } | null;
+                            /**
+                             * @description How it was found: by its words, by its meaning, or both. They answer different questions and deserve different trust
+                             * @enum {string}
+                             */
+                            found: "words" | "meaning" | "both";
                         }[];
                         /** @description Every declared dimension, each counted with the other filters in force and its own left out */
                         facets: {
@@ -76150,6 +76155,11 @@ export interface operations {
                                 }[];
                             }[];
                         };
+                        /**
+                         * @description Whether meaning was searched beside the words: `used`, its best fused with the best of the words; `unavailable`, the embedding model did not answer, so these are the words alone; `unconfigured`, no embedding model serves this environment; `skipped`, nothing to search by meaning (scoped terms, exclusions or filters alone, or an earlier version or a baseline). The count and facets are always the words'
+                         * @enum {string}
+                         */
+                        meaning: "used" | "unavailable" | "unconfigured" | "skipped";
                         /** @description The outcome in a sentence, for the reader */
                         message: string;
                     };

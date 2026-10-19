@@ -209,6 +209,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   stops when it is spent, and the page says so (`/v1/model-budget`).
 - **Twelve months of spend.** The same page shows model use by month and purpose, with tokens read
   from the cache and cost by currency, and query runs by month (`/v1/model-usage`).
+- **Searching by meaning.** Where an embedding model serves, search finds by meaning beside the
+  words: a part that means what was asked, though it holds none of its words, over what you may read
+  alone. Each result says whether it was found by its words, by its meaning, or both, and search says
+  when meaning is unavailable and the results are the words' alone (`/v1/search`).
 - **Generated content waits for a person.** A document is not published, nor pinned as a baseline,
   while a suggestion the assistant made waits to be accepted or rejected in Review; a preview still
   shows it, and a baseline made before is published as it was pinned. A workflow step can require that

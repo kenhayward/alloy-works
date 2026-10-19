@@ -474,6 +474,7 @@ const WRITERS: Readonly<Record<string, Readonly<Record<string, Entry>>>> = {
     sweepExpiredTenantExports: { none: 'derived' },
     sweepExpiredRangePreviews: { none: 'preview' },
     sweepAbandonedGenerationRuns: { none: 'derived' },
+    sweepQueryEmbeddingsEverywhere: { none: 'derived' },
     sweepStalePresence: { none: 'presence' },
     foldNotificationDigests: { none: 'inbox' },
     sweepOldNotifications: { none: 'inbox' },
