@@ -175,7 +175,15 @@ export async function alertSpend(
       const { rows: months } = await sql<{ month: string }>`
         select to_char(now() at time zone 'utc', 'YYYY-MM') as month`.execute(trx);
       const month = months[0]!.month;
-      for (const threshold of budget.thresholds) {
+      const { rows: named } = await sql<{ principal_id: string }>`
+        select principal_id from generation_budget_recipient order by added_at`.execute(trx);
+      // Decided when told: somebody no longer administering is told nothing of spend.
+      const recipients: string[] = [];
+      for (const { principal_id: each } of named) {
+        if (await mayBeToldOfSpend(trx, each)) recipients.push(each);
+      }
+      // With nobody to tell, no alert is spent: one named later is told of a threshold crossed before.
+      for (const threshold of recipients.length === 0 ? [] : budget.thresholds) {
         if (micros * 100n < budget.limitMicros * BigInt(threshold)) continue;
         const { rows: fresh } = await sql<{ threshold: number }>`
           insert into generation_budget_alert (month, threshold, limit_micros)
@@ -189,11 +197,7 @@ export async function alertSpend(
           limitMicros: budget.limitMicros.toString(),
           month,
         };
-        const { rows: recipients } = await sql<{ principal_id: string }>`
-          select principal_id from generation_budget_recipient order by added_at`.execute(trx);
-        for (const { principal_id: recipient } of recipients) {
-          // Decided when told: somebody no longer administering is told nothing of spend.
-          if (!(await mayBeToldOfSpend(trx, recipient))) continue;
+        for (const recipient of recipients) {
           await sql`insert into notification (recipient, kind, counts)
             values (${recipient}, 'budget', ${JSON.stringify(counts)}::jsonb)`.execute(trx);
           await notifyTenant(trx, { kind: 'inbox', recipient });

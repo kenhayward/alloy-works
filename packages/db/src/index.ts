@@ -764,6 +764,12 @@ export {
   type GenerationBudget,
 } from './generation-budget.js';
 export {
+  USAGE_MONTHS_MOST,
+  usageByMonth,
+  type ModelMonth,
+  type QueryMonth,
+} from './model-usage.js';
+export {
   changePersonalPrompt,
   deletePersonalPrompt,
   listPersonalPrompts,

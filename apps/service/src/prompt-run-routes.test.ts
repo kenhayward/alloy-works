@@ -389,6 +389,13 @@ describe('a prompt run through the service (the G4 plan, G4-H and G4-I)', () => 
       const frames = framesOf(ran.body);
       expect(frames.map((frame) => frame.event)).toEqual(['run', 'text', 'ended']);
       expect(frames.at(-1)!.data.refused).toBe('The model wrote nothing, so nothing is proposed.');
+      // A run that proposed nothing is never reused: the next calls again (G6-E).
+      const before = asked.length;
+      await h.call('grace', 'POST', `/v1/documents/${report.id}/prompt-runs`, {
+        prompt: one.id,
+        node: report.nodes[0],
+      });
+      expect(asked.length - before).toBe(1);
     } finally {
       h.connector.modelFor = was;
     }

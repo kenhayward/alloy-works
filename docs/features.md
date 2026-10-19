@@ -207,6 +207,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 - **A model budget.** The same page sets what the environment means to spend on models a month and
   the percents of it that alert, and names who is told, in their inbox, each once a month. Nothing
   stops when it is spent, and the page says so (`/v1/model-budget`).
+- **Twelve months of spend.** The same page shows model use by month and purpose, with tokens read
+  from the cache and cost by currency, and query runs by month (`/v1/model-usage`).
 - **Generated content waits for a person.** A document is not published, nor pinned as a baseline,
   while a suggestion the assistant made waits to be accepted or rejected in Review; a preview still
   shows it, and a baseline made before is published as it was pinned. A workflow step can require that

@@ -529,7 +529,7 @@ export async function reusableRun(
        and parameters = ${JSON.stringify(input.parameters)}::jsonb
        and endpoint_id = ${e.id} and endpoint ->> 'baseUrl' = ${e.baseUrl}
        and endpoint ->> 'model' = ${e.model} and endpoint ->> 'boundary' = ${e.boundary}
-       and coalesce(reply, '') <> ''
+       and coalesce(reply, '') <> '' and steps -> 0 ? 'proposal'
        and started_at > now() - make_interval(hours => ${RESULT_REUSED_HOURS})
      order by started_at desc limit 1`.execute(trx);
   return rows[0];

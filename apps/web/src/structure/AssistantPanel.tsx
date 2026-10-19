@@ -167,6 +167,7 @@ export function AssistantPanel({
   const [ended, setEnded] = useState<Ended | null>(null);
   // A prompt run that reused the requester's own earlier one, and how to run it afresh (G6-E).
   const [reused, setReused] = useState<Record<string, unknown> | null>(null);
+  useEffect(() => setReused(null), [node, document]);
   const [said, setSaid] = useState('');
   const [month, setMonth] = useState<string>('');
   const stop = useRef<AbortController | null>(null);

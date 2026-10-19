@@ -3,6 +3,17 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.199.0 - 2026-10-19 (PR #730)
+
+The intelligence's sixth slice: spend (the G6 plan).
+
+### Added
+
+- **Rate limits.** Administration's new Model spending page sets how many model runs each person may start an hour, and a person's own limit in place of it. A run over it is refused before any call, saying when one is free again.
+- **A model budget.** Model spending sets what models may cost a month and the percents of it that alert. The people named are told in their inbox, once a month for each threshold. Nothing stops when it is spent, and the page says so.
+- **Caching.** A prompt run you repeat on the same part, with nothing changed, reuses your own run of the last day at no cost, and says so; Run afresh calls the model. Nobody else's run is ever reused. Anthropic endpoints cache their instructions and context, and an endpoint can price tokens read from the cache.
+- **Twelve months of spend.** Model spending shows model use by month and purpose, with tokens read from the cache and cost, and query runs by month.
+
 ## 0.198.0 - 2026-10-18 (PR #726)
 
 The intelligence's fifth slice: the conversation (the G5 plan).

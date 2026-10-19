@@ -404,18 +404,19 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
         ended({ tokensIn: 0, tokensOut: 0, cost: '0.000000' }),
       ]),
     );
-    render(
+    const panel = (node: string) => (
       <AssistantPanel
         client={client}
         document={DOCUMENT}
         component={SITES}
-        node={NODE}
+        node={node}
         nameOf={() => 'Sites'}
         onCite={() => {}}
         stream={stream}
         origin="http://doc.test"
-      />,
+      />
     );
+    const { rerender } = render(panel(NODE));
     const offered = await screen.findByRole('region', { name: 'Prompts' });
     await user.click(
       within(offered).getByRole('button', { name: 'Run Say it plainly on this part' }),
@@ -423,6 +424,13 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
     expect(
       await screen.findByText(/From your earlier run of this prompt on this part, at no cost\./),
     ).toBeVisible();
+    // Another part open, it is not offered there.
+    rerender(panel('n2'));
+    expect(screen.queryByRole('button', { name: 'Run afresh' })).toBeNull();
+    rerender(panel(NODE));
+    await user.click(
+      within(offered).getByRole('button', { name: 'Run Say it plainly on this part' }),
+    );
     await user.click(screen.getByRole('button', { name: 'Run afresh' }));
     expect(stream).toHaveBeenLastCalledWith(
       expect.objectContaining({

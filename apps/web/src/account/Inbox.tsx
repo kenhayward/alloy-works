@@ -101,7 +101,8 @@ function said(each: Notification): string {
       return `Your daily digest: ${parts.join(', ')}, on ${counts.places.map(placeWords).join(', ')}`;
     }
     case 'budget': {
-      const budget = each.budget!;
+      const budget = each.budget;
+      if (!budget) return 'The model budget crossed a threshold.';
       const money = (text: string) => `${budget.currency} ${Number(text).toFixed(2)}`;
       return `Models have cost ${money(budget.spent)} this month, ${budget.threshold}% of the ${money(budget.limit)} budget. Nothing stops.`;
     }

@@ -84,7 +84,7 @@ time (below); embeddings for meaning are [search.md](search.md)'s and
 | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | GEN-002, GEN-004                                                                   | A prompt declares components, metadata and parameters, and writes a part's text: a query's results as context, and a field as output, are later slices' |
 | GEN-021                                                                            | The conversation's tray, guardrails, new components and personal prompts: G5's later PRs; GEN-021 is the model's (G5-H)                                 |
-| GEN-044, ADM-033                                                                   | Trends (G6d); GEN-044's embedding does not exist yet                                                                                                    |
+| GEN-044, ADM-033                                                                   | Nothing embeds yet (G6-G); the trend lacks ADM-011's storage, publication and asset measures (T7)                                                       |
 | ADM-048                                                                            | Translation, scanning, email and webhooks cost nothing yet; it is claimed when the last of them exists                                                  |
 | SCH-013, SCH-014, SCH-035, VER-039 (designed elsewhere), SCH-067, GEN-038, GEN-044 | Meaning (G7)                                                                                                                                            |
 | API-019, API-021, API-023, API-052, REL-021, IAM-033, LIF-071                      | The MCP surface and service identities (G8), with the token design ([access.md](access.md))                                                             |
@@ -267,7 +267,12 @@ rate limit, has its reply checked again by the returned guardrails and its propo
 Keyed by requester: no other person's result is reachable, and an erased requester's runs match
 nobody. `fresh` calls regardless. GEN-036's gap: trials, which are run to be seen again, and
 conversations, whose turns are never repeated, are never result-cached. DAT-026 is not claimed here:
-it is the query cache's (DAT-052, T7). The requester sees a run's tokens and cost when it
+it is the query cache's (DAT-052, T7).
+
+**The trend** (G6-F; towards ADM-033): `/v1/model-usage`, at most 13 months, by UTC month and purpose:
+runs ended, tokens in, out and from the cache, and cost by currency; and query runs by month with
+their rows and bytes. Runs are never deleted, so every month a tenant has run is there; query runs are
+kept 13 months. ADM-033 is left unclaimed: storage, publication and asset volume are ADM-011's (T7). The requester sees a run's tokens and cost when it
 ends, and their month's on the panel (GEN-037). Budgets, alerts before a limit, what stops when one is
 spent, and twelve months of trend are G6's.
 
