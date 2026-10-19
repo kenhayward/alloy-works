@@ -13,6 +13,14 @@ const json = (status: number, body: unknown) =>
 
 function service() {
   const sent: { method: string; path: string; body: unknown }[] = [];
+  let budget = {
+    budget: null as { currency: string; limit: number; thresholds: number[] } | null,
+    month: '2026-10',
+    spent: '42.500000',
+    otherCurrencyRuns: 0,
+    recipients: [] as { id: string; name: string }[],
+    whenSpent: 'everything_continues',
+  };
   let limits = {
     perHour: 20 as number | null,
     people: [{ person: { id: GRACE, name: 'Grace Hopper' }, perHour: 60 }],
@@ -21,6 +29,23 @@ function service() {
     const request = input instanceof Request ? input : new Request(String(input), init);
     const path = new URL(request.url).pathname;
     if (path === '/v1/model-limits' && request.method === 'GET') return json(200, limits);
+    if (path.startsWith('/v1/model-budget')) {
+      if (request.method === 'PUT') {
+        const body = (await request.json()) as Record<string, unknown>;
+        sent.push({ method: 'PUT', path, body });
+        if (path === '/v1/model-budget') budget = { ...budget, budget: body.budget as never };
+        else {
+          budget = {
+            ...budget,
+            recipients: (body.principals as string[]).map((id) => ({
+              id,
+              name: id === IVY ? 'Ivy Lane' : 'Grace Hopper',
+            })),
+          };
+        }
+      }
+      return json(200, budget);
+    }
     if (request.method === 'PUT') {
       const body = (await request.json()) as { perHour: number | null };
       sent.push({ method: 'PUT', path, body });
@@ -62,6 +87,41 @@ function service() {
 }
 
 describe("Administration's Model spending", () => {
+  it('GEN-034 ADM-013 ADM-014 sets a monthly budget with alerts before it, declares that nothing stops when it is spent, and names who is told', async () => {
+    const user = userEvent.setup();
+    const { client, sent } = service();
+    render(<ModelSpending client={client} />);
+    const section = await screen.findByRole('region', { name: 'Budget' });
+    expect(
+      within(section).getByText('When it is spent, nothing stops: every capability continues.'),
+    ).toBeInTheDocument();
+    expect(
+      await within(section).findByText('No budget is set. USD 42.50 spent in 2026-10.'),
+    ).toBeInTheDocument();
+    await user.type(within(section).getByRole('spinbutton', { name: 'Monthly limit' }), '500');
+    const percents = within(section).getByRole('textbox', { name: 'Alert at percents' });
+    await user.clear(percents);
+    await user.type(percents, '80, 100');
+    await user.click(within(section).getByRole('button', { name: 'Save budget' }));
+    expect(sent).toContainEqual({
+      method: 'PUT',
+      path: '/v1/model-budget',
+      body: { budget: { currency: 'USD', limit: 500, thresholds: [80, 100] } },
+    });
+    expect(
+      await within(section).findByText('USD 42.50 of USD 500.00 spent in 2026-10.'),
+    ).toBeInTheDocument();
+
+    await user.click(await within(section).findByRole('checkbox', { name: 'Ivy Lane' }));
+    await user.click(within(section).getByRole('button', { name: 'Save who is told' }));
+    expect(sent).toContainEqual({
+      method: 'PUT',
+      path: '/v1/model-budget/recipients',
+      body: { principals: [IVY] },
+    });
+    expect(await within(section).findByText('1 person is told.')).toBeInTheDocument();
+  });
+
   it("GEN-035 sets the environment's runs an hour, a person's own in place of it, and removes one", async () => {
     const user = userEvent.setup();
     const { client, sent } = service();

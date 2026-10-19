@@ -97,6 +97,16 @@ export async function setPersonLimit(
 export async function erasePersonLimit(trx: TenantTransaction, principal: string): Promise<void> {
   if (!(await limitsStored(trx))) return;
   await sql`delete from generation_limit_person where principal_id = ${principal}`.execute(trx);
+  // And as one told of the budget (G6-D), where this schema has one.
+  const { rows } = await sql<{ found: boolean }>`
+    select to_regclass(current_schema() || '.generation_budget_recipient') is not null as found`.execute(
+    trx,
+  );
+  if (rows[0]?.found === true) {
+    await sql`delete from generation_budget_recipient where principal_id = ${principal}`.execute(
+      trx,
+    );
+  }
 }
 
 /**

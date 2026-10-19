@@ -116,6 +116,11 @@ export const documentationGroups = [
           'How many model runs each person may start an hour: the environment’s limit, and a person’s own in place of it. A run over it is refused, saying when one is free again.',
       },
       {
+        name: 'Model budget',
+        description:
+          'The environment’s monthly limit on what models cost, the percents of it that alert, and who is told, through the inbox. Nothing stops when it is spent: every capability continues, declared here in advance.',
+      },
+      {
         name: 'Prompts',
         description:
           'Named, versioned prompts: the instructions, the context each declares and nothing beyond it, the text it writes and the models it accepts; and the libraries that list them, one bound by each template.',
@@ -402,6 +407,7 @@ const operationTags = {
   ],
   Guardrails: ['listGuardrails', 'setGuardrail', 'retireGuardrail'],
   'Model limits': ['getModelLimits', 'setModelLimit', 'setPersonLimit'],
+  'Model budget': ['getModelBudget', 'setModelBudget', 'setBudgetRecipients'],
   'Personal prompts': [
     'listPersonalPrompts',
     'savePersonalPrompt',
@@ -850,6 +856,12 @@ const descriptions: Readonly<Record<string, string>> = {
     'Sets how many model runs each person may start an hour, counted over the last hour; null lifts it. A run over it is refused with model_rate_limited and when one is free again; testing an endpoint is never counted. Needs administer, and is audited.',
   setPersonLimit:
     'Sets one person’s runs an hour in place of the environment’s, higher or lower; null removes it. Needs administer, and is audited.',
+  getModelBudget:
+    'Returns the monthly model budget, or none; what runs in its currency cost this month, UTC, whatever their purpose or outcome; how many runs cost something in another currency; who is told; and what stops when it is spent, which is nothing. Needs administer.',
+  setModelBudget:
+    'Sets the monthly model budget: a currency, a limit and up to five rising percents of it, at least one below 100, each alerting once a month as the spend crosses it; null lifts it. A changed limit may alert again. Nothing stops when it is spent. Needs administer, and is audited.',
+  setBudgetRecipients:
+    'Names who is told, through the inbox, as the month’s spend crosses a threshold, in place of who was: each from inside the organisation and administering the environment, decided again when told. Needs administer, and is audited.',
   listConversationEndpoints:
     'Lists the endpoints a conversation may run on, with a signed-in session alone: every one in use with its key set, its model and whether it sits outside the data boundary, the one a turn naming none runs on marked.',
   startConversation:

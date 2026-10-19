@@ -1,8 +1,10 @@
 import type { ModelEndpoint } from '@alloy-works/domain';
 import { sql } from 'kysely';
+import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { bootstrapCluster } from './bootstrap.js';
+import { setBudget } from './generation-budget.js';
 import { migrate } from './migrate.js';
 import {
   changeModelEndpoint,
@@ -226,6 +228,44 @@ describe('model endpoints', () => {
       ask: 'What floods?',
       reply: 'The north weir.',
     });
+  });
+
+  it('ends a run whose budget alert could not be sent, saying so, and sends nothing (the G6 plan, G6-D)', async () => {
+    const admin = new pg.Client({ connectionString: db.adminUrl });
+    await admin.connect();
+    try {
+      await service.withTenant(production, async (trx) => {
+        await setBudget(trx, { currency: 'USD', limitMicros: 1n, thresholds: [50] }, ada);
+      });
+      // Any alert's record refused, as a failing store would.
+      await admin.query(
+        `alter table "${production.schema}".generation_budget_alert
+           add constraint refuse_every_alert check (threshold < 0) not valid`,
+      );
+      const id = await service.withTenant(production, async (trx) =>
+        startRun(trx, {
+          purpose: 'drafting',
+          endpoint: await made(trx, { ...drafting, name: 'Alerting' }),
+          parameters: {},
+          contextDigest: 'f'.repeat(64),
+          by: ada,
+        }),
+      );
+      const ended = await service.withTenant(production, (trx) =>
+        endRun(trx, id, { outcome: 'finished', model: 'claude-test', usage: { in: 10, out: 10 } }),
+      );
+      expect(ended).toMatchObject({ outcome: 'finished', alertFailed: true });
+      expect(await service.withTenant(production, (trx) => readRun(trx, id))).toMatchObject({
+        outcome: 'finished',
+        costMicros: 180n,
+      });
+    } finally {
+      await admin.query(
+        `alter table "${production.schema}".generation_budget_alert drop constraint if exists refuse_every_alert`,
+      );
+      await service.withTenant(production, (trx) => setBudget(trx, null, ada));
+      await admin.end();
+    }
   });
 
   it('keeps a run whole: ended once, never changed after, never deleted', async () => {

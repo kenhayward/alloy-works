@@ -1,4 +1,5 @@
 import { personView } from './person-view.js';
+import type { BudgetCounts } from './generation-budget.js';
 import { internalHeld } from './internal-held.js';
 import { labelFor } from '@alloy-works/domain';
 import { sql } from 'kysely';
@@ -46,13 +47,15 @@ export interface DigestCounts {
 /** A notification as its recipient holds it (COL-063): identifiers, never the text (COL-036). */
 export interface StoredNotification {
   readonly id: string;
-  readonly kind: NotificationKind | 'digest';
+  readonly kind: NotificationKind | 'digest' | 'budget';
   readonly actor: { readonly id: string; readonly name: string | null } | null;
   readonly thread: string | null;
   /** A round's notification names it (RR-H). */
   readonly round: string | null;
   readonly artifact: string | null;
   readonly counts: DigestCounts | null;
+  /** A budget's notification says how much (G6-D); null on every other. */
+  readonly budget: BudgetCounts | null;
   readonly at: Date;
   readonly readAt: Date | null;
 }
@@ -251,7 +254,8 @@ export async function listInbox(
       thread: row.thread_id,
       round: row.round_id,
       artifact: row.artifact_id,
-      counts: row.counts as DigestCounts | null,
+      counts: row.kind === 'budget' ? null : (row.counts as DigestCounts | null),
+      budget: row.kind === 'budget' ? (row.counts as BudgetCounts) : null,
       at: row.at,
       readAt: row.read_at,
     })),

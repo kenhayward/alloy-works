@@ -163,6 +163,7 @@ const MODELS = 'packages/db/src/model-endpoints.ts';
 const PROPOSALS = 'packages/db/src/generation-proposals.ts';
 const GUARDRAILS = 'packages/db/src/guardrails.ts';
 const LIMITS = 'packages/db/src/generation-limits.ts';
+const BUDGET = 'packages/db/src/generation-budget.ts';
 
 /** A relationship acted on: its type and itself, both by identifier (the R8 plan, R8-E). */
 const Related = z.strictObject({ type: z.uuid(), relationship: z.uuid() });
@@ -305,6 +306,23 @@ export const auditKindSpecs = {
     ['LIF-067', 'GEN-035'],
     z.strictObject({ perHour: z.number().int().positive().nullable() }),
     LIMITS,
+  ),
+  // The budget set, lifted, or its recipients named (G6-B, G6-D): the budget whole, recipients counted.
+  'generation.budget_set': kind(
+    ['LIF-067', 'GEN-034', 'ADM-013'],
+    z.strictObject({
+      currency: z
+        .string()
+        .regex(/^[A-Z]{3}$/)
+        .nullable(),
+      limit: z
+        .string()
+        .regex(/^[0-9]{1,19}$/)
+        .nullable(),
+      thresholds: z.array(z.number().int().min(1).max(100)).max(5),
+      recipients: z.number().int().nonnegative(),
+    }),
+    BUDGET,
   ),
   'binding.resolved': kind(['LIF-067'], Binding, 'apps/service/src/data/bindings.ts'),
   'binding.checked': kind(['LIF-067'], Binding, 'apps/service/src/data/bindings.ts'),

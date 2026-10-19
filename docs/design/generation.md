@@ -56,6 +56,10 @@ time (below); embeddings for meaning are [search.md](search.md)'s and
 | **GEN-033** | Each run records tokens with tenant, user, purpose and document (Cost)                                                                           |
 | **ADM-010** | The same record                                                                                                                                  |
 | **GEN-035** | `model_rate_limited`, per user per hour (Cost)                                                                                                   |
+| **GEN-034** | `generation_budget`: a monthly limit, its rising thresholds, alerts as each run ends (Cost)                                                      |
+| **ADM-013** | The same; an alert before the limit, at a threshold below 100 (Cost; its gap beside the table)                                                   |
+| **ADM-014** | Declared in advance on the budget's view and page: nothing stops, every capability continues (Cost)                                              |
+| **ADM-034** | A `budget` notification in the inbox, COL-063's channel, to recipients an administrator names (Cost)                                             |
 | **GEN-037** | The run's cost shown to its requester as it ends, and their month on the assistant panel (Cost)                                                  |
 | **GEN-001** | A prompt: an artifact kind in a space, versioned, listed by a library, the fourth workflow kind (Prompts)                                        |
 | **GEN-005** | `models`: a purpose and the models accepted; another fails `model_mismatch` before any call (Prompts)                                            |
@@ -79,7 +83,7 @@ time (below); embeddings for meaning are [search.md](search.md)'s and
 | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | GEN-002, GEN-004                                                                   | A prompt declares components, metadata and parameters, and writes a part's text: a query's results as context, and a field as output, are later slices' |
 | GEN-021                                                                            | The conversation's tray, guardrails, new components and personal prompts: G5's later PRs; GEN-021 is the model's (G5-H)                                 |
-| GEN-034, GEN-036, GEN-044, ADM-013, ADM-014, ADM-033, ADM-034                      | Budgets, alerts, caching and trends (G6)                                                                                                                |
+| GEN-036, GEN-044, ADM-033                                                          | Caching and trends (G6's later PRs); GEN-044's embedding does not exist yet                                                                             |
 | ADM-048                                                                            | Translation, scanning, email and webhooks cost nothing yet; it is claimed when the last of them exists                                                  |
 | SCH-013, SCH-014, SCH-035, VER-039 (designed elsewhere), SCH-067, GEN-038, GEN-044 | Meaning (G7)                                                                                                                                            |
 | API-019, API-021, API-023, API-052, REL-021, IAM-033, LIF-071                      | The MCP surface and service identities (G8), with the token design ([access.md](access.md))                                                             |
@@ -236,7 +240,19 @@ ADM-010). **Rate limits** (G6-A): runs an hour per person, the environment's and
 place of it, set by `administer` (`/v1/model-limits`). Counted over the requester's runs of the last
 hour, the endpoint test's excluded; checked in the route's transaction, refusing 429
 `model_rate_limited` with `resetsAt`, and again as the run starts under the person's advisory lock,
-so runs started at once cannot all pass (GEN-035). The requester sees a run's tokens and cost when it
+so runs started at once cannot all pass (GEN-035).
+
+**The budget** (G6-B to G6-D; GEN-034, ADM-013, ADM-014, ADM-034): one a month for the environment
+(`/v1/model-budget`), in one currency, with up to five rising thresholds, at least one below 100. It
+sums every ended run's cost in that currency this UTC month, whatever its purpose or outcome, the
+endpoint test's among them. `endRun` checks it in its own transaction, under the budget's advisory
+lock, in a savepoint: each threshold crossed and not yet alerted at that limit is told once, a
+`budget` notification in the inbox of each recipient an administrator names, decided again when told
+(from inside, administering the environment). A failed alert never un-ends a run. It is never digested
+or muted by a cadence, a departure from COL-034, since spend is not a person's own to opt out of.
+**Nothing stops** when it is spent: the view's `whenSpent` and the page declare it (ADM-014). ADM-013's
+gap: one costly run can cross a threshold below 100 and the limit together, so the alert leads the
+limit only where runs are smaller than a threshold's step. The requester sees a run's tokens and cost when it
 ends, and their month's on the panel (GEN-037). Budgets, alerts before a limit, what stops when one is
 spent, and twelve months of trend are G6's.
 

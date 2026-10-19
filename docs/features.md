@@ -200,6 +200,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 - **Rate limits.** Administration's **Model spending** sets how many model runs each person may
   start an hour, and a person's own in place of it. A run over it is refused before any call, saying
   when one is free again; testing an endpoint is never counted (`/v1/model-limits`).
+- **A model budget.** The same page sets what the environment means to spend on models a month and
+  the percents of it that alert, and names who is told, in their inbox, each once a month. Nothing
+  stops when it is spent, and the page says so (`/v1/model-budget`).
 - **Generated content waits for a person.** A document is not published, nor pinned as a baseline,
   while a suggestion the assistant made waits to be accepted or rejected in Review; a preview still
   shows it, and a baseline made before is published as it was pinned. A workflow step can require that

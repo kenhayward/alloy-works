@@ -3399,6 +3399,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/model-budget": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The monthly model budget, this month’s spend, and who is told
+         * @description Returns the monthly model budget, or none; what runs in its currency cost this month, UTC, whatever their purpose or outcome; how many runs cost something in another currency; who is told; and what stops when it is spent, which is nothing. Needs administer.
+         */
+        get: operations["getModelBudget"];
+        /**
+         * Set or lift the monthly model budget
+         * @description Sets the monthly model budget: a currency, a limit and up to five rising percents of it, at least one below 100, each alerting once a month as the spend crosses it; null lifts it. A changed limit may alert again. Nothing stops when it is spent. Needs administer, and is audited.
+         */
+        put: operations["setModelBudget"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/model-budget/recipients": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Name who is told when the model budget crosses a threshold
+         * @description Names who is told, through the inbox, as the month’s spend crosses a threshold, in place of who was: each from inside the organisation and administering the environment, decided again when told. Needs administer, and is audited.
+         */
+        put: operations["setBudgetRecipients"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/model-endpoints": {
         parameters: {
             query?: never;
@@ -59075,7 +59119,7 @@ export interface operations {
                         notifications: {
                             id: string & (unknown & unknown);
                             /** @enum {string} */
-                            kind: "mention" | "reply" | "resolution" | "round" | "digest";
+                            kind: "mention" | "reply" | "resolution" | "round" | "digest" | "budget";
                             /** @description Who did it; null on a digest, or where the caller may no longer read what it is on */
                             actor: {
                                 id: string & (unknown & unknown);
@@ -59120,6 +59164,18 @@ export interface operations {
                                         name: string;
                                     } | null;
                                 }[];
+                            } | null;
+                            /** @description A model budget’s alert (ADM-034): how much of it this month has spent; null otherwise */
+                            budget: {
+                                /** @description The percent of the limit crossed */
+                                threshold: number;
+                                currency: string;
+                                /** @description What the month had cost when it was crossed, to six places */
+                                spent: string;
+                                /** @description The limit, to six places */
+                                limit: string;
+                                /** @description The month, `YYYY-MM`, UTC */
+                                month: string;
                             } | null;
                             /** Format: date-time */
                             at: string;
@@ -61750,6 +61806,486 @@ export interface operations {
             };
             /** @description No personal prompt of yours by that id: anybody else’s is not found */
             404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getModelBudget: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The budget */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "budget": {
+                     *         "currency": "USD",
+                     *         "limit": 1,
+                     *         "thresholds": [
+                     *           1
+                     *         ]
+                     *       },
+                     *       "month": "example",
+                     *       "spent": "example",
+                     *       "otherCurrencyRuns": 0,
+                     *       "recipients": [],
+                     *       "whenSpent": "everything_continues"
+                     *     }
+                     */
+                    "application/json": {
+                        budget: {
+                            /** @description The currency runs are counted in, as their endpoints price them */
+                            currency: string;
+                            /** @description What the environment means to spend on models a month, in that currency */
+                            limit: number;
+                            /** @description The percents of the limit that alert, rising, at least one below 100 */
+                            thresholds: number[];
+                        } | null;
+                        /** @description This month, `YYYY-MM`, UTC */
+                        month: string;
+                        /** @description What runs in the budget’s currency cost this month, to six places */
+                        spent: string;
+                        /** @description Runs this month that cost something in another currency, counted in no budget */
+                        otherCurrencyRuns: number;
+                        /** @description Who is told when a threshold is crossed */
+                        recipients: {
+                            id: string & (unknown & unknown);
+                            name: string | null;
+                            /**
+                             * @description True where the person is from outside the organisation; absent otherwise
+                             * @constant
+                             */
+                            external?: true;
+                        }[];
+                        /**
+                         * @description What stops when the budget is spent, declared in advance (ADM-014): nothing
+                         * @constant
+                         */
+                        whenSpent: "everything_continues";
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller does not administer this environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    setModelBudget: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "budget": {
+                 *         "currency": "USD",
+                 *         "limit": 1,
+                 *         "thresholds": [
+                 *           1
+                 *         ]
+                 *       }
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The budget; null lifts it */
+                    budget: {
+                        /** @description The currency runs are counted in, as their endpoints price them */
+                        currency: string;
+                        /** @description What the environment means to spend on models a month, in that currency */
+                        limit: number;
+                        /** @description The percents of the limit that alert, rising, at least one below 100 */
+                        thresholds: number[];
+                    } | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Set, counting from this month */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "budget": {
+                     *         "currency": "USD",
+                     *         "limit": 1,
+                     *         "thresholds": [
+                     *           1
+                     *         ]
+                     *       },
+                     *       "month": "example",
+                     *       "spent": "example",
+                     *       "otherCurrencyRuns": 0,
+                     *       "recipients": [],
+                     *       "whenSpent": "everything_continues"
+                     *     }
+                     */
+                    "application/json": {
+                        budget: {
+                            /** @description The currency runs are counted in, as their endpoints price them */
+                            currency: string;
+                            /** @description What the environment means to spend on models a month, in that currency */
+                            limit: number;
+                            /** @description The percents of the limit that alert, rising, at least one below 100 */
+                            thresholds: number[];
+                        } | null;
+                        /** @description This month, `YYYY-MM`, UTC */
+                        month: string;
+                        /** @description What runs in the budget’s currency cost this month, to six places */
+                        spent: string;
+                        /** @description Runs this month that cost something in another currency, counted in no budget */
+                        otherCurrencyRuns: number;
+                        /** @description Who is told when a threshold is crossed */
+                        recipients: {
+                            id: string & (unknown & unknown);
+                            name: string | null;
+                            /**
+                             * @description True where the person is from outside the organisation; absent otherwise
+                             * @constant
+                             */
+                            external?: true;
+                        }[];
+                        /**
+                         * @description What stops when the budget is spent, declared in advance (ADM-014): nothing
+                         * @constant
+                         */
+                        whenSpent: "everything_continues";
+                    };
+                };
+            };
+            /** @description A currency not three capitals, a limit not positive, or thresholds that do not rise or none below 100 */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller does not administer this environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    setBudgetRecipients: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "principals": []
+                 *     }
+                 */
+                "application/json": {
+                    /** @description Who is told, in place of who was: each from inside, administering the environment */
+                    principals: (string & (unknown & unknown))[];
+                };
+            };
+        };
+        responses: {
+            /** @description Named */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "budget": {
+                     *         "currency": "USD",
+                     *         "limit": 1,
+                     *         "thresholds": [
+                     *           1
+                     *         ]
+                     *       },
+                     *       "month": "example",
+                     *       "spent": "example",
+                     *       "otherCurrencyRuns": 0,
+                     *       "recipients": [],
+                     *       "whenSpent": "everything_continues"
+                     *     }
+                     */
+                    "application/json": {
+                        budget: {
+                            /** @description The currency runs are counted in, as their endpoints price them */
+                            currency: string;
+                            /** @description What the environment means to spend on models a month, in that currency */
+                            limit: number;
+                            /** @description The percents of the limit that alert, rising, at least one below 100 */
+                            thresholds: number[];
+                        } | null;
+                        /** @description This month, `YYYY-MM`, UTC */
+                        month: string;
+                        /** @description What runs in the budget’s currency cost this month, to six places */
+                        spent: string;
+                        /** @description Runs this month that cost something in another currency, counted in no budget */
+                        otherCurrencyRuns: number;
+                        /** @description Who is told when a threshold is crossed */
+                        recipients: {
+                            id: string & (unknown & unknown);
+                            name: string | null;
+                            /**
+                             * @description True where the person is from outside the organisation; absent otherwise
+                             * @constant
+                             */
+                            external?: true;
+                        }[];
+                        /**
+                         * @description What stops when the budget is spent, declared in advance (ADM-014): nothing
+                         * @constant
+                         */
+                        whenSpent: "everything_continues";
+                    };
+                };
+            };
+            /** @description `recipient_not_administrator`: somebody named is from outside, or does not administer the environment */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description Those who may not be told of spend */
+                        refused: (string & (unknown & unknown))[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller does not administer this environment */
+            403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;
