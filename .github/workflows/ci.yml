@@ -76,7 +76,7 @@ jobs:
     # required (role membership granted WITH INHERIT FALSE); the image matches deploy/compose.yaml.
     services:
       postgres:
-        image: pgvector/pgvector:pg17
+        image: pgvector/pgvector:pg17@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f
         env:
           POSTGRES_PASSWORD: postgres
         ports:
@@ -241,7 +241,7 @@ jobs:
         suite: ${{ fromJSON(needs.changes.outputs.suites) }}
     services:
       postgres:
-        image: pgvector/pgvector:pg17
+        image: pgvector/pgvector:pg17@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f
         env:
           POSTGRES_PASSWORD: postgres
         ports:

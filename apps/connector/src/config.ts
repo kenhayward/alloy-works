@@ -28,6 +28,8 @@ export interface ConnectorConfig {
   readonly host: string;
   /** SHA-256 of the key the service presents, compared with the presented key's by digest. */
   readonly keyDigest: Buffer;
+  /** SHA-256 of the key the worker presents, which opens `/v1/embed` alone (the G7 plan, G7-E). */
+  readonly embedKeyDigest?: Buffer;
   /** The key a credential is sealed and opened with, which the service never holds. */
   readonly sealingKey: Buffer;
   /** The deployment's own ranges, beside the built-in ones. */
@@ -100,6 +102,13 @@ export function loadConnectorConfig(
   const sealing = key(env, 'CONNECTOR_SEALING_KEY');
   if (service.equals(sealing))
     refuse('CONNECTOR_SEALING_KEY', 'must not be the same key as CONNECTOR_KEY');
+  // The worker's, for embedding alone: optional, and never either of the others.
+  const embed = env.CONNECTOR_EMBED_KEY ? key(env, 'CONNECTOR_EMBED_KEY') : undefined;
+  if (embed && (embed.equals(service) || embed.equals(sealing)))
+    refuse(
+      'CONNECTOR_EMBED_KEY',
+      'must not be the same key as CONNECTOR_KEY or CONNECTOR_SEALING_KEY',
+    );
 
   const listed = env.CONNECTOR_DENY?.trim();
   if (!listed) {
@@ -121,6 +130,9 @@ export function loadConnectorConfig(
     port: integer(env, 'CONNECTOR_PORT', 8090, [1, 65535]),
     host: env.CONNECTOR_HOST || '0.0.0.0',
     keyDigest: createHash('sha256').update(env.CONNECTOR_KEY!, 'utf8').digest(),
+    ...(embed === undefined
+      ? {}
+      : { embedKeyDigest: createHash('sha256').update(env.CONNECTOR_EMBED_KEY!, 'utf8').digest() }),
     sealingKey: sealing,
     deny,
     maxChildren: integer(env, 'CONNECTOR_MAX_CHILDREN', 8, [1, 64]),
@@ -155,6 +167,7 @@ export function takeConnectorConfig(env: Record<string, string | undefined>): Co
   } finally {
     delete env.CONNECTOR_KEY;
     delete env.CONNECTOR_SEALING_KEY;
+    delete env.CONNECTOR_EMBED_KEY;
   }
 }
 

@@ -1,6 +1,10 @@
-import { childModelRequestSchema, childRequestSchema } from '@alloy-works/domain';
+import {
+  childEmbedRequestSchema,
+  childModelRequestSchema,
+  childRequestSchema,
+} from '@alloy-works/domain';
 
-import { answerModel } from './model.js';
+import { answerEmbed, answerModel } from './model.js';
 import { answerRequest } from './work.js';
 
 /**
@@ -27,6 +31,12 @@ async function main(): Promise<number> {
     input = JSON.parse(await readInput()) as unknown;
   } catch {
     return 2;
+  }
+  // An embedding call (the G7 plan, G7-A): one answer.
+  const embed = childEmbedRequestSchema.safeParse(input);
+  if (embed.success) {
+    await line(await answerEmbed(embed.data));
+    return 0;
   }
   const model = childModelRequestSchema.safeParse(input);
   if (model.success) {

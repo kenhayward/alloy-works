@@ -819,6 +819,16 @@ describe('the domain package', () => {
         'guardrailSchema',
         'matchable',
         'watchesReplies',
+        // G7: an embedding call, its answer and its child's line.
+        'EMBED_INPUTS_MOST',
+        'EMBED_INPUT_CHARS_MOST',
+        'EMBEDDING_DIMENSIONS',
+        'EMBED_ANSWER_MAX_BYTES',
+        'EMBED_REQUEST_MAX_BYTES',
+        'embedCallSchema',
+        'embedRequestSchema',
+        'embedAnswerSchema',
+        'childEmbedRequestSchema',
       ].sort(),
     );
   });

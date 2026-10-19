@@ -17730,6 +17730,10 @@
           "howItIsMet": "A `budget` notification in the inbox, COL-063's channel, to recipients an administrator names (Cost)"
         },
         {
+          "id": "GEN-038",
+          "howItIsMet": "Embedding routed to an OpenAI-protocol endpoint alone, which a self-hosted model inside the boundary speaks; none routed, no meaning search (Meaning)"
+        },
+        {
           "id": "GEN-037",
           "howItIsMet": "The run's cost shown to its requester as it ends, and their month on the assistant panel (Cost)"
         },
@@ -20244,31 +20248,37 @@
     {
       "id": "GEN-027",
       "file": "apps/connector/src/model.test.ts",
-      "line": 112,
+      "line": 131,
       "kind": "title"
     },
     {
       "id": "GEN-029",
       "file": "apps/connector/src/model.test.ts",
-      "line": 152,
+      "line": 171,
       "kind": "title"
     },
     {
       "id": "GEN-030",
       "file": "apps/connector/src/model.test.ts",
-      "line": 139,
+      "line": 158,
       "kind": "title"
     },
     {
       "id": "GEN-032",
       "file": "apps/connector/src/model.test.ts",
-      "line": 193,
+      "line": 212,
       "kind": "title"
     },
     {
       "id": "GEN-036",
       "file": "apps/connector/src/model.test.ts",
-      "line": 294,
+      "line": 313,
+      "kind": "title"
+    },
+    {
+      "id": "VER-039",
+      "file": "apps/connector/src/model.test.ts",
+      "line": 323,
       "kind": "title"
     },
     {
@@ -21666,7 +21676,13 @@
     {
       "id": "GEN-032",
       "file": "apps/service/src/model-endpoint-routes.test.ts",
-      "line": 219,
+      "line": 239,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-038",
+      "file": "apps/service/src/model-endpoint-routes.test.ts",
+      "line": 172,
       "kind": "title"
     },
     {
@@ -26272,6 +26288,12 @@
       "kind": "title"
     },
     {
+      "id": "VER-039",
+      "file": "packages/db/src/embeddings.test.ts",
+      "line": 57,
+      "kind": "title"
+    },
+    {
       "id": "VER-038",
       "file": "packages/db/src/erasure.test.ts",
       "line": 285,
@@ -28488,7 +28510,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 826,
+      "line": 836,
       "kind": "title"
     },
     {

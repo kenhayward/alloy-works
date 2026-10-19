@@ -169,6 +169,26 @@ describe('model endpoints through the service (the G1 plan)', () => {
     });
   });
 
+  it('GEN-038 routes embedding to an endpoint speaking the OpenAI protocol alone, which a self-hosted model inside the boundary speaks', async () => {
+    const anthropic = await keyed({ name: 'Messages only' });
+    const refused = await h.call('ada', 'PUT', '/v1/model-routes/embedding', {
+      endpoint: anthropic.id,
+    });
+    expect(refused.statusCode).toBe(409);
+    expect(refused.json()).toMatchObject({ code: 'embedding_unsupported' });
+    const inside = await keyed({
+      name: 'Embedding inside',
+      protocol: 'openai',
+      boundary: 'inside',
+      model: 'stand-in-embed-768',
+    });
+    const routed = await h.call('ada', 'PUT', '/v1/model-routes/embedding', {
+      endpoint: inside.id,
+    });
+    expect(routed.statusCode, routed.body).toBe(200);
+    await h.call('ada', 'PUT', '/v1/model-routes/embedding', { endpoint: null });
+  });
+
   it('tests an endpoint with one fixed call, recorded as a run with its digest, tokens and cost', async () => {
     const made = await keyed({ name: 'Tested' });
     const tested = await h.call('ada', 'POST', `/v1/model-endpoints/${made.id}/test`);

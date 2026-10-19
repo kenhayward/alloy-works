@@ -61,6 +61,7 @@ time (below); embeddings for meaning are [search.md](search.md)'s and
 | **ADM-014** | Declared in advance on the budget's view and page: nothing stops, every capability continues (Cost)                                                     |
 | **GEN-036** | The Anthropic adapter's cache breakpoints, cached tokens priced; a prompt run reuses its requester's own identical run (Cost; its gap beside the table) |
 | **ADM-034** | A `budget` notification in the inbox, COL-063's channel, to recipients an administrator names (Cost)                                                    |
+| **GEN-038** | Embedding routed to an OpenAI-protocol endpoint alone, which a self-hosted model inside the boundary speaks; none routed, no meaning search (Meaning)   |
 | **GEN-037** | The run's cost shown to its requester as it ends, and their month on the assistant panel (Cost)                                                         |
 | **GEN-001** | A prompt: an artifact kind in a space, versioned, listed by a library, the fourth workflow kind (Prompts)                                               |
 | **GEN-005** | `models`: a purpose and the models accepted; another fails `model_mismatch` before any call (Prompts)                                                   |
@@ -80,16 +81,16 @@ time (below); embeddings for meaning are [search.md](search.md)'s and
 
 ## What this document does not own
 
-| Left unclaimed                                                                     | Why                                                                                                                                                     |
-| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| GEN-002, GEN-004                                                                   | A prompt declares components, metadata and parameters, and writes a part's text: a query's results as context, and a field as output, are later slices' |
-| GEN-021                                                                            | The conversation's tray, guardrails, new components and personal prompts: G5's later PRs; GEN-021 is the model's (G5-H)                                 |
-| GEN-044, ADM-033                                                                   | Nothing embeds yet (G6-G); the trend lacks ADM-011's storage, publication and asset measures (T7)                                                       |
-| ADM-048                                                                            | Translation, scanning, email and webhooks cost nothing yet; it is claimed when the last of them exists                                                  |
-| SCH-013, SCH-014, SCH-035, VER-039 (designed elsewhere), SCH-067, GEN-038, GEN-044 | Meaning (G7)                                                                                                                                            |
-| API-019, API-021, API-023, API-052, REL-021, IAM-033, LIF-071                      | The MCP surface and service identities (G8), with the token design ([access.md](access.md))                                                             |
-| API-028, API-029, API-046, API-055, API-060, COL-037                               | Webhooks: their own design (GN-D)                                                                                                                       |
-| API-030, API-031, API-034, API-048, API-059, DAT-054, DAT-073, DAT-079             | Extensions: their own design (GN-D)                                                                                                                     |
+| Left unclaimed                                                            | Why                                                                                                                                                     |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GEN-002, GEN-004                                                          | A prompt declares components, metadata and parameters, and writes a part's text: a query's results as context, and a field as output, are later slices' |
+| GEN-021                                                                   | The conversation's tray, guardrails, new components and personal prompts: G5's later PRs; GEN-021 is the model's (G5-H)                                 |
+| GEN-044, ADM-033                                                          | Nothing embeds yet (G6-G); the trend lacks ADM-011's storage, publication and asset measures (T7)                                                       |
+| ADM-048                                                                   | Translation, scanning, email and webhooks cost nothing yet; it is claimed when the last of them exists                                                  |
+| SCH-013, SCH-014, SCH-035, VER-039 (designed elsewhere), SCH-067, GEN-044 | Meaning (G7's later PRs)                                                                                                                                |
+| API-019, API-021, API-023, API-052, REL-021, IAM-033, LIF-071             | The MCP surface and service identities (G8), with the token design ([access.md](access.md))                                                             |
+| API-028, API-029, API-046, API-055, API-060, COL-037                      | Webhooks: their own design (GN-D)                                                                                                                       |
+| API-030, API-031, API-034, API-048, API-059, DAT-054, DAT-073, DAT-079    | Extensions: their own design (GN-D)                                                                                                                     |
 
 ## Decisions
 
@@ -275,6 +276,16 @@ their rows and bytes. Runs are never deleted, so every month a tenant has run is
 kept 13 months. ADM-033 is left unclaimed: storage, publication and asset volume are ADM-011's (T7). The requester sees a run's tokens and cost when it
 ends, and their month's on the panel (GEN-037). Budgets, alerts before a limit, what stops when one is
 spent, and twelve months of trend are G6's.
+
+## Meaning
+
+G7 ([plan](../plans/2026-10-19-g7-meaning.md)). Embedding is a model call on the OpenAI protocol's
+`/embeddings` alone, which Azure OpenAI and self-hosted servers speak too, so a tenant embeds inside
+its boundary or has no meaning search (GEN-038); routing embedding to another endpoint is refused
+`embedding_unsupported`. The connector's `/v1/embed` takes the endpoint's sealed key as `/v1/model`
+does, and a second key, `CONNECTOR_EMBED_KEY`, opens that route alone, for the worker. Vectors are
+kept in `embedding` by the hash of a block's words, the model and the model version the reply named,
+written once (VER-039); [search.md](search.md) finds by them.
 
 ## Failures
 

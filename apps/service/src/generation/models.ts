@@ -392,6 +392,14 @@ export function modelEndpointHandlers(
         if (!endpoint) throw notFound();
         if (endpoint.retiredAt !== null) throw unusable();
         if ((await usableModelKey(trx, endpoint)) === undefined) throw unusable();
+        // Embedding speaks OpenAI's `/embeddings` alone, which self-hosted servers speak too (G7-A).
+        if (purpose === 'embedding' && endpoint.protocol !== 'openai') {
+          throw new AppError(
+            409,
+            'embedding_unsupported',
+            'Embedding needs an endpoint speaking the OpenAI protocol.',
+          );
+        }
       }
       await setModelRoute(trx, purpose, id, principalId);
       return routesView(trx);

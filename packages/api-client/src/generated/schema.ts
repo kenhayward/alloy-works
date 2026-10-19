@@ -64320,7 +64320,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `endpoint_unusable`: the endpoint is retired, or has no key set for where it points */
+            /** @description `endpoint_unusable`: the endpoint is retired, or has no key set for where it points; `embedding_unsupported`: embedding routed to an endpoint not speaking the OpenAI protocol */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */

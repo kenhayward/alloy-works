@@ -296,7 +296,7 @@ export const modelEndpointRoutes = {
       404: { description: 'The endpoint named is not one of this environment', schema: ErrorBody },
       409: {
         description:
-          '`endpoint_unusable`: the endpoint is retired, or has no key set for where it points',
+          '`endpoint_unusable`: the endpoint is retired, or has no key set for where it points; `embedding_unsupported`: embedding routed to an endpoint not speaking the OpenAI protocol',
         schema: ErrorBody,
       },
     },
