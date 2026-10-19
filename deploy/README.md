@@ -72,8 +72,8 @@ to be healthy, so one `up` is enough from nothing.
 
 `connector` is the one process that reaches a tenant's own source
 ([data.md](../docs/design/data.md#the-connector)). It is on two networks and no others:
-`connector-private`, which it shares with the service alone and which carries the service's requests
-to it on port 8090, and `connector-egress`, out to the sources. Both are `internal: true` with
+`connector-private`, which it shares with the service and the worker and which carries their requests
+to it on port 8090 (the worker's key opens `/v1/embed` alone, the G7 plan), and `connector-egress`, out to the sources. Both are `internal: true` with
 `com.docker.network.bridge.gateway_mode_ipv4: isolated`, so neither is routed anywhere else and
 neither gives the host an address on its bridge: from the connector, nothing of the platform
 answers - not the database, the store, the provider or the worker, by name or by address - and no

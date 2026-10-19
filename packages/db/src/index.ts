@@ -764,8 +764,16 @@ export {
   type GenerationBudget,
 } from './generation-budget.js';
 export {
+  copyPassages,
+  passageBlocks,
+  embedIndexed,
   embeddedHashes,
+  embeddingModels,
   embeddingsStored,
+  setServingEmbedding,
+  takeEmbeddingWork,
+  type EmbeddingModel,
+  type EmbeddingWork,
   isDimensions,
   readEmbeddings,
   storeEmbeddings,

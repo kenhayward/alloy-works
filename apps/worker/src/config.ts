@@ -25,6 +25,8 @@ export interface WorkerConfig {
   readonly leaseMs: number;
   readonly sweepIntervalMs: number;
   readonly logLevel: LogLevel;
+  /** The connector, and the key that opens its embedding alone (the G7 plan, G7-E); none, no embedding. */
+  readonly connector?: { readonly url: string; readonly embedKey: string };
 }
 
 export class WorkerConfigError extends Error {}
@@ -55,6 +57,8 @@ const Environment = z.object({
   LOG_LEVEL: z
     .enum(LOG_LEVELS, { error: `must be one of ${LOG_LEVELS.join(', ')}` })
     .default('info'),
+  CONNECTOR_URL: z.url({ error: 'must be a URL' }).optional(),
+  SECRET_CONNECTOR_EMBED_KEY: z.string().min(1).optional(),
 });
 
 /** Read once, at start-up. Messages name the variable and the rule, never the value. */
@@ -65,6 +69,11 @@ export function loadWorkerConfig(env: Readonly<Record<string, string | undefined
     throw new WorkerConfigError(`The worker cannot start:\n  ${problems.join('\n  ')}`);
   }
   const data = result.data;
+  if ((data.CONNECTOR_URL === undefined) !== (data.SECRET_CONNECTOR_EMBED_KEY === undefined)) {
+    throw new WorkerConfigError(
+      'The worker cannot start:\n  CONNECTOR_URL and SECRET_CONNECTOR_EMBED_KEY are given together or not at all',
+    );
+  }
   return {
     databaseUrl: data.DATABASE_URL,
     objectStore: {
@@ -81,6 +90,9 @@ export function loadWorkerConfig(env: Readonly<Record<string, string | undefined
     leaseMs: data.LEASE_MS,
     sweepIntervalMs: data.SWEEP_INTERVAL_MS,
     logLevel: data.LOG_LEVEL,
+    ...(data.CONNECTOR_URL === undefined || data.SECRET_CONNECTOR_EMBED_KEY === undefined
+      ? {}
+      : { connector: { url: data.CONNECTOR_URL, embedKey: data.SECRET_CONNECTOR_EMBED_KEY } }),
   };
 }
 
@@ -97,5 +109,6 @@ export function describeWorkerConfig(config: WorkerConfig): Record<string, strin
     pollIntervalMs: config.pollIntervalMs,
     leaseMs: config.leaseMs,
     logLevel: config.logLevel,
+    connector: config.connector?.url ?? 'none',
   };
 }

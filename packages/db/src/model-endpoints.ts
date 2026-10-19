@@ -406,7 +406,8 @@ export async function startRun(
     readonly parameters: Readonly<Record<string, unknown>>;
     readonly contextDigest: string;
     readonly context?: readonly unknown[];
-    readonly by: string;
+    /** Its requester; none for an embedding whose version's author was erased (G7-F). */
+    readonly by: string | null;
     readonly documentId?: string | null;
     readonly promptVersion?: string | null;
     /** The person's words, kept with the run (GN-I). */

@@ -461,6 +461,8 @@ const WRITERS: Readonly<Record<string, Readonly<Record<string, Entry>>>> = {
     range: { none: 'preview' },
     // Each row's document cut at 0.1, as a document made by hand is (the R7 plan, R7-E).
     cohort: writes('content.version_cut'),
+    // Each batch a run, recorded as every run is (the G7 plan, G7-F).
+    embed: writes('generation.run'),
   },
   /** The worker's sweeps (apps/worker/src/sweep.ts). */
   sweeps: {

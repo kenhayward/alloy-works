@@ -146,12 +146,19 @@ services:
       OBJECT_STORE_ENDPOINT: http://store.localhost:${STORE_PORT:-8333}
       OBJECT_STORE_BUCKET: alloy-dev
       SECRET_OBJECT_STORE_KEY: ZGV2ZWxvcG1lbnQtb25seS1vYmplY3Qta2V5LTAwMDE=
+      # The connector, and the key that opens its embedding alone, the connector's CONNECTOR_EMBED_KEY
+      # (the G7 plan, G7-E): the worker reaches nothing else the connector serves.
+      CONNECTOR_URL: http://connector:8090
+      SECRET_CONNECTOR_EMBED_KEY: ZGV2ZWxvcG1lbnQtb25seS1lbWJlZC1rZXktMDAwMDE=
+    networks:
+      - default
+      - connector-private
     depends_on:
       setup:
         condition: service_completed_successfully
 
   # The one process that reaches a tenant's own source (data.md, "The connector"). It is on two
-  # networks and no others: `connector-private`, which it shares with the service alone, and
+  # networks and no others: `connector-private`, which it shares with the service and the worker, and
   # `connector-egress`, out to the sources. Neither carries the platform or the host (the D1 plan,
   # D1-I), so it has no route to the database, the store, the provider or anything the host
   # publishes. It holds no platform credential: only the key the service presents and the key it
@@ -167,6 +174,8 @@ services:
     environment:
       CONNECTOR_KEY: ZGV2ZWxvcG1lbnQtb25seS1jb25uZWN0b3Ita2V5LTE=
       CONNECTOR_SEALING_KEY: ZGV2ZWxvcG1lbnQtb25seS1zZWFsaW5nLWtleS0wMDE=
+      # The worker's, which opens `/v1/embed` alone (the G7 plan, G7-E).
+      CONNECTOR_EMBED_KEY: ZGV2ZWxvcG1lbnQtb25seS1lbWJlZC1rZXktMDAwMDE=
       CONNECTOR_DENY: none
       LOG_LEVEL: info
       # The development CAs `source-http` and `source-s3` are signed by, trusted beside the system's:

@@ -421,7 +421,7 @@ describe("the connector's model paths", () => {
     ).toBe(401);
   });
 
-  it('opens embedding alone to the embed key, which the worker holds, and every path to the service key', async () => {
+  it('DAT-089 opens embedding alone to the embed key the worker holds, never a source query, and every path to the service key', async () => {
     const embedded = await post('/v1/embed', embedFor(['The north weir.']), EMBED_KEY);
     expect(embedded.status).toBe(200);
     expect(embedAnswerSchema.parse(await embedded.json())).toMatchObject({ type: 'embedded' });

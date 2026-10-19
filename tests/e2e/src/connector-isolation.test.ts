@@ -272,15 +272,25 @@ describe("the connector's networks", () => {
     );
   }, 120_000);
 
-  it('DAT-089 gives the worker no route to the connector', () => {
-    const addresses = Object.values(connector.NetworkSettings.Networks).map(
-      (network) => network.IPAddress,
-    );
+  it('lets the worker reach the connector on connector-private alone, never a source', () => {
+    // The worker embeds through the connector (the G7 plan, G7-E), with a key that opens `/v1/embed`
+    // alone (apps/connector/src/model.test.ts): on its address there, and no source.
+    const privateAddress =
+      connector.NetworkSettings.Networks[`${PROJECT}_connector-private`]?.IPAddress;
+    const egressAddress =
+      connector.NetworkSettings.Networks[`${PROJECT}_connector-egress`]?.IPAddress;
+    const source = container('source-postgres');
     const outcomes = probe(platform.worker!, [
       { host: 'connector', port: 8090 },
-      ...addresses.map((host) => ({ host, port: 8090 })),
+      { host: privateAddress!, port: 8090 },
+      { host: egressAddress!, port: 8090 },
+      { host: 'source-postgres', port: 5432 },
+      ...Object.values(source.NetworkSettings.Networks).map((network) => ({
+        host: network.IPAddress,
+        port: 5432,
+      })),
     ]);
-    expect(connected(outcomes)).toEqual([]);
+    expect(connected(outcomes).sort()).toEqual(['connector:8090', `${privateAddress}:8090`].sort());
   }, 120_000);
 
   it('lets the service reach the connector and never the source', () => {

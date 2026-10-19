@@ -57,6 +57,31 @@ describe("the worker's configuration", () => {
     );
   });
 
+  it('reaches the connector only given both its address and the embed key, never one alone', () => {
+    expect(loadWorkerConfig(env).connector).toBeUndefined();
+    const embedKey = randomBytes(32).toString('base64');
+    expect(
+      loadWorkerConfig({
+        ...env,
+        CONNECTOR_URL: 'http://connector:8090',
+        SECRET_CONNECTOR_EMBED_KEY: embedKey,
+      }).connector,
+    ).toEqual({ url: 'http://connector:8090', embedKey });
+    expect(() => loadWorkerConfig({ ...env, CONNECTOR_URL: 'http://connector:8090' })).toThrow(
+      /SECRET_CONNECTOR_EMBED_KEY/,
+    );
+    const described = JSON.stringify(
+      describeWorkerConfig(
+        loadWorkerConfig({
+          ...env,
+          CONNECTOR_URL: 'http://connector:8090',
+          SECRET_CONNECTOR_EMBED_KEY: embedKey,
+        }),
+      ),
+    );
+    expect(described).not.toContain(embedKey);
+  });
+
   it('describes itself for a log without its secrets', () => {
     const described = JSON.stringify(describeWorkerConfig(loadWorkerConfig(env)));
     expect(described).not.toContain('secret-pw');

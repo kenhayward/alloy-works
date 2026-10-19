@@ -24,7 +24,7 @@ function importsOf(path: string): string[] {
 }
 
 describe("the connector's one caller", () => {
-  it('DAT-089 calls the connector only from a route a person calls: nothing but the connection, model endpoint and assistant routes imports its client, and the worker has no address for it', () => {
+  it('DAT-089 calls the connector only from a route a person calls: nothing but the connection, model endpoint and assistant routes imports its client, and the worker reaches it to embed alone', () => {
     // In the service, the client is imported by the connection routes, the model endpoint routes and
     // the assistant's run and a prompt's, each a person's ask (and its own test; the G1 plan, G1-L;
     // the G2 plan; the G4 plan).
@@ -77,16 +77,31 @@ describe("the connector's one caller", () => {
         .sort(),
     ).toEqual(['setModelEndpointKey', 'testModelEndpoint']);
 
-    // The worker imports nothing of the connector's, names no connector in its configuration, and
-    // is given no address for one.
+    // The worker imports nothing of the connector's. One module of its own, `embedder.ts`, reaches it,
+    // at `/v1/embed` and nowhere else, with the key that opens that route alone (the G7 plan, G7-E);
+    // its configuration names the connector's address and that key, and nothing more of it.
     for (const file of sources(worker)) {
       const text = readFileSync(join(worker, file), 'utf8');
       expect(
         importsOf(join(worker, file)).filter((spec) => /connector/i.test(spec)),
         file,
       ).toEqual([]);
-      if (!file.endsWith('.test.ts')) expect(text, file).not.toMatch(/CONNECTOR_/);
+      if (!file.endsWith('.test.ts') && file !== 'config.ts') {
+        expect(text, file).not.toMatch(/CONNECTOR_/);
+      }
+      if (!file.endsWith('.test.ts') && file !== 'embedder.ts') {
+        expect(text, file).not.toMatch(/\/v1\/(?!embed\b)\w+/);
+      }
     }
-    expect(readFileSync(join(worker, 'config.ts'), 'utf8')).not.toMatch(/connector/i);
+    const embedder = readFileSync(join(worker, 'embedder.ts'), 'utf8');
+    expect([...new Set([...embedder.matchAll(/\/v1\/\w+/g)].map((match) => match[0]))]).toEqual([
+      '/v1/embed',
+    ]);
+    expect(
+      [...readFileSync(join(worker, 'config.ts'), 'utf8').matchAll(/\b(?:SECRET_)?CONNECTOR_\w+/g)]
+        .map((match) => match[0])
+        .filter((name, at, all) => all.indexOf(name) === at)
+        .sort(),
+    ).toEqual(['CONNECTOR_URL', 'SECRET_CONNECTOR_EMBED_KEY']);
   });
 });

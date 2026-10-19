@@ -742,7 +742,8 @@ Two things it deliberately does not ask of the machine running it:
 `connector-isolation.test.ts` starts a throwaway `node:24-bookworm-slim` container in each of the
 connector's, the worker's and the service's network namespaces - the connector's image carries no
 probe - and tries every name, address and published port over TCP: from the connector, only its source
-and the service on `connector-private` answer; from the worker, the connector never does; from the
+and the service on `connector-private` answer; from the worker, the connector on `connector-private` alone, whose key
+for it opens `/v1/embed` and nothing that queries a source; from the
 service, the connector does and the source never. It publishes a listener of its own on every host
 address, which the stack never does, and requires an ordinary container to reach it through the host
 before requiring the connector not to, so the leak the spike found is tried on whatever engine runs
