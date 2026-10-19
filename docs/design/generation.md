@@ -232,8 +232,11 @@ endpoint, no tool beyond the five.
 ## Cost
 
 Each run records its tokens and their cost with tenant, user, purpose and document (GEN-033,
-ADM-010). A per-user limit of runs an hour, set by the administrator, refuses with
-`model_rate_limited` and when it resets (GEN-035). The requester sees a run's tokens and cost when it
+ADM-010). **Rate limits** (G6-A): runs an hour per person, the environment's and one person's own in
+place of it, set by `administer` (`/v1/model-limits`). Counted over the requester's runs of the last
+hour, the endpoint test's excluded; checked in the route's transaction, refusing 429
+`model_rate_limited` with `resetsAt`, and again as the run starts under the person's advisory lock,
+so runs started at once cannot all pass (GEN-035). The requester sees a run's tokens and cost when it
 ends, and their month's on the panel (GEN-037). Budgets, alerts before a limit, what stops when one is
 spent, and twelve months of trend are G6's.
 

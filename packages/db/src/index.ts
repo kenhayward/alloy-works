@@ -744,6 +744,14 @@ export {
   type StoredGuardrail,
 } from './guardrails.js';
 export {
+  RUNS_AN_HOUR_MOST,
+  rateRefusal,
+  readGenerationLimits,
+  setGenerationLimit,
+  setPersonLimit,
+  type GenerationLimits,
+} from './generation-limits.js';
+export {
   changePersonalPrompt,
   deletePersonalPrompt,
   listPersonalPrompts,

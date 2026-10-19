@@ -75,6 +75,7 @@ import { mayNameColumns, storableContent } from '../editing.js';
 import { AppError } from '../errors.js';
 import type { SessionPrincipal } from '../sessions.js';
 import { failureWords, microsText, streamedRun, type ToolAnswer } from './run-loop.js';
+import { refuseOverLimit } from './limits.js';
 
 /**
  * The drafting assistant (generation.md, "The assistant"; the G2 plan): a run against the open
@@ -627,6 +628,7 @@ export function assistantHandlers(
       const { ask, component } = request.body as { ask: string; component?: string };
       const document = await readDocument(trx, id);
       if (!document) throw notFound();
+      await refuseOverLimit(trx, principalId);
       const route = (await listModelRoutes(trx)).find((each) => each.purpose === 'drafting');
       if (!route) {
         throw new AppError(409, 'model_unconfigured', 'No model endpoint is set up for drafting.');
@@ -808,6 +810,7 @@ export function assistantHandlers(
               `A conversation takes ${CONVERSATION_TURNS_MOST} turns. Start another to go on.`,
             );
           }
+          await refuseOverLimit(trx, principalId);
           const endpoint = await endpointFor(trx, named);
           const sealed = await usableModelKey(trx, endpoint);
           if (sealed === undefined) {

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { rateLimited } from './model-limits.js';
 import type { RouteContract } from './contract.js';
 import { ListedPromptView } from './prompt-libraries.js';
 import { ErrorBody, LowercaseUuid } from './schemas.js';
@@ -96,6 +97,7 @@ export const promptRunRoutes = {
         schema: ErrorBody,
       },
       409: refusedBeforeAnyCall,
+      429: rateLimited,
       503: { description: '`connector_unavailable`', schema: ErrorBody },
     },
   },
@@ -124,6 +126,7 @@ export const promptRunRoutes = {
         schema: ErrorBody,
       },
       409: refusedBeforeAnyCall,
+      429: rateLimited,
       503: { description: '`connector_unavailable`', schema: ErrorBody },
     },
   },

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { rateLimited } from './model-limits.js';
 import type { RouteContract } from './contract.js';
 import { ErrorBody, LowercaseUuid } from './schemas.js';
 
@@ -255,6 +256,7 @@ export const conversationRoutes = {
           '`turn_running`: a turn of it has not ended; `conversation_too_long`: it has as many turns as one takes; `model_unconfigured`: no endpoint named or routed; `endpoint_unusable`: the one named is retired, has no key, or is not this environment’s',
         schema: ErrorBody,
       },
+      429: rateLimited,
       503: { description: '`connector_unavailable`', schema: ErrorBody },
     },
   },

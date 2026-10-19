@@ -1,5 +1,6 @@
 import { contentDocumentSchema } from '@alloy-works/domain';
 import { z } from 'zod';
+import { rateLimited } from './model-limits.js';
 
 import type { RouteContract } from './contract.js';
 import { ErrorBody, LowercaseUuid } from './schemas.js';
@@ -164,6 +165,7 @@ export const assistantRoutes = {
           '`model_unconfigured`: no endpoint is set up for drafting; `endpoint_unusable`: it is retired or has no key',
         schema: ErrorBody,
       },
+      429: rateLimited,
       503: { description: '`connector_unavailable`', schema: ErrorBody },
     },
   },
