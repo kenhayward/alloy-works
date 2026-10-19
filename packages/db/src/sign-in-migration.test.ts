@@ -142,6 +142,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0130_creation_proposals',
       '0131_personal_prompts',
       '0132_generation_limits',
+      '0133_generation_budget',
     ]);
 
     const read = async () =>

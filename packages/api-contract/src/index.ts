@@ -206,6 +206,13 @@ export {
   modelLimitRoutes,
 } from './model-limits.js';
 export {
+  BudgetRecipientsBody,
+  BudgetRecipientsRefusal,
+  ModelBudgetBody,
+  ModelBudgetView,
+  modelBudgetRoutes,
+} from './model-budget.js';
+export {
   PersonalPromptBody,
   PersonalPromptList,
   PersonalPromptParams,

@@ -727,6 +727,8 @@ const VALID_INPUT: Readonly<
   setGuardrail: { payload: { phrase: 'Probe', applies: 'sent', reason: 'Probe' } },
   setModelLimit: { payload: { perHour: 10 } },
   setPersonLimit: { payload: { perHour: 10 } },
+  setModelBudget: { payload: { budget: null } },
+  setBudgetRecipients: { payload: { principals: [] } },
   takeTurn: { payload: { ask: 'Hello' } },
   addConversationContext: { payload: { component: SESSION } },
   savePersonalPrompt: { payload: { title: 'Mine', instructions: 'Mine.' } },

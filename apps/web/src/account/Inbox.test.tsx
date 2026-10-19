@@ -17,8 +17,8 @@ const GONE = 'tttttttt-0000-4000-8000-000000000002';
 const id = (n: number) => `nnnnnnnn-0000-4000-8000-${String(n).padStart(12, '0')}`;
 
 /** The inbox routes, answered from notifications the test holds. */
-function service() {
-  const rows = [
+function service(only?: Record<string, unknown>[]) {
+  const held = [
     {
       id: id(1),
       kind: 'mention',
@@ -60,6 +60,7 @@ function service() {
       read: true,
     },
   ];
+  const rows = (only ?? held) as typeof held;
   let cadences = { mention: 'at_once', reply: 'at_once', resolution: 'daily' };
   const asked: string[] = [];
   const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
@@ -135,6 +136,38 @@ describe('the inbox, from the account chip', () => {
     // A thread its reader may no longer read is gone to them.
     await userEvent.click(within(items[1]!).getByRole('button', { name: 'Open' }));
     expect(await screen.findByText('You may no longer read this thread.')).toBeInTheDocument();
+  });
+
+  it('ADM-034 says a model budget alert to its recipient: how much of the month’s budget is spent, that nothing stops, and where to see it', async () => {
+    const { client } = service([
+      {
+        id: id(4),
+        kind: 'budget',
+        actor: null,
+        thread: null,
+        on: null,
+        counts: null,
+        budget: {
+          threshold: 80,
+          currency: 'USD',
+          spent: '412.500000',
+          limit: '500.000000',
+          month: '2026-10',
+        },
+        at: '2026-10-12T11:00:00.000Z',
+        read: false,
+      },
+    ]);
+    render(<Inbox client={client} onClose={() => undefined} />);
+    const list = await screen.findByRole('list', { name: 'Notifications' });
+    const item = within(list).getByRole('listitem');
+    expect(item.firstChild?.textContent).toBe(
+      'Models have cost USD 412.50 this month, 80% of the USD 500.00 budget. Nothing stops.',
+    );
+    expect(within(item).getByRole('link', { name: 'Open Model spending' })).toHaveAttribute(
+      'href',
+      '#/admin/spending',
+    );
   });
 
   it('COL-062 deletes one of your own notifications', async () => {

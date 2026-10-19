@@ -338,6 +338,7 @@ export function modelEndpointHandlers(
                 run,
                 last.type === 'ended' ? 'passed' : 'failed',
               );
+              if (recorded.alertFailed) request.log.error('a budget alert could not be sent');
               return recorded;
             },
             context,

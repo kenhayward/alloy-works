@@ -752,6 +752,16 @@ export {
   type GenerationLimits,
 } from './generation-limits.js';
 export {
+  BUDGET_RECIPIENTS_MOST,
+  budgetRecipients,
+  readBudget,
+  setBudget,
+  setBudgetRecipients,
+  spendThisMonth,
+  type BudgetCounts,
+  type GenerationBudget,
+} from './generation-budget.js';
+export {
   changePersonalPrompt,
   deletePersonalPrompt,
   listPersonalPrompts,

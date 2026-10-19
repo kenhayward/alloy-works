@@ -26,7 +26,7 @@ const Place = z.object({
 /** One notification (COL-063): what happened, by whom, where - never the text (COL-036). */
 export const NotificationView = z.object({
   id: LowercaseUuid,
-  kind: z.enum(['mention', 'reply', 'resolution', 'round', 'digest']),
+  kind: z.enum(['mention', 'reply', 'resolution', 'round', 'digest', 'budget']),
   actor: z
     .object({
       id: LowercaseUuid,
@@ -55,6 +55,18 @@ export const NotificationView = z.object({
     .nullable()
     .describe(
       'A digest’s: how many of each kind, and on which threads and where, of those the caller may still read (COL-035)',
+    ),
+  budget: z
+    .object({
+      threshold: z.int().describe('The percent of the limit crossed'),
+      currency: z.string(),
+      spent: z.string().describe('What the month had cost when it was crossed, to six places'),
+      limit: z.string().describe('The limit, to six places'),
+      month: z.string().describe('The month, `YYYY-MM`, UTC'),
+    })
+    .nullable()
+    .describe(
+      'A model budget’s alert (ADM-034): how much of it this month has spent; null otherwise',
     ),
   at: z.iso.datetime(),
   read: z.boolean(),

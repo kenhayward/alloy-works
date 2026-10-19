@@ -1175,6 +1175,13 @@ describe('routes that check a permission', () => {
     }),
     retireGuardrail: () => ({ url: `/v1/guardrails/${MISSING}/retirement`, status: 403 }),
     getModelLimits: () => ({ url: '/v1/model-limits', status: 403 }),
+    getModelBudget: () => ({ url: '/v1/model-budget', status: 403 }),
+    setModelBudget: () => ({ url: '/v1/model-budget', status: 403, payload: { budget: null } }),
+    setBudgetRecipients: () => ({
+      url: '/v1/model-budget/recipients',
+      status: 403,
+      payload: { principals: [] },
+    }),
     setModelLimit: () => ({ url: '/v1/model-limits', status: 403, payload: { perHour: 1 } }),
     setPersonLimit: () => ({
       url: `/v1/model-limits/people/${MISSING}`,

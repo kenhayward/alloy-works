@@ -30,6 +30,7 @@ import { contextOf } from '../audit.js';
 import { watchAuthority } from '../authority.js';
 import type { createConnectorClient } from '../data/connector.js';
 import { RateLimited, rateLimitedWords, startLimited } from './limits.js';
+import { microsText } from './money.js';
 
 /**
  * A run's loop (generation.md, "The run"; the G2 plan, G2-B; the G5 plan, G5-A): turns through the
@@ -75,12 +76,7 @@ export const failureWords = (code: GenerationFailure['code']) => WORDS[code];
 
 const sha256 = (text: string) => createHash('sha256').update(text, 'utf8').digest('hex');
 
-/** Millionths of a currency's unit, written to six places. */
-export function microsText(micros: bigint): string {
-  const whole = micros / 1_000_000n;
-  const part = (micros % 1_000_000n).toString().padStart(6, '0');
-  return `${whole}.${part}`;
-}
+export { microsText };
 
 export function streamedRun(input: {
   readonly request: FastifyRequest;
@@ -358,6 +354,7 @@ export function streamedRun(input: {
               reply: said,
             });
             await recordGenerationRun(inner, ended);
+            if (ended.alertFailed) request.log.error('a budget alert could not be sent');
             return ended;
           },
           context,

@@ -17710,6 +17710,22 @@
           "howItIsMet": "`model_rate_limited`, per user per hour (Cost)"
         },
         {
+          "id": "GEN-034",
+          "howItIsMet": "`generation_budget`: a monthly limit, its rising thresholds, alerts as each run ends (Cost)"
+        },
+        {
+          "id": "ADM-013",
+          "howItIsMet": "The same; an alert before the limit, at a threshold below 100 (Cost; its gap beside the table)"
+        },
+        {
+          "id": "ADM-014",
+          "howItIsMet": "Declared in advance on the budget's view and page: nothing stops, every capability continues (Cost)"
+        },
+        {
+          "id": "ADM-034",
+          "howItIsMet": "A `budget` notification in the inbox, COL-063's channel, to recipients an administrator names (Cost)"
+        },
+        {
           "id": "GEN-037",
           "howItIsMet": "The run's cost shown to its requester as it ends, and their month on the assistant panel (Cost)"
         },
@@ -20644,13 +20660,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 536,
+      "line": 539,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 549,
+      "line": 552,
       "kind": "title"
     },
     {
@@ -21052,7 +21068,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1795,
+      "line": 1797,
       "kind": "title"
     },
     {
@@ -21593,6 +21609,30 @@
       "id": "COL-067",
       "file": "apps/service/src/live-stream.test.ts",
       "line": 453,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-013",
+      "file": "apps/service/src/model-budget-routes.test.ts",
+      "line": 105,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-014",
+      "file": "apps/service/src/model-budget-routes.test.ts",
+      "line": 105,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-034",
+      "file": "apps/service/src/model-budget-routes.test.ts",
+      "line": 80,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-034",
+      "file": "apps/service/src/model-budget-routes.test.ts",
+      "line": 105,
       "kind": "title"
     },
     {
@@ -22688,33 +22728,39 @@
       "kind": "title"
     },
     {
+      "id": "ADM-034",
+      "file": "apps/web/src/account/Inbox.test.tsx",
+      "line": 141,
+      "kind": "title"
+    },
+    {
       "id": "COL-034",
       "file": "apps/web/src/account/Inbox.test.tsx",
-      "line": 150,
+      "line": 183,
       "kind": "title"
     },
     {
       "id": "COL-036",
       "file": "apps/web/src/account/Inbox.test.tsx",
-      "line": 112,
+      "line": 113,
       "kind": "title"
     },
     {
       "id": "COL-062",
       "file": "apps/web/src/account/Inbox.test.tsx",
-      "line": 140,
+      "line": 173,
       "kind": "title"
     },
     {
       "id": "COL-063",
       "file": "apps/web/src/account/Inbox.test.tsx",
-      "line": 112,
+      "line": 113,
       "kind": "title"
     },
     {
       "id": "LIF-005",
       "file": "apps/web/src/account/Inbox.test.tsx",
-      "line": 112,
+      "line": 113,
       "kind": "title"
     },
     {
@@ -22778,9 +22824,27 @@
       "kind": "title"
     },
     {
+      "id": "ADM-013",
+      "file": "apps/web/src/admin/ModelSpending.test.tsx",
+      "line": 90,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-014",
+      "file": "apps/web/src/admin/ModelSpending.test.tsx",
+      "line": 90,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-034",
+      "file": "apps/web/src/admin/ModelSpending.test.tsx",
+      "line": 90,
+      "kind": "title"
+    },
+    {
       "id": "GEN-035",
       "file": "apps/web/src/admin/ModelSpending.test.tsx",
-      "line": 65,
+      "line": 125,
       "kind": "title"
     },
     {
@@ -26428,19 +26492,19 @@
     {
       "id": "GEN-027",
       "file": "packages/db/src/model-endpoints.test.ts",
-      "line": 97,
+      "line": 99,
       "kind": "title"
     },
     {
       "id": "GEN-028",
       "file": "packages/db/src/model-endpoints.test.ts",
-      "line": 182,
+      "line": 184,
       "kind": "title"
     },
     {
       "id": "IAM-076",
       "file": "packages/db/src/model-endpoints.test.ts",
-      "line": 122,
+      "line": 124,
       "kind": "title"
     },
     {
@@ -27616,13 +27680,13 @@
     {
       "id": "LIF-030",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 241,
+      "line": 242,
       "kind": "title"
     },
     {
       "id": "LIF-070",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 222,
+      "line": 223,
       "kind": "title"
     },
     {

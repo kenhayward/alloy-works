@@ -371,6 +371,7 @@ export function promptRunHandlers(
                 ],
               });
               await recordGenerationRun(inner, ended);
+              if (ended.alertFailed) request.log.error('a budget alert could not be sent');
               return ended;
             },
             context,

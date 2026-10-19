@@ -21,6 +21,7 @@ import {
 } from '@alloy-works/db';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { notFound } from './access.js';
+import { microsText } from './generation/money.js';
 import { keysetAfter, keysetCursor } from './keyset.js';
 import type { SessionPrincipal } from './sessions.js';
 
@@ -133,6 +134,16 @@ export function inboxHandlers(
                     places: each.counts.artifacts
                       .filter((artifact) => readable.has(artifact))
                       .map(place),
+                  },
+            budget:
+              each.budget === null
+                ? null
+                : {
+                    threshold: each.budget.threshold,
+                    currency: each.budget.currency,
+                    spent: microsText(BigInt(each.budget.spentMicros)),
+                    limit: microsText(BigInt(each.budget.limitMicros)),
+                    month: each.budget.month,
                   },
             at: each.at.toISOString(),
             read: each.readAt !== null,

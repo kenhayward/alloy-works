@@ -8,6 +8,7 @@ import {
 import { sql } from 'kysely';
 
 import { recordEvent } from './audit.js';
+import { alertSpend } from './generation-budget.js';
 import type { TenantTransaction } from './tables.js';
 
 /**
@@ -324,6 +325,8 @@ export interface GenerationRun {
   readonly tokensOut: number | null;
   readonly costMicros: bigint | null;
   readonly finishedAt: Date | null;
+  /** As it ends: true where its budget alert could not be sent (G6-D), for the caller to log. */
+  readonly alertFailed?: true;
 }
 
 interface RunRow {
@@ -452,7 +455,9 @@ export async function endRun(
       context = ${JSON.stringify(ended.context ?? run.context)}::jsonb, finished_at = now()
       ${ended.reply === undefined ? sql`` : sql`, reply = ${ended.reply}`}
     where id = ${id} returning *`.execute(trx);
-  return runOf(rows[0]!);
+  // What it cost counts towards the month's budget, and may cross an alert (G6-D), never un-ending it.
+  const alerted = cost !== null && cost > 0n ? await alertSpend(trx) : { told: 0 };
+  return { ...runOf(rows[0]!), ...('failed' in alerted ? { alertFailed: true as const } : {}) };
 }
 
 export async function readRun(

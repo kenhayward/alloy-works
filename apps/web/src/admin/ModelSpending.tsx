@@ -22,19 +22,220 @@ const runsOf = (typed: string): number | null => {
   return typed.trim() === '' || !Number.isInteger(value) || value < 1 ? null : value;
 };
 
+interface Budget {
+  readonly budget: {
+    readonly currency: string;
+    readonly limit: number;
+    readonly thresholds: readonly number[];
+  } | null;
+  readonly month: string;
+  readonly spent: string;
+  readonly otherCurrencyRuns: number;
+  readonly recipients: readonly { readonly id: string; readonly name: string | null }[];
+}
+
 /**
- * Administration's **Model spending** (generation.md, "Cost"; the G6 plan): how often each person may
- * call a model (GEN-035).
+ * Administration's **Model spending** (generation.md, "Cost"; the G6 plan): the monthly budget and who
+ * is told as it is spent (GEN-034, ADM-013, ADM-014, ADM-034), and how often each person may call a
+ * model (GEN-035).
  */
 export function ModelSpending({ client }: { client: Client }) {
-  return <RateLimits client={client} />;
+  const [people, setPeople] = useState<readonly ShownPerson[]>([]);
+  useEffect(() => {
+    let current = true;
+    everyPage<ShownPerson>((cursor) =>
+      client.GET('/v1/principals', {
+        params: { query: { level: 'tenant', ...(cursor ? { cursor } : {}) } },
+      }),
+    )
+      .then((answer) => {
+        if (current && 'items' in answer) {
+          setPeople(
+            answer.items.filter(
+              (one) => isShownPerson(one) && one.erased !== true && one.kind === 'user',
+            ),
+          );
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      current = false;
+    };
+  }, [client]);
+  return (
+    <>
+      <MonthlyBudget client={client} people={people} />
+      <RateLimits client={client} people={people} />
+    </>
+  );
+}
+
+/** Thresholds from what was typed: whole percents, in the order typed. */
+const thresholdsOf = (typed: string) =>
+  typed
+    .split(/[ ,%]+/u)
+    .filter((part) => part !== '')
+    .map(Number);
+
+/** The monthly budget, what is spent, and who is told (G6-B to G6-D). */
+function MonthlyBudget({ client, people }: { client: Client; people: readonly ShownPerson[] }) {
+  const [read, setRead] = useState<Budget | 'failed' | null>(null);
+  const [currency, setCurrency] = useState('USD');
+  const [limit, setLimit] = useState('');
+  const [thresholds, setThresholds] = useState('50, 80, 100');
+  const [told, setTold] = useState<ReadonlySet<string>>(new Set());
+  const [said, setSaid] = useState('');
+
+  const shown = (answer: Budget) => {
+    setRead(answer);
+    if (answer.budget) {
+      setCurrency(answer.budget.currency);
+      setLimit(String(answer.budget.limit));
+      setThresholds(answer.budget.thresholds.join(', '));
+    }
+    setTold(new Set(answer.recipients.map((each) => each.id)));
+  };
+
+  useEffect(() => {
+    let current = true;
+    client
+      .GET('/v1/model-budget')
+      .then(({ data }) => {
+        if (current) {
+          if (data) shown(data);
+          else setRead('failed');
+        }
+      })
+      .catch(() => {
+        if (current) setRead('failed');
+      });
+    return () => {
+      current = false;
+    };
+  }, [client]);
+
+  const save = async (event: FormEvent) => {
+    event.preventDefault();
+    const { data, error } = await client.PUT('/v1/model-budget', {
+      body: {
+        budget: {
+          currency: currency.trim().toUpperCase(),
+          limit: Number(limit),
+          thresholds: thresholdsOf(thresholds),
+        },
+      },
+    });
+    if (data) {
+      shown(data);
+      setSaid('The budget is set, counting from this month.');
+    } else setSaid(refusal(error, 'The budget could not be set.'));
+  };
+
+  const lift = async () => {
+    const { data, error } = await client.PUT('/v1/model-budget', { body: { budget: null } });
+    if (data) {
+      shown(data);
+      setSaid('There is no budget now.');
+    } else setSaid(refusal(error, 'The budget could not be lifted.'));
+  };
+
+  const name = async () => {
+    const { data, error } = await client.PUT('/v1/model-budget/recipients', {
+      body: { principals: people.filter((one) => told.has(one.id)).map((one) => one.id) },
+    });
+    if (data) {
+      shown(data);
+      const count = data.recipients.length;
+      setSaid(count === 1 ? '1 person is told.' : `${count} people are told.`);
+    } else setSaid(refusal(error, 'Who is told could not be saved.'));
+  };
+
+  const money = (amount: string | number) => `${currency} ${Number(amount).toFixed(2)}`;
+  return (
+    <section aria-label="Budget">
+      <h2>Budget</h2>
+      <div className={styles['lead']}>
+        <p>
+          What the environment means to spend on models a month, and the percents of it at which the
+          people named here are told, in their inbox.
+        </p>
+        <p>When it is spent, nothing stops: every capability continues.</p>
+      </div>
+      {read === 'failed' && <p>The budget could not be loaded.</p>}
+      {read !== null && read !== 'failed' && (
+        <>
+          <p>
+            {read.budget
+              ? `${money(read.spent)} of ${money(read.budget.limit)} spent in ${read.month}.`
+              : `No budget is set. ${money(read.spent)} spent in ${read.month}.`}
+            {read.otherCurrencyRuns > 0 &&
+              ` ${read.otherCurrencyRuns} runs cost something in another currency, counted in no budget.`}
+          </p>
+          <form
+            className={styles['toolbar']}
+            aria-label="Set the budget"
+            onSubmit={(event) => void save(event)}
+            noValidate
+          >
+            <label className={styles['filter']}>
+              Currency
+              <input value={currency} onChange={(change) => setCurrency(change.target.value)} />
+            </label>
+            <label className={styles['filter']}>
+              Monthly limit
+              <input
+                type="number"
+                min={0}
+                step="any"
+                value={limit}
+                onChange={(change) => setLimit(change.target.value)}
+              />
+            </label>
+            <label className={styles['filter']}>
+              Alert at percents
+              <input value={thresholds} onChange={(change) => setThresholds(change.target.value)} />
+            </label>
+            <button type="submit" className="primary" disabled={!(Number(limit) > 0)}>
+              Save budget
+            </button>
+            {read.budget && (
+              <button type="button" onClick={() => void lift()}>
+                Lift budget
+              </button>
+            )}
+          </form>
+          <fieldset className={styles['toolbar']}>
+            <legend>Told, through the inbox</legend>
+            {people.map((one) => (
+              <label key={one.id} className={styles['filter']}>
+                <input
+                  type="checkbox"
+                  checked={told.has(one.id)}
+                  onChange={(change) => {
+                    const next = new Set(told);
+                    if (change.target.checked) next.add(one.id);
+                    else next.delete(one.id);
+                    setTold(next);
+                  }}
+                />
+                {personName(one)}
+              </label>
+            ))}
+            <button type="button" onClick={() => void name()}>
+              Save who is told
+            </button>
+          </fieldset>
+        </>
+      )}
+      <p role="status">{said}</p>
+    </section>
+  );
 }
 
 /** How many runs each person may start an hour, and a person's own in place of it (G6-A). */
-function RateLimits({ client }: { client: Client }) {
+function RateLimits({ client, people }: { client: Client; people: readonly ShownPerson[] }) {
   const [limits, setLimits] = useState<Limits | 'failed' | null>(null);
   const [each, setEach] = useState('');
-  const [people, setPeople] = useState<readonly ShownPerson[]>([]);
   const [person, setPerson] = useState('');
   const [theirs, setTheirs] = useState('');
   const [said, setSaid] = useState('');
@@ -57,21 +258,6 @@ function RateLimits({ client }: { client: Client }) {
       .catch(() => {
         if (current) setLimits('failed');
       });
-    everyPage<ShownPerson>((cursor) =>
-      client.GET('/v1/principals', {
-        params: { query: { level: 'tenant', ...(cursor ? { cursor } : {}) } },
-      }),
-    )
-      .then((answer) => {
-        if (current && 'items' in answer) {
-          const listed = answer.items.filter(
-            (one) => isShownPerson(one) && one.erased !== true && one.kind !== 'service',
-          );
-          setPeople(listed);
-          if (listed[0]) setPerson(listed[0].id);
-        }
-      })
-      .catch(() => undefined);
     return () => {
       current = false;
     };
@@ -106,6 +292,10 @@ function RateLimits({ client }: { client: Client }) {
       );
     } else setSaid(refusal(error, 'Their limit could not be saved.'));
   };
+
+  useEffect(() => {
+    if (person === '' && people[0]) setPerson(people[0].id);
+  }, [people, person]);
 
   const chosen = people.find((one) => one.id === person);
   return (
