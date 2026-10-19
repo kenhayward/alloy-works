@@ -12,6 +12,8 @@ import {
 import type { SearchKind } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import { AppError } from './errors.js';
+import type { ConnectorOptions } from './data/connections.js';
+import { meaningSearcher, type MeaningState } from './generation/meaning.js';
 import type { SessionPrincipal } from './sessions.js';
 
 /** A list said as a reader says it: `a`, `a and b`, `a, b and c`. */
@@ -53,6 +55,8 @@ function view(
   open: ReadonlyMap<string, readonly string[]> = new Map(),
   /** Somebody shared a publication alone: named no space and nobody (the R17 plan, R17-I). */
   outside = false,
+  /** Whether meaning was searched beside the words (the G7 plan, G7-I). */
+  meaning: MeaningState = 'skipped',
 ): SearchAnswerView {
   const message = sentenceFor(answer);
   if (answer.outcome === 'nothing_to_match') {
@@ -64,6 +68,7 @@ function view(
     count: answer.count,
     capped: answer.capped,
     facetsBounded: answer.facetsBounded,
+    meaning,
     message,
     facets: {
       kinds: answer.facets.kinds.map((each) => ({ ...each })),
@@ -112,6 +117,7 @@ function view(
               document: { ...each.section.document },
               components: each.section.components.map((component) => ({ ...component })),
             },
+      found: each.found,
     })),
   };
 }
@@ -174,7 +180,9 @@ export function searchHandlers(
   db: TenantDatabase,
   tenantOf: (request: FastifyRequest) => Tenant,
   principalOf: (request: FastifyRequest) => SessionPrincipal,
+  connector?: ConnectorOptions,
 ) {
+  const meaningOf = meaningSearcher(db, connector);
   return {
     // Anybody signed in may search, over what they may read (search.md, SE-H).
     search: async (request: FastifyRequest): Promise<SearchAnswerView> => {
@@ -187,11 +195,32 @@ export function searchHandlers(
           'Search every version or one baseline, not both.',
         );
       }
+      const filters = filtersOf(query);
+      // Meaning, beside the words, for the latest alone (the G7 plan, G7-G).
+      const meaning = await meaningOf(
+        request,
+        tenantOf(request),
+        principalOf(request).principalId,
+        {
+          q: query.q ?? '',
+          latest: query.baseline === undefined && (query.versions ?? 'latest') === 'latest',
+          filters: {
+            ...(filters.kinds === undefined ? {} : { kinds: filters.kinds }),
+            ...(filters.spaces === undefined ? {} : { spaces: filters.spaces }),
+            ...(filters.componentTypes === undefined
+              ? {}
+              : { componentTypes: filters.componentTypes }),
+            ...(filters.owners === undefined ? {} : { owners: filters.owners }),
+            ...(filters.states === undefined ? {} : { states: filters.states }),
+          },
+        },
+      );
       const { answer, open, outside } = await db.withTenant(tenantOf(request), async (trx) => {
         const found = await searchWords(trx, principalOf(request).principalId, query.q ?? '', {
+          ...(meaning.hits.length === 0 ? {} : { meaning: meaning.hits }),
           ...(query.offset === undefined ? {} : { offset: Number(query.offset) }),
           ...(query.limit === undefined ? {} : { limit: Number(query.limit) }),
-          filters: filtersOf(query),
+          filters,
           scope:
             query.baseline === undefined
               ? (query.versions ?? 'latest')
@@ -237,6 +266,7 @@ export function searchHandlers(
         },
         open,
         outside,
+        meaning.state,
       );
     },
   };

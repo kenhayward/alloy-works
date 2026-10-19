@@ -25,6 +25,7 @@ import {
   sweepExpiredTenantExports,
   sweepExpiredRangePreviews,
   sweepAbandonedGenerationRuns,
+  sweepQueryEmbeddingsEverywhere,
   sweepExpiredSignIns,
   sweepOldNotifications,
   sweepDates,
@@ -100,6 +101,10 @@ const sweep = setInterval(() => {
   void sweepExpiredRangePreviews(db, log)
     .then((removed) => removed > 0 && log.info({ removed }, 'swept range previews'))
     .catch((error: unknown) => log.error({ err: error }, 'range preview sweep failed'));
+  // A searcher's query vectors a day old (the G7 plan, G7-G).
+  void sweepQueryEmbeddingsEverywhere(db, log)
+    .then((removed) => removed > 0 && log.info({ removed }, 'swept old query vectors'))
+    .catch((error: unknown) => log.error({ err: error }, 'sweep failed'));
   // Model runs left running an hour, ended abandoned (the G2 plan, G2-B).
   void sweepAbandonedGenerationRuns(db, log)
     .then((ended) => ended > 0 && log.info({ ended }, 'ended abandoned runs'))

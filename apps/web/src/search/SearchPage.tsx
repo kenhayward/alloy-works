@@ -46,6 +46,8 @@ interface Result {
   readonly state?: { readonly key: string; readonly name: string } | null;
   /** A component's open divergent lines (LIF-046); absent where it has not diverged. */
   readonly lines?: readonly string[];
+  /** How it was found (SCH-014; the G7 plan): absent from a service before G7, which finds by words. */
+  readonly found?: 'words' | 'meaning' | 'both';
   /** A section's document and the components it places (SCH-053); absent from a service before R14. */
   readonly section?: {
     readonly document: { readonly id: string; readonly title: string };
@@ -92,6 +94,8 @@ type Answer =
       readonly capped: boolean;
       readonly items: readonly Result[];
       readonly facets: Facets;
+      /** Whether meaning was searched beside the words (the G7 plan, G7-I). */
+      readonly meaning?: 'used' | 'unavailable' | 'unconfigured' | 'skipped';
     };
 
 /** What narrows the search: each dimension's chosen values, and a field's as `<field>:<value>`. */
@@ -458,6 +462,11 @@ export function SearchPage({
         </Notice>
       )}
       {answer !== null && problem === null && <p role="status">{answer.message}</p>}
+      {answer?.outcome === 'results' && answer.meaning === 'unavailable' && problem === null && (
+        <p className={styles['about']}>
+          Searching by meaning is unavailable just now: these are found by their words alone.
+        </p>
+      )}
       {results !== null && problem === null && (
         <div className={styles['layout']}>
           <div className={styles['facets']}>
@@ -567,6 +576,9 @@ export function SearchPage({
                     {(item.lines?.length ?? 0) > 0 && (
                       <Chip>{`Diverged: ${item.lines!.join(', ')}`}</Chip>
                     )}
+                    {/* Found by meaning answers another question than by words (SCH-014). */}
+                    {item.found === 'meaning' && <Chip>Found by meaning</Chip>}
+                    {item.found === 'both' && <Chip>Found by words and meaning</Chip>}
                     {found !== null && <p className={styles['about']}>{found}</p>}
                     {where !== null && <p className={styles['about']}>{where}</p>}
                     {item.passage.length > 0 && (

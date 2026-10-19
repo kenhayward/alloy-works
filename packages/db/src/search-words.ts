@@ -9,6 +9,7 @@ import {
   type WorkflowKind,
 } from '@alloy-works/domain';
 import { internalHeld } from './internal-held.js';
+import { MEANING_HITS } from './search-meaning.js';
 import { sql, type RawBuilder, type SqlBool } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
 import { deletedAs, deletionStored, isDeleted } from './deletion.js';
@@ -124,6 +125,8 @@ export interface SearchResult {
   readonly state: { readonly key: string; readonly name: string } | null;
   /** A section's document and the components it places that the reader may read (SCH-053); else null. */
   readonly section: SectionMembers | null;
+  /** How it was found (SCH-014; the G7 plan, G7-I): by its words, its meaning, or both. */
+  readonly found: 'words' | 'meaning' | 'both';
 }
 
 /**
@@ -384,6 +387,12 @@ async function firstPinnedNodes(
 }
 
 export interface SearchOptions {
+  /**
+   * What meaning found (the G7 plan, G7-I), nearest first, from `searchMeaning`: fused with the best
+   * of the words by reciprocal rank, every filter applied again; the count and facets stay the
+   * words'. The latest alone.
+   */
+  readonly meaning?: readonly { readonly entry: string; readonly block: string }[];
   readonly offset?: number;
   readonly limit?: number;
   readonly filters?: SearchFilters;
@@ -944,13 +953,15 @@ export async function searchWords(
     sql`, `,
   );
   /** Every filter in force but `left`, over the flagged row `b`. */
-  const allBut = (left: string) =>
+  const filtersBut = (left: string) =>
     sql.raw(
       flagsOver('b')
         .filter(([flag]) => flag !== left)
         .map(([flag]) => `b.${flag}`)
         .join(' and ') || 'true',
     );
+  /** The same, over the rows the words found: what meaning alone found counts in no facet (G7-I). */
+  const allBut = (left: string) => sql`${filtersBut(left)} and b.f_words`;
   // A field's own filter is left out of that field's facet, and only that field's; an axis's of that
   // axis's, and a relationship field's of its own.
   const grouped = [
@@ -974,7 +985,7 @@ export async function searchWords(
     sql.join(
       [
         sql.raw(
-          ['f_kind', 'f_space', 'f_type', 'f_owner', 'f_state', 'f_changed']
+          ['f_kind', 'f_space', 'f_type', 'f_owner', 'f_state', 'f_changed', 'f_words']
             .map((f) => `b.${f}`)
             .join(' and '),
         ),
@@ -1185,6 +1196,11 @@ export async function searchWords(
     };
   }
 
+  // What meaning found, by entry, nearest first: the latest alone (G7-I).
+  const meant =
+    scope === 'latest' && bounded !== undefined
+      ? (options.meaning ?? []).map((each) => each.entry).filter((id) => UUID.test(id))
+      : [];
   // The rows read: a bounded search's candidates by id, the predicate checked again, and ranked over
   // them alone (SV3-C); a baseline's, or every version's before 0091, every match, exact and unbounded.
   const rank = sql`ts_rank(e.vector, websearch_to_tsquery(e.configuration, ${parsed.anyOf})) as rank`;
@@ -1202,12 +1218,19 @@ export async function searchWords(
                  ${scope === 'latest' ? sql`true` : sql`e.current`} as current, e.workflow_state,
                  ${rank}
           from ${source} e
-          where e.id = any(${bounded.facets}::uuid[]) and ${readableRow} and ${shown}`;
+          where e.id = any(${[...bounded.facets, ...meant]}::uuid[]) and ${readableRow} and ${shown}`;
   const matched =
     bounded === undefined
       ? sql`select * from flagged b where ${allBut('')}`
       : sql`select * from flagged b
-            where b.id = any(${bounded.results.slice(0, SEARCH_RANK_BOUND)}::uuid[])`;
+            where b.id = any(${bounded.results.slice(0, SEARCH_RANK_BOUND)}::uuid[])
+               or (b.id = any(${meant}::uuid[]) and ${filtersBut('')})`;
+  // Which rows the words found, and each one's place among the best words and meanings (G7-I).
+  const wordsFlag =
+    meant.length === 0 || bounded === undefined
+      ? sql`true`
+      : sql`b.id = any(${bounded.facets}::uuid[])`;
+  const meaningBlocks = (options.meaning ?? []).map((each) => `${each.entry}:block:${each.block}`);
   // The version a history row names, for the page's rows alone (SV3-M): the newest of its place's
   // versions matching the whole query, else the newest holding any of its words.
   const versionOf = (table: string, texts: string, current: boolean) => sql`
@@ -1247,6 +1270,7 @@ export async function searchWords(
       thread_on: 'component' | 'document' | null;
       resolved: boolean;
       workflow_state: string | null;
+      found: 'words' | 'meaning' | 'both';
     }[];
     kinds: FacetRow[];
     spaces: FacetRow[];
@@ -1326,7 +1350,7 @@ export async function searchWords(
       ) k
       where k.key is not null and k.key <> '' and ${otherReadable(sql`r.x ->> 'other'`)}
     ),
-    flagged as (select b.*, ${flagged} from base b),
+    flagged as (select b.*, ${flagged}, ${wordsFlag} as f_words from base b),
     matched as (${matched}),
     -- Each artifact and place once, at its newest version that matched every filter (SV-C).
     results as (${
@@ -1337,16 +1361,34 @@ export async function searchWords(
                order by m.artifact_id, m.node, m.thread_id, v.revision_no desc, v.version_no desc`
     })
     select
-      (select count(*) from (select 1 from results limit ${SEARCH_COUNT_CAP + 1}) c) as total,
-      (select coalesce(json_agg(r order by r.rank desc, r.changed_at desc, r.id), '[]'::json)
+      (select count(*) from (select 1 from results where f_words limit ${SEARCH_COUNT_CAP + 1}) c)
+        as total,
+      (select coalesce(json_agg(r order by r.fused desc, r.rank desc, r.changed_at desc, r.id),
+                       '[]'::json)
        from (
-         select p.id, p.rank, p.kind, p.artifact_id, p.node, p.title, p.space_id,
+         select p.id, p.rank, p.fused, p.found, p.kind, p.artifact_id, p.node, p.title, p.space_id,
                 sp.name as space_name, p.changed_at, best.place, best.passage,
                 coalesce(named.version_id, p.version_id) as version_id,
                 coalesce(named.current, p.current) as current, av.revision_no, av.version_no,
                 p.thread_id, th.on_kind as thread_on, th.resolved, p.workflow_state
-         from (select * from results order by rank desc, changed_at desc, id
-               limit ${limit} offset ${offset}) p
+         from (${
+           meant.length === 0
+             ? sql`select *, 0 as fused, 'words' as found from results
+                   order by rank desc, changed_at desc, id limit ${limit} offset ${offset}`
+             : sql`select f.*,
+                     coalesce(1.0 / (60 + f.wp), 0) + coalesce(1.0 / (60 + f.mp), 0) as fused,
+                     case when f.wp is not null and f.mp is not null then 'both'
+                          when f.mp is not null then 'meaning' else 'words' end as found
+                   from (select r.*,
+                           case when r.f_words then row_number() over (
+                             partition by r.f_words order by r.rank desc, r.changed_at desc, r.id) end
+                             as wp,
+                           array_position(${meant}::uuid[], r.id) as mp
+                         from results r) f
+                   where f.wp <= ${MEANING_HITS} or f.mp is not null
+                   order by fused desc, f.rank desc, f.changed_at desc, f.id
+                   limit ${limit} offset ${offset}`
+         }) p
          left join space sp on sp.id = p.space_id
          left join lateral (${named}) named on not p.current
          left join artifact_version av on av.id = coalesce(named.version_id, p.version_id)
@@ -1366,7 +1408,10 @@ export async function searchWords(
                               ${HEADLINE}) as passage
            from ${texts} t
            where t.entry_id = coalesce(named.id, p.id)
-           order by ts_rank(t.vector, websearch_to_tsquery(t.configuration, ${parsed.anyOf})) desc,
+           -- What meaning alone found shows the passage it found (G7-I).
+           order by (p.found = 'meaning'
+                     and (p.id::text || ':' || t.place) = any(${meaningBlocks}::text[])) desc,
+                    ts_rank(t.vector, websearch_to_tsquery(t.configuration, ${parsed.anyOf})) desc,
                     t.place = 'title' desc, t.place
            limit 1
          ) best on true
@@ -1589,6 +1634,7 @@ export async function searchWords(
         item.kind === 'section' && item.node !== null
           ? (members.get(`${item.version_id}:${item.node}`) ?? null)
           : null,
+      found: item.found,
     })),
     facets: {
       kinds: capped(row.kinds),

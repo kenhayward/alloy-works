@@ -20686,13 +20686,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 542,
+      "line": 543,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 555,
+      "line": 556,
       "kind": "title"
     },
     {
@@ -22139,6 +22139,24 @@
       "id": "COL-058",
       "file": "apps/service/src/rounds-routes.test.ts",
       "line": 288,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-013",
+      "file": "apps/service/src/search-meaning-routes.test.ts",
+      "line": 121,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-014",
+      "file": "apps/service/src/search-meaning-routes.test.ts",
+      "line": 131,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-031",
+      "file": "apps/service/src/search-meaning-routes.test.ts",
+      "line": 148,
       "kind": "title"
     },
     {
@@ -24034,43 +24052,49 @@
     {
       "id": "LIF-046",
       "file": "apps/web/src/search/SearchPage.test.tsx",
-      "line": 149,
+      "line": 181,
       "kind": "title"
     },
     {
       "id": "SCH-003",
       "file": "apps/web/src/search/SearchPage.test.tsx",
-      "line": 350,
+      "line": 382,
       "kind": "title"
     },
     {
-      "id": "SCH-053",
+      "id": "SCH-014",
       "file": "apps/web/src/search/SearchPage.test.tsx",
       "line": 116,
       "kind": "title"
     },
     {
+      "id": "SCH-053",
+      "file": "apps/web/src/search/SearchPage.test.tsx",
+      "line": 148,
+      "kind": "title"
+    },
+    {
       "id": "SCH-058",
       "file": "apps/web/src/search/SearchPage.test.tsx",
-      "line": 350,
+      "line": 382,
       "kind": "title"
     },
     {
       "id": "SCH-060",
       "file": "apps/web/src/search/SearchPage.test.tsx",
-      "line": 409,
+      "line": 441,
       "kind": "title"
     },
     {
       "id": "SCH-061",
       "file": "apps/web/src/search/SearchPage.test.tsx",
-      "line": 244,
+      "line": 276,
       "kind": "title"
     },
     {
       "id": "SCH-063",
       "file": "apps/web/src/search/SearchPage.test.tsx",
-      "line": 244,
+      "line": 276,
       "kind": "title"
     },
     {
@@ -27065,6 +27089,24 @@
       "id": "VER-038",
       "file": "packages/db/src/search-history.test.ts",
       "line": 420,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-013",
+      "file": "packages/db/src/search-meaning.test.ts",
+      "line": 142,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-014",
+      "file": "packages/db/src/search-meaning.test.ts",
+      "line": 178,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-035",
+      "file": "packages/db/src/search-meaning.test.ts",
+      "line": 195,
       "kind": "title"
     },
     {
