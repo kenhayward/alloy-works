@@ -46,6 +46,8 @@ interface EndpointRow {
   context_window: number;
   price_in_micros: string;
   price_out_micros: string;
+  /** Absent from a schema before 0134. */
+  price_cached_micros?: string | null;
   currency: string;
   boundary: ModelEndpoint['boundary'];
   made_at: Date;
@@ -65,6 +67,7 @@ const endpointOf = (row: EndpointRow): StoredModelEndpoint => ({
   contextWindow: row.context_window,
   priceIn: fromMicros(row.price_in_micros),
   priceOut: fromMicros(row.price_out_micros),
+  ...(row.price_cached_micros == null ? {} : { priceCached: fromMicros(row.price_cached_micros) }),
   currency: row.currency,
   boundary: row.boundary,
   madeAt: row.made_at,
@@ -131,12 +134,16 @@ export async function makeModelEndpoint(
   by: string,
 ): Promise<EndpointWritten> {
   if (await nameTaken(trx, endpoint.name)) return { answer: 'name.taken' };
+  // The cached price only where one is given, so a schema before 0134 still takes an endpoint.
+  const cachedColumn = endpoint.priceCached === undefined ? sql`` : sql`, price_cached_micros`;
+  const cachedValue =
+    endpoint.priceCached === undefined ? sql`` : sql`, ${toMicros(endpoint.priceCached)}`;
   const { rows } = await sql<EndpointRow>`insert into model_endpoint
         (name, protocol, base_url, model, context_window, price_in_micros, price_out_micros,
-         currency, boundary, made_by)
+         currency, boundary, made_by${cachedColumn})
       values (${endpoint.name}, ${endpoint.protocol}, ${endpoint.baseUrl}, ${endpoint.model},
         ${endpoint.contextWindow}, ${toMicros(endpoint.priceIn)}, ${toMicros(endpoint.priceOut)},
-        ${endpoint.currency}, ${endpoint.boundary}, ${by})
+        ${endpoint.currency}, ${endpoint.boundary}, ${by}${cachedValue})
       returning *`.execute(trx);
   const made = endpointOf(rows[0]!);
   await event(trx, 'model_endpoint.made', made.id);
@@ -151,6 +158,7 @@ const SETTING_MEMBERS = [
   'contextWindow',
   'priceIn',
   'priceOut',
+  'priceCached',
   'currency',
   'boundary',
 ] as const;
@@ -175,6 +183,11 @@ export async function changeModelEndpoint(
         base_url = ${next.baseUrl}, model = ${next.model}, context_window = ${next.contextWindow},
         price_in_micros = ${toMicros(next.priceIn)}, price_out_micros = ${toMicros(next.priceOut)},
         currency = ${next.currency}, boundary = ${next.boundary}, changed_at = now()
+        ${
+          changed.includes('priceCached')
+            ? sql`, price_cached_micros = ${next.priceCached === undefined ? null : toMicros(next.priceCached)}`
+            : sql``
+        }
       where id = ${id} returning *`.execute(trx);
   await event(trx, 'model_endpoint.changed', id, { settings: [...changed] });
   return { answer: 'written', endpoint: endpointOf(rows[0]!) };
@@ -323,6 +336,10 @@ export interface GenerationRun {
   readonly model: string | null;
   readonly tokensIn: number | null;
   readonly tokensOut: number | null;
+  /** Of those in, how many the provider read from its prompt cache (G6-E). */
+  readonly tokensCached: number | null;
+  /** The run of the requester's this one reused, made with no call (G6-E). */
+  readonly cachedFrom: string | null;
   readonly costMicros: bigint | null;
   readonly finishedAt: Date | null;
   /** As it ends: true where its budget alert could not be sent (G6-D), for the caller to log. */
@@ -348,6 +365,9 @@ interface RunRow {
   model: string | null;
   tokens_in: number | null;
   tokens_out: number | null;
+  /** Absent from a schema before 0134. */
+  tokens_cached?: number | null;
+  cached_from?: string | null;
   cost_micros: string | null;
   finished_at: Date | null;
 }
@@ -371,6 +391,8 @@ const runOf = (row: RunRow): GenerationRun => ({
   model: row.model,
   tokensIn: row.tokens_in,
   tokensOut: row.tokens_out,
+  tokensCached: row.tokens_cached ?? null,
+  cachedFrom: row.cached_from ?? null,
   costMicros: row.cost_micros === null ? null : BigInt(row.cost_micros),
   finishedAt: row.finished_at,
 });
@@ -391,6 +413,8 @@ export async function startRun(
     readonly ask?: string;
     /** The conversation it is a turn of (G5-A). */
     readonly conversationId?: string;
+    /** The requester's earlier run this one reuses, calling nothing (G6-E). */
+    readonly cachedFrom?: string;
   },
 ): Promise<string> {
   const e = input.endpoint;
@@ -402,6 +426,7 @@ export async function startRun(
     contextWindow: e.contextWindow,
     priceIn: e.priceIn,
     priceOut: e.priceOut,
+    ...(e.priceCached === undefined ? {} : { priceCached: e.priceCached }),
     currency: e.currency,
     boundary: e.boundary,
   };
@@ -410,13 +435,15 @@ export async function startRun(
   const asked = input.ask === undefined ? sql`` : sql`, ${input.ask}`;
   const on = input.conversationId === undefined ? sql`` : sql`, conversation_id`;
   const conversation = input.conversationId === undefined ? sql`` : sql`, ${input.conversationId}`;
+  const reusing = input.cachedFrom === undefined ? sql`` : sql`, cached_from`;
+  const reused = input.cachedFrom === undefined ? sql`` : sql`, ${input.cachedFrom}`;
   const { rows } = await sql<{ id: string }>`insert into generation_run
       (purpose, endpoint_id, endpoint, prompt_version, parameters, context_digest, context,
-       requested_by, document_id${ask}${on})
+       requested_by, document_id${ask}${on}${reusing})
     values (${input.purpose}, ${input.endpoint.id}, ${JSON.stringify(settings)}::jsonb,
       ${input.promptVersion ?? null}, ${JSON.stringify(input.parameters)}::jsonb,
       ${input.contextDigest}, ${JSON.stringify(input.context ?? [])}::jsonb, ${input.by},
-      ${input.documentId ?? null}${asked}${conversation})
+      ${input.documentId ?? null}${asked}${conversation}${reused})
     returning id`.execute(trx);
   return rows[0]!.id;
 }
@@ -431,7 +458,11 @@ export async function endRun(
   ended: {
     readonly outcome: string;
     readonly model?: string | null;
-    readonly usage?: { readonly in: number; readonly out: number } | null;
+    readonly usage?: {
+      readonly in: number;
+      readonly out: number;
+      readonly cached?: number | undefined;
+    } | null;
     readonly steps?: readonly unknown[];
     /** What the model was last given, as it ends (the G2 plan, G2-J): its digest, and what it read. */
     readonly contextDigest?: string;
@@ -444,11 +475,13 @@ export async function endRun(
     await sql<RunRow>`select * from generation_run where id = ${id}`.execute(trx);
   const run = started[0];
   if (!run) throw new Error('generation_run: no such run');
-  const prices = run.endpoint as { priceIn: number; priceOut: number };
+  // Prices as the run started with them: one started before 0134 has no cached price.
+  const prices = run.endpoint as { priceIn: number; priceOut: number; priceCached?: number };
   const cost = ended.usage ? costMicros(ended.usage, prices) : null;
   const { rows } = await sql<RunRow>`update generation_run set outcome = ${ended.outcome},
       model = ${ended.model ?? null}, tokens_in = ${ended.usage?.in ?? null},
       tokens_out = ${ended.usage?.out ?? null},
+      ${ended.usage?.cached === undefined ? sql`` : sql`tokens_cached = ${ended.usage.cached},`}
       cost_micros = ${cost === null ? null : cost.toString()},
       steps = ${JSON.stringify(ended.steps ?? run.steps)}::jsonb,
       context_digest = ${ended.contextDigest ?? run.context_digest},
@@ -458,6 +491,48 @@ export async function endRun(
   // What it cost counts towards the month's budget, and may cross an alert (G6-D), never un-ending it.
   const alerted = cost !== null && cost > 0n ? await alertSpend(trx) : { told: 0 };
   return { ...runOf(rows[0]!), ...('failed' in alerted ? { alertFailed: true as const } : {}) };
+}
+
+/** How long a finished run of a person's may be reused for them (G6-E). */
+export const RESULT_REUSED_HOURS = 24;
+
+/**
+ * A finished run of the requester's own to reuse in place of calling (G6-E; GEN-036): the same prompt
+ * version and purpose, the same call (its digest: model, instructions, context), the same parameters,
+ * and the same endpoint pointing where it did, with the same boundary; within the hours it is reused
+ * for. Keyed by the requester, so no other person's result is reachable. None before 0134.
+ */
+export async function reusableRun(
+  trx: TenantTransaction,
+  input: {
+    readonly by: string;
+    readonly purpose: RunPurpose;
+    readonly promptVersion: string;
+    readonly contextDigest: string;
+    readonly parameters: Readonly<Record<string, unknown>>;
+    readonly endpoint: StoredModelEndpoint;
+  },
+): Promise<
+  { readonly id: string; readonly reply: string; readonly model: string | null } | undefined
+> {
+  const { rows: held } = await sql<{ found: boolean }>`
+    select exists (select 1 from information_schema.columns
+      where table_schema = current_schema() and table_name = 'generation_run'
+        and column_name = 'cached_from') as found`.execute(trx);
+  if (held[0]?.found !== true) return undefined;
+  const e = input.endpoint;
+  const { rows } = await sql<{ id: string; reply: string; model: string | null }>`
+    select id, reply, model from generation_run
+     where requested_by = ${input.by} and purpose = ${input.purpose}
+       and prompt_version = ${input.promptVersion} and outcome = 'finished' and cached_from is null
+       and context_digest = ${input.contextDigest}
+       and parameters = ${JSON.stringify(input.parameters)}::jsonb
+       and endpoint_id = ${e.id} and endpoint ->> 'baseUrl' = ${e.baseUrl}
+       and endpoint ->> 'model' = ${e.model} and endpoint ->> 'boundary' = ${e.boundary}
+       and coalesce(reply, '') <> ''
+       and started_at > now() - make_interval(hours => ${RESULT_REUSED_HOURS})
+     order by started_at desc limit 1`.execute(trx);
+  return rows[0];
 }
 
 export async function readRun(

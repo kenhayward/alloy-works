@@ -17722,6 +17722,10 @@
           "howItIsMet": "Declared in advance on the budget's view and page: nothing stops, every capability continues (Cost)"
         },
         {
+          "id": "GEN-036",
+          "howItIsMet": "The Anthropic adapter's cache breakpoints, cached tokens priced; a prompt run reuses its requester's own identical run (Cost; its gap beside the table)"
+        },
+        {
           "id": "ADM-034",
           "howItIsMet": "A `budget` notification in the inbox, COL-063's channel, to recipients an administrator names (Cost)"
         },
@@ -20262,6 +20266,12 @@
       "kind": "title"
     },
     {
+      "id": "GEN-036",
+      "file": "apps/connector/src/model.test.ts",
+      "line": 294,
+      "kind": "title"
+    },
+    {
       "id": "DAT-056",
       "file": "apps/connector/src/package.test.ts",
       "line": 52,
@@ -21789,6 +21799,12 @@
       "id": "GEN-006",
       "file": "apps/service/src/prompt-run-routes.test.ts",
       "line": 190,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-036",
+      "file": "apps/service/src/prompt-run-routes.test.ts",
+      "line": 301,
       "kind": "title"
     },
     {
@@ -24072,6 +24088,12 @@
       "kind": "title"
     },
     {
+      "id": "GEN-036",
+      "file": "apps/web/src/structure/AssistantPanel.test.tsx",
+      "line": 389,
+      "kind": "title"
+    },
+    {
       "id": "GEN-037",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
       "line": 174,
@@ -24080,19 +24102,19 @@
     {
       "id": "GEN-047",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 405,
+      "line": 451,
       "kind": "title"
     },
     {
       "id": "GEN-051",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 405,
+      "line": 451,
       "kind": "title"
     },
     {
       "id": "GEN-053",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 441,
+      "line": 487,
       "kind": "title"
     },
     {
@@ -28449,6 +28471,12 @@
       "id": "GEN-031",
       "file": "packages/domain/src/generation/endpoint.test.ts",
       "line": 39,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-036",
+      "file": "packages/domain/src/generation/endpoint.test.ts",
+      "line": 79,
       "kind": "title"
     },
     {

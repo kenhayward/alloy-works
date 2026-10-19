@@ -634,6 +634,10 @@
                 "boundary"
               ],
               "additionalProperties": false
+            },
+            "cachedFrom": {
+              "description": "Your own earlier run this one reuses, calling nothing and costing nothing (GEN-036)",
+              "type": "string"
             }
           },
           "required": [

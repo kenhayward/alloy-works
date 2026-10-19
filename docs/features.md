@@ -200,6 +200,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 - **Rate limits.** Administration's **Model spending** sets how many model runs each person may
   start an hour, and a person's own in place of it. A run over it is refused before any call, saying
   when one is free again; testing an endpoint is never counted (`/v1/model-limits`).
+- **Caching.** A prompt run repeated by the same person, on the same part, with nothing changed,
+  reuses their own run of the last 24 hours at no cost, and says so; **Run afresh** calls the model.
+  Nobody else's run is ever reused. Anthropic endpoints mark their instructions and context cacheable,
+  and an endpoint may price tokens read from the provider's cache (`priceCached`).
 - **A model budget.** The same page sets what the environment means to spend on models a month and
   the percents of it that alert, and names who is told, in their inbox, each once a month. Nothing
   stops when it is spent, and the page says so (`/v1/model-budget`).

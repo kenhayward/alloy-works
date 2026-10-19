@@ -75,6 +75,16 @@ describe('a model endpoint', () => {
     expect(costMicros({ in: 1, out: 0 }, { priceIn: 0.5, priceOut: 0 })).toBe(1n);
     expect(costMicros({ in: 1, out: 0 }, { priceIn: 0.4, priceOut: 0 })).toBe(0n);
   });
+
+  it('GEN-036 prices tokens read from the provider cache at the cached price, else as any input', () => {
+    // Of a million in, 800,000 read from the cache at 0.3 and the rest at 3: 0.84.
+    expect(
+      costMicros({ in: 1_000_000, out: 0, cached: 800_000 }, { ...endpoint, priceCached: 0.3 }),
+    ).toBe(840_000n);
+    expect(costMicros({ in: 1_000_000, out: 0, cached: 800_000 }, endpoint)).toBe(3_000_000n);
+    // Never more read from the cache than came in.
+    expect(costMicros({ in: 10, out: 0, cached: 99 }, { ...endpoint, priceCached: 0 })).toBe(0n);
+  });
 });
 
 const call: ModelCall = {

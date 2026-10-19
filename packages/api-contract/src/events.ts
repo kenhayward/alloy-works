@@ -157,6 +157,9 @@ export const assistantEvents = {
     schema: z.object({
       run: Id,
       endpoint: z.object({ name: z.string(), boundary: z.enum(['inside', 'outside']) }),
+      cachedFrom: Id.optional().describe(
+        'Your own earlier run this one reuses, calling nothing and costing nothing (GEN-036)',
+      ),
     }),
   },
   text: {

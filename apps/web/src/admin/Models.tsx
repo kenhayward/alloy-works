@@ -18,6 +18,8 @@ interface Endpoint {
   readonly contextWindow: number;
   readonly priceIn: number;
   readonly priceOut: number;
+  /** What a token read from the provider's cache costs; absent, the price in (G6-E). */
+  readonly priceCached?: number;
   readonly currency: string;
   readonly boundary: 'inside' | 'outside';
   readonly retiredAt: string | null;
@@ -57,6 +59,7 @@ interface Draft {
   contextWindow: string;
   priceIn: string;
   priceOut: string;
+  priceCached: string;
   currency: string;
   boundary: Endpoint['boundary'] | '';
 }
@@ -69,6 +72,7 @@ const BLANK: Draft = {
   contextWindow: '200000',
   priceIn: '0',
   priceOut: '0',
+  priceCached: '',
   currency: 'USD',
   boundary: '',
 };
@@ -81,6 +85,7 @@ const draftOf = (endpoint: Endpoint): Draft => ({
   contextWindow: String(endpoint.contextWindow),
   priceIn: String(endpoint.priceIn),
   priceOut: String(endpoint.priceOut),
+  priceCached: endpoint.priceCached === undefined ? '' : String(endpoint.priceCached),
   currency: endpoint.currency,
   boundary: endpoint.boundary,
 });
@@ -129,6 +134,7 @@ export function Models({ client }: { client: Client }) {
       contextWindow: Number(draft.contextWindow),
       priceIn: Number(draft.priceIn),
       priceOut: Number(draft.priceOut),
+      ...(draft.priceCached.trim() === '' ? {} : { priceCached: Number(draft.priceCached) }),
       currency: draft.currency.trim().toUpperCase(),
       boundary: draft.boundary,
     };
@@ -273,6 +279,7 @@ export function Models({ client }: { client: Client }) {
           {field('contextWindow', 'Context window, in tokens', 'number')}
           {field('priceIn', 'Price per million tokens in', 'number')}
           {field('priceOut', 'Price per million tokens out', 'number')}
+          {field('priceCached', 'Price per million tokens read from its cache', 'number')}
           {field('currency', 'Currency')}
           <label className={styles['filter']}>
             Data boundary
