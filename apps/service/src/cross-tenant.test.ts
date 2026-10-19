@@ -225,6 +225,21 @@ const OTHER_TENANT_IDS: Readonly<
       };
     }),
   takeTurn: async (tenant, db) => ({ id: await conversationIdIn(tenant, db) }),
+  setPersonLimit: async (tenant, db) =>
+    db.withTenant(tenant, async (trx) => ({
+      principal: (
+        await trx
+          .insertInto('principal')
+          .values({
+            issuer: 'https://idp.example',
+            subject: `ivy-${randomUUID()}`,
+            email: null,
+            display_name: null,
+          })
+          .returning('id')
+          .executeTakeFirstOrThrow()
+      ).id,
+    })),
   listDocumentPrompts: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   startPromptRun: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   startPromptTrial: async (tenant, db) => {
@@ -710,6 +725,8 @@ const VALID_INPUT: Readonly<
   startAssistantRun: { payload: { ask: 'Hello' } },
   startConversation: { payload: { title: 'Hello' } },
   setGuardrail: { payload: { phrase: 'Probe', applies: 'sent', reason: 'Probe' } },
+  setModelLimit: { payload: { perHour: 10 } },
+  setPersonLimit: { payload: { perHour: 10 } },
   takeTurn: { payload: { ask: 'Hello' } },
   addConversationContext: { payload: { component: SESSION } },
   savePersonalPrompt: { payload: { title: 'Mine', instructions: 'Mine.' } },

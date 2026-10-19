@@ -111,6 +111,11 @@ export const documentationGroups = [
           'Phrases your environment forbids in what a model is sent and what it returns, each with the reason a refusal says. A phrase, never a pattern; nothing here changes what the assistant may do.',
       },
       {
+        name: 'Model limits',
+        description:
+          'How many model runs each person may start an hour: the environment’s limit, and a person’s own in place of it. A run over it is refused, saying when one is free again.',
+      },
+      {
         name: 'Prompts',
         description:
           'Named, versioned prompts: the instructions, the context each declares and nothing beyond it, the text it writes and the models it accepts; and the libraries that list them, one bound by each template.',
@@ -396,6 +401,7 @@ const operationTags = {
     'discardProposal',
   ],
   Guardrails: ['listGuardrails', 'setGuardrail', 'retireGuardrail'],
+  'Model limits': ['getModelLimits', 'setModelLimit', 'setPersonLimit'],
   'Personal prompts': [
     'listPersonalPrompts',
     'savePersonalPrompt',
@@ -838,6 +844,12 @@ const descriptions: Readonly<Record<string, string>> = {
     'Forbids a phrase in what a model is sent, what it returns, or both, matched in any case and spacing, with the reason a refusal gives. A turn, a run or a trial meeting it is refused, naming the rule and its reason; a reply is held until checked wherever a rule watches replies. Needs administer, and is audited.',
   retireGuardrail:
     'Retires a guardrail in force, kept as the reason any run it refused was. Needs administer, and is audited.',
+  getModelLimits:
+    'Returns how many model runs each person may start an hour: the environment’s limit, or none, and each person with a limit of their own. Needs administer.',
+  setModelLimit:
+    'Sets how many model runs each person may start an hour, counted over the last hour; null lifts it. A run over it is refused with model_rate_limited and when one is free again; testing an endpoint is never counted. Needs administer, and is audited.',
+  setPersonLimit:
+    'Sets one person’s runs an hour in place of the environment’s, higher or lower; null removes it. Needs administer, and is audited.',
   listConversationEndpoints:
     'Lists the endpoints a conversation may run on, with a signed-in session alone: every one in use with its key set, its model and whether it sits outside the data boundary, the one a turn naming none runs on marked.',
   startConversation:

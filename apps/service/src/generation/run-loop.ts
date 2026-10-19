@@ -29,6 +29,7 @@ import { Streamed } from '../after-commit.js';
 import { contextOf } from '../audit.js';
 import { watchAuthority } from '../authority.js';
 import type { createConnectorClient } from '../data/connector.js';
+import { RateLimited, rateLimitedWords, startLimited } from './limits.js';
 
 /**
  * A run's loop (generation.md, "The run"; the G2 plan, G2-B; the G5 plan, G5-A): turns through the
@@ -141,20 +142,32 @@ export function streamedRun(input: {
       run = await db.withTenant(
         tenant,
         (inner) =>
-          startRun(inner, {
-            purpose: input.purpose,
-            endpoint,
-            parameters: input.parameters,
-            contextDigest: sha256(canonicalCall(callOf())),
-            by: input.principalId,
-            documentId: input.documentId,
-            ask: input.ask,
-            ...(input.conversationId === undefined ? {} : { conversationId: input.conversationId }),
-          }),
+          startLimited(inner, input.principalId, () =>
+            startRun(inner, {
+              purpose: input.purpose,
+              endpoint,
+              parameters: input.parameters,
+              contextDigest: sha256(canonicalCall(callOf())),
+              by: input.principalId,
+              documentId: input.documentId,
+              ask: input.ask,
+              ...(input.conversationId === undefined
+                ? {}
+                : { conversationId: input.conversationId }),
+            }),
+          ),
         context,
       );
     } catch (error) {
       authority.stop();
+      if (error instanceof RateLimited) {
+        send('failed', {
+          code: 'model_rate_limited',
+          message: rateLimitedWords(error.resetsAt),
+          resetsAt: error.resetsAt.toISOString(),
+        });
+        return;
+      }
       request.log.error({ err: error }, 'a run could not start');
       send('failed', { code: 'connector_error', message: 'The assistant could not start.' });
       return;

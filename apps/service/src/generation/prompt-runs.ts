@@ -54,6 +54,7 @@ import { watchAuthority } from '../authority.js';
 import { createConnectorClient } from '../data/connector.js';
 import type { ConnectorOptions } from '../data/connections.js';
 import { AppError } from '../errors.js';
+import { RateLimited, rateLimitedWords, refuseOverLimit, startLimited } from './limits.js';
 
 /**
  * A prompt's runs (generation.md, "Prompts"; the G4 plan, G4-H and G4-I): its context resolved and
@@ -123,6 +124,8 @@ export function promptRunHandlers(
       readonly proposes: boolean;
     },
   ) {
+    // Over the hourly limit, nothing is resolved or called (GEN-035).
+    await refuseOverLimit(trx, input.principalId);
     const route = (await listModelRoutes(trx)).find(
       (each) => each.purpose === input.prompt.models.purpose,
     );
@@ -231,24 +234,34 @@ export function promptRunHandlers(
         run = await db.withTenant(
           tenant,
           (inner) =>
-            startRun(inner, {
-              purpose: input.trial ? 'trial' : input.prompt.models.purpose,
-              endpoint,
-              parameters: {
-                maxTokens: PROMPT_RUN_MAX_TOKENS,
-                instructions: PROMPT_RUN_INSTRUCTIONS_VERSION,
-                node: part.component,
-              },
-              contextDigest: sha256(canonicalCall(call)),
-              context: record,
-              by: input.principalId,
-              documentId: input.document,
-              promptVersion: input.promptVersion,
-            }),
+            startLimited(inner, input.principalId, () =>
+              startRun(inner, {
+                purpose: input.trial ? 'trial' : input.prompt.models.purpose,
+                endpoint,
+                parameters: {
+                  maxTokens: PROMPT_RUN_MAX_TOKENS,
+                  instructions: PROMPT_RUN_INSTRUCTIONS_VERSION,
+                  node: part.component,
+                },
+                contextDigest: sha256(canonicalCall(call)),
+                context: record,
+                by: input.principalId,
+                documentId: input.document,
+                promptVersion: input.promptVersion,
+              }),
+            ),
           context,
         );
       } catch (error) {
         authority.stop();
+        if (error instanceof RateLimited) {
+          send('failed', {
+            code: 'model_rate_limited',
+            message: rateLimitedWords(error.resetsAt),
+            resetsAt: error.resetsAt.toISOString(),
+          });
+          return;
+        }
         request.log.error({ err: error }, 'a prompt run could not start');
         send('failed', { code: 'connector_error', message: 'The prompt could not start.' });
         return;

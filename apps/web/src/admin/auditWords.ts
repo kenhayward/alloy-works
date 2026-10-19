@@ -67,6 +67,7 @@ export const KIND_WORDS: Readonly<Record<AuditKind, string>> = {
   'model_route.set': 'Model route set',
   'guardrail.set': 'Guardrail set',
   'guardrail.retired': 'Guardrail retired',
+  'generation.limit_set': 'Model rate limit set',
   'organisation.changed': 'Organisation changed',
   'publication.failed': 'Publishing failed',
   'publication.produced': 'Published',

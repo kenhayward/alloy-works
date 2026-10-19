@@ -20644,13 +20644,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 533,
+      "line": 536,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 546,
+      "line": 549,
       "kind": "title"
     },
     {
@@ -21052,7 +21052,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1778,
+      "line": 1795,
       "kind": "title"
     },
     {
@@ -21617,6 +21617,12 @@
       "id": "GEN-032",
       "file": "apps/service/src/model-endpoint-routes.test.ts",
       "line": 219,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-035",
+      "file": "apps/service/src/model-limit-routes.test.ts",
+      "line": 70,
       "kind": "title"
     },
     {
@@ -22769,6 +22775,12 @@
       "id": "LIF-022",
       "file": "apps/web/src/admin/Holds.test.tsx",
       "line": 63,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-035",
+      "file": "apps/web/src/admin/ModelSpending.test.tsx",
+      "line": 65,
       "kind": "title"
     },
     {
@@ -27604,13 +27616,13 @@
     {
       "id": "LIF-030",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 240,
+      "line": 241,
       "kind": "title"
     },
     {
       "id": "LIF-070",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 221,
+      "line": 222,
       "kind": "title"
     },
     {

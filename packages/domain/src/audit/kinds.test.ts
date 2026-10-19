@@ -44,6 +44,7 @@ describe('the audit kinds', () => {
       'model_route.set',
       'guardrail.set',
       'guardrail.retired',
+      'generation.limit_set',
       'binding.resolved',
       'binding.checked',
       'binding.accepted',

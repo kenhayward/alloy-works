@@ -204,6 +204,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0129_conversation_context',
       '0130_creation_proposals',
       '0131_personal_prompts',
+      '0132_generation_limits',
     ]);
 
     // The component and its version are as they were.
@@ -399,6 +400,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0129_conversation_context',
       '0130_creation_proposals',
       '0131_personal_prompts',
+      '0132_generation_limits',
     ]);
 
     const { rows } = await queryAs(

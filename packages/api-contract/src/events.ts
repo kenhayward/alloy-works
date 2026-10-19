@@ -213,7 +213,15 @@ export const assistantEvents = {
   },
   failed: {
     summary: 'The run failed, by code and reason, in the product\u2019s words',
-    schema: z.object({ code: z.string(), reason: z.string().optional(), message: z.string() }),
+    schema: z.object({
+      code: z.string(),
+      reason: z.string().optional(),
+      message: z.string(),
+      resetsAt: z
+        .string()
+        .optional()
+        .describe('With `model_rate_limited`: when a run is free again'),
+    }),
   },
 } as const;
 

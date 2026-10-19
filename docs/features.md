@@ -197,6 +197,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   model is sent, what it returns, or both, each with its reason. A turn, a run or a trial meeting one
   is refused before any call, or its reply withheld, saying which rule and why; where a rule watches
   replies, a reply is shown once checked. A phrase, never a pattern (`/v1/guardrails`).
+- **Rate limits.** Administration's **Model spending** sets how many model runs each person may
+  start an hour, and a person's own in place of it. A run over it is refused before any call, saying
+  when one is free again; testing an endpoint is never counted (`/v1/model-limits`).
 - **Generated content waits for a person.** A document is not published, nor pinned as a baseline,
   while a suggestion the assistant made waits to be accepted or rejected in Review; a preview still
   shows it, and a baseline made before is published as it was pinned. A workflow step can require that

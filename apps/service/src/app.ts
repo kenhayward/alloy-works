@@ -86,6 +86,7 @@ import { modelEndpointHandlers } from './generation/models.js';
 import { promptHandlers, promptLibraryHandlers } from './generation/prompts.js';
 import { promptRunHandlers } from './generation/prompt-runs.js';
 import { guardrailHandlers } from './generation/guardrails.js';
+import { modelLimitHandlers } from './generation/limits.js';
 import { personalPromptHandlers } from './generation/personal-prompts.js';
 import { rangePreviewHandlers } from './range-previews.js';
 import { ownSessionHandlers } from './own-sessions.js';
@@ -574,6 +575,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...promptHandlers(db, tenantOf, principalOf),
     ...promptLibraryHandlers(),
     ...guardrailHandlers(),
+    ...modelLimitHandlers(),
     ...personalPromptHandlers(db, tenantOf, principalOf),
     ...promptRunHandlers(db, tenantOf, options.connector, options.events),
     ...generatedHandlers(),

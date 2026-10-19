@@ -199,6 +199,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0129_conversation_context',
       '0130_creation_proposals',
       '0131_personal_prompts',
+      '0132_generation_limits',
     ]);
     expect(applied[own.id]).toEqual([
       '0058_query_roles',
@@ -275,6 +276,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0129_conversation_context',
       '0130_creation_proposals',
       '0131_personal_prompts',
+      '0132_generation_limits',
     ]);
 
     expect(await queryRoles(development)).toEqual([
