@@ -23,6 +23,7 @@ import {
   recordEndpointTest,
   retireModelEndpoint,
   setModelCredential,
+  routeEmbedding,
   setModelRoute,
   startRun,
   usableModelKey,
@@ -402,6 +403,11 @@ export function modelEndpointHandlers(
         }
       }
       await setModelRoute(trx, purpose, id, principalId);
+      // A model the store does not serve waits for an administrator's confirmation (G7-J).
+      if (purpose === 'embedding') {
+        const routed = id === null ? undefined : await readModelEndpoint(trx, id);
+        await routeEmbedding(trx, routed ? { id: routed.id, model: routed.model } : null);
+      }
       return routesView(trx);
     },
   };

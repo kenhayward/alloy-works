@@ -209,6 +209,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0134_caching',
       '0135_embeddings',
       '0136_embedding_queue',
+      '0137_embedding_confirmed',
     ]);
 
     // The component and its version are as they were.
@@ -409,6 +410,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0134_caching',
       '0135_embeddings',
       '0136_embedding_queue',
+      '0137_embedding_confirmed',
     ]);
 
     const { rows } = await queryAs(

@@ -62,6 +62,7 @@ time (below); embeddings for meaning are [search.md](search.md)'s and
 | **GEN-036** | The Anthropic adapter's cache breakpoints, cached tokens priced; a prompt run reuses its requester's own identical run (Cost; its gap beside the table) |
 | **ADM-034** | A `budget` notification in the inbox, COL-063's channel, to recipients an administrator names (Cost)                                                    |
 | **GEN-038** | Embedding routed to an OpenAI-protocol endpoint alone, which a self-hosted model inside the boundary speaks; none routed, no meaning search (Meaning)   |
+| **GEN-044** | Embedding runs attributed and budgeted as generation's; a model not serving waits, its estimate shown, until an administrator confirms it (Meaning)     |
 | **GEN-037** | The run's cost shown to its requester as it ends, and their month on the assistant panel (Cost)                                                         |
 | **GEN-001** | A prompt: an artifact kind in a space, versioned, listed by a library, the fourth workflow kind (Prompts)                                               |
 | **GEN-005** | `models`: a purpose and the models accepted; another fails `model_mismatch` before any call (Prompts)                                                   |
@@ -85,7 +86,7 @@ time (below); embeddings for meaning are [search.md](search.md)'s and
 | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | GEN-002, GEN-004                                                          | A prompt declares components, metadata and parameters, and writes a part's text: a query's results as context, and a field as output, are later slices' |
 | GEN-021                                                                   | The conversation's tray, guardrails, new components and personal prompts: G5's later PRs; GEN-021 is the model's (G5-H)                                 |
-| GEN-044, ADM-033                                                          | Nothing embeds yet (G6-G); the trend lacks ADM-011's storage, publication and asset measures (T7)                                                       |
+| ADM-033                                                                   | The trend lacks ADM-011's storage, publication and asset measures (T7)                                                                                  |
 | ADM-048                                                                   | Translation, scanning, email and webhooks cost nothing yet; it is claimed when the last of them exists                                                  |
 | SCH-013, SCH-014, SCH-035, VER-039 (designed elsewhere), SCH-067, GEN-044 | Meaning (G7's later PRs)                                                                                                                                |
 | API-019, API-021, API-023, API-052, REL-021, IAM-033, LIF-071             | The MCP surface and service identities (G8), with the token design ([access.md](access.md))                                                             |
@@ -291,6 +292,15 @@ queues the artifact (`embedding_queued`, once however often it is saved) for the
 `embed` job embeds them in batches of at most 96, each batch a run of the version's author on its
 document, in the budget and in no rate limit, and writes the passages. A block's text past 8,000
 characters is embedded from its first 8,000.
+
+Routing embedding to a model the store does not serve makes it pending: nothing is embedded for it,
+and `/v1/embedding` shows what embedding the latest texts it lacks would cost, about four characters a
+token at its endpoint's input price (GEN-044). An administrator's confirmation embeds one sample, a
+run of theirs, to learn its dimensions (`embedding_dimensions_unsupported` past the five), and queues
+every artifact; the serving model answers searches meanwhile, and the worker switches the moment the
+new one holds every latest text, deleting the old model's passages and never its vectors (VER-040).
+Routed to the model that serves, it goes on serving through the new endpoint; routed to none, nothing
+serves. SCH-067's interval is not yet measured, so not claimed.
 
 ## Failures
 

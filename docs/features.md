@@ -213,6 +213,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   words: a part that means what was asked, though it holds none of its words, over what you may read
   alone. Each result says whether it was found by its words, by its meaning, or both, and search says
   when meaning is unavailable and the results are the words' alone (`/v1/search`).
+- **Embedding costed first.** Administration's Models shows the model meaning is searched by, and,
+  where embedding is routed to another, what embedding every part would cost; nothing is embedded
+  until an administrator confirms it, and the old model goes on serving until the new one has every
+  part (`/v1/embedding`).
 - **Generated content waits for a person.** A document is not published, nor pinned as a baseline,
   while a suggestion the assistant made waits to be accepted or rejected in Review; a preview still
   shows it, and a baseline made before is published as it was pinned. A workflow step can require that

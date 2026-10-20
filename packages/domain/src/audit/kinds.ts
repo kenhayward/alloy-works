@@ -164,6 +164,7 @@ const PROPOSALS = 'packages/db/src/generation-proposals.ts';
 const GUARDRAILS = 'packages/db/src/guardrails.ts';
 const LIMITS = 'packages/db/src/generation-limits.ts';
 const BUDGET = 'packages/db/src/generation-budget.ts';
+const EMBEDDINGS = 'packages/db/src/embeddings.ts';
 
 /** A relationship acted on: its type and itself, both by identifier (the R8 plan, R8-E). */
 const Related = z.strictObject({ type: z.uuid(), relationship: z.uuid() });
@@ -323,6 +324,12 @@ export const auditKindSpecs = {
       recipients: z.number().int().nonnegative(),
     }),
     BUDGET,
+  ),
+  // An embedding model confirmed, its estimate seen (the G7 plan, G7-J): the endpoint, its subject.
+  'generation.embedding_confirmed': kind(
+    ['LIF-067', 'GEN-044'],
+    z.strictObject({ dims: z.number().int().positive() }),
+    EMBEDDINGS,
   ),
   'binding.resolved': kind(['LIF-067'], Binding, 'apps/service/src/data/bindings.ts'),
   'binding.checked': kind(['LIF-067'], Binding, 'apps/service/src/data/bindings.ts'),

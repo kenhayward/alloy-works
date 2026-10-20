@@ -520,6 +520,10 @@ export async function answerEmbed(
     const embedding = item?.embedding;
     const index = typeof item?.index === 'number' ? item.index : at;
     if (
+      !Number.isInteger(index) ||
+      index < 0 ||
+      index >= request.call.inputs.length ||
+      vectors[index] !== undefined ||
       !Array.isArray(embedding) ||
       !embedding.every((number) => typeof number === 'number' && Number.isFinite(number))
     ) {

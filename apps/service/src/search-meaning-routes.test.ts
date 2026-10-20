@@ -125,7 +125,8 @@ describe('searching by meaning through the service (the G7 plan, G7-G to G7-I)',
     expect(answer.items.map((each) => [each.artifactId, each.found])).toEqual([
       [id.Sites, 'meaning'],
     ]);
-    expect(answer.count).toBe(0);
+    // Counted as found, by meaning alone.
+    expect(answer.count).toBe(1);
   });
 
   it('SCH-014 labels a result found both ways apart from one found by its words alone', async () => {
@@ -143,6 +144,16 @@ describe('searching by meaning through the service (the G7 plan, G7-G to G7-I)',
     expect(
       (await h.tenantDb.withTenant(h.tenant, (trx) => runsThisMonth(trx, h.ids.grace!))).runs,
     ).toBe(runs + 1);
+  });
+
+  it("GEN-035 counts a search's embedding in its searcher's hourly limit, answering by words alone past it", async () => {
+    await h.call('ada', 'PUT', '/v1/model-limits', { perHour: 1 });
+    try {
+      await search('spring north weir again');
+      expect((await search('roses borders again')).meaning).toBe('unavailable');
+    } finally {
+      await h.call('ada', 'PUT', '/v1/model-limits', { perHour: null });
+    }
   });
 
   it('SCH-031 answers by words alone, saying so, where the embedding model does not answer or none serves', async () => {

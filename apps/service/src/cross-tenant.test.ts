@@ -729,6 +729,7 @@ const VALID_INPUT: Readonly<
   setPersonLimit: { payload: { perHour: 10 } },
   setModelBudget: { payload: { budget: null } },
   setBudgetRecipients: { payload: { principals: [] } },
+  confirmEmbedding: { payload: { model: 'm' } },
   takeTurn: { payload: { ask: 'Hello' } },
   addConversationContext: { payload: { component: SESSION } },
   savePersonalPrompt: { payload: { title: 'Mine', instructions: 'Mine.' } },

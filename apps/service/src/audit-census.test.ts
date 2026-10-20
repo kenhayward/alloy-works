@@ -79,6 +79,8 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   setPersonLimit: writes('generation.limit_set'),
   getModelBudget: read,
   getModelUsage: read,
+  getEmbedding: read,
+  confirmEmbedding: writes('generation.embedding_confirmed'),
   setModelBudget: writes('generation.budget_set'),
   setBudgetRecipients: writes('generation.budget_set'),
   startConversation: { none: 'conversation' },

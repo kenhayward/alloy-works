@@ -182,14 +182,46 @@ describe('searching by meaning (the G7 plan, G7-H and G7-I)', () => {
       throw new Error('no results');
     }
     const found = new Map(answer.items.map((each) => [each.title, each.found]));
-    // Found both ways first, then by meaning alone; the words' count and facets are the words' own.
+    // Found both ways first, then by meaning alone; the count holds both, the facets the words' alone.
     expect(answer.items[0]!.title).toBe('Sites');
     expect(found.get('Sites')).toBe('both');
     expect(found.get('Dams')).toBe('meaning');
     expect(found.get('Confidential weir')).toBeUndefined();
-    expect(answer.count).toBe(1);
+    expect(answer.count).toBe(answer.items.length);
+    expect(answer.facets.kinds).toEqual([
+      expect.objectContaining({ value: 'component', count: 1 }),
+    ]);
     // What meaning alone found shows the block it found.
     expect(answer.items.find((each) => each.title === 'Dams')?.place).toBe('block:p1');
+  });
+
+  it('SCH-035 applies the changed filter as meaning scans, so none older than asked is among its best', async () => {
+    const hits = await as((trx) =>
+      searchMeaning(trx, ivy, {
+        vector: towards(0),
+        model: MODEL,
+        dims: 384,
+        filters: { changed: { within: 'earlier' } },
+      }),
+    );
+    expect(hits).toEqual([]);
+  });
+
+  it('pages the words past their best fifty after what was fused, so every match the count says is reachable', async () => {
+    for (let at = 0; at < 55; at += 1) {
+      await part(open, `Weir note ${at}`, `Weir note number ${at}.`, towards(1));
+    }
+    const hits = await meaning(ivy, 'exact');
+    const pages = await as(async (trx) => {
+      const first = await searchWords(trx, ivy, 'weir', { meaning: hits, limit: 50 });
+      const second = await searchWords(trx, ivy, 'weir', { meaning: hits, limit: 50, offset: 50 });
+      return [first, second];
+    });
+    const [first, second] = pages.map((each) =>
+      each !== undefined && each.outcome === 'results' ? each : undefined,
+    );
+    const seen = new Set([...first!.items, ...second!.items].map((each) => each.artifactId));
+    expect(seen.size).toBe(first!.count);
   });
 
   it('SCH-035 gives a reader who sees a sliver a full page by meaning, though the nearest overall are hidden from them', async () => {

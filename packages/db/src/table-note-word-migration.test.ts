@@ -171,6 +171,7 @@ describe("migration 0056, which gives the default layout the word a table's note
       '0134_caching',
       '0135_embeddings',
       '0136_embedding_queue',
+      '0137_embedding_confirmed',
     ]);
     expect((await layoutChain(tenant)).at(-1)).toMatchObject({
       version_no: 9,

@@ -121,6 +121,11 @@ export const documentationGroups = [
           'The environment’s monthly limit on what models cost, the percents of it that alert, and who is told, through the inbox. Nothing stops when it is spent: every capability continues, declared here in advance.',
       },
       {
+        name: 'Embedding',
+        description:
+          'The model meaning is searched by, and one embedding is routed to that waits: what embedding the corpus would cost, and confirming it, before anything is embedded. The serving model answers until the new one has every text.',
+      },
+      {
         name: 'Prompts',
         description:
           'Named, versioned prompts: the instructions, the context each declares and nothing beyond it, the text it writes and the models it accepts; and the libraries that list them, one bound by each template.',
@@ -408,6 +413,7 @@ const operationTags = {
   Guardrails: ['listGuardrails', 'setGuardrail', 'retireGuardrail'],
   'Model limits': ['getModelLimits', 'setModelLimit', 'setPersonLimit'],
   'Model budget': ['getModelBudget', 'setModelBudget', 'setBudgetRecipients', 'getModelUsage'],
+  Embedding: ['getEmbedding', 'confirmEmbedding'],
   'Personal prompts': [
     'listPersonalPrompts',
     'savePersonalPrompt',
@@ -864,6 +870,10 @@ const descriptions: Readonly<Record<string, string>> = {
     'Names who is told, through the inbox, as the month’s spend crosses a threshold, in place of who was: each from inside the organisation and administering the environment, decided again when told. Needs administer, and is audited.',
   getModelUsage:
     'Returns what models and queries were used, month by month, UTC, the oldest first, twelve months where none is said and at most thirteen: model runs ended by purpose, with their tokens, those read from the provider cache, and their cost by currency; and query runs with the rows and bytes they returned. Needs administer.',
+  getEmbedding:
+    'Returns the embedding model meaning is searched by, and the one embedding is routed to that does not serve yet: how many of the latest texts it lacks and what embedding them would cost, approximately, at about four characters a token and its endpoint’s input price. Needs administer.',
+  confirmEmbedding:
+    'Confirms the waiting embedding model, its cost seen: one sample is embedded to learn its dimensions, a run of yours, and every latest text it lacks is queued. The serving model answers searches until the new one has every text, then the new one serves at once. Needs administer, and is audited.',
   listConversationEndpoints:
     'Lists the endpoints a conversation may run on, with a signed-in session alone: every one in use with its key set, its model and whether it sits outside the data boundary, the one a turn naming none runs on marked.',
   startConversation:

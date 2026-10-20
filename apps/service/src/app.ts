@@ -89,6 +89,7 @@ import { guardrailHandlers } from './generation/guardrails.js';
 import { modelLimitHandlers } from './generation/limits.js';
 import { modelBudgetHandlers } from './generation/budget.js';
 import { modelUsageHandlers } from './generation/usage.js';
+import { embeddingHandlers } from './generation/embedding.js';
 import { personalPromptHandlers } from './generation/personal-prompts.js';
 import { rangePreviewHandlers } from './range-previews.js';
 import { ownSessionHandlers } from './own-sessions.js';
@@ -580,6 +581,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...modelLimitHandlers(),
     ...modelBudgetHandlers(),
     ...modelUsageHandlers(),
+    ...embeddingHandlers(db, tenantOf, options.connector),
     ...personalPromptHandlers(db, tenantOf, principalOf),
     ...promptRunHandlers(db, tenantOf, options.connector, options.events),
     ...generatedHandlers(),

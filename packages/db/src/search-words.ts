@@ -301,7 +301,10 @@ function among(
     : sql<SqlBool>`${ref} = any(${[...values]}::text[])`;
 }
 
-function changedFilter(alias: string, changed: SearchFilters['changed']): RawBuilder<SqlBool> {
+export function changedFilter(
+  alias: string,
+  changed: SearchFilters['changed'],
+): RawBuilder<SqlBool> {
   if (changed === undefined) return sql<SqlBool>`true`;
   const at = sql.ref(`${alias}.changed_at`);
   if ('within' in changed) {
@@ -1252,6 +1255,7 @@ export async function searchWords(
 
   const page = sql<{
     total: string;
+    meant_alone: string;
     items: {
       kind: SearchKind;
       artifact_id: string;
@@ -1361,8 +1365,8 @@ export async function searchWords(
                order by m.artifact_id, m.node, m.thread_id, v.revision_no desc, v.version_no desc`
     })
     select
-      (select count(*) from (select 1 from results where f_words limit ${SEARCH_COUNT_CAP + 1}) c)
-        as total,
+      (select count(*) from (select 1 from results limit ${SEARCH_COUNT_CAP + 1}) c) as total,
+      (select count(*) from results where not f_words) as meant_alone,
       (select coalesce(json_agg(r order by r.fused desc, r.rank desc, r.changed_at desc, r.id),
                        '[]'::json)
        from (
@@ -1385,8 +1389,9 @@ export async function searchWords(
                              as wp,
                            array_position(${meant}::uuid[], r.id) as mp
                          from results r) f
-                   where f.wp <= ${MEANING_HITS} or f.mp is not null
-                   order by fused desc, f.rank desc, f.changed_at desc, f.id
+                   -- The words past their best 50 follow the fused, in the words' order (G7-I).
+                   order by (f.wp <= ${MEANING_HITS} or f.mp is not null) desc, fused desc,
+                            f.wp nulls last, f.rank desc, f.changed_at desc, f.id
                    limit ${limit} offset ${offset}`
          }) p
          left join space sp on sp.id = p.space_id
@@ -1511,7 +1516,10 @@ export async function searchWords(
   const { rows } = await page.execute(trx);
 
   const row = rows[0]!;
-  const total = bounded === undefined ? Number(row.total) : bounded.results.length;
+  // What meaning alone found counts with the words' (the G7 plan's final review).
+  const total =
+    (bounded === undefined ? Number(row.total) : bounded.results.length) +
+    Number(row.meant_alone ?? 0);
   const facetsBounded = bounded?.facetsBounded ?? false;
   const capped = (each: readonly FacetRow[] | null) => cappedOf(each, facetsBounded);
   const stateNamed =

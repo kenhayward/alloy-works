@@ -213,6 +213,7 @@ export {
   modelBudgetRoutes,
 } from './model-budget.js';
 export { ModelUsageQuery, ModelUsageView, modelUsageRoutes } from './model-usage.js';
+export { EmbeddingConfirmationBody, EmbeddingView, embeddingRoutes } from './model-embedding.js';
 export {
   PersonalPromptBody,
   PersonalPromptList,

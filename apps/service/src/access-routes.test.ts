@@ -1177,6 +1177,12 @@ describe('routes that check a permission', () => {
     getModelLimits: () => ({ url: '/v1/model-limits', status: 403 }),
     getModelBudget: () => ({ url: '/v1/model-budget', status: 403 }),
     getModelUsage: () => ({ url: '/v1/model-usage', status: 403 }),
+    getEmbedding: () => ({ url: '/v1/embedding', status: 403 }),
+    confirmEmbedding: () => ({
+      url: '/v1/embedding/confirmation',
+      status: 403,
+      payload: { model: 'm' },
+    }),
     setModelBudget: () => ({ url: '/v1/model-budget', status: 403, payload: { budget: null } }),
     setBudgetRecipients: () => ({
       url: '/v1/model-budget/recipients',

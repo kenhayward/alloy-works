@@ -1,13 +1,15 @@
 import { sql, type RawBuilder, type SqlBool } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
 import { embeddingsStored, type Dimensions, vectorLiteral } from './embeddings.js';
+import { changedFilter, type SearchFilters } from './search-words.js';
 import type { TenantTransaction } from './tables.js';
 
 /**
  * Searching by meaning (search.md, "Meaning"; the G7 plan, G7-H): the passages nearest a query's
  * vector over what the reader may read and has not archived or deleted, the reader's kind, space,
- * type, owner, state and changed filters applied where the passage is found, never after; the best
- * passage of each entry, nearest first. Below a visible set of `EXACT_BELOW` passages every distance
+ * type, owner, state and changed filters applied where the passage is found, never after; a field's,
+ * a condition's and a relation's are applied by `searchWords` to what this finds. The best passage of
+ * each entry, nearest first. Below a visible set of `EXACT_BELOW` passages every distance
  * is computed; above it the index is scanned iteratively, so a reader who may see little still gets
  * a full page (SCH-035). `searchWords` fuses these with the words and applies every filter again.
  */
@@ -36,6 +38,7 @@ export interface MeaningFilters {
   readonly componentTypes?: readonly string[];
   readonly owners?: readonly string[];
   readonly states?: readonly string[];
+  readonly changed?: SearchFilters['changed'];
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
@@ -76,7 +79,8 @@ export async function searchMeaning(
     ) and not e.archived and not e.deleted
     and ${among('kind', filters.kinds, false)} and ${among('space_id', filters.spaces, true)}
     and ${among('component_type', filters.componentTypes, true)}
-    and ${among('owner', filters.owners, true)} and ${among('workflow_state', filters.states, false)}`;
+    and ${among('owner', filters.owners, true)} and ${among('workflow_state', filters.states, false)}
+    and ${changedFilter('e', filters.changed)}`;
   // The dimension a literal, so the partial index for it serves the scan (G7-D).
   const n = sql.raw(String(input.dims));
   const query = sql`${vectorLiteral(input.vector)}::extensions.halfvec(${n})`;
