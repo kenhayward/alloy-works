@@ -8,6 +8,7 @@ import {
   recordGenerationRun,
   startRun,
   storeEmbeddings,
+  switchEmbeddingWhenDone,
   takeEmbeddingWork,
   usableModelKey,
   type EmbeddingModel,
@@ -39,11 +40,12 @@ export function embedJob(deps: {
     async run(tenant, job) {
       if (job.subjectId === null) return;
       const artifact = job.subjectId;
+      // Off the queue first, so a refused job leaves it free to be queued again (the final review).
+      const work = await deps.db.withTenant(tenant, (trx) => takeEmbeddingWork(trx, artifact));
       if (!deps.embedder) {
         throw new JobRefused('embedding_unconfigured', 'This worker has no way to the connector.');
       }
       const embed = deps.embedder;
-      const work = await deps.db.withTenant(tenant, (trx) => takeEmbeddingWork(trx, artifact));
       if (work.texts.length === 0 || work.models.length === 0) return;
       const done: EmbeddingModel[] = [];
       for (const model of work.models) {
@@ -128,7 +130,11 @@ export function embedJob(deps: {
         }
         done.push(model);
       }
-      await deps.db.withTenant(tenant, (trx) => copyPassages(trx, work.entries, done));
+      await deps.db.withTenant(tenant, async (trx) => {
+        await copyPassages(trx, work.entries, done);
+        // A confirmed model serves once every latest text has its vector (G7-J).
+        await switchEmbeddingWhenDone(trx);
+      });
     },
     async failed() {
       // Nothing to undo: what was embedded is kept, and the artifact's next version queues again.

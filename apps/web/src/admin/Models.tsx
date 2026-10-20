@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react';
 
 import { refusal } from '../account/TokenTable.js';
 import { Chip } from '../parts/Chip.js';
+import { EmbeddingPanel } from './EmbeddingPanel.js';
 import styles from './Administration.module.css';
 import { Shown, useListing } from './listing.js';
 
@@ -468,6 +469,7 @@ export function Models({ client }: { client: Client }) {
         )}
       </Shown>
       <p role="status">{said}</p>
+      <EmbeddingPanel client={client} generation={generation} />
     </>
   );
 }

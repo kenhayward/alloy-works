@@ -33,7 +33,12 @@ export function connectorEmbedder(options: {
     }
     if (response.status === 503) return { type: 'failed', failure: { code: 'connector_busy' } };
     if (!response.ok) return { type: 'failed', failure: { code: 'connector_error' } };
-    const text = await response.text();
+    let text: string;
+    try {
+      text = await response.text();
+    } catch {
+      return { type: 'failed', failure: { code: 'connector_unavailable' } };
+    }
     if (text.length > EMBED_ANSWER_MAX_BYTES) {
       return { type: 'failed', failure: { code: 'connector_error' } };
     }

@@ -2787,6 +2787,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/embedding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The embedding model serving meaning, and one waiting, with what it would cost
+         * @description Returns the embedding model meaning is searched by, and the one embedding is routed to that does not serve yet: how many of the latest texts it lacks and what embedding them would cost, approximately, at about four characters a token and its endpoint’s input price. Needs administer.
+         */
+        get: operations["getEmbedding"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/embedding/confirmation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm the waiting embedding model, its cost seen, so the corpus is embedded
+         * @description Confirms the waiting embedding model, its cost seen: one sample is embedded to learn its dimensions, a run of yours, and every latest text it lacks is queued. The serving model answers searches until the new one has every text, then the new one serves at once. Needs administer, and is audited.
+         */
+        post: operations["confirmEmbedding"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/exports": {
         parameters: {
             query?: never;
@@ -56296,6 +56336,372 @@ export interface operations {
                         title?: string;
                         /** @description values_unresolved: what the template names that no longer resolves */
                         unresolved?: unknown[];
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getEmbedding: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The models */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "serving": {
+                     *         "model": "example",
+                     *         "dims": -9007199254740991,
+                     *         "endpoint": {
+                     *           "id": "example",
+                     *           "name": "example",
+                     *           "boundary": "inside",
+                     *           "retired": false
+                     *         }
+                     *       },
+                     *       "pending": {
+                     *         "model": "example",
+                     *         "dims": -9007199254740991,
+                     *         "endpoint": {
+                     *           "id": "example",
+                     *           "name": "example",
+                     *           "boundary": "inside",
+                     *           "retired": false
+                     *         },
+                     *         "confirmed": false,
+                     *         "texts": 0,
+                     *         "missing": 0,
+                     *         "estimate": {
+                     *           "tokens": 0,
+                     *           "cost": "example",
+                     *           "currency": "example"
+                     *         }
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description The model meaning is searched by now; null where none serves */
+                        serving: {
+                            model: string;
+                            dims: number;
+                            endpoint: {
+                                id: string;
+                                name: string;
+                                /** @enum {string} */
+                                boundary: "inside" | "outside";
+                                retired: boolean;
+                            } | null;
+                        } | null;
+                        /** @description The model embedding is routed to that does not serve yet: shown with its cost, and embedding nothing until confirmed; the one serving answers searches until it has every text */
+                        pending: {
+                            model: string;
+                            /** @description Learned from a sample as it is confirmed */
+                            dims: number | null;
+                            endpoint: {
+                                id: string;
+                                name: string;
+                                /** @enum {string} */
+                                boundary: "inside" | "outside";
+                                retired: boolean;
+                            } | null;
+                            /** @description Whether an administrator confirmed it: nothing is embedded for it before */
+                            confirmed: boolean;
+                            /** @description The latest versions’ distinct block texts */
+                            texts: number;
+                            /** @description Of those, how many it has no vector for */
+                            missing: number;
+                            /** @description What embedding the texts it lacks would cost, approximately: about four characters a token, at its endpoint’s input price */
+                            estimate: {
+                                tokens: number;
+                                cost: string | null;
+                                currency: string | null;
+                            };
+                        } | null;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller does not administer this environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    confirmEmbedding: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "model": "example"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The pending model, as the view names it */
+                    model: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Confirmed, and every text queued */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "serving": {
+                     *         "model": "example",
+                     *         "dims": -9007199254740991,
+                     *         "endpoint": {
+                     *           "id": "example",
+                     *           "name": "example",
+                     *           "boundary": "inside",
+                     *           "retired": false
+                     *         }
+                     *       },
+                     *       "pending": {
+                     *         "model": "example",
+                     *         "dims": -9007199254740991,
+                     *         "endpoint": {
+                     *           "id": "example",
+                     *           "name": "example",
+                     *           "boundary": "inside",
+                     *           "retired": false
+                     *         },
+                     *         "confirmed": false,
+                     *         "texts": 0,
+                     *         "missing": 0,
+                     *         "estimate": {
+                     *           "tokens": 0,
+                     *           "cost": "example",
+                     *           "currency": "example"
+                     *         }
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description The model meaning is searched by now; null where none serves */
+                        serving: {
+                            model: string;
+                            dims: number;
+                            endpoint: {
+                                id: string;
+                                name: string;
+                                /** @enum {string} */
+                                boundary: "inside" | "outside";
+                                retired: boolean;
+                            } | null;
+                        } | null;
+                        /** @description The model embedding is routed to that does not serve yet: shown with its cost, and embedding nothing until confirmed; the one serving answers searches until it has every text */
+                        pending: {
+                            model: string;
+                            /** @description Learned from a sample as it is confirmed */
+                            dims: number | null;
+                            endpoint: {
+                                id: string;
+                                name: string;
+                                /** @enum {string} */
+                                boundary: "inside" | "outside";
+                                retired: boolean;
+                            } | null;
+                            /** @description Whether an administrator confirmed it: nothing is embedded for it before */
+                            confirmed: boolean;
+                            /** @description The latest versions’ distinct block texts */
+                            texts: number;
+                            /** @description Of those, how many it has no vector for */
+                            missing: number;
+                            /** @description What embedding the texts it lacks would cost, approximately: about four characters a token, at its endpoint’s input price */
+                            estimate: {
+                                tokens: number;
+                                cost: string | null;
+                                currency: string | null;
+                            };
+                        } | null;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller does not administer this environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `embedding_not_pending`: no such model waits; `endpoint_unusable`: its endpoint is retired or has no key; `embedding_unavailable`: the model did not answer a sample; `embedding_dimensions_unsupported`: its vectors are not 384, 768, 1024, 1536 or 3072 long */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `connector_unavailable` */
+            503: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
                     };
                 };
             };

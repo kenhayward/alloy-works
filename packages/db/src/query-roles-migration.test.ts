@@ -204,6 +204,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0134_caching',
       '0135_embeddings',
       '0136_embedding_queue',
+      '0137_embedding_confirmed',
     ]);
     expect(applied[own.id]).toEqual([
       '0058_query_roles',
@@ -285,6 +286,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0134_caching',
       '0135_embeddings',
       '0136_embedding_queue',
+      '0137_embedding_confirmed',
     ]);
 
     expect(await queryRoles(development)).toEqual([

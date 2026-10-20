@@ -3,6 +3,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import {
   endRun,
   keepQueryEmbedding,
+  rateRefusal,
   readModelEndpoint,
   readQueryEmbedding,
   recordGenerationRun,
@@ -37,8 +38,13 @@ const sha256 = (text: string) => createHash('sha256').update(text, 'utf8').diges
 /** How long a search's embedding may take before search answers by words alone. */
 const QUERY_EMBED_MS = 10_000;
 
+/** How long a model that failed a search is left alone, so no search waits on it again at once. */
+const FAILED_FOR_MS = 30_000;
+
 export function meaningSearcher(db: TenantDatabase, connector: ConnectorOptions | undefined) {
   const client = connector ? createConnectorClient(connector) : undefined;
+  // Each tenant's model that failed a search, and when: words alone until it may be asked again.
+  const failed = new Map<string, number>();
   return async (
     request: FastifyRequest,
     tenant: Tenant,
@@ -73,6 +79,14 @@ export function meaningSearcher(db: TenantDatabase, connector: ConnectorOptions 
     let vector = ready.cached;
     if (vector === undefined) {
       if (!client || !ready.endpoint || ready.sealed === undefined) {
+        return { state: 'unavailable', hits: [] };
+      }
+      const since = failed.get(tenant.id);
+      if (since !== undefined && Date.now() - since < FAILED_FOR_MS) {
+        return { state: 'unavailable', hits: [] };
+      }
+      // A search's embedding is a run of the searcher's, within their hourly limit (GEN-035).
+      if (await db.withTenant(tenant, (trx) => rateRefusal(trx, principal), context)) {
         return { state: 'unavailable', hits: [] };
       }
       const endpoint = ready.endpoint;
@@ -132,7 +146,11 @@ export function meaningSearcher(db: TenantDatabase, connector: ConnectorOptions 
         },
         context,
       );
-      if (!fits) return { state: 'unavailable', hits: [] };
+      if (!fits) {
+        failed.set(tenant.id, Date.now());
+        return { state: 'unavailable', hits: [] };
+      }
+      failed.delete(tenant.id);
       vector = answer.vectors[0]!;
     }
     const found = vector;

@@ -146,6 +146,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0134_caching',
       '0135_embeddings',
       '0136_embedding_queue',
+      '0137_embedding_confirmed',
     ]);
 
     const read = async () =>

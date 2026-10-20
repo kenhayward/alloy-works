@@ -247,6 +247,7 @@ describe('migration 0052, which widens dataset_take to an image', () => {
       '0134_caching',
       '0135_embeddings',
       '0136_embedding_queue',
+      '0137_embedding_confirmed',
     ]);
     const kept = await queryAs(
       db.adminUrl,

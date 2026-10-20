@@ -3,6 +3,17 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.200.0 - 2026-10-19 (PR #735)
+
+The intelligence's seventh slice: meaning (the G7 plan).
+
+### Added
+
+- **Embedding endpoints.** The embedding purpose takes an endpoint speaking the OpenAI protocol, which hosted services and self-hosted servers inside your boundary both speak; another is refused, saying why.
+- **Content embedded in the background.** Once an embedding model serves, each new version's parts are embedded by the worker, words already embedded anywhere reused at once, each batch recorded as a run of its author and counted in the budget.
+- **Searching by meaning.** Where an embedding model serves, search finds parts by what they mean as well as by their words, over what you may read alone. Each result says how it was found, by words, by meaning or both, and search says when meaning is unavailable.
+- **Embedding costed first.** Models shows what embedding every part with a new model would cost, and nothing is embedded until an administrator confirms it. The model already serving goes on answering searches until the new one has every part.
+
 ## 0.199.0 - 2026-10-19 (PR #730)
 
 The intelligence's sixth slice: spend (the G6 plan).

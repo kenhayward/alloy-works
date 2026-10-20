@@ -773,8 +773,13 @@ export {
   type MeaningRoad,
 } from './search-meaning.js';
 export {
+  confirmEmbedding,
   copyPassages,
+  embeddingStatus,
   eraseQueryEmbeddings,
+  routeEmbedding,
+  switchEmbeddingWhenDone,
+  type EmbeddingStatus,
   keepQueryEmbedding,
   passageBlocks,
   readQueryEmbedding,

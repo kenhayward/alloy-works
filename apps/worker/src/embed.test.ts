@@ -5,7 +5,12 @@ import {
   createSpace,
   createTenant,
   embedIndexed,
+  confirmEmbedding,
+  embeddedHashes,
+  embeddingStatus,
   makeModelEndpoint,
+  routeEmbedding,
+  textHash,
   passageBlocks,
   runsThisMonth,
   migrate,
@@ -28,9 +33,11 @@ import { processNext, type JobHandler, type WorkerLog } from './worker.js';
 const quiet: WorkerLog = { info: () => {}, warn: () => {}, error: () => {} };
 const SEALED = `v1.${'a'.repeat(16)}.${'b'.repeat(22)}.${'c'.repeat(40)}`;
 
-/** A vector of 384 places, its text's length in the first: enough to tell texts apart. */
-const vectorOf = (text: string) =>
-  Array.from({ length: 384 }, (_, index) => (index === 0 ? text.length : 0.5));
+/** A vector as long as the model's name says, its text's length in the first: enough to tell apart. */
+const vectorOf = (text: string, model = 'stand-in-embed-384') =>
+  Array.from({ length: Number(/-(\d+)$/.exec(model)?.[1] ?? 384) }, (_, index) =>
+    index === 0 ? text.length : 0.5,
+  );
 
 /** An artifact's embedding, from the queue to its passages (the G7 plan, G7-F). */
 describe("an artifact's embedding, from the queue to its passages", () => {
@@ -48,7 +55,7 @@ describe("an artifact's embedding, from the queue to its passages", () => {
     return {
       type: 'embedded',
       model: request.call.model,
-      vectors: request.call.inputs.map(vectorOf),
+      vectors: request.call.inputs.map((text) => vectorOf(text, request.call.model)),
       usage: { in: 40 },
     };
   };
@@ -170,6 +177,68 @@ describe("an artifact's embedding, from the queue to its passages", () => {
     await work();
     expect(asked.slice(before).map((each) => each.call.inputs)).toEqual([['Something new.']]);
     expect(await passages(again)).toEqual(['p1', 'p2']);
+  });
+
+  it('GEN-044 re-embeds the corpus for a confirmed model while the old one serves, then serves it at once, the old vectors kept', async () => {
+    const sites = await component('Re-embedded', ['Re-embedded once confirmed.']);
+    await work();
+    const newer = await as(async (trx) => {
+      const written = await makeModelEndpoint(
+        trx,
+        {
+          name: 'Embedding, newer',
+          protocol: 'openai',
+          baseUrl: 'https://models.example.test',
+          model: 'stand-in-embed-768',
+          contextWindow: 8192,
+          priceIn: 0.02,
+          priceOut: 0,
+          currency: 'USD',
+          boundary: 'inside',
+        },
+        ada,
+      );
+      if (written.answer !== 'written') throw new Error(written.answer);
+      await setModelCredential(trx, written.endpoint, SEALED, ada);
+      await routeEmbedding(trx, { id: written.endpoint.id, model: 'stand-in-embed-768' });
+      return written.endpoint.id;
+    });
+    // Routed, it waits: the old model serves, and nothing is embedded for the new.
+    expect((await as((trx) => embeddingStatus(trx))).serving?.model).toBe('stand-in-embed-384');
+    await as((trx) => confirmEmbedding(trx, { model: 'stand-in-embed-768', dims: 768, by: ada }));
+    // Confirmed, every artifact is queued: the old still serves until the new has every text.
+    expect((await as((trx) => embeddingStatus(trx))).serving?.model).toBe('stand-in-embed-384');
+    expect(await as((trx) => passageBlocks(trx, sites, 'stand-in-embed-384'))).toEqual(['p1']);
+    while ((await queue.waiting(tenant.id, 'embed')).length > 0) await work();
+    const status = await as((trx) => embeddingStatus(trx));
+    expect(status.serving).toEqual({ model: 'stand-in-embed-768', dims: 768, endpointId: newer });
+    expect(status.pending).toBeNull();
+    expect(await as((trx) => passageBlocks(trx, sites, 'stand-in-embed-384'))).toEqual([]);
+    expect(await as((trx) => passageBlocks(trx, sites, 'stand-in-embed-768'))).toEqual(['p1']);
+    // The old model's vectors stay in the store: switching deletes passages, never them (VER-040).
+    expect(
+      await as((trx) =>
+        embeddedHashes(trx, 'stand-in-embed-384', [textHash('Re-embedded once confirmed.')]),
+      ),
+    ).toEqual(new Set([textHash('Re-embedded once confirmed.')]));
+  });
+
+  it('leaves an artifact free to be queued again when a worker without the connector refuses its job', async () => {
+    const unready = { embed: embedJob({ db: worker, embedder: undefined }) };
+    const refused = await component('Refused', ['Waiting for a connector.']);
+    await processNext({
+      queue,
+      db: worker,
+      handlers: unready,
+      workerId: 'worker-2',
+      leaseMs: 600_000,
+      log: quiet,
+    });
+    expect(await queue.waiting(tenant.id, 'embed')).toEqual([]);
+    await as((trx) => embedIndexed(trx, refused, { queue: true }));
+    expect(await queue.waiting(tenant.id, 'embed')).toEqual([refused]);
+    await work();
+    expect(await passages(refused)).toEqual(['p1']);
   });
 
   it('queues an artifact once however often it is indexed before its job runs', async () => {

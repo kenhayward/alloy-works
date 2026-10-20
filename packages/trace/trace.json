@@ -17734,6 +17734,10 @@
           "howItIsMet": "Embedding routed to an OpenAI-protocol endpoint alone, which a self-hosted model inside the boundary speaks; none routed, no meaning search (Meaning)"
         },
         {
+          "id": "GEN-044",
+          "howItIsMet": "Embedding runs attributed and budgeted as generation's; a model not serving waits, its estimate shown, until an administrator confirms it (Meaning)"
+        },
+        {
           "id": "GEN-037",
           "howItIsMet": "The run's cost shown to its requester as it ends, and their month on the assistant panel (Cost)"
         },
@@ -20686,13 +20690,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 543,
+      "line": 545,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 556,
+      "line": 558,
       "kind": "title"
     },
     {
@@ -21094,7 +21098,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1797,
+      "line": 1798,
       "kind": "title"
     },
     {
@@ -21299,6 +21303,12 @@
       "id": "VER-009",
       "file": "apps/service/src/editing-routes.test.ts",
       "line": 238,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-044",
+      "file": "apps/service/src/embedding-routes.test.ts",
+      "line": 58,
       "kind": "title"
     },
     {
@@ -22142,6 +22152,12 @@
       "kind": "title"
     },
     {
+      "id": "GEN-035",
+      "file": "apps/service/src/search-meaning-routes.test.ts",
+      "line": 149,
+      "kind": "title"
+    },
+    {
       "id": "SCH-013",
       "file": "apps/service/src/search-meaning-routes.test.ts",
       "line": 121,
@@ -22150,13 +22166,13 @@
     {
       "id": "SCH-014",
       "file": "apps/service/src/search-meaning-routes.test.ts",
-      "line": 131,
+      "line": 132,
       "kind": "title"
     },
     {
       "id": "SCH-031",
       "file": "apps/service/src/search-meaning-routes.test.ts",
-      "line": 148,
+      "line": 159,
       "kind": "title"
     },
     {
@@ -22865,6 +22881,12 @@
       "id": "COL-046",
       "file": "apps/web/src/admin/Editing.test.tsx",
       "line": 27,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-044",
+      "file": "apps/web/src/admin/EmbeddingPanel.test.tsx",
+      "line": 42,
       "kind": "title"
     },
     {
@@ -25072,7 +25094,13 @@
     {
       "id": "GEN-033",
       "file": "apps/worker/src/embed.test.ts",
-      "line": 145,
+      "line": 152,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-044",
+      "file": "apps/worker/src/embed.test.ts",
+      "line": 182,
       "kind": "title"
     },
     {
@@ -27106,7 +27134,7 @@
     {
       "id": "SCH-035",
       "file": "packages/db/src/search-meaning.test.ts",
-      "line": 195,
+      "line": 198,
       "kind": "title"
     },
     {
@@ -27778,13 +27806,13 @@
     {
       "id": "LIF-030",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 242,
+      "line": 243,
       "kind": "title"
     },
     {
       "id": "LIF-070",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 223,
+      "line": 224,
       "kind": "title"
     },
     {

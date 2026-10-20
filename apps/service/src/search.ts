@@ -212,6 +212,7 @@ export function searchHandlers(
               : { componentTypes: filters.componentTypes }),
             ...(filters.owners === undefined ? {} : { owners: filters.owners }),
             ...(filters.states === undefined ? {} : { states: filters.states }),
+            ...(filters.changed === undefined ? {} : { changed: filters.changed }),
           },
         },
       );

@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 
 import { EMBEDDING_DIMENSIONS } from '@alloy-works/domain';
 import { sql } from 'kysely';
+import { recordEvent } from './audit.js';
 import { enqueueJob } from './queue.js';
 import type { TenantTransaction } from './tables.js';
 
@@ -326,4 +327,180 @@ export async function eraseQueryEmbeddings(
 ): Promise<void> {
   if (!(await embeddingsStored(trx))) return;
   await sql`delete from query_embedding where requester = ${principal}`.execute(trx);
+}
+
+/**
+ * Embedding routed to an endpoint (the G7 plan, G7-J): one whose model already serves goes on serving
+ * through it; another model waits, pending, until an administrator confirms its estimate; none routed,
+ * nothing serves or waits.
+ */
+export async function routeEmbedding(
+  trx: TenantTransaction,
+  endpoint: { readonly id: string; readonly model: string } | null,
+): Promise<void> {
+  if (!(await queueStored(trx))) return;
+  const { rows } = await sql<{ serving_model: string | null }>`
+    select serving_model from embedding_state`.execute(trx);
+  const serving = rows[0]?.serving_model ?? null;
+  if (endpoint === null) {
+    await sql`insert into embedding_state (only_one) values (true)
+      on conflict (only_one) do update set serving_model = null, serving_dims = null,
+        serving_endpoint = null, pending_model = null, pending_endpoint = null, pending_dims = null,
+        confirmed_by = null, confirmed_at = null`.execute(trx);
+  } else if (endpoint.model === serving) {
+    await sql`update embedding_state set serving_endpoint = ${endpoint.id}, pending_model = null,
+      pending_endpoint = null, pending_dims = null, confirmed_by = null, confirmed_at = null`.execute(
+      trx,
+    );
+  } else {
+    await sql`insert into embedding_state (only_one, pending_model, pending_endpoint)
+      values (true, ${endpoint.model}, ${endpoint.id})
+      on conflict (only_one) do update set pending_model = excluded.pending_model,
+        pending_endpoint = excluded.pending_endpoint, pending_dims = null, confirmed_by = null,
+        confirmed_at = null`.execute(trx);
+  }
+}
+
+/** The latest versions' distinct block texts, and how many and how long those a model lacks are. */
+async function textsLacking(
+  trx: TenantTransaction,
+  model: string,
+): Promise<{ readonly all: number; readonly missing: number; readonly characters: number }> {
+  const { rows } = await sql<{ all: string; missing: string; characters: string | null }>`
+    with texts as (
+      select distinct ${bodyHash} as h, char_length(st.body) as n
+        from search_text st join search_entry e on e.id = st.entry_id
+       where st.place like 'block:%' and e.kind <> 'section'
+    ),
+    lacking as (
+      select t.*, not exists (
+        select 1 from embedding m where m.text_hash = t.h and m.model = ${model}) as missing
+      from texts t
+    )
+    select count(*) as all, count(*) filter (where missing) as missing,
+           sum(n) filter (where missing) as characters
+      from lacking`.execute(trx);
+  return {
+    all: Number(rows[0]?.all ?? 0),
+    missing: Number(rows[0]?.missing ?? 0),
+    characters: Number(rows[0]?.characters ?? 0),
+  };
+}
+
+export interface EmbeddingStatus {
+  readonly serving: {
+    readonly model: string;
+    readonly dims: Dimensions;
+    readonly endpointId: string | null;
+  } | null;
+  readonly pending: {
+    readonly model: string;
+    readonly endpointId: string | null;
+    readonly dims: Dimensions | null;
+    readonly confirmedAt: Date | null;
+    /** The latest texts, those still to embed for it, and their tokens at about four characters each. */
+    readonly texts: number;
+    readonly missing: number;
+    readonly tokens: number;
+  } | null;
+}
+
+export async function embeddingStatus(trx: TenantTransaction): Promise<EmbeddingStatus> {
+  if (!(await queueStored(trx))) return { serving: null, pending: null };
+  const { rows } = await sql<{
+    serving_model: string | null;
+    serving_dims: number | null;
+    serving_endpoint: string | null;
+    pending_model: string | null;
+    pending_dims: number | null;
+    pending_endpoint: string | null;
+    confirmed_at: Date | null;
+  }>`select * from embedding_state`.execute(trx);
+  const state = rows[0];
+  const lacking = state?.pending_model ? await textsLacking(trx, state.pending_model) : undefined;
+  return {
+    serving:
+      state?.serving_model && state.serving_dims
+        ? {
+            model: state.serving_model,
+            dims: state.serving_dims as Dimensions,
+            endpointId: state.serving_endpoint ?? null,
+          }
+        : null,
+    pending:
+      state?.pending_model && lacking
+        ? {
+            model: state.pending_model,
+            endpointId: state.pending_endpoint ?? null,
+            dims: (state.pending_dims as Dimensions | null) ?? null,
+            confirmedAt: state.confirmed_at ?? null,
+            texts: lacking.all,
+            missing: lacking.missing,
+            tokens: Math.ceil(lacking.characters / 4),
+          }
+        : null,
+  };
+}
+
+/**
+ * An administrator confirms the pending model, its dimensions found (G7-J; GEN-044): from now its
+ * vectors are made, every artifact with a block queued, and it serves once every text has one.
+ * False: no such model waits.
+ */
+export async function confirmEmbedding(
+  trx: TenantTransaction,
+  input: { readonly model: string; readonly dims: Dimensions; readonly by: string },
+): Promise<boolean> {
+  if (!(await queueStored(trx))) return false;
+  const { rows } = await sql<{ pending_endpoint: string }>`
+    update embedding_state set pending_dims = ${input.dims}, confirmed_by = ${input.by},
+      confirmed_at = now()
+    where pending_model = ${input.model} and pending_endpoint is not null
+    returning pending_endpoint`.execute(trx);
+  if (!rows[0]) return false;
+  await recordEvent(trx, {
+    kind: 'generation.embedding_confirmed',
+    subject: { kind: 'model_endpoint', id: rows[0].pending_endpoint },
+    detail: { dims: input.dims },
+  });
+  const { rows: queued } = await sql<{ artifact_id: string }>`
+    insert into embedding_queued (artifact_id)
+    select distinct e.artifact_id from search_entry e
+     where e.kind <> 'section'
+       and exists (select 1 from search_text st where st.entry_id = e.id and st.place like 'block:%')
+    on conflict do nothing returning artifact_id`.execute(trx);
+  for (const { artifact_id: artifact } of queued) await enqueueJob(trx, 'embed', artifact);
+  return true;
+}
+
+/**
+ * Once the confirmed pending model holds a vector for every latest text, it serves, at once, and the
+ * old model's passages go; its vectors stay in the store (G7-J; VER-040). True where it switched.
+ */
+export async function switchEmbeddingWhenDone(trx: TenantTransaction): Promise<boolean> {
+  if (!(await queueStored(trx))) return false;
+  await sql`select pg_advisory_xact_lock(hashtextextended('embedding_state', 0))`.execute(trx);
+  const status = await embeddingStatus(trx);
+  const pending = status.pending;
+  if (!pending || pending.confirmedAt === null || pending.dims === null || pending.missing > 0) {
+    return false;
+  }
+  // Not while an artifact waits: its passages would be the old model's alone (the final review).
+  const { rows: waiting } = await sql<{ found: boolean }>`
+    select exists (select 1 from embedding_queued) as found`.execute(trx);
+  if (waiting[0]?.found === true) return false;
+  // Every latest entry's passages for the new model first, so none is left without meaning.
+  const { rows: entries } = await sql<{ id: string }>`select id from search_entry`.execute(trx);
+  await copyPassages(
+    trx,
+    entries.map((each) => each.id),
+    [{ model: pending.model, dims: pending.dims, endpointId: pending.endpointId ?? '' }],
+  );
+  await sql`update embedding_state set serving_model = pending_model, serving_dims = pending_dims,
+    serving_endpoint = pending_endpoint, pending_model = null, pending_endpoint = null,
+    pending_dims = null, confirmed_by = null, confirmed_at = null`.execute(trx);
+  if (status.serving && status.serving.model !== pending.model) {
+    await sql`delete from search_passage where model = ${status.serving.model}`.execute(trx);
+  }
+  return true;
 }

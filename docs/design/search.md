@@ -229,15 +229,17 @@ The total stays exact to the cap.
 
 W6 builds the words half. Meaning (SCH-013, SCH-014, SCH-035) is T5's, built in G7
 ([plan](../plans/2026-10-19-g7-meaning.md)): `searchMeaning` finds the passages nearest the query's
-vector over the readable set, not archived or deleted, the column filters applied as it scans, exact
+vector over the readable set, not archived or deleted, the kind, space, type, owner, state and changed
+filters applied as it scans (a field's, a condition's and a relation's after, by `searchWords`), exact
 below 20,000 visible passages and iterative HNSW above, one hit an entry, at most 50, none farther than
 a cosine distance of 0.75 (provisional, set once real models' vectors are measured). `searchWords`
 takes them as `meaning`, reads them with its own candidates, applies every filter again, and fuses the
-best 50 of each by reciprocal rank in its page query; each result says `found`, and the answer
-`meaning`. Departures from above: a passage joins its entry for the predicate rather than copying its
-permission columns, which archival, deletion and workflow change in place; the count and the facets
-are the words' alone; meaning is the latest's, and of free words; and a search's words are embedded
-through the connector as the person searches, a run of theirs, their vector kept a day for them alone
+best 50 of each by reciprocal rank in its page query, the words past their best 50 following in their
+own order; each result says `found`, and the answer `meaning`. Departures from above: a passage joins its entry for the predicate rather than copying its
+permission columns, which archival, deletion and workflow change in place; the count holds what
+meaning alone found, and the facets are the words' alone; meaning is the latest's, and of free words; and a search's words are embedded
+through the connector as the person searches, a run of theirs within their hourly limit, a model that
+failed left alone for 30 seconds, their vector kept a day for them alone
 (`query_embedding`), never in the shared store, so no hit says anything of another's text.
 
 ### What is an entry
