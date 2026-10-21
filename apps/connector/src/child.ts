@@ -1,9 +1,11 @@
 import {
+  childDeliverRequestSchema,
   childEmbedRequestSchema,
   childModelRequestSchema,
   childRequestSchema,
 } from '@alloy-works/domain';
 
+import { answerDeliver } from './deliver.js';
 import { answerEmbed, answerModel } from './model.js';
 import { answerRequest } from './work.js';
 
@@ -31,6 +33,12 @@ async function main(): Promise<number> {
     input = JSON.parse(await readInput()) as unknown;
   } catch {
     return 2;
+  }
+  // A webhook delivery (the WB plan, WB-F): one answer.
+  const delivery = childDeliverRequestSchema.safeParse(input);
+  if (delivery.success) {
+    await line(await answerDeliver(delivery.data));
+    return 0;
   }
   // An embedding call (the G7 plan, G7-A): one answer.
   const embed = childEmbedRequestSchema.safeParse(input);

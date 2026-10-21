@@ -24,7 +24,7 @@ function importsOf(path: string): string[] {
 }
 
 describe("the connector's one caller", () => {
-  it('DAT-089 calls the connector only from a route a person calls: nothing but the connection, model endpoint and assistant routes imports its client, and the worker reaches it to embed alone', () => {
+  it('DAT-089 calls the connector only from a route a person calls: nothing but the connection, model endpoint and assistant routes imports its client, and the worker reaches it to embed and to deliver webhooks alone', () => {
     // In the service, the client is imported by the connection routes, the model endpoint routes and
     // the assistant's run and a prompt's, each a person's ask (and its own test; the G1 plan, G1-L;
     // the G2 plan; the G4 plan).
@@ -83,9 +83,10 @@ describe("the connector's one caller", () => {
         .sort(),
     ).toEqual(['setModelEndpointKey', 'testModelEndpoint']);
 
-    // The worker imports nothing of the connector's. One module of its own, `embedder.ts`, reaches it,
-    // at `/v1/embed` and nowhere else, with the key that opens that route alone (the G7 plan, G7-E);
-    // its configuration names the connector's address and that key, and nothing more of it.
+    // The worker imports nothing of the connector's. Two modules of its own reach it: `embedder.ts`
+    // at `/v1/embed` (the G7 plan, G7-E) and `deliverer.ts` at `/v1/deliver` (the WB plan, WB-F), each
+    // with the key that opens that route alone; its configuration names the connector's address and
+    // those keys, and nothing more of it.
     for (const file of sources(worker)) {
       const text = readFileSync(join(worker, file), 'utf8');
       expect(
@@ -95,19 +96,23 @@ describe("the connector's one caller", () => {
       if (!file.endsWith('.test.ts') && file !== 'config.ts') {
         expect(text, file).not.toMatch(/CONNECTOR_/);
       }
-      if (!file.endsWith('.test.ts') && file !== 'embedder.ts') {
-        expect(text, file).not.toMatch(/\/v1\/(?!embed\b)\w+/);
+      if (!file.endsWith('.test.ts') && file !== 'embedder.ts' && file !== 'deliverer.ts') {
+        expect(text, file).not.toMatch(/\/v1\/(?!embed\b|deliver\b)\w+/);
       }
     }
     const embedder = readFileSync(join(worker, 'embedder.ts'), 'utf8');
     expect([...new Set([...embedder.matchAll(/\/v1\/\w+/g)].map((match) => match[0]))]).toEqual([
       '/v1/embed',
     ]);
+    const deliverer = readFileSync(join(worker, 'deliverer.ts'), 'utf8');
+    expect([...new Set([...deliverer.matchAll(/\/v1\/\w+/g)].map((match) => match[0]))]).toEqual([
+      '/v1/deliver',
+    ]);
     expect(
       [...readFileSync(join(worker, 'config.ts'), 'utf8').matchAll(/\b(?:SECRET_)?CONNECTOR_\w+/g)]
         .map((match) => match[0])
         .filter((name, at, all) => all.indexOf(name) === at)
         .sort(),
-    ).toEqual(['CONNECTOR_URL', 'SECRET_CONNECTOR_EMBED_KEY']);
+    ).toEqual(['CONNECTOR_URL', 'SECRET_CONNECTOR_DELIVER_KEY', 'SECRET_CONNECTOR_EMBED_KEY']);
   });
 });

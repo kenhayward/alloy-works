@@ -12,19 +12,19 @@ table queues, in the act's own transaction, a **delivery** for every enabled sub
 type: a thin payload of identifiers and versions, never content. The worker's delivery loop sends each
 through the **connector** (ADR-0064), signed as Standard Webhooks specifies, and only while the
 subscription's service identity may read the artifact. A failure is retried with backoff for a day,
-then given up; an endpoint failing for three days with no success is disabled and its administrators
-told. Every attempt, what was sent and what came back, is kept 30 days for an administrator to read.
+then given up; an endpoint failing for three days with no success is disabled and the administrator who
+made it told. Every attempt, what was sent and what came back, is kept 30 days for an administrator to read.
 
 ## Requirements owned
 
-| ID          | How it is met                                                                                                                                                |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **API-028** | Backoff from 30 seconds, doubling to an hour, for 24 hours; failing three days since the first failure with no success, disabled and its administrators told |
-| **API-029** | `GET /v1/webhooks/{id}/deliveries`: each delivery's payload and every attempt's status, latency, failure code and reply excerpt                              |
-| **API-046** | No ordering is promised; each payload carries its source's sequence and the artifact's version, so a receiver orders what it needs                           |
-| **API-060** | Content, workflow, review, publication and notification events, by their audit kind's name (Event types)                                                     |
-| **COL-037** | A notification addressed to the subscription's service identity is `notification.created`; a service is told only as a person is, by a mention or a reply    |
-| **LIF-071** | `webhook.changed`, for every make, change, rotation, removal and disabling, completing LIF-071 beside `tool.used` and the run's kinds                        |
+| ID          | How it is met                                                                                                                                                           |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **API-028** | Backoff from 30 seconds, doubling to an hour, for 24 hours; failing three days since the first failure with no success, disabled and the administrator who made it told |
+| **API-029** | `GET /v1/webhooks/{id}/deliveries`: each delivery's payload and every attempt's status, latency, failure code and reply excerpt                                         |
+| **API-046** | No ordering is promised; each payload carries its source's sequence and the artifact's version, so a receiver orders what it needs                                      |
+| **API-060** | Content, workflow, review, publication and notification events, by their audit kind's name (Event types)                                                                |
+| **COL-037** | A notification addressed to the subscription's service identity is `notification.created`; a service is told only as a person is, by a mention or a reply               |
+| **LIF-071** | `webhook.changed`, for every make, change, rotation, removal and disabling, completing LIF-071 beside `tool.used` and the run's kinds                                   |
 
 | Left unclaimed | Why                                                                                               |
 | -------------- | ------------------------------------------------------------------------------------------------- |

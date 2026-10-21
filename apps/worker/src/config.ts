@@ -25,8 +25,17 @@ export interface WorkerConfig {
   readonly leaseMs: number;
   readonly sweepIntervalMs: number;
   readonly logLevel: LogLevel;
-  /** The connector, and the key that opens its embedding alone (the G7 plan, G7-E); none, no embedding. */
-  readonly connector?: { readonly url: string; readonly embedKey: string };
+  /**
+   * The connector, and the keys that open its embedding (the G7 plan, G7-E) and its webhook delivery
+   * (the WB plan, WB-F) alone; none given, neither is done.
+   */
+  readonly connector?: {
+    readonly url: string;
+    readonly embedKey?: string;
+    readonly deliverKey?: string;
+  };
+  /** How often the webhook delivery loop runs, apart from the sweeps (WB-I). */
+  readonly deliverIntervalMs: number;
 }
 
 export class WorkerConfigError extends Error {}
@@ -59,6 +68,8 @@ const Environment = z.object({
     .default('info'),
   CONNECTOR_URL: z.url({ error: 'must be a URL' }).optional(),
   SECRET_CONNECTOR_EMBED_KEY: z.string().min(1).optional(),
+  SECRET_CONNECTOR_DELIVER_KEY: z.string().min(1).optional(),
+  DELIVER_INTERVAL_MS: z.coerce.number().int().min(500).default(5000),
 });
 
 /** Read once, at start-up. Messages name the variable and the rule, never the value. */
@@ -69,9 +80,12 @@ export function loadWorkerConfig(env: Readonly<Record<string, string | undefined
     throw new WorkerConfigError(`The worker cannot start:\n  ${problems.join('\n  ')}`);
   }
   const data = result.data;
-  if ((data.CONNECTOR_URL === undefined) !== (data.SECRET_CONNECTOR_EMBED_KEY === undefined)) {
+  const keyed =
+    data.SECRET_CONNECTOR_EMBED_KEY !== undefined ||
+    data.SECRET_CONNECTOR_DELIVER_KEY !== undefined;
+  if ((data.CONNECTOR_URL === undefined) === keyed) {
     throw new WorkerConfigError(
-      'The worker cannot start:\n  CONNECTOR_URL and SECRET_CONNECTOR_EMBED_KEY are given together or not at all',
+      'The worker cannot start:\n  CONNECTOR_URL is given with SECRET_CONNECTOR_EMBED_KEY or SECRET_CONNECTOR_DELIVER_KEY, or none of them',
     );
   }
   return {
@@ -90,9 +104,20 @@ export function loadWorkerConfig(env: Readonly<Record<string, string | undefined
     leaseMs: data.LEASE_MS,
     sweepIntervalMs: data.SWEEP_INTERVAL_MS,
     logLevel: data.LOG_LEVEL,
-    ...(data.CONNECTOR_URL === undefined || data.SECRET_CONNECTOR_EMBED_KEY === undefined
+    deliverIntervalMs: data.DELIVER_INTERVAL_MS,
+    ...(data.CONNECTOR_URL === undefined
       ? {}
-      : { connector: { url: data.CONNECTOR_URL, embedKey: data.SECRET_CONNECTOR_EMBED_KEY } }),
+      : {
+          connector: {
+            url: data.CONNECTOR_URL,
+            ...(data.SECRET_CONNECTOR_EMBED_KEY === undefined
+              ? {}
+              : { embedKey: data.SECRET_CONNECTOR_EMBED_KEY }),
+            ...(data.SECRET_CONNECTOR_DELIVER_KEY === undefined
+              ? {}
+              : { deliverKey: data.SECRET_CONNECTOR_DELIVER_KEY }),
+          },
+        }),
   };
 }
 

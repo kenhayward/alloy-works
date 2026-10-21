@@ -1112,7 +1112,12 @@ export {
 } from './service-identities.js';
 export {
   changeWebhookSubscription,
+  claimDeliveries,
   createWebhookSubscription,
+  recordAttempt,
+  sweepWebhookDeliveries,
+  type AttemptOutcome,
+  type ClaimedDelivery,
   listWebhookSubscriptions,
   removeWebhookSubscription,
   rotateWebhookSecret,

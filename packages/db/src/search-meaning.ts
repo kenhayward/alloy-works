@@ -97,24 +97,36 @@ export async function searchMeaning(
   }
   input.seen?.(road);
   let rows: { entry_id: string; block_id: string; distance: number }[];
-  if (road === 'exact') {
+  const exactly = async () =>
     // Every visible passage's distance, then sorted: `offset 0` keeps the index from being planned.
-    ({ rows } = await sql<{ entry_id: string; block_id: string; distance: number }>`
+    (
+      await sql<{ entry_id: string; block_id: string; distance: number }>`
       select entry_id, block_id, distance from (
         select p.entry_id, p.block_id, ${distance} as distance from ${passages} offset 0) d
       where distance <= ${MEANING_DISTANCE_MOST}
-      order by distance limit ${MEANING_HITS * 4}`.execute(trx));
+      order by distance limit ${MEANING_HITS * 4}`.execute(trx)
+    ).rows;
+  if (road === 'exact') {
+    rows = await exactly();
   } else {
     // The index scanned until enough pass the predicate, approximately in order, then re-sorted.
     await sql`set local hnsw.iterative_scan = relaxed_order`.execute(trx);
     await sql`set local hnsw.ef_search = 200`.execute(trx);
     await sql`set local hnsw.max_scan_tuples = 50000`.execute(trx);
-    ({ rows } = await sql<{ entry_id: string; block_id: string; distance: number }>`
-      select entry_id, block_id, distance from (
-        select p.entry_id, p.block_id, ${distance} as distance from ${passages}
-        order by ${distance} limit ${MEANING_HITS * 4}) d
-      where distance <= ${MEANING_DISTANCE_MOST}
-      order by distance`.execute(trx));
+    const scanned = (
+      await sql<{ entry_id: string; block_id: string; distance: number }>`
+      select p.entry_id, p.block_id, ${distance} as distance from ${passages}
+      order by ${distance} limit ${MEANING_HITS * 4}`.execute(trx)
+    ).rows;
+    // The index road is taken only where the reader sees thousands of passages, so a scan answering
+    // fewer than its limit stopped short of them: the reader's are found exactly, which costs little
+    // just where it happens, a reader seeing a sliver (SCH-035; CI, #740).
+    rows =
+      scanned.length < MEANING_HITS * 4
+        ? await exactly()
+        : scanned
+            .filter((row) => Number(row.distance) <= MEANING_DISTANCE_MOST)
+            .sort((one, other) => Number(one.distance) - Number(other.distance));
   }
   // Each entry once, at its nearest passage.
   const best = new Map<string, MeaningHit>();

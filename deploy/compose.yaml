@@ -150,6 +150,9 @@ services:
       # (the G7 plan, G7-E): the worker reaches nothing else the connector serves.
       CONNECTOR_URL: http://connector:8090
       SECRET_CONNECTOR_EMBED_KEY: ZGV2ZWxvcG1lbnQtb25seS1lbWJlZC1rZXktMDAwMDE=
+      # And the key that opens its webhook delivery alone, the connector's CONNECTOR_DELIVER_KEY (the
+      # WB plan, WB-F).
+      SECRET_CONNECTOR_DELIVER_KEY: ZGV2ZWxvcG1lbnQtb25seS1kZWxpdmVyLWtleS0wMDE=
     networks:
       - default
       - connector-private
@@ -176,6 +179,11 @@ services:
       CONNECTOR_SEALING_KEY: ZGV2ZWxvcG1lbnQtb25seS1zZWFsaW5nLWtleS0wMDE=
       # The worker's, which opens `/v1/embed` alone (the G7 plan, G7-E).
       CONNECTOR_EMBED_KEY: ZGV2ZWxvcG1lbnQtb25seS1lbWJlZC1rZXktMDAwMDE=
+      # The worker's, which opens `/v1/deliver` alone (the WB plan, WB-F).
+      CONNECTOR_DELIVER_KEY: ZGV2ZWxvcG1lbnQtb25seS1kZWxpdmVyLWtleS0wMDE=
+      # A webhook's receiver is public in production; the suites' is on a private network, so a stack
+      # running them says `allow` (deploy/README.md).
+      CONNECTOR_WEBHOOK_PRIVATE: ${CONNECTOR_WEBHOOK_PRIVATE:-deny}
       CONNECTOR_DENY: none
       LOG_LEVEL: info
       # The development CAs `source-http` and `source-s3` are signed by, trusted beside the system's:

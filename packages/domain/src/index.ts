@@ -95,12 +95,25 @@ export {
 
 // Webhooks: the event types a subscription may want, and its secret's sealing (docs/design/webhooks.md).
 export {
+  childDeliverRequestSchema,
+  deliverAnswerSchema,
+  deliverRequestSchema,
+  deliveryFailureCodes,
+  DELIVERY_BODY_MOST,
+  DELIVERY_DEADLINE_MS,
+  DELIVERY_REPLY_MOST,
+  secretKey,
+  signatureHeader,
+  signedContent,
   webhookAuditTypes,
   webhookEventTypes,
   webhookSealRequestSchema,
   webhookSecretContext,
   webhookSecretSchema,
   webhookUrlSchema,
+  type ChildDeliverRequest,
+  type DeliverAnswer,
+  type DeliverRequest,
   type WebhookEventType,
   type WebhookSealRequest,
 } from './webhooks/index.js';

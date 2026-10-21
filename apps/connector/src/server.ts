@@ -11,6 +11,8 @@ import {
   modelRequestSchema,
   modelSealRequestSchema,
   webhookSealRequestSchema,
+  deliverRequestSchema,
+  DELIVERY_BODY_MOST,
   webhookSecretContext,
   describeRequestSchema,
   describeSqlRequestSchema,
@@ -21,7 +23,7 @@ import {
 } from '@alloy-works/domain';
 import { sealSecret } from '@alloy-works/sealing';
 
-import { productionDeny, type ConnectorConfig } from './config.js';
+import { PRIVATE_RANGES, productionDeny, type ConnectorConfig } from './config.js';
 import { readNetworkDeny } from './network.js';
 import {
   createSupervisor,
@@ -46,6 +48,8 @@ const bodyLimits: Readonly<Record<string, number>> = {
   '/v1/model/seal': MAX_BODY_BYTES,
   // A webhook subscription's signing secret (the WB plan, WB-G).
   '/v1/webhook/seal': MAX_BODY_BYTES,
+  // A webhook delivery: its thin body and two sealed secrets (WB-F).
+  '/v1/deliver': 2 * DELIVERY_BODY_MOST,
   '/v1/model': MODEL_REQUEST_MAX_BYTES,
   // An embedding call: up to 96 texts (the G7 plan, G7-E).
   '/v1/embed': EMBED_REQUEST_MAX_BYTES,
@@ -108,6 +112,8 @@ export function createConnectorServer(options: {
       sealingKey: config.sealingKey,
       deny: options.deny ?? productionDeny(config, readNetworkDeny()),
       maxChildren: config.maxChildren,
+      // A webhook's receiver is public unless this deployment allows a private one (WB-F).
+      ...(config.webhookPrivate ? {} : { webhookDeny: PRIVATE_RANGES }),
       ...(config.ca === undefined ? {} : { ca: config.ca }),
       // Production's children, each as its slot's own user, unless a test hands another.
       ...(options.spec ? { spec: options.spec } : {}),
@@ -148,7 +154,10 @@ export function createConnectorServer(options: {
       authenticated(request, config.keyDigest) ||
       (path === '/v1/embed' &&
         config.embedKeyDigest !== undefined &&
-        authenticated(request, config.embedKeyDigest));
+        authenticated(request, config.embedKeyDigest)) ||
+      (path === '/v1/deliver' &&
+        config.deliverKeyDigest !== undefined &&
+        authenticated(request, config.deliverKeyDigest));
     if (!opened) {
       // Drain and drop the body unread, so the answer is not written under an unread upload.
       request.resume();
@@ -214,6 +223,14 @@ export function createConnectorServer(options: {
     response.on('close', () => {
       if (!response.writableFinished) gone.abort();
     });
+    if (path === '/v1/deliver') {
+      const parsed = deliverRequestSchema.safeParse(body);
+      if (!parsed.success) return send(400, { code: 'request_invalid' });
+      const call = supervisor.deliver(parsed.data, gone.signal);
+      if (call === 'busy') return send(503, { code: 'connector_busy' });
+      send(200, await call);
+      return { status: 200, stderrBytes: stderrBytes - before };
+    }
     if (path === '/v1/embed') {
       const parsed = embedRequestSchema.safeParse(body);
       if (!parsed.success) return send(400, { code: 'request_invalid' });

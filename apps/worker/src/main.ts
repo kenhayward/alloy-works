@@ -12,7 +12,9 @@ import { createWarmPool, rangePreviewJob } from './jobs/range-preview.js';
 import { impactReportJob } from './jobs/impact-report.js';
 import { cohortJob } from './jobs/cohort.js';
 import { embedJob } from './jobs/embed.js';
+import { connectorDeliverer } from './deliverer.js';
 import { connectorEmbedder } from './embedder.js';
+import { deliverWebhooks } from './webhooks.js';
 import { checkJob } from './jobs/check.js';
 import { ingestJob } from './jobs/ingest.js';
 import { publishJob } from './jobs/publish.js';
@@ -31,6 +33,7 @@ import {
   sweepDates,
   sweepStalePresence,
   sweepUncheckedPublications,
+  sweepWebhookDeliveriesEverywhere,
 } from './sweep.js';
 import { createTypst } from './typst.js';
 import { removeStaleVeraPdfDirectories, startLocalVeraPdf, veraPdfTimeouts } from './verapdf.js';
@@ -65,8 +68,14 @@ const checker = startLocalVeraPdf({
 const warmPool = createWarmPool();
 // Embedding through the connector's embed route alone (the G7 plan, G7-E); none configured, none.
 const embedder =
-  config.connector &&
-  connectorEmbedder({ url: config.connector.url, key: config.connector.embedKey });
+  config.connector?.embedKey === undefined
+    ? undefined
+    : connectorEmbedder({ url: config.connector.url, key: config.connector.embedKey });
+// Webhook delivery through the connector's deliver route alone (the WB plan, WB-F).
+const deliverer =
+  config.connector?.deliverKey === undefined
+    ? undefined
+    : connectorDeliverer({ url: config.connector.url, key: config.connector.deliverKey });
 const handlers: Record<string, JobHandler> = {
   sample_pdf: sampleJob({ db, stores, typst }),
   publish,
@@ -147,12 +156,29 @@ const sweep = setInterval(() => {
         queued > 0 && log.warn({ queued }, 'queued checks that had given up or never ran'),
     )
     .catch((error: unknown) => log.error({ err: error }, 'check sweep failed'));
+  // Webhook deliveries done with, past 30 days (the WB plan, WB-I).
+  void sweepWebhookDeliveriesEverywhere(db, log)
+    .then((removed) => removed > 0 && log.info({ removed }, 'swept old webhook deliveries'))
+    .catch((error: unknown) => log.error({ err: error }, 'webhook delivery sweep failed'));
 }, config.sweepIntervalMs);
+
+// The webhook delivery loop, on its own interval and never overlapping itself (the WB plan, WB-I).
+let delivering = false;
+const deliveries = setInterval(() => {
+  if (deliverer === undefined || delivering) return;
+  delivering = true;
+  void deliverWebhooks(db, deliverer, log)
+    .catch((error: unknown) => log.error({ err: error }, 'webhook delivery failed'))
+    .finally(() => {
+      delivering = false;
+    });
+}, config.deliverIntervalMs);
 
 const stop = async (signal: string) => {
   running = false;
   wake();
   clearInterval(sweep);
+  clearInterval(deliveries);
   log.info({ signal }, 'stopping');
   await listener.end();
   await checker.close();

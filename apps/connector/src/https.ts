@@ -478,3 +478,81 @@ export async function stream(
     request.end(asked.body);
   });
 }
+
+/** What a webhook delivery's exchange answers (the WB plan, WB-F): the receiver's own status. */
+export type Delivered =
+  | { readonly ok: true; readonly status: number; readonly reply: string }
+  | { readonly ok: false; readonly code: 'host_refused' | 'connection_failed' | 'timeout' };
+
+/**
+ * A webhook's POST (the WB plan, WB-F): the host guarded and pinned as `exchange`'s, no redirect
+ * followed, but the receiver's status kept whatever it is - it is the subscription's to see - and at
+ * most `replyBytes` of its body read, undecoded, then the socket closed.
+ */
+export async function deliver(
+  asked: Exchange,
+  policy: Pick<ExchangePolicy, 'deny' | 'lookup' | 'ca' | 'deadline' | 'connectTimeoutMs'> & {
+    readonly replyBytes: number;
+  },
+): Promise<Delivered> {
+  const prepared = await prepare(asked, policy, 'identity');
+  if (prepared === 'refused') return { ok: false, code: 'host_refused' };
+  if (prepared === 'late') return { ok: false, code: 'timeout' };
+  const { secure, open } = prepared;
+  return new Promise<Delivered>((resolve) => {
+    let settled = false;
+    let connected = false;
+    const timers: NodeJS.Timeout[] = [];
+    const finish = (outcome: Delivered) => {
+      if (settled) return;
+      settled = true;
+      for (const timer of timers) clearTimeout(timer);
+      request.destroy();
+      resolve(outcome);
+    };
+    const request = open();
+    timers.push(
+      setTimeout(
+        () => finish({ ok: false, code: 'timeout' }),
+        Math.max(0, policy.deadline - Date.now()),
+      ),
+      setTimeout(
+        () => {
+          if (!connected) finish({ ok: false, code: 'connection_failed' });
+        },
+        Math.max(0, Math.min(policy.connectTimeoutMs, policy.deadline - Date.now())),
+      ),
+    );
+    request.on('socket', (socket) => {
+      socket.once(secure ? 'secureConnect' : 'connect', () => {
+        connected = true;
+      });
+    });
+    request.on('error', () =>
+      finish({
+        ok: false,
+        code: Date.now() >= policy.deadline ? 'timeout' : 'connection_failed',
+      }),
+    );
+    request.on('response', (response) => {
+      const status = response.statusCode ?? 0;
+      const chunks: Buffer[] = [];
+      let read = 0;
+      const answer = () =>
+        finish({
+          ok: true,
+          status,
+          reply: Buffer.concat(chunks).subarray(0, policy.replyBytes).toString('utf8'),
+        });
+      response.on('data', (chunk: Buffer) => {
+        if (settled) return;
+        chunks.push(chunk);
+        read += chunk.length;
+        if (read >= policy.replyBytes) answer();
+      });
+      response.on('end', answer);
+      response.on('error', answer);
+    });
+    request.end(asked.body);
+  });
+}
