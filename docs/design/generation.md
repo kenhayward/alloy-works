@@ -43,6 +43,7 @@ time (below); embeddings for meaning are [search.md](search.md)'s and
 | **GEN-018** | What content says changes no tool, permission or confirmation (Injection)                                                                               |
 | **GEN-019** | Authority comes from the requester's session alone (Injection)                                                                                          |
 | **GEN-020** | The compliant stand-in model, through each of the four paths (Injection)                                                                                |
+| **GEN-021** | A declined instruction said aloud: a conversation's `declined` tool, its step kept and a `notice` streamed (Injection)                                  |
 | **GEN-022** | A generated suggestion is marked until accepted (Proposals)                                                                                             |
 | **GEN-024** | A suggestion made from a run; acceptance is `suggestion.accepted`, naming the person (Proposals)                                                        |
 | **GEN-040** | Discarding is a rejection, recorded with who and when                                                                                                   |
@@ -95,16 +96,15 @@ prompt's output is not built, and is the gap.
 
 ## What this document does not own
 
-| Left unclaimed                                                            | Why                                                                                                                     |
-| ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| GEN-002                                                                   | A prompt declares components, metadata and parameters: a query's results as context are a later slice's                 |
-| GEN-021                                                                   | The conversation's tray, guardrails, new components and personal prompts: G5's later PRs; GEN-021 is the model's (G5-H) |
-| ADM-033                                                                   | The trend lacks ADM-011's storage, publication and asset measures (T7)                                                  |
-| ADM-048                                                                   | Translation, scanning, email and webhooks cost nothing yet; it is claimed when the last of them exists                  |
-| SCH-013, SCH-014, SCH-035, VER-039 (designed elsewhere), SCH-067, GEN-044 | Meaning (G7's later PRs)                                                                                                |
-| LIF-071                                                                   | Tool use is `tool.used`; webhook subscription changes wait for webhooks (GN-D)                                          |
-| API-028, API-029, API-046, API-055, API-060, COL-037                      | Webhooks: their own design (GN-D)                                                                                       |
-| API-030, API-031, API-034, API-048, API-059, DAT-054, DAT-073, DAT-079    | Extensions: their own design (GN-D)                                                                                     |
+| Left unclaimed                                                            | Why                                                                                                     |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| GEN-002                                                                   | A prompt declares components, metadata and parameters: a query's results as context are a later slice's |
+| ADM-033                                                                   | The trend lacks ADM-011's storage, publication and asset measures (T7)                                  |
+| ADM-048                                                                   | Translation, scanning, email and webhooks cost nothing yet; it is claimed when the last of them exists  |
+| SCH-013, SCH-014, SCH-035, VER-039 (designed elsewhere), SCH-067, GEN-044 | Meaning (G7's later PRs)                                                                                |
+| LIF-071                                                                   | Tool use is `tool.used`; webhook subscription changes wait for webhooks (GN-D)                          |
+| API-028, API-029, API-046, API-055, API-060, COL-037                      | Webhooks: their own design (GN-D)                                                                       |
+| API-030, API-031, API-034, API-048, API-059, DAT-054, DAT-073, DAT-079    | Extensions: their own design (GN-D)                                                                     |
 
 ## Decisions
 
@@ -251,7 +251,15 @@ elsewhere), and every change waits on a person (GEN-009).
 **The test** (GEN-020) is the stand-in model in **compliant** mode, obeying any instruction it finds,
 fed one through each path: a component, a pasted import, a query result, a comment. Each must fail:
 no write without acceptance, no read the requester could not make, nothing to any host but the
-endpoint, no tool beyond the five.
+endpoint, no tool beyond the five. Through a component, a pasted import, a query result and a prompt
+run's context, each fails; a comment reaches no model at all, so its path is shown empty: a comment
+on the very part read is in no request sent.
+
+**Declining aloud** (the GC plan, GC-E; GEN-021): a conversation's model is given `declined`
+`{ where, instruction }` and asked to call it when content asks something of it (a prompt run has no
+tools, GEN-003). The loop records it as a step, answers the model `noted`, and streams `notice`, which
+the panel shows beside the turn as text. It does nothing else; a model that never calls it is
+refused nothing.
 
 ## Cost
 

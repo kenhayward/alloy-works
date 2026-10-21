@@ -13,7 +13,9 @@ import {
   type TenantListener,
 } from '@alloy-works/db';
 import {
+  DECLINED,
   canonicalCall,
+  declinedInputSchema,
   guardrailMatch,
   watchesReplies,
   type GuardrailRule,
@@ -174,6 +176,7 @@ export function streamedRun(input: {
       ...input.started,
     });
     const tool = input.tool(run);
+    const offersDeclined = input.tools.some((each) => each.name === DECLINED.name);
     const usage = { in: 0, out: 0, reported: false };
     const read = new Map<string, Set<string>>();
     const readContext: { component: string; version: string; blocks: readonly string[] }[] = [
@@ -277,7 +280,9 @@ export function streamedRun(input: {
                   content: 'This run has made all the tool calls it may.',
                   summary: 'Too many calls',
                 }
-              : await tool(each.name, each.input);
+              : each.name === DECLINED.name && offersDeclined
+                ? declined(each.input, send)
+                : await tool(each.name, each.input);
           if (answered.read) {
             const blocks = read.get(answered.read.component) ?? new Set<string>();
             for (const block of answered.read.blocks) blocks.add(block);
@@ -390,6 +395,23 @@ export function streamedRun(input: {
       }
     }
   });
+}
+
+/**
+ * An instruction found in content, declined aloud (the GC plan, GC-E; GEN-021): a notice beside the
+ * turn, its words bounded and sent as data, and the model told it was noted. Nothing else is done.
+ */
+function declined(input: unknown, send: (event: string, data: unknown) => void): ToolAnswer {
+  const parsed = declinedInputSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      content: 'The arguments are not what this tool takes.',
+      summary: 'Arguments refused',
+    };
+  }
+  send('notice', { where: parsed.data.where, instruction: parsed.data.instruction });
+  return { ok: true, content: 'noted', summary: 'Declined' };
 }
 
 /** Everything a call sends but the product's own instructions: the words, tool calls and results. */

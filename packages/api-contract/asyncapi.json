@@ -40,7 +40,7 @@
     },
     "assistantRun": {
       "address": "/v1/documents/{id}/assistant/runs",
-      "description": "What `POST /v1/documents/{id}/assistant/runs` answers, as Server-Sent Events: `run` first, then the model's text, its tool calls and their results, and its proposals as they come, and `ended` or `failed` last. Closing the request ends the run.",
+      "description": "What `POST /v1/documents/{id}/assistant/runs` answers, as Server-Sent Events: `run` first, then the model's text, its tool calls and their results, its proposals and, in a conversation, its notices as they come, and `ended` or `failed` last. Closing the request ends the run.",
       "parameters": {
         "id": {
           "description": "The document"
@@ -61,6 +61,9 @@
         },
         "proposal": {
           "$ref": "#/components/messages/assistant_proposal"
+        },
+        "notice": {
+          "$ref": "#/components/messages/assistant_notice"
         },
         "ended": {
           "$ref": "#/components/messages/assistant_ended"
@@ -127,6 +130,9 @@
         },
         {
           "$ref": "#/channels/assistantRun/messages/proposal"
+        },
+        {
+          "$ref": "#/channels/assistantRun/messages/notice"
         },
         {
           "$ref": "#/channels/assistantRun/messages/ended"
@@ -809,6 +815,31 @@
             "component",
             "against",
             "proposed"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "assistant_notice": {
+        "name": "notice",
+        "summary": "In a conversation, the model declined an instruction found in what it read, and says so: where, and what it asked. Its words are data, never done (GEN-021)",
+        "contentType": "application/json",
+        "payload": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "where": {
+              "type": "string",
+              "description": "Where it asked: a component, or what else the model read"
+            },
+            "instruction": {
+              "type": "string",
+              "maxLength": 500,
+              "description": "What it asked, in the model’s words"
+            }
+          },
+          "required": [
+            "where",
+            "instruction"
           ],
           "additionalProperties": false
         }

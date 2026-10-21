@@ -25994,7 +25994,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Server-sent events, as the AsyncAPI document’s `assistantRun` channel declares them: `run`, then `text`, `tool_call`, `tool_result` and `proposal` as they come, and `ended` or `failed` */
+            /** @description Server-sent events, as the AsyncAPI document’s `assistantRun` channel declares them: `run`, then `text`, `tool_call`, `tool_result`, `proposal` and `notice` as they come, and `ended` or `failed` */
             200: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */

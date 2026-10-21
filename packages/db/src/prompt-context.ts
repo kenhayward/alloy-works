@@ -27,8 +27,6 @@ export type ContextAnswer =
   | {
       readonly answer: 'resolved';
       readonly context: ResolvedContext;
-      /** The part's component type, by identity: what a prompt's output is held to (GEN-004). */
-      readonly partType: string;
       /** What the run records it read (GEN-057): each part by artifact, version and block. */
       readonly record: readonly (
         | {
@@ -234,7 +232,6 @@ export async function resolveContext(
   return {
     answer: 'resolved',
     context: { part: parts[0]!, parts, parameters },
-    partType: await typeOfVersion(trx, at.version),
     record: [
       ...parts.map((each) => ({
         component: each.component,

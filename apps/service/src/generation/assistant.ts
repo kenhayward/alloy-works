@@ -40,6 +40,8 @@ import {
   ASSISTANT_INSTRUCTIONS,
   ASSISTANT_INSTRUCTIONS_VERSION,
   ASSISTANT_TOOLS,
+  CONVERSATION_INSTRUCTIONS,
+  CONVERSATION_INSTRUCTIONS_VERSION,
   CONVERSATION_TOOLS,
   DOCUMENT_CONVERSATION_TOOLS,
   proposeComponentInputSchema,
@@ -543,6 +545,9 @@ export function assistantHandlers(
                 },
               };
             }
+            case 'declined':
+              // The run's loop answers it, and streams its notice (GC-E): never reached.
+              return { ok: false, content: `There is no tool ${name}.`, summary: 'No such tool' };
             case 'propose_component':
               return proposeComponent(
                 trx,
@@ -852,13 +857,13 @@ export function assistantHandlers(
         purpose: 'chat',
         parameters: {
           maxTokens: ASSISTANT_LIMITS.maxTokens,
-          instructions: ASSISTANT_INSTRUCTIONS_VERSION,
+          instructions: CONVERSATION_INSTRUCTIONS_VERSION,
           turn: turns.length + 1,
         },
         documentId: document,
         conversationId: conversation.id,
         ask,
-        system: ASSISTANT_INSTRUCTIONS,
+        system: CONVERSATION_INSTRUCTIONS,
         // On a document, the assistant's tools; with none, the person's own search, reads and proposals.
         tools: document === null ? CONVERSATION_TOOLS : DOCUMENT_CONVERSATION_TOOLS,
         messages: [...earlier, { role: 'user', content: [{ type: 'text', text: words }] }],

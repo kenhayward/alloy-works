@@ -335,6 +335,18 @@ describe('a prompt run through the service (the G4 plan, G4-H and G4-I)', () => 
     expect(refused.statusCode).toBe(409);
     expect(refused.json()).toMatchObject({ code: 'prompt_output_mismatch', rule: 'GEN-004' });
     expect(asked.length).toBe(before);
+    // The part's type is checked first: before its purpose is found to have no model.
+    const unrouted = await made({
+      output: { componentType: procedure.type },
+      models: { purpose: 'chat', accepts: ['stand-in-1'] },
+    });
+    const first = await h.call(
+      'grace',
+      'POST',
+      `/v1/prompts/${unrouted.id}/versions/${unrouted.version.id}/trials`,
+      { document: typed.id, node: typed.nodes[0] },
+    );
+    expect(first.json<{ code: string }>().code).toBe('prompt_output_mismatch');
     expect((await tryOn(typed.nodes[1]!)).statusCode).toBe(200);
     // Written for topics, the starter type: a topic is run.
     const forTopics = await made({ output: { componentType: STARTER_COMPONENT_TYPE_ID } });

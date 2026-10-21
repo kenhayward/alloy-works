@@ -10,7 +10,7 @@ import {
   type OutlineDocument,
   type ReferenceNode,
 } from '@alloy-works/domain';
-import { sql } from 'kysely';
+import { sql, type KyselyPlugin } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import { createComponent } from './creation.js';
@@ -49,6 +49,19 @@ describe('migration 0143, which lists the generated content each publication pri
   let db: TestDatabase;
   let service: TenantDatabase;
   let before: string;
+  // What the first test leaves for the guards' tests after it.
+  let made:
+    | {
+        tenant: Tenant;
+        ada: string;
+        run: string;
+        weir: StoredVersion;
+        printed: StoredVersion;
+        document: StoredVersion;
+        node: string;
+        publication: string;
+      }
+    | undefined;
 
   beforeAll(async () => {
     db = await freshDatabase();
@@ -69,6 +82,25 @@ describe('migration 0143, which lists the generated content each publication pri
     await service?.close();
     await rm(before, { recursive: true, force: true });
     await db?.drop();
+  });
+
+  /** A publication's record, as a worker reports it. */
+  const recording = (tenant: Tenant, requestId: string) => ({
+    requestId,
+    pipelineVersion: '2',
+    fonts: [{ file: 'LiberationSerif-Regular.ttf', sha256: 'a'.repeat(64) }],
+    dataSha256: 'b'.repeat(64),
+    numbering: { scheme: defaultNumberingScheme.id, entries: [] },
+    outputs: [
+      {
+        format: 'pdf' as const,
+        engineVersion: '0.15.1',
+        templateVersion: 2,
+        key: `${tenant.role}/sha256/${'c'.repeat(64)}`,
+        sha256: 'c'.repeat(64),
+        bytes: 1,
+      },
+    ],
   });
 
   /** The component's next version, its paragraph saying `text`. */
@@ -248,27 +280,12 @@ describe('migration 0143, which lists the generated content each publication pri
         creation: creation.id,
         lock,
         request: asked.request.id,
+        document: outlined.version,
         nodes: nodes.map((each) => each.id),
       };
     });
     const publication = await service.withTenant(tenant, (trx) =>
-      recordPublication(trx, {
-        requestId: seeded.request,
-        pipelineVersion: '2',
-        fonts: [{ file: 'LiberationSerif-Regular.ttf', sha256: 'a'.repeat(64) }],
-        dataSha256: 'b'.repeat(64),
-        numbering: { scheme: defaultNumberingScheme.id, entries: [] },
-        outputs: [
-          {
-            format: 'pdf' as const,
-            engineVersion: '0.15.1',
-            templateVersion: 2,
-            key: `${tenant.role}/sha256/${'c'.repeat(64)}`,
-            sha256: 'c'.repeat(64),
-            bytes: 1,
-          },
-        ],
-      }),
+      recordPublication(trx, recording(tenant, seeded.request)),
     );
     // Accepted after it was made, into the very version it printed: never in it.
     const later = await service.withTenant(tenant, async (trx) => {
@@ -317,5 +334,98 @@ describe('migration 0143, which lists the generated content each publication pri
       ]),
     );
     expect(listed.map((each) => each.suggestion)).not.toContain(later);
+    made = {
+      tenant,
+      ada: seeded.ada,
+      run: seeded.run,
+      weir: seeded.weir,
+      printed: seeded.printed,
+      document: seeded.document,
+      node: seeded.nodes[0]!,
+      publication: publication!,
+    };
+  });
+
+  /** A generated suggestion on the weir, never accepted: in no publication's history. */
+  const pending = (trx: TenantTransaction, at: NonNullable<typeof made>) =>
+    makeSuggestion(trx, {
+      component: at.weir.artifactId,
+      version: at.printed.id,
+      proposed: {
+        ...(at.printed.content as ContentDocument),
+        content: [paragraph('The weir is gone.')],
+      } as ContentDocument,
+      by: at.ada,
+      generated: { run: at.run, digest: 'a'.repeat(64) },
+    }).then((answer) => {
+      if (answer.answer !== 'made') throw new Error(answer.answer);
+      return answer.suggestion;
+    });
+
+  it('PUB-082 refuses at commit a publication listing generated content it did not print', async () => {
+    const at = made!;
+    await expect(
+      service.withTenant(at.tenant, async (trx) => {
+        const asked = await requestPublication(trx, {
+          documentId: at.document.artifactId,
+          version: at.document.id,
+          formats: ['pdf'],
+          requester: at.ada,
+        });
+        if (asked.answer !== 'requested') throw new Error(asked.answer);
+        const never = await pending(trx, at);
+        // Once its list is written (before its outputs), one row more, as a forger would add.
+        const outputs = new WeakSet<object>();
+        let forged = false;
+        const forging: KyselyPlugin = {
+          transformQuery: (args) => {
+            if (
+              args.node.kind === 'InsertQueryNode' &&
+              args.node.into?.table.identifier.name === 'publication_output'
+            ) {
+              outputs.add(args.queryId);
+            }
+            return args.node;
+          },
+          transformResult: async (args) => {
+            if (outputs.has(args.queryId)) {
+              const { numAffectedRows } = await sql`insert into publication_generated
+                  (publication_id, node, version_id, kind, suggestion_id, proposal_id, run_id)
+                select p.id, ${at.node}, ${at.printed.id}, 'suggestion', ${never}, null, ${at.run}
+                  from publication p where p.request_id = ${asked.request.id}`.execute(trx);
+              forged = numAffectedRows === 1n;
+            }
+            return args.result;
+          },
+        };
+        await recordPublication(trx.withPlugin(forging), recording(at.tenant, asked.request.id));
+        expect(forged).toBe(true);
+      }),
+    ).rejects.toThrow(/lists only the accepted generated content it printed/);
+  });
+
+  it('refuses a row for a publication whose request is no longer queued', async () => {
+    const at = made!;
+    await expect(
+      service.withTenant(at.tenant, async (trx) => {
+        const never = await pending(trx, at);
+        await sql`insert into publication_generated
+            (publication_id, node, version_id, kind, suggestion_id, proposal_id, run_id)
+          values (${at.publication}, ${at.node}, ${at.printed.id}, 'suggestion', ${never}, null,
+            ${at.run})`.execute(trx);
+      }),
+    ).rejects.toThrow(/only while its publication's request is queued/);
+  });
+
+  it('never changes or removes a row', async () => {
+    const at = made!;
+    for (const statement of [
+      sql`update publication_generated set run_id = run_id where publication_id = ${at.publication}`,
+      sql`delete from publication_generated where publication_id = ${at.publication}`,
+    ]) {
+      await expect(service.withTenant(at.tenant, (trx) => statement.execute(trx))).rejects.toThrow(
+        /permission denied/,
+      );
+    }
   });
 });

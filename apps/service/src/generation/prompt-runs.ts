@@ -141,6 +141,24 @@ export function promptRunHandlers(
       readonly reuse?: boolean;
     },
   ) {
+    // A prompt writes only the component type it declares, or any where it declares none (GEN-004):
+    // checked first, so a prompt that could never run on this part says so whatever else is wrong.
+    const writes = input.prompt.output.componentType;
+    if (writes !== null) {
+      const type = await partComponentType(trx, {
+        principal: input.principalId,
+        documentId: input.document,
+        node: input.node,
+      });
+      if (type === undefined) throw notFound();
+      if (type !== writes) {
+        throw refused(
+          409,
+          'prompt.output_mismatch',
+          'This prompt writes another type of component than this part is.',
+        );
+      }
+    }
     const route = (await listModelRoutes(trx)).find(
       (each) => each.purpose === input.prompt.models.purpose,
     );
@@ -181,15 +199,6 @@ export function promptRunHandlers(
           'context_too_large',
           `What this prompt reads is ${resolved.parts} parts, more than a run takes.`,
         );
-    }
-    // A prompt writes only the component type it declares, or any where it declares none (GEN-004).
-    const writes = input.prompt.output.componentType;
-    if (writes !== null && writes !== resolved.partType) {
-      throw refused(
-        409,
-        'prompt.output_mismatch',
-        'This prompt writes another type of component than this part is.',
-      );
     }
     const context: ResolvedContext = resolved.context;
     const call = promptCall(endpoint.model, input.prompt, context);
