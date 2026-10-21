@@ -1128,3 +1128,13 @@ export {
   webhookSubscription,
   type WebhookSubscription,
 } from './webhooks.js';
+export {
+  extensionUses,
+  installedExtension,
+  installExtension,
+  listExtensions,
+  removeExtension,
+  updateExtension,
+  type ExtensionUse,
+  type InstalledExtension,
+} from './extensions.js';

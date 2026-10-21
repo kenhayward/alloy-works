@@ -34,6 +34,8 @@ describe("the connector's one caller", () => {
     expect(importers.sort()).toEqual([
       'data/connections.ts',
       'data/connector.test.ts',
+      // An extension's manifest fetched as an administrator previews, installs or updates it (EX-B).
+      'extensions.ts',
       'generation/assistant.ts',
       // An embedding model's sample, as an administrator confirms it (the G7 plan, G7-J).
       'generation/embedding.ts',

@@ -1,0 +1,38 @@
+# EX: Extension source types
+
+> T5's extensions ([extensions.md](../design/extensions.md), ADR-0066; GN-D). **Full tier**: a new
+> kind of connection and of definition, a connector path to tenant-named services, new tables, an
+> install flow. Ken's answers of 2026-10-21 are marked **(Ken)**; the rest **(default)**. The
+> pre-flight review's findings are folded in.
+
+**Goal:** a tenant administrator installs an extension by its manifest URL, reading what it declares
+first; connections of type `extension` and definitions of kind `extension` reach any source it answers
+for, held to the product's limits, sent only what it declares, its failures its own; updating shows
+what changed and removal waits until nothing uses it (API-030, API-033, API-034, API-048, API-049,
+DAT-054, DAT-079).
+
+| PR  | Holds                                                                                                                                 |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| EXa | This plan, the design and ADR-0066; the manifest in domain; 0141; the connector's `/v1/manifest`; `/v1/extensions`                    |
+| EXb | Every type's capabilities; connection type and fetch kind `extension`; the connector's calls; the failures named                      |
+| EXc | Administration's Extensions; the connection and definition pages; a stand-in extension and e2e; the final review; the close (0.203.0) |
+
+## Decisions
+
+| ID   | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| EX-A | **A manifest and a service** (Ken; API-N03; ADR-0066): the manifest as the design gives it, parsed strictly in domain; its endpoint HTTPS.                                                                                                                                                                                                                                                                                                                                                                                       |
+| EX-B | **Installed by an administrator** (Ken): `POST /v1/extensions/preview` with a URL has the connector fetch it (`/v1/manifest`, the service key, a supervisor child, `GET`, 64 KiB, no redirect, the guard), answering it parsed with its digest, or `manifest_invalid` with paths only; `POST /v1/extensions` with the URL and that digest installs it, refused where it changed between. `administer` at the tenant, a session. `extension.changed`: the extension, the change and the digest, never its URL, name or publisher. |
+| EX-C | **Every manifest kept** (API-048): `extension (id, url, removed_at)` and an insert-only `extension_version (extension, digest, manifest, fetched_at)`; the current is the latest. An update is a preview's digest confirmed: its changes - endpoint, settings, capabilities, outbound - shown first.                                                                                                                                                                                                                             |
+| EX-D | **The connection's snapshot** (the pre-flight review): `type: 'extension'`, `source: { extension, digest, endpoint, capabilities, settings }`, the settings held to that manifest's fields at write; `connectionTarget` is `[type, extension, endpoint]`, so a credential (`source-credential`) opens for that endpoint alone. An update moving the endpoint leaves a connection on its snapshot until it is saved against the new one, which changes its target and so needs its credential again.                              |
+| EX-E | **Removal** (API-048, API-049): `GET /v1/extensions/{id}/uses` lists connections on it and their live definitions; removal is refused until every one is retired, then marks the extension removed, keeping its versions. A binding on a retired connection is `connection.retired`.                                                                                                                                                                                                                                             |
+| EX-F | **Capabilities, every type** (DAT-079): `connectorCapabilities` beside `connectorIdentities` - postgres and http bind parameters, s3 does not - and an extension's from its snapshot. Only `parameters` gates: a definition binding values on a source declaring none is refused, `capability_undeclared`, at write and at run. `rowLimit` sends the limit down; the product enforces rows and keys whatever is declared. `extension: []` in `connectorIdentities` (DAT-078): the account's identity alone.                      |
+| EX-G | **The definition**: `kind: 'extension'`, `request` an object of at most 64 KiB, columns `from: { column }`; no image column.                                                                                                                                                                                                                                                                                                                                                                                                     |
+| EX-H | **The calls** (API-033): an `extension` branch in `work.ts` built on `http-source.ts`: a fixed `POST` of `{ settings, request, parameters, limits }` with the credential as a bearer and no other header of the product's, read as JSON with `/columns` and `/rows`; the snapshot's endpoint its declared host.                                                                                                                                                                                                                  |
+| EX-I | **Failures** (API-034): attribution `connector`; codes `extension_refused` (a 4xx but 401 and 403), `extension_failed` (a 5xx or no answer), `extension_invalid` (an answer not of the shape); the service adds the extension's id and name from the connection's snapshot.                                                                                                                                                                                                                                                      |
+
+## Risks
+
+- **A hostile extension** answers whatever it likes: data, held to the limits and the shape, its host the declared one and guarded.
+- **The manifest fetch** reads a host an administrator names, as an HTTP connection's sample does, its answer only a parsed manifest or paths.
+- **Pinning holds the declaration, not the behaviour**: the service behind it may change; a connection's snapshot says what it was promised.

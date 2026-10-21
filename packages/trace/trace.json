@@ -17539,6 +17539,39 @@
       ]
     },
     {
+      "document": "extensions.md",
+      "owns": [
+        {
+          "id": "API-030",
+          "howItIsMet": "A source type is a manifest and a service, installed by an administrator, with no change to the product"
+        },
+        {
+          "id": "DAT-054",
+          "howItIsMet": "The same: a connection of type `extension` reaches any source an extension answers for"
+        },
+        {
+          "id": "DAT-079",
+          "howItIsMet": "Every source type declares its capabilities, the built-in ones in domain and an extension in its manifest; a definition binding parameters on one that declares none is refused at its write and at its run"
+        },
+        {
+          "id": "API-033",
+          "howItIsMet": "An extension is sent only what it declares: its settings, its one credential, the definition's request and the values bound; never a tenant, a person or another header"
+        },
+        {
+          "id": "API-034",
+          "howItIsMet": "A failure an extension causes is the source side's (`connector`), with codes of its own and the extension named in the failure, never the product's"
+        },
+        {
+          "id": "API-048",
+          "howItIsMet": "Updated after its preview shows what changed, connections moving to it each a new version; removed only once no connection uses it, its uses listed"
+        },
+        {
+          "id": "API-049",
+          "howItIsMet": "Removed, it alters no content; a binding on a connection retired with it is refused as `connection.retired`, never silently stale"
+        }
+      ]
+    },
+    {
       "document": "generation.md",
       "owns": [
         {
@@ -20769,13 +20802,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 572,
+      "line": 580,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 585,
+      "line": 593,
       "kind": "title"
     },
     {
@@ -21177,7 +21210,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1852,
+      "line": 1891,
       "kind": "title"
     },
     {
@@ -21394,6 +21427,18 @@
       "id": "VER-038",
       "file": "apps/service/src/erasure-routes.test.ts",
       "line": 194,
+      "kind": "title"
+    },
+    {
+      "id": "API-030",
+      "file": "apps/service/src/extension-routes.test.ts",
+      "line": 44,
+      "kind": "title"
+    },
+    {
+      "id": "API-048",
+      "file": "apps/service/src/extension-routes.test.ts",
+      "line": 76,
       "kind": "title"
     },
     {
@@ -21675,7 +21720,7 @@
     {
       "id": "API-007",
       "file": "apps/service/src/listing-routes.test.ts",
-      "line": 346,
+      "line": 347,
       "kind": "title"
     },
     {
@@ -26509,6 +26554,12 @@
       "kind": "title"
     },
     {
+      "id": "API-048",
+      "file": "packages/db/src/extensions.test.ts",
+      "line": 93,
+      "kind": "title"
+    },
+    {
       "id": "GEN-010",
       "file": "packages/db/src/generation-proposals.test.ts",
       "line": 101,
@@ -28779,7 +28830,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 853,
+      "line": 864,
       "kind": "title"
     },
     {

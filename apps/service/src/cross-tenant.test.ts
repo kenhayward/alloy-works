@@ -51,6 +51,7 @@ import {
   makeRelationship,
   createServiceIdentity,
   createWebhookSubscription,
+  installExtension,
 } from '@alloy-works/db';
 import {
   freshDatabase,
@@ -489,6 +490,11 @@ const OTHER_TENANT_IDS: Readonly<
     const { principal, token } = await tokenIn(tenant, db);
     return { id: principal, token };
   },
+  getExtension: async (tenant, db) => ({ id: await extensionIn(tenant, db) }),
+  previewExtensionUpdate: async (tenant, db) => ({ id: await extensionIn(tenant, db) }),
+  updateExtension: async (tenant, db) => ({ id: await extensionIn(tenant, db) }),
+  listExtensionUses: async (tenant, db) => ({ id: await extensionIn(tenant, db) }),
+  removeExtension: async (tenant, db) => ({ id: await extensionIn(tenant, db) }),
   getWebhook: async (tenant, db) => ({ id: await webhookIn(tenant, db) }),
   changeWebhook: async (tenant, db) => ({ id: await webhookIn(tenant, db) }),
   rotateWebhookSecret: async (tenant, db) => ({ id: await webhookIn(tenant, db) }),
@@ -805,6 +811,11 @@ const VALID_INPUT: Readonly<
     },
   },
   changeWebhook: { payload: { description: 'Elsewhere' } },
+  previewExtension: { payload: { url: 'https://elsewhere.example.test/manifest.json' } },
+  installExtension: {
+    payload: { url: 'https://elsewhere.example.test/manifest.json', digest: 'a'.repeat(64) },
+  },
+  updateExtension: { payload: { digest: 'a'.repeat(64) } },
   changeServiceIdentity: { payload: { name: 'Elsewhere' } },
   issueServiceIdentityToken: { payload: { name: 'Elsewhere', scopes: [], expiresAt: IN_A_MONTH } },
   setEditingSettings: { payload: { iterationRetentionDays: 7 } },
@@ -1748,6 +1759,34 @@ async function serviceIdentityIn(tenant: Tenant, db: TenantDatabase): Promise<st
     tenant,
     async (trx) =>
       (await createServiceIdentity(trx, { name: 'Elsewhere', description: '', by: null })).id,
+    { actorKind: 'system' },
+  );
+}
+
+async function extensionIn(tenant: Tenant, db: TenantDatabase): Promise<string> {
+  return db.withTenant(
+    tenant,
+    async (trx) =>
+      (
+        await installExtension(trx, {
+          url: 'https://elsewhere.example.test/manifest.json',
+          digest: 'a'.repeat(64),
+          manifest: {
+            manifest: 1,
+            name: 'Elsewhere',
+            version: '1.0.0',
+            publisher: 'Invented',
+            description: 'Another environment’s.',
+            kind: 'source',
+            endpoint: 'https://elsewhere.example.test/x',
+            settings: [],
+            authentication: 'none',
+            capabilities: { parameters: false, keyColumns: false, rowLimit: false },
+            outbound: [],
+          },
+          by: null,
+        })
+      ).id,
     { actorKind: 'system' },
   );
 }

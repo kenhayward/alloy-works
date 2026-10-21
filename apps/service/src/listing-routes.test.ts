@@ -9,6 +9,7 @@ import {
   createDocument,
   createTenant,
   createWebhookSubscription,
+  installExtension,
   findRole,
   grant,
   migrate,
@@ -407,6 +408,33 @@ describe('the listings through the service', () => {
       // Each queued a delivery for every component cut below, so its deliveries have pages to turn.
       feeds.push(feed.id);
     }
+    // Two extensions, so their listing has pages to turn (the EX plan): installed in the database, as
+    // a manifest's fetch is the connector's.
+    for (const name of ['First gauges', 'Second gauges']) {
+      await tenantDb.withTenant(
+        tenant,
+        (trx) =>
+          installExtension(trx, {
+            url: 'https://gauges.example.test/manifest.json',
+            digest: 'c'.repeat(64),
+            manifest: {
+              manifest: 1,
+              name,
+              version: '1.0.0',
+              publisher: 'Invented',
+              description: 'Invented gauges.',
+              kind: 'source',
+              endpoint: 'https://gauges.example.test/alloy',
+              settings: [],
+              authentication: 'none',
+              capabilities: { parameters: false, keyColumns: false, rowLimit: false },
+              outbound: [],
+            },
+            by: null,
+          }),
+        { actorKind: 'system' },
+      );
+    }
     // Two groups, one of each kind, so the groups listing has pages to turn.
     for (const payload of [
       { name: 'Reviewers' },
@@ -542,6 +570,7 @@ describe('the listings through the service', () => {
       listTokens: '/v1/tokens',
       listServiceIdentities: '/v1/service-identities',
       listWebhooks: '/v1/webhooks',
+      listExtensions: '/v1/extensions',
       listWebhookDeliveries: `/v1/webhooks/${feeds[0]}/deliveries`,
       listPrincipalTokens: `/v1/principals/${(await get('/v1/me')).json<{ id: string }>().id}/tokens`,
     };
@@ -568,6 +597,8 @@ describe('the listings through the service', () => {
       'getConversationContext',
       // And a person's own prompts, at most 200 (G5-G).
       'listPersonalPrompts',
+      // And an extension's connections: what removing it would wait on (the EX plan, EX-E).
+      'listExtensionUses',
     ];
     const listings = allRoutes.filter(
       (route) =>

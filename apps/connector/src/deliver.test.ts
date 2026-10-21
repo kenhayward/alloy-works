@@ -219,7 +219,14 @@ describe("the connector's deliver key (the WB plan, WB-F)", () => {
   it('opens delivery alone to the deliver key, and delivery to no other key the worker holds', async () => {
     expect((await post('/v1/deliver', deliveryTo('/hooks'), DELIVER_KEY)).status).toBe(200);
     expect((await post('/v1/deliver', deliveryTo('/hooks'), EMBED_KEY)).status).toBe(401);
-    for (const path of ['/v1/embed', '/v1/model', '/v1/seal', '/v1/webhook/seal', '/v1/run']) {
+    for (const path of [
+      '/v1/embed',
+      '/v1/model',
+      '/v1/seal',
+      '/v1/webhook/seal',
+      '/v1/run',
+      '/v1/manifest',
+    ]) {
       expect((await post(path, { tenant: TENANT }, DELIVER_KEY)).status, path).toBe(401);
     }
   });
