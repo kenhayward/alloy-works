@@ -230473,6 +230473,12 @@
                         "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                       }
                     ]
+                  },
+                  "markdown": {
+                    "description": "Its first version's text, as Markdown: paragraphs, headings, lists and emphasis, admitted as pasted text is. Absent: one empty paragraph",
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 20000
                   }
                 },
                 "required": [

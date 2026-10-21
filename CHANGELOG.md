@@ -3,6 +3,17 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.201.0 - 2026-10-21 (PR #738)
+
+The intelligence's eighth slice: the MCP surface and service identities (the G8 plan).
+
+### Added
+
+- **Service identities.** An administrator can make a service identity for an integration or an agent in People, give it access as a person is given access, issue it API tokens, and disable it, which stops its tokens at once.
+- **An MCP endpoint for agents.** An agent connects to `/mcp` on your environment with an API token, yours or a service identity's, and can search, read documents and components, and follow relationships, doing only what that token's holder may. Every call is recorded in the audit log.
+- **MCP tools that change, for review.** An agent can comment on a component or a document, suggest edits for the author to accept or reject, and draft a new component from Markdown. Nothing it does approves, publishes or edits content directly.
+- **A new component's first text through the API.** Creating a component can take its first version as Markdown.
+
 ## 0.200.0 - 2026-10-19 (PR #735)
 
 The intelligence's seventh slice: meaning (the G7 plan).

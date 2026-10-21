@@ -22,6 +22,13 @@ import { listed, tools, type Answer, type Call, type Tool } from './tools.js';
 
 const byName = new Map(tools.map((tool) => [tool.name, tool]));
 
+/** What a call naming no tool of ours is recorded as. */
+const UNKNOWN = {
+  name: 'unknown',
+  subject: () => undefined,
+  audited: () => ({}),
+} as unknown as Tool;
+
 /** A code from a route's refusal, for the model and the audit: the route's own. */
 const codeOf = (body: unknown): string | undefined => {
   const code = (body as { code?: unknown } | null)?.code;
@@ -108,9 +115,21 @@ export function registerMcp(
     params: Readonly<Record<string, unknown>>,
   ) => {
     const tool = typeof params['name'] === 'string' ? byName.get(params['name']) : undefined;
-    if (!tool) return failure(id, INVALID_PARAMS, 'No tool of that name.');
+    if (!tool) {
+      // Recorded too, by no name of its own: the name asked for is the caller's text (API-023).
+      await audit(request, tenant, UNKNOWN, {}, 'refused', 'unknown_tool');
+      return failure(id, INVALID_PARAMS, 'No tool of that name.');
+    }
     const parsed = tool.input.safeParse(params['arguments'] ?? {});
     if (!parsed.success) {
+      await audit(
+        request,
+        tenant,
+        { ...tool, audited: () => ({}) },
+        {},
+        'refused',
+        'invalid_arguments',
+      );
       // Invalid arguments are the tool's error, so the model can correct them (2025-11-25).
       return result(id, {
         content: asText({ code: 'invalid_arguments', issues: parsed.error.issues }),
@@ -147,8 +166,15 @@ export function registerMcp(
     {
       // A body that is not JSON is the protocol's parse error, never the API's.
       errorHandler: (error, request, reply) => {
-        if ((error as { statusCode?: number }).statusCode === 400) {
+        const status = (error as { statusCode?: number }).statusCode;
+        if (status === 400) {
           return send(reply, 400, failure(null, PARSE_ERROR, 'The body is not JSON.'));
+        }
+        // The request's own fault, a body too large or not JSON: its status, never ours (the G8
+        // final review).
+        if (status !== undefined && status > 400 && status < 500) {
+          request.log.warn({ err: error }, 'An MCP request was refused');
+          return send(reply, status, failure(null, INVALID_REQUEST, error.message));
         }
         request.log.error({ err: error }, 'The MCP endpoint failed');
         return send(reply, 500, failure(null, INTERNAL_ERROR, 'The server failed.'));

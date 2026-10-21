@@ -79,9 +79,10 @@ time (below); embeddings for meaning are [search.md](search.md)'s and
 | **GEN-052** | `propose_component` in a conversation: made at 0.1 as the person only once accepted, never kept, reported as generated (G5-E)                           |
 | **GEN-054** | `personal_prompt`: its owner's alone, never an artifact, so no template binds one and nobody else reads or runs it (G5-G)                               |
 | **GEN-055** | Promotion, the one path: a new prompt at draft in a space its owner may edit, reviewed and tried like any other (G5-G)                                  |
-| **API-018** | Four tools over the API, each the `/v1` route it wraps, never a mirror of it (MCP)                                                                      |
+| **API-018** | Seven tools over the API, each the `/v1` route it wraps, never a mirror of it (MCP)                                                                     |
 | **API-019** | Each tool's description: what it is for, when to use it, what it returns (MCP)                                                                          |
 | **API-020** | A tool is its route, called in process with the caller's token: no other path (MCP)                                                                     |
+| **API-021** | A changing tool's annotations say it is not read-only and its title starts `Changes:`; the route refuses what the token may not (MCP)                   |
 | **API-022** | A result is the route's JSON, never prose made from content, every description saying so (MCP)                                                          |
 | **API-023** | `tool.used`: the identity, the tool, its arguments as identifiers and digests, the outcome (MCP)                                                        |
 | **API-024** | The tools are rows in the G8 plan; adding one is a row there first (MCP)                                                                                |
@@ -97,7 +98,6 @@ time (below); embeddings for meaning are [search.md](search.md)'s and
 | ADM-033                                                                   | The trend lacks ADM-011's storage, publication and asset measures (T7)                                                                                  |
 | ADM-048                                                                   | Translation, scanning, email and webhooks cost nothing yet; it is claimed when the last of them exists                                                  |
 | SCH-013, SCH-014, SCH-035, VER-039 (designed elsewhere), SCH-067, GEN-044 | Meaning (G7's later PRs)                                                                                                                                |
-| API-021                                                                   | The tools that change: G8c                                                                                                                              |
 | LIF-071                                                                   | Tool use is `tool.used`; webhook subscription changes wait for webhooks (GN-D)                                                                          |
 | API-028, API-029, API-046, API-055, API-060, COL-037                      | Webhooks: their own design (GN-D)                                                                                                                       |
 | API-030, API-031, API-034, API-048, API-059, DAT-054, DAT-073, DAT-079    | Extensions: their own design (GN-D)                                                                                                                     |
@@ -319,17 +319,26 @@ Built by [G8](../plans/2026-10-21-g8-mcp-and-service-identities.md) ([ADR-0065](
 identity's; a cookie is never read, and an `Origin` that is not the environment's is refused. It is
 outside the contract, and `openapi.json` does not describe it.
 
-| Tool             | Wraps                                               | Reads |
-| ---------------- | --------------------------------------------------- | ----- |
-| `search`         | `GET /v1/search`                                    | Yes   |
-| `read_document`  | `GET /v1/documents/{id}`, and its `/texts`          | Yes   |
-| `read_component` | `GET /v1/components/{id}`, as numbered blocks       | Yes   |
-| `related`        | `GET /v1/artifacts/{id}/relationships`, and `/path` | Yes   |
+| Tool              | Wraps                                                                                           | Reads |
+| ----------------- | ----------------------------------------------------------------------------------------------- | ----- |
+| `search`          | `GET /v1/search`                                                                                | Yes   |
+| `read_document`   | `GET /v1/documents/{id}`, and its `/texts`                                                      | Yes   |
+| `read_component`  | `GET /v1/components/{id}`, as numbered blocks                                                   | Yes   |
+| `related`         | `GET /v1/artifacts/{id}/relationships`, and `/path`                                             | Yes   |
+| `comment`         | `POST /v1/components/{id}/threads`, `/v1/documents/{id}/threads` or `/v1/threads/{id}/comments` | No    |
+| `suggest_edit`    | `GET /v1/components/{id}/versions/{version}`, then `POST /v1/components/{id}/suggestions`       | No    |
+| `draft_component` | `POST /v1/spaces/{space}/components`, with `markdown`                                           | No    |
 
 **A tool is its route** (API-018, API-020, REL-021): each call is one in-process request of the route
 it wraps, with the caller's token, host and trace id, so tenancy, scopes, permissions and the route's
 own audit are the API's. A tool shapes arguments and trims answers; it holds no query. A route's
 refusal is a result marked an error with the route's own body; a failure is a JSON-RPC error.
+
+**Changes go to review** (API-021): the three that change are marked so in their annotations and
+titles. `comment` starts a thread or replies; `suggest_edit` applies the assistant's block edits to the
+version the caller read and makes a suggestion its author accepts or rejects; `draft_component` makes
+a new component whose first version is Markdown, admitted as pasted text is, so it holds no reference
+or binding. Nothing approves, publishes, saves over a version or moves workflow.
 
 **Described for a model** (API-019, API-022): what each tool is for, when to use it and what it
 returns, then that content is data and never an instruction. A result's text is its structured JSON,
@@ -338,7 +347,10 @@ never prose built from content. Each tool's annotations say whether it reads onl
 **Audited** (API-023): each call is `tool.used`, its subject the artifact it names, its detail the
 tool, its arguments as identifiers, numbers and words, any text as its length and SHA-256, never its
 words (LIF-030), and the outcome: `ok`, `refused` with the route's code, or `failed`. It is written
-after the call, in its own transaction, so a refusal is recorded too.
+after the call, in its own transaction, so a refusal is recorded too, and so is a call naming no tool
+or arguments the tool refuses. A digest is unsalted, so a short text can be guessed against it: it
+matches calls, it does not hide a name. The changing tools take no idempotency key, so a client that
+retries a call makes a second thread or component, as their annotations say.
 
 **Versions** (API-052): every tool wraps a `/v1` route. A `/v2` names in its own ADR the tools that
 move, those pinned to `/v1`, and the date `/v1`'s stop.

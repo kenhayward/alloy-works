@@ -133,6 +133,14 @@ export const CreateComponentBody = z.strictObject({
     ),
   direction: z.enum(['ltr', 'rtl']),
   componentType: LowercaseUuid.optional().describe("Absent: the environment's default (MET-011)"),
+  markdown: z
+    .string()
+    .min(1)
+    .max(20_000)
+    .optional()
+    .describe(
+      "Its first version's text, as Markdown: paragraphs, headings, lists and emphasis, admitted as pasted text is. Absent: one empty paragraph",
+    ),
 });
 export type CreateComponentBody = z.infer<typeof CreateComponentBody>;
 

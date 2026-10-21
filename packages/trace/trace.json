@@ -17807,7 +17807,7 @@
         },
         {
           "id": "API-018",
-          "howItIsMet": "Four tools over the API, each the `/v1` route it wraps, never a mirror of it (MCP)"
+          "howItIsMet": "Seven tools over the API, each the `/v1` route it wraps, never a mirror of it (MCP)"
         },
         {
           "id": "API-019",
@@ -17816,6 +17816,10 @@
         {
           "id": "API-020",
           "howItIsMet": "A tool is its route, called in process with the caller's token: no other path (MCP)"
+        },
+        {
+          "id": "API-021",
+          "howItIsMet": "A changing tool's annotations say it is not read-only and its title starts `Changes:`; the route refuses what the token may not (MCP)"
         },
         {
           "id": "API-022",
@@ -21690,31 +21694,43 @@
     {
       "id": "API-019",
       "file": "apps/service/src/mcp-routes.test.ts",
-      "line": 114,
+      "line": 119,
       "kind": "title"
     },
     {
       "id": "API-020",
       "file": "apps/service/src/mcp-routes.test.ts",
-      "line": 164,
+      "line": 172,
+      "kind": "title"
+    },
+    {
+      "id": "API-021",
+      "file": "apps/service/src/mcp-routes.test.ts",
+      "line": 146,
       "kind": "title"
     },
     {
       "id": "API-023",
       "file": "apps/service/src/mcp-routes.test.ts",
-      "line": 223,
+      "line": 231,
       "kind": "title"
     },
     {
       "id": "API-052",
       "file": "apps/service/src/mcp-routes.test.ts",
-      "line": 155,
+      "line": 163,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-036",
+      "file": "apps/service/src/mcp-routes.test.ts",
+      "line": 375,
       "kind": "title"
     },
     {
       "id": "REL-021",
       "file": "apps/service/src/mcp-routes.test.ts",
-      "line": 194,
+      "line": 202,
       "kind": "title"
     },
     {
