@@ -45,7 +45,7 @@ thin, retried for a day, the endpoint disabled after three days failing, every a
 
 ## Built
 
-WB in three PRs: WBa #739, WBb #740 and the close #741. Departures: queued by a trigger in the act's
+WB in three PRs: WBa #739, WBb #740 and the close #742. Departures: queued by a trigger in the act's
 transaction rather than by tailing the audit log (the pre-flight review); receivers at public addresses
 only, `CONNECTOR_WEBHOOK_PRIVATE=allow` for the suites; whoever made a subscription told of its
 disabling, rather than every administrator; `enabled` turns one on again. The final review found no
