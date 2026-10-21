@@ -13,6 +13,10 @@ Extensions (the EX plan).
 - **Connections to an extension.** A connection can reach a source an installed extension answers for, held to the manifest it was saved against: its settings, its secret sent to that endpoint alone, and parameters only where the extension declares it binds them. Its failures are said to be the extension's, never the product's.
 - **Extensions in Administration.** An administrator can install an extension from Administration after reading what it declares, see what uses it, take an update after seeing what changes, and remove it. A connection can be made to one from the connection pages, and a query definition on one writes its request and samples it for its columns.
 
+### Fixed
+
+- **Webhooks no longer break an act two subscriptions want.** With two subscriptions wanting the same event, saving a version, making a component or a connection failed; each now gets its own delivery (#750).
+
 ## 0.202.0 - 2026-10-21 (PR #742)
 
 Webhooks (the WB plan).
