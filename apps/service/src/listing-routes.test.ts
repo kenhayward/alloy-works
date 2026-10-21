@@ -366,6 +366,16 @@ describe('the listings through the service', () => {
       });
       expect(issued.statusCode, name).toBe(200);
     }
+    // Two service identities, so their listing has pages to turn (G8-G).
+    for (const name of ['Importer', 'Exporter']) {
+      const made = await app.inject({
+        method: 'POST',
+        url: '/v1/service-identities',
+        headers: { host: HOST, cookie },
+        payload: { name },
+      });
+      expect(made.statusCode, name).toBe(200);
+    }
     // Two groups, one of each kind, so the groups listing has pages to turn.
     for (const payload of [
       { name: 'Reviewers' },
@@ -499,6 +509,7 @@ describe('the listings through the service', () => {
       listDefinitions: '/v1/definitions',
       listPeople: '/v1/people',
       listTokens: '/v1/tokens',
+      listServiceIdentities: '/v1/service-identities',
       listPrincipalTokens: `/v1/principals/${(await get('/v1/me')).json<{ id: string }>().id}/tokens`,
     };
     // Every route that answers a list: a new one is listed here, and so paged, or this fails. What

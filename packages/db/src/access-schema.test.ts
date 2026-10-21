@@ -153,7 +153,8 @@ describe('the access tables', () => {
       trx.selectFrom('principal').select('kind').where('id', '=', ada).executeTakeFirstOrThrow(),
     );
     expect(kind).toEqual({ kind: 'user' });
-    for (const allowed of principalKinds) {
+    // A service is never made from a person (0138, IAM-033): service-identities.test.ts.
+    for (const allowed of principalKinds.filter((each) => each !== 'service')) {
       await service.withTenant(production, (trx) =>
         trx.updateTable('principal').set({ kind: allowed }).where('id', '=', ada).execute(),
       );

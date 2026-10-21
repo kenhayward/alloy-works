@@ -177,6 +177,8 @@ const administering =
   };
 
 /** The service as People meets it: people a page at a time, invitations, tokens, and why. */
+const NOW = '2026-10-21T09:00:00.000Z';
+
 function peopleService() {
   const people: {
     id: string;
@@ -218,6 +220,17 @@ function peopleService() {
       lastUsedAt: '2026-10-04T09:00:00.000Z',
     },
   ];
+  const services: { id: string; description: string; disabledAt: string | null }[] = [
+    { id: 'p3', description: 'Publishes on merge', disabledAt: null },
+  ];
+  const robots: {
+    id: string;
+    name: string;
+    scopes: string[];
+    createdAt: string;
+    expiresAt: string;
+    lastUsedAt: string | null;
+  }[] = [];
   const sent: { method: string; path: string; body: unknown }[] = [];
   const asked: URL[] = [];
   const erasure = { granted: 0 };
@@ -274,6 +287,31 @@ function peopleService() {
       return json(200, { erased: true, labels: 14 });
     }
     if (route === 'GET /v1/principals/p1/tokens') return json(200, { items: tokens, next: null });
+    if (route === 'GET /v1/service-identities') return json(200, { items: services, next: null });
+    if (route === 'POST /v1/service-identities') {
+      const { name, description } = body as { name: string; description: string };
+      const made = { id: `p${people.length + 1}`, description, disabledAt: null };
+      people.push({ id: made.id, name, email: null, kind: 'service', invited: false });
+      services.push(made);
+      return json(200, { ...made, name, createdBy: 'p1', createdAt: NOW, tokens: 0 });
+    }
+    if (route === 'POST /v1/service-identities/p3/disablement') {
+      services[0] = { ...services[0]!, disabledAt: NOW };
+      return json(200, { ...services[0], name: 'Publishing robot', tokens: 0 });
+    }
+    if (route === 'GET /v1/principals/p3/tokens') return json(200, { items: robots, next: null });
+    if (route === 'POST /v1/service-identities/p3/tokens') {
+      const made = {
+        id: '22222222-2222-4222-8222-222222222222',
+        name: (body as { name: string }).name,
+        scopes: (body as { scopes: string[] }).scopes,
+        createdAt: NOW,
+        expiresAt: '2027-01-01T00:00:00.000Z',
+        lastUsedAt: null,
+      };
+      robots.push(made);
+      return json(200, { ...made, secret: `awt_${'a'.repeat(43)}` });
+    }
     if (route.startsWith('DELETE /v1/principals/p1/tokens/')) {
       tokens.splice(0, 1);
       return json(200, { revoked: 'x' });
@@ -395,6 +433,101 @@ describe('People in Administration', () => {
     await userEvent.keyboard('{Escape}');
     expect(screen.queryByRole('complementary')).toBeNull();
     expect(opener).toHaveFocus();
+  });
+
+  it('makes a service identity from People, shown among the services', async () => {
+    const { client, sent } = peopleService();
+    const { table, page } = await openPeople(client);
+    await userEvent.click(within(page).getByRole('button', { name: 'New service identity' }));
+    const dialog = screen.getByRole('dialog', { name: 'New service identity' });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Make' }));
+    expect(within(dialog).getByRole('status')).toHaveTextContent(
+      'Give the service identity a name.',
+    );
+    await userEvent.type(within(dialog).getByRole('textbox', { name: 'Name' }), 'Nightly importer');
+    await userEvent.type(
+      within(dialog).getByRole('textbox', { name: 'What it is for' }),
+      'Imports each night',
+    );
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Make' }));
+    expect(
+      await within(page).findByText(
+        'Made Nightly importer. Give it access, then a token from its API tokens.',
+      ),
+    ).toBeInTheDocument();
+    expect(sent).toEqual([
+      {
+        method: 'POST',
+        path: '/v1/service-identities',
+        body: { name: 'Nightly importer', description: 'Imports each night' },
+      },
+    ]);
+    expect(await within(table).findByRole('row', { name: /Nightly importer/ })).toBeInTheDocument();
+    expect(within(table).queryByRole('row', { name: /^Ada / })).toBeNull();
+  });
+
+  it('issues a service identity a token from its panel, shown once, and lists it', async () => {
+    const { client, sent } = peopleService();
+    const { table } = await openPeople(client);
+    await userEvent.click(
+      within(row(table, /Publishing robot/)).getByRole('button', {
+        name: 'API tokens of Publishing robot',
+      }),
+    );
+    const panel = screen.getByRole('complementary', { name: 'Publishing robot' });
+    expect(await within(panel).findByText('Publishes on merge')).toBeInTheDocument();
+    await userEvent.click(within(panel).getByRole('button', { name: 'New token' }));
+    const dialog = screen.getByRole('dialog', { name: 'New token for Publishing robot' });
+    expect(dialog).toHaveTextContent('a token reads what Publishing robot reads');
+    await userEvent.type(within(dialog).getByRole('textbox', { name: 'Name' }), 'Agent');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Create token' }));
+    const copying = await screen.findByRole('dialog', { name: 'Copy the token' });
+    expect(within(copying).getByRole('textbox', { name: 'Token' })).toHaveValue(
+      `awt_${'a'.repeat(43)}`,
+    );
+    expect(sent.map((each) => `${each.method} ${each.path}`)).toEqual([
+      'POST /v1/service-identities/p3/tokens',
+    ]);
+    await userEvent.click(within(copying).getByRole('button', { name: 'Done' }));
+    expect(
+      await within(panel).findByRole('list', { name: 'Tokens of Publishing robot' }),
+    ).toHaveTextContent('Agent');
+  });
+
+  it('disables a service identity only after asking, then shows it Disabled', async () => {
+    const { client, sent } = peopleService();
+    const { table } = await openPeople(client);
+    expect(within(row(table, /^Ada /)).queryByRole('menuitem', { name: 'Disable' })).toBeNull();
+    await userEvent.click(
+      within(row(table, /Publishing robot/)).getByRole('button', {
+        name: /More actions/,
+      }),
+    );
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Disable' }));
+    const asking = screen.getByRole('dialog', { name: 'Disable Publishing robot?' });
+    await userEvent.click(within(asking).getByRole('button', { name: 'Keep it' }));
+    expect(sent).toEqual([]);
+    await userEvent.click(
+      within(row(table, /Publishing robot/)).getByRole('button', {
+        name: /More actions/,
+      }),
+    );
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Disable' }));
+    await userEvent.click(
+      within(screen.getByRole('dialog', { name: 'Disable Publishing robot?' })).getByRole(
+        'button',
+        { name: 'Disable' },
+      ),
+    );
+    expect(
+      await screen.findByText('Disabled Publishing robot: its tokens no longer work.'),
+    ).toBeInTheDocument();
+    expect(
+      await within(row(table, /Publishing robot/)).findByRole('cell', { name: 'Disabled' }),
+    ).toBeInTheDocument();
+    expect(sent.map((each) => `${each.method} ${each.path}`)).toEqual([
+      'POST /v1/service-identities/p3/disablement',
+    ]);
   });
 
   it('says what a person may do across the environment, and why, from More actions', async () => {

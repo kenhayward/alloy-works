@@ -436,6 +436,11 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   endOtherSessions: writes('authentication.signed_out'),
   listPrincipalTokens: read,
   revokePrincipalToken: writes('token.revoked'),
+  listServiceIdentities: read,
+  createServiceIdentity: writes('service_identity.created'),
+  changeServiceIdentity: writes('service_identity.renamed'),
+  disableServiceIdentity: writes('service_identity.disabled', 'token.revoked'),
+  issueServiceIdentityToken: writes('token.issued'),
   getErasure: read,
   erasePrincipal: writes(
     'authentication.signed_out',

@@ -19,6 +19,7 @@ import {
   type StoredApiToken,
   type Tenant,
   type TenantDatabase,
+  type TenantTransaction,
 } from '@alloy-works/db';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
@@ -80,7 +81,7 @@ export const tokenNotAllowed = () =>
     hidden: false,
   });
 
-function tokenView(stored: StoredApiToken): TokenView {
+export function tokenView(stored: StoredApiToken): TokenView {
   return {
     id: stored.id,
     name: stored.name,
@@ -121,28 +122,7 @@ export function tokenHandlers(
       // The issue is recorded as the person's own act (IAM-037; the AU1 plan, AU1-G).
       const issued = await db.withTenant(
         tenantOf(request),
-        async (trx) => {
-          // By the transaction's clock, which is the one the table bounds the expiry by.
-          const { now } = await trx
-            .selectNoFrom((eb) => eb.fn<Date>('now').as('now'))
-            .executeTakeFirstOrThrow();
-          const latest = now.getTime() + TOKEN_MAX_DAYS * DAY_MS;
-          if (expiresAt.getTime() <= now.getTime() || expiresAt.getTime() > latest) {
-            throw new AppError(
-              400,
-              'token_expiry_invalid',
-              'A token needs an expiry in the future, and no more than 365 days away.',
-              'IAM-034',
-            );
-          }
-          return issueApiToken(trx, {
-            principalId: principalOf(request).principalId,
-            name: body.name,
-            tokenHash: hashToken(secret),
-            scopes: body.scopes,
-            expiresAt,
-          });
-        },
+        (trx) => issueChecked(trx, principalOf(request).principalId, body, expiresAt, secret),
         contextOf(request),
       );
       // The secret, once: never kept by a cache between the service and the caller (final review).
@@ -166,6 +146,38 @@ export function tokenHandlers(
       return reply.status(204).send();
     },
   };
+}
+
+/**
+ * Issues a principal a token, its expiry checked by the transaction's clock, which is the one the table
+ * bounds it by: a person's own, or a service identity's by an administrator (the G8 plan, G8-H).
+ */
+export async function issueChecked(
+  trx: TenantTransaction,
+  principalId: string,
+  body: CreateTokenBody,
+  expiresAt: Date,
+  secret: string,
+): Promise<StoredApiToken> {
+  const { now } = await trx
+    .selectNoFrom((eb) => eb.fn<Date>('now').as('now'))
+    .executeTakeFirstOrThrow();
+  const latest = now.getTime() + TOKEN_MAX_DAYS * DAY_MS;
+  if (expiresAt.getTime() <= now.getTime() || expiresAt.getTime() > latest) {
+    throw new AppError(
+      400,
+      'token_expiry_invalid',
+      'A token needs an expiry in the future, and no more than 365 days away.',
+      'IAM-034',
+    );
+  }
+  return issueApiToken(trx, {
+    principalId,
+    name: body.name,
+    tokenHash: hashToken(secret),
+    scopes: body.scopes,
+    expiresAt,
+  });
 }
 
 /**

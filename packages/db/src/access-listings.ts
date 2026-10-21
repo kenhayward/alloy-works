@@ -183,7 +183,7 @@ export async function listPrincipals(
   const rows = await trx
     .selectFrom('principal')
     .select(['id', 'display_name as name', 'email', 'kind'])
-    .select(sql<boolean>`issuer is null`.as('invited'))
+    .select(sql<boolean>`issuer is null and kind <> 'service'`.as('invited'))
     .select(erasedIn().as('erased'))
     .$if(page.after !== undefined, (query) => query.where('id', '>', page.after!))
     .orderBy('id')

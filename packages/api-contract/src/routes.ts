@@ -11,6 +11,7 @@ import { queryUsageRoutes } from './query-usage.js';
 import { datasetSourceRoutes } from './dataset-sources.js';
 import { exportRoutes } from './exports.js';
 import { modelEndpointRoutes } from './model-endpoints.js';
+import { serviceIdentityRoutes } from './service-identities.js';
 import { assistantRoutes } from './assistant.js';
 import { generatedRoutes } from './generated.js';
 import { promptRoutes } from './prompts.js';
@@ -388,6 +389,7 @@ type Routes = typeof ownRoutes &
   typeof datasetSourceRoutes &
   typeof exportRoutes &
   typeof modelEndpointRoutes &
+  typeof serviceIdentityRoutes &
   typeof assistantRoutes &
   typeof generatedRoutes &
   typeof promptRoutes &
@@ -453,6 +455,7 @@ export const routes: Routes = {
   ...datasetSourceRoutes,
   ...exportRoutes,
   ...modelEndpointRoutes,
+  ...serviceIdentityRoutes,
   ...assistantRoutes,
   ...generatedRoutes,
   ...promptRoutes,

@@ -168,6 +168,11 @@ export const documentationGroups = [
         name: 'Tokens',
         description: 'Issue, list and revoke personal API tokens with a signed-in session.',
       },
+      {
+        name: 'Service identities',
+        description:
+          'Make and disable service identities for integrations and agents, and issue them tokens.',
+      },
       { name: 'People and principals', description: 'Find people that access grants may name.' },
       { name: 'Groups', description: 'Manage group membership and provider-backed groups.' },
       { name: 'Sessions', description: 'See and end your own sessions.' },
@@ -474,6 +479,13 @@ const operationTags = {
     'revokeToken',
     'listPrincipalTokens',
     'revokePrincipalToken',
+  ],
+  'Service identities': [
+    'listServiceIdentities',
+    'createServiceIdentity',
+    'changeServiceIdentity',
+    'disableServiceIdentity',
+    'issueServiceIdentityToken',
   ],
   Sessions: ['listSessions', 'endSession', 'endOtherSessions'],
   'Event stream': ['openStream', 'beatPresence', 'leavePresence'],
@@ -991,6 +1003,16 @@ const descriptions: Readonly<Record<string, string>> = {
     'For an environment administrator, lists another person’s tokens without revealing their secrets.',
   revokePrincipalToken:
     'For an environment administrator, revokes a person’s token. The next request with it is refused.',
+  listServiceIdentities:
+    'Lists the environment’s service identities: what each is for, who made it, whether it is disabled, and how many tokens it holds. Needs administer at the environment, with a signed-in session.',
+  createServiceIdentity:
+    'Makes a service identity, a principal of its own kind for an integration or agent: never a person, never signed in as, and no invitation claims it. It has no roles until granted some, as a person is. Recorded as made. Needs administer at the environment, with a signed-in session.',
+  changeServiceIdentity:
+    'Renames a service identity or changes what it says it is for. Recorded as renamed when anything changed. Needs administer at the environment, with a signed-in session.',
+  disableServiceIdentity:
+    'Disables a service identity: every token it holds is revoked at once, each recorded, and no more are issued. Kept, so what it did still names it. Needs administer at the environment, with a signed-in session.',
+  issueServiceIdentityToken:
+    'Issues a service identity a token that acts as it, masked to its scopes and lasting at most 365 days; its secret is answered this once. A token acts only as the service identity it was issued to, never as the administrator who issued it. Recorded as a token issued. Needs administer at the environment, with a signed-in session.',
   listPeople: 'Lists people in the environment by name for a user selection field.',
   listPrincipals: 'Lists people already signed in or invited who may be named by an access grant.',
   getErasure:

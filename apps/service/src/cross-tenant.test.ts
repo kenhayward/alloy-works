@@ -49,6 +49,7 @@ import {
   startRun,
   submitImpactReport,
   makeRelationship,
+  createServiceIdentity,
 } from '@alloy-works/db';
 import {
   freshDatabase,
@@ -487,6 +488,9 @@ const OTHER_TENANT_IDS: Readonly<
     const { principal, token } = await tokenIn(tenant, db);
     return { id: principal, token };
   },
+  changeServiceIdentity: async (tenant, db) => ({ id: await serviceIdentityIn(tenant, db) }),
+  disableServiceIdentity: async (tenant, db) => ({ id: await serviceIdentityIn(tenant, db) }),
+  issueServiceIdentityToken: async (tenant, db) => ({ id: await serviceIdentityIn(tenant, db) }),
 };
 
 /**
@@ -782,6 +786,9 @@ const VALID_INPUT: Readonly<
   setGroupMembers: { payload: { principals: [] } },
   extendGrant: { payload: {} },
   createToken: { payload: { name: 'Elsewhere', scopes: [], expiresAt: IN_A_MONTH } },
+  createServiceIdentity: { payload: { name: 'Elsewhere' } },
+  changeServiceIdentity: { payload: { name: 'Elsewhere' } },
+  issueServiceIdentityToken: { payload: { name: 'Elsewhere', scopes: [], expiresAt: IN_A_MONTH } },
   setEditingSettings: { payload: { iterationRetentionDays: 7 } },
   makeGrant: {
     payload: { role: SESSION, subject: { principal: SESSION }, level: 'tenant', effect: 'allow' },
@@ -1716,6 +1723,15 @@ async function sessionIn(tenant: Tenant, db: TenantDatabase): Promise<string> {
       .executeTakeFirstOrThrow();
     return session.id;
   });
+}
+
+async function serviceIdentityIn(tenant: Tenant, db: TenantDatabase): Promise<string> {
+  return db.withTenant(
+    tenant,
+    async (trx) =>
+      (await createServiceIdentity(trx, { name: 'Elsewhere', description: '', by: null })).id,
+    { actorKind: 'system' },
+  );
 }
 
 async function tokenIn(
