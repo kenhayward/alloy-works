@@ -241,7 +241,7 @@ export const conversationRoutes = {
     responses: {
       200: {
         description:
-          'Server-sent events, as the AsyncAPI document’s `assistantRun` channel declares them: `run`, then `text`, `tool_call`, `tool_result` and `proposal` as they come, and `ended` or `failed`',
+          'Server-sent events, as the AsyncAPI document’s `assistantRun` channel declares them: `run`, then `text`, `tool_call`, `tool_result`, `proposal` and `notice` as they come, and `ended` or `failed`',
         stream: true as const,
       },
       401: unauthenticated,

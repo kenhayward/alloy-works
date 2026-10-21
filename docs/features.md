@@ -190,6 +190,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   find one to add.
   A conversation may also propose a new part: where, its title and its text. Nothing is made until you
   accept it, when it is made as yours at 0.1, and the document's **Generated content** names it.
+  Where something it read asks the model to do anything, it does not, and may say so: the turn shows
+  where it asked, what it asked, and that it was not done.
   **Your prompts** keeps words of your own, which nobody else sees: **Use** one as what you ask,
   **Save** what you are asking, and **Promote** one into a space as a new prompt at draft, which is
   then reviewed and tried like any other (`/v1/me/prompts`).
@@ -223,7 +225,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   none waits (**No generated content waiting to be accepted**). The Publishing panel's **Generated
   content**, and a publication's page, list each part with content the assistant made: what was
   accepted, by whom, when and into which version, what waits, and what was rejected, withdrawn or
-  discarded, with the model and the endpoint behind each. The API does the same
+  discarded, with the model and the endpoint behind each. A publication records the accepted content
+  it holds and the run each came from as it is made, so what it lists never changes. The API does the same
   (`GET /v1/documents/{id}/generated`, `GET /v1/publications/{id}/generated`).
 - **Prompts.** **Prompts** lists the prompts you may read; a prompt's page writes one: its
   instructions, which may place the document's parameters, the context it declares (the part it runs
@@ -236,7 +239,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   are approved; every environment holds an empty default. A template names the library it binds
   (`prompts`), or binds the default (`/v1/prompt-libraries`). A prompt runs on one part of a document,
   through the API: what it declares is gathered first, as you may read it, and recorded on the run;
-  it is refused before any call where the endpoint's model is not one it accepts, what it reads
+  it is refused before any call where the part is not of the type it writes, the endpoint's model is
+  not one it accepts, what it reads
   resolved to nothing, or is more than the endpoint takes; its reply is proposed as the part's whole
   text (`POST /v1/documents/{id}/prompt-runs`). A trial runs any version and proposes nothing
   (`POST /v1/prompts/{id}/versions/{version}/trials`), and approving a prompt needs a finished trial of

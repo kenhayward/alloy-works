@@ -50,6 +50,7 @@ const TOOL_WORDS: Readonly<Record<string, string>> = {
   search_document: 'Searched the document',
   read_values: 'Read the bound values',
   propose_edit: 'Proposed an edit',
+  declined: 'Declined an instruction',
 };
 
 /** A proposal's text, a block a line, as it would read: paragraphs and list items. */
@@ -164,6 +165,8 @@ export function AssistantPanel({
   const [answer, setAnswer] = useState('');
   const [steps, setSteps] = useState<readonly Step[]>([]);
   const [proposals, setProposals] = useState<readonly Proposal[]>([]);
+  // Instructions found in what it read and declined aloud, beside the turn (GC-E; GEN-021).
+  const [notices, setNotices] = useState<readonly { where: string; instruction: string }[]>([]);
   const [ended, setEnded] = useState<Ended | null>(null);
   // A prompt run that reused the requester's own earlier one, and how to run it afresh (G6-E).
   const [reused, setReused] = useState<Record<string, unknown> | null>(null);
@@ -230,6 +233,8 @@ export function AssistantPanel({
   useEffect(() => {
     if (document === null) return undefined;
     let current = true;
+    // Never the last part's while this one's are read, nor once they could not be.
+    setPrompts([]);
     void client
       .GET('/v1/documents/{id}/prompts', {
         params: { path: { id: document }, query: node === null ? {} : { node } },
@@ -324,6 +329,7 @@ export function AssistantPanel({
     setAnswer('');
     setSteps([]);
     setProposals([]);
+    setNotices([]);
     setEnded(null);
     setSaid('');
     setReused(null);
@@ -373,6 +379,12 @@ export function AssistantPanel({
                 proposed: frame.proposed as Proposal['proposed'],
                 state: 'open',
               },
+            ]);
+            break;
+          case 'notice':
+            setNotices((was) => [
+              ...was,
+              { where: String(frame.where), instruction: String(frame.instruction) },
             ]);
             break;
           case 'ended':
@@ -637,6 +649,19 @@ export function AssistantPanel({
       )}
       <div aria-live="polite" className={styles['answer']}>
         {shownAnswer}
+      </div>
+      {/* Announced as each arrives, as the answer is (GEN-021). */}
+      <div aria-live="polite">
+        {notices.length > 0 && (
+          <ul aria-label="Instructions not followed" className={styles['muted']}>
+            {notices.map((each, index) => (
+              <li key={index}>
+                {nameOf(each.where) ?? titles.get(each.where) ?? 'Something it read'} asked: “
+                {each.instruction}” Not done.
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
       {cited.length > 0 && (
         <ol aria-label="Sources" className={styles['sources']}>

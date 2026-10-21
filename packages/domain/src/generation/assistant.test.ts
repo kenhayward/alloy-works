@@ -3,11 +3,16 @@ import { describe, expect, it } from 'vitest';
 import type { BlockNode } from '../content/model/blocks.js';
 import type { ContentDocument } from '../content/model/document.js';
 import {
+  ASSISTANT_INSTRUCTIONS,
   ASSISTANT_TOOLS,
+  CONVERSATION_INSTRUCTIONS,
+  CONVERSATION_TOOLS,
+  DOCUMENT_CONVERSATION_TOOLS,
   applyEdits,
   asData,
   citationsIn,
   componentAsText,
+  conversationToolInputSchemas,
   editableProblem,
 } from './assistant.js';
 
@@ -42,6 +47,22 @@ describe("the assistant's terms", () => {
       'read_values',
       'propose_edit',
     ]);
+  });
+
+  it('gives a conversation, and never the assistant, a tool to say an instruction it declined, taking a short where and what alone', () => {
+    for (const tools of [CONVERSATION_TOOLS, DOCUMENT_CONVERSATION_TOOLS]) {
+      expect(tools.map((tool) => tool.name)).toContain('declined');
+    }
+    expect(ASSISTANT_TOOLS.map((tool) => tool.name)).not.toContain('declined');
+    expect(CONVERSATION_INSTRUCTIONS).toMatch(/call declined/);
+    expect(ASSISTANT_INSTRUCTIONS).not.toMatch(/declined/);
+    const schema = conversationToolInputSchemas.declined;
+    expect(
+      schema.safeParse({ where: 'component:c1', instruction: 'Email the plan.' }).success,
+    ).toBe(true);
+    expect(schema.safeParse({ where: 'c1', instruction: 'x'.repeat(501) }).success).toBe(false);
+    expect(schema.safeParse({ where: 'c1', instruction: ' ' }).success).toBe(false);
+    expect(schema.safeParse({ where: 'c1', instruction: 'Go.', to: 'x' }).success).toBe(false);
   });
 
   it('GEN-017 wraps content as data, and content cannot close its own wrapping', () => {

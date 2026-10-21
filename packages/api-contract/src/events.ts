@@ -201,6 +201,14 @@ export const assistantEvents = {
       proposed: z.record(z.string(), z.unknown()),
     }),
   },
+  notice: {
+    summary:
+      'In a conversation, the model declined an instruction found in what it read, and says so: where, and what it asked. Its words are data, never done (GEN-021)',
+    schema: z.object({
+      where: z.string().describe('Where it asked: a component, or what else the model read'),
+      instruction: z.string().max(500).describe('What it asked, in the model’s words'),
+    }),
+  },
   ended: {
     summary: 'The run ended: the model, its tokens and cost, and the citations kept and dropped',
     schema: z.object({
@@ -280,7 +288,7 @@ export function buildAsyncApi() {
       assistantRun: {
         address: '/v1/documents/{id}/assistant/runs',
         description:
-          "What `POST /v1/documents/{id}/assistant/runs` answers, as Server-Sent Events: `run` first, then the model's text, its tool calls and their results, and its proposals as they come, and `ended` or `failed` last. Closing the request ends the run.",
+          "What `POST /v1/documents/{id}/assistant/runs` answers, as Server-Sent Events: `run` first, then the model's text, its tool calls and their results, its proposals and, in a conversation, its notices as they come, and `ended` or `failed` last. Closing the request ends the run.",
         parameters: { id: { description: 'The document' } },
         messages: Object.fromEntries(
           Object.keys(assistantEvents).map((name) => [

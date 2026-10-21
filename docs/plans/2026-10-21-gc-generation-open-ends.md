@@ -28,3 +28,15 @@ PUB-082).
 
 - **A notice is the model's word**: only a model that calls `declined` reports one; the suite's stand-in does, a real one may not.
 - **GC-B's backfill** runs current code's rule over old rows: written in SQL in 0143 from `to_jsonb`, so its migration test holds on old schemas.
+
+## Built
+
+GC in two PRs: GCa #751 and the close #752. Departures: conversations take their own instructions
+(`conversation-1`), asking the model to call `declined`, while the document assistant keeps GEN-007's
+five tools and its instructions; the commit-time check proves a publication's list holds only content
+accepted in its history, not that it holds all of it, `insertPublication` being its one writer. The
+final review found no leak; it fixed a prompt list left from the part before, a mismatched part
+refused only after the model checks, notices not announced, and guards on the list without tests.
+Left, named: a field as a prompt's output; a second proposal for one suggestion, made while a
+publication commits, could refuse it (unreachable today, one proposal a suggestion); a notice is the
+model's word, its `where` too.

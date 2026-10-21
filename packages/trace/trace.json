@@ -17695,6 +17695,10 @@
           "howItIsMet": "The compliant stand-in model, through each of the four paths (Injection)"
         },
         {
+          "id": "GEN-021",
+          "howItIsMet": "A declined instruction said aloud: a conversation's `declined` tool, its step kept and a `notice` streamed (Injection)"
+        },
+        {
           "id": "GEN-022",
           "howItIsMet": "A generated suggestion is marked until accepted (Proposals)"
         },
@@ -20680,133 +20684,139 @@
     {
       "id": "ADM-010",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 619,
+      "line": 784,
       "kind": "title"
     },
     {
       "id": "API-064",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 193,
+      "line": 197,
       "kind": "title"
     },
     {
       "id": "GEN-007",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 225,
+      "line": 229,
       "kind": "title"
     },
     {
       "id": "GEN-008",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 261,
+      "line": 265,
       "kind": "title"
     },
     {
       "id": "GEN-009",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 321,
+      "line": 325,
       "kind": "title"
     },
     {
       "id": "GEN-010",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 225,
+      "line": 229,
       "kind": "title"
     },
     {
       "id": "GEN-011",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 292,
+      "line": 296,
       "kind": "title"
     },
     {
       "id": "GEN-012",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 163,
+      "line": 167,
       "kind": "title"
     },
     {
       "id": "GEN-013",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 281,
+      "line": 285,
       "kind": "title"
     },
     {
       "id": "GEN-014",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 261,
+      "line": 265,
       "kind": "title"
     },
     {
       "id": "GEN-016",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 518,
+      "line": 522,
       "kind": "title"
     },
     {
       "id": "GEN-017",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 536,
+      "line": 566,
       "kind": "title"
     },
     {
       "id": "GEN-018",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 536,
+      "line": 566,
       "kind": "title"
     },
     {
       "id": "GEN-019",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 536,
+      "line": 566,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-020",
+      "file": "apps/service/src/assistant-routes.test.ts",
+      "line": 566,
       "kind": "title"
     },
     {
       "id": "GEN-022",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 396,
+      "line": 400,
       "kind": "title"
     },
     {
       "id": "GEN-024",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 328,
+      "line": 332,
       "kind": "title"
     },
     {
       "id": "GEN-033",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 619,
+      "line": 784,
       "kind": "title"
     },
     {
       "id": "GEN-037",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 619,
+      "line": 784,
       "kind": "title"
     },
     {
       "id": "GEN-039",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 437,
+      "line": 441,
       "kind": "title"
     },
     {
       "id": "GEN-040",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 396,
+      "line": 400,
       "kind": "title"
     },
     {
       "id": "GEN-041",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 414,
+      "line": 418,
       "kind": "title"
     },
     {
       "id": "GEN-060",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 328,
+      "line": 332,
       "kind": "title"
     },
     {
@@ -21170,39 +21180,45 @@
       "kind": "title"
     },
     {
+      "id": "GEN-021",
+      "file": "apps/service/src/conversation-routes.test.ts",
+      "line": 131,
+      "kind": "title"
+    },
+    {
       "id": "GEN-047",
       "file": "apps/service/src/conversation-routes.test.ts",
-      "line": 85,
+      "line": 86,
       "kind": "title"
     },
     {
       "id": "GEN-048",
       "file": "apps/service/src/conversation-routes.test.ts",
-      "line": 112,
+      "line": 113,
       "kind": "title"
     },
     {
       "id": "GEN-050",
       "file": "apps/service/src/conversation-routes.test.ts",
-      "line": 130,
+      "line": 211,
       "kind": "title"
     },
     {
       "id": "GEN-051",
       "file": "apps/service/src/conversation-routes.test.ts",
-      "line": 146,
+      "line": 227,
       "kind": "title"
     },
     {
       "id": "GEN-052",
       "file": "apps/service/src/conversation-routes.test.ts",
-      "line": 266,
+      "line": 348,
       "kind": "title"
     },
     {
       "id": "GEN-053",
       "file": "apps/service/src/conversation-routes.test.ts",
-      "line": 193,
+      "line": 274,
       "kind": "title"
     },
     {
@@ -22036,7 +22052,7 @@
     {
       "id": "GEN-003",
       "file": "apps/service/src/prompt-run-routes.test.ts",
-      "line": 391,
+      "line": 403,
       "kind": "title"
     },
     {
@@ -22054,7 +22070,7 @@
     {
       "id": "GEN-005",
       "file": "apps/service/src/prompt-run-routes.test.ts",
-      "line": 430,
+      "line": 442,
       "kind": "title"
     },
     {
@@ -22072,7 +22088,7 @@
     {
       "id": "GEN-036",
       "file": "apps/service/src/prompt-run-routes.test.ts",
-      "line": 461,
+      "line": 473,
       "kind": "title"
     },
     {
@@ -22090,13 +22106,13 @@
     {
       "id": "GEN-058",
       "file": "apps/service/src/prompt-run-routes.test.ts",
-      "line": 391,
+      "line": 403,
       "kind": "title"
     },
     {
       "id": "GEN-059",
       "file": "apps/service/src/prompt-run-routes.test.ts",
-      "line": 410,
+      "line": 422,
       "kind": "title"
     },
     {
@@ -24430,55 +24446,61 @@
     {
       "id": "GEN-004",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 446,
+      "line": 487,
       "kind": "title"
     },
     {
       "id": "GEN-009",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 266,
+      "line": 307,
       "kind": "title"
     },
     {
       "id": "GEN-010",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 177,
+      "line": 181,
       "kind": "title"
     },
     {
       "id": "GEN-011",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 229,
+      "line": 233,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-021",
+      "file": "apps/web/src/structure/AssistantPanel.test.tsx",
+      "line": 270,
       "kind": "title"
     },
     {
       "id": "GEN-036",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 392,
+      "line": 433,
       "kind": "title"
     },
     {
       "id": "GEN-037",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 177,
+      "line": 181,
       "kind": "title"
     },
     {
       "id": "GEN-047",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 487,
+      "line": 545,
       "kind": "title"
     },
     {
       "id": "GEN-051",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 487,
+      "line": 545,
       "kind": "title"
     },
     {
       "id": "GEN-053",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 523,
+      "line": 581,
       "kind": "title"
     },
     {
@@ -27028,7 +27050,7 @@
     {
       "id": "PUB-082",
       "file": "packages/db/src/publication-generated-migration.test.ts",
-      "line": 91,
+      "line": 123,
       "kind": "title"
     },
     {
@@ -28930,13 +28952,13 @@
     {
       "id": "GEN-007",
       "file": "packages/domain/src/generation/assistant.test.ts",
-      "line": 37,
+      "line": 42,
       "kind": "title"
     },
     {
       "id": "GEN-017",
       "file": "packages/domain/src/generation/assistant.test.ts",
-      "line": 47,
+      "line": 68,
       "kind": "title"
     },
     {
@@ -28960,7 +28982,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 869,
+      "line": 874,
       "kind": "title"
     },
     {

@@ -848,6 +848,11 @@ describe('the domain package', () => {
         'proposeComponentInputSchema',
         'conversationToolInputSchemas',
         'isConversationTool',
+        // GC: an instruction found in content, declined aloud, and a conversation's instructions.
+        'CONVERSATION_INSTRUCTIONS',
+        'CONVERSATION_INSTRUCTIONS_VERSION',
+        'DECLINED',
+        'declinedInputSchema',
         'guardrailMatch',
         'guardrailSchema',
         'matchable',

@@ -3,6 +3,16 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.204.0 - 2026-10-21 (PR #752)
+
+Generation finished (the GC plan).
+
+### Added
+
+- **What a publication holds from a model.** A publication now records each accepted generated suggestion and each component a model made that it printed, with the run each came from. Publications made earlier gain the same record. One accepted after publishing is never in it.
+- **A prompt writes only its component type.** A prompt declaring the type it writes is refused on a part of another type, before any model is called, and the Assistant offers only the prompts that fit the part open.
+- **The Assistant says what it declined.** When something a conversation reads asks the model to do anything, the model can say so, and the Assistant shows it beside the turn: where it asked, what it asked, and that it was not done.
+
 ## 0.203.0 - 2026-10-21 (PR #745)
 
 Extensions (the EX plan).
