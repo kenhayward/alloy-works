@@ -92,4 +92,35 @@ describe('webhook subscriptions through the API (the WB plan, WB-H)', () => {
     const listed = await h.bearer(own.json<{ secret: string }>().secret, 'GET', '/v1/webhooks');
     expect(listed.statusCode).toBe(403);
   });
+
+  it('API-029 shows an administrator each delivery: what was sent and every attempt at it', async () => {
+    const id = (await make({ eventTypes: ['artifact.archived'] })).json<Answer>().webhook.id;
+    const component = (await h.component(h.general, 'For the feed')).id;
+    expect((await h.call('ada', 'POST', `/v1/components/${component}/archive`)).statusCode).toBe(
+      200,
+    );
+    const listed = await h.call('ada', 'GET', `/v1/webhooks/${id}/deliveries`);
+    expect(listed.statusCode, listed.body).toBe(200);
+    const [delivery] = listed.json<{ items: { id: string; type: string; state: string }[] }>()
+      .items;
+    expect(delivery).toMatchObject({ type: 'artifact.archived', state: 'pending' });
+    const read = await h.call('ada', 'GET', `/v1/webhooks/${id}/deliveries/${delivery!.id}`);
+    expect(read.json()).toMatchObject({
+      payload: {
+        type: 'artifact.archived',
+        id: delivery!.id,
+        subject: { kind: 'component', id: component },
+      },
+      tried: [],
+    });
+    expect(
+      (
+        await h.call(
+          'ada',
+          'GET',
+          `/v1/webhooks/${id}/deliveries/00000000-0000-4000-8000-000000000001`,
+        )
+      ).statusCode,
+    ).toBe(404);
+  });
 });

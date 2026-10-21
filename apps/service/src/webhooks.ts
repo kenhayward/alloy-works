@@ -2,6 +2,10 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import type {
   ChangeWebhookBody,
   CreateWebhookBody,
+  DeliveryList,
+  DeliveryParams,
+  DeliverySummary,
+  DeliveryView,
   WebhookAnswer,
   WebhookList,
   WebhookListQuery,
@@ -13,11 +17,14 @@ import type {
 import {
   changeWebhookSubscription,
   createWebhookSubscription,
+  deliveryRecord,
+  listDeliveries,
   listWebhookSubscriptions,
   removeWebhookSubscription,
   rotateWebhookSecret,
   subscribableIdentity,
   webhookSubscription,
+  type DeliveryRecord,
   type Tenant,
   type WebhookSubscription,
 } from '@alloy-works/db';
@@ -40,6 +47,18 @@ function view(subscription: WebhookSubscription): WebhookView {
     disabledAt: subscription.disabledAt && subscription.disabledAt.toISOString(),
     disabledReason: subscription.disabledReason,
     lastSuccessAt: subscription.lastSuccessAt && subscription.lastSuccessAt.toISOString(),
+  };
+}
+
+function summary(delivery: Omit<DeliveryRecord, 'payload' | 'tried'>): DeliverySummary {
+  return {
+    id: delivery.id,
+    type: delivery.type as DeliverySummary['type'],
+    sequence: delivery.sequence,
+    state: delivery.state,
+    attempts: delivery.attempts,
+    nextAt: delivery.nextAt && delivery.nextAt.toISOString(),
+    createdAt: delivery.createdAt.toISOString(),
   };
 }
 
@@ -128,6 +147,13 @@ export function webhookHandlers(
       const body = request.body as ChangeWebhookBody;
       const held = await webhookSubscription(trx, id, { lock: true });
       if (!held) throw notFound();
+      if (body.enabled === true && !(await subscribableIdentity(trx, held.serviceIdentity))) {
+        throw new AppError(
+          409,
+          'service_identity_unavailable',
+          'Its service identity is disabled, so it cannot be turned on.',
+        );
+      }
       // A new URL needs a secret sealed to it: the old one was sealed to the old URL (WB-G).
       const moving = body.url !== undefined && body.url !== held.url;
       const secret = moving ? newSecret() : undefined;
@@ -136,6 +162,7 @@ export function webhookHandlers(
         ...(moving ? { sealed: await sealed(request, id, body.url!, secret!) } : {}),
         ...(body.description === undefined ? {} : { description: body.description }),
         ...(body.eventTypes === undefined ? {} : { eventTypes: body.eventTypes }),
+        ...(body.enabled === true ? { enable: true as const } : {}),
       });
       return { webhook: view(changed!), ...(secret === undefined ? {} : { secret }) };
     },
@@ -154,6 +181,41 @@ export function webhookHandlers(
         await sealed(request, id, held.url, secret),
       );
       return { webhook: view(rotated!), secret };
+    },
+
+    listWebhookDeliveries: async (
+      request: FastifyRequest,
+      { trx }: Authorised,
+    ): Promise<DeliveryList> => {
+      const { id } = request.params as WebhookParams;
+      if (!(await webhookSubscription(trx, id))) throw notFound();
+      const query = request.query as WebhookListQuery;
+      const after = afterCursor(query.cursor);
+      const page = await listDeliveries(trx, id, {
+        ...(after === undefined ? {} : { after }),
+        limit: pageLimit(query.limit),
+      });
+      return { items: page.items.map(summary), next: cursorAfter(page.after) };
+    },
+
+    getWebhookDelivery: async (
+      request: FastifyRequest,
+      { trx }: Authorised,
+    ): Promise<DeliveryView> => {
+      const { id, delivery } = request.params as DeliveryParams;
+      const held = await deliveryRecord(trx, id, delivery);
+      if (!held) throw notFound();
+      return {
+        ...summary(held),
+        payload: held.payload as Record<string, unknown>,
+        tried: held.tried.map((each) => ({
+          at: each.at.toISOString(),
+          status: each.status,
+          latencyMs: each.latencyMs,
+          failure: each.failure,
+          reply: each.reply,
+        })),
+      };
     },
 
     removeWebhook: async (

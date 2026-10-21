@@ -145,6 +145,7 @@ export function inboxHandlers(
                     limit: microsText(BigInt(each.budget.limitMicros)),
                     month: each.budget.month,
                   },
+            webhook: each.webhook,
             at: each.at.toISOString(),
             read: each.readAt !== null,
           })),

@@ -1407,7 +1407,12 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   act's own transaction for every subscription wanting it. The worker sends each through the
   connector within seconds, signed as Standard Webhooks specifies, only while the service identity
   may read what it is about, and only to a public address. A receiver that fails is tried again from
-  30 seconds, doubling to an hour, for a day; one failing three days with no success is disabled.
+  30 seconds, doubling to an hour, for a day; one failing three days with no success is disabled,
+  and whoever made it is told in their inbox. Administration's **Webhooks** makes one, choosing its
+  service identity, URL and events, shows its secret once with **Copy**, makes a **New secret**,
+  **Turn on** one turned off, **Remove** one after asking, and **Deliveries** shows each: what was
+  sent and, at every attempt, what came back or why nothing did. Through the API that is
+  `/v1/webhooks/{id}/deliveries`.
 - **MCP, for agents.** An MCP client connects to `/mcp` on your environment with an API token, yours
   or a service identity's, as a bearer: a signed-in session never works there. Four tools read:
   `search`, `read_document`, `read_component` (its blocks numbered) and `related` (an artifact's

@@ -6,6 +6,8 @@ import { recordEvent } from './audit.js';
 import { bootstrapCluster } from './bootstrap.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
+import { grant } from './grants.js';
+import { findRole } from './roles.js';
 import { createServiceIdentity, disableServiceIdentity } from './service-identities.js';
 import type { TenantTransaction } from './tables.js';
 import type { TenantDatabase } from './tenant-database.js';
@@ -367,6 +369,11 @@ describe('webhook subscriptions and the deliveries their trigger queues (the WB 
         .execute(),
     );
     expect(changes.at(-1)?.detail).toEqual({ change: 'disabled', reason: 'failing' });
+    // Its maker told, where they administer the environment (WB-E); Ada holds no grant here.
+    const told = await as((trx) =>
+      trx.selectFrom('notification').select('kind').where('recipient', '=', ada).execute(),
+    );
+    expect(told).toEqual([]);
     // A quiet endpoint's one failure is no reason: the clock starts at its first failure.
     const quiet = await queued();
     expect(await as((trx) => recordAttempt(trx, quiet.delivery, failed))).toEqual({});
@@ -390,5 +397,174 @@ describe('webhook subscriptions and the deliveries their trigger queues (the WB 
         .execute(),
     );
     expect(await as((trx) => sweepWebhookDeliveries(trx))).toBeGreaterThanOrEqual(1);
+  });
+
+  it('tells the administrator who made a subscription that it was disabled for failing', async () => {
+    const administrator = (await as((trx) => findRole(trx, 'Administrator')))!;
+    const granted = await as((trx) =>
+      grant(trx, {
+        roleId: administrator.id,
+        subject: { principal: ada },
+        level: { kind: 'tenant' },
+        effect: 'allow',
+        grantedBy: ada,
+      }),
+    );
+    expect('granted' in granted).toBe(true);
+    const { subscription, delivery } = await queued();
+    await as((trx) => recordAttempt(trx, delivery, failed));
+    await as((trx) =>
+      trx
+        .updateTable('webhook_subscription')
+        .set({ failing_since: sql<Date>`now() - interval '4 days'` })
+        .where('id', '=', subscription)
+        .execute(),
+    );
+    await as((trx) => recordAttempt(trx, delivery, failed));
+    const told = await as((trx) =>
+      trx
+        .selectFrom('notification')
+        .select(['kind', 'counts', 'actor', 'artifact_id'])
+        .where('recipient', '=', ada)
+        .execute(),
+    );
+    expect(told).toEqual([
+      { kind: 'webhook', counts: { webhook: subscription }, actor: null, artifact_id: null },
+    ]);
+  });
+
+  /** A live identity and its subscription wanting these types: the identity and the subscription. */
+  const feed = async (types: string[]) => {
+    const identity = (
+      await as((trx) => createServiceIdentity(trx, { name: 'Feed', description: '', by: ada }))
+    ).id;
+    const made = await as((trx) =>
+      createWebhookSubscription(trx, {
+        id: randomUUID(),
+        serviceIdentity: identity,
+        url: 'https://receiver.example.test/hooks',
+        description: 'Feed',
+        eventTypes: types as never,
+        sealed: 'sealed-for-the-test',
+        by: ada,
+      }),
+    );
+    return { identity, subscription: made.id };
+  };
+
+  it('API-060 queues content, workflow, review and publication events alike, each with its version', async () => {
+    const { subscription } = await feed([...webhookAuditTypes]);
+    const version = randomUUID();
+    for (const kind of webhookAuditTypes) {
+      await as((trx) =>
+        sql`insert into audit_event (kind, actor_kind, subject_kind, subject, subject_version, outcome)
+            values (${kind}, 'system', 'document', ${randomUUID()}, ${version}, 'done')`.execute(
+          trx,
+        ),
+      );
+    }
+    const queued = await deliveries(subscription);
+    expect(queued.map((each) => each.type).toSorted()).toEqual([...webhookAuditTypes].toSorted());
+    for (const each of queued) {
+      expect((each.payload as { subject: { version: string } }).subject.version).toBe(version);
+    }
+  });
+
+  it('COL-037 queues a notification addressed to the subscription’s service identity, and nobody else’s', async () => {
+    const { identity, subscription } = await feed(['notification.created']);
+    for (const recipient of [identity, ada]) {
+      await as((trx) =>
+        sql`insert into notification (recipient, kind, counts)
+            values (${recipient}, 'budget', '{}'::jsonb)`.execute(trx),
+      );
+    }
+    const queued = await deliveries(subscription);
+    expect(queued).toHaveLength(1);
+    expect(queued[0]).toMatchObject({
+      type: 'notification.created',
+      sequence: expect.stringMatching(/^notification:\d+$/),
+      payload: { type: 'notification.created', detail: { kind: 'budget' } },
+    });
+  });
+
+  it('keeps its backoff an hour at most however many attempts a delivery has had', async () => {
+    const { delivery } = await queued();
+    await as((trx) =>
+      trx
+        .updateTable('webhook_delivery')
+        .set({ attempts: 40 })
+        .where('id', '=', delivery)
+        .execute(),
+    );
+    await as((trx) => recordAttempt(trx, delivery, failed));
+    const wait = (await deliveryRow(delivery)).next_at.getTime() - Date.now();
+    expect(wait).toBeGreaterThan(3_500_000);
+    expect(wait).toBeLessThanOrEqual(3_601_000);
+  });
+
+  it('records nothing for a worker whose lease was claimed past, nor for a delivery already done', async () => {
+    const { delivery } = await queued();
+    const [stale] = (await as((trx) => claimDeliveries(trx, 1000, 60_000))).filter(
+      (each) => each.id === delivery,
+    );
+    await as((trx) =>
+      trx
+        .updateTable('webhook_delivery')
+        .set({ locked_until: null })
+        .where('id', '=', delivery)
+        .execute(),
+    );
+    const [fresh] = (await as((trx) => claimDeliveries(trx, 1000, 60_000))).filter(
+      (each) => each.id === delivery,
+    );
+    expect(fresh!.lease).not.toBe(stale!.lease);
+    await as((trx) => recordAttempt(trx, delivery, failed, stale!.lease));
+    expect(await deliveryRow(delivery)).toMatchObject({ attempts: 0, state: 'pending' });
+    await as((trx) =>
+      recordAttempt(
+        trx,
+        delivery,
+        { kind: 'answered', status: 200, latencyMs: 3, reply: '' },
+        fresh!.lease,
+      ),
+    );
+    await as((trx) => recordAttempt(trx, delivery, failed));
+    expect(await deliveryRow(delivery)).toMatchObject({ attempts: 1, state: 'delivered' });
+  });
+
+  it('counts a quiet endpoint’s failures afresh, gives up what waits once disabled, and turns it on again', async () => {
+    const { subscription, delivery } = await queued();
+    await as((trx) => recordAttempt(trx, delivery, failed));
+    // Its last failure four days ago, and nothing since: a quiet endpoint, not a failing one.
+    await as(async (trx) => {
+      await sql`update webhook_attempt set at = now() - interval '4 days'
+                where delivery_id = ${delivery}`.execute(trx);
+      await sql`update webhook_subscription set failing_since = now() - interval '4 days'
+                where id = ${subscription}`.execute(trx);
+    });
+    expect(await as((trx) => recordAttempt(trx, delivery, failed))).toEqual({});
+    await act('artifact.archived', randomUUID());
+    await as((trx) =>
+      trx
+        .updateTable('webhook_subscription')
+        .set({ failing_since: sql<Date>`now() - interval '4 days'` })
+        .where('id', '=', subscription)
+        .execute(),
+    );
+    expect(await as((trx) => recordAttempt(trx, delivery, failed))).toEqual({
+      disabled: subscription,
+    });
+    const waiting = await as((trx) =>
+      trx
+        .selectFrom('webhook_delivery')
+        .select('state')
+        .where('subscription_id', '=', subscription)
+        .execute(),
+    );
+    expect(waiting.every((each) => each.state !== 'pending')).toBe(true);
+    const enabled = await as((trx) =>
+      changeWebhookSubscription(trx, subscription, { enable: true }),
+    );
+    expect(enabled).toMatchObject({ disabledAt: null, failingSince: null });
   });
 });

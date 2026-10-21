@@ -18,8 +18,11 @@ const SYSTEM: AuditContext = { actorKind: 'system' };
 export const DELIVERIES_A_PASS = 50;
 const AT_ONCE = 4;
 
-/** How long a claimed delivery is held: past its ten seconds, and the connector's answer. */
-const LEASE_MS = 60_000;
+/**
+ * How long a claimed pass is held: every round of four at its ten seconds and the connector's five
+ * more, with a minute to spare, so no other worker claims its tail while it is sent (the final review).
+ */
+const LEASE_MS = Math.ceil(DELIVERIES_A_PASS / AT_ONCE) * 15_000 + 60_000;
 
 /**
  * One pass of the delivery loop (the WB plan, WB-I), in every tenant: the deliveries due claimed with a
@@ -94,6 +97,7 @@ async function deliverInTenant(
                     reply: answer.reply,
                   }
                 : { kind: 'failed', failure: answer.code, latencyMs: answer.latencyMs },
+          delivery.lease,
         ),
       SYSTEM,
     );

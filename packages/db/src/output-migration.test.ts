@@ -290,6 +290,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0137_embedding_confirmed',
       '0138_service_identities',
       '0139_webhooks',
+      '0140_webhook_notification',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,

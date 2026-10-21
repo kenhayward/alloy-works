@@ -492,6 +492,8 @@ const operationTags = {
     'changeWebhook',
     'rotateWebhookSecret',
     'removeWebhook',
+    'listWebhookDeliveries',
+    'getWebhookDelivery',
   ],
   'Service identities': [
     'listServiceIdentities',
@@ -1029,15 +1031,19 @@ const descriptions: Readonly<Record<string, string>> = {
   listWebhooks:
     'Lists the environment’s webhook subscriptions: each one’s service identity, URL, event types and whether it is disabled, never its secret. Needs administer at the environment, with a signed-in session.',
   createWebhook:
-    'Subscribes a service identity’s HTTPS endpoint to event types. Each event of those types is posted to it, signed as Standard Webhooks specifies, carrying identifiers and versions and never content, and only where the service identity may read what it is about. Answers the signing secret this once. Recorded as a webhook changed. Needs administer at the environment, with a signed-in session.',
+    'Subscribes a service identity’s HTTPS endpoint to event types. Each event of those types is posted to it, signed as Standard Webhooks specifies, carrying identifiers and versions and never content, and only where the service identity may read what it is about. Answers the signing secret this once. Delivery is at least once and in no promised order: a receiver deduplicates by the payload’s `id` and orders what matters to it by the artifact’s version, or by the number in `sequence`, which is its source’s order and not the order acts committed in. Recorded as a webhook changed. Needs administer at the environment, with a signed-in session.',
   getWebhook:
     'Returns a webhook subscription, never its secret. Needs administer at the environment, with a signed-in session.',
   changeWebhook:
-    'Changes a subscription’s URL, description or event types. A new URL ends the old secret at once and answers a new one. Recorded as a webhook changed. Needs administer at the environment, with a signed-in session.',
+    'Changes a subscription’s URL, description or event types, or turns it on again after it was turned off. A new URL ends the old secret at once and answers a new one; a type no longer wanted is not sent, though it was waiting. Recorded as a webhook changed. Needs administer at the environment, with a signed-in session.',
   rotateWebhookSecret:
     'Rotates a subscription’s signing secret and answers the new one this once; the old one signs beside it for 24 hours, so a receiver can move without losing an event. Recorded as a webhook changed. Needs administer at the environment, with a signed-in session.',
   removeWebhook:
     'Removes a subscription and every delivery waiting for it. Recorded as a webhook changed. Needs administer at the environment, with a signed-in session.',
+  listWebhookDeliveries:
+    'Lists a subscription’s deliveries, newest first: each one’s event type, sequence, state and how many attempts it has had. Kept 30 days. Needs administer at the environment, with a signed-in session.',
+  getWebhookDelivery:
+    'Returns one delivery: exactly what was sent, identifiers and versions and never content, and at each attempt what the receiver answered, its status, how long it took and at most 2 KiB of its reply, or why there was no answer. Needs administer at the environment, with a signed-in session.',
   listPeople: 'Lists people in the environment by name for a user selection field.',
   listPrincipals: 'Lists people already signed in or invited who may be named by an access grant.',
   getErasure:

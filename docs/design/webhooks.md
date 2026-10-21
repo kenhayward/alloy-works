@@ -78,6 +78,15 @@ subscriptions.
   `v1,<base64 HMAC-SHA256 of id.timestamp.body>`. A rotated secret signs beside the new for 24 hours.
 - **A 2xx is delivered**; anything else is a failed attempt.
 
+## Failing, and on again
+
+An attempt is recorded only under the lease that claimed it, so a worker whose lease was claimed past
+records nothing, and a delivery done is never sent again. The backoff stops at an hour. A day with no
+attempt at all restarts the three-day count: a quiet endpoint is not a failing one. Disabling gives up
+what waits for it; `PATCH /v1/webhooks/{id}` with `enabled` turns it on again, its count afresh,
+where its service identity may act. A type no longer wanted is not sent, though it was waiting. A
+reply's control characters are never kept.
+
 ## Ruled out
 
 - **Content in the payload** (Ken): it would leave the boundary on every event, filtered at send time.
