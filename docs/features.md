@@ -1404,7 +1404,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   approval, review rounds, publication and notifications. Its signing secret is shown once, sealed
   so only the connector can use it, and rotated with the old one still signing for a day. Every
   change is recorded in the audit log, never its URL. Each event an act records is queued in the
-  act's own transaction for every subscription wanting it. Delivery is not built yet.
+  act's own transaction for every subscription wanting it. The worker sends each through the
+  connector within seconds, signed as Standard Webhooks specifies, only while the service identity
+  may read what it is about, and only to a public address. A receiver that fails is tried again from
+  30 seconds, doubling to an hour, for a day; one failing three days with no success is disabled.
 - **MCP, for agents.** An MCP client connects to `/mcp` on your environment with an API token, yours
   or a service identity's, as a bearer: a signed-in session never works there. Four tools read:
   `search`, `read_document`, `read_component` (its blocks numbered) and `related` (an artifact's

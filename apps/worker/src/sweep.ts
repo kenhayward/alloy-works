@@ -16,6 +16,7 @@ import {
   sweepRangePreviews,
   sweepAbandonedRuns,
   sweepQueryEmbeddings,
+  sweepWebhookDeliveries,
   expireTenantExport,
   tenantExportsDue,
   type JobQueue,
@@ -391,6 +392,22 @@ export async function sweepExpiredTenantExports(
       }
     } catch (error) {
       log.error({ tenant: tenant.id, err: error }, 'the export sweep failed for a tenant');
+    }
+  }
+  return removed;
+}
+
+/** Webhook deliveries done with, and their attempts, past 30 days, in every tenant (WB-I). */
+export async function sweepWebhookDeliveriesEverywhere(
+  db: TenantDatabase,
+  log: WorkerLog,
+): Promise<number> {
+  let removed = 0;
+  for (const tenant of await db.tenants()) {
+    try {
+      removed += await db.withTenant(tenant, (trx) => sweepWebhookDeliveries(trx));
+    } catch (error) {
+      log.error({ tenant: tenant.id, err: error }, 'the webhook delivery sweep failed in a tenant');
     }
   }
   return removed;

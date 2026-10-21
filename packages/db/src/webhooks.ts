@@ -243,3 +243,179 @@ export async function disableIdentitySubscriptions(
     await recordWebhookChange(trx, row, { change: 'disabled', reason: 'identity_disabled' });
   }
 }
+
+/** A delivery claimed for an attempt: what the worker sends, and whose view decides it (WB-B). */
+export interface ClaimedDelivery {
+  readonly id: string;
+  readonly subscriptionId: string;
+  readonly serviceIdentity: string;
+  readonly url: string;
+  /** The secrets that sign it, the newer first (WB-G). */
+  readonly sealed: readonly string[];
+  readonly artifactId: string | null;
+  readonly body: string;
+}
+
+/** The longest backoff between attempts, and how long a delivery is tried (WB-E). */
+const BACKOFF_FIRST_S = 30;
+const BACKOFF_MOST_S = 60 * 60;
+
+/**
+ * The deliveries due now, at most `limit`, each leased for `leaseMs` so no other worker takes it while
+ * it is sent; claimed past any another holds (WB-I). A disabled subscription's wait.
+ */
+export async function claimDeliveries(
+  trx: TenantTransaction,
+  limit: number,
+  leaseMs: number,
+): Promise<readonly ClaimedDelivery[]> {
+  const { rows } = await sql<{
+    id: string;
+    subscription_id: string;
+    service_identity: string;
+    url: string;
+    sealed: string;
+    previous: string | null;
+    artifact_id: string | null;
+    body: string;
+  }>`
+    with due as (
+      select d.id from webhook_delivery d
+      join webhook_subscription s on s.id = d.subscription_id
+      where d.state = 'pending' and d.next_at <= now()
+        and (d.locked_until is null or d.locked_until < now())
+        and s.disabled_at is null
+      order by d.next_at
+      limit ${limit}
+      for update of d skip locked
+    )
+    update webhook_delivery d
+       set locked_until = now() + make_interval(secs => ${leaseMs / 1000})
+      from due, webhook_subscription s
+     where d.id = due.id and s.id = d.subscription_id
+    returning d.id, d.subscription_id, s.service_identity, s.url, s.sealed,
+              case when s.previous_until > now() then s.sealed_previous end as previous,
+              d.artifact_id, d.payload::text as body`.execute(trx);
+  return rows.map((row) => ({
+    id: row.id,
+    subscriptionId: row.subscription_id,
+    serviceIdentity: row.service_identity,
+    url: row.url,
+    sealed: row.previous === null ? [row.sealed] : [row.sealed, row.previous],
+    artifactId: row.artifact_id,
+    body: row.body,
+  }));
+}
+
+/** How an attempt ended, as the worker saw it (WB-E, WB-F). */
+export type AttemptOutcome =
+  | {
+      readonly kind: 'answered';
+      readonly status: number;
+      readonly latencyMs: number;
+      readonly reply: string;
+    }
+  | { readonly kind: 'failed'; readonly failure: string; readonly latencyMs: number }
+  /** Its service identity may not read what it is about: never sent (WB-B). */
+  | { readonly kind: 'unreadable' }
+  /** The connector was full: no attempt, tried again shortly. */
+  | { readonly kind: 'busy' };
+
+/**
+ * Records an attempt and what follows from it (WB-E): a 2xx delivered; else retried with backoff from
+ * 30 seconds doubling to an hour for a day from the first attempt, then given up; and the subscription
+ * disabled where its first failure since its last success, or since it was made, is three days old.
+ * Answers the subscription disabled, if one was.
+ */
+export async function recordAttempt(
+  trx: TenantTransaction,
+  deliveryId: string,
+  outcome: AttemptOutcome,
+): Promise<{ readonly disabled?: string }> {
+  if (outcome.kind === 'busy') {
+    await trx
+      .updateTable('webhook_delivery')
+      .set({ locked_until: null, next_at: sql<Date>`now() + interval '5 seconds'` })
+      .where('id', '=', deliveryId)
+      .execute();
+    return {};
+  }
+  if (outcome.kind === 'unreadable') {
+    await trx
+      .insertInto('webhook_attempt')
+      .values({
+        delivery_id: deliveryId,
+        status: null,
+        latency_ms: 0,
+        failure: 'unreadable',
+        reply: null,
+      })
+      .execute();
+    await trx
+      .updateTable('webhook_delivery')
+      .set({ state: 'dropped', locked_until: null })
+      .where('id', '=', deliveryId)
+      .execute();
+    return {};
+  }
+  const delivered = outcome.kind === 'answered' && outcome.status >= 200 && outcome.status < 300;
+  await trx
+    .insertInto('webhook_attempt')
+    .values({
+      delivery_id: deliveryId,
+      status: outcome.kind === 'answered' ? outcome.status : null,
+      latency_ms: outcome.latencyMs,
+      failure: outcome.kind === 'failed' ? outcome.failure : null,
+      reply: outcome.kind === 'answered' ? outcome.reply : null,
+    })
+    .execute();
+  const { rows } = await sql<{ subscription_id: string; attempts: number; state: string }>`
+    update webhook_delivery
+       set attempts = attempts + 1,
+           first_attempt_at = coalesce(first_attempt_at, now()),
+           locked_until = null,
+           state = case
+             when ${delivered} then 'delivered'
+             when coalesce(first_attempt_at, now()) <= now() - interval '24 hours' then 'given_up'
+             else 'pending' end,
+           next_at = now() + make_interval(secs => least(
+             ${BACKOFF_MOST_S}, ${BACKOFF_FIRST_S} * power(2, attempts)::integer))
+     where id = ${deliveryId}
+    returning subscription_id, attempts, state`.execute(trx);
+  const subscription = rows[0]!.subscription_id;
+  if (delivered) {
+    await trx
+      .updateTable('webhook_subscription')
+      .set({ last_success_at: sql<Date>`now()`, failing_since: null })
+      .where('id', '=', subscription)
+      .execute();
+    return {};
+  }
+  const failing = await trx
+    .updateTable('webhook_subscription')
+    .set({ failing_since: sql<Date>`coalesce(failing_since, now())` })
+    .where('id', '=', subscription)
+    .returning(['id', 'description', 'failing_since', 'disabled_at'])
+    .executeTakeFirstOrThrow();
+  const since = failing.failing_since!;
+  if (failing.disabled_at === null && Date.now() - since.getTime() >= 3 * 24 * 60 * 60 * 1000) {
+    await trx
+      .updateTable('webhook_subscription')
+      .set({ disabled_at: sql<Date>`now()`, disabled_reason: 'failing' })
+      .where('id', '=', subscription)
+      .execute();
+    await recordWebhookChange(trx, failing, { change: 'disabled', reason: 'failing' });
+    return { disabled: subscription };
+  }
+  return {};
+}
+
+/** Deliveries done with, and their attempts, kept 30 days (WB-I): how many went. */
+export async function sweepWebhookDeliveries(trx: TenantTransaction): Promise<number> {
+  const gone = await trx
+    .deleteFrom('webhook_delivery')
+    .where('state', '<>', 'pending')
+    .where('created_at', '<', sql<Date>`now() - interval '30 days'`)
+    .executeTakeFirst();
+  return Number(gone.numDeletedRows);
+}

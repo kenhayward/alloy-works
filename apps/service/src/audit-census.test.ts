@@ -492,6 +492,13 @@ const WRITERS: Readonly<Record<string, Readonly<Record<string, Entry>>>> = {
     foldNotificationDigests: { none: 'inbox' },
     sweepOldNotifications: { none: 'inbox' },
     sweepDates: writes('revision.effective', 'review.lapsed', 'workflow.transitioned'),
+    // Deliveries done with past 30 days, which the attempts they held go with (the WB plan, WB-I).
+    sweepWebhookDeliveriesEverywhere: { none: 'derived' },
+  },
+  /** The worker's webhook delivery loop (apps/worker/src/webhooks.ts; the WB plan, WB-I). */
+  delivery: {
+    // A subscription failing three days disabled, as the system (WB-E).
+    deliverWebhooks: writes('webhook.changed'),
   },
   /** The vendor's functions: everything in packages/db that runs through `asAdministrator`. */
   vendor: {

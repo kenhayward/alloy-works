@@ -30,6 +30,14 @@ export interface ConnectorConfig {
   readonly keyDigest: Buffer;
   /** SHA-256 of the key the worker presents, which opens `/v1/embed` alone (the G7 plan, G7-E). */
   readonly embedKeyDigest?: Buffer;
+  /** SHA-256 of the key the worker presents to deliver webhooks, which opens `/v1/deliver` alone (WB-F). */
+  readonly deliverKeyDigest?: Buffer;
+  /**
+   * Whether a webhook may reach a private address: never in production, where the reply an
+   * administrator reads would read an internal service (the WB plan, WB-F); development's and the
+   * suites' receivers are private.
+   */
+  readonly webhookPrivate: boolean;
   /** The key a credential is sealed and opened with, which the service never holds. */
   readonly sealingKey: Buffer;
   /** The deployment's own ranges, beside the built-in ones. */
@@ -110,6 +118,20 @@ export function loadConnectorConfig(
       'must not be the same key as CONNECTOR_KEY or CONNECTOR_SEALING_KEY',
     );
 
+  // The worker's, for webhook delivery alone: optional, and never any of the others.
+  const deliver = env.CONNECTOR_DELIVER_KEY ? key(env, 'CONNECTOR_DELIVER_KEY') : undefined;
+  if (
+    deliver &&
+    (deliver.equals(service) || deliver.equals(sealing) || (embed && deliver.equals(embed)))
+  )
+    refuse(
+      'CONNECTOR_DELIVER_KEY',
+      'must not be the same key as CONNECTOR_KEY, CONNECTOR_SEALING_KEY or CONNECTOR_EMBED_KEY',
+    );
+  const webhookPrivate = env.CONNECTOR_WEBHOOK_PRIVATE ?? 'deny';
+  if (!['deny', 'allow'].includes(webhookPrivate))
+    refuse('CONNECTOR_WEBHOOK_PRIVATE', 'must be deny or allow');
+
   const listed = env.CONNECTOR_DENY?.trim();
   if (!listed) {
     refuse('CONNECTOR_DENY', "is required: the platform's CIDR ranges, comma-separated, or none");
@@ -133,6 +155,14 @@ export function loadConnectorConfig(
     ...(embed === undefined
       ? {}
       : { embedKeyDigest: createHash('sha256').update(env.CONNECTOR_EMBED_KEY!, 'utf8').digest() }),
+    ...(deliver === undefined
+      ? {}
+      : {
+          deliverKeyDigest: createHash('sha256')
+            .update(env.CONNECTOR_DELIVER_KEY!, 'utf8')
+            .digest(),
+        }),
+    webhookPrivate: webhookPrivate === 'allow',
     sealingKey: sealing,
     deny,
     maxChildren: integer(env, 'CONNECTOR_MAX_CHILDREN', 8, [1, 64]),
@@ -168,6 +198,7 @@ export function takeConnectorConfig(env: Record<string, string | undefined>): Co
     delete env.CONNECTOR_KEY;
     delete env.CONNECTOR_SEALING_KEY;
     delete env.CONNECTOR_EMBED_KEY;
+    delete env.CONNECTOR_DELIVER_KEY;
   }
 }
 
@@ -181,3 +212,15 @@ export function productionDeny(
 ): readonly string[] {
   return [...builtInDenied, ...config.deny, ...network];
 }
+
+/**
+ * The private ranges a webhook is refused besides the guard's own (the WB plan, WB-F): RFC 1918,
+ * CGNAT and unique-local, where a connection's declared host may be private but a receiver may not.
+ */
+export const PRIVATE_RANGES = [
+  '10.0.0.0/8',
+  '172.16.0.0/12',
+  '192.168.0.0/16',
+  '100.64.0.0/10',
+  'fc00::/7',
+];

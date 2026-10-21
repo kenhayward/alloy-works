@@ -66,3 +66,84 @@ export const webhookSealRequestSchema = z.strictObject({
   secret: webhookSecretSchema,
 });
 export type WebhookSealRequest = z.infer<typeof webhookSealRequestSchema>;
+
+/** The most a delivery's body may be: a thin payload, never content (WB-A). */
+export const DELIVERY_BODY_MOST = 64 * 1024;
+
+/** The most of a receiver's reply kept for an administrator to read (WB-F, API-029). */
+export const DELIVERY_REPLY_MOST = 2048;
+
+/** How long a delivery may take, connecting, sending and reading the start of its reply (WB-F). */
+export const DELIVERY_DEADLINE_MS = 10_000;
+
+const sealed = z.string().min(1).max(4096);
+
+/**
+ * A delivery, as the worker asks the connector to make it (WB-F): the subscription's sealed secrets,
+ * the newer first, which only the connector opens; its URL; and the body, signed there.
+ */
+export const deliverRequestSchema = z.strictObject({
+  requestId: z.uuid(),
+  tenant,
+  subscription: z.uuid(),
+  url: webhookUrlSchema,
+  sealed: z.array(sealed).min(1).max(2),
+  /** The payload's `id`, the `webhook-id` a receiver deduplicates by. */
+  id: z.uuid(),
+  body: z.string().min(2).max(DELIVERY_BODY_MOST),
+});
+export type DeliverRequest = z.infer<typeof deliverRequestSchema>;
+
+/** Why a delivery reached no answer: never the receiver's or the network's own words. */
+export const deliveryFailureCodes = [
+  'host_refused',
+  'connection_failed',
+  'timeout',
+  'secret_refused',
+  'connector_error',
+] as const;
+
+export const deliverAnswerSchema = z.discriminatedUnion('type', [
+  z.strictObject({
+    type: z.literal('answered'),
+    status: z.number().int().min(100).max(599),
+    latencyMs: z.number().int().min(0),
+    reply: z.string().max(DELIVERY_REPLY_MOST),
+  }),
+  z.strictObject({
+    type: z.literal('failed'),
+    code: z.enum(deliveryFailureCodes),
+    latencyMs: z.number().int().min(0),
+  }),
+]);
+export type DeliverAnswer = z.infer<typeof deliverAnswerSchema>;
+
+/** The line the supervisor writes to a delivery's child: its secrets opened, the guard's ranges. */
+export const childDeliverRequestSchema = z.strictObject({
+  kind: z.literal('deliver'),
+  request: deliverRequestSchema,
+  secrets: z.array(webhookSecretSchema).min(1).max(2),
+  deny: z.array(z.string()),
+  connectTimeoutMs: z.number().int().min(1).max(60_000),
+  ca: z
+    .string()
+    .max(256 * 1024)
+    .optional(),
+});
+export type ChildDeliverRequest = z.infer<typeof childDeliverRequestSchema>;
+
+/**
+ * What Standard Webhooks signs: `id.timestamp.body`, with the secret's bytes after `whsec_` as the HMAC
+ * key; the signature header is each secret's `v1,<base64>`, space-separated. Pure, with the HMAC given,
+ * so domain stays free of `node:crypto`.
+ */
+export function signedContent(id: string, timestamp: number, body: string): string {
+  return `${id}.${timestamp}.${body}`;
+}
+
+export function signatureHeader(signatures: readonly string[]): string {
+  return signatures.map((each) => `v1,${each}`).join(' ');
+}
+
+/** A secret's key bytes, as base64: what follows `whsec_`. */
+export const secretKey = (secret: string): string => secret.slice('whsec_'.length);

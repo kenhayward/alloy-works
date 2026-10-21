@@ -20,7 +20,10 @@ import {
   createWebhookSubscription,
   listWebhookSubscriptions,
   removeWebhookSubscription,
+  claimDeliveries,
+  recordAttempt,
   rotateWebhookSecret,
+  sweepWebhookDeliveries,
 } from './webhooks.js';
 
 const SYSTEM: AuditContext = { actorKind: 'system' };
@@ -207,5 +210,185 @@ describe('webhook subscriptions and the deliveries their trigger queues (the WB 
     );
     const listed = [...rows[0]!.source.matchAll(/'([a-z_]+\.[a-z_]+)'/g)].map((match) => match[1]);
     expect(listed.toSorted()).toEqual([...webhookAuditTypes].toSorted());
+  });
+
+  /** A live identity's subscription, and one act queued for it: its delivery's id. */
+  const queued = async (types: string[] = ['artifact.archived']) => {
+    const identity = (
+      await as((trx) => createServiceIdentity(trx, { name: 'Courier', description: '', by: ada }))
+    ).id;
+    const made = await as((trx) =>
+      createWebhookSubscription(trx, {
+        id: randomUUID(),
+        serviceIdentity: identity,
+        url: 'https://receiver.example.test/hooks',
+        description: 'Courier feed',
+        eventTypes: types as never,
+        sealed: 'sealed-for-the-test',
+        by: ada,
+      }),
+    );
+    await act('artifact.archived', randomUUID());
+    const [delivery] = await as((trx) =>
+      trx
+        .selectFrom('webhook_delivery')
+        .select('id')
+        .where('subscription_id', '=', made.id)
+        .execute(),
+    );
+    return { subscription: made.id, delivery: delivery!.id };
+  };
+
+  const deliveryRow = (id: string) =>
+    as((trx) =>
+      trx
+        .selectFrom('webhook_delivery')
+        .select(['state', 'attempts', 'next_at', 'locked_until'])
+        .where('id', '=', id)
+        .executeTakeFirstOrThrow(),
+    );
+
+  const failed = { kind: 'answered', status: 503, latencyMs: 12, reply: 'busy' } as const;
+
+  it('API-046 queues every event once whatever order their transactions commit in', async () => {
+    const made = await subscribe(['artifact.archived']);
+    let release = () => {};
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let recorded = () => {};
+    const first = new Promise<void>((resolve) => {
+      recorded = resolve;
+    });
+    // The earlier sequence commits last.
+    const early = service.withTenant(
+      tenant,
+      async (trx) => {
+        await recordEvent(trx, {
+          kind: 'artifact.archived',
+          subject: { kind: 'component', id: randomUUID() },
+        });
+        recorded();
+        await held;
+      },
+      SYSTEM,
+    );
+    await first;
+    await act('artifact.archived', randomUUID());
+    release();
+    await early;
+    const sequences = (await deliveries(made.id)).map((each) =>
+      Number(each.sequence.slice('audit:'.length)),
+    );
+    expect(sequences).toHaveLength(2);
+    expect(new Set(sequences).size).toBe(2);
+  });
+
+  it('leases a claimed delivery, so no other worker sends it at once', async () => {
+    const { delivery } = await queued();
+    const first = await as((trx) => claimDeliveries(trx, 50, 60_000));
+    expect(first.map((each) => each.id)).toContain(delivery);
+    const second = await as((trx) => claimDeliveries(trx, 50, 60_000));
+    expect(second.map((each) => each.id)).not.toContain(delivery);
+    const claimed = first.find((each) => each.id === delivery)!;
+    expect(claimed).toMatchObject({ sealed: ['sealed-for-the-test'] });
+    expect(JSON.parse(claimed.body)).toMatchObject({ type: 'artifact.archived', id: delivery });
+  });
+
+  it('API-028 retries with backoff, gives up after a day, and delivers on a 2xx', async () => {
+    const { subscription, delivery } = await queued();
+    await as((trx) => recordAttempt(trx, delivery, failed));
+    const once = await deliveryRow(delivery);
+    expect(once).toMatchObject({ state: 'pending', attempts: 1, locked_until: null });
+    const firstWait = once.next_at.getTime() - Date.now();
+    expect(firstWait).toBeGreaterThan(25_000);
+    expect(firstWait).toBeLessThanOrEqual(31_000);
+    await as((trx) =>
+      recordAttempt(trx, delivery, { kind: 'failed', failure: 'timeout', latencyMs: 10_000 }),
+    );
+    const secondWait = (await deliveryRow(delivery)).next_at.getTime() - Date.now();
+    expect(secondWait).toBeGreaterThan(55_000);
+    await as((trx) =>
+      trx
+        .updateTable('webhook_delivery')
+        .set({ first_attempt_at: sql<Date>`now() - interval '25 hours'` })
+        .where('id', '=', delivery)
+        .execute(),
+    );
+    await as((trx) => recordAttempt(trx, delivery, failed));
+    expect(await deliveryRow(delivery)).toMatchObject({ state: 'given_up', attempts: 3 });
+    const attempts = await as((trx) =>
+      trx
+        .selectFrom('webhook_attempt')
+        .select(['status', 'failure', 'reply'])
+        .where('delivery_id', '=', delivery)
+        .execute(),
+    );
+    expect(attempts).toEqual([
+      { status: 503, failure: null, reply: 'busy' },
+      { status: null, failure: 'timeout', reply: null },
+      { status: 503, failure: null, reply: 'busy' },
+    ]);
+    const next = await queued();
+    await as((trx) =>
+      recordAttempt(trx, next.delivery, { kind: 'answered', status: 204, latencyMs: 8, reply: '' }),
+    );
+    expect(await deliveryRow(next.delivery)).toMatchObject({ state: 'delivered' });
+    void subscription;
+  });
+
+  it('API-028 disables a subscription failing three days since its last success, and records it', async () => {
+    const { subscription, delivery } = await queued();
+    await as((trx) => recordAttempt(trx, delivery, failed));
+    await as((trx) =>
+      trx
+        .updateTable('webhook_subscription')
+        .set({ failing_since: sql<Date>`now() - interval '3 days 1 minute'` })
+        .where('id', '=', subscription)
+        .execute(),
+    );
+    expect(await as((trx) => recordAttempt(trx, delivery, failed))).toEqual({
+      disabled: subscription,
+    });
+    const disabled = await as((trx) =>
+      trx
+        .selectFrom('webhook_subscription')
+        .select(['disabled_reason'])
+        .where('id', '=', subscription)
+        .executeTakeFirstOrThrow(),
+    );
+    expect(disabled.disabled_reason).toBe('failing');
+    const changes = await as((trx) =>
+      trx
+        .selectFrom('audit_event')
+        .select('detail')
+        .where('subject', '=', subscription)
+        .orderBy('sequence')
+        .execute(),
+    );
+    expect(changes.at(-1)?.detail).toEqual({ change: 'disabled', reason: 'failing' });
+    // A quiet endpoint's one failure is no reason: the clock starts at its first failure.
+    const quiet = await queued();
+    expect(await as((trx) => recordAttempt(trx, quiet.delivery, failed))).toEqual({});
+  });
+
+  it('drops a delivery its service identity may not read, and frees one the connector was too busy for', async () => {
+    const { delivery } = await queued();
+    await as((trx) => recordAttempt(trx, delivery, { kind: 'busy' }));
+    expect(await deliveryRow(delivery)).toMatchObject({
+      state: 'pending',
+      attempts: 0,
+      locked_until: null,
+    });
+    await as((trx) => recordAttempt(trx, delivery, { kind: 'unreadable' }));
+    expect(await deliveryRow(delivery)).toMatchObject({ state: 'dropped', attempts: 0 });
+    await as((trx) =>
+      trx
+        .updateTable('webhook_delivery')
+        .set({ created_at: sql<Date>`now() - interval '31 days'` })
+        .where('id', '=', delivery)
+        .execute(),
+    );
+    expect(await as((trx) => sweepWebhookDeliveries(trx))).toBeGreaterThanOrEqual(1);
   });
 });

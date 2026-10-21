@@ -8,6 +8,12 @@ import {
   credentialContext,
   modelCredentialContext,
   embedAnswerSchema,
+  deliverAnswerSchema,
+  webhookSecretContext,
+  DELIVERY_DEADLINE_MS,
+  type ChildDeliverRequest,
+  type DeliverAnswer,
+  type DeliverRequest,
   modelEventSchema,
   type ChildEmbedRequest,
   type ChildModelRequest,
@@ -307,6 +313,12 @@ export const MAX_MODELS = 4;
 /** The connect timeout, and the least time a failure to reach or authenticate takes (D1-L). */
 export const CONNECT_TIMEOUT_MS = 5000;
 
+/**
+ * The most webhook deliveries at once (the WB plan, WB-F): each may hold its child for ten seconds, so
+ * they never take the queries' or the models' slots.
+ */
+export const MAX_DELIVERIES = 4;
+
 export interface Supervisor {
   /**
    * The request's answer, or `busy` when the cap of children is running. Where `signal` aborts, its
@@ -328,6 +340,8 @@ export interface Supervisor {
   ): 'busy' | Promise<void>;
   /** An embedding call (the G7 plan, G7-A): `busy` as a model call is, else its one answer. */
   embed(request: EmbedRequest, signal?: AbortSignal): 'busy' | Promise<EmbedAnswer>;
+  /** A webhook delivery (the WB plan, WB-F): `busy` where its own cap is reached, else its answer. */
+  deliver(request: DeliverRequest, signal?: AbortSignal): 'busy' | Promise<DeliverAnswer>;
   /** How many children are running. */
   active(): number;
 }
@@ -350,6 +364,10 @@ export function createSupervisor(options: {
   readonly maxRuns?: number;
   /** The most of those children that may be model calls at once: `MAX_MODELS` unless a test says. */
   readonly maxModels?: number;
+  /** The most of those children that may be deliveries at once: `MAX_DELIVERIES` unless a test says. */
+  readonly maxDeliveries?: number;
+  /** The ranges a webhook is refused besides `deny`: production's private ones, unless it allows them. */
+  readonly webhookDeny?: readonly string[];
   /** How a child is started, fixed or by its slot: production's own users unless a test says. */
   readonly spec?: ChildSpec | ((slot: number) => ChildSpec);
   readonly spawn?: SpawnChild;
@@ -374,6 +392,8 @@ export function createSupervisor(options: {
   const streamSpawn = options.streamSpawn ?? streamChild;
   const maxModels = options.maxModels ?? MAX_MODELS;
   let models = 0;
+  const maxDeliveries = options.maxDeliveries ?? MAX_DELIVERIES;
+  let deliveries = 0;
   const sweep = options.sweep ?? sweepUser;
   const connectTimeoutMs = options.connectTimeoutMs ?? CONNECT_TIMEOUT_MS;
   const failureFloorMs = options.failureFloorMs ?? CONNECT_TIMEOUT_MS;
@@ -542,6 +562,71 @@ export function createSupervisor(options: {
     }
   }
 
+  /** A delivery's child: its secrets opened here, bound to its subscription and URL (WB-G). */
+  async function deliverWork(
+    request: DeliverRequest,
+    slot: number,
+    sweeping: (done: Promise<void>) => void,
+    signal: AbortSignal | undefined,
+  ): Promise<DeliverAnswer> {
+    let secrets: string[];
+    try {
+      secrets = request.sealed.map((each) =>
+        openSecret(
+          options.sealingKey,
+          'webhook-signing',
+          request.tenant,
+          each,
+          webhookSecretContext(request.subscription, request.url),
+        ),
+      );
+    } catch {
+      return { type: 'failed', code: 'secret_refused', latencyMs: 0 };
+    }
+    const input: ChildDeliverRequest = {
+      kind: 'deliver',
+      request,
+      secrets,
+      deny: [...options.deny, ...(options.webhookDeny ?? [])],
+      connectTimeoutMs,
+      ...(options.ca === undefined ? {} : { ca: options.ca }),
+    };
+    const spec = specFor(slot);
+    let stderrBytes = 0;
+    let answer: DeliverAnswer | undefined;
+    let outcome: StreamOutcome;
+    try {
+      outcome = await streamSpawn(
+        spec,
+        JSON.stringify(input),
+        DELIVERY_DEADLINE_MS,
+        (line) => {
+          try {
+            const parsed = deliverAnswerSchema.safeParse(JSON.parse(line));
+            if (parsed.success) answer = parsed.data;
+          } catch {
+            // Not an answer: the child is at fault.
+          }
+          return false;
+        },
+        (chunk) => {
+          stderrBytes += chunk.length;
+        },
+        signal,
+      );
+    } finally {
+      if (spec.uid !== undefined) sweeping(sweep(spec.uid).catch(() => {}));
+    }
+    options.onStderrBytes?.(stderrBytes);
+    return (
+      answer ?? {
+        type: 'failed',
+        code: outcome.kind === 'timeout' ? 'timeout' : 'connector_error',
+        latencyMs: DELIVERY_DEADLINE_MS,
+      }
+    );
+  }
+
   /** An embedding call's child: the key opened as a model call's, one line in and one answer out. */
   async function embedWork(
     request: EmbedRequest,
@@ -610,6 +695,24 @@ export function createSupervisor(options: {
   }
 
   return {
+    deliver(request, signal) {
+      if (deliveries >= maxDeliveries) return 'busy';
+      const slot = free.shift();
+      if (slot === undefined) return 'busy';
+      active += 1;
+      deliveries += 1;
+      let answer: DeliverAnswer | undefined;
+      return holding(slot, (sweeping) =>
+        deliverWork(request, slot, sweeping, signal)
+          .then((each) => {
+            answer = each;
+          })
+          .finally(() => {
+            active -= 1;
+            deliveries -= 1;
+          }),
+      ).then(() => answer!);
+    },
     embed(request, signal) {
       if (models >= maxModels) return 'busy';
       const slot = free.shift();

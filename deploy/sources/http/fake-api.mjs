@@ -96,6 +96,15 @@ export function createFakeApi(options = {}) {
       };
       // The stand-in model (the G1 plan, G1-H), behind its own key.
       if (isModelPath(url.pathname)) return answerModel(request, url, body, response);
+      // A webhook's receiver (the WB plan): `/hooks` answers 200, `/hooks/<status>` that status, a
+      // redirect's with a Location it must never be followed to; each kept in `seen`, unkeyed.
+      if (url.pathname === '/hooks' || url.pathname.startsWith('/hooks/')) {
+        const asked = /^\/hooks\/([0-9]{3})$/.exec(url.pathname);
+        const answer = asked ? Number(asked[1]) : 200;
+        return send(answer, Buffer.from(`received ${'x'.repeat(4000)}`), {
+          ...(answer >= 300 && answer < 400 ? { location: '/hooks' } : {}),
+        });
+      }
       if (url.pathname === '/v1/status/401' || key !== DEV_KEY)
         return send(401, json({ error: 'key' }));
       const status = /^\/v1\/status\/([0-9]{3})$/.exec(url.pathname);
