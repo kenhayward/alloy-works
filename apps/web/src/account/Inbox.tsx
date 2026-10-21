@@ -23,7 +23,7 @@ interface Place {
 
 interface Notification {
   readonly id: string;
-  readonly kind: Kind | 'digest' | 'budget';
+  readonly kind: Kind | 'digest' | 'budget' | 'webhook';
   readonly actor: { readonly id: string; readonly name: string | null } | null;
   readonly thread: string | null;
   /** A round a person was named a reviewer on (RR-H). */
@@ -106,6 +106,8 @@ function said(each: Notification): string {
       const money = (text: string) => `${budget.currency} ${Number(text).toFixed(2)}`;
       return `Models have cost ${money(budget.spent)} this month, ${budget.threshold}% of the ${money(budget.limit)} budget. Nothing stops.`;
     }
+    case 'webhook':
+      return 'A webhook you made was turned off after three days of failed deliveries.';
   }
 }
 
@@ -263,6 +265,11 @@ export function Inbox({ client, onClose }: { client: Client; onClose: () => void
                   {each.kind === 'budget' && (
                     <a href="#/admin/spending" onClick={() => void markRead(each)}>
                       Open Model spending
+                    </a>
+                  )}
+                  {each.kind === 'webhook' && (
+                    <a href="#/admin/webhooks" onClick={() => void markRead(each)}>
+                      Open Webhooks
                     </a>
                   )}
                   {!each.read && (

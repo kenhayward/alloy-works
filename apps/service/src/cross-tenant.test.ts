@@ -493,6 +493,11 @@ const OTHER_TENANT_IDS: Readonly<
   changeWebhook: async (tenant, db) => ({ id: await webhookIn(tenant, db) }),
   rotateWebhookSecret: async (tenant, db) => ({ id: await webhookIn(tenant, db) }),
   removeWebhook: async (tenant, db) => ({ id: await webhookIn(tenant, db) }),
+  listWebhookDeliveries: async (tenant, db) => ({ id: await webhookIn(tenant, db) }),
+  getWebhookDelivery: async (tenant, db) => ({
+    id: await webhookIn(tenant, db),
+    delivery: '55555555-5555-4555-8555-555555555555',
+  }),
   changeServiceIdentity: async (tenant, db) => ({ id: await serviceIdentityIn(tenant, db) }),
   disableServiceIdentity: async (tenant, db) => ({ id: await serviceIdentityIn(tenant, db) }),
   issueServiceIdentityToken: async (tenant, db) => ({ id: await serviceIdentityIn(tenant, db) }),

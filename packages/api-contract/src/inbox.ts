@@ -26,7 +26,7 @@ const Place = z.object({
 /** One notification (COL-063): what happened, by whom, where - never the text (COL-036). */
 export const NotificationView = z.object({
   id: LowercaseUuid,
-  kind: z.enum(['mention', 'reply', 'resolution', 'round', 'digest', 'budget']),
+  kind: z.enum(['mention', 'reply', 'resolution', 'round', 'digest', 'budget', 'webhook']),
   actor: z
     .object({
       id: LowercaseUuid,
@@ -68,6 +68,10 @@ export const NotificationView = z.object({
     .describe(
       'A model budget’s alert (ADM-034): how much of it this month has spent; null otherwise',
     ),
+  webhook: z
+    .object({ id: LowercaseUuid.describe('The subscription') })
+    .nullable()
+    .describe('A webhook disabled after three days of failures (API-028); null otherwise'),
   at: z.iso.datetime(),
   read: z.boolean(),
 });

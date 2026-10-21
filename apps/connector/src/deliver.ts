@@ -65,6 +65,17 @@ export async function answerDeliver(
     type: 'answered',
     status: delivered.status,
     latencyMs: latency(),
-    reply: delivered.reply.slice(0, DELIVERY_REPLY_MOST),
+    // Control characters, NUL among them, which a text column refuses, never kept (the final review).
+    reply: keptText(delivered.reply).slice(0, DELIVERY_REPLY_MOST),
   };
+}
+
+/** A reply's text with its control characters, NUL among them, dropped: tab and line ends kept. */
+function keptText(text: string): string {
+  return Array.from(text)
+    .filter((each) => {
+      const code = each.charCodeAt(0);
+      return code === 9 || code === 10 || code === 13 || (code >= 32 && code !== 127);
+    })
+    .join('');
 }

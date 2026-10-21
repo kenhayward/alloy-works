@@ -136,6 +136,8 @@ describe('what each route checks', () => {
         'changeWebhook',
         'rotateWebhookSecret',
         'removeWebhook',
+        'listWebhookDeliveries',
+        'getWebhookDelivery',
       ].sort(),
     );
     for (const route of allRoutes) {

@@ -98,6 +98,7 @@ export function createFakeApi(options = {}) {
       if (isModelPath(url.pathname)) return answerModel(request, url, body, response);
       // A webhook's receiver (the WB plan): `/hooks` answers 200, `/hooks/<status>` that status, a
       // redirect's with a Location it must never be followed to; each kept in `seen`, unkeyed.
+      if (url.pathname === '/hooks/nul') return send(200, Buffer.from('a\u0000b'));
       if (url.pathname === '/hooks' || url.pathname.startsWith('/hooks/')) {
         const asked = /^\/hooks\/([0-9]{3})$/.exec(url.pathname);
         const answer = asked ? Number(asked[1]) : 200;

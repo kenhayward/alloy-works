@@ -42,3 +42,17 @@ thin, retried for a day, the endpoint disabled after three days failing, every a
 - **A trigger in every audited act**: one indexed select of enabled subscriptions per event, and a row per match; none without subscriptions.
 - **A slow receiver** holds a connector child for 10 s; four at once, a pass at most 50.
 - **Tenants with private receivers** cannot use webhooks yet, named in the design.
+
+## Built
+
+WB in three PRs: WBa #739, WBb #740 and the close #742. Departures: queued by a trigger in the act's
+transaction rather than by tailing the audit log (the pre-flight review); receivers at public addresses
+only, `CONNECTOR_WEBHOOK_PRIVATE=allow` for the suites; whoever made a subscription told of its
+disabling, rather than every administrator; `enabled` turns one on again. The final review found no
+leak; it fixed a backoff overflowing at the 28th attempt, a NUL in a reply that could not be recorded,
+a pass outliving its lease and a stale worker recording over a delivery done, a quiet endpoint disabled
+by one failure, a disabled subscription's deliveries waiting for ever, and a type no longer wanted still
+sent. Two search tests were held still on the way (#739), and meaning search finds a sliver reader's
+page exactly where the index scan stops short of it (#740). Left, named: a receiver on a private
+network; API-055's configuration export (T7); a delivery's cost (ADM-048); a subscription's change
+locked across the connector's seal.

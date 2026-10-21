@@ -442,6 +442,8 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   changeWebhook: writes('webhook.changed'),
   rotateWebhookSecret: writes('webhook.changed'),
   removeWebhook: writes('webhook.changed'),
+  listWebhookDeliveries: read,
+  getWebhookDelivery: read,
   listServiceIdentities: read,
   createServiceIdentity: writes('service_identity.created'),
   changeServiceIdentity: writes('service_identity.renamed'),

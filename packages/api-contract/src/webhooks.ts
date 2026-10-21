@@ -69,6 +69,12 @@ export const ChangeWebhookBody = z.strictObject({
   url: url.optional().describe('A new URL: answered with a new secret, the old one ended at once'),
   description: description.optional(),
   eventTypes: eventTypes.optional(),
+  enabled: z
+    .literal(true)
+    .optional()
+    .describe(
+      'On again after it was turned off, its failures counted afresh; its service identity must be enabled',
+    ),
 });
 export type ChangeWebhookBody = z.infer<typeof ChangeWebhookBody>;
 
@@ -214,6 +220,97 @@ export const webhookRoutes = {
       401: unauthenticated,
       403: notAdministering,
       404: missing,
+    },
+  },
+} as const satisfies Record<string, RouteContract>;
+
+export const DeliveryParams = z.object({
+  id: LowercaseUuid.describe('The subscription'),
+  delivery: LowercaseUuid.describe('Its delivery'),
+});
+export type DeliveryParams = z.infer<typeof DeliveryParams>;
+
+const DeliveryState = z
+  .enum(['pending', 'delivered', 'given_up', 'dropped'])
+  .describe(
+    '`pending`: to be tried, at `nextAt`; `delivered`: a 2xx came back; `given_up`: a day of failures; `dropped`: its service identity may not read what it is about, so it was never sent',
+  );
+
+export const DeliverySummary = z.object({
+  id: z.string().describe('The payload’s `id`, the `webhook-id` it was sent as'),
+  type: WebhookEventType,
+  sequence: z.string().describe('`audit:<n>` or `notification:<n>`: the order its source holds'),
+  state: DeliveryState,
+  attempts: z.number().int(),
+  nextAt: z.string().nullable(),
+  createdAt: z.string(),
+});
+export type DeliverySummary = z.infer<typeof DeliverySummary>;
+
+export const DeliveryList = z.object({ items: z.array(DeliverySummary), next: nextCursor });
+export type DeliveryList = z.infer<typeof DeliveryList>;
+
+export const DeliveryView = DeliverySummary.extend({
+  payload: z
+    .record(z.string(), z.unknown())
+    .describe('Exactly what was sent: identifiers and versions, never content'),
+  tried: z
+    .array(
+      z.object({
+        at: z.string(),
+        status: z
+          .number()
+          .int()
+          .nullable()
+          .describe('What the receiver answered, or null for none'),
+        latencyMs: z.number().int(),
+        failure: z
+          .string()
+          .nullable()
+          .describe(
+            'Why there was no answer, by code: `host_refused`, `timeout`, `unreadable` and the like',
+          ),
+        reply: z.string().nullable().describe('At most 2 KiB of what the receiver answered'),
+      }),
+    )
+    .describe('Every attempt, oldest first'),
+});
+export type DeliveryView = z.infer<typeof DeliveryView>;
+
+export const webhookDeliveryRoutes = {
+  listWebhookDeliveries: {
+    operationId: 'listWebhookDeliveries',
+    method: 'GET',
+    path: '/v1/webhooks/{id}/deliveries',
+    summary: 'A subscription’s deliveries, newest first, kept 30 days',
+    tenantScoped: true,
+    access: ADMINISTER,
+    params: WebhookParams,
+    query: WebhookListQuery,
+    responses: {
+      200: { description: 'A page of its deliveries', schema: DeliveryList },
+      400: {
+        description: 'A cursor this listing did not give out, or a limit outside 1 to 100',
+        schema: ErrorBody,
+      },
+      401: unauthenticated,
+      403: notAdministering,
+      404: missing,
+    },
+  },
+  getWebhookDelivery: {
+    operationId: 'getWebhookDelivery',
+    method: 'GET',
+    path: '/v1/webhooks/{id}/deliveries/{delivery}',
+    summary: 'One delivery: what was sent, and what came back at each attempt',
+    tenantScoped: true,
+    access: ADMINISTER,
+    params: DeliveryParams,
+    responses: {
+      200: { description: 'The delivery', schema: DeliveryView },
+      401: unauthenticated,
+      403: notAdministering,
+      404: { description: 'No such delivery of this subscription', schema: ErrorBody },
     },
   },
 } as const satisfies Record<string, RouteContract>;

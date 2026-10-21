@@ -726,7 +726,7 @@ export const auditKindSpecs = {
   'webhook.changed': kind(
     ['API-055', 'LIF-071'],
     z.strictObject({
-      change: z.enum(['made', 'changed', 'rotated', 'removed', 'disabled']),
+      change: z.enum(['made', 'changed', 'rotated', 'removed', 'disabled', 'enabled']),
       types: z.array(AuditName).max(20).optional(),
       urlChanged: z.boolean().optional(),
       reason: z.enum(['failing', 'identity_disabled']).optional(),

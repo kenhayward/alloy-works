@@ -398,6 +398,9 @@ jobs:
       # With the development source, which the connector's isolation and end-to-end tests reach.
       - name: The stack
         id: stack
+        # A webhook's receiver here is `source-http`, on a private network (the WB plan, WB-F).
+        env:
+          CONNECTOR_WEBHOOK_PRIVATE: allow
         run: docker compose -f deploy/compose.yaml --profile sources up -d --wait
 
       # Through turbo, which builds what the suite imports before running it. Every target is set here,

@@ -3,6 +3,17 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.202.0 - 2026-10-21 (PR #742)
+
+Webhooks (the WB plan).
+
+### Added
+
+- **Webhook subscriptions through the API.** An administrator can subscribe a service identity's HTTPS endpoint to event types at `/v1/webhooks`, with a signing secret shown once, rotated without losing events, and every change recorded in the audit log. Delivery follows in the next release.
+- **Webhooks are delivered.** Each event a subscription wants is posted to its endpoint within seconds, signed as Standard Webhooks specifies, only while its service identity may read what the event is about. A failing endpoint is retried for a day, and one failing for three days is disabled.
+- **Webhooks in Administration.** Administration's Webhooks makes a webhook for a service identity, shows its signing secret once, rotates it, turns one back on after it was turned off, and shows each delivery: exactly what was sent, and what the receiver answered at every attempt.
+- **Told when a webhook is turned off.** Whoever made a webhook is told in their inbox when it is turned off after three days of failed deliveries.
+
 ## 0.201.0 - 2026-10-21 (PR #738)
 
 The intelligence's eighth slice: the MCP surface and service identities (the G8 plan).

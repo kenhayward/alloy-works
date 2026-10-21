@@ -47,7 +47,7 @@ export interface DigestCounts {
 /** A notification as its recipient holds it (COL-063): identifiers, never the text (COL-036). */
 export interface StoredNotification {
   readonly id: string;
-  readonly kind: NotificationKind | 'digest' | 'budget';
+  readonly kind: NotificationKind | 'digest' | 'budget' | 'webhook';
   readonly actor: { readonly id: string; readonly name: string | null } | null;
   readonly thread: string | null;
   /** A round's notification names it (RR-H). */
@@ -56,6 +56,8 @@ export interface StoredNotification {
   readonly counts: DigestCounts | null;
   /** A budget's notification says how much (G6-D); null on every other. */
   readonly budget: BudgetCounts | null;
+  /** A webhook disabled for failing names it (WB-E); null on every other. */
+  readonly webhook: { readonly id: string } | null;
   readonly at: Date;
   readonly readAt: Date | null;
 }
@@ -258,8 +260,15 @@ export async function listInbox(
       thread: row.thread_id,
       round: row.round_id,
       artifact: row.artifact_id,
-      counts: row.kind === 'budget' ? null : (row.counts as DigestCounts | null),
+      counts:
+        row.kind === 'budget' || row.kind === 'webhook'
+          ? null
+          : (row.counts as DigestCounts | null),
       budget: row.kind === 'budget' ? (row.counts as BudgetCounts) : null,
+      webhook:
+        row.kind === 'webhook'
+          ? { id: (row.counts as { readonly webhook: string }).webhook }
+          : null,
       at: row.at,
       readAt: row.read_at,
     })),

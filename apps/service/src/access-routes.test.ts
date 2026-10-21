@@ -1627,6 +1627,11 @@ describe('routes that check a permission', () => {
     }),
     rotateWebhookSecret: () => ({ url: `/v1/webhooks/${MISSING}/secret`, status: 403 }),
     removeWebhook: () => ({ url: `/v1/webhooks/${MISSING}`, status: 403 }),
+    listWebhookDeliveries: () => ({ url: `/v1/webhooks/${MISSING}/deliveries`, status: 403 }),
+    getWebhookDelivery: () => ({
+      url: `/v1/webhooks/${MISSING}/deliveries/${MISSING}`,
+      status: 403,
+    }),
     // Service identities are an administrator's of the whole environment (G8-G).
     listServiceIdentities: () => ({ url: '/v1/service-identities', status: 403 }),
     createServiceIdentity: () => ({

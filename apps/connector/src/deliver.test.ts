@@ -88,6 +88,13 @@ describe('a webhook delivery through the connector (the WB plan, WB-F and WB-G)'
     expect(api.seen.length).toBe(before + 1);
   });
 
+  it('keeps no control character of a reply, NUL among them', async () => {
+    const answer = await supervisor.deliver(deliveryTo('/hooks/nul'));
+    expect(answer).toMatchObject({ type: 'answered', status: 200 });
+    expect((answer as { reply: string }).reply.includes(String.fromCharCode(0))).toBe(false);
+    expect((answer as { reply: string }).reply).toMatch(/^ab/);
+  });
+
   it('refuses a secret sealed to another subscription or URL, and sends nothing', async () => {
     const request = deliveryTo('/hooks');
     const moved = { ...request, url: `https://127.0.0.1:${api.port}/hooks/201` };
@@ -111,6 +118,67 @@ describe('a webhook delivery through the connector (the WB plan, WB-F and WB-G)'
       type: 'failed',
       code: 'host_refused',
     });
+  });
+});
+
+describe('a private receiver, as production is configured (the WB plan, WB-F)', () => {
+  let url = '';
+  let close = () => Promise.resolve();
+  const DELIVER_KEY = Buffer.alloc(32, 9).toString('base64');
+
+  beforeAll(async () => {
+    // No CONNECTOR_WEBHOOK_PRIVATE: production's default, `deny`.
+    const server = createConnectorServer({
+      config: {
+        ...loadConnectorConfig({
+          CONNECTOR_KEY: Buffer.alloc(32, 1).toString('base64'),
+          CONNECTOR_SEALING_KEY: SEALING_KEY.toString('base64'),
+          CONNECTOR_DELIVER_KEY: DELIVER_KEY,
+          CONNECTOR_DENY: 'none',
+          LOG_LEVEL: 'silent',
+        }),
+        ca: DEV_CA,
+      },
+      deny: suiteDeny,
+      spec: childSpawn(suiteChild, suiteIsolation),
+      log: () => {},
+    });
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+    url = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
+    close = () => new Promise((resolve) => server.close(() => resolve()));
+  });
+  afterAll(() => close());
+
+  it('refuses a receiver at a private, CGNAT or unique-local address, however it is written', async () => {
+    for (const host of [
+      '10.0.0.5',
+      '172.20.1.1',
+      '192.168.4.4',
+      '100.64.0.9',
+      '[fd00::1]',
+      '[::ffff:10.0.0.5]',
+    ]) {
+      const request = { ...deliveryTo('/hooks') };
+      const target = `https://${host}/hooks`;
+      const answer = await fetch(`${url}/v1/deliver`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${DELIVER_KEY}`, 'content-type': 'application/json' },
+        body: JSON.stringify({
+          ...request,
+          url: target,
+          sealed: [
+            sealSecret(
+              SEALING_KEY,
+              'webhook-signing',
+              TENANT,
+              SECRET,
+              webhookSecretContext(request.subscription, target),
+            ),
+          ],
+        }),
+      });
+      expect(await answer.json(), host).toMatchObject({ type: 'failed', code: 'host_refused' });
+    }
   });
 });
 

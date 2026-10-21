@@ -388,8 +388,9 @@ describe('the listings through the service', () => {
       })
     ).json<{ id: string }>().id;
     // Made in the database: sealing a secret is the connector's, which this app is given none of.
+    const feeds: string[] = [];
     for (const description of ['First feed', 'Second feed']) {
-      await tenantDb.withTenant(
+      const feed = await tenantDb.withTenant(
         tenant,
         (trx) =>
           createWebhookSubscription(trx, {
@@ -403,6 +404,8 @@ describe('the listings through the service', () => {
           }),
         { actorKind: 'system' },
       );
+      // Each queued a delivery for every component cut below, so its deliveries have pages to turn.
+      feeds.push(feed.id);
     }
     // Two groups, one of each kind, so the groups listing has pages to turn.
     for (const payload of [
@@ -539,6 +542,7 @@ describe('the listings through the service', () => {
       listTokens: '/v1/tokens',
       listServiceIdentities: '/v1/service-identities',
       listWebhooks: '/v1/webhooks',
+      listWebhookDeliveries: `/v1/webhooks/${feeds[0]}/deliveries`,
       listPrincipalTokens: `/v1/principals/${(await get('/v1/me')).json<{ id: string }>().id}/tokens`,
     };
     // Every route that answers a list: a new one is listed here, and so paged, or this fails. What

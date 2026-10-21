@@ -8,6 +8,7 @@ import { About } from './About.js';
 import { AuditLog } from './AuditLog.js';
 import { Guardrails } from './Guardrails.js';
 import { ModelSpending } from './ModelSpending.js';
+import { Webhooks } from './Webhooks.js';
 import { Models } from './Models.js';
 import { TenantExport } from './TenantExport.js';
 import { Editing } from './Editing.js';
@@ -42,6 +43,8 @@ const SECTIONS = [
   { slug: 'guardrails', title: 'Guardrails', group: 'Environment' },
   // How often each person may call a model, the budget, and what models cost (the G6 plan).
   { slug: 'spending', title: 'Model spending', group: 'Environment' },
+  // Events posted to a service identity's endpoint, and every delivery (the WB plan, WB-J).
+  { slug: 'webhooks', title: 'Webhooks', group: 'Environment' },
   { slug: 'people', title: 'People', group: 'People and access' },
   { slug: 'groups', title: 'Groups', group: 'People and access' },
   { slug: 'roles', title: 'Roles', group: 'People and access' },
@@ -291,6 +294,7 @@ export function Administration({
         {shown === 'models' && <Models client={client} />}
         {shown === 'guardrails' && <Guardrails client={client} />}
         {shown === 'spending' && <ModelSpending client={client} />}
+        {shown === 'webhooks' && <Webhooks client={client} />}
         {shown === 'about' && <About about={about} />}
       </div>
     </section>
