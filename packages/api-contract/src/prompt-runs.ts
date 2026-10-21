@@ -5,6 +5,15 @@ import { ListedPromptView } from './prompt-libraries.js';
 import { ErrorBody, LowercaseUuid } from './schemas.js';
 
 export const PromptRunParams = z.object({ id: LowercaseUuid });
+export const DocumentPromptsQuery = z.object({
+  node: z
+    .string()
+    .min(1)
+    .max(64)
+    .optional()
+    .describe('A part, by its node: only the approved prompts that write its component type'),
+});
+export type DocumentPromptsQuery = z.infer<typeof DocumentPromptsQuery>;
 export const PromptRunBody = z.strictObject({
   prompt: LowercaseUuid.describe("A prompt the document's template's library lists"),
   node: z.string().min(1).max(64).describe('The part it writes, by its node in the outline'),
@@ -42,7 +51,8 @@ const refusedBeforeAnyCall = {
   description:
     '`model_unconfigured`: no endpoint is set up for its purpose; `endpoint_unusable`: it is retired or has no key; ' +
     '`model_mismatch`: the endpoint’s model is not one the prompt accepts; `context_empty`: its context resolved to nothing; ' +
-    '`context_too_large`: more than the endpoint takes, both sizes named; `part_not_writable`: the part holds what a proposal cannot write. ' +
+    '`context_too_large`: more than the endpoint takes, both sizes named; `part_not_writable`: the part holds what a proposal cannot write; ' +
+    '`prompt_output_mismatch`: the part is of another component type than the prompt writes. ' +
     'Each before any call',
   schema: ErrorBody,
 } as const;
@@ -64,6 +74,7 @@ export const promptRunRoutes = {
     tenantScoped: true,
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: PromptRunParams,
+    query: DocumentPromptsQuery,
     responses: {
       200: { description: 'The library and its prompts', schema: DocumentPrompts },
       401: unauthenticated,
@@ -71,7 +82,10 @@ export const promptRunRoutes = {
         description: 'Never answered: a document the caller may not read is not found',
         schema: ErrorBody,
       },
-      404: { description: 'No such document you may read', schema: ErrorBody },
+      404: {
+        description: 'No such document you may read, or no part you may read at that node',
+        schema: ErrorBody,
+      },
     },
   },
   startPromptRun: {

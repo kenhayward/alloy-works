@@ -2,7 +2,9 @@ import {
   endRun,
   findRole,
   listModelEndpoints,
+  makeCreationProposal,
   makeProposal,
+  publicationGenerated,
   readVersion,
   recordPublication,
   requestPublication,
@@ -108,6 +110,50 @@ describe('generated content reaching publishing (the G3 plan)', () => {
       id: string;
       version: { id: string };
     }>();
+
+  /** A publication of the document's version, recorded as a worker records one. */
+  const recorded = (document: string, version: string) =>
+    h.tenantDb.withTenant(h.tenant, async (trx) => {
+      const asked = await requestPublication(trx, {
+        documentId: document,
+        version,
+        formats: ['pdf'],
+        requester: h.ids.ada!,
+      });
+      if (asked.answer !== 'requested') throw new Error(asked.answer);
+      const id = await recordPublication(trx, {
+        requestId: asked.request.id,
+        pipelineVersion: '2',
+        fonts: [{ file: 'LiberationSerif-Regular.ttf', sha256: 'a'.repeat(64) }],
+        dataSha256: 'b'.repeat(64),
+        numbering: { scheme: 'default/1', entries: [] },
+        outputs: [
+          {
+            format: 'pdf' as const,
+            engineVersion: '0.15.1',
+            templateVersion: 2,
+            key: `${h.tenant.role}/sha256/${'c'.repeat(64)}`,
+            sha256: 'c'.repeat(64),
+            bytes: 1,
+          },
+        ],
+      });
+      if (id === undefined) throw new Error('not recorded');
+      return id;
+    });
+  /** The component's latest version, by id. */
+  const latestOf = async (component: string) =>
+    (
+      await h.tenantDb.withTenant(h.tenant, (trx) =>
+        trx
+          .selectFrom('artifact_version')
+          .select('id')
+          .where('artifact_id', '=', component)
+          .orderBy('revision_no', 'desc')
+          .orderBy('version_no', 'desc')
+          .executeTakeFirstOrThrow(),
+      )
+    ).id;
 
   it('GEN-025 refuses a publish and a baseline while a generated suggestion waits, and never a preview', async () => {
     const { component, document } = await placed('Waiting', 'The weir floods.');
@@ -247,32 +293,7 @@ describe('generated content reaching publishing (the G3 plan)', () => {
     const first = await proposal(component, 'The lock is sealed.', document.id);
     await act(first.id, 'acceptance');
     const at = await latestDocument(document.id);
-    const publication = await h.tenantDb.withTenant(h.tenant, async (trx) => {
-      const asked = await requestPublication(trx, {
-        documentId: document.id,
-        version: at.version.id,
-        formats: ['pdf'],
-        requester: h.ids.ada!,
-      });
-      if (asked.answer !== 'requested') throw new Error(asked.answer);
-      return recordPublication(trx, {
-        requestId: asked.request.id,
-        pipelineVersion: '2',
-        fonts: [{ file: 'LiberationSerif-Regular.ttf', sha256: 'a'.repeat(64) }],
-        dataSha256: 'b'.repeat(64),
-        numbering: { scheme: 'default/1', entries: [] },
-        outputs: [
-          {
-            format: 'pdf' as const,
-            engineVersion: '0.15.1',
-            templateVersion: 2,
-            key: `${h.tenant.role}/sha256/${'c'.repeat(64)}`,
-            sha256: 'c'.repeat(64),
-            bytes: 1,
-          },
-        ],
-      });
-    });
+    const publication = await recorded(document.id, at.version.id);
     const after = await h.tenantDb.withTenant(h.tenant, (trx) =>
       trx
         .selectFrom('artifact_version')
@@ -296,6 +317,119 @@ describe('generated content reaching publishing (the G3 plan)', () => {
     }>();
     const items = report.placements.find((each) => each.component === component.id)!.items;
     expect(items.map((each) => each.acceptedInto?.inPlaced)).toEqual([true, false]);
+  });
+
+  it('PUB-082 lists in a publication the accepted generated content it printed, as it was published', async () => {
+    const { component, document: first } = await placed('Listed', 'The east lock is shut.');
+    // Accepted into a version before the one printed, and into the one printed.
+    const earlier = await proposal(component, 'The east lock is sealed.', first.id);
+    const earlierSuggestion = await act(earlier.id, 'acceptance');
+    const placedVersion = { id: component.id, version: await latestOf(component.id) };
+    const latest = await proposal(placedVersion, 'The east lock is welded.', first.id);
+    const latestSuggestion = await act(latest.id, 'acceptance');
+    // A component a model made, accepted.
+    const creation = await h.tenantDb.withTenant(h.tenant, async (trx) => {
+      const run = await startRun(trx, {
+        purpose: 'drafting',
+        endpoint: (await listModelEndpoints(trx)).find((each) => each.name === 'Drafting')!,
+        parameters: { instructions: 'assistant-1' },
+        contextDigest: 'e'.repeat(64),
+        by: h.ids.ada!,
+        documentId: first.id,
+      });
+      await endRun(trx, run, {
+        outcome: 'finished',
+        model: 'stand-in-1',
+        usage: { in: 1, out: 1 },
+      });
+      return makeCreationProposal(trx, {
+        run,
+        creates: { space: h.general, title: 'East lock', language: 'en-GB', direction: 'ltr' },
+        proposed: {
+          schemaVersion: 1,
+          title: 'East lock',
+          language: 'en-GB',
+          direction: 'ltr',
+          content: [
+            {
+              type: 'paragraph',
+              id: 'p1',
+              style: 'body',
+              content: [{ type: 'text', value: 'The east lock holds.', marks: [] }],
+            },
+          ],
+        } as ContentDocument,
+      });
+    });
+    const made = await h.call('ada', 'POST', `/v1/assistant/proposals/${creation.id}/acceptance`);
+    expect(made.statusCode, made.body).toBe(200);
+    const madeComponent = made.json<{ proposal: { component: string } }>().proposal.component;
+    const document = await h.documentReferencing([component.id, madeComponent]);
+    const publication = await recorded(document.id, document.version);
+    // Accepted after it was published: never in it.
+    const after = await proposal(
+      { id: component.id, version: await latestOf(component.id) },
+      'The east lock is gone.',
+      document.id,
+    );
+    await act(after.id, 'acceptance');
+
+    const listed = await h.tenantDb.withTenant(h.tenant, (trx) =>
+      publicationGenerated(trx, publication),
+    );
+    const printed = await h.tenantDb.withTenant(h.tenant, (trx) =>
+      trx
+        .selectFrom('publication_input')
+        .select(['node', 'version_id'])
+        .where('publication_id', '=', publication)
+        .execute(),
+    );
+    const at = (node: string) => printed.find((each) => each.node === node)!.version_id;
+    expect(listed).toEqual(
+      expect.arrayContaining([
+        {
+          node: document.nodes[0],
+          version: at(document.nodes[0]!),
+          kind: 'suggestion',
+          suggestion: earlierSuggestion,
+          proposal: earlier.id,
+          run: earlier.runId,
+        },
+        {
+          node: document.nodes[0],
+          version: at(document.nodes[0]!),
+          kind: 'suggestion',
+          suggestion: latestSuggestion,
+          proposal: latest.id,
+          run: latest.runId,
+        },
+        {
+          node: document.nodes[1],
+          version: at(document.nodes[1]!),
+          kind: 'creation',
+          suggestion: null,
+          proposal: creation.id,
+          run: creation.runId,
+        },
+      ]),
+    );
+    expect(listed).toHaveLength(3);
+    // Its report reads the list: the later acceptance is not in what was placed.
+    const report = (await h.call('ada', 'GET', `/v1/publications/${publication}/generated`)).json<{
+      placements: { items: { kind: string; acceptedInto: { inPlaced: boolean } | null }[] }[];
+    }>();
+    expect(
+      report.placements.flatMap((each) =>
+        each.items.map((item) => [item.kind, item.acceptedInto?.inPlaced]),
+      ),
+    ).toEqual(
+      expect.arrayContaining([
+        ['suggestion', true],
+        ['suggestion', true],
+        ['suggestion', false],
+        ['creation', true],
+      ]),
+    );
   });
 
   it('GEN-046 keeps the report answering once the person who asked and accepted is erased', async () => {

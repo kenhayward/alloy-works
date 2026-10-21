@@ -357,6 +357,7 @@ describe('migration 0018, which gives every environment its default layout', () 
       '0140_webhook_notification',
       '0141_extensions',
       '0142_webhook_delivery_ids',
+      '0143_publication_generated',
     ]);
 
     // No trigger was held off, and every one stands enabled.
@@ -373,6 +374,11 @@ describe('migration 0018, which gives every environment its default layout', () 
       {
         relname: 'publication',
         tgname: 'publication_baseline_is_its_requests',
+        tgenabled: 'O',
+      },
+      {
+        relname: 'publication',
+        tgname: 'publication_generated_held',
         tgenabled: 'O',
       },
       {
@@ -398,6 +404,11 @@ describe('migration 0018, which gives every environment its default layout', () 
       {
         relname: 'publication_check',
         tgname: 'publication_check_report_in_own_store',
+        tgenabled: 'O',
+      },
+      {
+        relname: 'publication_generated',
+        tgname: 'publication_generated_while_queued',
         tgenabled: 'O',
       },
       {
@@ -850,6 +861,7 @@ describe('migration 0018, which gives every environment its default layout', () 
       '0140_webhook_notification',
       '0141_extensions',
       '0142_webhook_delivery_ids',
+      '0143_publication_generated',
     ]);
 
     const { declared, versions } = await service.withTenant(tenant, async (trx) => ({
@@ -1069,6 +1081,7 @@ describe('migration 0021, which gives the default layout a list of figures', () 
       '0140_webhook_notification',
       '0141_extensions',
       '0142_webhook_delivery_ids',
+      '0143_publication_generated',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -1270,6 +1283,7 @@ describe('migration 0023, which gives the default layout words for a relative re
       '0140_webhook_notification',
       '0141_extensions',
       '0142_webhook_delivery_ids',
+      '0143_publication_generated',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -1413,6 +1427,7 @@ describe('migration 0023, which gives the default layout words for a relative re
       '0140_webhook_notification',
       '0141_extensions',
       '0142_webhook_delivery_ids',
+      '0143_publication_generated',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
     const chain = await service.withTenant({ ...tenant, id }, (trx) =>
@@ -1637,6 +1652,7 @@ describe("migration 0025, which gives the default layout the words a continued t
       '0140_webhook_notification',
       '0141_extensions',
       '0142_webhook_delivery_ids',
+      '0143_publication_generated',
     ]);
     const declared = await service.withTenant(tenant, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -1773,6 +1789,7 @@ describe("migration 0025, which gives the default layout the words a continued t
       '0140_webhook_notification',
       '0141_extensions',
       '0142_webhook_delivery_ids',
+      '0143_publication_generated',
     ]);
     const { declared, fifth } = await service.withTenant(tenant, async (trx) => ({
       declared: await defaultLayout(trx),
@@ -1975,6 +1992,7 @@ describe('migration 0027, which gives the default layout a Word page', () => {
       '0140_webhook_notification',
       '0141_extensions',
       '0142_webhook_delivery_ids',
+      '0143_publication_generated',
     ]);
     const declared = await service.withTenant(tenant, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -2134,6 +2152,7 @@ describe('migration 0027, which gives the default layout a Word page', () => {
       '0140_webhook_notification',
       '0141_extensions',
       '0142_webhook_delivery_ids',
+      '0143_publication_generated',
     ]);
     const { declared, sixth, inputs } = await service.withTenant(tenant, async (trx) => ({
       declared: await defaultLayout(trx),
@@ -2338,6 +2357,7 @@ describe('migration 0035, which gives a request its kind and the default layout 
       '0140_webhook_notification',
       '0141_extensions',
       '0142_webhook_delivery_ids',
+      '0143_publication_generated',
     ]);
     const declared = await service.withTenant(tenant, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -2484,6 +2504,7 @@ describe('migration 0035, which gives a request its kind and the default layout 
       '0140_webhook_notification',
       '0141_extensions',
       '0142_webhook_delivery_ids',
+      '0143_publication_generated',
     ]);
     const version = (trx: TenantTransaction, number: number) =>
       trx

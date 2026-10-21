@@ -51,7 +51,7 @@ time (below); embeddings for meaning are [search.md](search.md)'s and
 | **GEN-025** | `generated_unaccepted` at publish, and a gate condition requiring none (Proposals)                                                                      |
 | **GEN-026** | `GET /v1/documents/{id}/generated`: each version a run produced and who accepted it (Proposals)                                                         |
 | **GEN-060** | Acceptance is `acceptSuggestion`, which writes as any edit does, the lock first                                                                         |
-| **PUB-082** | A publication's record lists the accepted runs its versions came from (Proposals)                                                                       |
+| **PUB-082** | `publication_generated`: each accepted suggestion and creation it printed, with its run, written as it is recorded (Proposals)                          |
 | **API-064** | The run's stream is a message set of the AsyncAPI document, apart from OpenAPI (The assistant)                                                          |
 | **GEN-033** | Each run records tokens with tenant, user, purpose and document (Cost)                                                                                  |
 | **ADM-010** | The same record                                                                                                                                         |
@@ -66,6 +66,7 @@ time (below); embeddings for meaning are [search.md](search.md)'s and
 | **GEN-037** | The run's cost shown to its requester as it ends, and their month on the assistant panel (Cost)                                                         |
 | **GEN-001** | A prompt: an artifact kind in a space, versioned, listed by a library, the fourth workflow kind (Prompts)                                               |
 | **GEN-005** | `models`: a purpose and the models accepted; another fails `model_mismatch` before any call (Prompts)                                                   |
+| **GEN-004** | `output.componentType`: a part of another type fails `prompt_output_mismatch` before any call; listed only where it fits (Prompts)                      |
 | **GEN-045** | Approving a prompt version needs a finished trial run of it, which no tenant's workflow lifts (GN-F)                                                    |
 | **GEN-056** | `context`: the part, its section or the document; related components; a field's value; parameters                                                       |
 | **TPL-061** | A template names one library, `prompts`; a library is a versioned list of prompts by identity                                                           |
@@ -89,18 +90,21 @@ time (below); embeddings for meaning are [search.md](search.md)'s and
 | **API-052** | Every tool wraps a `/v1` route; a `/v2` names in its ADR what moves (ADR-0065)                                                                          |
 | **REL-021** | `related` is `/v1/artifacts/{id}/relationships` and `/path`, as the caller (MCP)                                                                        |
 
+GEN-004 is claimed for a part's text of a declared component type (the GC plan, GC-C); a field as a
+prompt's output is not built, and is the gap.
+
 ## What this document does not own
 
-| Left unclaimed                                                            | Why                                                                                                                                                     |
-| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| GEN-002, GEN-004                                                          | A prompt declares components, metadata and parameters, and writes a part's text: a query's results as context, and a field as output, are later slices' |
-| GEN-021                                                                   | The conversation's tray, guardrails, new components and personal prompts: G5's later PRs; GEN-021 is the model's (G5-H)                                 |
-| ADM-033                                                                   | The trend lacks ADM-011's storage, publication and asset measures (T7)                                                                                  |
-| ADM-048                                                                   | Translation, scanning, email and webhooks cost nothing yet; it is claimed when the last of them exists                                                  |
-| SCH-013, SCH-014, SCH-035, VER-039 (designed elsewhere), SCH-067, GEN-044 | Meaning (G7's later PRs)                                                                                                                                |
-| LIF-071                                                                   | Tool use is `tool.used`; webhook subscription changes wait for webhooks (GN-D)                                                                          |
-| API-028, API-029, API-046, API-055, API-060, COL-037                      | Webhooks: their own design (GN-D)                                                                                                                       |
-| API-030, API-031, API-034, API-048, API-059, DAT-054, DAT-073, DAT-079    | Extensions: their own design (GN-D)                                                                                                                     |
+| Left unclaimed                                                            | Why                                                                                                                     |
+| ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| GEN-002                                                                   | A prompt declares components, metadata and parameters: a query's results as context are a later slice's                 |
+| GEN-021                                                                   | The conversation's tray, guardrails, new components and personal prompts: G5's later PRs; GEN-021 is the model's (G5-H) |
+| ADM-033                                                                   | The trend lacks ADM-011's storage, publication and asset measures (T7)                                                  |
+| ADM-048                                                                   | Translation, scanning, email and webhooks cost nothing yet; it is claimed when the last of them exists                  |
+| SCH-013, SCH-014, SCH-035, VER-039 (designed elsewhere), SCH-067, GEN-044 | Meaning (G7's later PRs)                                                                                                |
+| LIF-071                                                                   | Tool use is `tool.used`; webhook subscription changes wait for webhooks (GN-D)                                          |
+| API-028, API-029, API-046, API-055, API-060, COL-037                      | Webhooks: their own design (GN-D)                                                                                       |
+| API-030, API-031, API-034, API-048, API-059, DAT-054, DAT-073, DAT-079    | Extensions: their own design (GN-D)                                                                                     |
 
 ## Decisions
 
@@ -172,7 +176,9 @@ model (GEN-003). A library lists prompts by identity, each at its latest approve
 
 A run of a prompt is on a part of a document, the prompt one its template's library lists at its
 latest approved revision: the context resolved first, as the requester reads it, and recorded; the
-endpoint its purpose routes to refused where its model is not one the prompt accepts; one call, no
+endpoint its purpose routes to refused where its model is not one the prompt accepts; a part of
+another component type than the prompt's output refused `prompt_output_mismatch`, and a document's
+prompts listed for a part only where they fit it (GEN-004); one call, no
 tools; the reply the part's whole text, a proposal. A **trial** is the same run of any version,
 recorded with purpose `trial`, its output kept on the run. **What approval means** (GEN-045): the
 prompt workflow's approving transition requires a finished trial of the version approved, and a
@@ -229,8 +235,10 @@ and `suggestion.accepted` naming the person, as for any suggestion (GEN-024, GEN
 Publishing fails `generated_unaccepted` while an open generated suggestion targets a component the
 version places, and a workflow gate may require none; a rejected or withdrawn one blocks nothing
 (GEN-025, GEN-042). `GET /v1/documents/{id}/generated` lists each component version a run produced
-that the document places, the run, and who accepted it (GEN-026), and the publication record carries
-the same list for what it published (PUB-082).
+that the document places, the run, and who accepted it (GEN-026). A publication records its own list
+as it is made, `publication_generated` (0143; the GC plan, GC-B): each accepted suggestion and
+creation in a version it printed, by the report's history rule, with its run; its report reads
+whether an acceptance is in it from that list, so one accepted afterwards never is (PUB-082).
 
 ## Injection
 

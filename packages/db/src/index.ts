@@ -287,11 +287,13 @@ export {
 } from './generation-proposals.js';
 export {
   generatedReport,
+  publicationGenerated,
   publicationPlacements,
   type GeneratedItem,
   type GeneratedPlacement,
   type GeneratedRun,
   type Placement,
+  type PublicationGeneratedItem,
 } from './generated-report.js';
 export { sha256Hex, versionDigests, type VersionDigests } from './version-digest.js';
 export {
@@ -723,7 +725,12 @@ export {
   type ListedPrompt,
   type StoredLibrary,
 } from './prompt-libraries.js';
-export { CONTEXT_PARTS_MOST, resolveContext, type ContextAnswer } from './prompt-context.js';
+export {
+  CONTEXT_PARTS_MOST,
+  partComponentType,
+  resolveContext,
+  type ContextAnswer,
+} from './prompt-context.js';
 export {
   CONVERSATION_TURNS_MOST,
   listConversations,

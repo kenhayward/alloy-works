@@ -1,12 +1,17 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 
-import type { PromptRunBody, PromptTrialBody } from '@alloy-works/api-contract';
+import type {
+  DocumentPromptsQuery,
+  PromptRunBody,
+  PromptTrialBody,
+} from '@alloy-works/api-contract';
 import {
   listGuardrails,
   documentLibrary,
   endRun,
   libraryPrompts,
   listModelRoutes,
+  partComponentType,
   makeProposal,
   readDocument,
   readLibrary,
@@ -55,6 +60,7 @@ import { watchAuthority } from '../authority.js';
 import { createConnectorClient } from '../data/connector.js';
 import type { ConnectorOptions } from '../data/connections.js';
 import { AppError } from '../errors.js';
+import { refused } from '../wire-codes.js';
 import { RateLimited, rateLimitedWords, refuseOverLimit, startLimited } from './limits.js';
 
 /**
@@ -175,6 +181,15 @@ export function promptRunHandlers(
           'context_too_large',
           `What this prompt reads is ${resolved.parts} parts, more than a run takes.`,
         );
+    }
+    // A prompt writes only the component type it declares, or any where it declares none (GEN-004).
+    const writes = input.prompt.output.componentType;
+    if (writes !== null && writes !== resolved.partType) {
+      throw refused(
+        409,
+        'prompt.output_mismatch',
+        'This prompt writes another type of component than this part is.',
+      );
     }
     const context: ResolvedContext = resolved.context;
     const call = promptCall(endpoint.model, input.prompt, context);
@@ -462,12 +477,28 @@ export function promptRunHandlers(
   return {
     listDocumentPrompts: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
       const { id } = request.params as { id: string };
+      const { node } = request.query as DocumentPromptsQuery;
       if (!(await readDocument(trx, id))) throw notFound();
+      // For a part: only the approved prompts that write its type, or any (GEN-004).
+      const type =
+        node === undefined
+          ? undefined
+          : await partComponentType(trx, { principal: principalId, documentId: id, node });
+      if (node !== undefined && type === undefined) throw notFound();
       const library = await documentLibrary(trx, id);
       const stored = await readLibrary(trx, library);
+      const prompts = stored ? await libraryPrompts(trx, principalId, stored.library) : [];
       return {
         library: { id: library, isDefault: stored?.isDefault ?? true },
-        prompts: stored ? await libraryPrompts(trx, principalId, stored.library) : [],
+        prompts:
+          type === undefined
+            ? prompts
+            : prompts.filter(
+                (each) =>
+                  each.state === 'approved' &&
+                  (each.prompt.output.componentType === null ||
+                    each.prompt.output.componentType === type),
+              ),
       };
     },
 

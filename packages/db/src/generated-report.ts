@@ -93,11 +93,24 @@ const inHistory = (a: string, p: string) => sql<boolean>`(
           and (${sql.ref(a)}.revision_no, ${sql.ref(a)}.version_no) <= (d.revision_no, d.version_no)))
   ))`;
 
+/**
+ * The report of `placements`; of a publication's, given its id, whether an acceptance is in what was
+ * placed is read from the list it recorded (PUB-082), so one accepted after it was made never is.
+ */
 export async function generatedReport(
   trx: TenantTransaction,
   placements: readonly Placement[],
+  publication?: string,
 ): Promise<GeneratedPlacement[]> {
   if (placements.length === 0) return [];
+  const listed =
+    publication === undefined
+      ? undefined
+      : new Set(
+          (await publicationGenerated(trx, publication)).map(
+            (each) => `${each.node} ${each.suggestion ?? each.proposal}`,
+          ),
+        );
   const versions = [...new Set(placements.map((each) => each.version))];
   const { rows: placed } = await sql<{
     id: string;
@@ -179,7 +192,10 @@ export async function generatedReport(
             : {
                 version: row.accepted_version,
                 number: row.accepted_number!,
-                inPlaced: row.in_placed === true,
+                inPlaced:
+                  listed === undefined
+                    ? row.in_placed === true
+                    : listed.has(`${placement.node} ${row.id}`),
               },
         run: {
           id: row.run_id,
@@ -219,4 +235,45 @@ export async function publicationPlacements(
     component: row.artifact_id,
     version: row.version_id,
   }));
+}
+
+/** An accepted suggestion or creation a publication printed, as it recorded it (PUB-082). */
+export interface PublicationGeneratedItem {
+  readonly node: string;
+  readonly version: string;
+  readonly kind: 'suggestion' | 'creation';
+  readonly suggestion: string | null;
+  readonly proposal: string | null;
+  readonly run: string;
+}
+
+/**
+ * Records what of a publication came from a model, in the transaction recording it (0143): by 0143's
+ * rule, what is accepted now. An environment short of 0143 records none.
+ */
+export async function recordPublicationGenerated(
+  trx: TenantTransaction,
+  publication: string,
+): Promise<void> {
+  const { rows } = await sql<{
+    present: boolean;
+  }>`select to_regclass('publication_generated') is not null as present`.execute(trx);
+  if (rows[0]?.present !== true) return;
+  await sql`insert into publication_generated
+      (publication_id, node, version_id, kind, suggestion_id, proposal_id, run_id)
+    select ${publication}, d.node, d.version_id, d.kind, d.suggestion_id, d.proposal_id, d.run_id
+      from publication_generated_due(current_schema(), ${publication}, now()) d`.execute(trx);
+}
+
+/** What a publication recorded of a model's, by node (PUB-082). */
+export async function publicationGenerated(
+  trx: TenantTransaction,
+  publication: string,
+): Promise<PublicationGeneratedItem[]> {
+  const { rows } = await sql<PublicationGeneratedItem>`
+    select node, version_id as version, kind, suggestion_id as suggestion,
+           proposal_id as proposal, run_id as run
+      from publication_generated where publication_id = ${publication}
+     order by node, kind, suggestion_id, proposal_id`.execute(trx);
+  return rows;
 }

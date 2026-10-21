@@ -27,6 +27,8 @@ export type ContextAnswer =
   | {
       readonly answer: 'resolved';
       readonly context: ResolvedContext;
+      /** The part's component type, by identity: what a prompt's output is held to (GEN-004). */
+      readonly partType: string;
       /** What the run records it read (GEN-057): each part by artifact, version and block. */
       readonly record: readonly (
         | {
@@ -63,6 +65,52 @@ function sectionsOf(outline: OutlineDocument): ReadonlyMap<string, Node | null> 
 const holds = (held: unknown, value: unknown): boolean =>
   held === value || (Array.isArray(held) && held.includes(value));
 
+/** A component version's type, by the type's identity. */
+async function typeOfVersion(trx: TenantTransaction, version: string): Promise<string> {
+  const row = await trx
+    .selectFrom('artifact_version as v')
+    .innerJoin('artifact_version as t', 't.id', 'v.component_type_version_id')
+    .select('t.artifact_id')
+    .where('v.id', '=', version)
+    .executeTakeFirstOrThrow();
+  return row.artifact_id;
+}
+
+/** Each part of the document `principal` reads now, by node: its component and version. */
+async function readableParts(
+  trx: TenantTransaction,
+  outline: OutlineDocument,
+  principal: string,
+): Promise<Map<string, { component: string; version: string }>> {
+  const resolved = await resolveOccurrences(trx, outline, principal);
+  const readable = new Map<string, { component: string; version: string }>();
+  for (const each of resolved) {
+    if (each.outcome === 'resolved') {
+      readable.set(each.node, { component: each.component, version: each.version });
+    }
+  }
+  return readable;
+}
+
+/** The document as it is read, its profile's exclusions applied (R6-B). */
+const readOutline = (whole: OutlineDocument) =>
+  selectOutline(whole, whole.profile?.values ?? {}).outline;
+
+/**
+ * The component type of the part at `node` of `documentId`, as `principal` reads it now: what a
+ * document's prompts are listed for (GEN-004). Undefined where no part they may read is there.
+ */
+export async function partComponentType(
+  trx: TenantTransaction,
+  input: { readonly principal: string; readonly documentId: string; readonly node: string },
+): Promise<string | undefined> {
+  const stored = await readDocument(trx, input.documentId);
+  if (!stored) return undefined;
+  const outline = readOutline(stored.version.content as OutlineDocument);
+  const at = (await readableParts(trx, outline, input.principal)).get(input.node);
+  return at === undefined ? undefined : typeOfVersion(trx, at.version);
+}
+
 /**
  * Resolves a prompt's declared context for its run on `node` of `documentId`, as `principal` reads it
  * now. The caller has decided they may read the document.
@@ -78,16 +126,9 @@ export async function resolveContext(
 ): Promise<ContextAnswer> {
   const stored = await readDocument(trx, input.documentId);
   if (!stored) return { answer: 'part.missing' };
-  const whole = stored.version.content as OutlineDocument;
-  // The document as it is read, its profile's exclusions applied (R6-B): nothing excluded is context.
-  const outline = selectOutline(whole, whole.profile?.values ?? {}).outline;
-  const resolved = await resolveOccurrences(trx, outline, input.principal);
-  const readable = new Map<string, { component: string; version: string }>();
-  for (const each of resolved) {
-    if (each.outcome === 'resolved') {
-      readable.set(each.node, { component: each.component, version: each.version });
-    }
-  }
+  // Nothing a profile excludes is context.
+  const outline = readOutline(stored.version.content as OutlineDocument);
+  const readable = await readableParts(trx, outline, input.principal);
   const at = readable.get(input.node);
   if (at === undefined) return { answer: 'part.missing' };
 
@@ -193,6 +234,7 @@ export async function resolveContext(
   return {
     answer: 'resolved',
     context: { part: parts[0]!, parts, parameters },
+    partType: await typeOfVersion(trx, at.version),
     record: [
       ...parts.map((each) => ({
         component: each.component,

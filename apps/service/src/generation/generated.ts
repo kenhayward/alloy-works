@@ -75,7 +75,7 @@ export function generatedHandlers() {
         throw notFound();
       }
       if (!(await readPublication(trx, id))) throw notFound();
-      return view(await generatedReport(trx, await publicationPlacements(trx, id)), 0);
+      return view(await generatedReport(trx, await publicationPlacements(trx, id), id), 0);
     },
   };
 }

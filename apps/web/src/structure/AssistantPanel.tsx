@@ -225,12 +225,15 @@ export function AssistantPanel({
 
   useEffect(() => () => stop.current?.abort(), []);
 
-  // The prompts this document's library lists that run, each at its approved revision (G4-F).
+  // The prompts this document's library lists that run, each at its approved revision (G4-F); with a
+  // part open, those that write its type alone (GEN-004).
   useEffect(() => {
     if (document === null) return undefined;
     let current = true;
     void client
-      .GET('/v1/documents/{id}/prompts', { params: { path: { id: document } } })
+      .GET('/v1/documents/{id}/prompts', {
+        params: { path: { id: document }, query: node === null ? {} : { node } },
+      })
       .then(({ data }) => {
         if (!current || !data) return;
         setPrompts(
@@ -243,7 +246,7 @@ export function AssistantPanel({
     return () => {
       current = false;
     };
-  }, [client, document]);
+  }, [client, document, node]);
 
   const removePart = async (component: string) => {
     if (conversation === null) return;

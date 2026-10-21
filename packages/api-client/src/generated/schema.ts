@@ -2362,7 +2362,7 @@ export interface paths {
         put?: never;
         /**
          * Run a prompt of the document's library on one of its parts, its output a proposal
-         * @description Runs a prompt of the document's library on one of its parts, with a signed-in session alone, at the prompt's latest approved revision. Its context is resolved first, as the caller may read it, and recorded on the run; nothing it does not declare is sent. It calls the endpoint its purpose goes to, through the connector, once, with no tools, refused first where the endpoint's model is not one it accepts, the context resolved to nothing or is more than the endpoint takes. The reply, Markdown, is proposed as the part's whole text, a proposal that changes nothing until the caller accepts it. Answered as Server-Sent Events. Recorded as a run naming the prompt version. Your own identical run of the last 24 hours, the same prompt version, context, parameters and endpoint, is reused: its words checked again and proposed anew, calling nothing and costing nothing, the run naming what it reused. Nobody else's is ever reused; `fresh` calls the model regardless.
+         * @description Runs a prompt of the document's library on one of its parts, with a signed-in session alone, at the prompt's latest approved revision. Its context is resolved first, as the caller may read it, and recorded on the run; nothing it does not declare is sent. It calls the endpoint its purpose goes to, through the connector, once, with no tools, refused first where the endpoint's model is not one it accepts, the part is of another component type than the prompt writes, or the context resolved to nothing or is more than the endpoint takes. The reply, Markdown, is proposed as the part's whole text, a proposal that changes nothing until the caller accepts it. Answered as Server-Sent Events. Recorded as a run naming the prompt version. Your own identical run of the last 24 hours, the same prompt version, context, parameters and endpoint, is reused: its words checked again and proposed anew, calling nothing and costing nothing, the run naming what it reused. Nobody else's is ever reused; `fresh` calls the model regardless.
          */
         post: operations["startPromptRun"];
         delete?: never;
@@ -2380,7 +2380,7 @@ export interface paths {
         };
         /**
          * The prompts a document may run: its template's library, each at the revision it runs
-         * @description Returns the prompts a document may run: its template's library, or the environment's empty default where it names none or the document was made blank, each prompt at the revision a run of it runs. A prompt the caller may not read is counted, never named.
+         * @description Returns the prompts a document may run: its template's library, or the environment's empty default where it names none or the document was made blank, each prompt at the revision a run of it runs. A prompt the caller may not read is counted, never named. Given a part's `node`, only the approved prompts that write its component type, or any type, are listed.
          */
         get: operations["listDocumentPrompts"];
         put?: never;
@@ -51301,7 +51301,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `model_unconfigured`: no endpoint is set up for its purpose; `endpoint_unusable`: it is retired or has no key; `model_mismatch`: the endpoint’s model is not one the prompt accepts; `context_empty`: its context resolved to nothing; `context_too_large`: more than the endpoint takes, both sizes named; `part_not_writable`: the part holds what a proposal cannot write. Each before any call */
+            /** @description `model_unconfigured`: no endpoint is set up for its purpose; `endpoint_unusable`: it is retired or has no key; `model_mismatch`: the endpoint’s model is not one the prompt accepts; `context_empty`: its context resolved to nothing; `context_too_large`: more than the endpoint takes, both sizes named; `part_not_writable`: the part holds what a proposal cannot write; `prompt_output_mismatch`: the part is of another component type than the prompt writes. Each before any call */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -51387,7 +51387,9 @@ export interface operations {
     };
     listDocumentPrompts: {
         parameters: {
-            query?: never;
+            query?: {
+                node?: string;
+            };
             header?: {
                 /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
                 "X-Request-Id"?: string;
@@ -51536,7 +51538,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description No such document you may read */
+            /** @description No such document you may read, or no part you may read at that node */
             404: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -71426,7 +71428,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `model_unconfigured`: no endpoint is set up for its purpose; `endpoint_unusable`: it is retired or has no key; `model_mismatch`: the endpoint’s model is not one the prompt accepts; `context_empty`: its context resolved to nothing; `context_too_large`: more than the endpoint takes, both sizes named; `part_not_writable`: the part holds what a proposal cannot write. Each before any call */
+            /** @description `model_unconfigured`: no endpoint is set up for its purpose; `endpoint_unusable`: it is retired or has no key; `model_mismatch`: the endpoint’s model is not one the prompt accepts; `context_empty`: its context resolved to nothing; `context_too_large`: more than the endpoint takes, both sizes named; `part_not_writable`: the part holds what a proposal cannot write; `prompt_output_mismatch`: the part is of another component type than the prompt writes. Each before any call */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */

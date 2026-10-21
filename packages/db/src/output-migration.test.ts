@@ -293,6 +293,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0140_webhook_notification',
       '0141_extensions',
       '0142_webhook_delivery_ids',
+      '0143_publication_generated',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,

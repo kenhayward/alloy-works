@@ -53,6 +53,7 @@ import { loadReadableSet } from './access-facts.js';
 import { AUDIT_LOG_KEPT, labelled, labels, recordEvent } from './audit.js';
 import { deletionStored, isDeleted, notDeletedAs, shareDeletion } from './deletion.js';
 import { readableComponents } from './documents.js';
+import { recordPublicationGenerated } from './generated-report.js';
 import { enqueueJob } from './queue.js';
 import { readableArtifacts } from './readable-artifacts.js';
 import {
@@ -1960,6 +1961,8 @@ async function insertPublication(
       })),
     ])
     .execute();
+  // What of it came from a model, accepted, by the report's rule (PUB-082; 0143).
+  await recordPublicationGenerated(trx, artifact.id);
   // Exactly the images the request recorded (figures 3, ruling R6), which 0022's check holds at commit.
   const images = await trx
     .selectFrom('publication_request_asset')
