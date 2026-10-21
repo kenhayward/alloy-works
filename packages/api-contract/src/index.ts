@@ -210,6 +210,7 @@ export {
 } from './prompt-libraries.js';
 export {
   DocumentPrompts,
+  DocumentPromptsQuery,
   PromptRunBody,
   PromptRunParams,
   PromptTrialBody,

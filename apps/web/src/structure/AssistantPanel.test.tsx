@@ -21,10 +21,13 @@ const json = (status: number, body: unknown) =>
 /** The proposal acts and the month's usage, as the service answers them. */
 function service() {
   const asked: string[] = [];
+  // Each request's whole URL, its query among it.
+  const urls: string[] = [];
   const fetching = (async (input: string | URL | Request, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
     const path = new URL(request.url).pathname;
     asked.push(`${request.method} ${path}`);
+    urls.push(request.url);
     if (path === '/v1/conversation-endpoints') {
       return json(200, {
         items: [
@@ -145,7 +148,7 @@ function service() {
     }
     return json(404, { code: 'not_found', message: 'There is nothing at this address.' });
   }) as typeof fetch;
-  return { client: createApiClient({ baseUrl: 'http://doc.test', fetch: fetching }), asked };
+  return { client: createApiClient({ baseUrl: 'http://doc.test', fetch: fetching }), asked, urls };
 }
 
 /** A run streamed as the service would: its frames, in order. */
@@ -437,6 +440,31 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
         url: `http://doc.test/v1/documents/${DOCUMENT}/prompt-runs`,
         body: { prompt: PROMPT, node: NODE, fresh: true },
       }),
+    );
+  });
+
+  it('GEN-004 asks for the prompts that fit the part open, and for every prompt with none open', async () => {
+    const { client, urls } = service();
+    const panel = (node: string | null) => (
+      <AssistantPanel
+        client={client}
+        document={DOCUMENT}
+        component={node === null ? null : SITES}
+        node={node}
+        onCite={() => {}}
+      />
+    );
+    const listed = () => urls.filter((each) => each.includes(`/v1/documents/${DOCUMENT}/prompts`));
+    const { rerender } = render(panel(NODE));
+    await screen.findByRole('region', { name: 'Prompts' });
+    expect(listed().at(-1)).toBe(`http://doc.test/v1/documents/${DOCUMENT}/prompts?node=${NODE}`);
+    rerender(panel('n2'));
+    await waitFor(() =>
+      expect(listed().at(-1)).toBe(`http://doc.test/v1/documents/${DOCUMENT}/prompts?node=n2`),
+    );
+    rerender(panel(null));
+    await waitFor(() =>
+      expect(listed().at(-1)).toBe(`http://doc.test/v1/documents/${DOCUMENT}/prompts`),
     );
   });
 

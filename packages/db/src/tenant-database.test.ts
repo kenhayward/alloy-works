@@ -160,6 +160,7 @@ describe('the tenant database', () => {
       'publication_input',
       'publication_output',
       'publication_asset',
+      'publication_generated',
       'publication_check',
       'publication_check_given_up',
     ];

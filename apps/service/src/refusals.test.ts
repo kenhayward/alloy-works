@@ -50,6 +50,7 @@ describe('the rule behind a refusal', () => {
       ['reason.required', 'reason_required', 'LIF-061'],
       ['approval.author', 'approval_author', 'LIF-010'],
       ['conditions.unmet', 'conditions_unmet', 'LIF-004'],
+      ['prompt.output_mismatch', 'prompt_output_mismatch', 'GEN-004'],
     ];
     for (const [dotted, code, rule] of ruled) {
       const { body } = toErrorBody(refused(409, dotted, 'Refused.'), 'trace-1');

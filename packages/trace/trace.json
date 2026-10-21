@@ -17728,7 +17728,7 @@
         },
         {
           "id": "PUB-082",
-          "howItIsMet": "A publication's record lists the accepted runs its versions came from (Proposals)"
+          "howItIsMet": "`publication_generated`: each accepted suggestion and creation it printed, with its run, written as it is recorded (Proposals)"
         },
         {
           "id": "API-064",
@@ -17785,6 +17785,10 @@
         {
           "id": "GEN-005",
           "howItIsMet": "`models`: a purpose and the models accepted; another fails `model_mismatch` before any call (Prompts)"
+        },
+        {
+          "id": "GEN-004",
+          "howItIsMet": "`output.componentType`: a part of another type fails `prompt_output_mismatch` before any call; listed only where it fits (Prompts)"
         },
         {
           "id": "GEN-045",
@@ -21534,31 +21538,37 @@
     {
       "id": "GEN-025",
       "file": "apps/service/src/generated-routes.test.ts",
-      "line": 112,
+      "line": 158,
       "kind": "title"
     },
     {
       "id": "GEN-026",
       "file": "apps/service/src/generated-routes.test.ts",
-      "line": 197,
+      "line": 243,
       "kind": "title"
     },
     {
       "id": "GEN-041",
       "file": "apps/service/src/generated-routes.test.ts",
-      "line": 197,
+      "line": 243,
       "kind": "title"
     },
     {
       "id": "GEN-042",
       "file": "apps/service/src/generated-routes.test.ts",
-      "line": 140,
+      "line": 186,
       "kind": "title"
     },
     {
       "id": "GEN-046",
       "file": "apps/service/src/generated-routes.test.ts",
-      "line": 301,
+      "line": 435,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-082",
+      "file": "apps/service/src/generated-routes.test.ts",
+      "line": 322,
       "kind": "title"
     },
     {
@@ -22026,49 +22036,67 @@
     {
       "id": "GEN-003",
       "file": "apps/service/src/prompt-run-routes.test.ts",
-      "line": 231,
+      "line": 391,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-004",
+      "file": "apps/service/src/prompt-run-routes.test.ts",
+      "line": 336,
+      "kind": "rule"
+    },
+    {
+      "id": "GEN-004",
+      "file": "apps/service/src/prompt-run-routes.test.ts",
+      "line": 288,
       "kind": "title"
     },
     {
       "id": "GEN-005",
       "file": "apps/service/src/prompt-run-routes.test.ts",
-      "line": 270,
+      "line": 430,
       "kind": "title"
     },
     {
       "id": "GEN-006",
       "file": "apps/service/src/prompt-run-routes.test.ts",
-      "line": 190,
+      "line": 198,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-023",
+      "file": "apps/service/src/prompt-run-routes.test.ts",
+      "line": 239,
       "kind": "title"
     },
     {
       "id": "GEN-036",
       "file": "apps/service/src/prompt-run-routes.test.ts",
-      "line": 301,
+      "line": 461,
       "kind": "title"
     },
     {
       "id": "GEN-045",
       "file": "apps/service/src/prompt-run-routes.test.ts",
-      "line": 153,
+      "line": 161,
       "kind": "title"
     },
     {
       "id": "GEN-057",
       "file": "apps/service/src/prompt-run-routes.test.ts",
-      "line": 190,
+      "line": 198,
       "kind": "title"
     },
     {
       "id": "GEN-058",
       "file": "apps/service/src/prompt-run-routes.test.ts",
-      "line": 231,
+      "line": 391,
       "kind": "title"
     },
     {
       "id": "GEN-059",
       "file": "apps/service/src/prompt-run-routes.test.ts",
-      "line": 250,
+      "line": 410,
       "kind": "title"
     },
     {
@@ -24400,51 +24428,57 @@
       "kind": "title"
     },
     {
+      "id": "GEN-004",
+      "file": "apps/web/src/structure/AssistantPanel.test.tsx",
+      "line": 446,
+      "kind": "title"
+    },
+    {
       "id": "GEN-009",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 263,
+      "line": 266,
       "kind": "title"
     },
     {
       "id": "GEN-010",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 174,
+      "line": 177,
       "kind": "title"
     },
     {
       "id": "GEN-011",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 226,
+      "line": 229,
       "kind": "title"
     },
     {
       "id": "GEN-036",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 389,
+      "line": 392,
       "kind": "title"
     },
     {
       "id": "GEN-037",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 174,
+      "line": 177,
       "kind": "title"
     },
     {
       "id": "GEN-047",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 459,
+      "line": 487,
       "kind": "title"
     },
     {
       "id": "GEN-051",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 459,
+      "line": 487,
       "kind": "title"
     },
     {
       "id": "GEN-053",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 495,
+      "line": 523,
       "kind": "title"
     },
     {
@@ -26989,6 +27023,12 @@
       "id": "DAT-087",
       "file": "packages/db/src/publication-bindings.test.ts",
       "line": 323,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-082",
+      "file": "packages/db/src/publication-generated-migration.test.ts",
+      "line": 91,
       "kind": "title"
     },
     {

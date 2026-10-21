@@ -215,6 +215,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0140_webhook_notification',
       '0141_extensions',
       '0142_webhook_delivery_ids',
+      '0143_publication_generated',
     ]);
 
     // The component and its version are as they were.
@@ -421,6 +422,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0140_webhook_notification',
       '0141_extensions',
       '0142_webhook_delivery_ids',
+      '0143_publication_generated',
     ]);
 
     const { rows } = await queryAs(

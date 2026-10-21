@@ -1,7 +1,15 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
-import { DEFAULT_LAYOUT_ID, DEFAULT_THEME_ID, findRole } from '@alloy-works/db';
 import {
+  DEFAULT_LAYOUT_ID,
+  DEFAULT_THEME_ID,
+  STARTER_COMPONENT_TYPE_ID,
+  createArtifact,
+  createComponent,
+  findRole,
+} from '@alloy-works/db';
+import {
+  DEFINITION_SCHEMA_VERSION,
   canonicalCall,
   SEED_PROMPT_WORKFLOW,
   type ModelEvent,
@@ -127,7 +135,7 @@ describe('a prompt run through the service (the G4 plan, G4-H and G4-I)', () => 
   };
 
   /** A document made by Ada from a template binding a library listing these prompts. */
-  const bound = async (prompts: string[]) => {
+  const bound = async (prompts: string[], components = [sites.id, secret.id]) => {
     const library = (
       await h.call('ada', 'POST', '/v1/prompt-libraries', {
         library: { schemaVersion: 1, name: `Library ${prompts.length}`, prompts },
@@ -147,7 +155,7 @@ describe('a prompt run through the service (the G4 plan, G4-H and G4-I)', () => 
         },
       })
     ).json<{ id: string }>();
-    return h.documentReferencing([sites.id, secret.id], h.general, { template: template.id });
+    return h.documentReferencing(components, h.general, { template: template.id });
   };
 
   it('GEN-045 refuses to approve a prompt version before a finished trial of it, and approves it after; no prompt workflow saved lifts it', async () => {
@@ -226,6 +234,158 @@ describe('a prompt run through the service (the G4 plan, G4-H and G4-I)', () => 
     expect(run.read).toEqual([
       { component: sites.id, version: expect.any(String), blocks: ['p1'] },
     ]);
+  });
+
+  it("GEN-023 exposes a prompt run's suggestion's run: the model as the reply named its release, the prompt version and the digest", async () => {
+    const one = await approved({
+      title: 'Named release',
+      models: { purpose: 'drafting', accepts: ['stand-in'] },
+    });
+    const report = await bound([one.id]);
+    const was = h.connector.modelFor;
+    h.connector.modelFor = (request) => {
+      asked.push(request);
+      return [text('The north weir floods in March.'), { ...ended, model: 'stand-in-1-20261001' }];
+    };
+    try {
+      const before = asked.length;
+      const frames = framesOf(
+        (
+          await h.call('grace', 'POST', `/v1/documents/${report.id}/prompt-runs`, {
+            prompt: one.id,
+            node: report.nodes[0],
+            fresh: true,
+          })
+        ).body,
+      );
+      const proposal = frames.find((frame) => frame.event === 'proposal')!.data;
+      const kept = await h.call(
+        'grace',
+        'POST',
+        `/v1/assistant/proposals/${String(proposal.id)}/keeping`,
+      );
+      expect(kept.statusCode, kept.body).toBe(200);
+      const suggestion = kept.json<{ proposal: { suggestion: string } }>().proposal.suggestion;
+      const generated = (
+        await h.call('grace', 'GET', `/v1/documents/${report.id}/generated`)
+      ).json<{ placements: { items: { id: string; run: Json }[] }[] }>();
+      const item = generated.placements
+        .flatMap((each) => each.items)
+        .find((each) => each.id === suggestion)!;
+      expect(item.run).toMatchObject({
+        id: frames[0]!.data.run,
+        model: 'stand-in-1-20261001',
+        promptVersion: one.version.id,
+        contextDigest: createHash('sha256')
+          .update(canonicalCall(asked[before]!.call), 'utf8')
+          .digest('hex'),
+      });
+    } finally {
+      h.connector.modelFor = was;
+    }
+  });
+
+  it('GEN-004 refuses a run and a trial on a part of another type than the prompt writes, before any call, and lists only the prompts that fit a part', async () => {
+    const procedure = await h.tenantDb.withTenant(h.tenant, async (trx) => {
+      const type = await createArtifact(trx, {
+        author: h.ids.ada!,
+        substance: {
+          kind: 'componentType',
+          content: {
+            schemaVersion: DEFINITION_SCHEMA_VERSION,
+            id: randomUUID(),
+            name: 'Procedure',
+            assignments: [],
+          },
+        },
+      });
+      const made = await createComponent(trx, {
+        spaceId: h.general,
+        componentTypeId: type.artifactId,
+        title: 'Flushing the weir',
+        language: 'en-GB',
+        direction: 'ltr',
+        author: h.ids.ada!,
+      });
+      if (made.answer !== 'created') throw new Error(made.answer);
+      return {
+        type: type.artifactId,
+        component: { id: made.version.artifactId, version: made.version.id },
+      };
+    });
+    await h.place(procedure.component, { type: 'text', value: 'Open the sluice.', marks: [] });
+    const typed = await h.documentReferencing([sites.id, procedure.component.id]);
+    const before = asked.length;
+    // Written for procedures: a topic is refused, before any call, and a procedure is run.
+    const forProcedures = await made({
+      title: 'For procedures',
+      output: { componentType: procedure.type },
+    });
+    const tryOn = (node: string) =>
+      h.call(
+        'grace',
+        'POST',
+        `/v1/prompts/${forProcedures.id}/versions/${forProcedures.version.id}/trials`,
+        {
+          document: typed.id,
+          node,
+        },
+      );
+    const refused = await tryOn(typed.nodes[0]!);
+    expect(refused.statusCode).toBe(409);
+    expect(refused.json()).toMatchObject({ code: 'prompt_output_mismatch', rule: 'GEN-004' });
+    expect(asked.length).toBe(before);
+    expect((await tryOn(typed.nodes[1]!)).statusCode).toBe(200);
+    // Written for topics, the starter type: a topic is run.
+    const forTopics = await made({ output: { componentType: STARTER_COMPONENT_TYPE_ID } });
+    expect(
+      (
+        await h.call(
+          'grace',
+          'POST',
+          `/v1/prompts/${forTopics.id}/versions/${forTopics.version.id}/trials`,
+          {
+            document: typed.id,
+            node: typed.nodes[0],
+          },
+        )
+      ).statusCode,
+    ).toBe(200);
+
+    // Approved, it is refused a run on a topic the same way, and listed only for a procedure.
+    await h.call('grace', 'POST', `/v1/prompts/${forProcedures.id}/transitions`, {
+      transition: 'submit',
+      from: 'draft',
+    });
+    const passed = await h.call('ada', 'POST', `/v1/prompts/${forProcedures.id}/approvals`, {
+      transition: 'approve',
+      version: forProcedures.version.id,
+      decision: 'approved',
+    });
+    expect(passed.statusCode, passed.body).toBe(200);
+    const any = await approved({ title: 'For any part' });
+    const report = await bound([forProcedures.id, any.id], [sites.id, procedure.component.id]);
+    const ran = await h.call('grace', 'POST', `/v1/documents/${report.id}/prompt-runs`, {
+      prompt: forProcedures.id,
+      node: report.nodes[0],
+    });
+    expect(ran.statusCode).toBe(409);
+    expect(ran.json<{ code: string }>().code).toBe('prompt_output_mismatch');
+    const listed = async (node?: string) =>
+      (
+        await h.call(
+          'grace',
+          'GET',
+          `/v1/documents/${report.id}/prompts${node === undefined ? '' : `?node=${node}`}`,
+        )
+      )
+        .json<{ prompts: { id: string }[] }>()
+        .prompts.map((each) => each.id);
+    expect(await listed(report.nodes[0])).toEqual([any.id]);
+    expect(await listed(report.nodes[1])).toEqual(
+      expect.arrayContaining([forProcedures.id, any.id]),
+    );
+    expect(await listed()).toHaveLength(2);
   });
 
   it('GEN-003 GEN-058 sends what the context declares and nothing else, a part the runner may not read left out', async () => {

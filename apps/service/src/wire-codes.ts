@@ -183,6 +183,7 @@ const WIRE_CODES = {
   'relationship.refused': 'relationship_refused',
   'relationship.cardinality': 'relationship_cardinality',
   'relationship.cycle': 'relationship_cycle',
+  'prompt.output_mismatch': 'prompt_output_mismatch',
 } as const satisfies Record<string, string>;
 
 export type DottedCode = keyof typeof WIRE_CODES;
@@ -261,6 +262,8 @@ const RULES: Partial<Record<DottedCode, string>> = {
   'approval.author': 'LIF-010',
   // A transition taken, or a gate approved, while what it requires is unmet (workflow.md, WF3-B).
   'conditions.unmet': 'LIF-004',
+  // A prompt run on a part of another component type than it declares it writes (the GC plan, GC-C).
+  'prompt.output_mismatch': 'GEN-004',
 };
 
 /** The wire's spelling of a store's dotted answer. */
