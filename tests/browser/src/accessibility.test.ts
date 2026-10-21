@@ -527,6 +527,19 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
           .getByLabel('Data boundary'),
       });
       await administration.getByRole('button', { name: 'Cancel' }).click();
+      // Extensions installed, and the form one is installed with (the EX plan, EXc).
+      await sections.getByRole('link', { name: /^Extensions/ }).click();
+      await check('Administration, Extensions', {
+        shows: [
+          heading('Extensions', 1),
+          administration.getByRole('form', { name: 'Install an extension' }),
+          administration
+            .getByRole('table', { name: 'Extensions' })
+            .getByRole('row')
+            .first()
+            .or(administration.getByText('No extension is installed.')),
+        ],
+      });
       // Each kind's workflow, its states and transitions edited in place (the WF1 plan, WF-J).
       await sections.getByRole('link', { name: /^Workflows/ }).click();
       await check('Administration, Workflows', {

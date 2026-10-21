@@ -125,7 +125,11 @@ export function fakeConnector(): FakeConnector {
           : path === '/v1/test'
             ? testRequestSchema
             : path === '/v1/describe'
-              ? 'sql' in body || 'builder' in body || 'http' in body || 'file' in body
+              ? 'sql' in body ||
+                'builder' in body ||
+                'http' in body ||
+                'file' in body ||
+                'extension' in body
                 ? describeSqlRequestSchema
                 : describeRequestSchema
               : path === '/v1/model'
@@ -238,7 +242,9 @@ export function fakeConnector(): FakeConnector {
         }
         // A statement's, or an HTTP request's sample for its columns (the D6 plan, D6-A).
         return Response.json(
-          'sql' in body || 'http' in body || 'file' in body ? fake.describeSql : fake.describe,
+          'sql' in body || 'http' in body || 'file' in body || 'extension' in body
+            ? fake.describeSql
+            : fake.describe,
         );
       }
       if (path === '/v1/run') {

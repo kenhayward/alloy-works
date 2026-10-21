@@ -143,6 +143,7 @@ describe("an extension's source through the connector (the EX plan, EX-H and EX-
       ].toSorted(),
     );
     expect(seen.body).not.toContain(TENANT);
+    expect(seen.bearer).toBe(true);
     // Declaring no parameters and no row limit, it is sent neither.
     await supervisor.run(
       'run',
@@ -158,10 +159,28 @@ describe("an extension's source through the connector (the EX plan, EX-H and EX-
       outcome: 'failed',
       failure: { code: 'extension_failed', attribution: 'connector' },
     });
+    const refusing = await supervisor.run('run', runOf(settings('/extension-refusing')));
+    expect(refusing).toMatchObject({
+      outcome: 'failed',
+      failure: { code: 'extension_refused', attribution: 'connector' },
+    });
     const invalid = await supervisor.run('run', runOf(settings('/extension-invalid')));
     expect(invalid).toMatchObject({
       outcome: 'failed',
       failure: { code: 'extension_invalid', attribution: 'connector' },
+    });
+  });
+
+  it('DAT-105 proposes columns from a sample of an extension, each member of its first rows by its pointer', async () => {
+    const described = await supervisor.run('describeSql', {
+      ...requestFor(settings()),
+      extension: { request: { readings: 'latest' }, parameters: [], values: {} },
+    });
+    expect(described).toMatchObject({
+      columns: [
+        { name: 'site', proposed: { base: 'text' }, pointer: '/site' },
+        { name: 'level', pointer: '/level' },
+      ],
     });
   });
 

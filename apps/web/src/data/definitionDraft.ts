@@ -1,5 +1,6 @@
 import {
   checkTree,
+  EXTENSION_REQUEST_MOST,
   generatePostgres,
   pointerTo,
   type AggregateName,
@@ -196,6 +197,8 @@ export interface DefinitionDraft {
   readonly http: HttpDraft;
   readonly file: FileDraft;
   readonly sql: string;
+  /** An extension's request, as typed: a JSON object, its own (the EX plan, EX-G). */
+  readonly extension: string;
   readonly parameters: readonly ParameterDraft[];
   readonly columns: readonly ColumnDraft[];
   readonly key: readonly string[];
@@ -254,6 +257,7 @@ export function newDraft(limits: {
     http: NEW_HTTP,
     file: NEW_FILE,
     sql: '',
+    extension: '{}',
     parameters: [],
     columns: [],
     key: [],
@@ -654,6 +658,24 @@ export function unshownReason(definition: QueryDefinition): string | null {
 }
 
 /**
+ * An extension's request as typed, read as the service takes it (EX-G): a JSON object of at most
+ * 64 KiB, or why not, in a sentence.
+ */
+export function extensionRequestOf(text: string): Record<string, unknown> | string {
+  let read: unknown;
+  try {
+    read = JSON.parse(text);
+  } catch {
+    return 'The request is not JSON: check its brackets and quotes.';
+  }
+  if (typeof read !== 'object' || read === null || Array.isArray(read)) {
+    return 'The request is a JSON object, in braces.';
+  }
+  if (JSON.stringify(read).length > EXTENSION_REQUEST_MOST) return 'The request is at most 64 KiB.';
+  return read as Record<string, unknown>;
+}
+
+/**
  * The SQL a built draft runs, as the generator writes it (D4-E), or what it still needs: the tree's
  * own checks first, so an unfinished tree says what is missing rather than generating half a query.
  */
@@ -753,19 +775,22 @@ function parts(draft: DefinitionDraft) {
   for (const column of draft.columns) {
     const type = columnTypeOf(column.type, draft.columns);
     if (typeof type === 'string') return `The column ${column.name}: ${type}`;
-    // An HTTP response's or a file's column is read as its format reads (the D6 plan, D6-F).
+    // An HTTP response's or a file's column is read as its format reads (the D6 plan, D6-F), and
+    // an extension's by a pointer into its row (EX-G).
     const from =
       draft.mode === 'http'
         ? fromOf(column, draft.http)
         : draft.mode === 'file'
           ? fromOf(column, draft.file)
-          : { column: column.name };
+          : draft.mode === 'extension'
+            ? { pointer: column.pointer ?? pointerTo(column.name) }
+            : { column: column.name };
     columns.push({ name: column.name, from, type });
   }
   if (columns.length === 0) {
     return draft.mode === 'builder' || draft.mode === 'dataset'
       ? 'Describe the query to propose its columns first.'
-      : draft.mode === 'http'
+      : draft.mode === 'http' || draft.mode === 'extension'
         ? 'Sample the request to propose its columns first.'
         : draft.mode === 'file'
           ? 'Sample the file to propose its columns first.'
@@ -777,6 +802,8 @@ function parts(draft: DefinitionDraft) {
       : null;
   if (typeof query === 'string') return query;
   if (draft.mode === 'dataset' && draft.dataset === '') return 'Choose a stored result.';
+  const request = draft.mode === 'extension' ? extensionRequestOf(draft.extension) : null;
+  if (typeof request === 'string') return request;
   const limits = {
     rows: Number(draft.limits.rows),
     bytes: Number(draft.limits.bytes),
@@ -810,9 +837,11 @@ function parts(draft: DefinitionDraft) {
                 request: templateOf(draft.http),
                 format: formatOf(draft.http),
               }
-            : query === null
-              ? { kind: 'sql' as const, text: draft.sql }
-              : { kind: 'builder' as const, format: 1 as const, query },
+            : request !== null
+              ? { kind: 'extension' as const, request }
+              : query === null
+                ? { kind: 'sql' as const, text: draft.sql }
+                : { kind: 'builder' as const, format: 1 as const, query },
     columns,
     key: [...draft.key],
     order:
@@ -862,6 +891,7 @@ export function sqlOf(definition: QueryDefinition): string {
   if (statement.kind === 'http') return requestText(statement.request);
   if (statement.kind === 'file') return fileText(statement);
   if (statement.kind === 'dataset') return datasetText(statement.query);
+  if (statement.kind === 'extension') return JSON.stringify(statement.request, null, 2);
   return statement.kind === 'sql' ? statement.text : generatePostgres(definition, {}, 'run').text;
 }
 
@@ -887,6 +917,7 @@ export function draftOf(definition: QueryDefinition): DefinitionDraft {
     http: http === null || 'reason' in http ? NEW_HTTP : http,
     file: file === null || 'reason' in file ? NEW_FILE : file,
     sql: statement.kind === 'sql' ? statement.text : '',
+    extension: statement.kind === 'extension' ? JSON.stringify(statement.request, null, 2) : '{}',
     parameters: definition.parameters.map((parameter) => {
       const permitted = parameter.permitted;
       return {
@@ -966,7 +997,15 @@ export function unconfirmed(columns: readonly ColumnDraft[]): ColumnDraft[] {
 export function statementOf(
   draft: Pick<
     DefinitionDraft,
-    'connection' | 'dataset' | 'mode' | 'builder' | 'sql' | 'http' | 'file' | 'parameters'
+    | 'connection'
+    | 'dataset'
+    | 'mode'
+    | 'builder'
+    | 'sql'
+    | 'http'
+    | 'file'
+    | 'extension'
+    | 'parameters'
   >,
 ) {
   return JSON.stringify([
@@ -977,10 +1016,12 @@ export function statementOf(
       ? draft.sql
       : draft.mode === 'http'
         ? draft.http
-        : // A file's filters change which rows, never which columns.
-          draft.mode === 'file'
-          ? { ...draft.file, filters: [], match: 'all' }
-          : { ...draft.builder, limit: '' },
+        : draft.mode === 'extension'
+          ? draft.extension
+          : // A file's filters change which rows, never which columns.
+            draft.mode === 'file'
+            ? { ...draft.file, filters: [], match: 'all' }
+            : { ...draft.builder, limit: '' },
     draft.parameters,
   ]);
 }
@@ -988,7 +1029,15 @@ export function statementOf(
 /** The parts of a draft its columns are confirmed for (DAT-105). */
 export type StatementParts = Pick<
   Partial<DefinitionDraft>,
-  'connection' | 'dataset' | 'mode' | 'builder' | 'sql' | 'http' | 'file' | 'parameters'
+  | 'connection'
+  | 'dataset'
+  | 'mode'
+  | 'builder'
+  | 'sql'
+  | 'http'
+  | 'file'
+  | 'extension'
+  | 'parameters'
 >;
 
 /**

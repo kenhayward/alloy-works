@@ -130,6 +130,8 @@ export async function updateExtension(
   id: string,
   input: { readonly digest: string; readonly manifest: ExtensionManifest; readonly by: string },
 ): Promise<InstalledExtension> {
+  // Held against a concurrent update or removal, as a removal holds it.
+  await sql`select 1 from extension where id = ${id} for update`.execute(trx);
   const held = (await installedExtension(trx, id))!;
   if (held.digest === input.digest) return held;
   await trx
@@ -195,7 +197,9 @@ export async function removeExtension(
 
 /**
  * The manifest an extension had at a digest, and whether the extension is removed: what a connection's
- * snapshot is held to (the EX plan, EX-D). Undefined where it never had that digest.
+ * snapshot is held to (the EX plan, EX-D). Undefined where it never had that digest. The extension is
+ * held shared until the caller commits, so a removal waits for the connection written against it, and
+ * sees it among its uses, or the connection sees the removal.
  */
 export async function extensionAtDigest(
   trx: TenantTransaction,
@@ -205,7 +209,8 @@ export async function extensionAtDigest(
   const { rows } = await sql<{ manifest: unknown; removed_at: Date | null }>`
     select v.manifest, e.removed_at from extension_version v join extension e on e.id = v.extension_id
      where v.extension_id = ${id} and v.digest = ${digest}
-     order by v.id desc limit 1`.execute(trx);
+     order by v.id desc limit 1
+       for share of e`.execute(trx);
   const row = rows[0];
   return row
     ? { manifest: row.manifest as ExtensionManifest, removed: row.removed_at !== null }

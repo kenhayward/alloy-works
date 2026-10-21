@@ -51,6 +51,8 @@ export interface DefinitionPlaces {
   readonly http: ReadonlySet<string>;
   /** The S3 connections among them, whose query is a file read by its key (the D6 plan, task 2). */
   readonly s3: ReadonlySet<string>;
+  /** Those reaching an extension, whose query is the extension's own request (the EX plan, EX-G). */
+  readonly extension: ReadonlySet<string>;
 }
 
 /**
@@ -102,6 +104,7 @@ export function useDefinitionPlaces(client: Client): DefinitionPlaces | null {
           );
         const httpConnections = ofType('http');
         const s3Connections = ofType('s3');
+        const extensionConnections = ofType('extension');
         const [editable, atConnections] = await Promise.all([
           Promise.all(
             readableSpaces.map((each) => permitsAt(client, `space:${each.id}`, ['edit'])),
@@ -120,12 +123,16 @@ export function useDefinitionPlaces(client: Client): DefinitionPlaces | null {
               liveConnections
                 .filter(
                   (each, at) =>
-                    writable[at] && !httpConnections.has(each.id) && !s3Connections.has(each.id),
+                    writable[at] &&
+                    !httpConnections.has(each.id) &&
+                    !s3Connections.has(each.id) &&
+                    !extensionConnections.has(each.id),
                 )
                 .map((each) => each.id),
             ),
             http: httpConnections,
             s3: s3Connections,
+            extension: extensionConnections,
           });
         }
       } catch {
@@ -136,6 +143,7 @@ export function useDefinitionPlaces(client: Client): DefinitionPlaces | null {
             sql: new Set(),
             http: new Set(),
             s3: new Set(),
+            extension: new Set(),
           });
         }
       }

@@ -81,6 +81,8 @@ export function createFakeApi(options = {}) {
       const headers = { ...request.headers };
       const key = headers['x-api-key'];
       delete headers['x-api-key'];
+      // The stand-in extension's key rides as a bearer: whether it was its own is kept, never the key.
+      const bearer = headers.authorization === `Bearer ${EXTENSION_KEY}`;
       // The stand-in model's key rides here in OpenAI's protocol, and is never remembered either.
       delete headers.authorization;
       seen.push({
@@ -89,6 +91,7 @@ export function createFakeApi(options = {}) {
         headers,
         body,
         keyed: key === DEV_KEY,
+        bearer,
       });
       const send = (status, bytes, extra = {}) => {
         response.writeHead(status, { 'content-length': String(bytes.length), ...extra });
@@ -99,6 +102,9 @@ export function createFakeApi(options = {}) {
       // The stand-in extension (the EX plan): its test and its run, the run's rows its gauges, those of
       // the region its settings name and the site its parameters name; and one that fails, and one
       // that answers out of shape.
+      if ((url.pathname === '/extension/test' || url.pathname === '/extension/run') && !bearer) {
+        return send(401, json({ error: 'key' }));
+      }
       if (url.pathname === '/extension/test') return send(200, json({ ok: true }));
       if (url.pathname === '/extension/run') {
         const asked = JSON.parse(body || '{}');
@@ -110,6 +116,9 @@ export function createFakeApi(options = {}) {
         return send(200, json({ rows }));
       }
       if (url.pathname.startsWith('/extension-broken/')) return send(503, json({ error: 'down' }));
+      if (url.pathname.startsWith('/extension-refusing/')) {
+        return send(422, json({ error: 'no such reading' }));
+      }
       if (url.pathname.startsWith('/extension-invalid/')) return send(200, Buffer.from('not json'));
       // An extension's manifest (the EX plan): a stand-in source's, and one past 64 KiB.
       if (url.pathname === '/extension/manifest.json') {
@@ -308,6 +317,9 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
 }
 
 /** The stand-in extension's gauges (the EX plan): invented sites and levels. */
+/** The stand-in extension's key: invented. */
+const EXTENSION_KEY = 'stand-in-extension-key';
+
 const GAUGES = [
   { region: 'north', site: 'north-weir', level: 2.5 },
   { region: 'north', site: 'north-bridge', level: 1.75 },

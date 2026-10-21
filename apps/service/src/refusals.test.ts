@@ -124,6 +124,8 @@ describe('the rule behind a refusal', () => {
       'access.changed',
       'take.invalid',
       'definition.retired',
+      // A definition binding parameters on a source since saved to declare none (DAT-079; EX-F).
+      'capability.undeclared',
       'resolution.precondition',
       'name.invalid',
       // B2's Keep, refused where the binding's question changed (B2-F).

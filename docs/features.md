@@ -1413,7 +1413,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   **Turn on** one turned off, **Remove** one after asking, and **Deliveries** shows each: what was
   sent and, at every attempt, what came back or why nothing did. Through the API that is
   `/v1/webhooks/{id}/deliveries`.
-- **Extensions, through the API.** An administrator installs an extension, a source type someone else
+- **Extensions.** An administrator installs an extension, a source type someone else
   hosts, by its manifest's HTTPS URL at `/v1/extensions`: the connector fetches the manifest, and its
   preview shows what it is, the settings and secret a connection to it takes, what it can do and the
   hosts it says it sends data to, before installing it at that manifest's digest. An update shows what
@@ -1425,7 +1425,13 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   JSON is read, held to the product's limits; one binding parameters is refused where the extension
   declares it binds none. Only what it declares is sent: its settings, the request, the values and its
   secret. Its failures are the extension's (`extension_refused`, `extension_failed`,
-  `extension_invalid`), never the product's. The pages for connecting one follow in the next release.
+  `extension_invalid`), never the product's. Administration's **Extensions** previews and installs
+  one, shows what each declares, what uses it, any update's changes before taking it, and removes one
+  after asking. A new connection's type **An extension** offers the installed ones, their settings
+  asked for as the manifest names them; a connection's page offers **Use the latest manifest** when
+  there is a newer one. A query definition on one writes its request as JSON and samples it for its
+  columns, offering parameters only where the extension binds them. Only an environment administrator
+  may read the extensions, and so make a connection to one, for now.
 - **MCP, for agents.** An MCP client connects to `/mcp` on your environment with an API token, yours
   or a service identity's, as a bearer: a signed-in session never works there. Four tools read:
   `search`, `read_document`, `read_component` (its blocks numbered) and `related` (an artifact's

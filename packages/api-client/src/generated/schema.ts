@@ -22533,7 +22533,7 @@ export interface operations {
                             [key: string]: string | boolean | null | string[];
                         };
                     };
-                    /** @description An S3 connection's object, read and its first rows read to propose its columns, each by a pointer, a header or a letter: an S3 connection lists no tables. Send one of sql, builder, http and file */
+                    /** @description An S3 connection's object, read and its first rows read to propose its columns, each by a pointer, a header or a letter: an S3 connection lists no tables. Send one of sql, builder, http, file and extension */
                     file?: {
                         key: ({
                             fixed: string;
@@ -22561,6 +22561,61 @@ export interface operations {
                             kind: "xlsx";
                             sheet: string;
                             headerRow: boolean;
+                        };
+                        parameters: {
+                            name: string;
+                            type: {
+                                /** @constant */
+                                base: "text";
+                            } | {
+                                /** @constant */
+                                base: "integer";
+                            } | {
+                                /** @constant */
+                                base: "decimal";
+                                precision: number;
+                                scale: number;
+                            } | {
+                                /** @constant */
+                                base: "date";
+                            } | {
+                                /** @constant */
+                                base: "time";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "localDateTime";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "instant";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "boolean";
+                            };
+                            required: boolean;
+                            list: boolean;
+                            permitted?: {
+                                values: (string | boolean | null)[];
+                            } | {
+                                minimum?: string | boolean | null;
+                                maximum?: string | boolean | null;
+                            };
+                            variation?: {
+                                key: string;
+                                sql: string;
+                            }[];
+                        }[];
+                        /** @description Each parameter's value by name, in its type's canonical form */
+                        values: {
+                            [key: string]: string | boolean | null | string[];
+                        };
+                    };
+                    /** @description An extension connection's request, sent and its first rows read to propose its columns, each by a pointer. Send one of sql, builder, http, file and extension */
+                    extension?: {
+                        request: {
+                            [key: string]: unknown;
                         };
                         parameters: {
                             name: string;
@@ -40294,7 +40349,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `definition_retired`, `connection_retired`, `credential_missing`, `credential_target_changed`, `sql_not_permitted`: a run cannot be made; `identity_unavailable`: a binding's connection runs as each person and the caller's sign-in cannot name them; `acknowledgement_required`: a binding runs as the caller and `sharesOwnView` was not sent; `access_changed`: a permission or the session ended while the source answered; `binding_changed`: the binding changed while the source answered; `revision_decision_required`: a revision stands on what a binding holds and its item's `revisions` says nothing of it; `revision_precondition`: its `revisions.over` is not what stands, or is no longer when the result is recorded; `value_invalid`: a revision kept is not a value of its column in the new result. Nothing is recorded */
+            /** @description `definition_retired`, `connection_retired`, `credential_missing`, `credential_target_changed`, `sql_not_permitted`, `capability_undeclared`: a run cannot be made; `identity_unavailable`: a binding's connection runs as each person and the caller's sign-in cannot name them; `acknowledgement_required`: a binding runs as the caller and `sharesOwnView` was not sent; `access_changed`: a permission or the session ended while the source answered; `binding_changed`: the binding changed while the source answered; `revision_decision_required`: a revision stands on what a binding holds and its item's `revisions` says nothing of it; `revision_precondition`: its `revisions.over` is not what stands, or is no longer when the result is recorded; `value_invalid`: a revision kept is not a value of its column in the new result. Nothing is recorded */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -58212,14 +58267,14 @@ export interface operations {
             content: {
                 /**
                  * @example {
-                 *       "url": "https://example.com/",
+                 *       "url": "https://gauges.example.test/alloy",
                  *       "digest": "0000000000000000000000000000000000000000000000000000000000000000"
                  *     }
                  */
                 "application/json": {
                     /**
-                     * Format: uri
-                     * @description Where its manifest is: HTTPS, at most 2,000 characters
+                     * @description Where its manifest is: HTTPS, at most 2,000 characters, with no user, password, query or fragment
+                     * @example https://gauges.example.test/alloy
                      */
                     url: string;
                     /** @description SHA-256 of the manifest’s canonical JSON, as its preview gave it */
@@ -59353,13 +59408,13 @@ export interface operations {
             content: {
                 /**
                  * @example {
-                 *       "url": "https://example.com/"
+                 *       "url": "https://gauges.example.test/alloy"
                  *     }
                  */
                 "application/json": {
                     /**
-                     * Format: uri
-                     * @description Where its manifest is: HTTPS, at most 2,000 characters
+                     * @description Where its manifest is: HTTPS, at most 2,000 characters, with no user, password, query or fragment
+                     * @example https://gauges.example.test/alloy
                      */
                     url: string;
                 };

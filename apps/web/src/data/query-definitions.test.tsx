@@ -19,6 +19,7 @@ const BUCKET = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const COMPONENT = '88888888-8888-4888-8888-888888888888';
 const DOCUMENT = '99999999-9999-4999-8999-999999999999';
 const STORED = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+const GAUGE = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
@@ -143,6 +144,8 @@ function service(
     uses?: unknown;
     /** A stored result the person may read, Every site, to query as a source (DAT-094). */
     stored?: boolean;
+    /** A connection to an extension, Gauge readings, listed first, binding parameters or not (EX). */
+    extension?: { readonly parameters: boolean };
   } = {},
 ) {
   const asked: Asked[] = [];
@@ -170,6 +173,21 @@ function service(
     if (request.method === 'GET' && path === '/v1/connections') {
       return json(200, {
         items: [
+          ...(options.extension
+            ? [
+                {
+                  id: GAUGE,
+                  name: 'Gauge readings',
+                  space: { id: GENERAL, name: 'General' },
+                  type: 'extension',
+                  retired: false,
+                  version: { id: FIRST, number: '0.1' },
+                  credentialSet: true,
+                  lastTest: null,
+                  changedAt: '2026-09-30T09:00:00.000Z',
+                },
+              ]
+            : []),
           ...(options.bucket
             ? [
                 {
@@ -251,7 +269,8 @@ function service(
               (target === `artifact:${READINGS}` ||
                 target === `artifact:${WAREHOUSE}` ||
                 target === `artifact:${API}` ||
-                target === `artifact:${BUCKET}`),
+                target === `artifact:${BUCKET}` ||
+                target === `artifact:${GAUGE}`),
           },
           {
             permission: 'write_sql',
@@ -277,6 +296,33 @@ function service(
         next: null,
         total: 1,
         facets: { spaces: [{ value: GENERAL, label: 'General', count: 1 }] },
+      });
+    }
+    if (request.method === 'GET' && path === `/v1/connections/${GAUGE}` && options.extension) {
+      return json(200, {
+        id: GAUGE,
+        space: { id: GENERAL, name: 'General' },
+        version: { id: FIRST, number: '0.1' },
+        settings: {
+          schemaVersion: 1,
+          name: 'Gauge readings',
+          description: '',
+          type: 'extension',
+          identity: { kind: 'service' },
+          retired: false,
+          source: {
+            extension: '0b6f6b8e-4a39-4c1e-9d0f-3c0a8f1e2d41',
+            digest: 'a'.repeat(64),
+            endpoint: 'https://gauges.example.test/alloy',
+            authenticated: true,
+            capabilities: { ...options.extension, keyColumns: false, rowLimit: true },
+            settings: { region: 'north' },
+          },
+        },
+        credential: { set: false },
+        lastTest: null,
+        mayAdminister: false,
+        mayUse: true,
       });
     }
     if (request.method === 'GET' && path === `/v1/query-definitions/${DEFINITION}`) {
@@ -309,7 +355,8 @@ function service(
       (path === `/v1/connections/${READINGS}/describe` ||
         path === `/v1/connections/${WAREHOUSE}/describe` ||
         path === `/v1/connections/${API}/describe` ||
-        path === `/v1/connections/${BUCKET}/describe`)
+        path === `/v1/connections/${BUCKET}/describe` ||
+        path === `/v1/connections/${GAUGE}/describe`)
     ) {
       // Sent nothing, a describe lists the source's tables and views (D1).
       if (
@@ -317,7 +364,8 @@ function service(
         !('sql' in body) &&
         !('builder' in body) &&
         !('http' in body) &&
-        !('file' in body)
+        !('file' in body) &&
+        !('extension' in body)
       ) {
         return json(200, RELATIONS);
       }
@@ -2403,5 +2451,110 @@ describe('a query definition on an HTTP connection (the D6 plan)', () => {
     render(<QueryDefinitionPage client={client} id={DEFINITION} />);
     await tab(user, 'Query');
     expect(await screen.findByText('readings/{year}/sites.csv')).toBeInTheDocument();
+  });
+});
+
+describe('a query definition on an extension (the EX plan, EX-G)', () => {
+  const answered = () =>
+    json(200, {
+      columns: [
+        { name: 'site', sourceType: 'string', proposed: { base: 'text' }, pointer: '/site' },
+        { name: 'level', sourceType: 'number', proposed: { base: 'integer' }, pointer: '/level' },
+      ],
+      parameters: [],
+    });
+
+  it("DAT-054 writes an extension's request, proposes its columns by pointer from a sample, and saves it", async () => {
+    const user = userEvent.setup();
+    const { client, asked } = service({
+      extension: { parameters: true },
+      sqlWriter: false,
+      describe: answered,
+    });
+    render(<QueryDefinitionPage client={client} id="new" />);
+    const connection = await screen.findByLabelText('Connection');
+    await waitFor(() => expect(connection).toHaveValue(GAUGE));
+    await user.type(screen.getByLabelText('Title'), 'Gauge levels');
+    await tab(user, 'Query');
+    expect(screen.queryByLabelText('SQL text')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Add segment' })).toBeNull();
+    const request = screen.getByLabelText('Request, a JSON object');
+    await user.clear(request);
+    await user.click(request);
+    await user.paste('{"readings": "daily"}');
+    await user.click(await screen.findByRole('button', { name: 'Add parameter' }));
+    await user.type(
+      within(screen.getByRole('group', { name: 'Parameter 1' })).getByLabelText('Name'),
+      'site',
+    );
+    await tab(user, 'Sample');
+    await user.type(screen.getByLabelText('site'), 'north');
+    await tab(user, 'Columns');
+    await user.click(screen.getByRole('button', { name: 'Sample for columns' }));
+    const columns = await screen.findByRole('table', { name: 'Columns' });
+    expect(asked.find((each) => each.path.endsWith('/describe'))?.body).toEqual({
+      extension: {
+        request: { readings: 'daily' },
+        parameters: [{ name: 'site', type: { base: 'text' }, required: true, list: false }],
+        values: { site: 'north' },
+      },
+    });
+    for (const name of ['site', 'level']) {
+      await user.click(within(columns).getByRole('button', { name: `Confirm ${name}` }));
+    }
+    await user.click(saveVersion());
+    await waitFor(() => expect(window.location.hash).toBe(`#/query-definitions/${DEFINITION}`));
+    expect(asked.find((each) => each.path.endsWith('/query-definitions'))?.body).toMatchObject({
+      definition: {
+        connection: GAUGE,
+        fetch: { kind: 'extension', request: { readings: 'daily' } },
+        columns: [
+          { name: 'site', from: { pointer: '/site' }, type: { base: 'text' } },
+          { name: 'level', from: { pointer: '/level' }, type: { base: 'integer' } },
+        ],
+      },
+    });
+  });
+
+  it('DAT-079 offers no parameters on an extension declaring none, and says why', async () => {
+    const user = userEvent.setup();
+    const { client, asked } = service({ extension: { parameters: false }, describe: answered });
+    render(<QueryDefinitionPage client={client} id="new" />);
+    await waitFor(() => expect(screen.getByLabelText('Connection')).toHaveValue(GAUGE));
+    const query = await tab(user, 'Query');
+    expect(
+      await within(query).findByText(
+        'This extension binds no parameters: its manifest declares none.',
+      ),
+    ).toBeInTheDocument();
+    expect(within(query).queryByRole('button', { name: 'Add parameter' })).toBeNull();
+    // A request that is not an object is refused before anything is sent.
+    const request = within(query).getByLabelText('Request, a JSON object');
+    await user.clear(request);
+    await user.click(request);
+    await user.paste('[1]');
+    await tab(user, 'Columns');
+    await user.click(screen.getByRole('button', { name: 'Sample for columns' }));
+    expect(await screen.findByText('The request is a JSON object, in braces.')).toBeInTheDocument();
+    expect(asked.some((each) => each.path.endsWith('/describe'))).toBe(false);
+  });
+
+  it('shows the request an extension definition sends to somebody who may only read it', async () => {
+    const user = userEvent.setup();
+    const { client } = service({
+      held: {
+        ...view({
+          connection: GAUGE,
+          fetch: { kind: 'extension', request: { readings: 'daily' } },
+          columns: [{ name: 'site', from: { pointer: '/site' }, type: { base: 'text' } }],
+          key: [],
+          order: 'multiset',
+        }),
+        mayEdit: false,
+      },
+    });
+    render(<QueryDefinitionPage client={client} id={DEFINITION} />);
+    await tab(user, 'Query');
+    expect(await screen.findByText('"readings": "daily"', { exact: false })).toBeInTheDocument();
   });
 });

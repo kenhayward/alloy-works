@@ -1,5 +1,5 @@
 import type { createApiClient } from '@alloy-works/api-client';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 
 import { ManageAccessLink } from '../access/ManageAccessLink.js';
 import { Notice } from '../states/Notice.js';
@@ -11,6 +11,7 @@ import type { PanelTab } from '../parts/PanelTabs.js';
 import { RowActions } from '../parts/RowActions.js';
 import type { StripCell } from '../parts/StateStrip.js';
 import styles from './ConnectionPage.module.css';
+import { useInstalledExtensions } from './extensions.js';
 import { connectionAccessLink, connectionLink, queryDefinitionLink } from './links.js';
 import {
   KEY_PAIR_HINT,
@@ -22,6 +23,7 @@ import {
   draftOf,
   draftProblem,
   settingsOf,
+  withManifestFields,
   type Draft,
 } from './SettingsFields.js';
 import {
@@ -141,16 +143,19 @@ function credentialText(
 ): string {
   if (!credential.set) return 'Not set.';
   const set = `Set by ${nameOf(credential.setBy)} on ${longDate(credential.setAt)}`;
-  const what = type === 'http' ? 'secret' : type === 's3' ? 'key pair' : 'password';
+  const what =
+    type === 'http' || type === 'extension' ? 'secret' : type === 's3' ? 'key pair' : 'password';
   if (credential.setBeforeBinding) {
     return `${set}, before this version of the product. Set the ${what} again to use this connection.`;
   }
   const moved =
-    type === 'http'
-      ? 'the base URL or the secret header'
-      : type === 's3'
-        ? 'the endpoint, the region, the bucket or how it is addressed'
-        : 'the host, port, database, account or TLS';
+    type === 'extension'
+      ? "the extension's endpoint"
+      : type === 'http'
+        ? 'the base URL or the secret header'
+        : type === 's3'
+          ? 'the endpoint, the region, the bucket or how it is addressed'
+          : 'the host, port, database, account or TLS';
   return credential.targetChanged
     ? `${set}, before ${moved} changed. Set the ${what} again to use this connection.`
     : `${set}.`;
@@ -288,6 +293,12 @@ function SettingsList({ settings }: { readonly settings: Settings }) {
         <dd>{settings.description === '' ? 'None' : settings.description}</dd>
         <dt>Endpoint</dt>
         <dd>{settings.source.endpoint}</dd>
+        {Object.entries(settings.source.settings).map(([key, value]) => (
+          <Fragment key={key}>
+            <dt>{key}</dt>
+            <dd>{typeof value === 'boolean' ? (value ? 'Yes' : 'No') : String(value)}</dd>
+          </Fragment>
+        ))}
         <dt>Runs as</dt>
         <dd>{RUNS_AS_LABELS[runsAsOf(settings.identity)]}</dd>
       </dl>
@@ -342,6 +353,16 @@ export function ConnectionPage({
   const [uses, setUses] = useState<ConnectionUses | 'failed' | null>(null);
   const [retiring, setRetiring] = useState<readonly string[] | null>(null);
   const working = useRef(false);
+  // An extension's manifest, for its fields' labels and a newer one, read where it may be changed.
+  const extensions = useInstalledExtensions(
+    client,
+    isConnectionView(connection) &&
+      connection.settings.type === 'extension' &&
+      connection.mayAdminister,
+  );
+  useEffect(() => {
+    setDraft((held) => (held === null ? held : withManifestFields(held, extensions)));
+  }, [extensions, connection]);
 
   const shownVersion = useRef<string | null>(null);
 
@@ -459,7 +480,24 @@ export function ConnectionPage({
   const { type } = view.settings;
   const http = type === 'http';
   const s3 = type === 's3';
-  const secretWord = http ? 'secret' : s3 ? 'key pair' : 'password';
+  const extension = type === 'extension';
+  const secretWord = http || extension ? 'secret' : s3 ? 'key pair' : 'password';
+  // An extension's secret is named as its manifest names it, where that is read.
+  const manifest =
+    extension && Array.isArray(extensions)
+      ? extensions.find(
+          (each) =>
+            view.settings.type === 'extension' && each.id === view.settings.source.extension,
+        )?.manifest
+      : undefined;
+  const secretLabel =
+    manifest !== undefined && manifest.authentication !== 'none'
+      ? manifest.authentication.label
+      : http || extension
+        ? 'Secret'
+        : s3
+          ? 'Secret access key'
+          : 'Password';
 
   /**
    * Cuts the next version from the one shown, and shows what the service answered. Retiring and
@@ -632,7 +670,7 @@ export function ConnectionPage({
       title={view.settings.name}
       chips={
         <>
-          <Chip>{`${http ? 'HTTP API' : s3 ? 'S3 bucket' : 'PostgreSQL'}, in ${view.space.name}`}</Chip>
+          <Chip>{`${http ? 'HTTP API' : s3 ? 'S3 bucket' : extension ? 'Extension' : 'PostgreSQL'}, in ${view.space.name}`}</Chip>
           <Chip className={styles['mono']}>{`Version ${view.version.number}`}</Chip>
           {retired && <Chip tone="warn">Retired</Chip>}
           <ManageAccessLink
@@ -714,7 +752,7 @@ export function ConnectionPage({
                   </>
                 )}
                 <label>
-                  {http ? 'Secret' : s3 ? 'Secret access key' : 'Password'}
+                  {secretLabel}
                   <input
                     type="password"
                     autoComplete="new-password"
@@ -804,7 +842,12 @@ export function ConnectionPage({
             {view.mayAdminister && draft !== null ? (
               <>
                 <div className={styles['fields']}>
-                  <SettingsFields draft={draft} onChange={setDraft} typeFixed />
+                  <SettingsFields
+                    draft={draft}
+                    onChange={setDraft}
+                    typeFixed
+                    extensions={extensions}
+                  />
                 </div>
                 <footer className={styles['foot']}>
                   <p role="status">{saved}</p>

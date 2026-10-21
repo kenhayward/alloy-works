@@ -76,6 +76,8 @@ function service(
       settings: ReturnType<typeof settings>;
     }) => Response | undefined;
     uses?: () => Response;
+    /** What listing the installed extensions answers (the EX plan, EXc); none unless told. */
+    extensions?: () => Response;
   } = {},
 ) {
   const asked: Asked[] = [];
@@ -161,6 +163,9 @@ function service(
           ],
         },
       });
+    }
+    if (request.method === 'GET' && path === '/v1/extensions') {
+      return options.extensions?.() ?? json(200, { items: [], next: null });
     }
     if (request.method === 'GET' && path === '/v1/spaces') {
       return json(200, {
@@ -1226,5 +1231,191 @@ describe('a connection that runs as each person (the D7 plan, D7.3)', () => {
         "For the source's administrator: each person's role must be NOLOGIN, create in no schema or database, and own nothing.",
       ),
     ).toBeInTheDocument();
+  });
+});
+
+const GAUGES = '0b6f6b8e-4a39-4c1e-9d0f-3c0a8f1e2d41';
+const TIDES = '0c7a7c9f-5b4a-4d2f-8e1a-4d1b9a2f3e52';
+const DIGEST = 'a'.repeat(64);
+const NEWER = 'b'.repeat(64);
+
+const gaugeManifest = (over: Record<string, unknown> = {}) => ({
+  manifest: 1,
+  name: 'River gauges',
+  version: '1.2.0',
+  publisher: 'Grace Gauges',
+  description: 'Readings from river gauges, by site.',
+  kind: 'source',
+  endpoint: 'https://gauges.example.test/alloy',
+  settings: [
+    { key: 'region', label: 'Region', type: 'text', required: true },
+    { key: 'days', label: 'Days of readings', type: 'number', required: false },
+    { key: 'estimates', label: 'Include estimates', type: 'boolean', required: false },
+  ],
+  authentication: { label: 'Gauge API key' },
+  capabilities: { parameters: true, keyColumns: false, rowLimit: true },
+  outbound: [],
+  ...over,
+});
+
+const installed = (over: { digest?: string; manifest?: Record<string, unknown> } = {}) =>
+  json(200, {
+    items: [
+      {
+        id: GAUGES,
+        url: 'https://gauges.example.test/manifest.json',
+        digest: over.digest ?? DIGEST,
+        manifest: over.manifest ?? gaugeManifest(),
+        installedBy: 'ada',
+        installedAt: '2026-10-21T09:00:00.000Z',
+        updatedAt: '2026-10-21T09:00:00.000Z',
+        removedAt: null,
+      },
+      // Taking no secret, so no connection is offered to it yet.
+      {
+        id: TIDES,
+        url: 'https://tides.example.test/manifest.json',
+        digest: NEWER,
+        manifest: gaugeManifest({ name: 'Tide tables', authentication: 'none' }),
+        installedBy: 'ada',
+        installedAt: '2026-10-21T09:00:00.000Z',
+        updatedAt: '2026-10-21T09:00:00.000Z',
+        removedAt: null,
+      },
+    ],
+    next: null,
+  });
+
+const extensionSettings = (over: Record<string, unknown> = {}) =>
+  settings({
+    name: 'Gauge readings',
+    description: '',
+    type: 'extension',
+    source: {
+      extension: GAUGES,
+      digest: DIGEST,
+      endpoint: 'https://gauges.example.test/alloy',
+      authenticated: true,
+      capabilities: { parameters: true, keyColumns: false, rowLimit: true },
+      settings: { region: 'north', days: 7, estimates: false },
+      ...over,
+    },
+  });
+
+describe('a connection to an extension (the EX plan, EXc)', () => {
+  it('DAT-054 makes a connection to an installed extension: its fields, and a snapshot of its manifest', async () => {
+    const user = userEvent.setup();
+    const { client, asked } = service({ administers: [QUALITY], extensions: () => installed() });
+    render(<Connections client={client} />);
+    await user.click(await screen.findByRole('button', { name: 'New connection' }));
+    const dialog = screen.getByRole('dialog', { name: 'New connection' });
+    await user.selectOptions(within(dialog).getByLabelText('Type'), 'extension');
+    const chosen = await within(dialog).findByLabelText('Extension');
+    // An extension taking no secret is not offered.
+    expect(
+      within(chosen)
+        .getAllByRole('option')
+        .map((each) => each.textContent),
+    ).toEqual(['Choose an extension', 'River gauges 1.2.0']);
+    await user.selectOptions(chosen, GAUGES);
+    expect(within(dialog).queryByLabelText('Host')).toBeNull();
+    await user.type(within(dialog).getByLabelText('Name'), 'Gauge readings');
+    await user.click(within(dialog).getByRole('button', { name: 'Create' }));
+    expect(within(dialog).getByRole('status')).toHaveTextContent('Region is required.');
+    await user.type(within(dialog).getByLabelText('Region (required)'), 'north');
+    await user.type(within(dialog).getByLabelText('Days of readings'), '7');
+    await user.click(within(dialog).getByRole('button', { name: 'Create' }));
+    await waitFor(() => expect(window.location.hash).toBe(`#/connections/${READINGS}`));
+    expect(asked.find((each) => each.method === 'POST')?.body).toEqual({
+      settings: extensionSettings(),
+    });
+  });
+
+  it('says a connection to an extension is made by whoever administers the environment, where listing them is refused', async () => {
+    const user = userEvent.setup();
+    const { client } = service({
+      administers: [QUALITY],
+      extensions: () => json(403, { code: 'forbidden', message: 'Not yours' }),
+    });
+    render(<Connections client={client} />);
+    await user.click(await screen.findByRole('button', { name: 'New connection' }));
+    const dialog = screen.getByRole('dialog', { name: 'New connection' });
+    await user.selectOptions(within(dialog).getByLabelText('Type'), 'extension');
+    expect(
+      await within(dialog).findByText(
+        'Only somebody who administers the environment may read its extensions, so they make a connection to one.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("shows its endpoint and settings, edits their values, and sets its secret by the manifest's label", async () => {
+    const user = userEvent.setup();
+    const { client, asked } = service({
+      connection: view({ settings: extensionSettings() }),
+      extensions: () => installed(),
+    });
+    render(<ConnectionPage client={client} id={READINGS} />);
+    await screen.findByRole('heading', { name: 'Gauge readings', level: 1 });
+    expect(screen.getByText('Extension, in General')).toBeInTheDocument();
+    expect(
+      screen.getByText('Its calls go to https://gauges.example.test/alloy.'),
+    ).toBeInTheDocument();
+    expect(await screen.findByLabelText('Region (required)')).toHaveValue('north');
+    expect(screen.getByLabelText('Days of readings')).toHaveValue('7');
+    expect(screen.queryByRole('button', { name: 'Use the latest manifest' })).toBeNull();
+    await user.clear(screen.getByLabelText('Region (required)'));
+    await user.type(screen.getByLabelText('Region (required)'), 'south');
+    await user.click(screen.getByLabelText('Include estimates'));
+    await user.click(screen.getByRole('button', { name: 'Save version' }));
+    await waitFor(() =>
+      expect(asked.find((each) => each.path.endsWith('/versions'))?.body).toMatchObject({
+        settings: extensionSettings({ settings: { region: 'south', days: 7, estimates: true } }),
+      }),
+    );
+    const credential = await tab(user, 'Credential');
+    await user.type(within(credential).getByLabelText('Gauge API key'), CANARY);
+    await user.click(within(credential).getByRole('button', { name: 'Set' }));
+    await waitFor(() =>
+      expect(asked.find((each) => each.method === 'PUT')?.body).toEqual({ secret: CANARY }),
+    );
+    expect(document.body.textContent).not.toContain(CANARY);
+  });
+
+  it("shows a reader an extension connection's settings", async () => {
+    const { client } = service({
+      connection: view({ settings: extensionSettings(), mayAdminister: false }),
+    });
+    render(<ConnectionPage client={client} id={READINGS} />);
+    await screen.findByRole('heading', { name: 'Gauge readings', level: 1 });
+    expect(screen.getByText('https://gauges.example.test/alloy')).toBeInTheDocument();
+    expect(screen.getByText('region')).toBeInTheDocument();
+    expect(screen.getByText('north')).toBeInTheDocument();
+    expect(screen.getByText('7')).toBeInTheDocument();
+    expect(screen.getByText('No')).toBeInTheDocument();
+  });
+
+  it('keeps the manifest it was saved against until the latest is chosen, saying its secret must then be set again', async () => {
+    const user = userEvent.setup();
+    const { client, asked } = service({
+      connection: view({ settings: extensionSettings() }),
+      extensions: () =>
+        installed({
+          digest: NEWER,
+          manifest: gaugeManifest({ endpoint: 'https://gauges.example.test/v2' }),
+        }),
+    });
+    render(<ConnectionPage client={client} id={READINGS} />);
+    await user.click(await screen.findByRole('button', { name: 'Use the latest manifest' }));
+    expect(
+      screen.getByText(
+        'Its endpoint moves to https://gauges.example.test/v2, so its secret must be set again once this is saved.',
+      ),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Save version' }));
+    await waitFor(() =>
+      expect(asked.find((each) => each.path.endsWith('/versions'))?.body).toMatchObject({
+        settings: extensionSettings({ digest: NEWER, endpoint: 'https://gauges.example.test/v2' }),
+      }),
+    );
   });
 });

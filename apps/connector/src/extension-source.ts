@@ -98,7 +98,7 @@ function runBody(
   };
 }
 
-/** A test: `/test` with its settings; any answer but a refusal to sign in proves it. */
+/** A test: `/test` with its settings; a 2xx proves it, a refusal to sign in is the secret's. */
 export async function testExtension(
   settings: ExtensionSettings,
   secret: string,

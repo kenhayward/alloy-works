@@ -100,6 +100,16 @@ function isSettings(value: unknown): value is Settings {
   if (value.type === 'http') {
     return common && typeof source.baseUrl === 'string' && typeof source.secretHeader === 'string';
   }
+  if (value.type === 'extension') {
+    return (
+      common &&
+      typeof source.extension === 'string' &&
+      typeof source.digest === 'string' &&
+      typeof source.endpoint === 'string' &&
+      isRecord(source.capabilities) &&
+      isRecord(source.settings)
+    );
+  }
   if (value.type === 's3') {
     return (
       common &&

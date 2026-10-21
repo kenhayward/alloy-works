@@ -11,6 +11,7 @@ import { everyPage } from '../paging.js';
 import { Empty } from '../states/Empty.js';
 import { Notice } from '../states/Notice.js';
 import styles from '../structure/DocumentList.module.css';
+import { useInstalledExtensions } from './extensions.js';
 import { connectionLink } from './links.js';
 import {
   EMPTY_DRAFT,
@@ -106,7 +107,7 @@ function useAdministeredSpaces(client: Client): readonly Space[] | null {
 }
 
 /**
- * Making a connection: the space, and a PostgreSQL source's settings. Offered only where the person
+ * Making a connection: the space, and its source's settings, an extension's its manifest's. Offered only where the person
  * may administer a space. Its credential is set on the connection's own page once it exists, so the
  * password never shares a form with anything that is kept.
  */
@@ -121,6 +122,8 @@ function NewConnection({
 }) {
   const [where, setWhere] = useState(spaces[0]?.id ?? '');
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
+  // Read once an extension's connection is asked for: listing them is the environment's administrator's.
+  const extensions = useInstalledExtensions(client, draft.type === 'extension');
   const [notice, setNotice] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const pending = useRef(false);
@@ -165,8 +168,8 @@ function NewConnection({
     <section aria-labelledby="new-connection-heading">
       <h2 id="new-connection-heading">New connection</h2>
       <p>
-        A connection reaches one PostgreSQL database, one HTTP API or one S3 bucket. Its password,
-        secret or key pair is set once it is made.
+        A connection reaches one PostgreSQL database, one HTTP API, one S3 bucket or one installed
+        extension. Its password, secret or key pair is set once it is made.
       </p>
       <label>
         Space
@@ -178,7 +181,7 @@ function NewConnection({
           ))}
         </select>
       </label>
-      <SettingsFields draft={draft} onChange={setDraft} />
+      <SettingsFields draft={draft} onChange={setDraft} extensions={extensions} />
       <button className="primary" type="button" disabled={sending} onClick={() => void create()}>
         Create
       </button>

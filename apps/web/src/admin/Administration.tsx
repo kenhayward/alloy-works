@@ -12,6 +12,7 @@ import { Webhooks } from './Webhooks.js';
 import { Models } from './Models.js';
 import { TenantExport } from './TenantExport.js';
 import { Editing } from './Editing.js';
+import { Extensions } from './Extensions.js';
 import { Groups } from './Groups.js';
 import { Holds } from './Holds.js';
 import { Overview } from './Overview.js';
@@ -45,6 +46,8 @@ const SECTIONS = [
   { slug: 'spending', title: 'Model spending', group: 'Environment' },
   // Events posted to a service identity's endpoint, and every delivery (the WB plan, WB-J).
   { slug: 'webhooks', title: 'Webhooks', group: 'Environment' },
+  // Source types installed from their manifests, read first (the EX plan, EXc).
+  { slug: 'extensions', title: 'Extensions', group: 'Environment' },
   { slug: 'people', title: 'People', group: 'People and access' },
   { slug: 'groups', title: 'Groups', group: 'People and access' },
   { slug: 'roles', title: 'Roles', group: 'People and access' },
@@ -295,6 +298,7 @@ export function Administration({
         {shown === 'guardrails' && <Guardrails client={client} />}
         {shown === 'spending' && <ModelSpending client={client} />}
         {shown === 'webhooks' && <Webhooks client={client} />}
+        {shown === 'extensions' && <Extensions client={client} />}
         {shown === 'about' && <About about={about} />}
       </div>
     </section>

@@ -45,6 +45,8 @@ export interface FakeApi {
     readonly headers: Record<string, string | string[] | undefined>;
     readonly body: string;
     readonly keyed: boolean;
+    /** Whether the stand-in extension's own key rode as a bearer. */
+    readonly bearer: boolean;
   }[];
   close(): Promise<void>;
 }

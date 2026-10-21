@@ -20244,13 +20244,19 @@
     {
       "id": "API-034",
       "file": "apps/connector/src/extension-source.test.ts",
-      "line": 155,
+      "line": 156,
       "kind": "title"
     },
     {
       "id": "DAT-054",
       "file": "apps/connector/src/extension-source.test.ts",
       "line": 108,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-105",
+      "file": "apps/connector/src/extension-source.test.ts",
+      "line": 174,
       "kind": "title"
     },
     {
@@ -21462,7 +21468,7 @@
     {
       "id": "API-049",
       "file": "apps/service/src/extension-source-routes.test.ts",
-      "line": 123,
+      "line": 124,
       "kind": "title"
     },
     {
@@ -21474,7 +21480,7 @@
     {
       "id": "DAT-079",
       "file": "apps/service/src/extension-source-routes.test.ts",
-      "line": 93,
+      "line": 94,
       "kind": "title"
     },
     {
@@ -23110,6 +23116,18 @@
       "kind": "title"
     },
     {
+      "id": "API-030",
+      "file": "apps/web/src/admin/Extensions.test.tsx",
+      "line": 133,
+      "kind": "title"
+    },
+    {
+      "id": "API-048",
+      "file": "apps/web/src/admin/Extensions.test.tsx",
+      "line": 182,
+      "kind": "title"
+    },
+    {
       "id": "GEN-049",
       "file": "apps/web/src/admin/Guardrails.test.tsx",
       "line": 47,
@@ -23322,19 +23340,25 @@
     {
       "id": "DAT-004",
       "file": "apps/web/src/data/connections.test.tsx",
-      "line": 669,
+      "line": 674,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-054",
+      "file": "apps/web/src/data/connections.test.tsx",
+      "line": 1306,
       "kind": "title"
     },
     {
       "id": "DAT-064",
       "file": "apps/web/src/data/connections.test.tsx",
-      "line": 939,
+      "line": 944,
       "kind": "title"
     },
     {
       "id": "DAT-075",
       "file": "apps/web/src/data/connections.test.tsx",
-      "line": 594,
+      "line": 599,
       "kind": "title"
     },
     {
@@ -23346,37 +23370,49 @@
     {
       "id": "DAT-014",
       "file": "apps/web/src/data/query-definitions.test.tsx",
-      "line": 579,
+      "line": 627,
       "kind": "title"
     },
     {
       "id": "DAT-016",
       "file": "apps/web/src/data/query-definitions.test.tsx",
-      "line": 1133,
+      "line": 1181,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-054",
+      "file": "apps/web/src/data/query-definitions.test.tsx",
+      "line": 2467,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-079",
+      "file": "apps/web/src/data/query-definitions.test.tsx",
+      "line": 2519,
       "kind": "title"
     },
     {
       "id": "DAT-094",
       "file": "apps/web/src/data/query-definitions.test.tsx",
-      "line": 1941,
+      "line": 1989,
       "kind": "title"
     },
     {
       "id": "DAT-105",
       "file": "apps/web/src/data/query-definitions.test.tsx",
-      "line": 504,
+      "line": 552,
       "kind": "title"
     },
     {
       "id": "DAT-119",
       "file": "apps/web/src/data/query-definitions.test.tsx",
-      "line": 1857,
+      "line": 1905,
       "kind": "title"
     },
     {
       "id": "DAT-121",
       "file": "apps/web/src/data/query-definitions.test.tsx",
-      "line": 733,
+      "line": 781,
       "kind": "title"
     },
     {
@@ -30756,13 +30792,13 @@
     {
       "id": "CNT-155",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 924,
+      "line": 937,
       "kind": "title"
     },
     {
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 557,
+      "line": 570,
       "kind": "title"
     },
     {
@@ -30865,6 +30901,12 @@
       "id": "TPL-066",
       "file": "tests/e2e/src/document-arguments.test.ts",
       "line": 46,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-054",
+      "file": "tests/e2e/src/extensions.test.ts",
+      "line": 42,
       "kind": "title"
     },
     {
