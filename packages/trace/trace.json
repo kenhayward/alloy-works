@@ -17559,7 +17559,7 @@
         },
         {
           "id": "API-034",
-          "howItIsMet": "A failure an extension causes is the source side's (`connector`), with codes of its own and the extension named in the failure, never the product's"
+          "howItIsMet": "A failure an extension causes is the source side's (`connector`), in codes of its own (`extension_refused`, `extension_failed`, `extension_invalid`), never the product's"
         },
         {
           "id": "API-048",
@@ -20236,6 +20236,24 @@
       "kind": "title"
     },
     {
+      "id": "API-033",
+      "file": "apps/connector/src/extension-source.test.ts",
+      "line": 119,
+      "kind": "title"
+    },
+    {
+      "id": "API-034",
+      "file": "apps/connector/src/extension-source.test.ts",
+      "line": 155,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-054",
+      "file": "apps/connector/src/extension-source.test.ts",
+      "line": 108,
+      "kind": "title"
+    },
+    {
       "id": "DAT-105",
       "file": "apps/connector/src/formats/csv.test.ts",
       "line": 128,
@@ -21439,6 +21457,24 @@
       "id": "API-048",
       "file": "apps/service/src/extension-routes.test.ts",
       "line": 76,
+      "kind": "title"
+    },
+    {
+      "id": "API-049",
+      "file": "apps/service/src/extension-source-routes.test.ts",
+      "line": 123,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-054",
+      "file": "apps/service/src/extension-source-routes.test.ts",
+      "line": 70,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-079",
+      "file": "apps/service/src/extension-source-routes.test.ts",
+      "line": 93,
       "kind": "title"
     },
     {
@@ -28546,6 +28582,24 @@
       "kind": "title"
     },
     {
+      "id": "DAT-054",
+      "file": "packages/domain/src/data/extension-source.test.ts",
+      "line": 32,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-078",
+      "file": "packages/domain/src/data/extension-source.test.ts",
+      "line": 45,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-079",
+      "file": "packages/domain/src/data/extension-source.test.ts",
+      "line": 55,
+      "kind": "title"
+    },
+    {
       "id": "DAT-049",
       "file": "packages/domain/src/data/failures.test.ts",
       "line": 12,
@@ -28830,7 +28884,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 864,
+      "line": 869,
       "kind": "title"
     },
     {

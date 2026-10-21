@@ -55,6 +55,10 @@ export const dataFailures = Object.freeze({
   value_unrepresentable: 'query',
   definition_unbindable: 'query',
   describe_not_supported: 'product',
+  // An extension's answer (the EX plan, EX-I): the source side's, never the product's (API-034).
+  extension_refused: 'connector',
+  extension_failed: 'connector',
+  extension_invalid: 'connector',
 } as const satisfies Record<string, Attribution>);
 
 export type DataFailureCode = keyof typeof dataFailures;

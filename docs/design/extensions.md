@@ -17,7 +17,7 @@ snapshot of the manifest it was made against - its endpoint, digest and capabili
 does changes behind it, and its credential is bound to that endpoint. A query definition of kind
 `extension` holds the extension's own request. The connector calls the extension through its guarded
 client as it calls an HTTP source, holding it to the product's limits and its answer to one shape; a
-failure the extension causes says so, by its name (API-034). Updating shows what changed first;
+failure the extension causes says so, in codes of its own (API-034). Updating shows what changed first;
 removal waits until no connection uses it.
 
 ## Requirements owned
@@ -28,7 +28,7 @@ removal waits until no connection uses it.
 | **DAT-054** | The same: a connection of type `extension` reaches any source an extension answers for                                                                                                                      |
 | **DAT-079** | Every source type declares its capabilities, the built-in ones in domain and an extension in its manifest; a definition binding parameters on one that declares none is refused at its write and at its run |
 | **API-033** | An extension is sent only what it declares: its settings, its one credential, the definition's request and the values bound; never a tenant, a person or another header                                     |
-| **API-034** | A failure an extension causes is the source side's (`connector`), with codes of its own and the extension named in the failure, never the product's                                                         |
+| **API-034** | A failure an extension causes is the source side's (`connector`), in codes of its own (`extension_refused`, `extension_failed`, `extension_invalid`), never the product's                                   |
 | **API-048** | Updated after its preview shows what changed, connections moving to it each a new version; removed only once no connection uses it, its uses listed                                                         |
 | **API-049** | Removed, it alters no content; a binding on a connection retired with it is refused as `connection.retired`, never silently stale                                                                           |
 
@@ -73,5 +73,5 @@ the connection's own account (DAT-078): no person's identity is ever sent.
 - **Code run by the product** (API-N03; Ken): a manifest and a service, never a package.
 - **A vendor catalogue** (Ken): an administrator installs by URL, reading what it declares first.
 - **Output formats now** (Ken): sources first; `kind` is left open for them.
-- **An attribution of its own**: `connector`, the source side's, already never the product's; the extension
-  is named in the failure instead (the pre-flight review).
+- **An attribution of its own**: `connector`, the source side's, already never the product's; the
+  extension's codes say whose the failure is (the pre-flight review).

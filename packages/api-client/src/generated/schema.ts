@@ -12934,6 +12934,11 @@ export interface operations {
                                             version: string;
                                             checksum: string;
                                         } | null;
+                                    } | {
+                                        /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                        extension: {
+                                            [key: string]: unknown;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -13178,6 +13183,11 @@ export interface operations {
                                             artifact: string;
                                             version: string;
                                             checksum: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                        extension: {
+                                            [key: string]: unknown;
                                         } | null;
                                     };
                                     identity: {
@@ -21545,7 +21555,7 @@ export interface operations {
                                 name: string;
                             };
                             /** @enum {string} */
-                            type: "postgres" | "http" | "s3";
+                            type: "postgres" | "http" | "s3" | "extension";
                             retired: boolean;
                             version: {
                                 id: string;
@@ -21830,6 +21840,50 @@ export interface operations {
                                 region: string;
                                 bucket: string;
                                 pathStyle: boolean;
+                            };
+                        } | {
+                            /** @constant */
+                            schemaVersion: 1;
+                            name: string;
+                            description: string;
+                            identity: {
+                                /** @constant */
+                                kind: "service";
+                            } | {
+                                /** @constant */
+                                kind: "endUser";
+                                /** @constant */
+                                mechanism: "delegated";
+                                tokenEndpoint: string;
+                                audience: string;
+                            } | {
+                                /** @constant */
+                                kind: "endUser";
+                                /** @constant */
+                                mechanism: "asserted";
+                                /** @enum {string} */
+                                attribute: "email" | "subject";
+                                /** @enum {string} */
+                                assertion?: "sessionContext" | "executeAs";
+                            };
+                            retired: boolean;
+                            /** @constant */
+                            type: "extension";
+                            source: {
+                                /** Format: uuid */
+                                extension: string;
+                                digest: string;
+                                /** @example https://gauges.example.test/alloy */
+                                endpoint: string;
+                                authenticated: boolean;
+                                capabilities: {
+                                    parameters: boolean;
+                                    keyColumns: boolean;
+                                    rowLimit: boolean;
+                                };
+                                settings: {
+                                    [key: string]: string | number | boolean;
+                                };
                             };
                         };
                         credential: {
@@ -23119,6 +23173,12 @@ export interface operations {
                             /** Format: uuid */
                             version?: string;
                             query: components["schemas"]["sampleConnectionBody_schema0"];
+                        } | {
+                            /** @constant */
+                            kind: "extension";
+                            request: {
+                                [key: string]: unknown;
+                            };
                         };
                         columns: {
                             name: string;
@@ -23228,7 +23288,7 @@ export interface operations {
                         rowCount: number;
                         /** @description The SHA-256 of the whole result in canonical form, in hexadecimal */
                         checksum: string;
-                        /** @description What ran: SQL for a database, the request template for an HTTP connection, the object for an S3 one, the stored result for a dataset query */
+                        /** @description What ran: SQL for a database, the request template for an HTTP connection, the object for an S3 one, the stored result for a dataset query, the request for an extension */
                         ran: {
                             /** @description The SQL that ran, each value a bound parameter */
                             sql: string;
@@ -23273,6 +23333,11 @@ export interface operations {
                                 artifact: string;
                                 version: string;
                                 checksum: string;
+                            };
+                        } | {
+                            /** @description The request sent to an extension, as its definition holds it */
+                            extension: {
+                                [key: string]: unknown;
                             };
                         };
                         durationMs: number;
@@ -24020,6 +24085,50 @@ export interface operations {
                             bucket: string;
                             pathStyle: boolean;
                         };
+                    } | {
+                        /** @constant */
+                        schemaVersion: 1;
+                        name: string;
+                        description: string;
+                        identity: {
+                            /** @constant */
+                            kind: "service";
+                        } | {
+                            /** @constant */
+                            kind: "endUser";
+                            /** @constant */
+                            mechanism: "delegated";
+                            tokenEndpoint: string;
+                            audience: string;
+                        } | {
+                            /** @constant */
+                            kind: "endUser";
+                            /** @constant */
+                            mechanism: "asserted";
+                            /** @enum {string} */
+                            attribute: "email" | "subject";
+                            /** @enum {string} */
+                            assertion?: "sessionContext" | "executeAs";
+                        };
+                        retired: boolean;
+                        /** @constant */
+                        type: "extension";
+                        source: {
+                            /** Format: uuid */
+                            extension: string;
+                            digest: string;
+                            /** @example https://gauges.example.test/alloy */
+                            endpoint: string;
+                            authenticated: boolean;
+                            capabilities: {
+                                parameters: boolean;
+                                keyColumns: boolean;
+                                rowLimit: boolean;
+                            };
+                            settings: {
+                                [key: string]: string | number | boolean;
+                            };
+                        };
                     };
                 };
             };
@@ -24200,6 +24309,50 @@ export interface operations {
                                 region: string;
                                 bucket: string;
                                 pathStyle: boolean;
+                            };
+                        } | {
+                            /** @constant */
+                            schemaVersion: 1;
+                            name: string;
+                            description: string;
+                            identity: {
+                                /** @constant */
+                                kind: "service";
+                            } | {
+                                /** @constant */
+                                kind: "endUser";
+                                /** @constant */
+                                mechanism: "delegated";
+                                tokenEndpoint: string;
+                                audience: string;
+                            } | {
+                                /** @constant */
+                                kind: "endUser";
+                                /** @constant */
+                                mechanism: "asserted";
+                                /** @enum {string} */
+                                attribute: "email" | "subject";
+                                /** @enum {string} */
+                                assertion?: "sessionContext" | "executeAs";
+                            };
+                            retired: boolean;
+                            /** @constant */
+                            type: "extension";
+                            source: {
+                                /** Format: uuid */
+                                extension: string;
+                                digest: string;
+                                /** @example https://gauges.example.test/alloy */
+                                endpoint: string;
+                                authenticated: boolean;
+                                capabilities: {
+                                    parameters: boolean;
+                                    keyColumns: boolean;
+                                    rowLimit: boolean;
+                                };
+                                settings: {
+                                    [key: string]: string | number | boolean;
+                                };
                             };
                         };
                         credential: {
@@ -24407,6 +24560,50 @@ export interface operations {
                                     region: string;
                                     bucket: string;
                                     pathStyle: boolean;
+                                };
+                            } | {
+                                /** @constant */
+                                schemaVersion: 1;
+                                name: string;
+                                description: string;
+                                identity: {
+                                    /** @constant */
+                                    kind: "service";
+                                } | {
+                                    /** @constant */
+                                    kind: "endUser";
+                                    /** @constant */
+                                    mechanism: "delegated";
+                                    tokenEndpoint: string;
+                                    audience: string;
+                                } | {
+                                    /** @constant */
+                                    kind: "endUser";
+                                    /** @constant */
+                                    mechanism: "asserted";
+                                    /** @enum {string} */
+                                    attribute: "email" | "subject";
+                                    /** @enum {string} */
+                                    assertion?: "sessionContext" | "executeAs";
+                                };
+                                retired: boolean;
+                                /** @constant */
+                                type: "extension";
+                                source: {
+                                    /** Format: uuid */
+                                    extension: string;
+                                    digest: string;
+                                    /** @example https://gauges.example.test/alloy */
+                                    endpoint: string;
+                                    authenticated: boolean;
+                                    capabilities: {
+                                        parameters: boolean;
+                                        keyColumns: boolean;
+                                        rowLimit: boolean;
+                                    };
+                                    settings: {
+                                        [key: string]: string | number | boolean;
+                                    };
                                 };
                             };
                             credential: {
@@ -24685,6 +24882,50 @@ export interface operations {
                                     region: string;
                                     bucket: string;
                                     pathStyle: boolean;
+                                };
+                            } | {
+                                /** @constant */
+                                schemaVersion: 1;
+                                name: string;
+                                description: string;
+                                identity: {
+                                    /** @constant */
+                                    kind: "service";
+                                } | {
+                                    /** @constant */
+                                    kind: "endUser";
+                                    /** @constant */
+                                    mechanism: "delegated";
+                                    tokenEndpoint: string;
+                                    audience: string;
+                                } | {
+                                    /** @constant */
+                                    kind: "endUser";
+                                    /** @constant */
+                                    mechanism: "asserted";
+                                    /** @enum {string} */
+                                    attribute: "email" | "subject";
+                                    /** @enum {string} */
+                                    assertion?: "sessionContext" | "executeAs";
+                                };
+                                retired: boolean;
+                                /** @constant */
+                                type: "extension";
+                                source: {
+                                    /** Format: uuid */
+                                    extension: string;
+                                    digest: string;
+                                    /** @example https://gauges.example.test/alloy */
+                                    endpoint: string;
+                                    authenticated: boolean;
+                                    capabilities: {
+                                        parameters: boolean;
+                                        keyColumns: boolean;
+                                        rowLimit: boolean;
+                                    };
+                                    settings: {
+                                        [key: string]: string | number | boolean;
+                                    };
                                 };
                             };
                             credential: {
@@ -26617,6 +26858,12 @@ export interface operations {
                             /** Format: uuid */
                             version?: string;
                             query: components["schemas"]["sampleDatasetBody_schema0"];
+                        } | {
+                            /** @constant */
+                            kind: "extension";
+                            request: {
+                                [key: string]: unknown;
+                            };
                         };
                         columns: {
                             name: string;
@@ -26726,7 +26973,7 @@ export interface operations {
                         rowCount: number;
                         /** @description The SHA-256 of the whole result in canonical form, in hexadecimal */
                         checksum: string;
-                        /** @description What ran: SQL for a database, the request template for an HTTP connection, the object for an S3 one, the stored result for a dataset query */
+                        /** @description What ran: SQL for a database, the request template for an HTTP connection, the object for an S3 one, the stored result for a dataset query, the request for an extension */
                         ran: {
                             /** @description The SQL that ran, each value a bound parameter */
                             sql: string;
@@ -26771,6 +27018,11 @@ export interface operations {
                                 artifact: string;
                                 version: string;
                                 checksum: string;
+                            };
+                        } | {
+                            /** @description The request sent to an extension, as its definition holds it */
+                            extension: {
+                                [key: string]: unknown;
                             };
                         };
                         durationMs: number;
@@ -30175,6 +30427,11 @@ export interface operations {
                                             version: string;
                                             checksum: string;
                                         } | null;
+                                    } | {
+                                        /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                        extension: {
+                                            [key: string]: unknown;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -30419,6 +30676,11 @@ export interface operations {
                                             artifact: string;
                                             version: string;
                                             checksum: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                        extension: {
+                                            [key: string]: unknown;
                                         } | null;
                                     };
                                     identity: {
@@ -30946,6 +31208,11 @@ export interface operations {
                                             version: string;
                                             checksum: string;
                                         } | null;
+                                    } | {
+                                        /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                        extension: {
+                                            [key: string]: unknown;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -31190,6 +31457,11 @@ export interface operations {
                                             artifact: string;
                                             version: string;
                                             checksum: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                        extension: {
+                                            [key: string]: unknown;
                                         } | null;
                                     };
                                     identity: {
@@ -31632,6 +31904,11 @@ export interface operations {
                                             version: string;
                                             checksum: string;
                                         } | null;
+                                    } | {
+                                        /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                        extension: {
+                                            [key: string]: unknown;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -31876,6 +32153,11 @@ export interface operations {
                                             artifact: string;
                                             version: string;
                                             checksum: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                        extension: {
+                                            [key: string]: unknown;
                                         } | null;
                                     };
                                     identity: {
@@ -32432,6 +32714,11 @@ export interface operations {
                                         version: string;
                                         checksum: string;
                                     } | null;
+                                } | {
+                                    /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                    extension: {
+                                        [key: string]: unknown;
+                                    } | null;
                                 };
                                 identity: {
                                     /** @constant */
@@ -32676,6 +32963,11 @@ export interface operations {
                                         artifact: string;
                                         version: string;
                                         checksum: string;
+                                    } | null;
+                                } | {
+                                    /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                    extension: {
+                                        [key: string]: unknown;
                                     } | null;
                                 };
                                 identity: {
@@ -33045,6 +33337,11 @@ export interface operations {
                                             version: string;
                                             checksum: string;
                                         } | null;
+                                    } | {
+                                        /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                        extension: {
+                                            [key: string]: unknown;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -33289,6 +33586,11 @@ export interface operations {
                                             artifact: string;
                                             version: string;
                                             checksum: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                        extension: {
+                                            [key: string]: unknown;
                                         } | null;
                                     };
                                     identity: {
@@ -33691,6 +33993,11 @@ export interface operations {
                                             version: string;
                                             checksum: string;
                                         } | null;
+                                    } | {
+                                        /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                        extension: {
+                                            [key: string]: unknown;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -33935,6 +34242,11 @@ export interface operations {
                                             artifact: string;
                                             version: string;
                                             checksum: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                        extension: {
+                                            [key: string]: unknown;
                                         } | null;
                                     };
                                     identity: {
@@ -34337,6 +34649,11 @@ export interface operations {
                                             version: string;
                                             checksum: string;
                                         } | null;
+                                    } | {
+                                        /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                        extension: {
+                                            [key: string]: unknown;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -34581,6 +34898,11 @@ export interface operations {
                                             artifact: string;
                                             version: string;
                                             checksum: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                        extension: {
+                                            [key: string]: unknown;
                                         } | null;
                                     };
                                     identity: {
@@ -35230,6 +35552,11 @@ export interface operations {
                                             version: string;
                                             checksum: string;
                                         } | null;
+                                    } | {
+                                        /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                        extension: {
+                                            [key: string]: unknown;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -35474,6 +35801,11 @@ export interface operations {
                                             artifact: string;
                                             version: string;
                                             checksum: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                        extension: {
+                                            [key: string]: unknown;
                                         } | null;
                                     };
                                     identity: {
@@ -35856,6 +36188,11 @@ export interface operations {
                                             version: string;
                                             checksum: string;
                                         } | null;
+                                    } | {
+                                        /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                        extension: {
+                                            [key: string]: unknown;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -36100,6 +36437,11 @@ export interface operations {
                                             artifact: string;
                                             version: string;
                                             checksum: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                        extension: {
+                                            [key: string]: unknown;
                                         } | null;
                                     };
                                     identity: {
@@ -36638,6 +36980,11 @@ export interface operations {
                                         version: string;
                                         checksum: string;
                                     } | null;
+                                } | {
+                                    /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                    extension: {
+                                        [key: string]: unknown;
+                                    } | null;
                                 };
                                 identity: {
                                     /** @constant */
@@ -36882,6 +37229,11 @@ export interface operations {
                                         artifact: string;
                                         version: string;
                                         checksum: string;
+                                    } | null;
+                                } | {
+                                    /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                    extension: {
+                                        [key: string]: unknown;
                                     } | null;
                                 };
                                 identity: {
@@ -37251,6 +37603,11 @@ export interface operations {
                                             version: string;
                                             checksum: string;
                                         } | null;
+                                    } | {
+                                        /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                        extension: {
+                                            [key: string]: unknown;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -37495,6 +37852,11 @@ export interface operations {
                                             artifact: string;
                                             version: string;
                                             checksum: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                        extension: {
+                                            [key: string]: unknown;
                                         } | null;
                                     };
                                     identity: {
@@ -37937,6 +38299,11 @@ export interface operations {
                                             version: string;
                                             checksum: string;
                                         } | null;
+                                    } | {
+                                        /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                        extension: {
+                                            [key: string]: unknown;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -38181,6 +38548,11 @@ export interface operations {
                                             artifact: string;
                                             version: string;
                                             checksum: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                        extension: {
+                                            [key: string]: unknown;
                                         } | null;
                                     };
                                     identity: {
@@ -38769,6 +39141,11 @@ export interface operations {
                                             version: string;
                                             checksum: string;
                                         } | null;
+                                    } | {
+                                        /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                        extension: {
+                                            [key: string]: unknown;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -39013,6 +39390,11 @@ export interface operations {
                                             artifact: string;
                                             version: string;
                                             checksum: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                        extension: {
+                                            [key: string]: unknown;
                                         } | null;
                                     };
                                     identity: {
@@ -39417,6 +39799,11 @@ export interface operations {
                                             version: string;
                                             checksum: string;
                                         } | null;
+                                    } | {
+                                        /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                        extension: {
+                                            [key: string]: unknown;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -39661,6 +40048,11 @@ export interface operations {
                                             artifact: string;
                                             version: string;
                                             checksum: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                        extension: {
+                                            [key: string]: unknown;
                                         } | null;
                                     };
                                     identity: {
@@ -40063,6 +40455,11 @@ export interface operations {
                                             version: string;
                                             checksum: string;
                                         } | null;
+                                    } | {
+                                        /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                        extension: {
+                                            [key: string]: unknown;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -40307,6 +40704,11 @@ export interface operations {
                                             artifact: string;
                                             version: string;
                                             checksum: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                        extension: {
+                                            [key: string]: unknown;
                                         } | null;
                                     };
                                     identity: {
@@ -40689,6 +41091,11 @@ export interface operations {
                                             version: string;
                                             checksum: string;
                                         } | null;
+                                    } | {
+                                        /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                        extension: {
+                                            [key: string]: unknown;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -40933,6 +41340,11 @@ export interface operations {
                                             artifact: string;
                                             version: string;
                                             checksum: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                        extension: {
+                                            [key: string]: unknown;
                                         } | null;
                                     };
                                     identity: {
@@ -41477,6 +41889,11 @@ export interface operations {
                                         version: string;
                                         checksum: string;
                                     } | null;
+                                } | {
+                                    /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                    extension: {
+                                        [key: string]: unknown;
+                                    } | null;
                                 };
                                 identity: {
                                     /** @constant */
@@ -41721,6 +42138,11 @@ export interface operations {
                                         artifact: string;
                                         version: string;
                                         checksum: string;
+                                    } | null;
+                                } | {
+                                    /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                    extension: {
+                                        [key: string]: unknown;
                                     } | null;
                                 };
                                 identity: {
@@ -42090,6 +42512,11 @@ export interface operations {
                                             version: string;
                                             checksum: string;
                                         } | null;
+                                    } | {
+                                        /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                        extension: {
+                                            [key: string]: unknown;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -42334,6 +42761,11 @@ export interface operations {
                                             artifact: string;
                                             version: string;
                                             checksum: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                        extension: {
+                                            [key: string]: unknown;
                                         } | null;
                                     };
                                     identity: {
@@ -42776,6 +43208,11 @@ export interface operations {
                                             version: string;
                                             checksum: string;
                                         } | null;
+                                    } | {
+                                        /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                        extension: {
+                                            [key: string]: unknown;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -43020,6 +43457,11 @@ export interface operations {
                                             artifact: string;
                                             version: string;
                                             checksum: string;
+                                        } | null;
+                                    } | {
+                                        /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                        extension: {
+                                            [key: string]: unknown;
                                         } | null;
                                     };
                                     identity: {
@@ -43531,6 +43973,11 @@ export interface operations {
                                     artifact: string;
                                     version: string;
                                     checksum: string;
+                                } | null;
+                            } | {
+                                /** @description The request sent to an extension, or null where the caller may not read the query definition */
+                                extension: {
+                                    [key: string]: unknown;
                                 } | null;
                             };
                             identity: {
@@ -71768,6 +72215,10 @@ export interface operations {
                                     dataset: {
                                         [key: string]: unknown;
                                     };
+                                } | {
+                                    extension: {
+                                        [key: string]: unknown;
+                                    };
                                 };
                                 /** @description The connection it ran on: to a reader of the query definition alone */
                                 connection?: {
@@ -73061,6 +73512,12 @@ export interface operations {
                                 /** Format: uuid */
                                 version?: string;
                                 query: components["schemas"]["getQueryDefinition200_schema0"];
+                            } | {
+                                /** @constant */
+                                kind: "extension";
+                                request: {
+                                    [key: string]: unknown;
+                                };
                             };
                             columns: {
                                 name: string;
@@ -74334,6 +74791,12 @@ export interface operations {
                             /** Format: uuid */
                             version?: string;
                             query: components["schemas"]["recordQueryDefinitionVersionBody_schema0"];
+                        } | {
+                            /** @constant */
+                            kind: "extension";
+                            request: {
+                                [key: string]: unknown;
+                            };
                         };
                         columns: {
                             name: string;
@@ -74650,6 +75113,12 @@ export interface operations {
                                 /** Format: uuid */
                                 version?: string;
                                 query: components["schemas"]["recordQueryDefinitionVersion200_schema0"];
+                            } | {
+                                /** @constant */
+                                kind: "extension";
+                                request: {
+                                    [key: string]: unknown;
+                                };
                             };
                             columns: {
                                 name: string;
@@ -75005,6 +75474,12 @@ export interface operations {
                                     /** Format: uuid */
                                     version?: string;
                                     query: components["schemas"]["recordQueryDefinitionVersion400_schema0"];
+                                } | {
+                                    /** @constant */
+                                    kind: "extension";
+                                    request: {
+                                        [key: string]: unknown;
+                                    };
                                 };
                                 columns: {
                                     name: string;
@@ -75421,6 +75896,12 @@ export interface operations {
                                     /** Format: uuid */
                                     version?: string;
                                     query: components["schemas"]["recordQueryDefinitionVersion409_schema0"];
+                                } | {
+                                    /** @constant */
+                                    kind: "extension";
+                                    request: {
+                                        [key: string]: unknown;
+                                    };
                                 };
                                 columns: {
                                     name: string;
@@ -82290,6 +82771,50 @@ export interface operations {
                             bucket: string;
                             pathStyle: boolean;
                         };
+                    } | {
+                        /** @constant */
+                        schemaVersion: 1;
+                        name: string;
+                        description: string;
+                        identity: {
+                            /** @constant */
+                            kind: "service";
+                        } | {
+                            /** @constant */
+                            kind: "endUser";
+                            /** @constant */
+                            mechanism: "delegated";
+                            tokenEndpoint: string;
+                            audience: string;
+                        } | {
+                            /** @constant */
+                            kind: "endUser";
+                            /** @constant */
+                            mechanism: "asserted";
+                            /** @enum {string} */
+                            attribute: "email" | "subject";
+                            /** @enum {string} */
+                            assertion?: "sessionContext" | "executeAs";
+                        };
+                        retired: boolean;
+                        /** @constant */
+                        type: "extension";
+                        source: {
+                            /** Format: uuid */
+                            extension: string;
+                            digest: string;
+                            /** @example https://gauges.example.test/alloy */
+                            endpoint: string;
+                            authenticated: boolean;
+                            capabilities: {
+                                parameters: boolean;
+                                keyColumns: boolean;
+                                rowLimit: boolean;
+                            };
+                            settings: {
+                                [key: string]: string | number | boolean;
+                            };
+                        };
                     };
                 };
             };
@@ -82470,6 +82995,50 @@ export interface operations {
                                 region: string;
                                 bucket: string;
                                 pathStyle: boolean;
+                            };
+                        } | {
+                            /** @constant */
+                            schemaVersion: 1;
+                            name: string;
+                            description: string;
+                            identity: {
+                                /** @constant */
+                                kind: "service";
+                            } | {
+                                /** @constant */
+                                kind: "endUser";
+                                /** @constant */
+                                mechanism: "delegated";
+                                tokenEndpoint: string;
+                                audience: string;
+                            } | {
+                                /** @constant */
+                                kind: "endUser";
+                                /** @constant */
+                                mechanism: "asserted";
+                                /** @enum {string} */
+                                attribute: "email" | "subject";
+                                /** @enum {string} */
+                                assertion?: "sessionContext" | "executeAs";
+                            };
+                            retired: boolean;
+                            /** @constant */
+                            type: "extension";
+                            source: {
+                                /** Format: uuid */
+                                extension: string;
+                                digest: string;
+                                /** @example https://gauges.example.test/alloy */
+                                endpoint: string;
+                                authenticated: boolean;
+                                capabilities: {
+                                    parameters: boolean;
+                                    keyColumns: boolean;
+                                    rowLimit: boolean;
+                                };
+                                settings: {
+                                    [key: string]: string | number | boolean;
+                                };
                             };
                         };
                         credential: {
@@ -82677,6 +83246,50 @@ export interface operations {
                                     region: string;
                                     bucket: string;
                                     pathStyle: boolean;
+                                };
+                            } | {
+                                /** @constant */
+                                schemaVersion: 1;
+                                name: string;
+                                description: string;
+                                identity: {
+                                    /** @constant */
+                                    kind: "service";
+                                } | {
+                                    /** @constant */
+                                    kind: "endUser";
+                                    /** @constant */
+                                    mechanism: "delegated";
+                                    tokenEndpoint: string;
+                                    audience: string;
+                                } | {
+                                    /** @constant */
+                                    kind: "endUser";
+                                    /** @constant */
+                                    mechanism: "asserted";
+                                    /** @enum {string} */
+                                    attribute: "email" | "subject";
+                                    /** @enum {string} */
+                                    assertion?: "sessionContext" | "executeAs";
+                                };
+                                retired: boolean;
+                                /** @constant */
+                                type: "extension";
+                                source: {
+                                    /** Format: uuid */
+                                    extension: string;
+                                    digest: string;
+                                    /** @example https://gauges.example.test/alloy */
+                                    endpoint: string;
+                                    authenticated: boolean;
+                                    capabilities: {
+                                        parameters: boolean;
+                                        keyColumns: boolean;
+                                        rowLimit: boolean;
+                                    };
+                                    settings: {
+                                        [key: string]: string | number | boolean;
+                                    };
                                 };
                             };
                             credential: {
@@ -84163,6 +84776,12 @@ export interface operations {
                             /** Format: uuid */
                             version?: string;
                             query: components["schemas"]["createQueryDefinitionBody_schema0"];
+                        } | {
+                            /** @constant */
+                            kind: "extension";
+                            request: {
+                                [key: string]: unknown;
+                            };
                         };
                         columns: {
                             name: string;
@@ -84479,6 +85098,12 @@ export interface operations {
                                 /** Format: uuid */
                                 version?: string;
                                 query: components["schemas"]["createQueryDefinition200_schema0"];
+                            } | {
+                                /** @constant */
+                                kind: "extension";
+                                request: {
+                                    [key: string]: unknown;
+                                };
                             };
                             columns: {
                                 name: string;
@@ -84834,6 +85459,12 @@ export interface operations {
                                     /** Format: uuid */
                                     version?: string;
                                     query: components["schemas"]["createQueryDefinition400_schema0"];
+                                } | {
+                                    /** @constant */
+                                    kind: "extension";
+                                    request: {
+                                        [key: string]: unknown;
+                                    };
                                 };
                                 columns: {
                                     name: string;
@@ -85250,6 +85881,12 @@ export interface operations {
                                     /** Format: uuid */
                                     version?: string;
                                     query: components["schemas"]["createQueryDefinition409_schema0"];
+                                } | {
+                                    /** @constant */
+                                    kind: "extension";
+                                    request: {
+                                        [key: string]: unknown;
+                                    };
                                 };
                                 columns: {
                                     name: string;

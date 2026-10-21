@@ -281,6 +281,18 @@ function SettingsList({ settings }: { readonly settings: Settings }) {
       </dl>
     );
   }
+  if (settings.type === 'extension') {
+    return (
+      <dl className={styles['settings']}>
+        <dt>Description</dt>
+        <dd>{settings.description === '' ? 'None' : settings.description}</dd>
+        <dt>Endpoint</dt>
+        <dd>{settings.source.endpoint}</dd>
+        <dt>Runs as</dt>
+        <dd>{RUNS_AS_LABELS[runsAsOf(settings.identity)]}</dd>
+      </dl>
+    );
+  }
   return (
     <dl className={styles['settings']}>
       <dt>Description</dt>

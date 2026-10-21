@@ -192,3 +192,22 @@ export async function removeExtension(
   }
   return { removed: true };
 }
+
+/**
+ * The manifest an extension had at a digest, and whether the extension is removed: what a connection's
+ * snapshot is held to (the EX plan, EX-D). Undefined where it never had that digest.
+ */
+export async function extensionAtDigest(
+  trx: TenantTransaction,
+  id: string,
+  digest: string,
+): Promise<{ readonly manifest: ExtensionManifest; readonly removed: boolean } | undefined> {
+  const { rows } = await sql<{ manifest: unknown; removed_at: Date | null }>`
+    select v.manifest, e.removed_at from extension_version v join extension e on e.id = v.extension_id
+     where v.extension_id = ${id} and v.digest = ${digest}
+     order by v.id desc limit 1`.execute(trx);
+  const row = rows[0];
+  return row
+    ? { manifest: row.manifest as ExtensionManifest, removed: row.removed_at !== null }
+    : undefined;
+}

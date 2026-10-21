@@ -20,6 +20,7 @@ import {
   type TenantTransaction,
 } from '@alloy-works/db';
 import {
+  capabilityProblems,
   connectionFetchProblems,
   decide,
   type AccessFacts,
@@ -128,7 +129,11 @@ async function connectionFor(
     });
   }
   // A fetch of the connection's type, never naming its secret's header (the D6 plan, D6-A).
-  const unsuited = connectionFetchProblems(definition.fetch, connection.settings);
+  const unsuited = [
+    ...connectionFetchProblems(definition.fetch, connection.settings),
+    // Parameters on a source that binds none (DAT-079; the EX plan, EX-F).
+    ...capabilityProblems(definition, connection.settings),
+  ];
   if (unsuited.length > 0) {
     throw refused(400, 'definition.invalid', 'The query definition is not valid.', {
       problems: unsuited,

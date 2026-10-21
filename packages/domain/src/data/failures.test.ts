@@ -53,6 +53,10 @@ describe('a data failure', () => {
       definition_unbindable: 'query',
       // The D6 plan's D6-A: a source whose type lists no relations.
       describe_not_supported: 'product',
+      // The EX plan's EX-I: an extension refused, failed or answered out of shape, the source side's.
+      extension_refused: 'connector',
+      extension_failed: 'connector',
+      extension_invalid: 'connector',
     });
     expect(new Set(dataFailureCodes).size).toBe(dataFailureCodes.length);
     for (const code of dataFailureCodes) {

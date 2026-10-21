@@ -9,6 +9,7 @@ import {
   type HttpSettings,
   type PostgresSettings,
   type S3Settings,
+  type ExtensionSettings,
   limitCeilings,
   type DataFailure,
   type DataFailureCode,
@@ -29,6 +30,7 @@ import {
   withRefusedColumn,
 } from './describe.js';
 import { guardedAddress, type Lookup } from './guard.js';
+import { describeExtension, runExtension, testExtension } from './extension-source.js';
 import { describeHttp, runHttp, testHttp, type HttpPolicy } from './http-source.js';
 import {
   accountHoldsPrivilege,
@@ -111,7 +113,9 @@ async function describeSql(
 ): Promise<DescribeSqlAnswer> {
   // A sample of an HTTP request or a file is its own source's, never sent to a database
   // (`connectionFetchProblems`).
-  if ('http' in request || 'file' in request) throw failedWith('describe_not_supported');
+  if ('http' in request || 'file' in request || 'extension' in request) {
+    throw failedWith('describe_not_supported');
+  }
   const { parameters } = 'sql' in request ? request.sql : request.builder;
   const values: ParameterValues = Object.fromEntries(
     parameters.map((parameter) => [parameter.name, parameter.variation?.[0]?.key ?? null]),
@@ -156,7 +160,7 @@ export async function answerRequest(
 ): Promise<Answer> {
   // The source is chosen by the connection's type (the D6 plan, D6-A); PostgreSQL's is as it was.
   const { type } = request.request.settings;
-  return type === 'http' || type === 's3'
+  return type === 'http' || type === 's3' || type === 'extension'
     ? answerHttp(request, options)
     : answerPostgres(request, options);
 }
@@ -176,7 +180,7 @@ async function answerHttp(
 ): Promise<Answer> {
   const started = Date.now();
   const deadline = deadlineOf(request, started, options.startedAt);
-  const settings = request.request.settings as HttpSettings | S3Settings;
+  const settings = request.request.settings as HttpSettings | S3Settings | ExtensionSettings;
   const policy: HttpPolicy = {
     deny: request.deny,
     connectTimeoutMs: request.connectTimeoutMs,
@@ -186,25 +190,33 @@ async function answerHttp(
   let answer: Answer;
   try {
     const s3 = settings.type === 's3';
+    // An extension's, by its snapshot's endpoint (the EX plan, EX-H).
+    const extension = settings.type === 'extension';
     switch (request.kind) {
       case 'test':
-        answer = s3
-          ? await testS3(settings, request.secret, policy, deadline)
-          : await testHttp(settings, request.secret, policy, deadline);
+        answer = extension
+          ? await testExtension(settings, request.secret, policy, deadline)
+          : s3
+            ? await testS3(settings, request.secret, policy, deadline)
+            : await testHttp(settings, request.secret, policy, deadline);
         break;
       case 'run':
-        answer = s3
-          ? await runS3(request.request, request.secret, policy, deadline)
-          : await runHttp(request.request, request.secret, policy, deadline);
+        answer = extension
+          ? await runExtension(request.request, request.secret, policy, deadline)
+          : s3
+            ? await runS3(request.request, request.secret, policy, deadline)
+            : await runHttp(request.request, request.secret, policy, deadline);
         break;
       case 'describeSql': {
         const asked = request.request;
         answer =
-          'http' in asked && !s3
-            ? await describeHttp(asked, request.secret, policy, deadline, limitCeilings.bytes)
-            : 'file' in asked && s3
-              ? await describeS3(asked, request.secret, policy, deadline, limitCeilings.bytes)
-              : { failure: dataFailure('describe_not_supported') };
+          'extension' in asked && extension
+            ? await describeExtension(asked, request.secret, policy, deadline, limitCeilings.bytes)
+            : 'http' in asked && !s3 && !extension
+              ? await describeHttp(asked, request.secret, policy, deadline, limitCeilings.bytes)
+              : 'file' in asked && s3
+                ? await describeS3(asked, request.secret, policy, deadline, limitCeilings.bytes)
+                : { failure: dataFailure('describe_not_supported') };
         break;
       }
       default:

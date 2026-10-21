@@ -134,6 +134,14 @@ export const ProvenanceView = provenanceSchema.extend({
           'The stored result a dataset query read (DAT-094), or null where the caller may not read the query definition',
         ),
     }),
+    z.strictObject({
+      extension: z
+        .record(z.string(), z.unknown())
+        .nullable()
+        .describe(
+          'The request sent to an extension, or null where the caller may not read the query definition',
+        ),
+    }),
   ]),
 });
 

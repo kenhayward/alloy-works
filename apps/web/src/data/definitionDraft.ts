@@ -191,7 +191,7 @@ export interface DefinitionDraft {
    * connection, a request template, and on an S3 connection a file (the D6 plan); or built over a
    * stored result, on no connection (R21-A).
    */
-  readonly mode: 'builder' | 'sql' | 'http' | 'file' | 'dataset';
+  readonly mode: 'builder' | 'sql' | 'http' | 'file' | 'dataset' | 'extension';
   readonly builder: BuilderDraft;
   readonly http: HttpDraft;
   readonly file: FileDraft;

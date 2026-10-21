@@ -26801,6 +26801,29 @@
                                             "required": [
                                               "dataset"
                                             ]
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "extension": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "object",
+                                                    "propertyNames": {
+                                                      "type": "string"
+                                                    },
+                                                    "additionalProperties": {}
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ],
+                                                "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                              }
+                                            },
+                                            "required": [
+                                              "extension"
+                                            ]
                                           }
                                         ]
                                       },
@@ -27898,6 +27921,29 @@
                                             },
                                             "required": [
                                               "dataset"
+                                            ]
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "extension": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "object",
+                                                    "propertyNames": {
+                                                      "type": "string"
+                                                    },
+                                                    "additionalProperties": {}
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ],
+                                                "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                              }
+                                            },
+                                            "required": [
+                                              "extension"
                                             ]
                                           }
                                         ]
@@ -49475,7 +49521,8 @@
                             "enum": [
                               "postgres",
                               "http",
-                              "s3"
+                              "s3",
+                              "extension"
                             ]
                           },
                           "retired": {
@@ -50247,6 +50294,186 @@
                                 "region",
                                 "bucket",
                                 "pathStyle"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "schemaVersion",
+                            "name",
+                            "description",
+                            "identity",
+                            "retired",
+                            "type",
+                            "source"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "schemaVersion": {
+                              "type": "number",
+                              "const": 1
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "description": {
+                              "type": "string"
+                            },
+                            "identity": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "const": "service"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind"
+                                  ]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "const": "endUser"
+                                    },
+                                    "mechanism": {
+                                      "type": "string",
+                                      "const": "delegated"
+                                    },
+                                    "tokenEndpoint": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 2048
+                                    },
+                                    "audience": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 2048
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "mechanism",
+                                    "tokenEndpoint",
+                                    "audience"
+                                  ]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "const": "endUser"
+                                    },
+                                    "mechanism": {
+                                      "type": "string",
+                                      "const": "asserted"
+                                    },
+                                    "attribute": {
+                                      "type": "string",
+                                      "enum": [
+                                        "email",
+                                        "subject"
+                                      ]
+                                    },
+                                    "assertion": {
+                                      "type": "string",
+                                      "enum": [
+                                        "sessionContext",
+                                        "executeAs"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "mechanism",
+                                    "attribute"
+                                  ]
+                                }
+                              ]
+                            },
+                            "retired": {
+                              "type": "boolean"
+                            },
+                            "type": {
+                              "type": "string",
+                              "const": "extension"
+                            },
+                            "source": {
+                              "type": "object",
+                              "properties": {
+                                "extension": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "digest": {
+                                  "type": "string",
+                                  "pattern": "^[0-9a-f]{64}$"
+                                },
+                                "endpoint": {
+                                  "type": "string",
+                                  "maxLength": 2000,
+                                  "examples": [
+                                    "https://gauges.example.test/alloy"
+                                  ]
+                                },
+                                "authenticated": {
+                                  "type": "boolean"
+                                },
+                                "capabilities": {
+                                  "type": "object",
+                                  "properties": {
+                                    "parameters": {
+                                      "type": "boolean"
+                                    },
+                                    "keyColumns": {
+                                      "type": "boolean"
+                                    },
+                                    "rowLimit": {
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "parameters",
+                                    "keyColumns",
+                                    "rowLimit"
+                                  ]
+                                },
+                                "settings": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-zA-Z0-9_]{0,39}$"
+                                  },
+                                  "additionalProperties": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 1000
+                                      },
+                                      {
+                                        "type": "number"
+                                      },
+                                      {
+                                        "type": "boolean"
+                                      }
+                                    ]
+                                  }
+                                }
+                              },
+                              "required": [
+                                "extension",
+                                "digest",
+                                "endpoint",
+                                "authenticated",
+                                "capabilities",
+                                "settings"
                               ]
                             }
                           },
@@ -54706,6 +54933,27 @@
                               "query"
                             ],
                             "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "const": "extension"
+                              },
+                              "request": {
+                                "type": "object",
+                                "propertyNames": {
+                                  "type": "string"
+                                },
+                                "additionalProperties": {}
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "request"
+                            ],
+                            "additionalProperties": false
                           }
                         ]
                       },
@@ -55396,9 +55644,25 @@
                               "required": [
                                 "dataset"
                               ]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "extension": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string"
+                                  },
+                                  "additionalProperties": {},
+                                  "description": "The request sent to an extension, as its definition holds it"
+                                }
+                              },
+                              "required": [
+                                "extension"
+                              ]
                             }
                           ],
-                          "description": "What ran: SQL for a database, the request template for an HTTP connection, the object for an S3 one, the stored result for a dataset query"
+                          "description": "What ran: SQL for a database, the request template for an HTTP connection, the object for an S3 one, the stored result for a dataset query, the request for an extension"
                         },
                         "durationMs": {
                           "type": "integer",
@@ -57379,6 +57643,192 @@
                           "source"
                         ],
                         "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "schemaVersion": {
+                            "type": "number",
+                            "const": 1
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "identity": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "service"
+                                  }
+                                },
+                                "required": [
+                                  "kind"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "endUser"
+                                  },
+                                  "mechanism": {
+                                    "type": "string",
+                                    "const": "delegated"
+                                  },
+                                  "tokenEndpoint": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 2048
+                                  },
+                                  "audience": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 2048
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "mechanism",
+                                  "tokenEndpoint",
+                                  "audience"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "endUser"
+                                  },
+                                  "mechanism": {
+                                    "type": "string",
+                                    "const": "asserted"
+                                  },
+                                  "attribute": {
+                                    "type": "string",
+                                    "enum": [
+                                      "email",
+                                      "subject"
+                                    ]
+                                  },
+                                  "assertion": {
+                                    "type": "string",
+                                    "enum": [
+                                      "sessionContext",
+                                      "executeAs"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "mechanism",
+                                  "attribute"
+                                ],
+                                "additionalProperties": false
+                              }
+                            ]
+                          },
+                          "retired": {
+                            "type": "boolean"
+                          },
+                          "type": {
+                            "type": "string",
+                            "const": "extension"
+                          },
+                          "source": {
+                            "type": "object",
+                            "properties": {
+                              "extension": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "digest": {
+                                "type": "string",
+                                "pattern": "^[0-9a-f]{64}$"
+                              },
+                              "endpoint": {
+                                "type": "string",
+                                "maxLength": 2000,
+                                "examples": [
+                                  "https://gauges.example.test/alloy"
+                                ]
+                              },
+                              "authenticated": {
+                                "type": "boolean"
+                              },
+                              "capabilities": {
+                                "type": "object",
+                                "properties": {
+                                  "parameters": {
+                                    "type": "boolean"
+                                  },
+                                  "keyColumns": {
+                                    "type": "boolean"
+                                  },
+                                  "rowLimit": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "parameters",
+                                  "keyColumns",
+                                  "rowLimit"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "settings": {
+                                "type": "object",
+                                "propertyNames": {
+                                  "type": "string",
+                                  "pattern": "^[a-z][a-zA-Z0-9_]{0,39}$"
+                                },
+                                "additionalProperties": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "maxLength": 1000
+                                    },
+                                    {
+                                      "type": "number"
+                                    },
+                                    {
+                                      "type": "boolean"
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            "required": [
+                              "extension",
+                              "digest",
+                              "endpoint",
+                              "authenticated",
+                              "capabilities",
+                              "settings"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "schemaVersion",
+                          "name",
+                          "description",
+                          "identity",
+                          "retired",
+                          "type",
+                          "source"
+                        ],
+                        "additionalProperties": false
                       }
                     ]
                   }
@@ -57859,6 +58309,186 @@
                                 "region",
                                 "bucket",
                                 "pathStyle"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "schemaVersion",
+                            "name",
+                            "description",
+                            "identity",
+                            "retired",
+                            "type",
+                            "source"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "schemaVersion": {
+                              "type": "number",
+                              "const": 1
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "description": {
+                              "type": "string"
+                            },
+                            "identity": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "const": "service"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind"
+                                  ]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "const": "endUser"
+                                    },
+                                    "mechanism": {
+                                      "type": "string",
+                                      "const": "delegated"
+                                    },
+                                    "tokenEndpoint": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 2048
+                                    },
+                                    "audience": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 2048
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "mechanism",
+                                    "tokenEndpoint",
+                                    "audience"
+                                  ]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "const": "endUser"
+                                    },
+                                    "mechanism": {
+                                      "type": "string",
+                                      "const": "asserted"
+                                    },
+                                    "attribute": {
+                                      "type": "string",
+                                      "enum": [
+                                        "email",
+                                        "subject"
+                                      ]
+                                    },
+                                    "assertion": {
+                                      "type": "string",
+                                      "enum": [
+                                        "sessionContext",
+                                        "executeAs"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "mechanism",
+                                    "attribute"
+                                  ]
+                                }
+                              ]
+                            },
+                            "retired": {
+                              "type": "boolean"
+                            },
+                            "type": {
+                              "type": "string",
+                              "const": "extension"
+                            },
+                            "source": {
+                              "type": "object",
+                              "properties": {
+                                "extension": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "digest": {
+                                  "type": "string",
+                                  "pattern": "^[0-9a-f]{64}$"
+                                },
+                                "endpoint": {
+                                  "type": "string",
+                                  "maxLength": 2000,
+                                  "examples": [
+                                    "https://gauges.example.test/alloy"
+                                  ]
+                                },
+                                "authenticated": {
+                                  "type": "boolean"
+                                },
+                                "capabilities": {
+                                  "type": "object",
+                                  "properties": {
+                                    "parameters": {
+                                      "type": "boolean"
+                                    },
+                                    "keyColumns": {
+                                      "type": "boolean"
+                                    },
+                                    "rowLimit": {
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "parameters",
+                                    "keyColumns",
+                                    "rowLimit"
+                                  ]
+                                },
+                                "settings": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-zA-Z0-9_]{0,39}$"
+                                  },
+                                  "additionalProperties": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 1000
+                                      },
+                                      {
+                                        "type": "number"
+                                      },
+                                      {
+                                        "type": "boolean"
+                                      }
+                                    ]
+                                  }
+                                }
+                              },
+                              "required": [
+                                "extension",
+                                "digest",
+                                "endpoint",
+                                "authenticated",
+                                "capabilities",
+                                "settings"
                               ]
                             }
                           },
@@ -58650,6 +59280,186 @@
                                     "region",
                                     "bucket",
                                     "pathStyle"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "schemaVersion",
+                                "name",
+                                "description",
+                                "identity",
+                                "retired",
+                                "type",
+                                "source"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "schemaVersion": {
+                                  "type": "number",
+                                  "const": 1
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "description": {
+                                  "type": "string"
+                                },
+                                "identity": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "service"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "endUser"
+                                        },
+                                        "mechanism": {
+                                          "type": "string",
+                                          "const": "delegated"
+                                        },
+                                        "tokenEndpoint": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 2048
+                                        },
+                                        "audience": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 2048
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "mechanism",
+                                        "tokenEndpoint",
+                                        "audience"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "endUser"
+                                        },
+                                        "mechanism": {
+                                          "type": "string",
+                                          "const": "asserted"
+                                        },
+                                        "attribute": {
+                                          "type": "string",
+                                          "enum": [
+                                            "email",
+                                            "subject"
+                                          ]
+                                        },
+                                        "assertion": {
+                                          "type": "string",
+                                          "enum": [
+                                            "sessionContext",
+                                            "executeAs"
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "mechanism",
+                                        "attribute"
+                                      ]
+                                    }
+                                  ]
+                                },
+                                "retired": {
+                                  "type": "boolean"
+                                },
+                                "type": {
+                                  "type": "string",
+                                  "const": "extension"
+                                },
+                                "source": {
+                                  "type": "object",
+                                  "properties": {
+                                    "extension": {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    "digest": {
+                                      "type": "string",
+                                      "pattern": "^[0-9a-f]{64}$"
+                                    },
+                                    "endpoint": {
+                                      "type": "string",
+                                      "maxLength": 2000,
+                                      "examples": [
+                                        "https://gauges.example.test/alloy"
+                                      ]
+                                    },
+                                    "authenticated": {
+                                      "type": "boolean"
+                                    },
+                                    "capabilities": {
+                                      "type": "object",
+                                      "properties": {
+                                        "parameters": {
+                                          "type": "boolean"
+                                        },
+                                        "keyColumns": {
+                                          "type": "boolean"
+                                        },
+                                        "rowLimit": {
+                                          "type": "boolean"
+                                        }
+                                      },
+                                      "required": [
+                                        "parameters",
+                                        "keyColumns",
+                                        "rowLimit"
+                                      ]
+                                    },
+                                    "settings": {
+                                      "type": "object",
+                                      "propertyNames": {
+                                        "type": "string",
+                                        "pattern": "^[a-z][a-zA-Z0-9_]{0,39}$"
+                                      },
+                                      "additionalProperties": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 1000
+                                          },
+                                          {
+                                            "type": "number"
+                                          },
+                                          {
+                                            "type": "boolean"
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "extension",
+                                    "digest",
+                                    "endpoint",
+                                    "authenticated",
+                                    "capabilities",
+                                    "settings"
                                   ]
                                 }
                               },
@@ -59553,6 +60363,186 @@
                                     "region",
                                     "bucket",
                                     "pathStyle"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "schemaVersion",
+                                "name",
+                                "description",
+                                "identity",
+                                "retired",
+                                "type",
+                                "source"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "schemaVersion": {
+                                  "type": "number",
+                                  "const": 1
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "description": {
+                                  "type": "string"
+                                },
+                                "identity": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "service"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "endUser"
+                                        },
+                                        "mechanism": {
+                                          "type": "string",
+                                          "const": "delegated"
+                                        },
+                                        "tokenEndpoint": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 2048
+                                        },
+                                        "audience": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 2048
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "mechanism",
+                                        "tokenEndpoint",
+                                        "audience"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "endUser"
+                                        },
+                                        "mechanism": {
+                                          "type": "string",
+                                          "const": "asserted"
+                                        },
+                                        "attribute": {
+                                          "type": "string",
+                                          "enum": [
+                                            "email",
+                                            "subject"
+                                          ]
+                                        },
+                                        "assertion": {
+                                          "type": "string",
+                                          "enum": [
+                                            "sessionContext",
+                                            "executeAs"
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "mechanism",
+                                        "attribute"
+                                      ]
+                                    }
+                                  ]
+                                },
+                                "retired": {
+                                  "type": "boolean"
+                                },
+                                "type": {
+                                  "type": "string",
+                                  "const": "extension"
+                                },
+                                "source": {
+                                  "type": "object",
+                                  "properties": {
+                                    "extension": {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    "digest": {
+                                      "type": "string",
+                                      "pattern": "^[0-9a-f]{64}$"
+                                    },
+                                    "endpoint": {
+                                      "type": "string",
+                                      "maxLength": 2000,
+                                      "examples": [
+                                        "https://gauges.example.test/alloy"
+                                      ]
+                                    },
+                                    "authenticated": {
+                                      "type": "boolean"
+                                    },
+                                    "capabilities": {
+                                      "type": "object",
+                                      "properties": {
+                                        "parameters": {
+                                          "type": "boolean"
+                                        },
+                                        "keyColumns": {
+                                          "type": "boolean"
+                                        },
+                                        "rowLimit": {
+                                          "type": "boolean"
+                                        }
+                                      },
+                                      "required": [
+                                        "parameters",
+                                        "keyColumns",
+                                        "rowLimit"
+                                      ]
+                                    },
+                                    "settings": {
+                                      "type": "object",
+                                      "propertyNames": {
+                                        "type": "string",
+                                        "pattern": "^[a-z][a-zA-Z0-9_]{0,39}$"
+                                      },
+                                      "additionalProperties": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 1000
+                                          },
+                                          {
+                                            "type": "number"
+                                          },
+                                          {
+                                            "type": "boolean"
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "extension",
+                                    "digest",
+                                    "endpoint",
+                                    "authenticated",
+                                    "capabilities",
+                                    "settings"
                                   ]
                                 }
                               },
@@ -64493,6 +65483,27 @@
                               "query"
                             ],
                             "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "const": "extension"
+                              },
+                              "request": {
+                                "type": "object",
+                                "propertyNames": {
+                                  "type": "string"
+                                },
+                                "additionalProperties": {}
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "request"
+                            ],
+                            "additionalProperties": false
                           }
                         ]
                       },
@@ -65183,9 +66194,25 @@
                               "required": [
                                 "dataset"
                               ]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "extension": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string"
+                                  },
+                                  "additionalProperties": {},
+                                  "description": "The request sent to an extension, as its definition holds it"
+                                }
+                              },
+                              "required": [
+                                "extension"
+                              ]
                             }
                           ],
-                          "description": "What ran: SQL for a database, the request template for an HTTP connection, the object for an S3 one, the stored result for a dataset query"
+                          "description": "What ran: SQL for a database, the request template for an HTTP connection, the object for an S3 one, the stored result for a dataset query, the request for an extension"
                         },
                         "durationMs": {
                           "type": "integer",
@@ -74337,6 +75364,29 @@
                                             "required": [
                                               "dataset"
                                             ]
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "extension": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "object",
+                                                    "propertyNames": {
+                                                      "type": "string"
+                                                    },
+                                                    "additionalProperties": {}
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ],
+                                                "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                              }
+                                            },
+                                            "required": [
+                                              "extension"
+                                            ]
                                           }
                                         ]
                                       },
@@ -75434,6 +76484,29 @@
                                             },
                                             "required": [
                                               "dataset"
+                                            ]
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "extension": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "object",
+                                                    "propertyNames": {
+                                                      "type": "string"
+                                                    },
+                                                    "additionalProperties": {}
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ],
+                                                "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                              }
+                                            },
+                                            "required": [
+                                              "extension"
                                             ]
                                           }
                                         ]
@@ -77505,6 +78578,29 @@
                                           "required": [
                                             "dataset"
                                           ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "extension": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "propertyNames": {
+                                                    "type": "string"
+                                                  },
+                                                  "additionalProperties": {}
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ],
+                                              "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                            }
+                                          },
+                                          "required": [
+                                            "extension"
+                                          ]
                                         }
                                       ]
                                     },
@@ -78602,6 +79698,29 @@
                                           },
                                           "required": [
                                             "dataset"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "extension": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "propertyNames": {
+                                                    "type": "string"
+                                                  },
+                                                  "additionalProperties": {}
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ],
+                                              "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                            }
+                                          },
+                                          "required": [
+                                            "extension"
                                           ]
                                         }
                                       ]
@@ -80421,6 +81540,29 @@
                                           "required": [
                                             "dataset"
                                           ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "extension": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "propertyNames": {
+                                                    "type": "string"
+                                                  },
+                                                  "additionalProperties": {}
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ],
+                                              "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                            }
+                                          },
+                                          "required": [
+                                            "extension"
+                                          ]
                                         }
                                       ]
                                     },
@@ -81518,6 +82660,29 @@
                                           },
                                           "required": [
                                             "dataset"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "extension": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "propertyNames": {
+                                                    "type": "string"
+                                                  },
+                                                  "additionalProperties": {}
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ],
+                                              "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                            }
+                                          },
+                                          "required": [
+                                            "extension"
                                           ]
                                         }
                                       ]
@@ -83304,6 +84469,29 @@
                                       "required": [
                                         "dataset"
                                       ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "extension": {
+                                          "anyOf": [
+                                            {
+                                              "type": "object",
+                                              "propertyNames": {
+                                                "type": "string"
+                                              },
+                                              "additionalProperties": {}
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ],
+                                          "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                        }
+                                      },
+                                      "required": [
+                                        "extension"
+                                      ]
                                     }
                                   ]
                                 },
@@ -84401,6 +85589,29 @@
                                       },
                                       "required": [
                                         "dataset"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "extension": {
+                                          "anyOf": [
+                                            {
+                                              "type": "object",
+                                              "propertyNames": {
+                                                "type": "string"
+                                              },
+                                              "additionalProperties": {}
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ],
+                                          "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                        }
+                                      },
+                                      "required": [
+                                        "extension"
                                       ]
                                     }
                                   ]
@@ -86185,6 +87396,29 @@
                                           "required": [
                                             "dataset"
                                           ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "extension": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "propertyNames": {
+                                                    "type": "string"
+                                                  },
+                                                  "additionalProperties": {}
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ],
+                                              "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                            }
+                                          },
+                                          "required": [
+                                            "extension"
+                                          ]
                                         }
                                       ]
                                     },
@@ -87282,6 +88516,29 @@
                                           },
                                           "required": [
                                             "dataset"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "extension": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "propertyNames": {
+                                                    "type": "string"
+                                                  },
+                                                  "additionalProperties": {}
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ],
+                                              "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                            }
+                                          },
+                                          "required": [
+                                            "extension"
                                           ]
                                         }
                                       ]
@@ -89019,6 +90276,29 @@
                                           "required": [
                                             "dataset"
                                           ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "extension": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "propertyNames": {
+                                                    "type": "string"
+                                                  },
+                                                  "additionalProperties": {}
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ],
+                                              "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                            }
+                                          },
+                                          "required": [
+                                            "extension"
+                                          ]
                                         }
                                       ]
                                     },
@@ -90116,6 +91396,29 @@
                                           },
                                           "required": [
                                             "dataset"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "extension": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "propertyNames": {
+                                                    "type": "string"
+                                                  },
+                                                  "additionalProperties": {}
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ],
+                                              "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                            }
+                                          },
+                                          "required": [
+                                            "extension"
                                           ]
                                         }
                                       ]
@@ -91853,6 +93156,29 @@
                                           "required": [
                                             "dataset"
                                           ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "extension": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "propertyNames": {
+                                                    "type": "string"
+                                                  },
+                                                  "additionalProperties": {}
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ],
+                                              "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                            }
+                                          },
+                                          "required": [
+                                            "extension"
+                                          ]
                                         }
                                       ]
                                     },
@@ -92950,6 +94276,29 @@
                                           },
                                           "required": [
                                             "dataset"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "extension": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "propertyNames": {
+                                                    "type": "string"
+                                                  },
+                                                  "additionalProperties": {}
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ],
+                                              "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                            }
+                                          },
+                                          "required": [
+                                            "extension"
                                           ]
                                         }
                                       ]
@@ -95354,6 +96703,29 @@
                                           "required": [
                                             "dataset"
                                           ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "extension": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "propertyNames": {
+                                                    "type": "string"
+                                                  },
+                                                  "additionalProperties": {}
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ],
+                                              "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                            }
+                                          },
+                                          "required": [
+                                            "extension"
+                                          ]
                                         }
                                       ]
                                     },
@@ -96451,6 +97823,29 @@
                                           },
                                           "required": [
                                             "dataset"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "extension": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "propertyNames": {
+                                                    "type": "string"
+                                                  },
+                                                  "additionalProperties": {}
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ],
+                                              "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                            }
+                                          },
+                                          "required": [
+                                            "extension"
                                           ]
                                         }
                                       ]
@@ -98147,6 +99542,29 @@
                                           "required": [
                                             "dataset"
                                           ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "extension": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "propertyNames": {
+                                                    "type": "string"
+                                                  },
+                                                  "additionalProperties": {}
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ],
+                                              "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                            }
+                                          },
+                                          "required": [
+                                            "extension"
+                                          ]
                                         }
                                       ]
                                     },
@@ -99244,6 +100662,29 @@
                                           },
                                           "required": [
                                             "dataset"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "extension": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "propertyNames": {
+                                                    "type": "string"
+                                                  },
+                                                  "additionalProperties": {}
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ],
+                                              "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                            }
+                                          },
+                                          "required": [
+                                            "extension"
                                           ]
                                         }
                                       ]
@@ -100991,6 +102432,29 @@
                                       "required": [
                                         "dataset"
                                       ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "extension": {
+                                          "anyOf": [
+                                            {
+                                              "type": "object",
+                                              "propertyNames": {
+                                                "type": "string"
+                                              },
+                                              "additionalProperties": {}
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ],
+                                          "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                        }
+                                      },
+                                      "required": [
+                                        "extension"
+                                      ]
                                     }
                                   ]
                                 },
@@ -102088,6 +103552,29 @@
                                       },
                                       "required": [
                                         "dataset"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "extension": {
+                                          "anyOf": [
+                                            {
+                                              "type": "object",
+                                              "propertyNames": {
+                                                "type": "string"
+                                              },
+                                              "additionalProperties": {}
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ],
+                                          "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                        }
+                                      },
+                                      "required": [
+                                        "extension"
                                       ]
                                     }
                                   ]
@@ -103872,6 +105359,29 @@
                                           "required": [
                                             "dataset"
                                           ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "extension": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "propertyNames": {
+                                                    "type": "string"
+                                                  },
+                                                  "additionalProperties": {}
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ],
+                                              "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                            }
+                                          },
+                                          "required": [
+                                            "extension"
+                                          ]
                                         }
                                       ]
                                     },
@@ -104969,6 +106479,29 @@
                                           },
                                           "required": [
                                             "dataset"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "extension": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "propertyNames": {
+                                                    "type": "string"
+                                                  },
+                                                  "additionalProperties": {}
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ],
+                                              "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                            }
+                                          },
+                                          "required": [
+                                            "extension"
                                           ]
                                         }
                                       ]
@@ -106788,6 +108321,29 @@
                                           "required": [
                                             "dataset"
                                           ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "extension": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "propertyNames": {
+                                                    "type": "string"
+                                                  },
+                                                  "additionalProperties": {}
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ],
+                                              "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                            }
+                                          },
+                                          "required": [
+                                            "extension"
+                                          ]
                                         }
                                       ]
                                     },
@@ -107885,6 +109441,29 @@
                                           },
                                           "required": [
                                             "dataset"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "extension": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "propertyNames": {
+                                                    "type": "string"
+                                                  },
+                                                  "additionalProperties": {}
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ],
+                                              "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                            }
+                                          },
+                                          "required": [
+                                            "extension"
                                           ]
                                         }
                                       ]
@@ -110150,6 +111729,29 @@
                                           "required": [
                                             "dataset"
                                           ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "extension": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "propertyNames": {
+                                                    "type": "string"
+                                                  },
+                                                  "additionalProperties": {}
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ],
+                                              "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                            }
+                                          },
+                                          "required": [
+                                            "extension"
+                                          ]
                                         }
                                       ]
                                     },
@@ -111247,6 +112849,29 @@
                                           },
                                           "required": [
                                             "dataset"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "extension": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "propertyNames": {
+                                                    "type": "string"
+                                                  },
+                                                  "additionalProperties": {}
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ],
+                                              "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                            }
+                                          },
+                                          "required": [
+                                            "extension"
                                           ]
                                         }
                                       ]
@@ -112991,6 +114616,29 @@
                                           "required": [
                                             "dataset"
                                           ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "extension": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "propertyNames": {
+                                                    "type": "string"
+                                                  },
+                                                  "additionalProperties": {}
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ],
+                                              "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                            }
+                                          },
+                                          "required": [
+                                            "extension"
+                                          ]
                                         }
                                       ]
                                     },
@@ -114088,6 +115736,29 @@
                                           },
                                           "required": [
                                             "dataset"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "extension": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "propertyNames": {
+                                                    "type": "string"
+                                                  },
+                                                  "additionalProperties": {}
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ],
+                                              "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                            }
+                                          },
+                                          "required": [
+                                            "extension"
                                           ]
                                         }
                                       ]
@@ -115825,6 +117496,29 @@
                                           "required": [
                                             "dataset"
                                           ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "extension": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "propertyNames": {
+                                                    "type": "string"
+                                                  },
+                                                  "additionalProperties": {}
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ],
+                                              "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                            }
+                                          },
+                                          "required": [
+                                            "extension"
+                                          ]
                                         }
                                       ]
                                     },
@@ -116922,6 +118616,29 @@
                                           },
                                           "required": [
                                             "dataset"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "extension": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "propertyNames": {
+                                                    "type": "string"
+                                                  },
+                                                  "additionalProperties": {}
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ],
+                                              "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                            }
+                                          },
+                                          "required": [
+                                            "extension"
                                           ]
                                         }
                                       ]
@@ -118618,6 +120335,29 @@
                                           "required": [
                                             "dataset"
                                           ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "extension": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "propertyNames": {
+                                                    "type": "string"
+                                                  },
+                                                  "additionalProperties": {}
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ],
+                                              "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                            }
+                                          },
+                                          "required": [
+                                            "extension"
+                                          ]
                                         }
                                       ]
                                     },
@@ -119715,6 +121455,29 @@
                                           },
                                           "required": [
                                             "dataset"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "extension": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "propertyNames": {
+                                                    "type": "string"
+                                                  },
+                                                  "additionalProperties": {}
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ],
+                                              "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                            }
+                                          },
+                                          "required": [
+                                            "extension"
                                           ]
                                         }
                                       ]
@@ -121482,6 +123245,29 @@
                                       "required": [
                                         "dataset"
                                       ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "extension": {
+                                          "anyOf": [
+                                            {
+                                              "type": "object",
+                                              "propertyNames": {
+                                                "type": "string"
+                                              },
+                                              "additionalProperties": {}
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ],
+                                          "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                        }
+                                      },
+                                      "required": [
+                                        "extension"
+                                      ]
                                     }
                                   ]
                                 },
@@ -122579,6 +124365,29 @@
                                       },
                                       "required": [
                                         "dataset"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "extension": {
+                                          "anyOf": [
+                                            {
+                                              "type": "object",
+                                              "propertyNames": {
+                                                "type": "string"
+                                              },
+                                              "additionalProperties": {}
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ],
+                                          "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                        }
+                                      },
+                                      "required": [
+                                        "extension"
                                       ]
                                     }
                                   ]
@@ -124363,6 +126172,29 @@
                                           "required": [
                                             "dataset"
                                           ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "extension": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "propertyNames": {
+                                                    "type": "string"
+                                                  },
+                                                  "additionalProperties": {}
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ],
+                                              "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                            }
+                                          },
+                                          "required": [
+                                            "extension"
+                                          ]
                                         }
                                       ]
                                     },
@@ -125460,6 +127292,29 @@
                                           },
                                           "required": [
                                             "dataset"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "extension": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "propertyNames": {
+                                                    "type": "string"
+                                                  },
+                                                  "additionalProperties": {}
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ],
+                                              "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                            }
+                                          },
+                                          "required": [
+                                            "extension"
                                           ]
                                         }
                                       ]
@@ -127279,6 +129134,29 @@
                                           "required": [
                                             "dataset"
                                           ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "extension": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "propertyNames": {
+                                                    "type": "string"
+                                                  },
+                                                  "additionalProperties": {}
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ],
+                                              "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                            }
+                                          },
+                                          "required": [
+                                            "extension"
+                                          ]
                                         }
                                       ]
                                     },
@@ -128376,6 +130254,29 @@
                                           },
                                           "required": [
                                             "dataset"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "extension": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "propertyNames": {
+                                                    "type": "string"
+                                                  },
+                                                  "additionalProperties": {}
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ],
+                                              "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                            }
+                                          },
+                                          "required": [
+                                            "extension"
                                           ]
                                         }
                                       ]
@@ -130101,6 +132002,29 @@
                               },
                               "required": [
                                 "dataset"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "extension": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "propertyNames": {
+                                        "type": "string"
+                                      },
+                                      "additionalProperties": {}
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "The request sent to an extension, or null where the caller may not read the query definition"
+                                }
+                              },
+                              "required": [
+                                "extension"
                               ]
                             }
                           ]
@@ -207123,6 +209047,21 @@
                                     "required": [
                                       "dataset"
                                     ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "extension": {
+                                        "type": "object",
+                                        "propertyNames": {
+                                          "type": "string"
+                                        },
+                                        "additionalProperties": {}
+                                      }
+                                    },
+                                    "required": [
+                                      "extension"
+                                    ]
                                   }
                                 ]
                               },
@@ -210551,6 +212490,26 @@
                                 "format",
                                 "dataset",
                                 "query"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "extension"
+                                },
+                                "request": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string"
+                                  },
+                                  "additionalProperties": {}
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "request"
                               ]
                             }
                           ]
@@ -214190,6 +216149,27 @@
                               "query"
                             ],
                             "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "const": "extension"
+                              },
+                              "request": {
+                                "type": "object",
+                                "propertyNames": {
+                                  "type": "string"
+                                },
+                                "additionalProperties": {}
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "request"
+                            ],
+                            "additionalProperties": false
                           }
                         ]
                       },
@@ -215351,6 +217331,26 @@
                                 "format",
                                 "dataset",
                                 "query"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "extension"
+                                },
+                                "request": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string"
+                                  },
+                                  "additionalProperties": {}
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "request"
                               ]
                             }
                           ]
@@ -216893,6 +218893,26 @@
                                     "format",
                                     "dataset",
                                     "query"
+                                  ]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "const": "extension"
+                                    },
+                                    "request": {
+                                      "type": "object",
+                                      "propertyNames": {
+                                        "type": "string"
+                                      },
+                                      "additionalProperties": {}
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "request"
                                   ]
                                 }
                               ]
@@ -218491,6 +220511,26 @@
                                     "format",
                                     "dataset",
                                     "query"
+                                  ]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "const": "extension"
+                                    },
+                                    "request": {
+                                      "type": "object",
+                                      "propertyNames": {
+                                        "type": "string"
+                                      },
+                                      "additionalProperties": {}
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "request"
                                   ]
                                 }
                               ]
@@ -235891,6 +237931,192 @@
                           "source"
                         ],
                         "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "schemaVersion": {
+                            "type": "number",
+                            "const": 1
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "identity": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "service"
+                                  }
+                                },
+                                "required": [
+                                  "kind"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "endUser"
+                                  },
+                                  "mechanism": {
+                                    "type": "string",
+                                    "const": "delegated"
+                                  },
+                                  "tokenEndpoint": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 2048
+                                  },
+                                  "audience": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 2048
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "mechanism",
+                                  "tokenEndpoint",
+                                  "audience"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "endUser"
+                                  },
+                                  "mechanism": {
+                                    "type": "string",
+                                    "const": "asserted"
+                                  },
+                                  "attribute": {
+                                    "type": "string",
+                                    "enum": [
+                                      "email",
+                                      "subject"
+                                    ]
+                                  },
+                                  "assertion": {
+                                    "type": "string",
+                                    "enum": [
+                                      "sessionContext",
+                                      "executeAs"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "mechanism",
+                                  "attribute"
+                                ],
+                                "additionalProperties": false
+                              }
+                            ]
+                          },
+                          "retired": {
+                            "type": "boolean"
+                          },
+                          "type": {
+                            "type": "string",
+                            "const": "extension"
+                          },
+                          "source": {
+                            "type": "object",
+                            "properties": {
+                              "extension": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "digest": {
+                                "type": "string",
+                                "pattern": "^[0-9a-f]{64}$"
+                              },
+                              "endpoint": {
+                                "type": "string",
+                                "maxLength": 2000,
+                                "examples": [
+                                  "https://gauges.example.test/alloy"
+                                ]
+                              },
+                              "authenticated": {
+                                "type": "boolean"
+                              },
+                              "capabilities": {
+                                "type": "object",
+                                "properties": {
+                                  "parameters": {
+                                    "type": "boolean"
+                                  },
+                                  "keyColumns": {
+                                    "type": "boolean"
+                                  },
+                                  "rowLimit": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "parameters",
+                                  "keyColumns",
+                                  "rowLimit"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "settings": {
+                                "type": "object",
+                                "propertyNames": {
+                                  "type": "string",
+                                  "pattern": "^[a-z][a-zA-Z0-9_]{0,39}$"
+                                },
+                                "additionalProperties": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "maxLength": 1000
+                                    },
+                                    {
+                                      "type": "number"
+                                    },
+                                    {
+                                      "type": "boolean"
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            "required": [
+                              "extension",
+                              "digest",
+                              "endpoint",
+                              "authenticated",
+                              "capabilities",
+                              "settings"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "schemaVersion",
+                          "name",
+                          "description",
+                          "identity",
+                          "retired",
+                          "type",
+                          "source"
+                        ],
+                        "additionalProperties": false
                       }
                     ]
                   }
@@ -236369,6 +238595,186 @@
                                 "region",
                                 "bucket",
                                 "pathStyle"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "schemaVersion",
+                            "name",
+                            "description",
+                            "identity",
+                            "retired",
+                            "type",
+                            "source"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "schemaVersion": {
+                              "type": "number",
+                              "const": 1
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "description": {
+                              "type": "string"
+                            },
+                            "identity": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "const": "service"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind"
+                                  ]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "const": "endUser"
+                                    },
+                                    "mechanism": {
+                                      "type": "string",
+                                      "const": "delegated"
+                                    },
+                                    "tokenEndpoint": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 2048
+                                    },
+                                    "audience": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 2048
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "mechanism",
+                                    "tokenEndpoint",
+                                    "audience"
+                                  ]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "const": "endUser"
+                                    },
+                                    "mechanism": {
+                                      "type": "string",
+                                      "const": "asserted"
+                                    },
+                                    "attribute": {
+                                      "type": "string",
+                                      "enum": [
+                                        "email",
+                                        "subject"
+                                      ]
+                                    },
+                                    "assertion": {
+                                      "type": "string",
+                                      "enum": [
+                                        "sessionContext",
+                                        "executeAs"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "mechanism",
+                                    "attribute"
+                                  ]
+                                }
+                              ]
+                            },
+                            "retired": {
+                              "type": "boolean"
+                            },
+                            "type": {
+                              "type": "string",
+                              "const": "extension"
+                            },
+                            "source": {
+                              "type": "object",
+                              "properties": {
+                                "extension": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "digest": {
+                                  "type": "string",
+                                  "pattern": "^[0-9a-f]{64}$"
+                                },
+                                "endpoint": {
+                                  "type": "string",
+                                  "maxLength": 2000,
+                                  "examples": [
+                                    "https://gauges.example.test/alloy"
+                                  ]
+                                },
+                                "authenticated": {
+                                  "type": "boolean"
+                                },
+                                "capabilities": {
+                                  "type": "object",
+                                  "properties": {
+                                    "parameters": {
+                                      "type": "boolean"
+                                    },
+                                    "keyColumns": {
+                                      "type": "boolean"
+                                    },
+                                    "rowLimit": {
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "parameters",
+                                    "keyColumns",
+                                    "rowLimit"
+                                  ]
+                                },
+                                "settings": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-zA-Z0-9_]{0,39}$"
+                                  },
+                                  "additionalProperties": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 1000
+                                      },
+                                      {
+                                        "type": "number"
+                                      },
+                                      {
+                                        "type": "boolean"
+                                      }
+                                    ]
+                                  }
+                                }
+                              },
+                              "required": [
+                                "extension",
+                                "digest",
+                                "endpoint",
+                                "authenticated",
+                                "capabilities",
+                                "settings"
                               ]
                             }
                           },
@@ -237160,6 +239566,186 @@
                                     "region",
                                     "bucket",
                                     "pathStyle"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "schemaVersion",
+                                "name",
+                                "description",
+                                "identity",
+                                "retired",
+                                "type",
+                                "source"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "schemaVersion": {
+                                  "type": "number",
+                                  "const": 1
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "description": {
+                                  "type": "string"
+                                },
+                                "identity": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "service"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "endUser"
+                                        },
+                                        "mechanism": {
+                                          "type": "string",
+                                          "const": "delegated"
+                                        },
+                                        "tokenEndpoint": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 2048
+                                        },
+                                        "audience": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 2048
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "mechanism",
+                                        "tokenEndpoint",
+                                        "audience"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "endUser"
+                                        },
+                                        "mechanism": {
+                                          "type": "string",
+                                          "const": "asserted"
+                                        },
+                                        "attribute": {
+                                          "type": "string",
+                                          "enum": [
+                                            "email",
+                                            "subject"
+                                          ]
+                                        },
+                                        "assertion": {
+                                          "type": "string",
+                                          "enum": [
+                                            "sessionContext",
+                                            "executeAs"
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "mechanism",
+                                        "attribute"
+                                      ]
+                                    }
+                                  ]
+                                },
+                                "retired": {
+                                  "type": "boolean"
+                                },
+                                "type": {
+                                  "type": "string",
+                                  "const": "extension"
+                                },
+                                "source": {
+                                  "type": "object",
+                                  "properties": {
+                                    "extension": {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    "digest": {
+                                      "type": "string",
+                                      "pattern": "^[0-9a-f]{64}$"
+                                    },
+                                    "endpoint": {
+                                      "type": "string",
+                                      "maxLength": 2000,
+                                      "examples": [
+                                        "https://gauges.example.test/alloy"
+                                      ]
+                                    },
+                                    "authenticated": {
+                                      "type": "boolean"
+                                    },
+                                    "capabilities": {
+                                      "type": "object",
+                                      "properties": {
+                                        "parameters": {
+                                          "type": "boolean"
+                                        },
+                                        "keyColumns": {
+                                          "type": "boolean"
+                                        },
+                                        "rowLimit": {
+                                          "type": "boolean"
+                                        }
+                                      },
+                                      "required": [
+                                        "parameters",
+                                        "keyColumns",
+                                        "rowLimit"
+                                      ]
+                                    },
+                                    "settings": {
+                                      "type": "object",
+                                      "propertyNames": {
+                                        "type": "string",
+                                        "pattern": "^[a-z][a-zA-Z0-9_]{0,39}$"
+                                      },
+                                      "additionalProperties": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 1000
+                                          },
+                                          {
+                                            "type": "number"
+                                          },
+                                          {
+                                            "type": "boolean"
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "extension",
+                                    "digest",
+                                    "endpoint",
+                                    "authenticated",
+                                    "capabilities",
+                                    "settings"
                                   ]
                                 }
                               },
@@ -241633,6 +244219,27 @@
                               "query"
                             ],
                             "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "const": "extension"
+                              },
+                              "request": {
+                                "type": "object",
+                                "propertyNames": {
+                                  "type": "string"
+                                },
+                                "additionalProperties": {}
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "request"
+                            ],
+                            "additionalProperties": false
                           }
                         ]
                       },
@@ -242792,6 +245399,26 @@
                                 "format",
                                 "dataset",
                                 "query"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "extension"
+                                },
+                                "request": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string"
+                                  },
+                                  "additionalProperties": {}
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "request"
                               ]
                             }
                           ]
@@ -244334,6 +246961,26 @@
                                     "format",
                                     "dataset",
                                     "query"
+                                  ]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "const": "extension"
+                                    },
+                                    "request": {
+                                      "type": "object",
+                                      "propertyNames": {
+                                        "type": "string"
+                                      },
+                                      "additionalProperties": {}
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "request"
                                   ]
                                 }
                               ]
@@ -245932,6 +248579,26 @@
                                     "format",
                                     "dataset",
                                     "query"
+                                  ]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "const": "extension"
+                                    },
+                                    "request": {
+                                      "type": "object",
+                                      "propertyNames": {
+                                        "type": "string"
+                                      },
+                                      "additionalProperties": {}
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "request"
                                   ]
                                 }
                               ]

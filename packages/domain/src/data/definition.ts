@@ -10,7 +10,7 @@ import {
 import { valueProblem, compareCanonical, type CanonicalValue } from './canonical.js';
 import { columnTypeSchema, valueTypeSchema, type ValueType } from './columns.js';
 import { generatedLength } from './generate.js';
-import type { ConnectionSettings } from './connection.js';
+import { capabilitiesOf, type ConnectionSettings } from './connection.js';
 import { checkFileCondition, fileConditionSchema } from './file-filter.js';
 import { checkHttpTemplate, httpTemplateSchema } from './http-template.js';
 import { jsonPointerSchema } from './json-text.js';
@@ -234,14 +234,32 @@ export const datasetFetchSchema = z.strictObject({
 });
 export type DatasetFetch = z.infer<typeof datasetFetchSchema>;
 
-// SQL as D2 wrote it, the builder's tree (D4-A), an HTTP request (D6-E), a file (D6.2) or a stored
-// result (R21-A): each arm added refuses nothing stored.
+/** The most an extension's request may be, as JSON (the EX plan, EX-G). */
+export const EXTENSION_REQUEST_MOST = 64 * 1024;
+
+/**
+ * An extension's fetch (the EX plan, EX-G): its own request, opaque to the product, at most 64 KiB;
+ * its answer's rows read as JSON at `/rows`, its columns by pointer.
+ */
+export const extensionFetchSchema = z.strictObject({
+  kind: z.literal('extension'),
+  request: z
+    .record(z.string(), z.unknown())
+    .refine((value) => JSON.stringify(value).length <= EXTENSION_REQUEST_MOST, {
+      message: 'An extension’s request is at most 64 KiB as JSON',
+    }),
+});
+export type ExtensionFetch = z.infer<typeof extensionFetchSchema>;
+
+// SQL as D2 wrote it, the builder's tree (D4-A), an HTTP request (D6-E), a file (D6.2), a stored
+// result (R21-A) or an extension's request (EX-G): each arm added refuses nothing stored.
 const fetchSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('sql'), text: sqlTextSchema }),
   builderFetchSchema,
   httpFetchSchema,
   fileFetchSchema,
   datasetFetchSchema,
+  extensionFetchSchema,
 ]);
 
 const limit = (ceiling: number) => z.number().int().min(1).max(ceiling);
@@ -471,6 +489,8 @@ export function checkQueryDefinition(
   } else if (fetch.kind === 'http') {
     // An HTTP request: its template's rules against the parameters (D6-E).
     checkHttpTemplate(fetch.request, definition.parameters, problem);
+  } else if (fetch.kind === 'extension') {
+    // An extension's request is its own: its parameters are sent beside it, by name (EX-G).
   } else {
     // A file: its key's rules, its filter's over the declared columns, and every parameter placed
     // in one or the other (D6-J).
@@ -550,6 +570,12 @@ export function checkQueryDefinition(
 function fromProblem(fetch: DraftDefinition['fetch'], from: Column['from']): string | undefined {
   if (fetch.kind === 'sql' || fetch.kind === 'builder' || fetch.kind === 'dataset') {
     return 'column' in from ? undefined : "A column of a query is read by the query's column name";
+  }
+  // An extension answers rows of JSON (EX-G).
+  if (fetch.kind === 'extension') {
+    return 'pointer' in from
+      ? undefined
+      : 'A column of an extension is read by a pointer into its row';
   }
   if (fetch.format.kind !== 'csv' && fetch.format.kind !== 'xlsx') {
     return 'pointer' in from ? undefined : 'A column of JSON is read by a pointer into its row';
@@ -725,6 +751,24 @@ export function parseDraftDefinition(value: unknown): DraftDefinition {
  * sends its secret in, and a file on an S3 connection. Checked on save, on a sample's draft and at each run, against the connection
  * version it runs on.
  */
+/**
+ * What a definition relies on that its connection's type does not declare (DAT-079; the EX plan,
+ * EX-F): parameters bound on a source that binds none. Checked at its write and at its run.
+ */
+export function capabilityProblems(
+  definition: Pick<DraftDefinition, 'parameters'>,
+  settings: Pick<ConnectionSettings, 'type' | 'source'>,
+): DefinitionProblem[] {
+  if (definition.parameters.length === 0 || capabilitiesOf(settings).parameters) return [];
+  return [
+    {
+      rule: 'definition_invalid',
+      path: 'parameters',
+      message: 'This source declares no parameters, so a definition on it binds none',
+    },
+  ];
+}
+
 export function connectionFetchProblems(
   fetch: DraftDefinition['fetch'],
   settings: Pick<ConnectionSettings, 'type' | 'source'>,
@@ -734,6 +778,11 @@ export function connectionFetchProblems(
   ];
   if (fetch.kind === 'dataset') {
     return problem('fetch', 'A stored result is queried on no connection');
+  }
+  if (fetch.kind === 'extension') {
+    return settings.type === 'extension'
+      ? []
+      : problem('fetch', 'An extension’s request is sent on a connection to that extension');
   }
   if (fetch.kind === 'file') {
     return settings.type === 's3' ? [] : problem('fetch', 'A file is read on an S3 connection');

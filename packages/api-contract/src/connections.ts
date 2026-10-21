@@ -401,9 +401,14 @@ export const SampleView = z.discriminatedUnion('outcome', [
             'The stored result a dataset query read: its dataset, version and checksum (DAT-094)',
           ),
         }),
+        z.object({
+          extension: z
+            .record(z.string(), z.unknown())
+            .describe('The request sent to an extension, as its definition holds it'),
+        }),
       ])
       .describe(
-        'What ran: SQL for a database, the request template for an HTTP connection, the object for an S3 one, the stored result for a dataset query',
+        'What ran: SQL for a database, the request template for an HTTP connection, the object for an S3 one, the stored result for a dataset query, the request for an extension',
       ),
     durationMs: z.number().int(),
     images: z
@@ -428,7 +433,7 @@ export const ConnectionSummary = z.object({
   id: z.string(),
   name: z.string(),
   space: z.object({ id: z.string(), name: z.string() }),
-  type: z.enum(['postgres', 'http', 's3']),
+  type: z.enum(['postgres', 'http', 's3', 'extension']),
   retired: z.boolean(),
   version: z.object({ id: z.string(), number: z.string() }),
   credentialSet: z

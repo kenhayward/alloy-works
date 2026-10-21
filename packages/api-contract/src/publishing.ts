@@ -384,6 +384,7 @@ export const PublicationBindingView = z.object({
         z.object({ request: z.record(z.string(), z.unknown()) }),
         z.object({ object: z.record(z.string(), z.unknown()) }),
         z.object({ dataset: z.record(z.string(), z.unknown()) }),
+        z.object({ extension: z.record(z.string(), z.unknown()) }),
       ])
       .optional()
       .describe(

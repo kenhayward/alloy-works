@@ -1129,6 +1129,7 @@ export {
   type WebhookSubscription,
 } from './webhooks.js';
 export {
+  extensionAtDigest,
   extensionUses,
   installedExtension,
   installExtension,

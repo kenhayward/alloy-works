@@ -43,6 +43,7 @@ import {
   type TenantDatabase,
   type TenantListener,
   type TenantTransaction,
+  extensionAtDigest,
 } from '@alloy-works/db';
 import {
   BindingRefused,
@@ -54,6 +55,7 @@ import {
   checkQueryDefinition,
   checkTree,
   connectionFetchProblems,
+  connectionSettingsSchema,
   headerValueProblem,
   httpValueProblems,
   keyPairText,
@@ -293,6 +295,73 @@ function builtProblems(builder: {
   } catch (error) {
     if (!(error instanceof BindingRefused)) throw error;
     problem('fetch.query', 'The query cannot be generated whole');
+  }
+  return problems;
+}
+
+/**
+ * An extension's connection held to the manifest its snapshot names (the EX plan, EX-D): one the
+ * extension has had, by its digest; its endpoint, whether it takes a secret and its capabilities that
+ * manifest's; its settings the fields it asks for, each of its type. A removed extension's takes only a
+ * retirement. Every problem, or none for any other type.
+ */
+async function extensionSnapshotProblems(
+  trx: TenantTransaction,
+  value: unknown,
+): Promise<ConnectionProblem[]> {
+  const parsed = connectionSettingsSchema.safeParse(value);
+  if (!parsed.success || parsed.data.type !== 'extension') return [];
+  const { source, retired } = parsed.data;
+  const problem = (path: string, message: string): ConnectionProblem => ({
+    rule: 'connection_invalid',
+    path: `source.${path}`,
+    message,
+  });
+  const held = await extensionAtDigest(trx, source.extension, source.digest);
+  if (!held) return [problem('digest', 'No manifest of an installed extension has this digest')];
+  if (held.removed && !retired) {
+    return [problem('extension', 'This extension is removed: a connection to it may only retire')];
+  }
+  const { manifest } = held;
+  const problems: ConnectionProblem[] = [];
+  if (manifest.authentication === 'none') {
+    problems.push(
+      problem(
+        'authenticated',
+        'A connection to an extension takes a secret: this one declares none',
+      ),
+    );
+  }
+  if (source.endpoint !== manifest.endpoint) {
+    problems.push(problem('endpoint', 'The endpoint is the manifest’s'));
+  }
+  if (!source.authenticated) {
+    problems.push(problem('authenticated', 'The manifest takes a secret'));
+  }
+  const capabilities = manifest.capabilities;
+  if (
+    source.capabilities.parameters !== capabilities.parameters ||
+    source.capabilities.keyColumns !== capabilities.keyColumns ||
+    source.capabilities.rowLimit !== capabilities.rowLimit
+  ) {
+    problems.push(problem('capabilities', 'The capabilities are the manifest’s'));
+  }
+  for (const field of manifest.settings) {
+    const given = source.settings[field.key];
+    if (given === undefined) {
+      if (field.required)
+        problems.push(problem(`settings.${field.key}`, `${field.label} is required`));
+      continue;
+    }
+    const type = typeof given === 'string' ? 'text' : typeof given;
+    if (type !== field.type) {
+      problems.push(problem(`settings.${field.key}`, `${field.label} is ${field.type}`));
+    }
+  }
+  for (const key of Object.keys(source.settings)) {
+    if (!manifest.settings.some((field) => field.key === key)) {
+      problems.push(problem(`settings.${key}`, 'The manifest asks for no such setting'));
+    }
   }
   return problems;
 }
@@ -739,6 +808,8 @@ export function connectionHandlers(
     createConnection: async (request: FastifyRequest, { trx, principalId, facts }: Authorised) => {
       const { space } = request.params as SpaceParams;
       const body = request.body as CreateConnectionBody;
+      const unsnapped = await extensionSnapshotProblems(trx, body.settings);
+      if (unsnapped.length > 0) throw settingsRefused(unsnapped);
       const answer = await createConnection(trx, {
         author: principalId,
         spaceId: space,
@@ -769,6 +840,8 @@ export function connectionHandlers(
     ) => {
       const { id } = request.params as ConnectionParams;
       const body = request.body as ConnectionVersionBody;
+      const unsnapped = await extensionSnapshotProblems(trx, body.settings);
+      if (unsnapped.length > 0) throw settingsRefused(unsnapped);
       const answer = await recordConnectionVersion(trx, {
         author: principalId,
         id,
@@ -803,7 +876,11 @@ export function connectionHandlers(
         body.secret ??
         keyPairText({ accessKeyId: body.accessKeyId!, secretAccessKey: body.secretAccessKey! });
       // An HTTP connection's secret is sent as a header's value, so it is one a header carries (D6-D).
-      if (connection.settings.type === 'http' && headerValueProblem(secret) !== undefined) {
+      // An extension's is sent as a bearer, a header's value too (the EX plan, EX-H).
+      if (
+        (connection.settings.type === 'http' || connection.settings.type === 'extension') &&
+        headerValueProblem(secret) !== undefined
+      ) {
         throw new AppError(
           400,
           'invalid_request',

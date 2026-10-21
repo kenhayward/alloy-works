@@ -1418,7 +1418,14 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   preview shows what it is, the settings and secret a connection to it takes, what it can do and the
   hosts it says it sends data to, before installing it at that manifest's digest. An update shows what
   would change first; removing waits until no connection uses it. Every change is recorded in the
-  audit log, never its URL. Connections to an extension follow in the next release.
+  audit log, never its URL. A connection of type `extension` names one at the manifest it was
+  saved against, its endpoint, settings and capabilities among it, so an update changes nothing a
+  connection does until it is saved again; its secret is sent to that endpoint alone. A query
+  definition on one holds the extension's own request and reads its rows by pointer, as an HTTP API's
+  JSON is read, held to the product's limits; one binding parameters is refused where the extension
+  declares it binds none. Only what it declares is sent: its settings, the request, the values and its
+  secret. Its failures are the extension's (`extension_refused`, `extension_failed`,
+  `extension_invalid`), never the product's. The pages for connecting one follow in the next release.
 - **MCP, for agents.** An MCP client connects to `/mcp` on your environment with an API token, yours
   or a service identity's, as a bearer: a signed-in session never works there. Four tools read:
   `search`, `read_document`, `read_component` (its blocks numbered) and `related` (an artifact's
