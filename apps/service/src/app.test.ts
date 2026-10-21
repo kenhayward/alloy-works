@@ -99,7 +99,9 @@ describe('the service', () => {
           route.method !== 'HEAD' &&
           !route.url.startsWith('/docs') &&
           route.url !== '/openapi/v1.json' &&
-          route.url !== '/asyncapi/v1.json',
+          route.url !== '/asyncapi/v1.json' &&
+          // The MCP surface, outside the contract (ADR-0065): JSON-RPC, never a REST route.
+          route.url !== '/mcp',
       )
       .map((route) => key(route.method, route.url));
     expect(served.sort()).toEqual(declared.sort());

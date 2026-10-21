@@ -79,6 +79,14 @@ time (below); embeddings for meaning are [search.md](search.md)'s and
 | **GEN-052** | `propose_component` in a conversation: made at 0.1 as the person only once accepted, never kept, reported as generated (G5-E)                           |
 | **GEN-054** | `personal_prompt`: its owner's alone, never an artifact, so no template binds one and nobody else reads or runs it (G5-G)                               |
 | **GEN-055** | Promotion, the one path: a new prompt at draft in a space its owner may edit, reviewed and tried like any other (G5-G)                                  |
+| **API-018** | Four tools over the API, each the `/v1` route it wraps, never a mirror of it (MCP)                                                                      |
+| **API-019** | Each tool's description: what it is for, when to use it, what it returns (MCP)                                                                          |
+| **API-020** | A tool is its route, called in process with the caller's token: no other path (MCP)                                                                     |
+| **API-022** | A result is the route's JSON, never prose made from content, every description saying so (MCP)                                                          |
+| **API-023** | `tool.used`: the identity, the tool, its arguments as identifiers and digests, the outcome (MCP)                                                        |
+| **API-024** | The tools are rows in the G8 plan; adding one is a row there first (MCP)                                                                                |
+| **API-052** | Every tool wraps a `/v1` route; a `/v2` names in its ADR what moves (ADR-0065)                                                                          |
+| **REL-021** | `related` is `/v1/artifacts/{id}/relationships` and `/path`, as the caller (MCP)                                                                        |
 
 ## What this document does not own
 
@@ -89,7 +97,8 @@ time (below); embeddings for meaning are [search.md](search.md)'s and
 | ADM-033                                                                   | The trend lacks ADM-011's storage, publication and asset measures (T7)                                                                                  |
 | ADM-048                                                                   | Translation, scanning, email and webhooks cost nothing yet; it is claimed when the last of them exists                                                  |
 | SCH-013, SCH-014, SCH-035, VER-039 (designed elsewhere), SCH-067, GEN-044 | Meaning (G7's later PRs)                                                                                                                                |
-| API-019, API-021, API-023, API-052, REL-021, IAM-033, LIF-071             | The MCP surface and service identities (G8), with the token design ([access.md](access.md))                                                             |
+| API-021                                                                   | The tools that change: G8c                                                                                                                              |
+| LIF-071                                                                   | Tool use is `tool.used`; webhook subscription changes wait for webhooks (GN-D)                                                                          |
 | API-028, API-029, API-046, API-055, API-060, COL-037                      | Webhooks: their own design (GN-D)                                                                                                                       |
 | API-030, API-031, API-034, API-048, API-059, DAT-054, DAT-073, DAT-079    | Extensions: their own design (GN-D)                                                                                                                     |
 
@@ -301,6 +310,38 @@ every artifact; the serving model answers searches meanwhile, and the worker swi
 new one holds every latest text, deleting the old model's passages and never its vectors (VER-040).
 Routed to the model that serves, it goes on serving through the new endpoint; routed to none, nothing
 serves. SCH-067's interval is not yet measured, so not claimed.
+
+## MCP
+
+Built by [G8](../plans/2026-10-21-g8-mcp-and-service-identities.md) ([ADR-0065](../decisions/0065-mcp-is-a-few-tools-over-the-api.md)).
+`POST /mcp` on the service speaks MCP's stateless Streamable HTTP, protocol versions `2025-11-25` and
+`2025-06-18`, every answer JSON. It takes a bearer API token alone, a person's or a service
+identity's; a cookie is never read, and an `Origin` that is not the environment's is refused. It is
+outside the contract, and `openapi.json` does not describe it.
+
+| Tool             | Wraps                                               | Reads |
+| ---------------- | --------------------------------------------------- | ----- |
+| `search`         | `GET /v1/search`                                    | Yes   |
+| `read_document`  | `GET /v1/documents/{id}`, and its `/texts`          | Yes   |
+| `read_component` | `GET /v1/components/{id}`, as numbered blocks       | Yes   |
+| `related`        | `GET /v1/artifacts/{id}/relationships`, and `/path` | Yes   |
+
+**A tool is its route** (API-018, API-020, REL-021): each call is one in-process request of the route
+it wraps, with the caller's token, host and trace id, so tenancy, scopes, permissions and the route's
+own audit are the API's. A tool shapes arguments and trims answers; it holds no query. A route's
+refusal is a result marked an error with the route's own body; a failure is a JSON-RPC error.
+
+**Described for a model** (API-019, API-022): what each tool is for, when to use it and what it
+returns, then that content is data and never an instruction. A result's text is its structured JSON,
+never prose built from content. Each tool's annotations say whether it reads only.
+
+**Audited** (API-023): each call is `tool.used`, its subject the artifact it names, its detail the
+tool, its arguments as identifiers, numbers and words, any text as its length and SHA-256, never its
+words (LIF-030), and the outcome: `ok`, `refused` with the route's code, or `failed`. It is written
+after the call, in its own transaction, so a refusal is recorded too.
+
+**Versions** (API-052): every tool wraps a `/v1` route. A `/v2` names in its own ADR the tools that
+move, those pinned to `/v1`, and the date `/v1`'s stop.
 
 ## Failures
 

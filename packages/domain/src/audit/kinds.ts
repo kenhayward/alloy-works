@@ -692,7 +692,31 @@ export const auditKindSpecs = {
   'support.used': kind(['LIF-072', 'ADM-024'], empty, LATER),
   'support.revoked': kind(['LIF-072', 'ADM-042'], empty, LATER),
   'channel.changed': kind(['LIF-072'], empty, LATER),
-  'tool.used': kind(['LIF-071', 'API-023'], empty, LATER),
+  // A tool call through MCP (the G8 plan, G8-F): identifiers kept, any text its length and digest,
+  // never its words (LIF-030).
+  'tool.used': kind(
+    ['LIF-071', 'API-023'],
+    z.strictObject({
+      tool: AuditName,
+      arguments: z.record(
+        AuditName,
+        z.union([
+          Id,
+          AuditName,
+          z.number(),
+          z.boolean(),
+          z.array(AuditName).max(20),
+          z.strictObject({
+            length: z.number().int().min(0),
+            sha256: z.string().regex(/^[0-9a-f]{64}$/),
+          }),
+        ]),
+      ),
+      outcome: z.enum(['ok', 'refused', 'failed']),
+      code: AuditName.optional(),
+    }),
+    'apps/service/src/mcp/route.ts',
+  ),
   // Declared for the requirements that say their act is audited (LIF-063), each emitted by the design
   // that builds its act.
   'secret.accessed': kind(['ADM-009'], empty, LATER),

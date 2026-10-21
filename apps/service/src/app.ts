@@ -84,6 +84,7 @@ import { assistantHandlers } from './generation/assistant.js';
 import { generatedHandlers } from './generation/generated.js';
 import { modelEndpointHandlers } from './generation/models.js';
 import { serviceIdentityHandlers } from './service-identities.js';
+import { registerMcp } from './mcp/route.js';
 import { promptHandlers, promptLibraryHandlers } from './generation/prompts.js';
 import { promptRunHandlers } from './generation/prompt-runs.js';
 import { guardrailHandlers } from './generation/guardrails.js';
@@ -343,6 +344,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ttlMs: options.tenantCacheMs ?? 30_000,
   });
   registerDocs(app, (hostname) => tenants.resolve(hostname));
+  registerMcp(app, db, (hostname) => tenants.resolve(hostname));
   app.decorateRequest('tenant', null);
   app.decorateRequest('principal', null);
   app.decorateRequest('credential', null);

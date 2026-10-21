@@ -511,6 +511,13 @@ const WRITERS: Readonly<Record<string, Readonly<Record<string, Entry>>>> = {
   erasure: {
     eraseLabels: writes('audit.label_erased'),
   },
+  /**
+   * The MCP surface (apps/service/src/mcp/route.ts), a route outside the contract: each tool call is
+   * recorded there, and what the route it wraps records is that route's own (ADR-0065).
+   */
+  mcp: {
+    'tools/call': writes('tool.used'),
+  },
 };
 
 const source = (path: string) => readFileSync(new URL(path, import.meta.url), 'utf8');

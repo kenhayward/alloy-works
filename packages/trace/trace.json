@@ -16006,6 +16006,10 @@
           "howItIsMet": "A grant's subject is exactly one of a principal or a group"
         },
         {
+          "id": "IAM-036",
+          "howItIsMet": "Every route decides for the principal its session or token belongs to, and no route takes the acting principal from a parameter. An MCP tool is a route called with the caller's token ([generation.md](generation.md), MCP), and a model's tool call runs as the requester through the same functions (GEN-008)"
+        },
+        {
           "id": "IAM-009",
           "howItIsMet": "A group can stand for a value the organisation's provider asserts in a configured claim; membership of such a group is replaced from the claim at every sign-in, and granting the group a role maps it"
         },
@@ -17800,6 +17804,38 @@
         {
           "id": "GEN-055",
           "howItIsMet": "Promotion, the one path: a new prompt at draft in a space its owner may edit, reviewed and tried like any other (G5-G)"
+        },
+        {
+          "id": "API-018",
+          "howItIsMet": "Four tools over the API, each the `/v1` route it wraps, never a mirror of it (MCP)"
+        },
+        {
+          "id": "API-019",
+          "howItIsMet": "Each tool's description: what it is for, when to use it, what it returns (MCP)"
+        },
+        {
+          "id": "API-020",
+          "howItIsMet": "A tool is its route, called in process with the caller's token: no other path (MCP)"
+        },
+        {
+          "id": "API-022",
+          "howItIsMet": "A result is the route's JSON, never prose made from content, every description saying so (MCP)"
+        },
+        {
+          "id": "API-023",
+          "howItIsMet": "`tool.used`: the identity, the tool, its arguments as identifiers and digests, the outcome (MCP)"
+        },
+        {
+          "id": "API-024",
+          "howItIsMet": "The tools are rows in the G8 plan; adding one is a row there first (MCP)"
+        },
+        {
+          "id": "API-052",
+          "howItIsMet": "Every tool wraps a `/v1` route; a `/v2` names in its ADR what moves (ADR-0065)"
+        },
+        {
+          "id": "REL-021",
+          "howItIsMet": "`related` is `/v1/artifacts/{id}/relationships` and `/path`, as the caller (MCP)"
         }
       ]
     },
@@ -20424,13 +20460,13 @@
     {
       "id": "API-062",
       "file": "apps/service/src/app.test.ts",
-      "line": 108,
+      "line": 110,
       "kind": "title"
     },
     {
       "id": "IAM-053",
       "file": "apps/service/src/app.test.ts",
-      "line": 185,
+      "line": 187,
       "kind": "title"
     },
     {
@@ -20694,13 +20730,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 550,
+      "line": 557,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 563,
+      "line": 570,
       "kind": "title"
     },
     {
@@ -21649,6 +21685,36 @@
       "id": "COL-067",
       "file": "apps/service/src/live-stream.test.ts",
       "line": 453,
+      "kind": "title"
+    },
+    {
+      "id": "API-019",
+      "file": "apps/service/src/mcp-routes.test.ts",
+      "line": 114,
+      "kind": "title"
+    },
+    {
+      "id": "API-020",
+      "file": "apps/service/src/mcp-routes.test.ts",
+      "line": 164,
+      "kind": "title"
+    },
+    {
+      "id": "API-023",
+      "file": "apps/service/src/mcp-routes.test.ts",
+      "line": 223,
+      "kind": "title"
+    },
+    {
+      "id": "API-052",
+      "file": "apps/service/src/mcp-routes.test.ts",
+      "line": 155,
+      "kind": "title"
+    },
+    {
+      "id": "REL-021",
+      "file": "apps/service/src/mcp-routes.test.ts",
+      "line": 194,
       "kind": "title"
     },
     {

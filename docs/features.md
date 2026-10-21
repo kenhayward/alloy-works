@@ -1399,6 +1399,13 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   under More actions, asks first, then stops every token it holds at once and issues it no more, and
   it is kept so what it did still names it. Through the API it is `/v1/service-identities`, an
   administrator's with a signed-in session.
+- **MCP, for agents.** An MCP client connects to `/mcp` on your environment with an API token, yours
+  or a service identity's, as a bearer: a signed-in session never works there. Four tools read:
+  `search`, `read_document`, `read_component` (its blocks numbered) and `related` (an artifact's
+  relationships, or the shortest path to another). Each is the API route it wraps, called as the
+  token's holder, so it reads only what they may and refuses as the route does. Each call is recorded in
+  the audit log as a tool used, with the tool, its identifiers and the outcome; any text it was given,
+  a search's words among them, is kept only as its length and a digest.
 - **An administrator revokes anybody's tokens.** In Administration's People - a table of each person's kind and status,
   found by name and shown by kind, a page at a time - **API tokens** beside a person opens theirs in a
   panel beside the list, with what they may do across the environment and why, each token with
