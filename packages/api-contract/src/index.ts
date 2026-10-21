@@ -139,6 +139,15 @@ export {
   modelEndpointRoutes,
 } from './model-endpoints.js';
 export {
+  ChangeServiceIdentityBody,
+  CreateServiceIdentityBody,
+  ServiceIdentityList,
+  ServiceIdentityListQuery,
+  ServiceIdentityParams,
+  ServiceIdentityView,
+  serviceIdentityRoutes,
+} from './service-identities.js';
+export {
   AssistantRunBody,
   AssistantRunParams,
   AssistantRunView,

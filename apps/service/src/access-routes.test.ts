@@ -1608,6 +1608,31 @@ describe('routes that check a permission', () => {
     getErasure: () => ({ url: `/v1/principals/${ids.alice}/erasure`, status: 403 }),
     erasePrincipal: () => ({ url: `/v1/principals/${ids.alice}/erase`, status: 403 }),
     listPrincipalTokens: () => ({ url: `/v1/principals/${ids.alice}/tokens`, status: 403 }),
+    // Service identities are an administrator's of the whole environment (G8-G).
+    listServiceIdentities: () => ({ url: '/v1/service-identities', status: 403 }),
+    createServiceIdentity: () => ({
+      url: '/v1/service-identities',
+      status: 403,
+      payload: { name: 'Mine' },
+    }),
+    changeServiceIdentity: () => ({
+      url: `/v1/service-identities/${MISSING}`,
+      status: 403,
+      payload: { name: 'Mine' },
+    }),
+    disableServiceIdentity: () => ({
+      url: `/v1/service-identities/${MISSING}/disablement`,
+      status: 403,
+    }),
+    issueServiceIdentityToken: () => ({
+      url: `/v1/service-identities/${MISSING}/tokens`,
+      status: 403,
+      payload: {
+        name: 'Mine',
+        scopes: [],
+        expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
+      },
+    }),
     revokePrincipalToken: () => ({
       url: `/v1/principals/${ids.alice}/tokens/${MISSING}`,
       status: 403,

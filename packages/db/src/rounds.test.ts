@@ -72,8 +72,8 @@ describe('review rounds', () => {
         trx
           .insertInto('principal')
           .values({
-            issuer: 'https://idp.example',
-            subject,
+            issuer: kind === 'service' ? null : 'https://idp.example',
+            subject: kind === 'service' ? null : subject,
             email: null,
             display_name: name,
             kind,

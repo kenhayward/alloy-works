@@ -151,6 +151,15 @@ export interface SessionTable {
 }
 
 /** A personal token, kept as its hash (0038); its scopes a mask over its principal's grants. */
+/** A service identity's own facts, beside its principal (0138; the G8 plan, G8-G). */
+export interface ServiceIdentityTable {
+  principal_id: string;
+  description: Generated<string>;
+  created_by: string | null;
+  created_at: Generated<Date>;
+  disabled_at: Date | null;
+}
+
 export interface ApiTokenTable {
   id: Generated<string>;
   principal_id: string;
@@ -1070,6 +1079,7 @@ export interface TenantTables {
   sign_in_attempt: SignInAttemptTable;
   session: SessionTable;
   api_token: ApiTokenTable;
+  service_identity: ServiceIdentityTable;
   invitation: InvitationTable;
   google_domain: GoogleDomainTable;
   sign_in_handoff: SignInHandoffTable;

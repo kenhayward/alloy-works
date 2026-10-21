@@ -181,7 +181,7 @@ describe('erasure over HTTP (the ER plan, Task 1)', () => {
     const robot = await tenantDb.withTenant(tenant, (trx) =>
       trx
         .insertInto('principal')
-        .values({ issuer: 'https://robots.example', subject: 'publisher', kind: 'service' })
+        .values({ issuer: null, subject: null, display_name: 'Publisher', kind: 'service' })
         .returning('id')
         .executeTakeFirstOrThrow(),
     );

@@ -1,6 +1,7 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
+import { NewToken } from '../account/ApiTokens.js';
 import { refusal, type ShownToken } from '../account/TokenTable.js';
 import { explainAnswer, permissionName, type ShownPerson } from '../access/describe.js';
 import { Modal } from '../layouts/Modal.js';
@@ -65,15 +66,44 @@ const longDay = (iso: string) =>
  * A person's status: erased, an invitation not yet accepted, a service at work, or somebody who signed
  * in.
  */
-function status(person: ShownPerson) {
+function status(person: ShownPerson, service?: ShownService) {
   if (person.erased === true) return <Chip>Erased</Chip>;
   if (person.invited) return <Chip tone="warn">Invited</Chip>;
+  if (service?.disabledAt) return <Chip>Disabled</Chip>;
   return <Chip tone="ok">{person.kind === 'service' ? 'Active' : 'Signed in'}</Chip>;
 }
 
 /** What a token may do, in words: reading alone where it holds nothing more. */
 const scopeWords = (scopes: readonly string[]) =>
   scopes.length === 0 ? 'Reads only' : `May ${scopes.map(permissionName).join(', ')}`;
+
+/** A service identity as People shows it beside its principal (the G8 plan, G8-J). */
+export interface ShownService {
+  readonly id: string;
+  readonly description: string;
+  readonly disabledAt: string | null;
+}
+
+/** The environment's service identities, by id: whether each is disabled, and what it is for. */
+function useServices(client: Client, generation: number) {
+  const [services, setServices] = useState<ReadonlyMap<string, ShownService>>(new Map());
+  useEffect(() => {
+    let current = true;
+    everyPage<ShownService>((cursor) =>
+      client.GET('/v1/service-identities', { params: { query: cursor ? { cursor } : {} } }),
+    )
+      .then((answer) => {
+        if (current && 'items' in answer) {
+          setServices(new Map(answer.items.map((each) => [each.id, each])));
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      current = false;
+    };
+  }, [client, generation]);
+  return services;
+}
 
 /** The people, a page at a time, with how many there are in all (AD-A, AD-E). */
 function usePeople(client: Client, generation: number) {
@@ -114,6 +144,44 @@ function usePeople(client: Client, generation: number) {
  * for each to expire (service-foundations.md, TK-E).
  */
 function PersonTokens({
+  client,
+  person,
+  service,
+  onCount,
+}: {
+  client: Client;
+  person: ShownPerson;
+  service?: ShownService | undefined;
+  onCount: (count: number) => void;
+}) {
+  const [issuing, setIssuing] = useState(false);
+  const [issued, setIssued] = useState(0);
+  // A service identity's tokens are issued by an administrator, here (G8-H).
+  const issuable = service !== undefined && service.disabledAt === null;
+  return (
+    <>
+      {issuable && (
+        <div className={styles['lead']}>
+          <p>{service.description}</p>
+          <button type="button" onClick={() => setIssuing(true)}>
+            New token
+          </button>
+        </div>
+      )}
+      <HeldTokens key={issued} client={client} person={person} onCount={onCount} />
+      {issuing && (
+        <NewToken
+          client={client}
+          holder={{ id: person.id, name: nameOf(person) }}
+          onIssued={() => setIssued((count) => count + 1)}
+          onClose={() => setIssuing(false)}
+        />
+      )}
+    </>
+  );
+}
+
+function HeldTokens({
   client,
   person,
   onCount,
@@ -304,6 +372,7 @@ function WhatTheyMayDo({
 function PersonPanel({
   client,
   person,
+  service,
   people,
   tab,
   onTab,
@@ -311,6 +380,7 @@ function PersonPanel({
 }: {
   client: Client;
   person: ShownPerson;
+  service: ShownService | undefined;
   people: readonly ShownPerson[];
   tab: 'tokens' | 'may';
   onTab: (tab: 'tokens' | 'may') => void;
@@ -329,7 +399,7 @@ function PersonPanel({
       description={
         <>
           {person.name !== null && person.email !== null && <span>{person.email} </span>}
-          <Chip>{KINDS[person.kind]}</Chip> {status(person)}
+          <Chip>{KINDS[person.kind]}</Chip> {status(person, service)}
         </>
       }
       onClose={onClose}
@@ -343,12 +413,83 @@ function PersonPanel({
       />
       <div role="tabpanel" id={idsOf(tab).panel} aria-labelledby={idsOf(tab).tab}>
         {tab === 'tokens' ? (
-          <PersonTokens client={client} person={person} onCount={setCount} />
+          <PersonTokens client={client} person={person} service={service} onCount={setCount} />
         ) : (
           <WhatTheyMayDo client={client} person={person} people={people} />
         )}
       </div>
     </SidePanel>
+  );
+}
+
+/**
+ * A new service identity (IAM-033; the G8 plan, G8-J): a name and what it is for. It may do nothing
+ * until it is given access and a token, as a person is.
+ */
+function NewService({
+  client,
+  onClose,
+  onDone,
+}: {
+  client: Client;
+  onClose: () => void;
+  onDone: (said: string) => void;
+}) {
+  const id = useId();
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [said, setSaid] = useState('');
+  const [sending, setSending] = useState(false);
+  const make = async () => {
+    if (name.trim() === '') {
+      setSaid('Give the service identity a name.');
+      return;
+    }
+    setSending(true);
+    try {
+      const { data, error } = await client.POST('/v1/service-identities', {
+        body: { name: name.trim(), description: description.trim() },
+      });
+      if (data) {
+        onDone(`Made ${data.name}. Give it access, then a token from its API tokens.`);
+        return;
+      }
+      setSaid(refusal(error, 'The service identity could not be made.'));
+    } catch {
+      setSaid('The service identity could not be made.');
+    } finally {
+      setSending(false);
+    }
+  };
+  return (
+    <Modal labelledBy={id} onClose={onClose}>
+      <section>
+        <h2 id={id}>New service identity</h2>
+        <p>
+          For an integration or an agent: it acts as itself, never as a person, and may do only what
+          it is given access to.
+        </p>
+        <label>
+          Name
+          <input value={name} maxLength={80} onChange={(event) => setName(event.target.value)} />
+        </label>
+        <label>
+          What it is for
+          <input
+            value={description}
+            maxLength={500}
+            onChange={(event) => setDescription(event.target.value)}
+          />
+        </label>
+        <p role="status">{said}</p>
+        <button type="button" onClick={onClose}>
+          Cancel
+        </button>
+        <button type="button" className="primary" disabled={sending} onClick={() => void make()}>
+          Make
+        </button>
+      </section>
+    </Modal>
   );
 }
 
@@ -445,6 +586,9 @@ export function People({ client }: { client: Client }) {
   const [tab, setTab] = useState<'people' | 'invitations'>('people');
   const [generation, setGeneration] = useState(0);
   const people = usePeople(client, generation);
+  const services = useServices(client, generation);
+  const [making, setMaking] = useState(false);
+  const [disabling, setDisabling] = useState<ShownPerson | null>(null);
   const [loadInvitations] = useState(
     () => () =>
       everyPage<InvitationRow>((cursor) =>
@@ -503,6 +647,23 @@ export function People({ client }: { client: Client }) {
     setGeneration((count) => count + 1);
   };
 
+  const disable = async (person: ShownPerson) => {
+    try {
+      const { data, error } = await client.POST('/v1/service-identities/{id}/disablement', {
+        params: { path: { id: person.id } },
+      });
+      setSaid(
+        data
+          ? `Disabled ${nameOf(person)}: its tokens no longer work.`
+          : refusal(error, 'The service identity could not be disabled.'),
+      );
+    } catch {
+      setSaid('The service identity could not be disabled.');
+    }
+    setDisabling(null);
+    setGeneration((count) => count + 1);
+  };
+
   const listed: readonly ShownPerson[] =
     people.rows !== null && typeof people.rows === 'object' ? people.rows : [];
   const shownPeople = listed.filter((person) => {
@@ -517,9 +678,14 @@ export function People({ client }: { client: Client }) {
     <>
       <div className={styles['lead']}>
         <p>Everybody who has signed in to this environment, or been invited to.</p>
-        <button type="button" className="primary" onClick={() => setInviting(true)}>
-          <Icon name="Invite people" /> Invite people
-        </button>
+        <span>
+          <button type="button" onClick={() => setMaking(true)}>
+            New service identity
+          </button>{' '}
+          <button type="button" className="primary" onClick={() => setInviting(true)}>
+            <Icon name="Invite people" /> Invite people
+          </button>
+        </span>
       </div>
       <PanelTabs
         label="People and invitations"
@@ -620,7 +786,7 @@ export function People({ client }: { client: Client }) {
                             </span>
                           </td>
                           <td>{KINDS[person.kind]}</td>
-                          <td>{status(person)}</td>
+                          <td>{status(person, services.get(person.id))}</td>
                           <td>
                             <RowActions
                               subject={nameOf(person)}
@@ -642,6 +808,15 @@ export function People({ client }: { client: Client }) {
                                   label: 'What they may do',
                                   onSelect: () => setOpen({ person, tab: 'may' }),
                                 },
+                                ...(services.get(person.id)?.disabledAt === null
+                                  ? [
+                                      {
+                                        label: 'Disable',
+                                        danger: true,
+                                        onSelect: () => setDisabling(person),
+                                      },
+                                    ]
+                                  : []),
                                 ...(erasable(person)
                                   ? [
                                       {
@@ -674,6 +849,7 @@ export function People({ client }: { client: Client }) {
                     key={open.person.id}
                     client={client}
                     person={open.person}
+                    service={services.get(open.person.id)}
                     people={listed}
                     tab={open.tab}
                     onTab={(chosen) => setOpen({ ...open, tab: chosen })}
@@ -817,6 +993,28 @@ export function People({ client }: { client: Client }) {
             if (open?.person.id === erasing.id) setOpen(null);
             setGeneration((count) => count + 1);
           }}
+        />
+      )}
+      {making && (
+        <NewService
+          client={client}
+          onClose={() => setMaking(false)}
+          onDone={(words) => {
+            setMaking(false);
+            setSaid(words);
+            setFilter('Services');
+            setGeneration((count) => count + 1);
+          }}
+        />
+      )}
+      {disabling !== null && (
+        <ConfirmDialog
+          question={`Disable ${nameOf(disabling)}?`}
+          sentence="Its tokens stop working at once, and it is issued no more. What it did still names it."
+          keep="Keep it"
+          act="Disable"
+          onKeep={() => setDisabling(null)}
+          onAct={() => disable(disabling)}
         />
       )}
       {withdrawing !== null && (

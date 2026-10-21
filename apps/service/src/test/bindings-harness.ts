@@ -139,7 +139,7 @@ export interface Harness {
   readonly lines: string[];
   call(
     as: string,
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+    method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
     url: string,
     payload?: unknown,
   ): Promise<LightMyRequestResponse>;
@@ -155,7 +155,7 @@ export interface Harness {
   /** Calls as `call` does, with a personal token in place of a session. */
   bearer(
     token: string,
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+    method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
     url: string,
     payload?: unknown,
   ): Promise<LightMyRequestResponse>;

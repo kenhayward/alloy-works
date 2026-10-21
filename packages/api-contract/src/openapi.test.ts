@@ -120,9 +120,10 @@ describe('the OpenAPI document', () => {
     };
     for (const [path, byMethod] of Object.entries(document.paths)) {
       for (const [method, operation] of Object.entries(byMethod as Record<string, unknown>)) {
-        // The one secret the API answers: a personal token's own, once, to the person who made it
-        // (service-foundations.md, TK-A), which is no connection's.
-        if ((operation as { operationId?: string }).operationId === 'createToken') continue;
+        // The one secret the API answers: a token's own, once, to the person who made it or the
+        // administrator who issued it to a service identity (TK-A, G8-H), which is no connection's.
+        const issuing = (operation as { operationId?: string }).operationId;
+        if (issuing === 'createToken' || issuing === 'issueServiceIdentityToken') continue;
         walk((operation as { responses?: unknown }).responses, `${method} ${path}`);
       }
     }

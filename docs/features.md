@@ -1392,6 +1392,13 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   within two seconds, and its next request is refused. No device or address is kept, so sessions are
   told apart by their times. Through the API it is `GET /v1/sessions`, `DELETE /v1/sessions/{id}` and
   `DELETE /v1/sessions`, with a session alone.
+- **Service identities, for integrations and agents.** In Administration's People, **New service
+  identity** makes one with a name and what it is for: a principal of its own that acts as itself,
+  never as a person, which no sign-in or invitation can become. It may do nothing until it is given
+  access, as a person is. Its panel issues it API tokens, shown once, that act as it alone; **Disable**,
+  under More actions, asks first, then stops every token it holds at once and issues it no more, and
+  it is kept so what it did still names it. Through the API it is `/v1/service-identities`, an
+  administrator's with a signed-in session.
 - **An administrator revokes anybody's tokens.** In Administration's People - a table of each person's kind and status,
   found by name and shown by kind, a page at a time - **API tokens** beside a person opens theirs in a
   panel beside the list, with what they may do across the environment and why, each token with

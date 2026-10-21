@@ -77,7 +77,7 @@ async function stateOf(
   let principal = trx
     .selectFrom('principal')
     .select(['id', 'kind'])
-    .select(sql<boolean>`issuer is null`.as('invited'))
+    .select(sql<boolean>`issuer is null and kind <> 'service'`.as('invited'))
     .select(erasedIn().as('erased'))
     .where('id', '=', person);
   if (lock) principal = principal.forUpdate();

@@ -362,6 +362,7 @@ export async function claimInvitation(
     })
     .where('id', '=', open.principal_id)
     .where('issuer', 'is', null)
+    .where('kind', '<>', 'service')
     .executeTakeFirst();
   // No code path leaves an invitation pointing at a principal who already has an identity, but this
   // is the one place that would silently hand somebody else's signed-in account to a claim if it

@@ -70,14 +70,17 @@ const shown = (token: ShownToken): ShownToken => ({
  * with Copy. The secret lives in this dialog's state alone - never in storage, the address or a log -
  * and goes when the dialog does, however it is closed.
  */
-function NewToken({
+export function NewToken({
   client,
   onIssued,
   onClose,
+  holder,
 }: {
   client: Client;
   onIssued: (token: ShownToken) => void;
   onClose: () => void;
+  /** A service identity an administrator issues it to (the G8 plan, G8-J); the caller's own if none. */
+  holder?: { readonly id: string; readonly name: string };
 }) {
   const [name, setName] = useState('');
   const [scopes, setScopes] = useState<ReadonlySet<string>>(new Set());
@@ -103,7 +106,11 @@ function NewToken({
   const create = async () => {
     const trimmed = name.trim();
     if (trimmed === '') {
-      setProblem('Give the token a name, to tell it apart from your others.');
+      setProblem(
+        holder === undefined
+          ? 'Give the token a name, to tell it apart from your others.'
+          : 'Give the token a name, to tell it apart from its others.',
+      );
       return;
     }
     const expiresAt = fromDateField(expiry);
@@ -118,13 +125,18 @@ function NewToken({
     setProblem('');
     setSending(true);
     try {
-      const { data, error } = await client.POST('/v1/tokens', {
-        body: {
-          name: trimmed,
-          scopes: tokenScopes.filter((scope) => scopes.has(scope)),
-          expiresAt: expiresAt.toISOString(),
-        },
-      });
+      const body = {
+        name: trimmed,
+        scopes: tokenScopes.filter((scope) => scopes.has(scope)),
+        expiresAt: expiresAt.toISOString(),
+      };
+      const { data, error } =
+        holder === undefined
+          ? await client.POST('/v1/tokens', { body })
+          : await client.POST('/v1/service-identities/{id}/tokens', {
+              params: { path: { id: holder.id } },
+              body,
+            });
       if (data) {
         onIssued(shown(data as ShownToken));
         setSecret((data as { secret: string }).secret);
@@ -152,7 +164,9 @@ function NewToken({
     <Modal labelledBy="new-token-heading" onClose={close}>
       {secret === null ? (
         <section aria-labelledby="new-token-heading">
-          <h2 id="new-token-heading">New token</h2>
+          <h2 id="new-token-heading">
+            {holder === undefined ? 'New token' : `New token for ${holder.name}`}
+          </h2>
           <label>
             Name
             <input
@@ -175,8 +189,9 @@ function NewToken({
           <fieldset className={styles['scopes']}>
             <legend>What it may do besides reading</legend>
             <p className={styles['muted']}>
-              Reading is always allowed: a token reads what you read. It can never do more than you
-              may, whatever is chosen here.
+              {holder === undefined
+                ? 'Reading is always allowed: a token reads what you read. It can never do more than you may, whatever is chosen here.'
+                : `Reading is always allowed: a token reads what ${holder.name} reads. It can never do more than ${holder.name} may, whatever is chosen here.`}
             </p>
             {tokenScopes.map((scope) => (
               <label key={scope} className={styles['scope']}>
@@ -209,7 +224,9 @@ function NewToken({
         </section>
       ) : (
         <section aria-labelledby="new-token-heading">
-          <h2 id="new-token-heading">Copy your token</h2>
+          <h2 id="new-token-heading">
+            {holder === undefined ? 'Copy your token' : 'Copy the token'}
+          </h2>
           <p className={styles['warning']}>
             Copy it now: this token will not be shown again, and nobody can find it for you later.
             Keep it as you would a password.

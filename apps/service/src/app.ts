@@ -83,6 +83,7 @@ import { auditHandlers, tenantExportHandlers } from './audit-log.js';
 import { assistantHandlers } from './generation/assistant.js';
 import { generatedHandlers } from './generation/generated.js';
 import { modelEndpointHandlers } from './generation/models.js';
+import { serviceIdentityHandlers } from './service-identities.js';
 import { promptHandlers, promptLibraryHandlers } from './generation/prompts.js';
 import { promptRunHandlers } from './generation/prompt-runs.js';
 import { guardrailHandlers } from './generation/guardrails.js';
@@ -571,6 +572,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...settingsHandlers(db, tenantOf),
     ...tokenHandlers(db, tenantOf, principalOf),
     ...administeredTokenHandlers(),
+    ...serviceIdentityHandlers(),
     ...auditHandlers(tenantOf, options.objects),
     ...tenantExportHandlers(tenantOf, options.objects),
     ...rangePreviewHandlers(),
@@ -1069,6 +1071,8 @@ export function buildApp(options: AppOptions): FastifyInstance {
         contextOf(request),
       );
       if (replayed) void reply.header(IDEMPOTENT_REPLAYED, 'true');
+      // A token's secret, answered once, is never kept by a cache on the way (the G8 plan, G8-H).
+      if (operation === 'issueServiceIdentityToken') void reply.header('Cache-Control', 'no-store');
       if (body instanceof Streamed) return sendStreamed(request, reply, body);
       // The deciding transaction has committed, and its lock on access with it: the rest of the work -
       // a connector's, say - holds back no grant or revocation (the D1 fix, C4).

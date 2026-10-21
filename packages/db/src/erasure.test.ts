@@ -58,14 +58,18 @@ describe('erasure of a person', () => {
       const subject = randomUUID();
       const row = await trx
         .insertInto('principal')
-        .values({
-          issuer: ISSUER,
-          subject,
-          email: `${subject}@example.test`,
-          email_verified: true,
-          display_name: name,
-          kind,
-        })
+        .values(
+          kind === 'service'
+            ? { issuer: null, subject: null, email: null, display_name: name, kind }
+            : {
+                issuer: ISSUER,
+                subject,
+                email: `${subject}@example.test`,
+                email_verified: true,
+                display_name: name,
+                kind,
+              },
+        )
         .returning('id')
         .executeTakeFirstOrThrow();
       return { id: row.id, subject, email: `${subject}@example.test` };

@@ -77,7 +77,7 @@ describe('what each route checks', () => {
     }
   });
 
-  it('takes a session alone for signing out, the event stream, managing tokens as their owner or as an administrator (TK-D, TK-E), seeing and ending sessions, presence, the inbox, what waits, the development sample, erasing a person and the assistant, each declaring the 403 a token is refused with', () => {
+  it('takes a session alone for signing out, the event stream, managing tokens as their owner or as an administrator (TK-D, TK-E), seeing and ending sessions, presence, the inbox, what waits, the development sample, erasing a person, the assistant and service identities, each declaring the 403 a token is refused with', () => {
     const sessionAlone = allRoutes
       .filter((route) => route.access.check !== 'none' && route.access.credential === 'session')
       .map((route) => route.operationId)
@@ -125,6 +125,11 @@ describe('what each route checks', () => {
         'revokeToken',
         'setInboxPreferences',
         'signOut',
+        'listServiceIdentities',
+        'createServiceIdentity',
+        'changeServiceIdentity',
+        'disableServiceIdentity',
+        'issueServiceIdentityToken',
       ].sort(),
     );
     for (const route of allRoutes) {

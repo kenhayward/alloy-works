@@ -4603,6 +4603,90 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/service-identities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The environment's service identities, a page at a time
+         * @description Lists the environment’s service identities: what each is for, who made it, whether it is disabled, and how many tokens it holds. Needs administer at the environment, with a signed-in session.
+         */
+        get: operations["listServiceIdentities"];
+        put?: never;
+        /**
+         * Make a service identity: a principal of its own, never a person, with no roles yet
+         * @description Makes a service identity, a principal of its own kind for an integration or agent: never a person, never signed in as, and no invitation claims it. It has no roles until granted some, as a person is. Recorded as made. Needs administer at the environment, with a signed-in session.
+         */
+        post: operations["createServiceIdentity"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/service-identities/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Rename a service identity or change what it says it is for
+         * @description Renames a service identity or changes what it says it is for. Recorded as renamed when anything changed. Needs administer at the environment, with a signed-in session.
+         */
+        patch: operations["changeServiceIdentity"];
+        trace?: never;
+    };
+    "/v1/service-identities/{id}/disablement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Disable a service identity: its tokens are refused at their next request
+         * @description Disables a service identity: every token it holds is revoked at once, each recorded, and no more are issued. Kept, so what it did still names it. Needs administer at the environment, with a signed-in session.
+         */
+        post: operations["disableServiceIdentity"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/service-identities/{id}/tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Issue a service identity a token that acts as it, masked to its scopes, until it expires
+         * @description Issues a service identity a token that acts as it, masked to its scopes and lasting at most 365 days; its secret is answered this once. A token acts only as the service identity it was issued to, never as the administrator who issued it. Recorded as a token issued. Needs administer at the environment, with a signed-in session.
+         */
+        post: operations["issueServiceIdentityToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/sessions": {
         parameters: {
             query?: never;
@@ -76613,6 +76697,775 @@ export interface operations {
             };
             /** @description A baseline the caller may not read, or none by that id */
             404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listServiceIdentities: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: string;
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of service identities */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "next": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        items: {
+                            /** @description Its principal, which grants name as they name a person */
+                            id: string;
+                            name: string;
+                            description: string;
+                            /** @description The administrator who made it */
+                            createdBy: string | null;
+                            createdAt: string;
+                            /** @description When it was disabled, its tokens revoked and no more issued; null while it may act */
+                            disabledAt: string | null;
+                            /** @description Its tokens not yet revoked */
+                            tokens: number;
+                        }[];
+                        /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
+                        next: string | null;
+                    };
+                };
+            };
+            /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description forbidden: the caller may not administer this environment; or token_not_allowed: service identities are managed with a signed-in session, never a token */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    createServiceIdentity: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "name": "example"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description 1 to 80 characters, trimmed */
+                    name: string;
+                    /**
+                     * @description What it is for and who looks after it: at most 500 characters, trimmed
+                     * @default
+                     */
+                    description?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Made */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "name": "example",
+                     *       "description": "example",
+                     *       "createdBy": "example",
+                     *       "createdAt": "example",
+                     *       "disabledAt": "example",
+                     *       "tokens": -9007199254740991
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Its principal, which grants name as they name a person */
+                        id: string;
+                        name: string;
+                        description: string;
+                        /** @description The administrator who made it */
+                        createdBy: string | null;
+                        createdAt: string;
+                        /** @description When it was disabled, its tokens revoked and no more issued; null while it may act */
+                        disabledAt: string | null;
+                        /** @description Its tokens not yet revoked */
+                        tokens: number;
+                    };
+                };
+            };
+            /** @description invalid_request */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description forbidden: the caller may not administer this environment; or token_not_allowed: service identities are managed with a signed-in session, never a token */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    changeServiceIdentity: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /** @example {} */
+                "application/json": {
+                    /** @description 1 to 80 characters, trimmed */
+                    name?: string;
+                    /** @description What it is for and who looks after it: at most 500 characters, trimmed */
+                    description?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Changed */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "name": "example",
+                     *       "description": "example",
+                     *       "createdBy": "example",
+                     *       "createdAt": "example",
+                     *       "disabledAt": "example",
+                     *       "tokens": -9007199254740991
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Its principal, which grants name as they name a person */
+                        id: string;
+                        name: string;
+                        description: string;
+                        /** @description The administrator who made it */
+                        createdBy: string | null;
+                        createdAt: string;
+                        /** @description When it was disabled, its tokens revoked and no more issued; null while it may act */
+                        disabledAt: string | null;
+                        /** @description Its tokens not yet revoked */
+                        tokens: number;
+                    };
+                };
+            };
+            /** @description invalid_request */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description forbidden: the caller may not administer this environment; or token_not_allowed: service identities are managed with a signed-in session, never a token */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such service identity in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    disableServiceIdentity: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Disabled; kept, so what it did still names it */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "name": "example",
+                     *       "description": "example",
+                     *       "createdBy": "example",
+                     *       "createdAt": "example",
+                     *       "disabledAt": "example",
+                     *       "tokens": -9007199254740991
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Its principal, which grants name as they name a person */
+                        id: string;
+                        name: string;
+                        description: string;
+                        /** @description The administrator who made it */
+                        createdBy: string | null;
+                        createdAt: string;
+                        /** @description When it was disabled, its tokens revoked and no more issued; null while it may act */
+                        disabledAt: string | null;
+                        /** @description Its tokens not yet revoked */
+                        tokens: number;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description forbidden: the caller may not administer this environment; or token_not_allowed: service identities are managed with a signed-in session, never a token */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such service identity in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    issueServiceIdentityToken: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "name": "example",
+                 *       "scopes": [],
+                 *       "expiresAt": "2026-01-01T00:00:00.000Z"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description 1 to 80 characters, trimmed */
+                    name: string;
+                    /** @description The permissions it may use: a mask over its creator's grants, never a grant */
+                    scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire")[];
+                    /**
+                     * Format: date-time
+                     * @description When it stops working: required, in the future and at most 365 days away
+                     */
+                    expiresAt: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Issued, with its secret, shown this once */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "name": "example",
+                     *       "scopes": [],
+                     *       "createdAt": "example",
+                     *       "expiresAt": "example",
+                     *       "lastUsedAt": "example",
+                     *       "secret": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        /** @description What the person called it, to tell their tokens apart */
+                        name: string;
+                        /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
+                        scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire")[];
+                        createdAt: string;
+                        /** @description When it stops working; nothing extends a token */
+                        expiresAt: string;
+                        /** @description When a request last used it, to the minute, or null for never */
+                        lastUsedAt: string | null;
+                        /** @description The token, awt_ and 43 characters, shown this once: only its hash is kept */
+                        secret: string;
+                    };
+                };
+            };
+            /** @description invalid_request, or token_expiry_invalid: an expiry past, or more than 365 days away */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description forbidden: the caller may not administer this environment; or token_not_allowed: service identities are managed with a signed-in session, never a token */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such service identity in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description service_identity_disabled: a disabled service identity is issued nothing */
+            409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;

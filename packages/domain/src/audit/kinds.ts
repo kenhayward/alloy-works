@@ -248,6 +248,13 @@ export const auditKindSpecs = {
   ),
   'token.used': kind(['IAM-037'], empty, 'packages/db/src/api-tokens.ts'),
   'token.revoked': kind(['IAM-037'], empty, 'packages/db/src/api-tokens.ts'),
+  'service_identity.created': kind(['IAM-033'], empty, 'packages/db/src/service-identities.ts'),
+  'service_identity.renamed': kind(['IAM-033'], empty, 'packages/db/src/service-identities.ts'),
+  'service_identity.disabled': kind(
+    ['IAM-033', 'IAM-035'],
+    z.strictObject({ tokens: z.number().int().min(0) }),
+    'packages/db/src/service-identities.ts',
+  ),
   'space.made': kind(['ADM-002', 'ADM-049', 'LIF-067'], empty, 'packages/db/src/spaces.ts'),
   'space.renamed': kind(['ADM-002', 'ADM-049', 'LIF-067'], empty, 'packages/db/src/spaces.ts'),
   'space.archived': kind(['ADM-002', 'ADM-049', 'LIF-067'], empty, 'packages/db/src/spaces.ts'),

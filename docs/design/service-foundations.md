@@ -29,6 +29,7 @@ generated from them and committed, and the renderer's client is generated from t
 | **IAM-003** | Authority comes from the session found; the hostname only chooses where to look, and a session exists only in the tenant that issued it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | **IAM-004** | A shared harness gives every route a test that signs in to one tenant and calls with another's hostname and ids, and must be refused                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | **IAM-007** | The organisation's provider is an OpenID Connect authorisation code flow with PKCE, redirecting to each environment's own hostname                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| **IAM-033** | A service identity is a principal of kind `service` with no issuer, subject or address, made by an administrator; no sign-in, invitation claim or update makes one from a person, or a person from one (G8)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | **IAM-034** | An API token is a row with explicit scopes, chosen from the closed permission set, and an expiry that cannot be left unset; the scopes mask its creator's grants at every decision, so it can do less than its creator and never more (TK-A)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | **IAM-035** | A token or session is checked against its row on every request, so deleting the row revokes it at once                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | **IAM-039** | Signing out deletes the session row, which ends it in every browser and device presenting that cookie                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
@@ -242,7 +243,8 @@ sessions apart by when each began and was last used.
 ### Personal tokens, as W12 builds them
 
 [ADR-0028](../decisions/0028-personal-api-tokens-in-t1.md) settles what a T1 token is. It belongs to a
-person, acts as that person, and can do no more than they may do. Service identities (IAM-033) are T5's.
+person, acts as that person, and can do no more than they may do. A service identity's tokens are
+the same, issued by an administrator ([Service identities](#service-identities)).
 W12 builds the rest of this section ([W12](../plans/2026-09-28-w12-identity.md)).
 
 **A token is a mask over its creator's grants** (IAM-034, IAM-062):
@@ -291,6 +293,26 @@ W12 builds the rest of this section ([W12](../plans/2026-09-28-w12-identity.md))
 person's tokens by name, with their scopes, their expiry and when each was last used. It issues one,
 showing the secret once with a way to copy it, and revokes one. An administrator reaches anybody's from
 Administration's People.
+
+### Service identities
+
+Built by [G8](../plans/2026-10-21-g8-mcp-and-service-identities.md) (ADR-0065), for an integration or
+an agent that acts as itself (IAM-033):
+
+- **A principal of kind `service`** with no issuer, subject or address (0138), so no sign-in finds it
+  and no invitation claims it. A trigger refuses a person becoming a service, a service becoming a
+  person, and a service gaining an issuer, subject or address. It is never shown as invited, and never
+  counts as the last administrator.
+- **Made, renamed and disabled by an administrator with a session**, at `/v1/service-identities`, each
+  recorded (`service_identity.created`, `.renamed`, `.disabled`). It holds no roles until granted some,
+  as a person is, through `/v1/grants`.
+- **Its tokens are issued by an administrator** at `POST /v1/service-identities/{id}/tokens`, as a
+  person's own are (TK-A to TK-F), and listed and revoked at the administered token routes. A token acts
+  only as the principal it was issued to.
+- **Disabling revokes every token at once** (IAM-035), each recorded, and refuses more. The principal
+  stays, so what it did still names it.
+- Shown in Administration's People, under Services: New service identity, its tokens in its panel,
+  and Disable in its row.
 
 #### Decisions for Ken
 

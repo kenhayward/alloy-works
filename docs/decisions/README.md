@@ -57,6 +57,7 @@ exist.
 | [0061](0061-t9s-order.md)                                                         | T9's order                                                                    | Accepted           |
 | [0062](0062-a-templates-query-set-is-computed.md)                                 | A template's query set is computed                                            | Accepted           |
 | [0064](0064-model-calls-leave-through-the-connector.md)                           | Model calls leave through the connector                                       | Accepted           |
+| [0065](0065-mcp-is-a-few-tools-over-the-api.md)                                   | MCP is a few tools over the API, as their caller                              | Accepted           |
 | [0063](0063-a-line-is-numbered-below-the-main-line.md)                            | A line is numbered below the main line                                        | Accepted           |
 | [0048](0048-plain-http-sources-until-t7.md)                                       | Plain http sources until a tenant can refuse them                             | Accepted           |
 | [0047](0047-workflow-leaves-t3-for-t9.md)                                         | Workflow leaves T3 for T9                                                     | Accepted           |

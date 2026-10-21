@@ -1102,3 +1102,11 @@ export {
   readDatasetSource,
   type DatasetSourceSummary,
 } from './dataset-sources.js';
+export {
+  changeServiceIdentity,
+  createServiceIdentity,
+  disableServiceIdentity,
+  listServiceIdentities,
+  serviceIdentity,
+  type ServiceIdentity,
+} from './service-identities.js';

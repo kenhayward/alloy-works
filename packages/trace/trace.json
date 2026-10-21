@@ -18718,6 +18718,10 @@
           "howItIsMet": "The organisation's provider is an OpenID Connect authorisation code flow with PKCE, redirecting to each environment's own hostname"
         },
         {
+          "id": "IAM-033",
+          "howItIsMet": "A service identity is a principal of kind `service` with no issuer, subject or address, made by an administrator; no sign-in, invitation claim or update makes one from a person, or a person from one (G8)"
+        },
+        {
           "id": "IAM-034",
           "howItIsMet": "An API token is a row with explicit scopes, chosen from the closed permission set, and an expiry that cannot be left unset; the scopes mask its creator's grants at every decision, so it can do less than its creator and never more (TK-A)"
         },
@@ -20690,13 +20694,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 545,
+      "line": 550,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 558,
+      "line": 563,
       "kind": "title"
     },
     {
@@ -21098,7 +21102,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1798,
+      "line": 1814,
       "kind": "title"
     },
     {
@@ -22206,6 +22210,18 @@
       "kind": "title"
     },
     {
+      "id": "IAM-033",
+      "file": "apps/service/src/service-identity-routes.test.ts",
+      "line": 47,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-035",
+      "file": "apps/service/src/service-identity-routes.test.ts",
+      "line": 113,
+      "kind": "title"
+    },
+    {
       "id": "IAM-039",
       "file": "apps/service/src/session-routes.test.ts",
       "line": 80,
@@ -22844,19 +22860,19 @@
     {
       "id": "ADM-049",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1370,
+      "line": 1503,
       "kind": "title"
     },
     {
       "id": "LIF-022",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1512,
+      "line": 1645,
       "kind": "title"
     },
     {
       "id": "VER-038",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 424,
+      "line": 557,
       "kind": "title"
     },
     {
@@ -25646,7 +25662,7 @@
     {
       "id": "API-012",
       "file": "packages/api-contract/src/openapi.test.ts",
-      "line": 189,
+      "line": 190,
       "kind": "title"
     },
     {
@@ -25706,7 +25722,7 @@
     {
       "id": "IAM-062",
       "file": "packages/db/src/access-schema.test.ts",
-      "line": 171,
+      "line": 172,
       "kind": "title"
     },
     {
@@ -26360,7 +26376,7 @@
     {
       "id": "VER-038",
       "file": "packages/db/src/erasure.test.ts",
-      "line": 285,
+      "line": 289,
       "kind": "title"
     },
     {
@@ -27210,6 +27226,18 @@
       "kind": "title"
     },
     {
+      "id": "IAM-033",
+      "file": "packages/db/src/service-identities.test.ts",
+      "line": 78,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-035",
+      "file": "packages/db/src/service-identities.test.ts",
+      "line": 159,
+      "kind": "title"
+    },
+    {
       "id": "PUB-057",
       "file": "packages/db/src/shares.test.ts",
       "line": 137,
@@ -27806,13 +27834,13 @@
     {
       "id": "LIF-030",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 243,
+      "line": 246,
       "kind": "title"
     },
     {
       "id": "LIF-070",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 224,
+      "line": 227,
       "kind": "title"
     },
     {
