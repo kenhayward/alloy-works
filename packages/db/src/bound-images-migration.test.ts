@@ -252,6 +252,7 @@ describe('migration 0052, which widens dataset_take to an image', () => {
       '0139_webhooks',
       '0140_webhook_notification',
       '0141_extensions',
+      '0142_webhook_delivery_ids',
     ]);
     const kept = await queryAs(
       db.adminUrl,

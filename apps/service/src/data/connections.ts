@@ -54,6 +54,7 @@ import {
   checkParameterValues,
   checkQueryDefinition,
   checkTree,
+  capabilityProblems,
   connectionFetchProblems,
   connectionSettingsSchema,
   headerValueProblem,
@@ -347,8 +348,11 @@ async function extensionSnapshotProblems(
     problems.push(problem('capabilities', 'The capabilities are the manifest’s'));
   }
   for (const field of manifest.settings) {
-    const given = source.settings[field.key];
-    if (given === undefined) {
+    // Its own member alone, never one every object inherits; an empty text is no value.
+    const given = Object.hasOwn(source.settings, field.key)
+      ? source.settings[field.key]
+      : undefined;
+    if (given === undefined || (typeof given === 'string' && given.trim() === '')) {
       if (field.required)
         problems.push(problem(`settings.${field.key}`, `${field.label} is required`));
       continue;
@@ -973,8 +977,8 @@ export function connectionHandlers(
 
     describeConnection: async (request: FastifyRequest, { trx, facts }: Authorised) => {
       const { id } = request.params as ConnectionParams;
-      const { sql, builder, http, file } = request.body as DescribeBody;
-      if ([sql, builder, http, file].filter((each) => each !== undefined).length > 1) {
+      const { sql, builder, http, file, extension } = request.body as DescribeBody;
+      if ([sql, builder, http, file, extension].filter((each) => each !== undefined).length > 1) {
         throw definitionRefused([
           {
             rule: 'definition_invalid',
@@ -990,21 +994,36 @@ export function connectionHandlers(
       const connection = await runnable(trx, id);
       // What is described suits the connection's type; neither HTTP nor S3 lists tables (D6-A).
       const asked =
-        file !== undefined
-          ? { kind: 'file' as const, key: file.key, format: file.format }
-          : http !== undefined
-            ? { kind: 'http' as const, request: http.request, format: http.format }
-            : sql !== undefined
-              ? { kind: 'sql' as const, text: sql.text }
-              : builder !== undefined
-                ? { kind: 'builder' as const, format: 1 as const, query: builder.query }
-                : undefined;
+        extension !== undefined
+          ? { kind: 'extension' as const, request: extension.request }
+          : file !== undefined
+            ? { kind: 'file' as const, key: file.key, format: file.format }
+            : http !== undefined
+              ? { kind: 'http' as const, request: http.request, format: http.format }
+              : sql !== undefined
+                ? { kind: 'sql' as const, text: sql.text }
+                : builder !== undefined
+                  ? { kind: 'builder' as const, format: 1 as const, query: builder.query }
+                  : undefined;
       if (asked === undefined && connection.settings.type !== 'postgres') {
         throw dataRefused(409, 'describe_not_supported');
       }
       if (asked !== undefined) {
         const unsuited = connectionFetchProblems(asked, connection.settings);
         if (unsuited.length > 0) throw definitionRefused(unsuited);
+      }
+      // An extension's request is its own: only its values are held to their declarations (EX-G).
+      if (extension !== undefined) {
+        const problems = [
+          ...capabilityProblems(extension, connection.settings),
+          ...checkParameterValues(extension.parameters, extension.values as ParameterValues),
+        ];
+        if (problems.length > 0) {
+          throw refused(400, 'parameter.invalid', 'A value does not fit its parameter.', {
+            attribution: 'product',
+            problems,
+          });
+        }
       }
       const sampled = http ?? file;
       if (sampled !== undefined) {
@@ -1054,6 +1073,26 @@ export function connectionHandlers(
       };
       // Decided and read here; the connector is asked once this transaction, and its lock on access,
       // is let go (the D1 fix, C4). A describe records nothing.
+      if (extension !== undefined) {
+        const values = extension.values as Record<string, string>;
+        return new AfterCommit(() =>
+          whileHeld(request, async (signal) => {
+            const described = answered(
+              await client.describeSql(
+                {
+                  ...describing,
+                  deadlineMs: HTTP_SAMPLE_DEADLINE_MS,
+                  extension: { ...extension, values },
+                },
+                signal,
+              ),
+            );
+            if ('failure' in described)
+              throw dataRefused(describedStatus(described.failure), described.failure);
+            return described;
+          }),
+        );
+      }
       if (sampled !== undefined) {
         // An HTTP request is sent, or an object read, to sample its columns, as the account: no
         // person runs either (ADR-0041; an S3 connection declares no person, DAT-077).
@@ -1219,7 +1258,10 @@ export function connectionHandlers(
         ]);
       }
       // A fetch of the connection's type, by the version it runs on (D6-A).
-      const unsuited = connectionFetchProblems(draft.fetch, connection.settings);
+      const unsuited = [
+        ...connectionFetchProblems(draft.fetch, connection.settings),
+        ...capabilityProblems(draft, connection.settings),
+      ];
       if (unsuited.length > 0) throw definitionRefused(unsuited);
       // Every value against its declaration, and an HTTP value or a key's against its position,
       // before the connector is asked (DAT-020, DAT-081).

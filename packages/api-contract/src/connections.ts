@@ -3,6 +3,7 @@ import {
   builderFetchSchema,
   connectionSettingsSchema,
   dataFormatSchema,
+  extensionFetchSchema,
   httpFetchSchema,
   objectKeySchema,
   ranDatasetSchema,
@@ -300,6 +301,18 @@ export const FileSampleBody = z.strictObject({
     .describe("Each parameter's value by name, in its type's canonical form"),
 });
 
+/**
+ * An extension's request sampled for its columns (DAT-105; the EX plan, EX-G): sent to its `/run`, and
+ * each member of its first rows proposed as a column read by its pointer.
+ */
+export const ExtensionSampleBody = z.strictObject({
+  request: extensionFetchSchema.shape.request,
+  parameters: z.array(parameterSchema).max(50),
+  values: z
+    .record(z.string(), z.union([z.string(), z.boolean(), z.null(), z.array(z.string())]))
+    .describe("Each parameter's value by name, in its type's canonical form"),
+});
+
 export const DescribeBody = z.strictObject({
   sql: SqlStatementBody.optional().describe(
     "A statement to describe instead of the source's tables and views: its result's columns, never run",
@@ -311,7 +324,10 @@ export const DescribeBody = z.strictObject({
     "An HTTP connection's request, sent and its first rows read to propose its columns, each read by a pointer: an HTTP connection lists no tables. Send one of sql, builder, http and file",
   ),
   file: FileSampleBody.optional().describe(
-    "An S3 connection's object, read and its first rows read to propose its columns, each by a pointer, a header or a letter: an S3 connection lists no tables. Send one of sql, builder, http and file",
+    "An S3 connection's object, read and its first rows read to propose its columns, each by a pointer, a header or a letter: an S3 connection lists no tables. Send one of sql, builder, http, file and extension",
+  ),
+  extension: ExtensionSampleBody.optional().describe(
+    "An extension connection's request, sent and its first rows read to propose its columns, each by a pointer. Send one of sql, builder, http, file and extension",
   ),
 });
 export type DescribeBody = z.infer<typeof DescribeBody>;

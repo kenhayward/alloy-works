@@ -151,6 +151,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0139_webhooks',
       '0140_webhook_notification',
       '0141_extensions',
+      '0142_webhook_delivery_ids',
     ]);
 
     const read = async () =>

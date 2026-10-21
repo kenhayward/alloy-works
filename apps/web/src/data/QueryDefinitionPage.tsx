@@ -19,6 +19,7 @@ import {
   definitionOf,
   draftOf,
   everyColumnConfirmed,
+  extensionRequestOf,
   fitFilters,
   generatedSql,
   keyNamed,
@@ -63,7 +64,7 @@ import { Segmented } from '../parts/Segmented.js';
 import type { StripCell } from '../parts/StateStrip.js';
 import { Tooltip } from '../parts/Tooltip.js';
 import styles from './QueryDefinitionPage.module.css';
-import { isRecord, isRelations, refusalText, type Described } from './shapes.js';
+import { isConnectionView, isRecord, isRelations, refusalText, type Described } from './shapes.js';
 import { isUses, PagedUses, type Uses } from './uses.js';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -114,6 +115,7 @@ function isDefinitionView(value: unknown): value is DefinitionView {
       ((statement.kind === 'builder' || statement.kind === 'dataset') &&
         isRecord(statement.query)) ||
       (statement.kind === 'http' && isRecord(statement.request) && isRecord(statement.format)) ||
+      (statement.kind === 'extension' && isRecord(statement.request)) ||
       (statement.kind === 'file' && Array.isArray(statement.key) && isRecord(statement.format))) &&
     Array.isArray(definition.parameters) &&
     Array.isArray(definition.columns) &&
@@ -732,6 +734,11 @@ function ReadOnlyStatement({ definition }: { readonly definition: QueryDefinitio
       <figcaption>The request it sends, after the connection&apos;s base URL</figcaption>
       <pre className={styles['sql']}>{sqlOf(definition)}</pre>
     </figure>
+  ) : statement.kind === 'extension' ? (
+    <figure className={styles['generated']}>
+      <figcaption>The request it sends to the extension</figcaption>
+      <pre className={styles['sql']}>{sqlOf(definition)}</pre>
+    </figure>
   ) : statement.kind === 'file' ? (
     <figure className={styles['generated']}>
       <figcaption>The object it reads, in the connection&apos;s bucket</figcaption>
@@ -887,14 +894,50 @@ export function QueryDefinitionPage({
     setDraft((held) => {
       if (held.connection !== '') return held;
       const first = places.connections[0]?.id ?? '';
-      // An HTTP connection's query is a request template, an S3 connection's a file (the D6 plan).
+      // An HTTP connection's query is a request template, an S3 connection's a file (the D6 plan),
+      // an extension's its own request (EX-G).
       return {
         ...held,
         connection: first,
-        mode: places.http.has(first) ? 'http' : places.s3.has(first) ? 'file' : held.mode,
+        mode: places.http.has(first)
+          ? 'http'
+          : places.s3.has(first)
+            ? 'file'
+            : places.extension.has(first)
+              ? 'extension'
+              : held.mode,
       };
     });
   }, [isNew, places]);
+
+  // Whether the extension a request is sent to binds parameters, as its connection's snapshot of its
+  // manifest says (DAT-079): null where that could not be read.
+  const [binding, setBinding] = useState<{
+    readonly connection: string;
+    readonly binds: boolean | null;
+  } | null>(null);
+  useEffect(() => {
+    if (draft.mode !== 'extension' || draft.connection === '') return undefined;
+    let current = true;
+    const connection = draft.connection;
+    client
+      .GET('/v1/connections/{id}', { params: { path: { id: connection } } })
+      .then(({ data }) => {
+        const answer: unknown = data;
+        if (!current) return;
+        setBinding({
+          connection,
+          binds:
+            isConnectionView(answer) && answer.settings.type === 'extension'
+              ? answer.settings.source.capabilities.parameters
+              : null,
+        });
+      })
+      .catch(() => current && setBinding({ connection, binds: null }));
+    return () => {
+      current = false;
+    };
+  }, [client, draft.mode, draft.connection]);
 
   /** Runs one act at a time: a second click while one is in flight sends nothing. */
   const act = useCallback(async (name: string, work: () => Promise<void>) => {
@@ -1060,6 +1103,11 @@ export function QueryDefinitionPage({
         setDescribed([query]);
         return;
       }
+      const request = draft.mode === 'extension' ? extensionRequestOf(draft.extension) : null;
+      if (typeof request === 'string') {
+        setDescribed([request]);
+        return;
+      }
       const sent = statementOf(draft);
       try {
         const { data, error } = await client.POST('/v1/connections/{id}/describe', {
@@ -1075,19 +1123,28 @@ export function QueryDefinitionPage({
                     values: sampleValues(keyNamed(draft, draft.parameters), typed) as never,
                   },
                 }
-              : draft.mode === 'http'
+              : request !== null
                 ? {
-                    // An HTTP response is described by its rows: it is sent with the sample's values.
-                    http: {
-                      request: templateOf(draft.http) as never,
-                      format: formatOf(draft.http) as never,
+                    // An extension is described by its rows, as an HTTP response is (EX-G).
+                    extension: {
+                      request,
                       parameters: parameters as never,
                       values: sampleValues(draft.parameters, typed) as never,
                     },
                   }
-                : query === null
-                  ? { sql: { text: draft.sql, parameters: parameters as never } }
-                  : { builder: { query: query as never, parameters: parameters as never } },
+                : draft.mode === 'http'
+                  ? {
+                      // An HTTP response is described by its rows: it is sent with the sample's values.
+                      http: {
+                        request: templateOf(draft.http) as never,
+                        format: formatOf(draft.http) as never,
+                        parameters: parameters as never,
+                        values: sampleValues(draft.parameters, typed) as never,
+                      },
+                    }
+                  : query === null
+                    ? { sql: { text: draft.sql, parameters: parameters as never } }
+                    : { builder: { query: query as never, parameters: parameters as never } },
         });
         const answer: unknown = data;
         if (isRecord(answer) && Array.isArray(answer.columns)) {
@@ -1252,7 +1309,13 @@ export function QueryDefinitionPage({
   const held = editable && !everyColumnConfirmed(draft);
   const connectionName = connections.find((each) => each.id === draft.connection)?.name ?? null;
   const kind =
-    draft.mode === 'http' ? 'an HTTP API' : draft.mode === 'file' ? 'an S3 bucket' : 'a PostgreSQL';
+    draft.mode === 'http'
+      ? 'an HTTP API'
+      : draft.mode === 'file'
+        ? 'an S3 bucket'
+        : draft.mode === 'extension'
+          ? 'an extension'
+          : 'a PostgreSQL';
   const storedName =
     draft.mode === 'dataset'
       ? (stored?.find((each) => each.id === draft.dataset)?.name ??
@@ -1590,9 +1653,13 @@ export function QueryDefinitionPage({
                             ? 'http'
                             : places?.s3.has(chosen) === true
                               ? 'file'
-                              : draft.mode === 'http' || draft.mode === 'file'
-                                ? 'builder'
-                                : draft.mode,
+                              : places?.extension.has(chosen) === true
+                                ? 'extension'
+                                : draft.mode === 'http' ||
+                                    draft.mode === 'file' ||
+                                    draft.mode === 'extension'
+                                  ? 'builder'
+                                  : draft.mode,
                       });
                     }}
                   >
@@ -1787,6 +1854,46 @@ export function QueryDefinitionPage({
         </section>
       );
     }
+    // An extension's: its own request, as JSON, and its parameters where it binds them (EX-G, DAT-079).
+    if (draft.mode === 'extension') {
+      const binds = binding?.connection === draft.connection ? binding.binds : null;
+      return (
+        <section className={`${styles['card']} ${styles['fileCard']}`} aria-label="Query">
+          <Section
+            heading="Request"
+            region={false}
+            hint="Sent to the extension as it is written, with the values bound beside it by name. What it means is the extension's own: at most 64 KiB."
+          >
+            <textarea
+              aria-label="Request, a JSON object"
+              className={`${styles['code']} ${styles['sqlText']}`}
+              rows={14}
+              spellCheck={false}
+              value={draft.extension}
+              onChange={(event) => changeStatement({ extension: event.target.value })}
+            />
+          </Section>
+          {binds === true || draft.parameters.length > 0 ? (
+            <Section
+              heading="Parameters"
+              count={draft.parameters.length}
+              acts={binds === true && <Act words="Add parameter" onClick={addParameter} />}
+            >
+              {parameterLines}
+            </Section>
+          ) : null}
+          {binds !== true && (
+            <p className={styles['hint']}>
+              {binds === false
+                ? 'This extension binds no parameters: its manifest declares none.'
+                : binding?.connection === draft.connection
+                  ? 'Whether this extension binds parameters could not be read, so none are offered.'
+                  : ''}
+            </p>
+          )}
+        </section>
+      );
+    }
     // HTTP: one card too (PQ-E), its request as it is until an HTTP handoff, then its parameters.
     return (
       <section className={`${styles['card']} ${styles['fileCard']}`} aria-label="Query">
@@ -1830,7 +1937,7 @@ export function QueryDefinitionPage({
           hint={
             draft.mode === 'file'
               ? "Sample for columns reads the file with the sample values and proposes a column, and a type, for each field or member of its first rows. A sample cannot prove a decimal's digits: nothing is saved until you have confirmed every one."
-              : draft.mode === 'http'
+              : draft.mode === 'http' || draft.mode === 'extension'
                 ? "Sample for columns sends the request with the sample values and proposes a column, and a type, for each member of the first rows. A sample cannot prove a decimal's digits: nothing is saved until you have confirmed every one."
                 : 'Describe asks the source what the query returns, without running it, and proposes a type for each column. Nothing is saved until you have confirmed every one.'
           }
@@ -1862,7 +1969,7 @@ export function QueryDefinitionPage({
               )}
               {mayRun && (
                 <button type="button" disabled={busy !== null} onClick={describe}>
-                  {draft.mode === 'http' || draft.mode === 'file'
+                  {draft.mode === 'http' || draft.mode === 'file' || draft.mode === 'extension'
                     ? 'Sample for columns'
                     : 'Describe'}
                 </button>

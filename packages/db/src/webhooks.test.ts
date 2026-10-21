@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { webhookAuditTypes, type AuditContext } from '@alloy-works/domain';
 import { sql } from 'kysely';
+import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { recordEvent } from './audit.js';
 import { bootstrapCluster } from './bootstrap.js';
@@ -188,6 +189,30 @@ describe('webhook subscriptions and the deliveries their trigger queues (the WB 
       },
     ]);
     expect(await deliveries(other.id)).toEqual([]);
+  });
+
+  it('queues one act for many subscriptions wanting it, each its own delivery (issue #750)', async () => {
+    // Enough subscriptions, their statistics taken, that the planner may hold a per-statement value.
+    const many = [];
+    for (let each = 0; each < 40; each += 1) {
+      many.push(await subscribe(['artifact.unarchived'], `Receiver ${each}`));
+    }
+    const admin = new pg.Client({ connectionString: db.adminUrl });
+    await admin.connect();
+    try {
+      await admin.query(`analyze ${admin.escapeIdentifier(tenant.schema)}.webhook_subscription`);
+    } finally {
+      await admin.end();
+    }
+    await act('artifact.unarchived', randomUUID());
+    const ids: string[] = [];
+    for (const subscription of many) {
+      for (const each of await deliveries(subscription.id)) {
+        ids.push((each.payload as { id: string }).id);
+      }
+    }
+    expect(ids).toHaveLength(40);
+    expect(new Set(ids).size).toBe(40);
   });
 
   it('queues nothing for a disabled subscription, and disables a service identity disabled', async () => {

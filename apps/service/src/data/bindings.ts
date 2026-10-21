@@ -131,6 +131,7 @@ import {
   type RunRequest,
   type TakeOutcome,
   type ContentDocument,
+  capabilityProblems,
 } from '@alloy-works/domain';
 import { tenantPrefix, type ObjectStores, type TenantStore } from '@alloy-works/objects';
 import type { FastifyRequest } from 'fastify';
@@ -859,6 +860,14 @@ async function prepare(
         : error;
     }
     await requireSqlPermitted(trx, connection, definition.fetch);
+    // Saved against a connection since saved again to a source that binds no parameters (DAT-079).
+    if (capabilityProblems(definition, connection.settings).length > 0) {
+      throw refused(
+        409,
+        'capability.undeclared',
+        `The query definition the binding ${binding.id} names binds parameters, which its connection's source declares it does not.`,
+      );
+    }
     const { sealed } = await through.usableSealed(trx, connection.id);
     const limits = effectiveLimits(definition.limits, await dataPolicy(trx));
     const acting = await through.acting(trx, connection);

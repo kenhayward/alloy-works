@@ -36,3 +36,18 @@ DAT-054, DAT-079).
 - **A hostile extension** answers whatever it likes: data, held to the limits and the shape, its host the declared one and guarded.
 - **The manifest fetch** reads a host an administrator names, as an HTTP connection's sample does, its answer only a parsed manifest or paths.
 - **Pinning holds the declaration, not the behaviour**: the service behind it may change; a connection's snapshot says what it was promised.
+
+## Built
+
+EX in three PRs: EXa #743, EXb #744 and the close #745. Departures: an extension's columns are read
+by pointer (`from: { pointer }`), as an HTTP API's JSON is, and its rows at `/rows`; binding parameters
+on a source declaring none is refused as `definition_invalid` at write, describe and sample, and as
+`capability_undeclared` at a binding's run; `keyColumns` is carried in the snapshot but gates nothing,
+the product enforcing keys whatever is declared (EX-F); an extension taking no secret is refused for
+connections for now. The final review found no leak; it fixed a removal racing a connection saved
+against the extension, an update not held against another, a sample and a run not held to the
+capabilities, the manifest URL refused as the connector refuses it, a setting read through a key every
+object inherits, an empty required setting accepted, and tests claiming a bearer and a refusal they did
+not show. The Administration menu now scrolls itself rather than the page. Left, named: only an
+environment administrator may read the extensions, and so make a connection to one; the same URL may be
+installed twice; an extension that takes no secret.

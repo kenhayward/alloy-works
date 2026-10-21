@@ -1,4 +1,4 @@
-import { extensionManifestSchema } from '@alloy-works/domain';
+import { extensionManifestSchema, httpsUrl } from '@alloy-works/domain';
 import { z } from 'zod';
 import type { RouteContract } from './contract.js';
 import { nextCursor, pageQuery } from './listing.js';
@@ -17,10 +17,10 @@ const Digest = z
   .regex(/^[0-9a-f]{64}$/)
   .describe('SHA-256 of the manifest’s canonical JSON, as its preview gave it');
 
-const manifestUrl = z
-  .url({ protocol: /^https$/ })
-  .max(2000)
-  .describe('Where its manifest is: HTTPS, at most 2,000 characters');
+// Held as the connector holds it, so a URL it would refuse is the caller's 400, never a 503.
+const manifestUrl = httpsUrl.describe(
+  'Where its manifest is: HTTPS, at most 2,000 characters, with no user, password, query or fragment',
+);
 
 export const ExtensionManifestView = extensionManifestSchema.describe(
   'What the extension says it is, takes and does, and where it sends data: its own words',
