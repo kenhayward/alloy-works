@@ -419,6 +419,13 @@ describe('the domain package', () => {
         'printVariables',
         'resolveVariable',
         'variableDefinitionSchema',
+        // Webhooks: the event types, the URL and secret, the secret's sealing (the WB plan).
+        'webhookAuditTypes',
+        'webhookEventTypes',
+        'webhookSealRequestSchema',
+        'webhookSecretContext',
+        'webhookSecretSchema',
+        'webhookUrlSchema',
         // R6: condition axes, profiles, and content as a profile selects it.
         'applyConditions',
         'conditionsIn',

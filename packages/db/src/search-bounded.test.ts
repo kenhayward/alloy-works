@@ -315,7 +315,11 @@ describe('search bounded at scale (SV3)', () => {
     await admin.connect();
     try {
       for (const table of ['search_entry', 'search_text', 'search_history']) {
-        await admin.query(`analyze ${admin.escapeIdentifier(production.schema)}.${table}`);
+        const named = `${admin.escapeIdentifier(production.schema)}.${table}`;
+        // Held to these statistics: autovacuum analysing again as later tests add rows would move the
+        // planner under the plans asserted (CI, #739).
+        await admin.query(`alter table ${named} set (autovacuum_enabled = false)`);
+        await admin.query(`analyze ${named}`);
       }
     } finally {
       await admin.end();

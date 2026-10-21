@@ -217,6 +217,8 @@ describe('the inbox', () => {
       'read_at',
       'recipient',
       'round_id',
+      // Its webhook event's sequence (0139; the WB plan, WB-C).
+      'sequence',
       'thread_id',
     ]);
     // A title is the reader's alone, read when asked.

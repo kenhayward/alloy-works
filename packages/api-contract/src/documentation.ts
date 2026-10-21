@@ -169,6 +169,11 @@ export const documentationGroups = [
         description: 'Issue, list and revoke personal API tokens with a signed-in session.',
       },
       {
+        name: 'Webhooks',
+        description:
+          'Subscribe a service identity’s endpoint to events, signed, and manage its secret.',
+      },
+      {
         name: 'Service identities',
         description:
           'Make and disable service identities for integrations and agents, and issue them tokens.',
@@ -479,6 +484,14 @@ const operationTags = {
     'revokeToken',
     'listPrincipalTokens',
     'revokePrincipalToken',
+  ],
+  Webhooks: [
+    'listWebhooks',
+    'createWebhook',
+    'getWebhook',
+    'changeWebhook',
+    'rotateWebhookSecret',
+    'removeWebhook',
   ],
   'Service identities': [
     'listServiceIdentities',
@@ -1013,6 +1026,18 @@ const descriptions: Readonly<Record<string, string>> = {
     'Disables a service identity: every token it holds is revoked at once, each recorded, and no more are issued. Kept, so what it did still names it. Needs administer at the environment, with a signed-in session.',
   issueServiceIdentityToken:
     'Issues a service identity a token that acts as it, masked to its scopes and lasting at most 365 days; its secret is answered this once. A token acts only as the service identity it was issued to, never as the administrator who issued it. Recorded as a token issued. Needs administer at the environment, with a signed-in session.',
+  listWebhooks:
+    'Lists the environment’s webhook subscriptions: each one’s service identity, URL, event types and whether it is disabled, never its secret. Needs administer at the environment, with a signed-in session.',
+  createWebhook:
+    'Subscribes a service identity’s HTTPS endpoint to event types. Each event of those types is posted to it, signed as Standard Webhooks specifies, carrying identifiers and versions and never content, and only where the service identity may read what it is about. Answers the signing secret this once. Recorded as a webhook changed. Needs administer at the environment, with a signed-in session.',
+  getWebhook:
+    'Returns a webhook subscription, never its secret. Needs administer at the environment, with a signed-in session.',
+  changeWebhook:
+    'Changes a subscription’s URL, description or event types. A new URL ends the old secret at once and answers a new one. Recorded as a webhook changed. Needs administer at the environment, with a signed-in session.',
+  rotateWebhookSecret:
+    'Rotates a subscription’s signing secret and answers the new one this once; the old one signs beside it for 24 hours, so a receiver can move without losing an event. Recorded as a webhook changed. Needs administer at the environment, with a signed-in session.',
+  removeWebhook:
+    'Removes a subscription and every delivery waiting for it. Recorded as a webhook changed. Needs administer at the environment, with a signed-in session.',
   listPeople: 'Lists people in the environment by name for a user selection field.',
   listPrincipals: 'Lists people already signed in or invited who may be named by an access grant.',
   getErasure:

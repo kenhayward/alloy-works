@@ -122,6 +122,8 @@ A closed list in `packages/domain/src/audit/kinds.ts`, each naming the requireme
 | `invitation.sent`, `.accepted`, `.withdrawn`                                                   | invitations                                                                                                                                        | ADM-002          |
 | `tenant.administrator_named`, `.administrator_claimed`                                         | provisioning, the first sign-in                                                                                                                    | IAM-060          |
 | `token.issued`, `.used`, `.revoked`                                                            | API tokens; `used` at most once a minute per token                                                                                                 | IAM-037          |
+| `tool.used`                                                                                    | an MCP tool call: the tool, its arguments as identifiers and digests, the outcome ([generation.md](generation.md))                                 | API-023, LIF-071 |
+| `webhook.changed`                                                                              | a webhook subscription made, changed, rotated, removed or disabled, never its URL ([webhooks.md](webhooks.md))                                     | LIF-071          |
 | `service_identity.created`, `.renamed`, `.disabled`                                            | service identities; `disabled` counts the tokens it revoked ([access.md](access.md))                                                               | IAM-033          |
 | `space.made`, `.renamed`, `.archived`, `.restored`                                             | SP1's acts                                                                                                                                         | ADM-002, ADM-049 |
 | `group.made`, `.deleted`; `settings.changed`                                                   | groups; the editing and data settings                                                                                                              | ADM-002          |
@@ -158,10 +160,10 @@ A closed list in `packages/domain/src/audit/kinds.ts`, each naming the requireme
 **Declared now, emitted by the design that builds the act:** `baseline.made`, `baseline.superseded`, `content.restored`, `reference.repointed` (CNT-161),
 `lock.taken` (COL-009), `suggestion.accepted`, `suggestion.rejected` (COL-024), `binding.revised` (DAT-058), `relationship.*`, `asset.replaced`, `asset.relicensed`, and those the AU1 review
 added so that every requirement saying its act is audited names a kind (LIF-063): `secret.accessed`,
-`tenant.closed`, `webhook.changed`, `extension.changed`, `organisation.changed`, `import.restored`,
+`tenant.closed`, `extension.changed`, `organisation.changed`, `import.restored`,
 `library.changed`, `line.merged`, `component.type_changed`, `theme.moved`,
 `style.changed`,
-`publication.shared_accessed`, `support.*`, `channel.changed`, `tool.used`. A design emitting one
+`publication.shared_accessed`, `support.*`, `channel.changed`. A design emitting one
 cites it in its tests.
 
 ## Writing

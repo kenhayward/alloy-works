@@ -421,6 +421,23 @@ describe("the connector's model paths", () => {
     ).toBe(401);
   });
 
+  it('seals a webhook signing secret to its subscription and URL, and to the service key alone', async () => {
+    const request = {
+      tenant: TENANT,
+      subscription: '0b6f6b8e-4a39-4c1e-9d0f-3c0a8f1e2d41',
+      url: 'https://receiver.example.test/hooks',
+      secret: `whsec_${Buffer.alloc(32, 7).toString('base64')}`,
+    };
+    const sealing = await post('/v1/webhook/seal', request);
+    expect(sealing.status).toBe(200);
+    const { sealed } = (await sealing.json()) as { sealed: string };
+    expect(sealed).not.toContain(request.secret);
+    expect(
+      (await post('/v1/webhook/seal', { ...request, url: 'http://receiver.example.test' })).status,
+    ).toBe(400);
+    expect((await post('/v1/webhook/seal', request, EMBED_KEY)).status).toBe(401);
+  });
+
   it('DAT-089 opens embedding alone to the embed key the worker holds, never a source query, and every path to the service key', async () => {
     const embedded = await post('/v1/embed', embedFor(['The north weir.']), EMBED_KEY);
     expect(embedded.status).toBe(200);
@@ -429,6 +446,7 @@ describe("the connector's model paths", () => {
     for (const path of [
       '/v1/model',
       '/v1/model/seal',
+      '/v1/webhook/seal',
       '/v1/seal',
       '/v1/test',
       '/v1/run',

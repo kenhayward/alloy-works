@@ -92,3 +92,15 @@ export {
   type RelationshipEnd,
   type RelationshipTypeDefinition,
 } from './relationships/type.js';
+
+// Webhooks: the event types a subscription may want, and its secret's sealing (docs/design/webhooks.md).
+export {
+  webhookAuditTypes,
+  webhookEventTypes,
+  webhookSealRequestSchema,
+  webhookSecretContext,
+  webhookSecretSchema,
+  webhookUrlSchema,
+  type WebhookEventType,
+  type WebhookSealRequest,
+} from './webhooks/index.js';

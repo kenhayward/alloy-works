@@ -721,7 +721,18 @@ export const auditKindSpecs = {
   // that builds its act.
   'secret.accessed': kind(['ADM-009'], empty, LATER),
   'tenant.closed': kind(['ADM-030', 'LIF-066'], empty, LATER),
-  'webhook.changed': kind(['API-055', 'LIF-071'], empty, LATER),
+  // A subscription made, changed, its secret rotated, removed or disabled (the WB plan, WB-H): never
+  // its URL, which names a host (LIF-030).
+  'webhook.changed': kind(
+    ['API-055', 'LIF-071'],
+    z.strictObject({
+      change: z.enum(['made', 'changed', 'rotated', 'removed', 'disabled']),
+      types: z.array(AuditName).max(20).optional(),
+      urlChanged: z.boolean().optional(),
+      reason: z.enum(['failing', 'identity_disabled']).optional(),
+    }),
+    'packages/db/src/webhooks.ts',
+  ),
   'extension.changed': kind(['API-059'], empty, LATER),
   'organisation.changed': kind(['IAM-068'], empty, LATER),
   'import.restored': kind(['IMP-048'], empty, LATER),

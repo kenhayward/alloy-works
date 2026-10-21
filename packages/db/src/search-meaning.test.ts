@@ -231,9 +231,14 @@ describe('searching by meaning (the G7 plan, G7-H and G7-I)', () => {
       const hidden = parts.get('Confidential weir')!;
       const { rows } = await sql<{ id: string }>`
         select id from search_entry where artifact_id = ${hidden}`.execute(trx);
+      // Each a hair from the query and from each other: an HNSW graph over identical vectors is a
+      // matter of chance, and its scan can be stranded among them (CI, #739).
       await sql`insert into search_passage (entry_id, block_id, text_hash, model, dims, vector)
         select ${rows[0]!.id}::uuid, 'h' || n, ${'0'.repeat(64)}, ${MODEL}, 384,
-               ${vectorLiteral(towards(0))}::extensions.halfvec
+               (select array_agg(case when i = 0 then 1
+                                      when i = 2 + n % 382 then 0.001 * (1 + n / 382)
+                                      else 0 end order by i)
+                  from generate_series(0, 383) i)::real[]::extensions.halfvec
           from generate_series(1, 3000) n`.execute(trx);
     });
     for (const road of ['index', 'exact'] as const) {

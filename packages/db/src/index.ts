@@ -1110,3 +1110,13 @@ export {
   serviceIdentity,
   type ServiceIdentity,
 } from './service-identities.js';
+export {
+  changeWebhookSubscription,
+  createWebhookSubscription,
+  listWebhookSubscriptions,
+  removeWebhookSubscription,
+  rotateWebhookSecret,
+  subscribableIdentity,
+  webhookSubscription,
+  type WebhookSubscription,
+} from './webhooks.js';

@@ -8,9 +8,11 @@ export class SealedSecretRefused extends Error {}
  * will not open as another: an object store credential copied into a sign-in row opens as nothing.
  * `source-credential` is a connection's credential, sealed and opened only by the connector, with a
  * key of its own that the service never holds. `model-credential` is a model endpoint's key, sealed and
- * opened by the connector alike (ADR-0064).
+ * opened by the connector alike (ADR-0064). `webhook-signing` is a webhook subscription's signing secret,
+ * sealed by the connector and opened there to sign (the WB plan, WB-G).
  */
-export type SealPurpose = 'object-store' | 'sign-in' | 'source-credential' | 'model-credential';
+export type SealPurpose =
+  'object-store' | 'sign-in' | 'source-credential' | 'model-credential' | 'webhook-signing';
 
 const VERSION = 'v1';
 const IV_BYTES = 12;

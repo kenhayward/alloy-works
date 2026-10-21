@@ -11,6 +11,8 @@ import {
   type EmbedAnswer,
   type EmbedRequest,
   modelSealRequestSchema,
+  webhookSealRequestSchema,
+  webhookSecretContext,
   type ModelEvent,
   type ModelRequest,
   runRequestSchema,
@@ -129,7 +131,9 @@ export function fakeConnector(): FakeConnector {
                   ? embedRequestSchema
                   : path === '/v1/model/seal'
                     ? modelSealRequestSchema
-                    : undefined;
+                    : path === '/v1/webhook/seal'
+                      ? webhookSealRequestSchema
+                      : undefined;
       if (door && !door.safeParse(body).success) {
         return Response.json({ code: 'request_invalid' }, { status: 400 });
       }
@@ -142,6 +146,17 @@ export function fakeConnector(): FakeConnector {
             'source-credential',
             String(body.tenant),
             String(body.secret),
+          ),
+        });
+      }
+      if (path === '/v1/webhook/seal') {
+        return Response.json({
+          sealed: sealSecret(
+            sealingKey,
+            'webhook-signing',
+            String(body.tenant),
+            String(body.secret),
+            webhookSecretContext(String(body.subscription), String(body.url)),
           ),
         });
       }

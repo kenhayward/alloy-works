@@ -130,6 +130,12 @@ describe('what each route checks', () => {
         'changeServiceIdentity',
         'disableServiceIdentity',
         'issueServiceIdentityToken',
+        'listWebhooks',
+        'createWebhook',
+        'getWebhook',
+        'changeWebhook',
+        'rotateWebhookSecret',
+        'removeWebhook',
       ].sort(),
     );
     for (const route of allRoutes) {

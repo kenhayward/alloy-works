@@ -57,6 +57,8 @@ export interface NotificationTable {
   counts: ColumnType<unknown, string | null, never>;
   at: ColumnType<Date, Date | undefined, never>;
   read_at: ColumnType<Date | null, never, Date>;
+  /** Its event's sequence (0139; the WB plan, WB-C). */
+  sequence: ColumnType<string, never, never>;
 }
 
 /** A daily event held for the fold (TH-F). */

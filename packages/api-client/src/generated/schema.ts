@@ -5487,6 +5487,78 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/webhooks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The environment's webhook subscriptions, a page at a time, never their secrets
+         * @description Lists the environment’s webhook subscriptions: each one’s service identity, URL, event types and whether it is disabled, never its secret. Needs administer at the environment, with a signed-in session.
+         */
+        get: operations["listWebhooks"];
+        put?: never;
+        /**
+         * Subscribe a service identity’s endpoint to events, answering its signing secret once
+         * @description Subscribes a service identity’s HTTPS endpoint to event types. Each event of those types is posted to it, signed as Standard Webhooks specifies, carrying identifiers and versions and never content, and only where the service identity may read what it is about. Answers the signing secret this once. Recorded as a webhook changed. Needs administer at the environment, with a signed-in session.
+         */
+        post: operations["createWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/webhooks/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A webhook subscription, never its secret
+         * @description Returns a webhook subscription, never its secret. Needs administer at the environment, with a signed-in session.
+         */
+        get: operations["getWebhook"];
+        put?: never;
+        post?: never;
+        /**
+         * Remove a subscription, and every delivery waiting for it
+         * @description Removes a subscription and every delivery waiting for it. Recorded as a webhook changed. Needs administer at the environment, with a signed-in session.
+         */
+        delete: operations["removeWebhook"];
+        options?: never;
+        head?: never;
+        /**
+         * Change a subscription’s URL, description or event types
+         * @description Changes a subscription’s URL, description or event types. A new URL ends the old secret at once and answers a new one. Recorded as a webhook changed. Needs administer at the environment, with a signed-in session.
+         */
+        patch: operations["changeWebhook"];
+        trace?: never;
+    };
+    "/v1/webhooks/{id}/secret": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rotate a subscription’s signing secret; the old one signs beside it for 24 hours
+         * @description Rotates a subscription’s signing secret and answers the new one this once; the old one signs beside it for 24 hours, so a receiver can move without losing an event. Recorded as a webhook changed. Needs administer at the environment, with a signed-in session.
+         */
+        post: operations["rotateWebhookSecret"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/workflows": {
         parameters: {
             query?: never;
@@ -87682,6 +87754,894 @@ export interface operations {
                 };
             };
             /** @description No such token of the caller's in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listWebhooks: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: string;
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of subscriptions */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "next": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        items: {
+                            id: string;
+                            /** @description Whose view decides what it receives: only events about what it may read */
+                            serviceIdentity: string;
+                            url: string;
+                            description: string;
+                            eventTypes: ("content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "notification.created")[];
+                            createdBy: string | null;
+                            createdAt: string;
+                            disabledAt: string | null;
+                            /** @description `failing`: three days of failures with no success; `identity_disabled`: its service identity was */
+                            disabledReason: ("failing" | "identity_disabled") | null;
+                            lastSuccessAt: string | null;
+                        }[];
+                        /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
+                        next: string | null;
+                    };
+                };
+            };
+            /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description forbidden: the caller may not administer this environment; or token_not_allowed: webhooks are managed with a signed-in session, never a token */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    createWebhook: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "serviceIdentity": "00000000-0000-4000-8000-000000000001",
+                 *       "url": "https://example.com/",
+                 *       "eventTypes": [
+                 *         "content.version_cut"
+                 *       ]
+                 *     }
+                 */
+                "application/json": {
+                    /** @description A service identity, not disabled */
+                    serviceIdentity: string & (unknown & unknown);
+                    /**
+                     * Format: uri
+                     * @description Where events are posted: HTTPS, to a public address, at most 2,000 characters
+                     */
+                    url: string;
+                    /**
+                     * @description What receives it and who looks after it: at most 500 characters, trimmed
+                     * @default
+                     */
+                    description?: string;
+                    /** @description The events it receives, by their audit kind’s name */
+                    eventTypes: ("content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "notification.created")[];
+                };
+            };
+        };
+        responses: {
+            /** @description Made, with its secret */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "webhook": {
+                     *         "id": "example",
+                     *         "serviceIdentity": "example",
+                     *         "url": "example",
+                     *         "description": "example",
+                     *         "eventTypes": [],
+                     *         "createdBy": "example",
+                     *         "createdAt": "example",
+                     *         "disabledAt": "example",
+                     *         "disabledReason": "failing",
+                     *         "lastSuccessAt": "example"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        webhook: {
+                            id: string;
+                            /** @description Whose view decides what it receives: only events about what it may read */
+                            serviceIdentity: string;
+                            url: string;
+                            description: string;
+                            eventTypes: ("content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "notification.created")[];
+                            createdBy: string | null;
+                            createdAt: string;
+                            disabledAt: string | null;
+                            /** @description `failing`: three days of failures with no success; `identity_disabled`: its service identity was */
+                            disabledReason: ("failing" | "identity_disabled") | null;
+                            lastSuccessAt: string | null;
+                        };
+                        /** @description The signing secret, `whsec_` and base64, shown this once: only where it was made or rotated, or the URL changed */
+                        secret?: string;
+                    };
+                };
+            };
+            /** @description invalid_request */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description forbidden: the caller may not administer this environment; or token_not_allowed: webhooks are managed with a signed-in session, never a token */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description service_identity_unavailable: no such service identity, or it is disabled */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getWebhook: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The subscription */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "webhook": {
+                     *         "id": "example",
+                     *         "serviceIdentity": "example",
+                     *         "url": "example",
+                     *         "description": "example",
+                     *         "eventTypes": [],
+                     *         "createdBy": "example",
+                     *         "createdAt": "example",
+                     *         "disabledAt": "example",
+                     *         "disabledReason": "failing",
+                     *         "lastSuccessAt": "example"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        webhook: {
+                            id: string;
+                            /** @description Whose view decides what it receives: only events about what it may read */
+                            serviceIdentity: string;
+                            url: string;
+                            description: string;
+                            eventTypes: ("content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "notification.created")[];
+                            createdBy: string | null;
+                            createdAt: string;
+                            disabledAt: string | null;
+                            /** @description `failing`: three days of failures with no success; `identity_disabled`: its service identity was */
+                            disabledReason: ("failing" | "identity_disabled") | null;
+                            lastSuccessAt: string | null;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description forbidden: the caller may not administer this environment; or token_not_allowed: webhooks are managed with a signed-in session, never a token */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such subscription in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    removeWebhook: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "removed": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        removed: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description forbidden: the caller may not administer this environment; or token_not_allowed: webhooks are managed with a signed-in session, never a token */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such subscription in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    changeWebhook: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /** @example {} */
+                "application/json": {
+                    /**
+                     * Format: uri
+                     * @description A new URL: answered with a new secret, the old one ended at once
+                     */
+                    url?: string;
+                    /** @description What receives it and who looks after it: at most 500 characters, trimmed */
+                    description?: string;
+                    /** @description The events it receives, by their audit kind’s name */
+                    eventTypes?: ("content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "notification.created")[];
+                };
+            };
+        };
+        responses: {
+            /** @description Changed; with a new secret where the URL changed */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "webhook": {
+                     *         "id": "example",
+                     *         "serviceIdentity": "example",
+                     *         "url": "example",
+                     *         "description": "example",
+                     *         "eventTypes": [],
+                     *         "createdBy": "example",
+                     *         "createdAt": "example",
+                     *         "disabledAt": "example",
+                     *         "disabledReason": "failing",
+                     *         "lastSuccessAt": "example"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        webhook: {
+                            id: string;
+                            /** @description Whose view decides what it receives: only events about what it may read */
+                            serviceIdentity: string;
+                            url: string;
+                            description: string;
+                            eventTypes: ("content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "notification.created")[];
+                            createdBy: string | null;
+                            createdAt: string;
+                            disabledAt: string | null;
+                            /** @description `failing`: three days of failures with no success; `identity_disabled`: its service identity was */
+                            disabledReason: ("failing" | "identity_disabled") | null;
+                            lastSuccessAt: string | null;
+                        };
+                        /** @description The signing secret, `whsec_` and base64, shown this once: only where it was made or rotated, or the URL changed */
+                        secret?: string;
+                    };
+                };
+            };
+            /** @description invalid_request */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description forbidden: the caller may not administer this environment; or token_not_allowed: webhooks are managed with a signed-in session, never a token */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such subscription in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    rotateWebhookSecret: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Rotated, with the new secret */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "webhook": {
+                     *         "id": "example",
+                     *         "serviceIdentity": "example",
+                     *         "url": "example",
+                     *         "description": "example",
+                     *         "eventTypes": [],
+                     *         "createdBy": "example",
+                     *         "createdAt": "example",
+                     *         "disabledAt": "example",
+                     *         "disabledReason": "failing",
+                     *         "lastSuccessAt": "example"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        webhook: {
+                            id: string;
+                            /** @description Whose view decides what it receives: only events about what it may read */
+                            serviceIdentity: string;
+                            url: string;
+                            description: string;
+                            eventTypes: ("content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "notification.created")[];
+                            createdBy: string | null;
+                            createdAt: string;
+                            disabledAt: string | null;
+                            /** @description `failing`: three days of failures with no success; `identity_disabled`: its service identity was */
+                            disabledReason: ("failing" | "identity_disabled") | null;
+                            lastSuccessAt: string | null;
+                        };
+                        /** @description The signing secret, `whsec_` and base64, shown this once: only where it was made or rotated, or the URL changed */
+                        secret?: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description forbidden: the caller may not administer this environment; or token_not_allowed: webhooks are managed with a signed-in session, never a token */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such subscription in this environment */
             404: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */

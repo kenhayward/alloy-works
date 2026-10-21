@@ -43,6 +43,8 @@ describe("the connector's one caller", () => {
       'generation/prompt-runs.ts',
       // The loop both runs share, which a route hands the client (the G5 plan, G5-A).
       'generation/run-loop.ts',
+      // A webhook's signing secret sealed as an administrator makes or rotates it (the WB plan, WB-G).
+      'webhooks.ts',
     ]);
     // And those routes are the connection routes, each a person's request: nothing the service runs
     // on its own - no job, no timer, no stream - reaches them.

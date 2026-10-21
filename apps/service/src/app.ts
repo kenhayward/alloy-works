@@ -84,6 +84,7 @@ import { assistantHandlers } from './generation/assistant.js';
 import { generatedHandlers } from './generation/generated.js';
 import { modelEndpointHandlers } from './generation/models.js';
 import { serviceIdentityHandlers } from './service-identities.js';
+import { webhookHandlers } from './webhooks.js';
 import { registerMcp } from './mcp/route.js';
 import { promptHandlers, promptLibraryHandlers } from './generation/prompts.js';
 import { promptRunHandlers } from './generation/prompt-runs.js';
@@ -222,6 +223,14 @@ type Success<R extends RouteContract> = R['responses'] extends {
     : R['responses'] extends { 200: { stream: true } }
       ? Streamed
       : never;
+
+/** The routes answering a secret once, never kept by a cache on the way (G8-H, WB-G). */
+const ANSWERS_A_SECRET: ReadonlySet<string> = new Set([
+  'issueServiceIdentityToken',
+  'createWebhook',
+  'changeWebhook',
+  'rotateWebhookSecret',
+]);
 
 /**
  * A route that checks a permission is handed what was decided, and runs in the transaction it was
@@ -575,6 +584,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...tokenHandlers(db, tenantOf, principalOf),
     ...administeredTokenHandlers(),
     ...serviceIdentityHandlers(),
+    ...webhookHandlers(tenantOf, options.connector),
     ...auditHandlers(tenantOf, options.objects),
     ...tenantExportHandlers(tenantOf, options.objects),
     ...rangePreviewHandlers(),
@@ -1074,7 +1084,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
       );
       if (replayed) void reply.header(IDEMPOTENT_REPLAYED, 'true');
       // A token's secret, answered once, is never kept by a cache on the way (the G8 plan, G8-H).
-      if (operation === 'issueServiceIdentityToken') void reply.header('Cache-Control', 'no-store');
+      if (ANSWERS_A_SECRET.has(operation)) void reply.header('Cache-Control', 'no-store');
       if (body instanceof Streamed) return sendStreamed(request, reply, body);
       // The deciding transaction has committed, and its lock on access with it: the rest of the work -
       // a connector's, say - holds back no grant or revocation (the D1 fix, C4).

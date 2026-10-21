@@ -148,6 +148,19 @@ export {
   serviceIdentityRoutes,
 } from './service-identities.js';
 export {
+  ChangeWebhookBody,
+  CreateWebhookBody,
+  WebhookAnswer,
+  WebhookEventType,
+  WebhookList,
+  WebhookListQuery,
+  WebhookParams,
+  WebhookRead,
+  WebhookRemoved,
+  WebhookView,
+  webhookRoutes,
+} from './webhooks.js';
+export {
   AssistantRunBody,
   AssistantRunParams,
   AssistantRunView,
