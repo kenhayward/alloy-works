@@ -2,6 +2,7 @@ export {
   CONNECTION_SCHEMA_VERSION,
   ConnectionRefused,
   bucketHost,
+  capabilitiesOf,
   endpointHost,
   checkConnection,
   connectionChangeProblems,
@@ -17,9 +18,11 @@ export {
 export type {
   ConnectionProblem,
   ConnectionSettings,
+  ExtensionSettings,
   HttpSettings,
   PostgresSettings,
   S3Settings,
+  SourceCapabilities,
 } from './connection.js';
 export {
   dataFailure,
@@ -48,8 +51,12 @@ export {
   DefinitionRefused,
   PARAMETER_NAME,
   QUERY_DEFINITION_SCHEMA_VERSION,
+  capabilityProblems,
   checkQueryDefinition,
   connectionFetchProblems,
+  EXTENSION_REQUEST_MOST,
+  extensionFetchSchema,
+  type ExtensionFetch,
   dataFormatSchema,
   draftDefinitionSchema,
   fileFetchSchema,

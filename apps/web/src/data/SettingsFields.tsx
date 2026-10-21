@@ -7,6 +7,7 @@ export const TYPE_LABELS: Readonly<Record<SourceType, string>> = {
   postgres: 'A PostgreSQL database',
   http: 'An HTTP API',
   s3: 'An S3 bucket',
+  extension: 'An extension',
 };
 
 /** What the settings form holds while it is being written: the port as typed. */
@@ -81,6 +82,8 @@ export function draftOf(settings: Settings): Draft {
   if (settings.type === 's3') {
     return { ...common, ...settings.source };
   }
+  // An extension's settings are its manifest's, edited from Administration's Extensions (EX plan).
+  if (settings.type === 'extension') return common;
   return {
     ...common,
     host: settings.source.host,

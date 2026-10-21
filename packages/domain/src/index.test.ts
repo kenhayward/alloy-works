@@ -421,6 +421,11 @@ describe('the domain package', () => {
         'variableDefinitionSchema',
         // Webhooks: the event types, the URL and secret, the secret's sealing (the WB plan).
         // Extensions: the manifest and its fetch (the EX plan).
+        // Extension sources: capabilities, the fetch (the EX plan, EX-F, EX-G).
+        'capabilitiesOf',
+        'capabilityProblems',
+        'EXTENSION_REQUEST_MOST',
+        'extensionFetchSchema',
         'childManifestRequestSchema',
         'extensionCapabilitiesSchema',
         'extensionManifestSchema',

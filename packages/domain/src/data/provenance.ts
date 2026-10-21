@@ -80,6 +80,8 @@ export const provenanceSchema = z.strictObject({
     z.strictObject({ object: ranObjectSchema }),
     // A stored result queried as a source (R21-A): the dataset version, by its checksum too.
     z.strictObject({ dataset: ranDatasetSchema }),
+    // An extension's request, as its definition holds it (the EX plan, EX-G).
+    z.strictObject({ extension: z.record(z.string(), z.unknown()) }),
   ]),
   identity: z.union([
     z.strictObject({ kind: z.literal('service') }),
@@ -112,7 +114,8 @@ export type Provenance = {
     | { readonly sql: string }
     | { readonly request: HttpTemplate }
     | { readonly object: RanObject }
-    | { readonly dataset: RanDataset };
+    | { readonly dataset: RanDataset }
+    | { readonly extension: Readonly<Record<string, unknown>> };
   readonly identity: ProvenanceIdentity;
   readonly at: string;
   readonly durationMs: number;

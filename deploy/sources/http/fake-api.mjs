@@ -96,6 +96,21 @@ export function createFakeApi(options = {}) {
       };
       // The stand-in model (the G1 plan, G1-H), behind its own key.
       if (isModelPath(url.pathname)) return answerModel(request, url, body, response);
+      // The stand-in extension (the EX plan): its test and its run, the run's rows its gauges, those of
+      // the region its settings name and the site its parameters name; and one that fails, and one
+      // that answers out of shape.
+      if (url.pathname === '/extension/test') return send(200, json({ ok: true }));
+      if (url.pathname === '/extension/run') {
+        const asked = JSON.parse(body || '{}');
+        const rows = GAUGES.filter(
+          (each) =>
+            each.region === asked.settings?.region &&
+            (asked.parameters?.site === undefined || each.site === asked.parameters.site),
+        ).map(({ site, level }) => ({ site, level }));
+        return send(200, json({ rows }));
+      }
+      if (url.pathname.startsWith('/extension-broken/')) return send(503, json({ error: 'down' }));
+      if (url.pathname.startsWith('/extension-invalid/')) return send(200, Buffer.from('not json'));
       // An extension's manifest (the EX plan): a stand-in source's, and one past 64 KiB.
       if (url.pathname === '/extension/manifest.json') {
         return send(200, json(standInManifest(`https://${request.headers.host ?? 'source-http'}`)));
@@ -291,6 +306,13 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   process.stdout.write(`${JSON.stringify({ listening: port })}\n`);
   for (const signal of ['SIGTERM', 'SIGINT']) process.on(signal, () => process.exit(0));
 }
+
+/** The stand-in extension's gauges (the EX plan): invented sites and levels. */
+const GAUGES = [
+  { region: 'north', site: 'north-weir', level: 2.5 },
+  { region: 'north', site: 'north-bridge', level: 1.75 },
+  { region: 'south', site: 'south-ford', level: 0.5 },
+];
 
 /** The stand-in extension's manifest (the EX plan): an invented gauge source behind this server. */
 export function standInManifest(origin) {

@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { extensionCapabilitiesSchema, httpsUrl } from '../extensions/manifest.js';
+
 import { storableText } from '../stored/storable.js';
 
 /**
@@ -318,6 +320,25 @@ const s3Source = z
     },
   );
 
+/**
+ * An extension's source (the EX plan, EX-D): the snapshot of the manifest the connection was saved
+ * against - the extension, its digest, its endpoint, whether it takes a secret and what it can do -
+ * and the settings its manifest asks for, so nothing it does changes behind it.
+ */
+const extensionSource = z.strictObject({
+  extension: z.uuid(),
+  digest: z.string().regex(/^[0-9a-f]{64}$/),
+  endpoint: httpsUrl,
+  authenticated: z.boolean(),
+  capabilities: extensionCapabilitiesSchema,
+  settings: z
+    .record(
+      z.string().regex(/^[a-z][a-zA-Z0-9_]{0,39}$/),
+      z.union([z.string().max(1000), z.number().finite(), z.boolean()]),
+    )
+    .refine((values) => Object.keys(values).length <= 20, { message: 'At most 20 settings' }),
+});
+
 const versionMembers = {
   schemaVersion: z.literal(CONNECTION_SCHEMA_VERSION),
   name,
@@ -335,12 +356,15 @@ export const connectionSettingsSchema = z.discriminatedUnion('type', [
   z.strictObject({ ...versionMembers, type: z.literal('postgres'), source: postgresSource }),
   z.strictObject({ ...versionMembers, type: z.literal('http'), source: httpSource }),
   z.strictObject({ ...versionMembers, type: z.literal('s3'), source: s3Source }),
+  // An extension's source type (the EX plan, EX-D; ADR-0066).
+  z.strictObject({ ...versionMembers, type: z.literal('extension'), source: extensionSource }),
 ]);
 
 export type ConnectionSettings = z.infer<typeof connectionSettingsSchema>;
 export type PostgresSettings = Extract<ConnectionSettings, { type: 'postgres' }>;
 export type HttpSettings = Extract<ConnectionSettings, { type: 'http' }>;
 export type S3Settings = Extract<ConnectionSettings, { type: 's3' }>;
+export type ExtensionSettings = Extract<ConnectionSettings, { type: 'extension' }>;
 
 type EndUserMechanism = 'delegated' | 'asserted';
 
@@ -356,7 +380,28 @@ export const connectorIdentities: Readonly<
   http: Object.freeze([] as const),
   // An S3 connection reads as its key pair alone: a store has no person's identity (DAT-077).
   s3: Object.freeze([] as const),
+  // An extension is called as the connection's own account: no person's identity is sent (EX-F).
+  extension: Object.freeze([] as const),
 });
+
+/** What a source type can do beyond reading (DAT-079): whether it binds a definition's parameters. */
+export interface SourceCapabilities {
+  readonly parameters: boolean;
+}
+
+/**
+ * Each type's capabilities (DAT-079; the EX plan, EX-F): every built-in one binds parameters -
+ * PostgreSQL's markers, HTTP's template, S3's key segments - and an extension's are its manifest's,
+ * as its connection snapshotted them.
+ */
+export function capabilitiesOf(
+  settings: Pick<ConnectionSettings, 'type' | 'source'>,
+): SourceCapabilities {
+  if (settings.type === 'extension') {
+    return { parameters: (settings.source as ExtensionSettings['source']).capabilities.parameters };
+  }
+  return { parameters: true };
+}
 
 export type ConnectionProblem =
   | { readonly rule: 'connection_invalid'; readonly path: string; readonly message: string }
@@ -420,7 +465,13 @@ export function connectionTarget(settings: Pick<ConnectionSettings, 'type' | 'so
   const target = settings as
     | Pick<PostgresSettings, 'type' | 'source'>
     | Pick<HttpSettings, 'type' | 'source'>
-    | Pick<S3Settings, 'type' | 'source'>;
+    | Pick<S3Settings, 'type' | 'source'>
+    | Pick<ExtensionSettings, 'type' | 'source'>;
+  // An extension's is the extension and the endpoint its snapshot names, where the secret is sent
+  // (the EX plan, EX-D): an update moving the endpoint leaves no credential that follows it.
+  if (target.type === 'extension') {
+    return JSON.stringify([target.type, target.source.extension, target.source.endpoint]);
+  }
   // HTTP's target is where the secret is sent and in which header (the D6 plan's stored-shape check).
   if (target.type === 'http') {
     return JSON.stringify([target.type, target.source.baseUrl, target.source.secretHeader]);

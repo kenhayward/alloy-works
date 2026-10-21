@@ -6,9 +6,11 @@ import { connectionSettingsSchema } from './connection.js';
 import { builderQuerySchema, checkTree, type Query } from './builder.js';
 import {
   checkQueryDefinition,
+  capabilityProblems,
   connectionFetchProblems,
   dataFormatSchema,
   draftDefinitionSchema,
+  extensionFetchSchema,
   httpFetchSchema,
   sampleDraft,
   parameterSchema,
@@ -86,7 +88,8 @@ export const sealRequestSchema = z
   // An HTTP secret is sent as a header's value, so it is one a header can carry (the D6 plan, D6-D).
   .refine(
     (request) =>
-      request.settings.type !== 'http' || headerValueProblem(request.secret) === undefined,
+      (request.settings.type !== 'http' && request.settings.type !== 'extension') ||
+      headerValueProblem(request.secret) === undefined,
     { message: 'A secret sent in a header is printable ASCII, with no space before or after it' },
   )
   // An S3 secret is its key pair, sealed together as JSON (the stored-shape check).
@@ -296,6 +299,10 @@ export const runRequestSchema = testRequestSchema
     (request) => connectionFetchProblems(request.definition.fetch, request.settings).length === 0,
     { message: "A run's fetch suits its connection's type" },
   )
+  // And relies on nothing its source does not declare, by the version it runs on (DAT-079).
+  .refine((request) => capabilityProblems(request.definition, request.settings).length === 0, {
+    message: 'A run binds parameters only on a source that declares them',
+  })
   .refine(assertsAsDeclared, AS_DECLARED)
   // Only text the product generated runs as a person (DAT-113, the D7 plan's D7-F).
   .refine(
@@ -373,6 +380,8 @@ export const ranSchema = z.union([
   z.strictObject({ object: ranObjectSchema }),
   // A stored result queried as a source, in the service (R21-A): never a connector's answer.
   z.strictObject({ dataset: ranDatasetSchema }),
+  // An extension's request, as its definition holds it (EX-G).
+  z.strictObject({ extension: z.record(z.string(), z.unknown()) }),
 ]);
 export type Ran = z.infer<typeof ranSchema>;
 
@@ -504,6 +513,29 @@ const httpDescribe = z
       checkParameterValues(http.parameters, http.values as ParameterValues).length === 0,
     { message: 'A request passes its checks, and its values their declarations' },
   );
+/** An extension's request sampled for its columns (DAT-105; the EX plan, EX-G), as HTTP's is. */
+const extensionDescribe = z
+  .strictObject({
+    request: extensionFetchSchema.shape.request,
+    parameters: z.array(parameterSchema).max(50),
+    values: parameterValuesSchema,
+  })
+  .refine(
+    (described) =>
+      checkParameterValues(described.parameters, described.values as ParameterValues).length === 0,
+    { message: 'Its values pass their declarations' },
+  );
+const extensionDescribeRequest = testRequestSchema
+  .extend({ extension: extensionDescribe })
+  .refine(
+    (request) =>
+      connectionFetchProblems(
+        { kind: 'extension', request: request.extension.request },
+        request.settings,
+      ).length === 0,
+    { message: "A request suits its connection's type" },
+  );
+
 const httpDescribeRequest = testRequestSchema
   .extend({ http: httpDescribe })
   .refine(
@@ -557,21 +589,26 @@ export const describeSqlRequestSchema = z.unknown().transform((value, context) =
   const built = has('builder') && !has('sql');
   const http = has('http') && !has('sql') && !has('builder');
   const file = has('file') && !has('sql') && !has('builder') && !has('http');
+  const extension =
+    has('extension') && !has('sql') && !has('builder') && !has('http') && !has('file');
   const parsed = (
-    file
-      ? fileDescribeRequest
-      : http
-        ? httpDescribeRequest
-        : built
-          ? builderDescribeRequest
-          : sqlDescribeRequest
+    extension
+      ? extensionDescribeRequest
+      : file
+        ? fileDescribeRequest
+        : http
+          ? httpDescribeRequest
+          : built
+            ? builderDescribeRequest
+            : sqlDescribeRequest
   ).safeParse(value);
   if (parsed.success) {
     return parsed.data as
       | z.infer<typeof sqlDescribeRequest>
       | z.infer<typeof builderDescribeRequest>
       | z.infer<typeof httpDescribeRequest>
-      | z.infer<typeof fileDescribeRequest>;
+      | z.infer<typeof fileDescribeRequest>
+      | z.infer<typeof extensionDescribeRequest>;
   }
   for (const issue of parsed.error.issues) context.addIssue({ ...issue } as never);
   return z.NEVER;
