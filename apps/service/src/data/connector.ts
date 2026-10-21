@@ -25,6 +25,7 @@ import {
   type SealAnswer,
   type TestAnswer,
   type TestRequest,
+  type WebhookSealRequest,
 } from '@alloy-works/domain';
 import type { z } from 'zod';
 
@@ -68,6 +69,8 @@ export interface ConnectorClient {
   run(request: RunRequest, signal?: AbortSignal): Promise<Answered<RunAnswer>>;
   /** Seals a model endpoint's key, bound to the endpoint and its origin (the G1 plan, G1-B). */
   sealModel(request: ModelSealRequest): Promise<Answered<SealAnswer>>;
+  /** Seals a webhook's signing secret to its subscription and URL (the WB plan, WB-G). */
+  sealWebhook(request: WebhookSealRequest): Promise<Answered<SealAnswer>>;
   /**
    * A model call (the G1 plan, G1-C): each event as the connector streams it, the last `ended` or
    * `failed`, which is also answered. A connector that cannot be reached, is full, or ends without a
@@ -168,6 +171,7 @@ export function createConnectorClient(options: {
     run: (request, signal) =>
       ask('/v1/run', request, runAnswerSchema, request.deadlineMs + SLACK_MS, signal),
     sealModel: (request) => ask('/v1/model/seal', request, sealAnswerSchema, SEAL_MS),
+    sealWebhook: (request) => ask('/v1/webhook/seal', request, sealAnswerSchema, SEAL_MS),
     embed: (request, signal) =>
       ask('/v1/embed', request, embedAnswerSchema, request.deadlineMs + SLACK_MS, signal),
     model: async (request, onEvent, signal) => {

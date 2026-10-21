@@ -2,6 +2,7 @@ import { sql } from 'kysely';
 import { labelled, labels, recordEvent } from './audit.js';
 import { checkedPage, isPageCursor, paged, type Page, type PageRequest } from './paging.js';
 import type { TenantTransaction } from './tables.js';
+import { disableIdentitySubscriptions } from './webhooks.js';
 
 /**
  * A service identity (IAM-033; the G8 plan, G8-G): a principal of kind `service` an administrator
@@ -177,5 +178,7 @@ export async function disableServiceIdentity(
     .where('principal_id', '=', id)
     .execute();
   await record(trx, 'service_identity.disabled', id, held.name, { tokens: tokens.length });
+  // Its subscriptions with it: it receives nothing more (the WB plan, WB-B).
+  await disableIdentitySubscriptions(trx, id);
   return { identity: (await serviceIdentity(trx, id))!, revoked: tokens.map((each) => each.id) };
 }

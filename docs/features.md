@@ -1399,6 +1399,12 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   under More actions, asks first, then stops every token it holds at once and issues it no more, and
   it is kept so what it did still names it. Through the API it is `/v1/service-identities`, an
   administrator's with a signed-in session.
+- **Webhook subscriptions, through the API.** An administrator subscribes a service identity's HTTPS
+  endpoint to event types at `/v1/webhooks`: content cut and restored, archiving, workflow,
+  approval, review rounds, publication and notifications. Its signing secret is shown once, sealed
+  so only the connector can use it, and rotated with the old one still signing for a day. Every
+  change is recorded in the audit log, never its URL. Each event an act records is queued in the
+  act's own transaction for every subscription wanting it. Delivery is not built yet.
 - **MCP, for agents.** An MCP client connects to `/mcp` on your environment with an API token, yours
   or a service identity's, as a bearer: a signed-in session never works there. Four tools read:
   `search`, `read_document`, `read_component` (its blocks numbered) and `related` (an artifact's

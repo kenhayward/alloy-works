@@ -228,6 +228,7 @@ describe('migration 0051, which keeps a result waiting on its images', () => {
       '0136_embedding_queue',
       '0137_embedding_confirmed',
       '0138_service_identities',
+      '0139_webhooks',
     ]);
     const kept = await queryAs(
       db.adminUrl,

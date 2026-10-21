@@ -19930,6 +19930,35 @@
       ]
     },
     {
+      "document": "webhooks.md",
+      "owns": [
+        {
+          "id": "API-028",
+          "howItIsMet": "Backoff from 30 seconds, doubling to an hour, for 24 hours; failing three days since the first failure with no success, disabled and its administrators told"
+        },
+        {
+          "id": "API-029",
+          "howItIsMet": "`GET /v1/webhooks/{id}/deliveries`: each delivery's payload and every attempt's status, latency, failure code and reply excerpt"
+        },
+        {
+          "id": "API-046",
+          "howItIsMet": "No ordering is promised; each payload carries its source's sequence and the artifact's version, so a receiver orders what it needs"
+        },
+        {
+          "id": "API-060",
+          "howItIsMet": "Content, workflow, review, publication and notification events, by their audit kind's name (Event types)"
+        },
+        {
+          "id": "COL-037",
+          "howItIsMet": "A notification addressed to the subscription's service identity is `notification.created`; a service is told only as a person is, by a mention or a reply"
+        },
+        {
+          "id": "LIF-071",
+          "howItIsMet": "`webhook.changed`, for every make, change, rotation, removal and disabling, completing LIF-071 beside `tool.used` and the run's kinds"
+        }
+      ]
+    },
+    {
       "document": "word-output.md",
       "owns": [
         {
@@ -20296,7 +20325,7 @@
     {
       "id": "DAT-089",
       "file": "apps/connector/src/model.test.ts",
-      "line": 424,
+      "line": 441,
       "kind": "title"
     },
     {
@@ -20734,13 +20763,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 557,
+      "line": 563,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 570,
+      "line": 576,
       "kind": "title"
     },
     {
@@ -21142,7 +21171,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1814,
+      "line": 1847,
       "kind": "title"
     },
     {
@@ -21640,7 +21669,7 @@
     {
       "id": "API-007",
       "file": "apps/service/src/listing-routes.test.ts",
-      "line": 344,
+      "line": 346,
       "kind": "title"
     },
     {
@@ -25744,7 +25773,7 @@
     {
       "id": "API-012",
       "file": "packages/api-contract/src/openapi.test.ts",
-      "line": 190,
+      "line": 197,
       "kind": "title"
     },
     {
@@ -26584,13 +26613,13 @@
     {
       "id": "COL-034",
       "file": "packages/db/src/inbox.test.ts",
-      "line": 228,
+      "line": 230,
       "kind": "title"
     },
     {
       "id": "COL-035",
       "file": "packages/db/src/inbox.test.ts",
-      "line": 250,
+      "line": 252,
       "kind": "title"
     },
     {
@@ -26602,13 +26631,13 @@
     {
       "id": "COL-053",
       "file": "packages/db/src/inbox.test.ts",
-      "line": 250,
+      "line": 252,
       "kind": "title"
     },
     {
       "id": "COL-062",
       "file": "packages/db/src/inbox.test.ts",
-      "line": 307,
+      "line": 309,
       "kind": "title"
     },
     {
@@ -27641,6 +27670,12 @@
       "id": "VER-042",
       "file": "packages/db/src/versions.test.ts",
       "line": 303,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-071",
+      "file": "packages/db/src/webhooks.test.ts",
+      "line": 99,
       "kind": "title"
     },
     {
@@ -28702,7 +28737,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 836,
+      "line": 843,
       "kind": "title"
     },
     {

@@ -123,7 +123,14 @@ describe('the OpenAPI document', () => {
         // The one secret the API answers: a token's own, once, to the person who made it or the
         // administrator who issued it to a service identity (TK-A, G8-H), which is no connection's.
         const issuing = (operation as { operationId?: string }).operationId;
-        if (issuing === 'createToken' || issuing === 'issueServiceIdentityToken') continue;
+        if (
+          issuing === 'createToken' ||
+          issuing === 'issueServiceIdentityToken' ||
+          issuing === 'createWebhook' ||
+          issuing === 'changeWebhook' ||
+          issuing === 'rotateWebhookSecret'
+        )
+          continue;
         walk((operation as { responses?: unknown }).responses, `${method} ${path}`);
       }
     }

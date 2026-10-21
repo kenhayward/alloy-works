@@ -10,6 +10,8 @@ import {
   modelCredentialContext,
   modelRequestSchema,
   modelSealRequestSchema,
+  webhookSealRequestSchema,
+  webhookSecretContext,
   describeRequestSchema,
   describeSqlRequestSchema,
   runRequestSchema,
@@ -42,6 +44,8 @@ const bodyLimits: Readonly<Record<string, number>> = {
   '/v1/run': RUN_REQUEST_MAX_BYTES,
   // A model's key, and a model call, which holds a whole conversation (the G1 plan, G1-C).
   '/v1/model/seal': MAX_BODY_BYTES,
+  // A webhook subscription's signing secret (the WB plan, WB-G).
+  '/v1/webhook/seal': MAX_BODY_BYTES,
   '/v1/model': MODEL_REQUEST_MAX_BYTES,
   // An embedding call: up to 96 texts (the G7 plan, G7-E).
   '/v1/embed': EMBED_REQUEST_MAX_BYTES,
@@ -170,6 +174,20 @@ export function createConnectorServer(options: {
           parsed.data.tenant,
           parsed.data.secret,
           credentialContext(parsed.data.connection, parsed.data.settings),
+        ),
+      };
+      return send(200, answer);
+    }
+    if (path === '/v1/webhook/seal') {
+      const parsed = webhookSealRequestSchema.safeParse(body);
+      if (!parsed.success) return send(400, { code: 'request_invalid' });
+      const answer: SealAnswer = {
+        sealed: sealSecret(
+          config.sealingKey,
+          'webhook-signing',
+          parsed.data.tenant,
+          parsed.data.secret,
+          webhookSecretContext(parsed.data.subscription, parsed.data.url),
         ),
       };
       return send(200, answer);

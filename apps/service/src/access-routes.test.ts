@@ -1608,6 +1608,25 @@ describe('routes that check a permission', () => {
     getErasure: () => ({ url: `/v1/principals/${ids.alice}/erasure`, status: 403 }),
     erasePrincipal: () => ({ url: `/v1/principals/${ids.alice}/erase`, status: 403 }),
     listPrincipalTokens: () => ({ url: `/v1/principals/${ids.alice}/tokens`, status: 403 }),
+    // Webhooks are an administrator's of the whole environment (WB-H).
+    listWebhooks: () => ({ url: '/v1/webhooks', status: 403 }),
+    createWebhook: () => ({
+      url: '/v1/webhooks',
+      status: 403,
+      payload: {
+        serviceIdentity: MISSING,
+        url: 'https://receiver.example.test',
+        eventTypes: ['content.version_cut'],
+      },
+    }),
+    getWebhook: () => ({ url: `/v1/webhooks/${MISSING}`, status: 403 }),
+    changeWebhook: () => ({
+      url: `/v1/webhooks/${MISSING}`,
+      status: 403,
+      payload: { description: 'Mine' },
+    }),
+    rotateWebhookSecret: () => ({ url: `/v1/webhooks/${MISSING}/secret`, status: 403 }),
+    removeWebhook: () => ({ url: `/v1/webhooks/${MISSING}`, status: 403 }),
     // Service identities are an administrator's of the whole environment (G8-G).
     listServiceIdentities: () => ({ url: '/v1/service-identities', status: 403 }),
     createServiceIdentity: () => ({

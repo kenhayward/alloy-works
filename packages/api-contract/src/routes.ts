@@ -12,6 +12,7 @@ import { datasetSourceRoutes } from './dataset-sources.js';
 import { exportRoutes } from './exports.js';
 import { modelEndpointRoutes } from './model-endpoints.js';
 import { serviceIdentityRoutes } from './service-identities.js';
+import { webhookRoutes } from './webhooks.js';
 import { assistantRoutes } from './assistant.js';
 import { generatedRoutes } from './generated.js';
 import { promptRoutes } from './prompts.js';
@@ -390,6 +391,7 @@ type Routes = typeof ownRoutes &
   typeof exportRoutes &
   typeof modelEndpointRoutes &
   typeof serviceIdentityRoutes &
+  typeof webhookRoutes &
   typeof assistantRoutes &
   typeof generatedRoutes &
   typeof promptRoutes &
@@ -456,6 +458,7 @@ export const routes: Routes = {
   ...exportRoutes,
   ...modelEndpointRoutes,
   ...serviceIdentityRoutes,
+  ...webhookRoutes,
   ...assistantRoutes,
   ...generatedRoutes,
   ...promptRoutes,

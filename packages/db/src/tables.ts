@@ -151,6 +151,51 @@ export interface SessionTable {
 }
 
 /** A personal token, kept as its hash (0038); its scopes a mask over its principal's grants. */
+/** A webhook subscription (0139; the WB plan): never answered with its sealed secrets. */
+export interface WebhookSubscriptionTable {
+  id: Generated<string>;
+  service_identity: string;
+  url: string;
+  description: Generated<string>;
+  event_types: string[];
+  sealed: string;
+  sealed_previous: string | null;
+  previous_until: Date | null;
+  created_by: string | null;
+  created_at: Generated<Date>;
+  disabled_at: Date | null;
+  disabled_reason: 'failing' | 'identity_disabled' | null;
+  last_success_at: Date | null;
+  failing_since: Date | null;
+}
+
+/** A delivery, queued by trigger (0139; WB-D). */
+export interface WebhookDeliveryTable {
+  id: string;
+  subscription_id: string;
+  type: string;
+  sequence: string;
+  artifact_id: string | null;
+  payload: ColumnType<unknown, string, never>;
+  state: Generated<'pending' | 'delivered' | 'given_up' | 'dropped'>;
+  attempts: Generated<number>;
+  next_at: Generated<Date>;
+  locked_until: Date | null;
+  first_attempt_at: Date | null;
+  created_at: Generated<Date>;
+}
+
+/** One attempt at a delivery (0139; API-029). */
+export interface WebhookAttemptTable {
+  id: Generated<string>;
+  delivery_id: string;
+  at: Generated<Date>;
+  status: number | null;
+  latency_ms: number;
+  failure: string | null;
+  reply: string | null;
+}
+
 /** A service identity's own facts, beside its principal (0138; the G8 plan, G8-G). */
 export interface ServiceIdentityTable {
   principal_id: string;
@@ -1080,6 +1125,9 @@ export interface TenantTables {
   session: SessionTable;
   api_token: ApiTokenTable;
   service_identity: ServiceIdentityTable;
+  webhook_subscription: WebhookSubscriptionTable;
+  webhook_delivery: WebhookDeliveryTable;
+  webhook_attempt: WebhookAttemptTable;
   invitation: InvitationTable;
   google_domain: GoogleDomainTable;
   sign_in_handoff: SignInHandoffTable;
