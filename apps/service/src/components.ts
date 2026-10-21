@@ -39,12 +39,18 @@ import {
   openLinesOf,
   readLines,
 } from '@alloy-works/db';
-import { decide, type EffectiveField } from '@alloy-works/domain';
+import {
+  decide,
+  storableEverywhere,
+  type ContentDocument,
+  type EffectiveField,
+} from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import { administersTenant, notFound, scopesOf, type Authorised } from './access.js';
 import { AppError } from './errors.js';
 import { cursorFor, pageAsked } from './listing.js';
 import type { SessionPrincipal } from './sessions.js';
+import { markdownReader } from './markdown.js';
 import { refused } from './wire-codes.js';
 import { stateOf, workflowView } from './workflows.js';
 
@@ -272,12 +278,30 @@ export function componentHandlers(
     createComponent: async (request: FastifyRequest, { trx, principalId, facts }: Authorised) => {
       const { space } = request.params as SpaceParams;
       const body = request.body as CreateComponentBody;
+      // Markdown admitted as pasted text is, so nothing it makes is a reference or a binding a save
+      // would check (the G8 plan, G8-C).
+      const first = {
+        schemaVersion: 1,
+        title: body.title,
+        language: body.language,
+        direction: body.direction,
+        content: [],
+      } as unknown as ContentDocument;
+      const blocks = body.markdown === undefined ? undefined : markdownReader(first)(body.markdown);
+      // Held to what a save may store, a lone surrogate among it (the G8 final review).
+      if (
+        typeof blocks === 'string' ||
+        (blocks !== undefined && !storableEverywhere({ ...first, content: [...blocks] }))
+      ) {
+        throw refused(400, 'content.invalid', 'The Markdown could not be admitted as content.');
+      }
       const answer = await createComponent(trx, {
         spaceId: space,
         title: body.title,
         language: body.language,
         direction: body.direction,
         ...(body.componentType === undefined ? {} : { componentTypeId: body.componentType }),
+        ...(blocks === undefined ? {} : { blocks }),
         author: principalId,
       });
       // The space was decided on before this ran, so `space.missing` here means it went in the moment

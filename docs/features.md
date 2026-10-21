@@ -1402,7 +1402,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 - **MCP, for agents.** An MCP client connects to `/mcp` on your environment with an API token, yours
   or a service identity's, as a bearer: a signed-in session never works there. Four tools read:
   `search`, `read_document`, `read_component` (its blocks numbered) and `related` (an artifact's
-  relationships, or the shortest path to another). Each is the API route it wraps, called as the
+  relationships, or the shortest path to another). Three change, and say so: `comment` starts a thread
+  on a component or a document's node, or replies to one; `suggest_edit` suggests block edits for the
+  author to accept or reject, changing nothing; `draft_component` makes a new component from
+  Markdown. None approves, publishes or edits directly. Each is the API route it wraps, called as the
   token's holder, so it reads only what they may and refuses as the route does. Each call is recorded in
   the audit log as a tool used, with the tool, its identifiers and the outcome; any text it was given,
   a search's words among them, is kept only as its length and a digest.

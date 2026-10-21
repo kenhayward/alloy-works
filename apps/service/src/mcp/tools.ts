@@ -1,7 +1,13 @@
 import { createHash } from 'node:crypto';
 import { ComponentView, routes } from '@alloy-works/api-contract';
-import { componentAsText, type ContentDocument } from '@alloy-works/domain';
+import {
+  applyEdits,
+  blockEditSchema,
+  componentAsText,
+  type ContentDocument,
+} from '@alloy-works/domain';
 import { z } from 'zod';
+import { markdownReader } from '../markdown.js';
 
 /**
  * The MCP surface's tools (ADR-0065; the G8 plan, G8-B to G8-E): each the `/v1` route it wraps,
@@ -233,8 +239,195 @@ const related: Tool = {
   },
 };
 
-/** The tools, in the order `tools/list` gives them. */
-export const tools: readonly Tool[] = [search, readDocument, readComponent, related];
+/** A refusal of the tool's own, before any route is called: the route's body shape (G8-B). */
+const refusal = (code: string, message: string): Answer => ({
+  ok: false,
+  status: 400,
+  body: { code, message },
+});
+
+const words = z
+  .string()
+  .min(1)
+  .max(4000)
+  .describe('The comment: plain words, at most 4,000 characters, no mentions');
+
+// One object, as an input schema's root must be (MCP): exactly one of a component, a document's
+// node, or a thread to reply to.
+const commentInput = z
+  .strictObject({
+    component: id.optional().describe('A component to start a thread on'),
+    document: id.optional().describe('A document to start a thread on, at `node`'),
+    node: z
+      .string()
+      .min(1)
+      .max(64)
+      .optional()
+      .describe("With `document`: the outline node, as read_document's outline names it"),
+    thread: id.optional().describe('A thread to reply to'),
+    text: words,
+  })
+  .refine(
+    (args) =>
+      [args.component, args.document, args.thread].filter((each) => each !== undefined).length ===
+        1 && (args.document === undefined) === (args.node === undefined),
+    { message: 'Exactly one of a component, a document and its node, or a thread' },
+  );
+type CommentInput = z.infer<typeof commentInput>;
+
+const comment: Tool = {
+  name: 'comment',
+  title: 'Comment',
+  purpose:
+    'Starts a comment thread on a component or on a node of a document, or replies to a thread, as the caller.',
+  when: 'to raise a question or a point for the people who write and review it.',
+  returns: 'the thread, with every comment in it.',
+  reads: false,
+  wraps: ['startComponentThread', 'startDocumentThread', 'addComment'],
+  input: commentInput,
+  output: z.object({ thread: routes.addComment.responses[200].schema }),
+  subject: (args: CommentInput) =>
+    args.component !== undefined
+      ? { kind: 'component', id: args.component }
+      : args.document !== undefined
+        ? { kind: 'document', id: args.document }
+        : { kind: 'thread', id: args.thread! },
+  audited: (args: CommentInput) => ({
+    ...(args.component === undefined ? {} : { component: args.component }),
+    ...(args.document === undefined ? {} : { document: args.document, node: digest(args.node!) }),
+    ...(args.thread === undefined ? {} : { thread: args.thread }),
+    text: digest(args.text),
+  }),
+  run: async (args: CommentInput, call) => {
+    const parts = [{ text: args.text }];
+    const wrapped = (body: unknown) => ({ thread: body });
+    if (args.thread !== undefined) {
+      return answered(
+        call('POST', `/v1/threads/${args.thread}/comments`, { body: { parts } }),
+        wrapped,
+      );
+    }
+    // The version the anchor stands on: the latest, as the caller reads it.
+    const path =
+      args.component !== undefined
+        ? `/v1/components/${args.component}`
+        : `/v1/documents/${args.document}`;
+    const read = await answered(call('GET', path));
+    if (!read.ok) return read;
+    const version = (read.value as { version: { id: string } }).version.id;
+    const anchor =
+      args.component !== undefined ? { kind: 'component' } : { kind: 'node', node: args.node };
+    return answered(call('POST', `${path}/threads`, { body: { version, anchor, parts } }), wrapped);
+  },
+};
+
+const suggestInput = z.strictObject({
+  component: id,
+  version: id.describe('The version read_component gave, which the edits are against'),
+  edits: z
+    .array(blockEditSchema)
+    .min(1)
+    .max(50)
+    .describe(
+      'Each `{ replace, markdown }`, `{ insertAfter, markdown }` (null for first) or `{ delete }`, by block identifier',
+    ),
+});
+type SuggestInput = z.infer<typeof suggestInput>;
+
+const suggestEdit: Tool = {
+  name: 'suggest_edit',
+  title: 'Suggest an edit',
+  purpose:
+    "Suggests edits to a component's blocks, as read_component numbered them, for its author to accept or reject: nothing changes until they do.",
+  when: 'to propose new or changed text in a component, never to change it directly.',
+  returns: 'the suggestion made, which its author reviews as a redline.',
+  reads: false,
+  wraps: ['getComponentVersion', 'makeSuggestion'],
+  input: suggestInput,
+  output: z.object({ suggestion: routes.makeSuggestion.responses[200].schema }),
+  subject: (args: SuggestInput) => ({ kind: 'component', id: args.component }),
+  audited: (args: SuggestInput) => ({
+    component: args.component,
+    version: args.version,
+    edits: args.edits.length,
+    markdown: digest(
+      args.edits.map((each) => ('markdown' in each ? each.markdown : '')).join('\n'),
+    ),
+  }),
+  run: async (args: SuggestInput, call) => {
+    const read = await answered(
+      call('GET', `/v1/components/${args.component}/versions/${args.version}`),
+    );
+    if (!read.ok) return read;
+    const content = (read.value as { content: ContentDocument }).content;
+    const edited = applyEdits(content, args.edits, markdownReader(content));
+    if (!edited.ok) return refusal('edits_invalid', edited.problem);
+    return answered(
+      call('POST', `/v1/components/${args.component}/suggestions`, {
+        body: { version: args.version, content: edited.content },
+      }),
+      (body) => ({ suggestion: body }),
+    );
+  },
+};
+
+const draftInput = z.strictObject({
+  space: id.describe('The space to make it in'),
+  title: z.string().min(1).max(200),
+  markdown: z
+    .string()
+    .min(1)
+    .max(20_000)
+    .describe('Its text, as Markdown: paragraphs, headings, lists and emphasis'),
+  language: z
+    .string()
+    .regex(/^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|\d{3}))?$/)
+    .optional()
+    .describe('A language tag such as en-GB; en-GB if absent'),
+});
+type DraftInput = z.infer<typeof draftInput>;
+
+const draftComponent: Tool = {
+  name: 'draft_component',
+  title: 'Draft a component',
+  purpose:
+    'Makes a new component in a space, its first version this Markdown, as a draft that nothing places until a person does.',
+  when: 'to offer new content to be reviewed, never to change content that exists.',
+  returns: 'the component made, with its identifier and its version.',
+  reads: false,
+  wraps: ['createComponent'],
+  input: draftInput,
+  output: z.object({ component: routes.createComponent.responses[200].schema }),
+  subject: (args: DraftInput) => ({ kind: 'space', id: args.space }),
+  audited: (args: DraftInput) => ({
+    space: args.space,
+    title: digest(args.title),
+    markdown: digest(args.markdown),
+  }),
+  run: (args: DraftInput, call) =>
+    answered(
+      call('POST', `/v1/spaces/${args.space}/components`, {
+        body: {
+          title: args.title,
+          language: args.language ?? 'en-GB',
+          direction: 'ltr',
+          markdown: args.markdown,
+        },
+      }),
+      (body) => ({ component: body }),
+    ),
+};
+
+/** The tools, in the order `tools/list` gives them: the four that read, then the three that change. */
+export const tools: readonly Tool[] = [
+  search,
+  readDocument,
+  readComponent,
+  related,
+  comment,
+  suggestEdit,
+  draftComponent,
+];
 
 /** A tool as `tools/list` describes it (API-019, API-021). */
 export function listed(tool: Tool) {

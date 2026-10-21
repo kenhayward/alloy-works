@@ -79949,6 +79949,8 @@ export interface operations {
                     direction: "ltr" | "rtl";
                     /** @description Absent: the environment's default (MET-011) */
                     componentType?: string & (unknown & unknown);
+                    /** @description Its first version's text, as Markdown: paragraphs, headings, lists and emphasis, admitted as pasted text is. Absent: one empty paragraph */
+                    markdown?: string;
                 };
             };
         };

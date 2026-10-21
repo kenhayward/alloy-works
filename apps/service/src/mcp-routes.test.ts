@@ -93,14 +93,19 @@ describe('the MCP surface (ADR-0065; the G8 plan, G8-A to G8-F)', () => {
 
   beforeAll(async () => {
     h = await startHarness();
-    for (const user of ['ada', 'ivy']) {
+    for (const [user, as, scopes] of [
+      ['ada', 'ada', []],
+      ['ivy', 'ivy', []],
+      ['alice', 'alice', ['comment', 'suggest', 'create']],
+      ['ada', 'adaWrites', ['comment', 'suggest', 'create']],
+    ] as const) {
       const issued = await h.call(user, 'POST', '/v1/tokens', {
         name: 'Agent',
-        scopes: [],
+        scopes,
         expiresAt: inAMonth(),
       });
       expect(issued.statusCode, issued.body).toBe(200);
-      secrets[user] = issued.json<{ secret: string }>().secret;
+      secrets[as] = issued.json<{ secret: string }>().secret;
     }
     const made = await h.component(h.general, 'Weir notes');
     await h.place(made, { type: 'text', value: 'The north weir floods each spring.', marks: [] });
@@ -119,6 +124,9 @@ describe('the MCP surface (ADR-0065; the G8 plan, G8-A to G8-F)', () => {
       'read_document',
       'read_component',
       'related',
+      'comment',
+      'suggest_edit',
+      'draft_component',
     ]);
     for (const tool of tools) {
       const shown = listed.find((each) => each.name === tool.name)!;
@@ -135,7 +143,7 @@ describe('the MCP surface (ADR-0065; the G8 plan, G8-A to G8-F)', () => {
     await client.close();
   });
 
-  it('marks every reading tool read-only to the calling agent, its title saying nothing changes', async () => {
+  it('API-021 marks a tool that changes anything apart from one that reads, in its annotations and its title', async () => {
     const client = await connect('ada');
     const { tools: listed } = await client.listTools();
     for (const shown of listed) {
@@ -263,6 +271,191 @@ describe('the MCP surface (ADR-0065; the G8 plan, G8-A to G8-F)', () => {
       }),
     ]);
     expect(JSON.stringify(events)).not.toContain('north weir');
+  });
+
+  it('API-021 refuses a change to a token that may only read, as the route it wraps does', async () => {
+    const client = await connect('ada');
+    const refused = await client.callTool({
+      name: 'comment',
+      arguments: { component, text: 'Is the weir still there?' },
+    });
+    expect(refused.isError).toBe(true);
+    expect(JSON.parse((refused.content as { text: string }[])[0]!.text)).toMatchObject({
+      code: 'forbidden',
+    });
+    await client.close();
+  });
+
+  it('comments on a component, and replies to the thread, as the caller', async () => {
+    const client = await connect('adaWrites');
+    const started = await client.callTool({
+      name: 'comment',
+      arguments: { component, text: 'Is the weir still there?' },
+    });
+    expect(started.isError, JSON.stringify(started.content)).toBeFalsy();
+    const thread = (started.structuredContent as { thread: { id: string } }).thread.id;
+    const replied = await client.callTool({
+      name: 'comment',
+      arguments: { thread, text: 'Yes, rebuilt in spring.' },
+    });
+    expect(replied.isError, JSON.stringify(replied.content)).toBeFalsy();
+    const read = await h.call('ada', 'GET', `/v1/threads/${thread}`);
+    expect(read.json<{ comments: unknown[] }>().comments).toHaveLength(2);
+    const both = await client.callTool({
+      name: 'comment',
+      arguments: { component, thread, text: 'Both at once' },
+    });
+    expect(both.isError).toBe(true);
+    await client.close();
+  });
+
+  it('suggests an edit for the author to review, changing nothing, and refuses one the caller may not make', async () => {
+    const before = (await h.call('ada', 'GET', `/v1/components/${component}`)).json<{
+      version: { id: string };
+    }>().version.id;
+    const client = await connect('adaWrites');
+    const suggested = await client.callTool({
+      name: 'suggest_edit',
+      arguments: {
+        component,
+        version: before,
+        edits: [{ replace: 'p1', markdown: 'The north weir floods each spring and autumn.' }],
+      },
+    });
+    expect(suggested.isError, JSON.stringify(suggested.content)).toBeFalsy();
+    const after = (await h.call('ada', 'GET', `/v1/components/${component}`)).json<{
+      version: { id: string };
+    }>().version.id;
+    expect(after).toBe(before);
+    const missing = await client.callTool({
+      name: 'suggest_edit',
+      arguments: { component, version: before, edits: [{ delete: 'nowhere' }] },
+    });
+    expect(missing.isError).toBe(true);
+    expect(JSON.parse((missing.content as { text: string }[])[0]!.text)).toMatchObject({
+      code: 'edits_invalid',
+    });
+    await client.close();
+    // Alice reads General and holds no suggest there: her token's scope gives her none.
+    const hers = await connect('alice');
+    const refused = await hers.callTool({
+      name: 'suggest_edit',
+      arguments: { component, version: before, edits: [{ delete: 'p1' }] },
+    });
+    expect(refused.isError).toBe(true);
+    await hers.close();
+  });
+
+  it('drafts a new component from Markdown in a space the caller may create in, and nowhere else', async () => {
+    const client = await connect('adaWrites');
+    const drafted = await client.callTool({
+      name: 'draft_component',
+      arguments: {
+        space: h.general,
+        title: 'Spring floods',
+        markdown: 'The weir floods.\n\nEach spring.',
+      },
+    });
+    expect(drafted.isError, JSON.stringify(drafted.content)).toBeFalsy();
+    const made = (drafted.structuredContent as { component: { id: string } }).component.id;
+    const read = await client.callTool({ name: 'read_component', arguments: { component: made } });
+    expect((read.structuredContent as { blocks: string }).blocks).toMatch(
+      /^\[#\S+\] paragraph\nThe weir floods\.\n\n\[#\S+\] paragraph\nEach spring\.$/,
+    );
+    await client.close();
+    const hers = await connect('alice');
+    const refused = await hers.callTool({
+      name: 'draft_component',
+      arguments: { space: h.general, title: 'Hers', markdown: 'Not hers to make.' },
+    });
+    expect(refused.isError).toBe(true);
+    await hers.close();
+  });
+
+  it('IAM-036 acts through MCP as a service identity, with its grants and never another', async () => {
+    const made = (
+      await h.call('ada', 'POST', '/v1/service-identities', { name: 'Weir agent' })
+    ).json<{ id: string }>().id;
+    secrets.robot = (
+      await h.call('ada', 'POST', `/v1/service-identities/${made}/tokens`, {
+        name: 'Agent',
+        scopes: ['comment'],
+        expiresAt: inAMonth(),
+      })
+    ).json<{ secret: string }>().secret;
+    const client = await connect('robot');
+    const unread = await client.callTool({ name: 'read_component', arguments: { component } });
+    expect(unread.isError).toBe(true);
+    await h.allow(made, h.roles.Reader!, { kind: 'space', id: h.general });
+    const read = await client.callTool({ name: 'read_component', arguments: { component } });
+    expect(read.isError, JSON.stringify(read.content)).toBeFalsy();
+    // Reading, and a comment scope, give it no permission to comment its grants do not hold.
+    const comment = await client.callTool({
+      name: 'comment',
+      arguments: { component, text: 'From the agent' },
+    });
+    expect(comment.isError).toBe(true);
+    await client.close();
+    const used = (await toolEvents()).filter((each) => each.actor === made);
+    expect(used.map((each) => each.detail.outcome)).toEqual(['refused', 'ok', 'refused']);
+  });
+
+  it('refuses Markdown a save could not store, as the route does', async () => {
+    const client = await connect('adaWrites');
+    const drafted = await client.callTool({
+      name: 'draft_component',
+      arguments: { space: h.general, title: 'Broken', markdown: 'a\ud800b' },
+    });
+    expect(drafted.isError).toBe(true);
+    expect(JSON.parse((drafted.content as { text: string }[])[0]!.text)).toMatchObject({
+      code: 'content_invalid',
+    });
+    await client.close();
+  });
+
+  it("comments on a document's node, as the caller", async () => {
+    const document = await h.documentReferencing([component]);
+    const client = await connect('adaWrites');
+    const started = await client.callTool({
+      name: 'comment',
+      arguments: { document: document.id, node: document.nodes[0]!, text: 'Check this section.' },
+    });
+    expect(started.isError, JSON.stringify(started.content)).toBeFalsy();
+    await client.close();
+  });
+
+  it('API-023 audits a call naming no tool, or arguments it refuses, as refused', async () => {
+    const before = (await toolEvents()).length;
+    const bearer = { authorization: `Bearer ${secrets.ada!}` };
+    await post(
+      { jsonrpc: '2.0', id: 5, method: 'tools/call', params: { name: 'publish' } },
+      bearer,
+    );
+    await post(
+      { jsonrpc: '2.0', id: 6, method: 'tools/call', params: { name: 'search', arguments: {} } },
+      bearer,
+    );
+    expect((await toolEvents()).slice(before).map((each) => each.detail)).toEqual([
+      { tool: 'unknown', arguments: {}, outcome: 'refused', code: 'unknown_tool' },
+      { tool: 'search', arguments: {}, outcome: 'refused', code: 'invalid_arguments' },
+    ]);
+  });
+
+  it('answers a body that is not JSON, or too large, in its own status', async () => {
+    const bearer = { authorization: `Bearer ${secrets.ada!}` };
+    const xml = await h.app.inject({
+      method: 'POST',
+      url: '/mcp',
+      headers: { host: HOST, 'content-type': 'application/xml', ...bearer },
+      payload: '<ping/>',
+    });
+    expect(xml.statusCode).toBe(415);
+    expect(xml.json()).toMatchObject({ error: { code: -32600 } });
+    const large = await post(
+      { jsonrpc: '2.0', id: 7, method: 'ping', params: { padding: 'x'.repeat(2_000_000) } },
+      bearer,
+    );
+    expect(large.statusCode).toBe(413);
   });
 
   it('takes a bearer token alone, refusing a cookie, a page of another origin and a version it does not hold', async () => {

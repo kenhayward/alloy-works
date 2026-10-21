@@ -1,5 +1,3 @@
-import { randomBytes } from 'node:crypto';
-
 import {
   createComponent,
   makeCreationProposal,
@@ -47,22 +45,18 @@ import {
   proposeComponentInputSchema,
   conversationToolInputSchemas,
   isConversationTool,
-  admit,
   applyEdits,
   asData,
-  blockIdentifierFrom,
   citationsIn,
   componentAsText,
   isAssistantTool,
   parseContentDocument,
   toolInputSchemas,
-  type BlockNode,
   type ContentDocument,
   type ModelMessage,
   type OutlineDocument,
 } from '@alloy-works/domain';
 import type { ObjectStores } from '@alloy-works/objects';
-import { readMarkdown } from '@alloy-works/readers/markdown';
 import type { StartConversationBody, TurnBody } from '@alloy-works/api-contract';
 import type { FastifyRequest } from 'fastify';
 
@@ -72,6 +66,7 @@ import { createConnectorClient } from '../data/connector.js';
 import type { ConnectorOptions } from '../data/connections.js';
 import { liveBindingStates } from '../data/bindings.js';
 import { mayNameColumns, storableContent } from '../editing.js';
+import { markdownReader } from '../markdown.js';
 import { AppError } from '../errors.js';
 import type { SessionPrincipal } from '../sessions.js';
 import { failureWords, microsText, streamedRun, type ToolAnswer } from './run-loop.js';
@@ -100,20 +95,6 @@ const capped = (text: string) =>
   text.length <= TOOL_ANSWER_MAX
     ? text
     : `${text.slice(0, TOOL_ANSWER_MAX)}\n[Cut short: the rest is not shown.]`;
-
-/** A component's latest blocks, as Markdown admitted into them (G2-D). */
-function markdownReader(document: ContentDocument) {
-  return (markdown: string): readonly BlockNode[] | string => {
-    const reading = readMarkdown(markdown);
-    if (!reading.ok) return 'The Markdown could not be read.';
-    const admitted = admit(reading.input, {
-      document,
-      conditionAxes: [],
-      newIdentifier: () => blockIdentifierFrom(randomBytes(16)),
-    });
-    return admitted.ok ? admitted.content : 'The Markdown could not be admitted as content.';
-  };
-}
 
 /** The text a section title's inline content says. */
 const titleOf = (title: readonly unknown[]): string =>
