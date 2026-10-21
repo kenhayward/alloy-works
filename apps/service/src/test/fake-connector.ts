@@ -23,6 +23,7 @@ import {
   type DescribeSqlAnswer,
   type RunAnswer,
   type TestAnswer,
+  type ManifestAnswer,
 } from '@alloy-works/domain';
 
 /** The key a harness's service presents to its fake connector: invented, and made afresh. */
@@ -52,6 +53,8 @@ export interface FakeConnector {
   modelFor?: ((request: ModelRequest) => ModelEvent[]) | undefined;
   /** Where set, an embedding call's answer by what it was sent (the G7 plan); else a failure. */
   embedFor?: ((request: EmbedRequest) => EmbedAnswer) | undefined;
+  /** What a manifest fetch answers, by its URL: refused unless a test says (the EX plan). */
+  manifestFor?: ((url: string) => ManifestAnswer) | undefined;
   /** Where set, a run's answer by what it was sent, in place of `run`. */
   runFor?: ((body: { readonly values: Record<string, unknown> }) => RunAnswer) | undefined;
   /** Where set, a test and a describe wait for it before answering: a source that is slow. */
@@ -148,6 +151,13 @@ export function fakeConnector(): FakeConnector {
             String(body.secret),
           ),
         });
+      }
+      if (path === '/v1/manifest') {
+        const answer = fake.manifestFor?.(String(body.url)) ?? {
+          type: 'failed',
+          code: 'manifest_refused',
+        };
+        return Response.json(answer);
       }
       if (path === '/v1/webhook/seal') {
         return Response.json({

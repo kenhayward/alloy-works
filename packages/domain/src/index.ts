@@ -117,3 +117,23 @@ export {
   type WebhookEventType,
   type WebhookSealRequest,
 } from './webhooks/index.js';
+
+// Extensions: a manifest, read strictly, and its fetch through the connector (docs/design/extensions.md).
+export {
+  childManifestRequestSchema,
+  extensionCapabilitiesSchema,
+  extensionManifestSchema,
+  extensionSettingSchema,
+  httpsUrl,
+  manifestAnswerSchema,
+  manifestDigestInput,
+  manifestRequestSchema,
+  MANIFEST_MOST_BYTES,
+  readManifest,
+  type ChildManifestRequest,
+  type ExtensionCapabilities,
+  type ExtensionManifest,
+  type ExtensionSetting,
+  type ManifestAnswer,
+  type ManifestRequest,
+} from './extensions/manifest.js';

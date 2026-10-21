@@ -166,6 +166,19 @@ export {
   webhookRoutes,
 } from './webhooks.js';
 export {
+  ExtensionList,
+  ExtensionListQuery,
+  ExtensionParams,
+  ExtensionPreview,
+  ExtensionRemoved,
+  ExtensionUses,
+  ExtensionView,
+  InstallExtensionBody,
+  PreviewExtensionBody,
+  UpdateExtensionBody,
+  extensionRoutes,
+} from './extensions.js';
+export {
   AssistantRunBody,
   AssistantRunParams,
   AssistantRunView,

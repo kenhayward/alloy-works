@@ -12,6 +12,7 @@ import {
   modelSealRequestSchema,
   webhookSealRequestSchema,
   deliverRequestSchema,
+  manifestRequestSchema,
   DELIVERY_BODY_MOST,
   webhookSecretContext,
   describeRequestSchema,
@@ -50,6 +51,8 @@ const bodyLimits: Readonly<Record<string, number>> = {
   '/v1/webhook/seal': MAX_BODY_BYTES,
   // A webhook delivery: its thin body and two sealed secrets (WB-F).
   '/v1/deliver': 2 * DELIVERY_BODY_MOST,
+  // An extension's manifest, by its URL (the EX plan, EX-B).
+  '/v1/manifest': 8 * 1024,
   '/v1/model': MODEL_REQUEST_MAX_BYTES,
   // An embedding call: up to 96 texts (the G7 plan, G7-E).
   '/v1/embed': EMBED_REQUEST_MAX_BYTES,
@@ -223,6 +226,14 @@ export function createConnectorServer(options: {
     response.on('close', () => {
       if (!response.writableFinished) gone.abort();
     });
+    if (path === '/v1/manifest') {
+      const parsed = manifestRequestSchema.safeParse(body);
+      if (!parsed.success) return send(400, { code: 'request_invalid' });
+      const call = supervisor.manifest(parsed.data, gone.signal);
+      if (call === 'busy') return send(503, { code: 'connector_busy' });
+      send(200, await call);
+      return { status: 200, stderrBytes: stderrBytes - before };
+    }
     if (path === '/v1/deliver') {
       const parsed = deliverRequestSchema.safeParse(body);
       if (!parsed.success) return send(400, { code: 'request_invalid' });

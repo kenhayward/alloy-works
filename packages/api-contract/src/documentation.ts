@@ -169,6 +169,11 @@ export const documentationGroups = [
         description: 'Issue, list and revoke personal API tokens with a signed-in session.',
       },
       {
+        name: 'Extensions',
+        description:
+          'Install a source type from its manifest, read what it declares, update and remove it.',
+      },
+      {
         name: 'Webhooks',
         description:
           'Subscribe a service identity’s endpoint to events, signed, and manage its secret.',
@@ -484,6 +489,16 @@ const operationTags = {
     'revokeToken',
     'listPrincipalTokens',
     'revokePrincipalToken',
+  ],
+  Extensions: [
+    'listExtensions',
+    'previewExtension',
+    'installExtension',
+    'getExtension',
+    'previewExtensionUpdate',
+    'updateExtension',
+    'listExtensionUses',
+    'removeExtension',
   ],
   Webhooks: [
     'listWebhooks',
@@ -1028,6 +1043,22 @@ const descriptions: Readonly<Record<string, string>> = {
     'Disables a service identity: every token it holds is revoked at once, each recorded, and no more are issued. Kept, so what it did still names it. Needs administer at the environment, with a signed-in session.',
   issueServiceIdentityToken:
     'Issues a service identity a token that acts as it, masked to its scopes and lasting at most 365 days; its secret is answered this once. A token acts only as the service identity it was issued to, never as the administrator who issued it. Recorded as a token issued. Needs administer at the environment, with a signed-in session.',
+  listExtensions:
+    'Lists the extensions installed, removed ones too: each one’s manifest as it was installed or last updated, and its digest. Needs administer at the environment, with a signed-in session.',
+  previewExtension:
+    'Has the connector fetch an extension’s manifest by its HTTPS URL, and answers it read strictly with its digest, so an administrator reads what it declares - what it is, the settings and credential a connection takes, its capabilities, and the hosts it says it sends data to - before installing it. A manifest that does not read is refused naming where, never what it said. Needs administer at the environment, with a signed-in session.',
+  installExtension:
+    'Installs an extension at the manifest its preview showed, by that digest; refused where the manifest has changed since. Recorded as an extension changed. Needs administer at the environment, with a signed-in session.',
+  getExtension:
+    'Returns an extension and the manifest it has now. Needs administer at the environment, with a signed-in session.',
+  previewExtensionUpdate:
+    'Fetches an extension’s manifest again and says what an update would change: its endpoint, settings, credential, capabilities, outbound hosts or description. Needs administer at the environment, with a signed-in session.',
+  updateExtension:
+    'Moves an extension to the manifest its update preview showed, every earlier one kept; a connection keeps the manifest it was saved against until it is saved again. Recorded as an extension changed. Needs administer at the environment, with a signed-in session.',
+  listExtensionUses:
+    'Lists the connections using an extension, retired ones too, each with the manifest it was saved against. Needs administer at the environment, with a signed-in session.',
+  removeExtension:
+    'Removes an extension once no connection uses it but a retired one; kept, so what used it still names it. Recorded as an extension changed. Needs administer at the environment, with a signed-in session.',
   listWebhooks:
     'Lists the environment’s webhook subscriptions: each one’s service identity, URL, event types and whether it is disabled, never its secret. Needs administer at the environment, with a signed-in session.',
   createWebhook:

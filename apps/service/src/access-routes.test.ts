@@ -1608,6 +1608,27 @@ describe('routes that check a permission', () => {
     getErasure: () => ({ url: `/v1/principals/${ids.alice}/erasure`, status: 403 }),
     erasePrincipal: () => ({ url: `/v1/principals/${ids.alice}/erase`, status: 403 }),
     listPrincipalTokens: () => ({ url: `/v1/principals/${ids.alice}/tokens`, status: 403 }),
+    // Extensions are an administrator's of the whole environment (EX-B).
+    listExtensions: () => ({ url: '/v1/extensions', status: 403 }),
+    previewExtension: () => ({
+      url: '/v1/extensions/preview',
+      status: 403,
+      payload: { url: 'https://gauges.example.test/manifest.json' },
+    }),
+    installExtension: () => ({
+      url: '/v1/extensions',
+      status: 403,
+      payload: { url: 'https://gauges.example.test/manifest.json', digest: 'a'.repeat(64) },
+    }),
+    getExtension: () => ({ url: `/v1/extensions/${MISSING}`, status: 403 }),
+    previewExtensionUpdate: () => ({ url: `/v1/extensions/${MISSING}/preview`, status: 403 }),
+    updateExtension: () => ({
+      url: `/v1/extensions/${MISSING}/update`,
+      status: 403,
+      payload: { digest: 'a'.repeat(64) },
+    }),
+    listExtensionUses: () => ({ url: `/v1/extensions/${MISSING}/uses`, status: 403 }),
+    removeExtension: () => ({ url: `/v1/extensions/${MISSING}`, status: 403 }),
     // Webhooks are an administrator's of the whole environment (WB-H).
     listWebhooks: () => ({ url: '/v1/webhooks', status: 403 }),
     createWebhook: () => ({

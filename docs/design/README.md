@@ -45,6 +45,7 @@ understand the storage layer, rather than something to be thrown away.
 | [workflow.md](workflow.md)                             | Each kind's workflow, declared and versioned per tenant; every component and document in one state, moved along a transition by whoever it permits             |
 | [generation.md](generation.md)                         | A model as a governed contributor: endpoints, runs, the assistant drafting against a document, and every output a proposal                                     |
 | [webhooks.md](webhooks.md)                             | Events posted to a service identity's endpoint, thin and signed, queued in the act's transaction and retried for a day                                         |
+| [extensions.md](extensions.md)                         | A source type added as a manifest and a remote service, installed by an administrator, pinned by its digest                                                    |
 
 ## Why these are not one per requirement area
 

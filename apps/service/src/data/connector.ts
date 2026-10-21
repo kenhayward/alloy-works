@@ -26,6 +26,9 @@ import {
   type TestAnswer,
   type TestRequest,
   type WebhookSealRequest,
+  manifestAnswerSchema,
+  type ManifestAnswer,
+  type ManifestRequest,
 } from '@alloy-works/domain';
 import type { z } from 'zod';
 
@@ -71,6 +74,8 @@ export interface ConnectorClient {
   sealModel(request: ModelSealRequest): Promise<Answered<SealAnswer>>;
   /** Seals a webhook's signing secret to its subscription and URL (the WB plan, WB-G). */
   sealWebhook(request: WebhookSealRequest): Promise<Answered<SealAnswer>>;
+  /** Fetches an extension's manifest by its URL (the EX plan, EX-B). */
+  manifest(request: ManifestRequest): Promise<Answered<ManifestAnswer>>;
   /**
    * A model call (the G1 plan, G1-C): each event as the connector streams it, the last `ended` or
    * `failed`, which is also answered. A connector that cannot be reached, is full, or ends without a
@@ -89,6 +94,9 @@ export interface ConnectorClient {
  * How long a seal may take: it opens no source, and is answered in milliseconds, so it is asked in the
  * transaction its permission was decided in, and three seconds bounds a connector that hangs there.
  */
+/** How long a manifest's fetch may take: its ten seconds, a child's start, and the way there. */
+const MANIFEST_MS = 15_000;
+
 const SEAL_MS = 3_000;
 /** How long past a request's own deadline the service waits before giving up on the connector. */
 const SLACK_MS = 2_000;
@@ -172,6 +180,7 @@ export function createConnectorClient(options: {
       ask('/v1/run', request, runAnswerSchema, request.deadlineMs + SLACK_MS, signal),
     sealModel: (request) => ask('/v1/model/seal', request, sealAnswerSchema, SEAL_MS),
     sealWebhook: (request) => ask('/v1/webhook/seal', request, sealAnswerSchema, SEAL_MS),
+    manifest: (request) => ask('/v1/manifest', request, manifestAnswerSchema, MANIFEST_MS),
     embed: (request, signal) =>
       ask('/v1/embed', request, embedAnswerSchema, request.deadlineMs + SLACK_MS, signal),
     model: async (request, onEvent, signal) => {

@@ -420,6 +420,17 @@ describe('the domain package', () => {
         'resolveVariable',
         'variableDefinitionSchema',
         // Webhooks: the event types, the URL and secret, the secret's sealing (the WB plan).
+        // Extensions: the manifest and its fetch (the EX plan).
+        'childManifestRequestSchema',
+        'extensionCapabilitiesSchema',
+        'extensionManifestSchema',
+        'extensionSettingSchema',
+        'httpsUrl',
+        'manifestAnswerSchema',
+        'manifestDigestInput',
+        'manifestRequestSchema',
+        'MANIFEST_MOST_BYTES',
+        'readManifest',
         'childDeliverRequestSchema',
         'deliverAnswerSchema',
         'deliverRequestSchema',

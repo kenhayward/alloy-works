@@ -447,6 +447,7 @@ describe("the connector's model paths", () => {
       '/v1/model',
       '/v1/model/seal',
       '/v1/webhook/seal',
+      '/v1/manifest',
       '/v1/seal',
       '/v1/test',
       '/v1/run',

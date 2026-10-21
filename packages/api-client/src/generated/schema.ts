@@ -2891,6 +2891,134 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/extensions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The extensions installed, removed ones too, a page at a time
+         * @description Lists the extensions installed, removed ones too: each one’s manifest as it was installed or last updated, and its digest. Needs administer at the environment, with a signed-in session.
+         */
+        get: operations["listExtensions"];
+        put?: never;
+        /**
+         * Install an extension at the manifest its preview showed
+         * @description Installs an extension at the manifest its preview showed, by that digest; refused where the manifest has changed since. Recorded as an extension changed. Needs administer at the environment, with a signed-in session.
+         */
+        post: operations["installExtension"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/extensions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * An extension and the manifest it has now
+         * @description Returns an extension and the manifest it has now. Needs administer at the environment, with a signed-in session.
+         */
+        get: operations["getExtension"];
+        put?: never;
+        post?: never;
+        /**
+         * Remove an extension no connection uses but a retired one
+         * @description Removes an extension once no connection uses it but a retired one; kept, so what used it still names it. Recorded as an extension changed. Needs administer at the environment, with a signed-in session.
+         */
+        delete: operations["removeExtension"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/extensions/{id}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Read an extension’s manifest again, saying what an update would change
+         * @description Fetches an extension’s manifest again and says what an update would change: its endpoint, settings, credential, capabilities, outbound hosts or description. Needs administer at the environment, with a signed-in session.
+         */
+        post: operations["previewExtensionUpdate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/extensions/{id}/update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move an extension to the manifest its update preview showed
+         * @description Moves an extension to the manifest its update preview showed, every earlier one kept; a connection keeps the manifest it was saved against until it is saved again. Recorded as an extension changed. Needs administer at the environment, with a signed-in session.
+         */
+        post: operations["updateExtension"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/extensions/{id}/uses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The connections using an extension, retired ones too
+         * @description Lists the connections using an extension, retired ones too, each with the manifest it was saved against. Needs administer at the environment, with a signed-in session.
+         */
+        get: operations["listExtensionUses"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/extensions/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Read an extension’s manifest by its URL, before installing it
+         * @description Has the connector fetch an extension’s manifest by its HTTPS URL, and answers it read strictly with its digest, so an administrator reads what it declares - what it is, the settings and credential a connection takes, its capabilities, and the hosts it says it sends data to - before installing it. A manifest that does not read is refused naming where, never what it said. Needs administer at the environment, with a signed-in session.
+         */
+        post: operations["previewExtension"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/grants": {
         parameters: {
             query?: never;
@@ -57420,6 +57548,1514 @@ export interface operations {
             };
             /** @description `export_not_ready`: the export is not written yet, failed, or has expired */
             409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listExtensions: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: string;
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of extensions */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "next": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        items: {
+                            id: string;
+                            url: string;
+                            /** @description SHA-256 of the manifest’s canonical JSON, as its preview gave it */
+                            digest: string;
+                            /** @description What the extension says it is, takes and does, and where it sends data: its own words */
+                            manifest: {
+                                /** @constant */
+                                manifest: 1;
+                                name: string;
+                                /** @example 1.2.0 */
+                                version: string;
+                                publisher: string;
+                                description: string;
+                                /** @constant */
+                                kind: "source";
+                                /** @example https://gauges.example.test/alloy */
+                                endpoint: string;
+                                settings: {
+                                    key: string;
+                                    label: string;
+                                    /** @enum {string} */
+                                    type: "text" | "number" | "boolean";
+                                    required: boolean;
+                                }[];
+                                authentication: "none" | {
+                                    label: string;
+                                };
+                                capabilities: {
+                                    parameters: boolean;
+                                    keyColumns: boolean;
+                                    rowLimit: boolean;
+                                };
+                                outbound: {
+                                    host: string;
+                                    purpose: string;
+                                }[];
+                            };
+                            installedBy: string | null;
+                            installedAt: string;
+                            updatedAt: string;
+                            /** @description When it was removed; kept, so what used it names it */
+                            removedAt: string | null;
+                        }[];
+                        /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
+                        next: string | null;
+                    };
+                };
+            };
+            /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description forbidden: the caller may not administer this environment; or token_not_allowed: extensions are managed with a signed-in session, never a token */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    installExtension: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "url": "https://example.com/",
+                 *       "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+                 *     }
+                 */
+                "application/json": {
+                    /**
+                     * Format: uri
+                     * @description Where its manifest is: HTTPS, at most 2,000 characters
+                     */
+                    url: string;
+                    /** @description SHA-256 of the manifest’s canonical JSON, as its preview gave it */
+                    digest: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Installed */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "url": "example",
+                     *       "digest": "0000000000000000000000000000000000000000000000000000000000000000",
+                     *       "manifest": {
+                     *         "manifest": 1,
+                     *         "name": "example",
+                     *         "version": "1.2.0",
+                     *         "publisher": "example",
+                     *         "description": "example",
+                     *         "kind": "source",
+                     *         "endpoint": "https://gauges.example.test/alloy",
+                     *         "settings": [],
+                     *         "authentication": "none",
+                     *         "capabilities": {
+                     *           "parameters": false,
+                     *           "keyColumns": false,
+                     *           "rowLimit": false
+                     *         },
+                     *         "outbound": []
+                     *       },
+                     *       "installedBy": "example",
+                     *       "installedAt": "example",
+                     *       "updatedAt": "example",
+                     *       "removedAt": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        url: string;
+                        /** @description SHA-256 of the manifest’s canonical JSON, as its preview gave it */
+                        digest: string;
+                        /** @description What the extension says it is, takes and does, and where it sends data: its own words */
+                        manifest: {
+                            /** @constant */
+                            manifest: 1;
+                            name: string;
+                            /** @example 1.2.0 */
+                            version: string;
+                            publisher: string;
+                            description: string;
+                            /** @constant */
+                            kind: "source";
+                            /** @example https://gauges.example.test/alloy */
+                            endpoint: string;
+                            settings: {
+                                key: string;
+                                label: string;
+                                /** @enum {string} */
+                                type: "text" | "number" | "boolean";
+                                required: boolean;
+                            }[];
+                            authentication: "none" | {
+                                label: string;
+                            };
+                            capabilities: {
+                                parameters: boolean;
+                                keyColumns: boolean;
+                                rowLimit: boolean;
+                            };
+                            outbound: {
+                                host: string;
+                                purpose: string;
+                            }[];
+                        };
+                        installedBy: string | null;
+                        installedAt: string;
+                        updatedAt: string;
+                        /** @description When it was removed; kept, so what used it names it */
+                        removedAt: string | null;
+                    };
+                };
+            };
+            /** @description invalid_request */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description forbidden: the caller may not administer this environment; or token_not_allowed: extensions are managed with a signed-in session, never a token */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description manifest_changed: the manifest is no longer the one its preview showed */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description manifest_invalid: what the URL answered is not a manifest, naming where it failed and never what it said; manifest_unavailable: the URL could not be read, by the connector’s code */
+            422: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getExtension: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The extension */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "url": "example",
+                     *       "digest": "0000000000000000000000000000000000000000000000000000000000000000",
+                     *       "manifest": {
+                     *         "manifest": 1,
+                     *         "name": "example",
+                     *         "version": "1.2.0",
+                     *         "publisher": "example",
+                     *         "description": "example",
+                     *         "kind": "source",
+                     *         "endpoint": "https://gauges.example.test/alloy",
+                     *         "settings": [],
+                     *         "authentication": "none",
+                     *         "capabilities": {
+                     *           "parameters": false,
+                     *           "keyColumns": false,
+                     *           "rowLimit": false
+                     *         },
+                     *         "outbound": []
+                     *       },
+                     *       "installedBy": "example",
+                     *       "installedAt": "example",
+                     *       "updatedAt": "example",
+                     *       "removedAt": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        url: string;
+                        /** @description SHA-256 of the manifest’s canonical JSON, as its preview gave it */
+                        digest: string;
+                        /** @description What the extension says it is, takes and does, and where it sends data: its own words */
+                        manifest: {
+                            /** @constant */
+                            manifest: 1;
+                            name: string;
+                            /** @example 1.2.0 */
+                            version: string;
+                            publisher: string;
+                            description: string;
+                            /** @constant */
+                            kind: "source";
+                            /** @example https://gauges.example.test/alloy */
+                            endpoint: string;
+                            settings: {
+                                key: string;
+                                label: string;
+                                /** @enum {string} */
+                                type: "text" | "number" | "boolean";
+                                required: boolean;
+                            }[];
+                            authentication: "none" | {
+                                label: string;
+                            };
+                            capabilities: {
+                                parameters: boolean;
+                                keyColumns: boolean;
+                                rowLimit: boolean;
+                            };
+                            outbound: {
+                                host: string;
+                                purpose: string;
+                            }[];
+                        };
+                        installedBy: string | null;
+                        installedAt: string;
+                        updatedAt: string;
+                        /** @description When it was removed; kept, so what used it names it */
+                        removedAt: string | null;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description forbidden: the caller may not administer this environment; or token_not_allowed: extensions are managed with a signed-in session, never a token */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such extension in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    removeExtension: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "removed": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        removed: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description forbidden: the caller may not administer this environment; or token_not_allowed: extensions are managed with a signed-in session, never a token */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such extension in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description extension_in_use: a connection not retired uses it; its uses list them */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    previewExtensionUpdate: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Its manifest now, and what changed */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "url": "example",
+                     *       "digest": "0000000000000000000000000000000000000000000000000000000000000000",
+                     *       "manifest": {
+                     *         "manifest": 1,
+                     *         "name": "example",
+                     *         "version": "1.2.0",
+                     *         "publisher": "example",
+                     *         "description": "example",
+                     *         "kind": "source",
+                     *         "endpoint": "https://gauges.example.test/alloy",
+                     *         "settings": [],
+                     *         "authentication": "none",
+                     *         "capabilities": {
+                     *           "parameters": false,
+                     *           "keyColumns": false,
+                     *           "rowLimit": false
+                     *         },
+                     *         "outbound": []
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        url: string;
+                        /** @description SHA-256 of the manifest’s canonical JSON, as its preview gave it */
+                        digest: string;
+                        /** @description What the extension says it is, takes and does, and where it sends data: its own words */
+                        manifest: {
+                            /** @constant */
+                            manifest: 1;
+                            name: string;
+                            /** @example 1.2.0 */
+                            version: string;
+                            publisher: string;
+                            description: string;
+                            /** @constant */
+                            kind: "source";
+                            /** @example https://gauges.example.test/alloy */
+                            endpoint: string;
+                            settings: {
+                                key: string;
+                                label: string;
+                                /** @enum {string} */
+                                type: "text" | "number" | "boolean";
+                                required: boolean;
+                            }[];
+                            authentication: "none" | {
+                                label: string;
+                            };
+                            capabilities: {
+                                parameters: boolean;
+                                keyColumns: boolean;
+                                rowLimit: boolean;
+                            };
+                            outbound: {
+                                host: string;
+                                purpose: string;
+                            }[];
+                        };
+                        /** @description Against the manifest it has now, where it is installed: what an update would change */
+                        changes?: ("endpoint" | "settings" | "authentication" | "capabilities" | "outbound" | "about")[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description forbidden: the caller may not administer this environment; or token_not_allowed: extensions are managed with a signed-in session, never a token */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such extension in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description extension_removed: it is removed */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description manifest_invalid: what the URL answered is not a manifest, naming where it failed and never what it said; manifest_unavailable: the URL could not be read, by the connector’s code */
+            422: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    updateExtension: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description SHA-256 of the manifest’s canonical JSON, as its preview gave it */
+                    digest: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "url": "example",
+                     *       "digest": "0000000000000000000000000000000000000000000000000000000000000000",
+                     *       "manifest": {
+                     *         "manifest": 1,
+                     *         "name": "example",
+                     *         "version": "1.2.0",
+                     *         "publisher": "example",
+                     *         "description": "example",
+                     *         "kind": "source",
+                     *         "endpoint": "https://gauges.example.test/alloy",
+                     *         "settings": [],
+                     *         "authentication": "none",
+                     *         "capabilities": {
+                     *           "parameters": false,
+                     *           "keyColumns": false,
+                     *           "rowLimit": false
+                     *         },
+                     *         "outbound": []
+                     *       },
+                     *       "installedBy": "example",
+                     *       "installedAt": "example",
+                     *       "updatedAt": "example",
+                     *       "removedAt": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        url: string;
+                        /** @description SHA-256 of the manifest’s canonical JSON, as its preview gave it */
+                        digest: string;
+                        /** @description What the extension says it is, takes and does, and where it sends data: its own words */
+                        manifest: {
+                            /** @constant */
+                            manifest: 1;
+                            name: string;
+                            /** @example 1.2.0 */
+                            version: string;
+                            publisher: string;
+                            description: string;
+                            /** @constant */
+                            kind: "source";
+                            /** @example https://gauges.example.test/alloy */
+                            endpoint: string;
+                            settings: {
+                                key: string;
+                                label: string;
+                                /** @enum {string} */
+                                type: "text" | "number" | "boolean";
+                                required: boolean;
+                            }[];
+                            authentication: "none" | {
+                                label: string;
+                            };
+                            capabilities: {
+                                parameters: boolean;
+                                keyColumns: boolean;
+                                rowLimit: boolean;
+                            };
+                            outbound: {
+                                host: string;
+                                purpose: string;
+                            }[];
+                        };
+                        installedBy: string | null;
+                        installedAt: string;
+                        updatedAt: string;
+                        /** @description When it was removed; kept, so what used it names it */
+                        removedAt: string | null;
+                    };
+                };
+            };
+            /** @description invalid_request */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description forbidden: the caller may not administer this environment; or token_not_allowed: extensions are managed with a signed-in session, never a token */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such extension in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description manifest_changed: the manifest is no longer the one its preview showed; extension_removed */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description manifest_invalid: what the URL answered is not a manifest, naming where it failed and never what it said; manifest_unavailable: the URL could not be read, by the connector’s code */
+            422: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listExtensionUses: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Its uses */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": []
+                     *     }
+                     */
+                    "application/json": {
+                        items: {
+                            connection: string;
+                            name: string;
+                            /** @description The manifest the connection was saved against */
+                            digest: string;
+                            retired: boolean;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description forbidden: the caller may not administer this environment; or token_not_allowed: extensions are managed with a signed-in session, never a token */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such extension in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    previewExtension: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "url": "https://example.com/"
+                 *     }
+                 */
+                "application/json": {
+                    /**
+                     * Format: uri
+                     * @description Where its manifest is: HTTPS, at most 2,000 characters
+                     */
+                    url: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Its manifest, and the digest installing it names */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "url": "example",
+                     *       "digest": "0000000000000000000000000000000000000000000000000000000000000000",
+                     *       "manifest": {
+                     *         "manifest": 1,
+                     *         "name": "example",
+                     *         "version": "1.2.0",
+                     *         "publisher": "example",
+                     *         "description": "example",
+                     *         "kind": "source",
+                     *         "endpoint": "https://gauges.example.test/alloy",
+                     *         "settings": [],
+                     *         "authentication": "none",
+                     *         "capabilities": {
+                     *           "parameters": false,
+                     *           "keyColumns": false,
+                     *           "rowLimit": false
+                     *         },
+                     *         "outbound": []
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        url: string;
+                        /** @description SHA-256 of the manifest’s canonical JSON, as its preview gave it */
+                        digest: string;
+                        /** @description What the extension says it is, takes and does, and where it sends data: its own words */
+                        manifest: {
+                            /** @constant */
+                            manifest: 1;
+                            name: string;
+                            /** @example 1.2.0 */
+                            version: string;
+                            publisher: string;
+                            description: string;
+                            /** @constant */
+                            kind: "source";
+                            /** @example https://gauges.example.test/alloy */
+                            endpoint: string;
+                            settings: {
+                                key: string;
+                                label: string;
+                                /** @enum {string} */
+                                type: "text" | "number" | "boolean";
+                                required: boolean;
+                            }[];
+                            authentication: "none" | {
+                                label: string;
+                            };
+                            capabilities: {
+                                parameters: boolean;
+                                keyColumns: boolean;
+                                rowLimit: boolean;
+                            };
+                            outbound: {
+                                host: string;
+                                purpose: string;
+                            }[];
+                        };
+                        /** @description Against the manifest it has now, where it is installed: what an update would change */
+                        changes?: ("endpoint" | "settings" | "authentication" | "capabilities" | "outbound" | "about")[];
+                    };
+                };
+            };
+            /** @description invalid_request */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description forbidden: the caller may not administer this environment; or token_not_allowed: extensions are managed with a signed-in session, never a token */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description manifest_invalid: what the URL answered is not a manifest, naming where it failed and never what it said; manifest_unavailable: the URL could not be read, by the connector’s code */
+            422: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;

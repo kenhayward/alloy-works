@@ -96,6 +96,13 @@ export function createFakeApi(options = {}) {
       };
       // The stand-in model (the G1 plan, G1-H), behind its own key.
       if (isModelPath(url.pathname)) return answerModel(request, url, body, response);
+      // An extension's manifest (the EX plan): a stand-in source's, and one past 64 KiB.
+      if (url.pathname === '/extension/manifest.json') {
+        return send(200, json(standInManifest(`https://${request.headers.host ?? 'source-http'}`)));
+      }
+      if (url.pathname === '/extension/too-large.json') {
+        return send(200, Buffer.from(JSON.stringify({ padding: 'x'.repeat(70_000) })));
+      }
       // A webhook's receiver (the WB plan): `/hooks` answers 200, `/hooks/<status>` that status, a
       // redirect's with a Location it must never be followed to; each kept in `seen`, unkeyed.
       if (url.pathname === '/hooks/nul') return send(200, Buffer.from('a\u0000b'));
@@ -283,4 +290,21 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const port = await api.listen(Number(process.env.PORT ?? '8443'), '0.0.0.0');
   process.stdout.write(`${JSON.stringify({ listening: port })}\n`);
   for (const signal of ['SIGTERM', 'SIGINT']) process.on(signal, () => process.exit(0));
+}
+
+/** The stand-in extension's manifest (the EX plan): an invented gauge source behind this server. */
+export function standInManifest(origin) {
+  return {
+    manifest: 1,
+    name: 'Stand-in gauges',
+    version: '1.0.0',
+    publisher: 'Alloy Works development',
+    description: 'Invented river gauge readings, for development and the suites.',
+    kind: 'source',
+    endpoint: `${origin}/extension`,
+    settings: [{ key: 'region', label: 'Region', type: 'text', required: true }],
+    authentication: { label: 'Stand-in key' },
+    capabilities: { parameters: true, keyColumns: true, rowLimit: true },
+    outbound: [],
+  };
 }

@@ -9,6 +9,10 @@ import {
   modelCredentialContext,
   embedAnswerSchema,
   deliverAnswerSchema,
+  manifestAnswerSchema,
+  type ChildManifestRequest,
+  type ManifestAnswer,
+  type ManifestRequest,
   webhookSecretContext,
   DELIVERY_DEADLINE_MS,
   type ChildDeliverRequest,
@@ -319,6 +323,9 @@ export const CONNECT_TIMEOUT_MS = 5000;
  */
 export const MAX_DELIVERIES = 4;
 
+/** How long a manifest's child may take: its ten seconds, and a start. */
+const MANIFEST_SPAWN_MS = 12_000;
+
 export interface Supervisor {
   /**
    * The request's answer, or `busy` when the cap of children is running. Where `signal` aborts, its
@@ -340,6 +347,8 @@ export interface Supervisor {
   ): 'busy' | Promise<void>;
   /** An embedding call (the G7 plan, G7-A): `busy` as a model call is, else its one answer. */
   embed(request: EmbedRequest, signal?: AbortSignal): 'busy' | Promise<EmbedAnswer>;
+  /** An extension's manifest fetched (the EX plan, EX-B): `busy` where every child is running. */
+  manifest(request: ManifestRequest, signal?: AbortSignal): 'busy' | Promise<ManifestAnswer>;
   /** A webhook delivery (the WB plan, WB-F): `busy` where its own cap is reached, else its answer. */
   deliver(request: DeliverRequest, signal?: AbortSignal): 'busy' | Promise<DeliverAnswer>;
   /** How many children are running. */
@@ -562,6 +571,55 @@ export function createSupervisor(options: {
     }
   }
 
+  /** A manifest's child: no secret, the connection's guard (EX-B). */
+  async function manifestWork(
+    request: ManifestRequest,
+    slot: number,
+    sweeping: (done: Promise<void>) => void,
+    signal: AbortSignal | undefined,
+  ): Promise<ManifestAnswer> {
+    const input: ChildManifestRequest = {
+      kind: 'manifest',
+      request,
+      deny: [...options.deny],
+      connectTimeoutMs,
+      ...(options.ca === undefined ? {} : { ca: options.ca }),
+    };
+    const spec = specFor(slot);
+    let stderrBytes = 0;
+    let answer: ManifestAnswer | undefined;
+    let outcome: StreamOutcome;
+    try {
+      outcome = await streamSpawn(
+        spec,
+        JSON.stringify(input),
+        MANIFEST_SPAWN_MS,
+        (line) => {
+          try {
+            const parsed = manifestAnswerSchema.safeParse(JSON.parse(line));
+            if (parsed.success) answer = parsed.data;
+          } catch {
+            // Not an answer: the child is at fault.
+          }
+          return false;
+        },
+        (chunk) => {
+          stderrBytes += chunk.length;
+        },
+        signal,
+      );
+    } finally {
+      if (spec.uid !== undefined) sweeping(sweep(spec.uid).catch(() => {}));
+    }
+    options.onStderrBytes?.(stderrBytes);
+    return (
+      answer ?? {
+        type: 'failed',
+        code: outcome.kind === 'timeout' ? 'timeout' : 'connector_error',
+      }
+    );
+  }
+
   /** A delivery's child: its secrets opened here, bound to its subscription and URL (WB-G). */
   async function deliverWork(
     request: DeliverRequest,
@@ -695,6 +753,21 @@ export function createSupervisor(options: {
   }
 
   return {
+    manifest(request, signal) {
+      const slot = free.shift();
+      if (slot === undefined) return 'busy';
+      active += 1;
+      let answer: ManifestAnswer | undefined;
+      return holding(slot, (sweeping) =>
+        manifestWork(request, slot, sweeping, signal)
+          .then((each) => {
+            answer = each;
+          })
+          .finally(() => {
+            active -= 1;
+          }),
+      ).then(() => answer!);
+    },
     deliver(request, signal) {
       if (deliveries >= maxDeliveries) return 'busy';
       const slot = free.shift();

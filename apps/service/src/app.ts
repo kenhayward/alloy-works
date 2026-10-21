@@ -85,6 +85,7 @@ import { generatedHandlers } from './generation/generated.js';
 import { modelEndpointHandlers } from './generation/models.js';
 import { serviceIdentityHandlers } from './service-identities.js';
 import { webhookHandlers } from './webhooks.js';
+import { extensionHandlers } from './extensions.js';
 import { registerMcp } from './mcp/route.js';
 import { promptHandlers, promptLibraryHandlers } from './generation/prompts.js';
 import { promptRunHandlers } from './generation/prompt-runs.js';
@@ -585,6 +586,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...administeredTokenHandlers(),
     ...serviceIdentityHandlers(),
     ...webhookHandlers(tenantOf, options.connector),
+    ...extensionHandlers(tenantOf, options.connector),
     ...auditHandlers(tenantOf, options.objects),
     ...tenantExportHandlers(tenantOf, options.objects),
     ...rangePreviewHandlers(),

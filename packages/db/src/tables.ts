@@ -151,6 +151,26 @@ export interface SessionTable {
 }
 
 /** A personal token, kept as its hash (0038); its scopes a mask over its principal's grants. */
+/** An extension installed (0141; the EX plan, EX-B). */
+export interface ExtensionTable {
+  id: Generated<string>;
+  url: string;
+  installed_by: string | null;
+  installed_at: Generated<Date>;
+  removed_at: Date | null;
+  removed_by: string | null;
+}
+
+/** Every manifest an extension has had, by its digest (0141; EX-C). */
+export interface ExtensionVersionTable {
+  id: Generated<string>;
+  extension_id: string;
+  digest: string;
+  manifest: ColumnType<unknown, string, never>;
+  fetched_by: string | null;
+  fetched_at: Generated<Date>;
+}
+
 /** A webhook subscription (0139; the WB plan): never answered with its sealed secrets. */
 export interface WebhookSubscriptionTable {
   id: Generated<string>;
@@ -1126,6 +1146,8 @@ export interface TenantTables {
   api_token: ApiTokenTable;
   service_identity: ServiceIdentityTable;
   webhook_subscription: WebhookSubscriptionTable;
+  extension: ExtensionTable;
+  extension_version: ExtensionVersionTable;
   webhook_delivery: WebhookDeliveryTable;
   webhook_attempt: WebhookAttemptTable;
   invitation: InvitationTable;

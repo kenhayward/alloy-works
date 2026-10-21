@@ -230,6 +230,7 @@ describe('migration 0051, which keeps a result waiting on its images', () => {
       '0138_service_identities',
       '0139_webhooks',
       '0140_webhook_notification',
+      '0141_extensions',
     ]);
     const kept = await queryAs(
       db.adminUrl,

@@ -1413,6 +1413,12 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   **Turn on** one turned off, **Remove** one after asking, and **Deliveries** shows each: what was
   sent and, at every attempt, what came back or why nothing did. Through the API that is
   `/v1/webhooks/{id}/deliveries`.
+- **Extensions, through the API.** An administrator installs an extension, a source type someone else
+  hosts, by its manifest's HTTPS URL at `/v1/extensions`: the connector fetches the manifest, and its
+  preview shows what it is, the settings and secret a connection to it takes, what it can do and the
+  hosts it says it sends data to, before installing it at that manifest's digest. An update shows what
+  would change first; removing waits until no connection uses it. Every change is recorded in the
+  audit log, never its URL. Connections to an extension follow in the next release.
 - **MCP, for agents.** An MCP client connects to `/mcp` on your environment with an API token, yours
   or a service identity's, as a bearer: a signed-in session never works there. Four tools read:
   `search`, `read_document`, `read_component` (its blocks numbered) and `related` (an artifact's
