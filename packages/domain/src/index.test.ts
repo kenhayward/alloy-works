@@ -985,6 +985,13 @@ describe('the domain package', () => {
         'INTRODUCTION_TITLE',
         'importLevelsSchema',
         'proposeImport',
+        // IMb: a proposal's edits, its search and flags, and what was accepted unchanged.
+        'acceptedCounts',
+        'blockText',
+        'editProposal',
+        'importReviewFlags',
+        'partMatches',
+        'reviewFlags',
       ].sort(),
     );
   });

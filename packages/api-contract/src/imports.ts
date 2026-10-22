@@ -81,14 +81,16 @@ export type ImportSummary = z.infer<typeof ImportSummary>;
 
 const ImportReason = z
   .object({
-    rule: z.enum(['heading', 'beforeFirstComponent', 'beforeFirstHeading']),
+    rule: z.enum(['heading', 'beforeFirstComponent', 'beforeFirstHeading', 'split']),
     style: z.string().optional(),
     text: z.string().optional(),
     level: z.number().int().optional(),
   })
   .describe(
-    'Why the part starts where it does: the heading, by its style and text; or what came before the first heading under it',
+    'Why the part starts where it does: the heading, by its style and text; what came before the first heading under it; or that its importer split it there',
   );
+
+const ImportReviewFlag = z.enum(['empty', 'refused', 'notYetRead', 'leftOut', 'keptDifferently']);
 
 export const ImportPartView = z.object({
   id: z.string(),
@@ -97,12 +99,99 @@ export const ImportPartView = z.object({
   parent: z.string().nullable().describe('The section it stands under; null at the top'),
   reason: ImportReason,
   flags: z
-    .array(z.enum(['empty', 'refused']))
-    .describe('`empty`: nothing under its heading; `refused`: what it held could not be admitted'),
+    .array(ImportReviewFlag)
+    .describe(
+      '`empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from',
+    ),
   blocks: z.number().int().describe('How many blocks it holds'),
   source: z.string().describe('Its text as the file had it, its heading first'),
 });
 export type ImportPartView = z.infer<typeof ImportPartView>;
+
+export const ImportPartParams = z.object({ id: LowercaseUuid, part: LowercaseUuid });
+export type ImportPartParams = z.infer<typeof ImportPartParams>;
+
+/** One part, beside what it came from (IMP-028): its blocks as text, and its neighbours. */
+export const ImportPartDetail = ImportPartView.omit({ blocks: true }).extend({
+  place: z.number().int().describe('Its place in the outline, from 0'),
+  of: z.number().int().describe('How many parts the outline holds'),
+  previous: z.string().nullable().describe('The part before it; null for the first'),
+  next: z.string().nullable().describe('The part after it; null for the last'),
+  blocks: z
+    .array(
+      z.object({
+        type: z.string().describe('What kind of block it is: paragraph, list, table and so on'),
+        text: z.string().describe('Its text, shown as text'),
+      }),
+    )
+    .describe('What it holds, a block at a time'),
+});
+export type ImportPartDetail = z.infer<typeof ImportPartDetail>;
+
+export const ImportPartSearchQuery = z.object({
+  q: z.string().max(200).optional().describe('Words its title or text holds, ignoring case'),
+  flag: ImportReviewFlag.optional().describe('A flag it carries'),
+});
+export type ImportPartSearchQuery = z.infer<typeof ImportPartSearchQuery>;
+
+export const ImportPartMatches = z.object({
+  parts: z.array(z.string()).describe('The parts that match, by id, in outline order'),
+});
+export type ImportPartMatches = z.infer<typeof ImportPartMatches>;
+
+const revision = z.number().int().min(0).describe('The revision the edit was made against');
+const part = LowercaseUuid.describe('The part it is made to');
+const editTitle = z.string().min(1).max(500);
+
+/** An edit to the proposal (IMb; IMP-002, IMP-041), made against the revision its importer read. */
+const ImportEdit = z.discriminatedUnion('edit', [
+  z.strictObject({
+    edit: z.literal('move'),
+    part,
+    to: z
+      .enum(['previous', 'next'])
+      .describe(
+        'Its first blocks to the end of the part before, or its last to the start of the next',
+      ),
+    blocks: z.number().int().min(1).describe('How many blocks move'),
+  }),
+  z.strictObject({
+    edit: z.literal('split'),
+    part,
+    at: z.number().int().min(1).describe('The block, from 0, the new part starts at'),
+    title: editTitle.describe('The new part’s title'),
+  }),
+  z.strictObject({
+    edit: z.literal('merge'),
+    part: part.describe('The part merged with the one after it'),
+  }),
+  z.strictObject({ edit: z.literal('rename'), part, title: editTitle }),
+  z.strictObject({
+    edit: z.literal('kind'),
+    part,
+    kind: z.enum(['section', 'component']),
+  }),
+]);
+
+export const EditImportBody = z.strictObject({ revision, edit: ImportEdit });
+export type EditImportBody = z.infer<typeof EditImportBody>;
+
+export const ImportPlaceBody = z.strictObject({
+  part: LowercaseUuid.describe('The part its importer is at'),
+});
+export type ImportPlaceBody = z.infer<typeof ImportPlaceBody>;
+
+const AcceptedCounts = z
+  .object({
+    unchanged: z.number().int(),
+    edited: z.number().int(),
+    merged: z.number().int(),
+    split: z.number().int(),
+    renamed: z.number().int(),
+  })
+  .describe(
+    'How the parts accepted compare with the proposal as read, each counted once: merged, split, edited, renamed, or unchanged',
+  );
 
 export const ImportReportEntry = z.object({
   stage: z.string(),
@@ -122,6 +211,12 @@ export const ImportView = ImportSummary.extend({
   levels: ImportLevelsBody,
   title: z.string().nullable().describe('The title the file names, where it names one'),
   parts: z.array(ImportPartView).describe('The proposed outline, in order'),
+  revision: z
+    .number()
+    .int()
+    .describe('How many edits it has had: what the next edit is made against'),
+  place: z.string().nullable().describe('The part its importer was last at'),
+  accepted: AcceptedCounts.nullable().describe('Once accepted, how much was accepted unchanged'),
   report: z
     .array(ImportReportEntry)
     .describe('What was left out, kept differently, or not read yet (IMP-007)'),
@@ -274,6 +369,77 @@ export const importRoutes = {
       401: unauthenticated,
       403: { description: 'The caller may no longer create in the space', schema: ErrorBody },
       404: notYours,
+      409: { description: '`import_not_proposed`: it is not proposed', schema: ErrorBody },
+    },
+  },
+  getImportPart: {
+    operationId: 'getImportPart',
+    method: 'GET',
+    path: '/v1/imports/{id}/parts/{part}',
+    summary: 'One part of a proposal, beside the text it came from',
+    tenantScoped: true,
+    access: { check: 'session' },
+    params: ImportPartParams,
+    responses: {
+      200: { description: 'The part', schema: ImportPartDetail },
+      401: unauthenticated,
+      404: { description: 'No such part, or no such import the caller may see', schema: ErrorBody },
+    },
+  },
+  searchImportParts: {
+    operationId: 'searchImportParts',
+    method: 'GET',
+    path: '/v1/imports/{id}/parts',
+    summary:
+      'The parts of a proposal whose title or text holds the words asked, or carrying a flag',
+    tenantScoped: true,
+    access: { check: 'session' },
+    params: ImportParams,
+    query: ImportPartSearchQuery,
+    responses: {
+      200: { description: 'The parts that match, in outline order', schema: ImportPartMatches },
+      401: unauthenticated,
+      404: notYours,
+    },
+  },
+  editImport: {
+    operationId: 'editImport',
+    method: 'POST',
+    path: '/v1/imports/{id}/edits',
+    summary: 'Edit a proposal: move a split, split, merge or rename a part, or change its kind',
+    tenantScoped: true,
+    access: { check: 'session' },
+    params: ImportParams,
+    body: EditImportBody,
+    responses: {
+      200: { description: 'The import as edited', schema: ImportView },
+      400: {
+        description:
+          '`import_edit_refused`: what the edit would make is not a part an import can accept, the message saying why',
+        schema: ErrorBody,
+      },
+      401: unauthenticated,
+      404: notYours,
+      409: {
+        description:
+          '`import_not_proposed`: it is not proposed; `import_changed`: it was edited since the revision given',
+        schema: ErrorBody,
+      },
+    },
+  },
+  setImportPlace: {
+    operationId: 'setImportPlace',
+    method: 'PUT',
+    path: '/v1/imports/{id}/place',
+    summary: 'Keep the part its importer is at, to return to',
+    tenantScoped: true,
+    access: { check: 'session' },
+    params: ImportParams,
+    body: ImportPlaceBody,
+    responses: {
+      200: { description: 'The import', schema: ImportView },
+      401: unauthenticated,
+      404: { description: 'No such part, or no such import the caller made', schema: ErrorBody },
       409: { description: '`import_not_proposed`: it is not proposed', schema: ErrorBody },
     },
   },

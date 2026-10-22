@@ -636,6 +636,10 @@ const operationTags = {
     'listImports',
     'getImport',
     'setImportLevels',
+    'getImportPart',
+    'searchImportParts',
+    'editImport',
+    'setImportPlace',
     'acceptImport',
     'abandonImport',
   ],
@@ -1140,8 +1144,16 @@ const descriptions: Readonly<Record<string, string>> = {
     'Returns an import: its state, the outline it proposes, each part with the reason it starts where it does and its text as the file had it, and the report of what was left out, kept differently or not read yet. Only its importer and the space’s administrators may read it.',
   setImportLevels:
     'Changes the heading levels a proposal breaks out at: which level starts a section and which a component. The file is read again. Only its importer may change them.',
+  getImportPart:
+    'Returns one part of a proposal, so it can be reviewed alone: its title, kind, the reason it starts where it does, what it is flagged for, its blocks as text beside the text of the file it came from, and the parts before and after it. Only its importer and the space’s administrators may read it.',
+  searchImportParts:
+    'Lists the parts of a proposal whose title or text holds the words asked, ignoring case, or that carry a flag: empty, refused, or something the report said was not read yet, left out or kept differently. Only its importer and the space’s administrators may search it.',
+  editImport:
+    'Edits a proposal before it is accepted: moves blocks across the split between two components, splits a component at a block, merges a part with the one after it, renames a part, or makes a part a section or a component. Each edit is checked as it is made and refused, saying why, if what it makes could not be accepted. It is made against the revision last read, and refused if the proposal changed since. The proposal as the file was read is kept unchanged beside it. Only its importer may edit it.',
+  setImportPlace:
+    'Keeps the part of a proposal its importer is at, so that returning to the import, from any session, opens that part. Only its importer may set it.',
   acceptImport:
-    'Accepts a proposal: its document, sections and components are made in one act, by the person accepting, each at 0.1 and each recording the file it came from. Blank, or from the template named. Only its importer may accept it, and they need create in the space.',
+    'Accepts a proposal: its document, sections and components are made in one act, by the person accepting, each at 0.1 and each recording the file it came from. Blank, or from the template named. How many parts were accepted unchanged, edited, merged, split or renamed is recorded on the import. Only its importer may accept it, and they need create in the space.',
   abandonImport:
     'Abandons an import before it is accepted: its proposal and its file are removed and nothing of it is left in the space. Recorded as an import abandoned. Only its importer and the space’s administrators may abandon it.',
   requestTenantExport:

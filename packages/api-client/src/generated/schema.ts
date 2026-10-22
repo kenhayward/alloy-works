@@ -3570,9 +3570,29 @@ export interface paths {
         put?: never;
         /**
          * Accept a proposal, making its document, sections and components in one act
-         * @description Accepts a proposal: its document, sections and components are made in one act, by the person accepting, each at 0.1 and each recording the file it came from. Blank, or from the template named. Only its importer may accept it, and they need create in the space.
+         * @description Accepts a proposal: its document, sections and components are made in one act, by the person accepting, each at 0.1 and each recording the file it came from. Blank, or from the template named. How many parts were accepted unchanged, edited, merged, split or renamed is recorded on the import. Only its importer may accept it, and they need create in the space.
          */
         post: operations["acceptImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/imports/{id}/edits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Edit a proposal: move a split, split, merge or rename a part, or change its kind
+         * @description Edits a proposal before it is accepted: moves blocks across the split between two components, splits a component at a block, merges a part with the one after it, renames a part, or makes a part a section or a component. Each edit is checked as it is made and refused, saying why, if what it makes could not be accepted. It is made against the revision last read, and refused if the proposal changed since. The proposal as the file was read is kept unchanged beside it. Only its importer may edit it.
+         */
+        post: operations["editImport"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3612,6 +3632,66 @@ export interface paths {
          * @description Changes the heading levels a proposal breaks out at: which level starts a section and which a component. The file is read again. Only its importer may change them.
          */
         put: operations["setImportLevels"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/imports/{id}/parts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The parts of a proposal whose title or text holds the words asked, or carrying a flag
+         * @description Lists the parts of a proposal whose title or text holds the words asked, ignoring case, or that carry a flag: empty, refused, or something the report said was not read yet, left out or kept differently. Only its importer and the space’s administrators may search it.
+         */
+        get: operations["searchImportParts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/imports/{id}/parts/{part}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One part of a proposal, beside the text it came from
+         * @description Returns one part of a proposal, so it can be reviewed alone: its title, kind, the reason it starts where it does, what it is flagged for, its blocks as text beside the text of the file it came from, and the parts before and after it. Only its importer and the space’s administrators may read it.
+         */
+        get: operations["getImportPart"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/imports/{id}/place": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Keep the part its importer is at, to return to
+         * @description Keeps the part of a proposal its importer is at, so that returning to the import, from any session, opens that part. Only its importer may set it.
+         */
+        put: operations["setImportPlace"];
         post?: never;
         delete?: never;
         options?: never;
@@ -67870,6 +67950,15 @@ export interface operations {
                      *       },
                      *       "title": "example",
                      *       "parts": [],
+                     *       "revision": -9007199254740991,
+                     *       "place": "example",
+                     *       "accepted": {
+                     *         "unchanged": -9007199254740991,
+                     *         "edited": -9007199254740991,
+                     *         "merged": -9007199254740991,
+                     *         "split": -9007199254740991,
+                     *         "renamed": -9007199254740991
+                     *       },
                      *       "report": []
                      *     }
                      */
@@ -67908,21 +67997,33 @@ export interface operations {
                             title: string;
                             /** @description The section it stands under; null at the top */
                             parent: string | null;
-                            /** @description Why the part starts where it does: the heading, by its style and text; or what came before the first heading under it */
+                            /** @description Why the part starts where it does: the heading, by its style and text; what came before the first heading under it; or that its importer split it there */
                             reason: {
                                 /** @enum {string} */
-                                rule: "heading" | "beforeFirstComponent" | "beforeFirstHeading";
+                                rule: "heading" | "beforeFirstComponent" | "beforeFirstHeading" | "split";
                                 style?: string;
                                 text?: string;
                                 level?: number;
                             };
-                            /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted */
-                            flags: ("empty" | "refused")[];
+                            /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from */
+                            flags: ("empty" | "refused" | "notYetRead" | "leftOut" | "keptDifferently")[];
                             /** @description How many blocks it holds */
                             blocks: number;
                             /** @description Its text as the file had it, its heading first */
                             source: string;
                         }[];
+                        /** @description How many edits it has had: what the next edit is made against */
+                        revision: number;
+                        /** @description The part its importer was last at */
+                        place: string | null;
+                        /** @description Once accepted, how much was accepted unchanged */
+                        accepted: {
+                            unchanged: number;
+                            edited: number;
+                            merged: number;
+                            split: number;
+                            renamed: number;
+                        } | null;
                         /** @description What was left out, kept differently, or not read yet (IMP-007) */
                         report: {
                             stage: string;
@@ -68042,6 +68143,15 @@ export interface operations {
                      *       },
                      *       "title": "example",
                      *       "parts": [],
+                     *       "revision": -9007199254740991,
+                     *       "place": "example",
+                     *       "accepted": {
+                     *         "unchanged": -9007199254740991,
+                     *         "edited": -9007199254740991,
+                     *         "merged": -9007199254740991,
+                     *         "split": -9007199254740991,
+                     *         "renamed": -9007199254740991
+                     *       },
                      *       "report": []
                      *     }
                      */
@@ -68080,21 +68190,33 @@ export interface operations {
                             title: string;
                             /** @description The section it stands under; null at the top */
                             parent: string | null;
-                            /** @description Why the part starts where it does: the heading, by its style and text; or what came before the first heading under it */
+                            /** @description Why the part starts where it does: the heading, by its style and text; what came before the first heading under it; or that its importer split it there */
                             reason: {
                                 /** @enum {string} */
-                                rule: "heading" | "beforeFirstComponent" | "beforeFirstHeading";
+                                rule: "heading" | "beforeFirstComponent" | "beforeFirstHeading" | "split";
                                 style?: string;
                                 text?: string;
                                 level?: number;
                             };
-                            /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted */
-                            flags: ("empty" | "refused")[];
+                            /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from */
+                            flags: ("empty" | "refused" | "notYetRead" | "leftOut" | "keptDifferently")[];
                             /** @description How many blocks it holds */
                             blocks: number;
                             /** @description Its text as the file had it, its heading first */
                             source: string;
                         }[];
+                        /** @description How many edits it has had: what the next edit is made against */
+                        revision: number;
+                        /** @description The part its importer was last at */
+                        place: string | null;
+                        /** @description Once accepted, how much was accepted unchanged */
+                        accepted: {
+                            unchanged: number;
+                            edited: number;
+                            merged: number;
+                            split: number;
+                            renamed: number;
+                        } | null;
                         /** @description What was left out, kept differently, or not read yet (IMP-007) */
                         report: {
                             stage: string;
@@ -68247,6 +68369,15 @@ export interface operations {
                      *         },
                      *         "title": "example",
                      *         "parts": [],
+                     *         "revision": -9007199254740991,
+                     *         "place": "example",
+                     *         "accepted": {
+                     *           "unchanged": -9007199254740991,
+                     *           "edited": -9007199254740991,
+                     *           "merged": -9007199254740991,
+                     *           "split": -9007199254740991,
+                     *           "renamed": -9007199254740991
+                     *         },
                      *         "report": []
                      *       },
                      *       "document": "example"
@@ -68288,21 +68419,33 @@ export interface operations {
                                 title: string;
                                 /** @description The section it stands under; null at the top */
                                 parent: string | null;
-                                /** @description Why the part starts where it does: the heading, by its style and text; or what came before the first heading under it */
+                                /** @description Why the part starts where it does: the heading, by its style and text; what came before the first heading under it; or that its importer split it there */
                                 reason: {
                                     /** @enum {string} */
-                                    rule: "heading" | "beforeFirstComponent" | "beforeFirstHeading";
+                                    rule: "heading" | "beforeFirstComponent" | "beforeFirstHeading" | "split";
                                     style?: string;
                                     text?: string;
                                     level?: number;
                                 };
-                                /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted */
-                                flags: ("empty" | "refused")[];
+                                /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from */
+                                flags: ("empty" | "refused" | "notYetRead" | "leftOut" | "keptDifferently")[];
                                 /** @description How many blocks it holds */
                                 blocks: number;
                                 /** @description Its text as the file had it, its heading first */
                                 source: string;
                             }[];
+                            /** @description How many edits it has had: what the next edit is made against */
+                            revision: number;
+                            /** @description The part its importer was last at */
+                            place: string | null;
+                            /** @description Once accepted, how much was accepted unchanged */
+                            accepted: {
+                                unchanged: number;
+                                edited: number;
+                                merged: number;
+                                split: number;
+                                renamed: number;
+                            } | null;
                             /** @description What was left out, kept differently, or not read yet (IMP-007) */
                             report: {
                                 stage: string;
@@ -68445,6 +68588,297 @@ export interface operations {
             };
         };
     };
+    editImport: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "revision": 0,
+                 *       "edit": {
+                 *         "edit": "move",
+                 *         "part": "00000000-0000-4000-8000-000000000001",
+                 *         "to": "previous",
+                 *         "blocks": 1
+                 *       }
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The revision the edit was made against */
+                    revision: number;
+                    edit: {
+                        /** @constant */
+                        edit: "move";
+                        /** @description The part it is made to */
+                        part: string & (unknown & unknown);
+                        /**
+                         * @description Its first blocks to the end of the part before, or its last to the start of the next
+                         * @enum {string}
+                         */
+                        to: "previous" | "next";
+                        /** @description How many blocks move */
+                        blocks: number;
+                    } | {
+                        /** @constant */
+                        edit: "split";
+                        /** @description The part it is made to */
+                        part: string & (unknown & unknown);
+                        /** @description The block, from 0, the new part starts at */
+                        at: number;
+                        /** @description The new part’s title */
+                        title: string;
+                    } | {
+                        /** @constant */
+                        edit: "merge";
+                        /** @description The part merged with the one after it */
+                        part: string & (unknown & unknown);
+                    } | {
+                        /** @constant */
+                        edit: "rename";
+                        /** @description The part it is made to */
+                        part: string & (unknown & unknown);
+                        title: string;
+                    } | {
+                        /** @constant */
+                        edit: "kind";
+                        /** @description The part it is made to */
+                        part: string & (unknown & unknown);
+                        /** @enum {string} */
+                        kind: "section" | "component";
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description The import as edited */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": "example",
+                     *       "importer": "example",
+                     *       "fileName": "example",
+                     *       "fileType": "docx",
+                     *       "state": "awaiting",
+                     *       "failure": "file_unreadable",
+                     *       "document": "example",
+                     *       "createdAt": "example",
+                     *       "sweepsAt": "example",
+                     *       "levels": {
+                     *         "section": 1,
+                     *         "component": 2
+                     *       },
+                     *       "title": "example",
+                     *       "parts": [],
+                     *       "revision": -9007199254740991,
+                     *       "place": "example",
+                     *       "accepted": {
+                     *         "unchanged": -9007199254740991,
+                     *         "edited": -9007199254740991,
+                     *         "merged": -9007199254740991,
+                     *         "split": -9007199254740991,
+                     *         "renamed": -9007199254740991
+                     *       },
+                     *       "report": []
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        space: string;
+                        importer: string;
+                        fileName: string;
+                        /** @enum {string} */
+                        fileType: "docx" | "markdown" | "html";
+                        /**
+                         * @description `awaiting` its file; `reading` it; `proposed`, its outline to review; `accepted` into a document; `abandoned`, or `failed` with why, leaving nothing
+                         * @enum {string}
+                         */
+                        state: "awaiting" | "reading" | "proposed" | "accepted" | "abandoned" | "failed";
+                        /** @description Why it failed, once failed */
+                        failure: ("file_unreadable" | "file_unsafe" | "file_too_large" | "file_missing" | "reading_failed") | null;
+                        /** @description The document it made, once accepted */
+                        document: string | null;
+                        createdAt: string;
+                        /** @description When a proposal left alone is abandoned: 30 days after it last changed */
+                        sweepsAt: string | null;
+                        levels: {
+                            /** @description The heading level that starts a section */
+                            section: number;
+                            /** @description The heading level that starts a component, below the section’s */
+                            component: number;
+                        };
+                        /** @description The title the file names, where it names one */
+                        title: string | null;
+                        /** @description The proposed outline, in order */
+                        parts: {
+                            id: string;
+                            /** @enum {string} */
+                            kind: "section" | "component";
+                            title: string;
+                            /** @description The section it stands under; null at the top */
+                            parent: string | null;
+                            /** @description Why the part starts where it does: the heading, by its style and text; what came before the first heading under it; or that its importer split it there */
+                            reason: {
+                                /** @enum {string} */
+                                rule: "heading" | "beforeFirstComponent" | "beforeFirstHeading" | "split";
+                                style?: string;
+                                text?: string;
+                                level?: number;
+                            };
+                            /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from */
+                            flags: ("empty" | "refused" | "notYetRead" | "leftOut" | "keptDifferently")[];
+                            /** @description How many blocks it holds */
+                            blocks: number;
+                            /** @description Its text as the file had it, its heading first */
+                            source: string;
+                        }[];
+                        /** @description How many edits it has had: what the next edit is made against */
+                        revision: number;
+                        /** @description The part its importer was last at */
+                        place: string | null;
+                        /** @description Once accepted, how much was accepted unchanged */
+                        accepted: {
+                            unchanged: number;
+                            edited: number;
+                            merged: number;
+                            split: number;
+                            renamed: number;
+                        } | null;
+                        /** @description What was left out, kept differently, or not read yet (IMP-007) */
+                        report: {
+                            stage: string;
+                            /** @enum {string} */
+                            action: "discarded" | "rewritten" | "kept" | "refused";
+                            subject: string;
+                            /** @description A fixed sentence saying what happened, never quoting the file */
+                            message: string;
+                            /** @description What it was about, as data: shown as text */
+                            detail?: string;
+                            count?: number;
+                            /** @description The part it was about, by its place; null for the file */
+                            part: number | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description `import_edit_refused`: what the edit would make is not a part an import can accept, the message saying why */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such import, or one the caller neither made nor administers the space of */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `import_not_proposed`: it is not proposed; `import_changed`: it was edited since the revision given */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     putImportFile: {
         parameters: {
             query?: never;
@@ -68489,6 +68923,15 @@ export interface operations {
                      *       },
                      *       "title": "example",
                      *       "parts": [],
+                     *       "revision": -9007199254740991,
+                     *       "place": "example",
+                     *       "accepted": {
+                     *         "unchanged": -9007199254740991,
+                     *         "edited": -9007199254740991,
+                     *         "merged": -9007199254740991,
+                     *         "split": -9007199254740991,
+                     *         "renamed": -9007199254740991
+                     *       },
                      *       "report": []
                      *     }
                      */
@@ -68527,21 +68970,33 @@ export interface operations {
                             title: string;
                             /** @description The section it stands under; null at the top */
                             parent: string | null;
-                            /** @description Why the part starts where it does: the heading, by its style and text; or what came before the first heading under it */
+                            /** @description Why the part starts where it does: the heading, by its style and text; what came before the first heading under it; or that its importer split it there */
                             reason: {
                                 /** @enum {string} */
-                                rule: "heading" | "beforeFirstComponent" | "beforeFirstHeading";
+                                rule: "heading" | "beforeFirstComponent" | "beforeFirstHeading" | "split";
                                 style?: string;
                                 text?: string;
                                 level?: number;
                             };
-                            /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted */
-                            flags: ("empty" | "refused")[];
+                            /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from */
+                            flags: ("empty" | "refused" | "notYetRead" | "leftOut" | "keptDifferently")[];
                             /** @description How many blocks it holds */
                             blocks: number;
                             /** @description Its text as the file had it, its heading first */
                             source: string;
                         }[];
+                        /** @description How many edits it has had: what the next edit is made against */
+                        revision: number;
+                        /** @description The part its importer was last at */
+                        place: string | null;
+                        /** @description Once accepted, how much was accepted unchanged */
+                        accepted: {
+                            unchanged: number;
+                            edited: number;
+                            merged: number;
+                            split: number;
+                            renamed: number;
+                        } | null;
                         /** @description What was left out, kept differently, or not read yet (IMP-007) */
                         report: {
                             stage: string;
@@ -68756,6 +69211,15 @@ export interface operations {
                      *       },
                      *       "title": "example",
                      *       "parts": [],
+                     *       "revision": -9007199254740991,
+                     *       "place": "example",
+                     *       "accepted": {
+                     *         "unchanged": -9007199254740991,
+                     *         "edited": -9007199254740991,
+                     *         "merged": -9007199254740991,
+                     *         "split": -9007199254740991,
+                     *         "renamed": -9007199254740991
+                     *       },
                      *       "report": []
                      *     }
                      */
@@ -68794,21 +69258,33 @@ export interface operations {
                             title: string;
                             /** @description The section it stands under; null at the top */
                             parent: string | null;
-                            /** @description Why the part starts where it does: the heading, by its style and text; or what came before the first heading under it */
+                            /** @description Why the part starts where it does: the heading, by its style and text; what came before the first heading under it; or that its importer split it there */
                             reason: {
                                 /** @enum {string} */
-                                rule: "heading" | "beforeFirstComponent" | "beforeFirstHeading";
+                                rule: "heading" | "beforeFirstComponent" | "beforeFirstHeading" | "split";
                                 style?: string;
                                 text?: string;
                                 level?: number;
                             };
-                            /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted */
-                            flags: ("empty" | "refused")[];
+                            /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from */
+                            flags: ("empty" | "refused" | "notYetRead" | "leftOut" | "keptDifferently")[];
                             /** @description How many blocks it holds */
                             blocks: number;
                             /** @description Its text as the file had it, its heading first */
                             source: string;
                         }[];
+                        /** @description How many edits it has had: what the next edit is made against */
+                        revision: number;
+                        /** @description The part its importer was last at */
+                        place: string | null;
+                        /** @description Once accepted, how much was accepted unchanged */
+                        accepted: {
+                            unchanged: number;
+                            edited: number;
+                            merged: number;
+                            split: number;
+                            renamed: number;
+                        } | null;
                         /** @description What was left out, kept differently, or not read yet (IMP-007) */
                         report: {
                             stage: string;
@@ -68867,6 +69343,469 @@ export interface operations {
                 };
             };
             /** @description No such import, or one the caller neither made nor administers the space of */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `import_not_proposed`: it is not proposed */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    searchImportParts: {
+        parameters: {
+            query?: {
+                q?: string;
+                flag?: "empty" | "refused" | "notYetRead" | "leftOut" | "keptDifferently";
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The parts that match, in outline order */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "parts": []
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description The parts that match, by id, in outline order */
+                        parts: string[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such import, or one the caller neither made nor administers the space of */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getImportPart: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+                part: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The part */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "kind": "section",
+                     *       "title": "example",
+                     *       "parent": "example",
+                     *       "reason": {
+                     *         "rule": "heading"
+                     *       },
+                     *       "flags": [],
+                     *       "source": "example",
+                     *       "place": -9007199254740991,
+                     *       "of": -9007199254740991,
+                     *       "previous": "example",
+                     *       "next": "example",
+                     *       "blocks": []
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        /** @enum {string} */
+                        kind: "section" | "component";
+                        title: string;
+                        /** @description The section it stands under; null at the top */
+                        parent: string | null;
+                        /** @description Why the part starts where it does: the heading, by its style and text; what came before the first heading under it; or that its importer split it there */
+                        reason: {
+                            /** @enum {string} */
+                            rule: "heading" | "beforeFirstComponent" | "beforeFirstHeading" | "split";
+                            style?: string;
+                            text?: string;
+                            level?: number;
+                        };
+                        /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from */
+                        flags: ("empty" | "refused" | "notYetRead" | "leftOut" | "keptDifferently")[];
+                        /** @description Its text as the file had it, its heading first */
+                        source: string;
+                        /** @description Its place in the outline, from 0 */
+                        place: number;
+                        /** @description How many parts the outline holds */
+                        of: number;
+                        /** @description The part before it; null for the first */
+                        previous: string | null;
+                        /** @description The part after it; null for the last */
+                        next: string | null;
+                        /** @description What it holds, a block at a time */
+                        blocks: {
+                            /** @description What kind of block it is: paragraph, list, table and so on */
+                            type: string;
+                            /** @description Its text, shown as text */
+                            text: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such part, or no such import the caller may see */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    setImportPlace: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "part": "00000000-0000-4000-8000-000000000001"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The part its importer is at */
+                    part: string & (unknown & unknown);
+                };
+            };
+        };
+        responses: {
+            /** @description The import */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": "example",
+                     *       "importer": "example",
+                     *       "fileName": "example",
+                     *       "fileType": "docx",
+                     *       "state": "awaiting",
+                     *       "failure": "file_unreadable",
+                     *       "document": "example",
+                     *       "createdAt": "example",
+                     *       "sweepsAt": "example",
+                     *       "levels": {
+                     *         "section": 1,
+                     *         "component": 2
+                     *       },
+                     *       "title": "example",
+                     *       "parts": [],
+                     *       "revision": -9007199254740991,
+                     *       "place": "example",
+                     *       "accepted": {
+                     *         "unchanged": -9007199254740991,
+                     *         "edited": -9007199254740991,
+                     *         "merged": -9007199254740991,
+                     *         "split": -9007199254740991,
+                     *         "renamed": -9007199254740991
+                     *       },
+                     *       "report": []
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        space: string;
+                        importer: string;
+                        fileName: string;
+                        /** @enum {string} */
+                        fileType: "docx" | "markdown" | "html";
+                        /**
+                         * @description `awaiting` its file; `reading` it; `proposed`, its outline to review; `accepted` into a document; `abandoned`, or `failed` with why, leaving nothing
+                         * @enum {string}
+                         */
+                        state: "awaiting" | "reading" | "proposed" | "accepted" | "abandoned" | "failed";
+                        /** @description Why it failed, once failed */
+                        failure: ("file_unreadable" | "file_unsafe" | "file_too_large" | "file_missing" | "reading_failed") | null;
+                        /** @description The document it made, once accepted */
+                        document: string | null;
+                        createdAt: string;
+                        /** @description When a proposal left alone is abandoned: 30 days after it last changed */
+                        sweepsAt: string | null;
+                        levels: {
+                            /** @description The heading level that starts a section */
+                            section: number;
+                            /** @description The heading level that starts a component, below the section’s */
+                            component: number;
+                        };
+                        /** @description The title the file names, where it names one */
+                        title: string | null;
+                        /** @description The proposed outline, in order */
+                        parts: {
+                            id: string;
+                            /** @enum {string} */
+                            kind: "section" | "component";
+                            title: string;
+                            /** @description The section it stands under; null at the top */
+                            parent: string | null;
+                            /** @description Why the part starts where it does: the heading, by its style and text; what came before the first heading under it; or that its importer split it there */
+                            reason: {
+                                /** @enum {string} */
+                                rule: "heading" | "beforeFirstComponent" | "beforeFirstHeading" | "split";
+                                style?: string;
+                                text?: string;
+                                level?: number;
+                            };
+                            /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from */
+                            flags: ("empty" | "refused" | "notYetRead" | "leftOut" | "keptDifferently")[];
+                            /** @description How many blocks it holds */
+                            blocks: number;
+                            /** @description Its text as the file had it, its heading first */
+                            source: string;
+                        }[];
+                        /** @description How many edits it has had: what the next edit is made against */
+                        revision: number;
+                        /** @description The part its importer was last at */
+                        place: string | null;
+                        /** @description Once accepted, how much was accepted unchanged */
+                        accepted: {
+                            unchanged: number;
+                            edited: number;
+                            merged: number;
+                            split: number;
+                            renamed: number;
+                        } | null;
+                        /** @description What was left out, kept differently, or not read yet (IMP-007) */
+                        report: {
+                            stage: string;
+                            /** @enum {string} */
+                            action: "discarded" | "rewritten" | "kept" | "refused";
+                            subject: string;
+                            /** @description A fixed sentence saying what happened, never quoting the file */
+                            message: string;
+                            /** @description What it was about, as data: shown as text */
+                            detail?: string;
+                            count?: number;
+                            /** @description The part it was about, by its place; null for the file */
+                            part: number | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such part, or no such import the caller made */
             404: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -97320,6 +98259,15 @@ export interface operations {
                      *       },
                      *       "title": "example",
                      *       "parts": [],
+                     *       "revision": -9007199254740991,
+                     *       "place": "example",
+                     *       "accepted": {
+                     *         "unchanged": -9007199254740991,
+                     *         "edited": -9007199254740991,
+                     *         "merged": -9007199254740991,
+                     *         "split": -9007199254740991,
+                     *         "renamed": -9007199254740991
+                     *       },
                      *       "report": []
                      *     }
                      */
@@ -97358,21 +98306,33 @@ export interface operations {
                             title: string;
                             /** @description The section it stands under; null at the top */
                             parent: string | null;
-                            /** @description Why the part starts where it does: the heading, by its style and text; or what came before the first heading under it */
+                            /** @description Why the part starts where it does: the heading, by its style and text; what came before the first heading under it; or that its importer split it there */
                             reason: {
                                 /** @enum {string} */
-                                rule: "heading" | "beforeFirstComponent" | "beforeFirstHeading";
+                                rule: "heading" | "beforeFirstComponent" | "beforeFirstHeading" | "split";
                                 style?: string;
                                 text?: string;
                                 level?: number;
                             };
-                            /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted */
-                            flags: ("empty" | "refused")[];
+                            /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from */
+                            flags: ("empty" | "refused" | "notYetRead" | "leftOut" | "keptDifferently")[];
                             /** @description How many blocks it holds */
                             blocks: number;
                             /** @description Its text as the file had it, its heading first */
                             source: string;
                         }[];
+                        /** @description How many edits it has had: what the next edit is made against */
+                        revision: number;
+                        /** @description The part its importer was last at */
+                        place: string | null;
+                        /** @description Once accepted, how much was accepted unchanged */
+                        accepted: {
+                            unchanged: number;
+                            edited: number;
+                            merged: number;
+                            split: number;
+                            renamed: number;
+                        } | null;
                         /** @description What was left out, kept differently, or not read yet (IMP-007) */
                         report: {
                             stage: string;

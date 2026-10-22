@@ -1,13 +1,19 @@
 import {
+  acceptedCounts,
+  contentDocumentSchema,
+  editProposal,
+  type AcceptedCounts,
   type BlockNode,
+  type ImportEdit,
+  type ImportEditRefusal,
   type ImportLevels,
+  type ImportReviewReason,
   type ImportPartFlag,
-  type ImportPartReason,
   type OutlineNode,
   type ProposedPart,
   type ReportEntry,
 } from '@alloy-works/domain';
-import { sql } from 'kysely';
+import { sql, type RawBuilder } from 'kysely';
 import { objectInUse } from './assets.js';
 import {
   checkedLimit,
@@ -68,6 +74,12 @@ export interface StoredImport {
   readonly createdAt: Date;
   readonly touchedAt: Date;
   readonly finishedAt: Date | null;
+  /** How many edits its proposal has had (IMb): what an edit is made against. */
+  readonly revision: number;
+  /** The part of its edited set its importer was last at (IMP-029). */
+  readonly place: string | null;
+  /** How the parts accepted compare with the proposal as read, once accepted (IMP-031). */
+  readonly acceptedCounts: AcceptedCounts | null;
 }
 
 export interface StoredImportPart {
@@ -77,10 +89,12 @@ export interface StoredImportPart {
   readonly title: string;
   readonly blocks: readonly BlockNode[];
   readonly source: string;
-  readonly reason: ImportPartReason;
+  readonly reason: ImportReviewReason;
   readonly flags: readonly ImportPartFlag[];
   /** The section it stands under, by its id; null at the top. */
   readonly parent: string | null;
+  /** The parts as read it came from, by their place. */
+  readonly origins: readonly number[];
 }
 
 interface Row {
@@ -103,6 +117,9 @@ interface Row {
   created_at: Date;
   touched_at: Date;
   finished_at: Date | null;
+  revision: number;
+  place: string | null;
+  accepted: AcceptedCounts | null;
 }
 
 const importOf = (row: Row): StoredImport => ({
@@ -125,11 +142,14 @@ const importOf = (row: Row): StoredImport => ({
   createdAt: row.created_at,
   touchedAt: row.touched_at,
   finishedAt: row.finished_at,
+  revision: row.revision,
+  place: row.place,
+  acceptedCounts: row.accepted,
 });
 
 const COLUMNS = sql`id, space_id, importer, file_name, file_type, object_key, sha256,
   bytes::text as bytes, kind, state, levels, title, language, report, failure, document_id,
-  created_at, touched_at, finished_at`;
+  created_at, touched_at, finished_at, revision, place, accepted`;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -220,12 +240,121 @@ export async function importParts(
     title: string;
     blocks: BlockNode[];
     source: string;
-    reason: ImportPartReason;
+    reason: ImportReviewReason;
     flags: ImportPartFlag[];
     parent: string | null;
-  }>`select id, ord, kind, title, blocks, source, reason, flags, parent from import_part
+    origins: number[];
+  }>`select id, ord, kind, title, blocks, source, reason, flags, parent, origins from import_part
       where import_id = ${id} and proposal = ${proposal} order by ord`.execute(trx);
   return rows;
+}
+
+/** Its parts and the edits made to them deleted: abandoned, failed, or proposed again. */
+async function forgetProposal(trx: TenantTransaction, id: string): Promise<void> {
+  await sql`delete from import_edit where import_id = ${id}`.execute(trx);
+  await sql`delete from import_part where import_id = ${id}`.execute(trx);
+}
+
+/** An edit as recorded (IMb): by whom, when, and what was asked. */
+export interface StoredImportEdit {
+  readonly revision: number;
+  readonly by: string;
+  readonly at: Date;
+  readonly edit: ImportEdit;
+}
+
+/** The edits made to an import's proposal, in order. */
+export async function importEdits(trx: TenantTransaction, id: string): Promise<StoredImportEdit[]> {
+  const { rows } = await sql<{ revision: number; by: string; at: Date; edit: ImportEdit }>`
+    select revision, by_principal as by, at, edit from import_edit
+     where import_id = ${id} order by revision`.execute(trx);
+  return rows;
+}
+
+export type EditImportAnswer =
+  | { readonly answer: 'edited'; readonly import: StoredImport }
+  | { readonly answer: 'import.not_proposed' }
+  /** Another edit came first: the caller's revision is not the import's. */
+  | { readonly answer: 'import.changed' }
+  | { readonly answer: 'refused'; readonly refusal: ImportEditRefusal };
+
+/**
+ * An edit to the edited set (IMb; IMP-002, IMP-041), by its importer, against the revision they
+ * read: validated as made (`editProposal`), written in place, each component under the section
+ * before it, and recorded. The proposal as read is never touched.
+ */
+export async function editImport(
+  trx: TenantTransaction,
+  id: string,
+  input: { readonly revision: number; readonly edit: ImportEdit; readonly by: string },
+): Promise<EditImportAnswer> {
+  const { rows: held } = await sql<Row>`select ${COLUMNS} from import where id = ${id}
+    and state = 'proposed' for update`.execute(trx);
+  const row = held[0];
+  if (!row) return { answer: 'import.not_proposed' };
+  if (row.revision !== input.revision) return { answer: 'import.changed' };
+  const language =
+    row.language !== null && contentDocumentSchema.shape.language.safeParse(row.language).success
+      ? row.language
+      : 'en';
+  const before = await importParts(trx, id);
+  const edited = editProposal(before, input.edit, { language, direction: 'ltr' });
+  if (!edited.ok) return { answer: 'refused', refusal: edited.refusal };
+
+  // Out of the way of the order each is given, then each written where it now stands.
+  await sql`update import_part set ord = ord + 1000000
+     where import_id = ${id} and proposal = 'edited'`.execute(trx);
+  let section: string | null = null;
+  const kept: string[] = [];
+  for (const [ord, part] of edited.parts.entries()) {
+    const parent: string | null = part.kind === 'section' ? null : section;
+    const values: RawBuilder<unknown> = sql`${part.kind}, ${part.title}, ${JSON.stringify(part.blocks)}::jsonb,
+      ${part.source}, ${[...part.flags]}::text[], ${parent}, ${[...part.origins]}::integer[]`;
+    const written: readonly { id: string }[] = (
+      part.id === null
+        ? await sql<{ id: string }>`insert into import_part
+              (import_id, proposal, ord, reason, kind, title, blocks, source, flags, parent, origins)
+            values (${id}, 'edited', ${ord}, ${JSON.stringify(part.reason)}::jsonb, ${values})
+            returning id`.execute(trx)
+        : await sql<{ id: string }>`update import_part
+              set ord = ${ord}, (kind, title, blocks, source, flags, parent, origins) = (${values})
+            where id = ${part.id} and import_id = ${id} and proposal = 'edited'
+            returning id`.execute(trx)
+    ).rows;
+    kept.push(written[0]!.id);
+    if (part.kind === 'section') section = written[0]!.id;
+  }
+  // What was merged away goes once nothing stands under it.
+  await sql`delete from import_part where import_id = ${id} and proposal = 'edited'
+     and not (id = any(${kept}::uuid[]))`.execute(trx);
+  const { rows } = await sql<Row>`
+    update import set revision = revision + 1, touched_at = now()
+     where id = ${id}
+    returning ${COLUMNS}`.execute(trx);
+  await sql`insert into import_edit (import_id, revision, by_principal, edit)
+    values (${id}, ${rows[0]!.revision}, ${input.by}, ${JSON.stringify(input.edit)}::jsonb)`.execute(
+    trx,
+  );
+  return { answer: 'edited', import: importOf(rows[0]!) };
+}
+
+/**
+ * The part its importer is at (IMP-029), kept on the import so returning, from anywhere, lands there.
+ * Undefined where it is not proposed; `part.missing` where the part is not of its edited set.
+ */
+export async function setImportPlace(
+  trx: TenantTransaction,
+  id: string,
+  part: string,
+): Promise<StoredImport | 'part.missing' | undefined> {
+  if (!UUID.test(part)) return 'part.missing';
+  const { rows: found } = await sql`select 1 from import_part
+     where id = ${part} and import_id = ${id} and proposal = 'edited'`.execute(trx);
+  if (found.length === 0) return 'part.missing';
+  const { rows } = await sql<Row>`
+    update import set place = ${part} where id = ${id} and state = 'proposed'
+    returning ${COLUMNS}`.execute(trx);
+  return rows[0] && importOf(rows[0]);
 }
 
 /**
@@ -261,10 +390,11 @@ export async function recordProposal(
       const parent = part.parent === null ? null : ids[part.parent]!;
       const { rows: made } = await sql<{ id: string }>`
         insert into import_part
-          (import_id, proposal, ord, kind, title, blocks, source, reason, flags, parent)
+          (import_id, proposal, ord, kind, title, blocks, source, reason, flags, parent, origins)
         values (${id}, ${set}, ${index}, ${part.kind}, ${part.title},
                 ${JSON.stringify(part.blocks)}::jsonb, ${part.source},
-                ${JSON.stringify(part.reason)}::jsonb, ${[...part.flags]}::text[], ${parent})
+                ${JSON.stringify(part.reason)}::jsonb, ${[...part.flags]}::text[], ${parent},
+                array[${index}::integer])
         returning id`.execute(trx);
       ids.push(made[0]!.id);
     }
@@ -340,7 +470,7 @@ export async function failImport(
      where id = ${id} and state in ('awaiting', 'reading')
     returning ${COLUMNS}`.execute(trx);
   if (!rows[0]) return undefined;
-  await sql`delete from import_part where import_id = ${id}`.execute(trx);
+  await forgetProposal(trx, id);
   await releaseFile(trx, rows[0], remove);
   return importOf({ ...rows[0], object_key: null });
 }
@@ -360,7 +490,7 @@ export async function abandonImport(
      where id = ${id} and state in ('awaiting', 'reading', 'proposed')
     returning ${COLUMNS}`.execute(trx);
   if (!rows[0]) return undefined;
-  await sql`delete from import_part where import_id = ${id}`.execute(trx);
+  await forgetProposal(trx, id);
   await releaseFile(trx, rows[0], remove);
   await recordImportEvent(trx, rows[0], { kind: 'import.abandoned', swept });
   return importOf({ ...rows[0], object_key: null });
@@ -377,11 +507,11 @@ export async function changeImportLevels(
 ): Promise<StoredImport | undefined> {
   const { rows } = await sql<Row>`
     update import set levels = ${JSON.stringify(levels)}::jsonb, state = 'reading', report = null,
-           touched_at = now()
+           revision = revision + 1, touched_at = now()
      where id = ${id} and state = 'proposed'
     returning ${COLUMNS}`.execute(trx);
   if (!rows[0]) return undefined;
-  await sql`delete from import_part where import_id = ${id}`.execute(trx);
+  await forgetProposal(trx, id);
   await enqueueJob(trx, 'import', id);
   return importOf(rows[0]);
 }
@@ -503,7 +633,7 @@ export type AcceptImportAnswer =
 /**
  * Accepted (IM-F): the document and its components made from the proposal as edited, by the person
  * accepting, in the caller's transaction; what each version came from recorded (IMP-035); the import
- * `accepted`, naming the document. The parts are kept, for what was accepted unchanged (IMP-031), and
+ * `accepted`, naming the document and counting what was accepted unchanged (IMP-031). The parts are kept, and
  * the file, for a re-import (IMd).
  */
 export async function acceptImport(
@@ -521,6 +651,7 @@ export async function acceptImport(
     and state = 'proposed' for update`.execute(trx);
   const row = held[0];
   if (!row) return { answer: 'import.not_proposed' };
+  const parts = await importParts(trx, id);
   const made = await createDocumentWithComponents(trx, {
     spaceId: row.space_id,
     author: input.by,
@@ -528,16 +659,17 @@ export async function acceptImport(
     language: input.language,
     direction: input.direction,
     ...(input.template === undefined ? {} : { template: input.template }),
-    parts: outlineOf(await importParts(trx, id)),
+    parts: outlineOf(parts),
   });
   if (made.answer !== 'created') return made;
+  const counts = acceptedCounts(await importParts(trx, id, 'read'), parts);
   for (const version of [made.document, ...made.components]) {
     await sql`insert into import_made (version_id, artifact_id, import_id)
       values (${version.id}, ${version.artifactId}, ${id})`.execute(trx);
   }
   const { rows } = await sql<Row>`
     update import set state = 'accepted', document_id = ${made.document.artifactId},
-           finished_at = now(), touched_at = now()
+           accepted = ${JSON.stringify(counts)}::jsonb, finished_at = now(), touched_at = now()
      where id = ${id}
     returning ${COLUMNS}`.execute(trx);
   await recordImportEvent(trx, row, {

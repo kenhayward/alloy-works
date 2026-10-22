@@ -12,3 +12,19 @@ export type {
   ImportPartReason,
   ProposedPart,
 } from './proposal.js';
+export {
+  acceptedCounts,
+  blockText,
+  editProposal,
+  importReviewFlags,
+  partMatches,
+  reviewFlags,
+} from './review.js';
+export type {
+  AcceptedCounts,
+  ImportEdit,
+  ImportEditRefusal,
+  ImportReviewFlag,
+  ImportReviewReason,
+  ReviewPart,
+} from './review.js';
