@@ -45,6 +45,10 @@ import {
   workflowBodySchema,
   type PublishedApproval,
   type StoredProfile,
+  parseCitationStyle,
+  parseEntry,
+  type CslItem,
+  type Requires,
 } from '@alloy-works/domain';
 import { waivedKeys } from './waivers.js';
 import { latestRevisionsOf } from './workflow.js';
@@ -552,6 +556,74 @@ async function resolveImages(
   return { assets, failures };
 }
 
+/** Every entry a citation anywhere in this content names: a paragraph's, a cell's, a note's. */
+function citedIn(value: unknown): string[] {
+  if (Array.isArray(value)) return value.flatMap(citedIn);
+  if (typeof value !== 'object' || value === null) return [];
+  const record = value as Record<string, unknown>;
+  if (record['type'] === 'citation' && typeof record['entry'] === 'string')
+    return [record['entry']];
+  return Object.values(record).flatMap(citedIn);
+}
+
+/**
+ * Every entry the resolved occurrences cite, decided as the publisher (CIc; CI-B): its latest version,
+ * where the publisher may read it and it is an entry of the space of a component citing it, each once.
+ * One that is not is recorded as nothing, and `assemble` fails its citation by name (CNT-054).
+ */
+async function resolveEntries(
+  trx: TenantTransaction,
+  resolved: readonly ReadOccurrence[],
+  principalId: string,
+): Promise<readonly { readonly version: string; readonly entry: string }[]> {
+  const cited = resolved.flatMap(({ component, content }) =>
+    citedIn(content.content).map((entry) => ({ component, entry })),
+  );
+  const wanted = [...new Set(cited.map((each) => each.entry))].filter((id) => UUID.test(id));
+  if (wanted.length === 0) return [];
+  const readable = await loadReadableSet(trx, principalId);
+  if (!readable) return [];
+  const deletion = (await deletionStored(trx)) ? sql`and ${notDeletedAs('a')}` : sql``;
+  const { rows } = await sql<{ id: string; space_id: string; version: string }>`
+    select a.id, a.space_id,
+           (select v.id from artifact_version v where v.artifact_id = a.id
+             order by v.revision_no desc, v.version_no desc limit 1) as version
+      from artifact a
+     where a.kind = 'bibliographyEntry' and a.id = any(${wanted}::uuid[]) ${deletion}`.execute(trx);
+  if (rows.length === 0) return [];
+  const read = new Set(
+    (
+      await trx
+        .selectFrom('artifact as a')
+        .select('a.id')
+        .where(
+          'a.id',
+          'in',
+          rows.map((row) => row.id),
+        )
+        .where((eb) => readableArtifacts(eb, readable))
+        .execute()
+    ).map((row) => row.id),
+  );
+  const spaces = new Map(
+    (
+      await trx
+        .selectFrom('artifact')
+        .select(['id', 'space_id'])
+        .where('id', 'in', [...new Set(cited.map((each) => each.component))])
+        .execute()
+    ).map((row) => [row.id, row.space_id]),
+  );
+  const entries = new Map(rows.map((row) => [row.id, row]));
+  const kept = new Map<string, string>();
+  for (const { component, entry } of cited) {
+    const row = entries.get(entry);
+    if (row === undefined || !read.has(entry) || row.space_id !== spaces.get(component)) continue;
+    kept.set(entry, row.version);
+  }
+  return [...kept].map(([entry, version]) => ({ version, entry }));
+}
+
 export type PublicationRequestAnswer =
   /** A profile naming an axis, or a value of one, the environment does not declare (R6-F). */
   | { readonly answer: 'profile.invalid'; readonly unknown: readonly string[] }
@@ -763,6 +835,8 @@ export interface Publishable {
   readonly failures: readonly PublishFailure[];
   readonly bindings: readonly HeldBinding[];
   readonly assets: readonly { readonly version: string; readonly asset: string }[];
+  /** Each entry a citation reads, at its latest version (CIc), recorded and pinned as an image is. */
+  readonly entries: readonly { readonly version: string; readonly entry: string }[];
 }
 
 /** A refusal a request or a baseline is answered with before anything is recorded. */
@@ -942,6 +1016,7 @@ export async function resolvePublishable(
     failures: [...failures, ...stale, ...held, ...generated, ...images.failures],
     bindings: bindings.held,
     assets: images.assets,
+    entries: await resolveEntries(trx, resolved, input.principal),
   };
 }
 
@@ -1040,6 +1115,21 @@ export async function requestPublication(
           request_id: request.id,
           version_id: each.version,
           asset_id: each.asset,
+        })),
+      )
+      .execute();
+  }
+  // Each entry version its citations read (CIc), beside the images: the next publish reads the
+  // latest again, and a baseline pins these.
+  if (found.entries.length > 0) {
+    await trx
+      .insertInto('publication_request_asset')
+      .values(
+        found.entries.map((each) => ({
+          request_id: request.id,
+          version_id: each.version,
+          asset_id: each.entry,
+          asset_kind: 'bibliographyEntry' as const,
         })),
       )
       .execute();
@@ -1198,6 +1288,16 @@ export interface PublicationInputs {
    * since the dataset version does; the worker reads the bytes only of those the binding stage placed.
    */
   readonly boundAssets: ReadonlyMap<string, PublishingAsset>;
+  /**
+   * What its citations are published from (CIc): the citation style version its theme names, read
+   * whole, or null where it names none; and each entry version the request recorded, by node and then
+   * entry, for each node whose component is in the entry's space (CI-B). Neither is read where no
+   * occurrence cites anything.
+   */
+  readonly citations: {
+    readonly style: { readonly csl: string; readonly requires: Requires } | null;
+    readonly entries: ReadonlyMap<string, ReadonlyMap<string, CslItem>>;
+  };
 }
 
 /** A binding as a request or a publication records it, with the dataset version it took. */
@@ -1547,6 +1647,7 @@ async function inputsOf(
     .innerJoin('artifact_version as v', 'v.id', 'q.version_id')
     .select(['q.version_id', 'v.content'])
     .where('q.request_id', '=', requestId)
+    .where('q.asset_kind', '=', 'asset')
     .execute();
   const assets = new Map<string, PublishingAsset>();
   for (const row of images) {
@@ -1585,6 +1686,7 @@ async function inputsOf(
     }
   }
   const approved = await gateApprovals(trx, request.baseline_id);
+  const cites = rows.some((row) => citedIn(row.content).length > 0);
   return {
     request: {
       id: request.id,
@@ -1632,7 +1734,77 @@ async function inputsOf(
     assets,
     bindings,
     boundAssets,
+    citations: cites
+      ? await recordedCitations(
+          trx,
+          requestId,
+          rows,
+          theme?.theme.citationStyle ?? null,
+          // An entry the request failed a citation of, which its requester may not read, is never read.
+          new Set(
+            (request.failures as PublishFailure[]).flatMap((each) =>
+              each.code === 'citation_unresolved' && each.detail !== null
+                ? [each.detail.slice(each.detail.indexOf(': ') + 2)]
+                : [],
+            ),
+          ),
+        )
+      : { style: null, entries: new Map() },
   };
+}
+
+/**
+ * A request's citations' inputs (CIc): the style version its theme names, and each entry version it
+ * recorded, offered to each node whose component stands in the entry's space. A version that does not
+ * read is a broken store, thrown, as a component's is.
+ */
+async function recordedCitations(
+  trx: TenantTransaction,
+  requestId: string,
+  occurrences: readonly { readonly node: string; readonly component_id: string }[],
+  named: { readonly id: string; readonly version: string } | null,
+  hidden: ReadonlySet<string>,
+): Promise<PublicationInputs['citations']> {
+  const entries = await trx
+    .selectFrom('publication_request_asset as q')
+    .innerJoin('artifact_version as v', 'v.id', 'q.version_id')
+    .innerJoin('artifact as a', 'a.id', 'q.asset_id')
+    .select(['q.asset_id', 'v.content', 'a.space_id'])
+    .where('q.request_id', '=', requestId)
+    .where('q.asset_kind', '=', 'bibliographyEntry')
+    .$if(hidden.size > 0, (query) => query.where('q.asset_id', 'not in', [...hidden]))
+    .execute();
+  const spaces = new Map(
+    (
+      await trx
+        .selectFrom('artifact')
+        .select(['id', 'space_id'])
+        .where(
+          'id',
+          'in',
+          occurrences.map((each) => each.component_id),
+        )
+        .execute()
+    ).map((row) => [row.id, row.space_id]),
+  );
+  const byNode = new Map<string, Map<string, CslItem>>();
+  for (const { node, component_id } of occurrences) {
+    const space = spaces.get(component_id);
+    byNode.set(
+      node,
+      new Map(
+        entries
+          .filter((each) => each.space_id === space)
+          .map((each) => [each.asset_id, parseEntry(each.content).csl]),
+      ),
+    );
+  }
+  if (named === null) return { style: null, entries: byNode };
+  const stored = await readVersion(trx, named.version);
+  if (!stored)
+    throw new Error(`The citation style version ${named.version} its theme names is gone`);
+  const { csl, requires } = parseCitationStyle(stored.content);
+  return { style: { csl, requires }, entries: byNode };
 }
 
 /**
@@ -1903,6 +2075,18 @@ async function insertPublication(
   // A baseline taken at a gate makes an approved publication (PUB-004; the WF2 plan, WF2-I).
   const gated =
     request.baseline_id !== null && (await baselineGate(trx, request.baseline_id)) !== null;
+  // Exactly the images and the entries the request recorded (figures 3, ruling R6; CIc), which 0022's
+  // check holds at commit.
+  const images = await trx
+    .selectFrom('publication_request_asset')
+    .select(['version_id', 'asset_id', 'asset_kind'])
+    .where('request_id', '=', request.id)
+    .execute();
+  // The citation style version its theme names, where it printed a citation (CIc).
+  const style =
+    images.some((each) => each.asset_kind === 'bibliographyEntry') && request.theme_version_id
+      ? (await themeAt(trx, request.theme_version_id)).citationStyle
+      : null;
   const artifact = await trx
     .insertInto('artifact')
     .values({ kind: 'publication', space_id: request.space_id })
@@ -1943,6 +2127,9 @@ async function insertPublication(
       theme_version_id: request.theme_version_id,
       // The profile it was made under (REU-027; R6-F), as 0106's rule holds it to its request's.
       ...(request.profile === null ? {} : { profile: JSON.stringify(request.profile) }),
+      ...(style === null
+        ? {}
+        : { citation_style_id: style.id, citation_style_version_id: style.version }),
     })
     .execute();
   const occurrences = await trx
@@ -1963,12 +2150,6 @@ async function insertPublication(
     .execute();
   // What of it came from a model, accepted, by the report's rule (PUB-082; 0143).
   await recordPublicationGenerated(trx, artifact.id);
-  // Exactly the images the request recorded (figures 3, ruling R6), which 0022's check holds at commit.
-  const images = await trx
-    .selectFrom('publication_request_asset')
-    .select(['version_id', 'asset_id'])
-    .where('request_id', '=', request.id)
-    .execute();
   if (images.length > 0) {
     await trx
       .insertInto('publication_asset')
@@ -1977,10 +2158,13 @@ async function insertPublication(
           publication_id: artifact.id,
           version_id: each.version_id,
           asset_id: each.asset_id,
+          // Named only for an entry, so a schema before 0147 is never asked for another kind.
+          ...(each.asset_kind === 'asset' ? {} : { asset_kind: each.asset_kind }),
         })),
       )
       .execute();
   }
+
   await trx
     .insertInto('publication_output')
     .values(

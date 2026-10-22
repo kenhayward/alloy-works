@@ -1713,6 +1713,10 @@ describe('requesting and recording a publication', () => {
         theme_kind: 'theme',
         // No profile: the empty one, as a request names none (0106).
         profile: null,
+        // No citation style, since it printed no citation (0147).
+        citation_style_id: null,
+        citation_style_version_id: null,
+        citation_style_kind: 'citationStyle',
         // The transaction that recorded it, which a listing's snapshot reads (0032).
         written_by: expect.stringMatching(/^\d+$/),
       });

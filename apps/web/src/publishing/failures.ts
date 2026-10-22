@@ -503,6 +503,20 @@ export function failureWords(failure: Failure, wordOffered = false): string {
           : 'This table is too wide to print: it would have to be scaled to less than half its size. Set it to rotate onto landscape pages, or take out some of its columns.';
     case 'store_failed':
       return 'The publication could not be stored. Publish again.';
+    // CIc (CNT-054, LIB-012): `detail` names the citation by its place and the entry, or the entry and
+    // the variable, by identifier and name alone.
+    case 'citation_unresolved': {
+      const [place, entry] = (failure.detail ?? '').split(': ');
+      return `Citation ${place ?? ''} here names a bibliography entry you may not read, or one not in this space: ${entry ?? ''}. Cite an entry of this space, or remove the citation.`;
+    }
+    case 'entry_incomplete': {
+      const [entry, variable] = (failure.detail ?? '').split(': ');
+      return `The bibliography entry ${entry ?? ''} lacks ${variable ?? 'a field'}, which the citation style needs for its type. Fill it in on the entry, and publish again.`;
+    }
+    case 'style_invalid':
+      return failure.detail === 'none'
+        ? "The publication's theme names no citation style, so its citations cannot be set. Choose one in the theme."
+        : "The theme's citation style no longer sets citations. Choose another in the theme, or upload the style again.";
     default:
       return 'The publication could not be made. Publish again.';
   }
@@ -521,6 +535,9 @@ export const FAILURE_SUMMARIES: Readonly<Record<PublishFailureCode, string>> = {
   axis_unset: 'Content in it depends on a condition the document does not set.',
   condition_leaked: 'Text its profile leaves out was found in what was made.',
   generated_unaccepted: 'Generated content in it waits to be accepted or rejected.',
+  citation_unresolved: 'A citation in it names an entry that cannot be read.',
+  entry_incomplete: 'A bibliography entry it cites lacks a field its style needs.',
+  style_invalid: 'Its theme names no citation style that sets its citations.',
   occurrence_unresolved: 'A reference in it waits on an approved version.',
   asset_unreadable: 'A figure in it shows an image you may not see.',
   component_metadata_invalid: 'A component in it has fields not filled in as its type asks.',

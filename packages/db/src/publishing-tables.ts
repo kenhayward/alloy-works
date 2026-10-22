@@ -67,7 +67,12 @@ export interface PublicationRequestAssetTable {
   request_id: ColumnType<string, string, never>;
   version_id: ColumnType<string, string, never>;
   asset_id: ColumnType<string, string, never>;
-  asset_kind: ColumnType<'asset', never, never>;
+  /** An image's version, or since 0147 a bibliography entry's a citation read (CIc). */
+  asset_kind: ColumnType<
+    'asset' | 'bibliographyEntry',
+    'asset' | 'bibliographyEntry' | undefined,
+    never
+  >;
 }
 
 /** A binding a request holds, as its latest resolution (0050; B3-C): insert and read alone. */
@@ -102,7 +107,12 @@ export interface PublicationAssetTable {
   publication_id: ColumnType<string, string, never>;
   version_id: ColumnType<string, string, never>;
   asset_id: ColumnType<string, string, never>;
-  asset_kind: ColumnType<'asset', never, never>;
+  /** An image's version, or since 0147 a bibliography entry's a citation read (CIc). */
+  asset_kind: ColumnType<
+    'asset' | 'bibliographyEntry',
+    'asset' | 'bibliographyEntry' | undefined,
+    never
+  >;
 }
 
 /** Insert and read, nothing else (PUB-050). */
@@ -141,6 +151,10 @@ export interface PublicationTable {
   theme_kind: ColumnType<'theme', never, never>;
   /** Its request's profile, exactly (0106's `publication_recorded_whole`). */
   profile: ColumnType<StoredProfile | null, string | undefined, never>;
+  /** The citation style version its theme named, where it printed a citation (0147; CIc). */
+  citation_style_id: ColumnType<string | null, string | undefined, never>;
+  citation_style_version_id: ColumnType<string | null, string | undefined, never>;
+  citation_style_kind: ColumnType<'citationStyle', never, never>;
 }
 
 export interface PublicationInputTable {

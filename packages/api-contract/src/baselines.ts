@@ -83,6 +83,12 @@ export const BaselineView = BaselineSummaryView.extend({
       template: Pinned.nullable(),
       occurrences: z.array(Pinned.extend({ node: z.string() })),
       assets: z.array(Pinned),
+      entries: z
+        .array(Pinned)
+        .optional()
+        .describe(
+          'The bibliography entry versions its citations read, the caller may read; absent where it cites none',
+        ),
       bindings: z.array(
         z.object({
           node: z.string(),

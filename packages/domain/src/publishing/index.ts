@@ -1,6 +1,12 @@
 // Word 3: a cross-reference's key in `WordInput.references`, which the worker's Word check reads each
 // reference's form by, as the writer does.
-export { assemble, inlineReferenceKey, publishedImagePath, publishedPdf } from './assemble.js';
+export {
+  assemble,
+  citationPlaces,
+  inlineReferenceKey,
+  publishedImagePath,
+  publishedPdf,
+} from './assemble.js';
 // The page's two lengths an image style is a share of, and an image's size by its style: what the
 // editor sets a figure by, as `assemble` does (themes.md, "The theme in the editor", CNT-122).
 export { styledSize, textBlockHeight, textMeasure } from './measure.js';
@@ -149,10 +155,15 @@ export {
   PUBLISHING_SCHEMA_20,
   // Frozen by WF2b, which made `publishing/22`: the schema template 21 reads.
   PUBLISHING_SCHEMA_21,
+  // Frozen by CIc, which made `publishing/23`: the schema template 22 reads.
+  PUBLISHING_SCHEMA_22,
 } from './published.js';
 export type {
   PublishedApproval,
   PublishedApprovals,
+  PublishedBibliography,
+  PublishedBibliographyEntry,
+  PublishedCitationRun,
   PublishedBlock,
   PublishedBlock1,
   PublishedDocument,

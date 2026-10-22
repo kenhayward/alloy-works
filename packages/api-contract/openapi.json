@@ -22335,6 +22335,35 @@
                             ]
                           }
                         },
+                        "entries": {
+                          "description": "The bibliography entry versions its citations read, the caller may read; absent where it cites none",
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "version": {
+                                "type": "string",
+                                "allOf": [
+                                  {
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  {
+                                    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                  }
+                                ]
+                              },
+                              "digest": {
+                                "type": "string",
+                                "pattern": "^[0-9a-f]{64}$",
+                                "description": "The version's digest"
+                              }
+                            },
+                            "required": [
+                              "version",
+                              "digest"
+                            ]
+                          }
+                        },
                         "bindings": {
                           "type": "array",
                           "items": {
@@ -24184,7 +24213,10 @@
                               "variable_unresolved",
                               "axis_unset",
                               "condition_leaked",
-                              "generated_unaccepted"
+                              "generated_unaccepted",
+                              "citation_unresolved",
+                              "entry_incomplete",
+                              "style_invalid"
                             ]
                           },
                           "node": {
@@ -24591,7 +24623,10 @@
                               "variable_unresolved",
                               "axis_unset",
                               "condition_leaked",
-                              "generated_unaccepted"
+                              "generated_unaccepted",
+                              "citation_unresolved",
+                              "entry_incomplete",
+                              "style_invalid"
                             ]
                           },
                           "node": {
@@ -88849,7 +88884,10 @@
                               "variable_unresolved",
                               "axis_unset",
                               "condition_leaked",
-                              "generated_unaccepted"
+                              "generated_unaccepted",
+                              "citation_unresolved",
+                              "entry_incomplete",
+                              "style_invalid"
                             ]
                           },
                           "node": {
@@ -89329,7 +89367,10 @@
                               "variable_unresolved",
                               "axis_unset",
                               "condition_leaked",
-                              "generated_unaccepted"
+                              "generated_unaccepted",
+                              "citation_unresolved",
+                              "entry_incomplete",
+                              "style_invalid"
                             ]
                           },
                           "node": {
@@ -165572,7 +165613,10 @@
                               "variable_unresolved",
                               "axis_unset",
                               "condition_leaked",
-                              "generated_unaccepted"
+                              "generated_unaccepted",
+                              "citation_unresolved",
+                              "entry_incomplete",
+                              "style_invalid"
                             ]
                           },
                           "node": {
@@ -171556,7 +171600,10 @@
                               "variable_unresolved",
                               "axis_unset",
                               "condition_leaked",
-                              "generated_unaccepted"
+                              "generated_unaccepted",
+                              "citation_unresolved",
+                              "entry_incomplete",
+                              "style_invalid"
                             ]
                           },
                           "node": {
@@ -221816,7 +221863,10 @@
                               "variable_unresolved",
                               "axis_unset",
                               "condition_leaked",
-                              "generated_unaccepted"
+                              "generated_unaccepted",
+                              "citation_unresolved",
+                              "entry_incomplete",
+                              "style_invalid"
                             ]
                           },
                           "node": {

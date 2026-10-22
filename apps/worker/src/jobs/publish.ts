@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { publishedImagePath, type PublishingAsset } from '@alloy-works/domain';
+import { renderCitations } from '@alloy-works/domain/citations';
 import {
   failPublicationRequest,
   recordPublicationEvent,
@@ -72,8 +73,9 @@ import type { JobHandler } from '../worker.js';
  * to set a transposed table (TG2), 23 the first to measure a table's columns by what they hold
  * (TG3), 24 the first to print a value revised by hand and write `provenance.json` at its schema 4
  * (the RV plan, RV-F), 25 the first to publish a gate's baseline as approved, without the notice
- * and with its approval page (the WF2 plan, WF2-I, WF2-J), and 26 the first to print a variable and
- * write `provenance.json` at its schema 5 (the R5 plan, R5-E).
+ * and with its approval page (the WF2 plan, WF2-I, WF2-J), 26 the first to print a variable and
+ * write `provenance.json` at its schema 5 (the R5 plan, R5-E), and 27 the first to print a citation
+ * and its bibliography (the CI plan, CIc).
  *
  * **Both keys are frozen.** Keyed by `PUBLISHING_SCHEMA` itself, a repoint moved the key while the
  * value stayed behind, and the `satisfies` clause could not catch it because `PublishedSchema`
@@ -85,7 +87,7 @@ import type { JobHandler } from '../worker.js';
  */
 export const PIPELINE_VERSION = {
   [PUBLISHING_SCHEMA_1]: '1',
-  [PUBLISHING_SCHEMA_CURRENT]: '26',
+  [PUBLISHING_SCHEMA_CURRENT]: '27',
 } as const satisfies Record<PublishedSchema, string>;
 
 /** The document's own failures, every one at once: the job is finished, never tried again. */
@@ -352,6 +354,8 @@ export async function assembleRequest(
     // The request's own images, and every one a held result could place (B6-F): the binding
     // stage sets a bound image as an ordinary one, naming its asset version, sized from these.
     assets: new Map([...boundAssets, ...assets]),
+    // Each entry version the request recorded and its theme's style, rendered by citeproc here (CIc).
+    citations: { ...inputs.citations, render: renderCitations },
     ...(deps.conditionContent ? { conditionContent: deps.conditionContent } : {}),
   });
 }

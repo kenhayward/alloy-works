@@ -60,6 +60,7 @@ import {
   PUBLISHING_SCHEMA_19,
   PUBLISHING_SCHEMA_20,
   PUBLISHING_SCHEMA_21,
+  PUBLISHING_SCHEMA_22,
   type PublishedBlock,
   type PublishedDocument,
   type PublishedInline,
@@ -1167,8 +1168,8 @@ describe('assemble', () => {
     ]);
   });
 
-  it('assembles under a layout as publishing/22, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/22');
+  it('assembles under a layout as publishing/23, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/23');
     // Frozen with templates 3 and 4 and the publications made by them, exactly as `publishing/2` was
     // frozen when a run began to carry its marks: a template version is a record, not something to
     // migrate.
@@ -1754,8 +1755,8 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
     ]);
   });
 
-  it('makes publishing/22, and publishing/4 to publishing/21 are frozen', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/22');
+  it('makes publishing/23, and publishing/4 to publishing/22 are frozen', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/23');
     expect(PUBLISHING_SCHEMA_4).toBe('publishing/4');
     expect(PUBLISHING_SCHEMA_5).toBe('publishing/5');
     expect(PUBLISHING_SCHEMA_6).toBe('publishing/6');
@@ -1774,6 +1775,7 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
     expect(PUBLISHING_SCHEMA_19).toBe('publishing/19');
     expect(PUBLISHING_SCHEMA_20).toBe('publishing/20');
     expect(PUBLISHING_SCHEMA_21).toBe('publishing/21');
+    expect(PUBLISHING_SCHEMA_22).toBe('publishing/22');
   });
 });
 
@@ -4888,11 +4890,11 @@ describe('the theme a publication is set from (themes 1)', () => {
     return styles;
   };
 
-  it('makes publishing/22, carrying the Typst projection of every paragraph, table and image style the theme holds, used or not', () => {
+  it('makes publishing/23, carrying the Typst projection of every paragraph, table and image style the theme holds, used or not', () => {
     const theme = resolved();
     const assembled = assemble(oneParagraph(text('Set the tray.')));
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
-    expect(assembled.document.schema).toBe('publishing/22');
+    expect(assembled.document.schema).toBe('publishing/23');
     expect(assembled.document.theme).toEqual(projectTypst(theme));
     expect(Object.keys(assembled.document.theme.tables)).toEqual(['table', 'banded']);
     expect(Object.keys(assembled.document.theme.images)).toEqual([

@@ -233,6 +233,14 @@ export const publishFailureCodes = [
   // resolve, from G3 (GEN-025): a component the version places with a generated suggestion waiting to be
   // accepted or rejected, naming the node and in `detail` how many wait. A preview is never refused.
   'generated_unaccepted',
+  // compose, from CIc (CNT-054, LIB-012; citations.md, "Failures"): a citation whose entry the publisher
+  // may not read, or that is no entry of its component's space, naming the block and in `detail` the
+  // citation by its place in the block and the entry, `<n>: <entry>`; an entry lacking a variable its
+  // style requires for its type, naming the first block citing it and `<entry>: <variable>`; and a
+  // theme naming no style, or one that no longer renders, `detail` `none` or `render`.
+  'citation_unresolved',
+  'entry_incomplete',
+  'style_invalid',
 ] as const;
 
 export type PublishFailureCode = (typeof publishFailureCodes)[number];

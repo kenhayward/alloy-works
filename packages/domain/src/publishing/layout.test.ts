@@ -600,6 +600,17 @@ describe('a layout', () => {
     expect(() => parseLayout(blank)).toThrow();
   });
 
+  it('PUB-040 declares a bibliography under a title of its words, which a layout stored without one reads as placing none', () => {
+    const placed = copy();
+    placed.matter.bibliography = { title: 'References' };
+    expect(parseLayout(placed).matter.bibliography).toEqual({ title: 'References' });
+    expect(parseLayout(copy()).matter.bibliography).toBeUndefined();
+
+    const blank = copy();
+    blank.matter.bibliography = { title: '  ' };
+    expect(() => parseLayout(blank)).toThrow();
+  });
+
   it('refuses every member it does not declare, at every depth', () => {
     const lists = { ...copy(), lists: [] };
     expect(() => parseLayout(lists)).toThrow(/Unrecognized key/);

@@ -9,6 +9,10 @@ import type {
   InlineNode,
 } from '../content/model/inline.js';
 import type { Mark } from '../content/model/marks.js';
+// Types alone: the processor is the worker's to hand in, so citeproc stays out of the renderer.
+import type { RenderRequest, Rendered } from '../library/citations.js';
+import type { CslItem } from '../library/entry.js';
+import { requiredProblems, type Requires } from '../library/style.js';
 import { formatsFor } from '../data/format.js';
 import { placeTableNotes } from '../data/table-notes.js';
 import { hasText } from '../content/model/text.js';
@@ -126,6 +130,8 @@ import {
   type PublishedTableNote,
   type PublishedTitleRun,
   type PublishedApproval,
+  type PublishedBibliography,
+  type PublishedBibliographyEntry,
 } from './published.js';
 
 /**
@@ -223,6 +229,18 @@ export interface AssembleInput {
    * baseline taken at a gate (PUB-004), and prints no notice and no sentence of being a draft.
    */
   readonly approvals?: readonly PublishedApproval[];
+  /**
+   * What citations are published from (the CI plan, CIc; citations.md, "Rendering"): the theme's style
+   * at the version it names, or null where it names none; each entry a citation may resolve to, by
+   * node and then entry - one the publisher may read, in the space of the component placed there; and
+   * the processor, `renderCitations`, handed in so citeproc stays out of the renderer. Omitted, every
+   * citation is `citation_unresolved`.
+   */
+  readonly citations?: {
+    readonly style: { readonly csl: string; readonly requires: Requires } | null;
+    readonly entries: ReadonlyMap<string, ReadonlyMap<string, CslItem>>;
+    readonly render: (request: RenderRequest) => Rendered;
+  };
 }
 
 /** `assemble`'s input once through the binding stage: every occurrence's content `Bound`. */
@@ -940,6 +958,31 @@ export function assemble(given: AssembleInput): Assembled {
   failures.push(...resolved.failures);
   for (const each of resolved.pdfsOwn) pdfsOwn.add(each);
   if (docx) failures.push(...resolved.forWord);
+  // Every citation, rendered once in reading order after the references (CIc): a citation without a
+  // layout is refused where it stands, as a reference is.
+  const citations =
+    layout === null
+      ? null
+      : resolveCitations(resolved.cited, input.citations, input.outline.language);
+  // A citation the request already failed (a baseline's publish, for an entry its requester may not
+  // read) is said once.
+  failures.push(
+    ...(citations?.failures ?? []).filter(
+      (next) =>
+        !input.refused.some(
+          (each) =>
+            each.code === next.code &&
+            each.node === next.node &&
+            each.block === next.block &&
+            each.detail === next.detail,
+        ),
+    ),
+  );
+  // Placed where the layout declares one and a citation stands (PUB-040); its title is the layout's.
+  const bibliography: PublishedBibliography | null =
+    layout?.matter.bibliography === undefined || (citations?.bibliography.length ?? 0) === 0
+      ? null
+      : { title: layout.matter.bibliography.title, entries: citations!.bibliography };
   /** A block's or a footnote's anchor where a reference names it, else null. */
   const anchorOf = (node: string, block: string): string | null => {
     const anchor = blockAnchor(node, block);
@@ -1054,6 +1097,16 @@ export function assemble(given: AssembleInput): Assembled {
         if (docx)
           wordReferences.set(inlineReferenceKey(node, site, runs.length), resolved.forms.get(key)!);
         runs.push({ reference: { ...printed, link } });
+        continue;
+      }
+      // A citation as its style rendered it (CIc), a link to its entry where a reference here would
+      // be one and the layout places the bibliography (PUB-097). One that failed is not set.
+      if (inline.type === 'citation' && layout !== null) {
+        const form = citations?.forms.get(node)?.get(inline);
+        if (form === undefined) continue;
+        for (const run of form.runs) check(run.text, node, block, runFamilies(run.marks, families));
+        const link = bibliography !== null && inParagraph !== null && !inParagraph.heading;
+        runs.push({ citation: { runs: form.runs, link: link ? entryAnchor(form.entry) : null } });
         continue;
       }
       // A caption's height is estimated from its words, and the list after the contents sets it again,
@@ -1760,6 +1813,7 @@ export function assemble(given: AssembleInput): Assembled {
               if ('text' in run) return run.text;
               if ('reference' in run) return run.reference.text ?? '';
               if ('equation' in run) return mathsText(run.equation.tree);
+              if ('citation' in run) return run.citation.runs.map((each) => each.text).join('');
               return '';
             })
             .join('');
@@ -1978,6 +2032,13 @@ export function assemble(given: AssembleInput): Assembled {
           return [{ text: each.footnote.label, strong: false, slanted: false }];
         if ('tableMark' in each)
           return [{ text: each.tableMark.letter, strong: false, slanted: false }];
+        if ('citation' in each) {
+          return each.citation.runs.map((run) => ({
+            text: run.text,
+            strong: bold || run.marks.some((mark) => mark.kind === 'strong'),
+            slanted: run.marks.some((mark) => mark.kind === 'emphasis'),
+          }));
+        }
         // An image in a line is as wide as it is set.
         if ('image' in each)
           return [{ text: '', strong: false, slanted: false, points: each.image.width }];
@@ -2375,6 +2436,16 @@ export function assemble(given: AssembleInput): Assembled {
   };
 
   const nodes = input.outline.nodes.map((node) => project(node, 1, node.matter));
+  // The bibliography after them: its title in the first heading's style, its entries in running
+  // text's, each asked of the faces as the document's words are.
+  if (bibliography !== null) {
+    checkWords(bibliography.title, roles('heading1'), (next) => failures.push(next));
+    for (const entry of bibliography.entries) {
+      for (const run of [...(entry.label ?? []), ...entry.runs]) {
+        check(run.text, null, null, runFamilies(run.marks, inPlace('text')));
+      }
+    }
+  }
   /** Every failure said for the formats asked for: the PDF engine's own only where a PDF is. */
   const reported = () => (pdf ? failures : failures.filter((each) => !pdfsOwn.has(each)));
 
@@ -2486,6 +2557,7 @@ export function assemble(given: AssembleInput): Assembled {
       front: { cover, contents: shownContents, lists, approvals },
       appendices: { newPage: layout.matter.appendices.newPage },
       nodes,
+      back: { bibliography },
     },
   };
 }
@@ -2632,6 +2704,18 @@ interface ResolvedReferences {
   readonly forms: ReadonlyMap<string, WordReference>;
   /** What Word's fields would not print as the PDF does, said where Word is asked for (Word 3, R5). */
   readonly forWord: readonly PublishFailure[];
+  /** Every citation in a component, in reading order (CIc), with the block a failure names. */
+  readonly cited: readonly Cited[];
+}
+
+/** A citation as the content model stores it. */
+type CitationNode = Extract<InlineNode, { type: 'citation' }>;
+
+/** A citation found in the document: where it is read, and the block a failure in it names. */
+interface Cited {
+  readonly node: string;
+  readonly block: string;
+  readonly citation: CitationNode;
 }
 
 /** Nothing resolved: a request made before layouts, which refuses a reference where it stands. */
@@ -2642,6 +2726,7 @@ const NO_REFERENCES: ResolvedReferences = {
   pdfsOwn: new Set(),
   forms: new Map(),
   forWord: [],
+  cited: [],
 };
 
 /**
@@ -2754,6 +2839,8 @@ function resolveReferences(
   /** Every floated figure's anchor, whose caption Word writes in a text box (Word 3, R5). */
   const floated = new Set<string>();
   let at = 0;
+  // Each citation where the walk meets it, which is the order a reader meets it (CIc).
+  const cited: Cited[] = [];
 
   const place = (anchor: string, inHeader: boolean) => {
     positions.set(anchor, at++);
@@ -2771,17 +2858,21 @@ function resolveReferences(
     inHeader: boolean,
     inCaption: string | null = null,
     inNote = false,
+    /** The block a citation's failure names: a footnote's own for its text, as publishing names it. */
+    block: string | null = null,
   ) => {
     for (const inline of content) {
       if (inline.type === 'crossReference') {
         found.push({ node, reference: inline, inTitle, at: at++, inNote, inCaption });
+      } else if (inline.type === 'citation' && block !== null) {
+        cited.push({ node, block, citation: inline });
       } else if (inline.type === 'footnote' && beneath !== null) {
         beneath.push(() => {
           place(blockAnchor(node, inline.id), false);
           const paragraphs = inline.content as readonly Extract<BlockNode, { type: 'paragraph' }>[];
           for (const paragraph of paragraphs) {
             place(blockAnchor(node, paragraph.id), false);
-            inlines(paragraph.content, node, inTitle, false, inCaption, false);
+            inlines(paragraph.content, node, inTitle, false, inCaption, false, inline.id);
           }
         });
       } else if (inline.type === 'footnote') {
@@ -2790,7 +2881,7 @@ function resolveReferences(
         for (const paragraph of paragraphs) {
           place(blockAnchor(node, paragraph.id), inHeader);
           inNotes.add(blockAnchor(node, paragraph.id));
-          inlines(paragraph.content, node, inTitle, inHeader, inCaption, true);
+          inlines(paragraph.content, node, inTitle, inHeader, inCaption, true, inline.id);
         }
       }
     }
@@ -2801,21 +2892,29 @@ function resolveReferences(
     place(blockAnchor(node, stored.id), inHeader);
     switch (stored.type) {
       case 'paragraph':
-        inlines(stored.content, node, false, inHeader);
+        inlines(stored.content, node, false, inHeader, null, false, stored.id);
         return;
       case 'list':
         for (const item of stored.items) {
-          inlines(item.term ?? [], node, false, inHeader);
+          inlines(item.term ?? [], node, false, inHeader, null, false, stored.id);
           for (const each of item.content) block(each, node, inHeader);
         }
         return;
       case 'blockquote':
         for (const each of stored.content) block(each, node, inHeader);
-        inlines(stored.attribution ?? [], node, false, inHeader);
+        inlines(stored.attribution ?? [], node, false, inHeader, null, false, stored.id);
         return;
       case 'table':
         captions.set(blockAnchor(node, stored.id), { node, caption: stored.caption });
-        inlines(stored.caption, node, false, inHeader, blockAnchor(node, stored.id));
+        inlines(
+          stored.caption,
+          node,
+          false,
+          inHeader,
+          blockAnchor(node, stored.id),
+          false,
+          stored.id,
+        );
         {
           const outer = beneath;
           const lettered: (() => void)[] = [];
@@ -2826,22 +2925,38 @@ function resolveReferences(
               for (const each of cell.content) block(each, node, header);
           });
           beneath = outer;
-          inlines(stored.note ?? [], node, false, inHeader);
+          inlines(stored.note ?? [], node, false, inHeader, null, false, stored.id);
           for (const each of lettered) each();
         }
         return;
       case 'boundTable':
         // Walked as a table (TB1-D): its caption, then what stands beneath it, its note and source.
         captions.set(blockAnchor(node, stored.id), { node, caption: stored.caption });
-        inlines(stored.caption, node, false, inHeader, blockAnchor(node, stored.id));
-        inlines(stored.empty ?? [], node, false, inHeader);
-        inlines(stored.note ?? [], node, false, inHeader);
-        inlines(stored.source ?? [], node, false, inHeader);
+        inlines(
+          stored.caption,
+          node,
+          false,
+          inHeader,
+          blockAnchor(node, stored.id),
+          false,
+          stored.id,
+        );
+        inlines(stored.empty ?? [], node, false, inHeader, null, false, stored.id);
+        inlines(stored.note ?? [], node, false, inHeader, null, false, stored.id);
+        inlines(stored.source ?? [], node, false, inHeader, null, false, stored.id);
         return;
       case 'figure':
         captions.set(blockAnchor(node, stored.id), { node, caption: stored.caption });
         if (floats(stored.imageStyle)) floated.add(blockAnchor(node, stored.id));
-        inlines(stored.caption, node, false, inHeader, blockAnchor(node, stored.id));
+        inlines(
+          stored.caption,
+          node,
+          false,
+          inHeader,
+          blockAnchor(node, stored.id),
+          false,
+          stored.id,
+        );
         return;
       case 'preformatted':
       case 'equation':
@@ -3021,7 +3136,174 @@ function resolveReferences(
     );
     forms.set(key, { display, label: target.label, title: target.title });
   }
-  return { printed, named, failures, pdfsOwn, forms, forWord };
+  return { printed, named, failures, pdfsOwn, forms, forWord, cited };
+}
+
+/** Every citation rendered (CIc): each one's in-text form by node and stored node, and the entries. */
+interface ResolvedCitations {
+  readonly forms: ReadonlyMap<
+    string,
+    ReadonlyMap<CitationNode, { readonly entry: string; readonly runs: readonly PublishedRun[] }>
+  >;
+  readonly bibliography: readonly PublishedBibliographyEntry[];
+  readonly failures: readonly PublishFailure[];
+}
+
+/**
+ * **Each citation in a component, by its place** (CIc): the block a failure in it names - a footnote's
+ * own for its text, a list's for a term, a quotation's for its attribution, a table's or a figure's
+ * for its caption and note - and its place among that block's citations, as `resolveCitations` counts
+ * them. What a request made before `assemble` runs names an unresolved citation by.
+ */
+export function citationPlaces(
+  content: ContentDocument,
+): { readonly block: string; readonly n: number; readonly entry: string }[] {
+  const found: { block: string; n: number; entry: string }[] = [];
+  const counted = new Map<string, number>();
+  const inlines = (each: readonly InlineNode[] | undefined, block: string) => {
+    for (const inline of each ?? []) {
+      if (inline.type === 'citation') {
+        const n = (counted.get(block) ?? 0) + 1;
+        counted.set(block, n);
+        found.push({ block, n, entry: inline.entry });
+      } else if (inline.type === 'footnote') {
+        for (const paragraph of inline.content as readonly BlockNode[]) {
+          if (paragraph.type === 'paragraph') inlines(paragraph.content, inline.id);
+        }
+      }
+    }
+  };
+  const blocks = (each: readonly BlockNode[]): void => {
+    for (const stored of each) {
+      switch (stored.type) {
+        case 'paragraph':
+          inlines(stored.content, stored.id);
+          break;
+        case 'list':
+          for (const item of stored.items) {
+            inlines(item.term, stored.id);
+            blocks(item.content);
+          }
+          break;
+        case 'blockquote':
+          blocks(stored.content);
+          inlines(stored.attribution, stored.id);
+          break;
+        case 'table':
+          inlines(stored.caption, stored.id);
+          for (const row of stored.rows) for (const cell of row.cells) blocks(cell.content);
+          inlines(stored.note, stored.id);
+          break;
+        case 'boundTable':
+          for (const part of [stored.caption, stored.empty, stored.note, stored.source]) {
+            inlines(part, stored.id);
+          }
+          break;
+        case 'figure':
+          inlines(stored.caption, stored.id);
+          break;
+        default:
+          break;
+      }
+    }
+  };
+  blocks(content.content);
+  return found;
+}
+
+/** An entry's anchor in the bibliography: its identity, so a document holds one label for it. */
+const entryAnchor = (entry: string) => `e-${entry}`;
+
+/**
+ * **Every citation rendered at once** (the CI plan, CIc; citations.md, "Rendering"), in reading order,
+ * so the style numbers and disambiguates across the whole document. A citation whose entry was not
+ * resolved for its node fails `citation_unresolved` (CNT-054), naming its block and, in `detail`, its
+ * place among the block's citations and the entry; an entry lacking what the style requires of its
+ * type fails `entry_incomplete` once per variable (LIB-012), at the first block citing it; a theme
+ * naming no style, or a style that throws, `style_invalid`. Nothing is rendered where any fails, and
+ * the in-text forms carry no link of their own: a citation links to its entry alone.
+ */
+function resolveCitations(
+  cited: readonly Cited[],
+  given: AssembleInput['citations'],
+  language: string,
+): ResolvedCitations {
+  const failures: PublishFailure[] = [];
+  const nothing = { forms: new Map(), bibliography: [], failures };
+  const counted = new Map<string, number>();
+  const read: { readonly found: Cited; readonly csl: CslItem }[] = [];
+  for (const found of cited) {
+    const place = referenceKey(found.node, found.block);
+    const n = (counted.get(place) ?? 0) + 1;
+    counted.set(place, n);
+    const { entry } = found.citation;
+    const csl = given?.entries.get(found.node)?.get(entry);
+    if (csl === undefined) {
+      failures.push(
+        failure('compose', 'citation_unresolved', found.node, found.block, `${n}: ${entry}`),
+      );
+    } else {
+      read.push({ found, csl });
+    }
+  }
+  if (given === undefined || cited.length === 0) return nothing;
+  if (given.style === null) {
+    failures.push(failure('compose', 'style_invalid', null, null, 'none'));
+    return nothing;
+  }
+  const asked = new Set<string>();
+  for (const { found, csl } of read) {
+    if (asked.has(found.citation.entry)) continue;
+    asked.add(found.citation.entry);
+    for (const { variable } of requiredProblems(csl, given.style.requires)) {
+      failures.push(
+        failure(
+          'compose',
+          'entry_incomplete',
+          found.node,
+          found.block,
+          `${found.citation.entry}: ${variable}`,
+        ),
+      );
+    }
+  }
+  if (failures.length > 0) return nothing;
+  let rendered: Rendered;
+  try {
+    rendered = given.render({
+      style: given.style.csl,
+      language,
+      entries: Object.fromEntries(read.map(({ found, csl }) => [found.citation.entry, csl])),
+      citations: read.map(({ found: { citation } }) =>
+        citation.locator === undefined
+          ? { entry: citation.entry }
+          : { entry: citation.entry, locator: citation.locator },
+      ),
+    });
+  } catch {
+    failures.push(failure('compose', 'style_invalid', null, null, 'render'));
+    return nothing;
+  }
+  const forms = new Map<string, Map<CitationNode, { entry: string; runs: PublishedRun[] }>>();
+  read.forEach(({ found }, n) => {
+    if (!forms.has(found.node)) forms.set(found.node, new Map());
+    forms.get(found.node)!.set(found.citation, {
+      entry: found.citation.entry,
+      runs: (rendered.citations[n] ?? []).map((run) => ({
+        text: run.text,
+        marks: run.marks.filter((mark) => mark.kind !== 'hyperlink'),
+      })),
+    });
+  });
+  return {
+    forms,
+    bibliography: rendered.bibliography.map((each) => ({
+      anchor: entryAnchor(each.entry),
+      label: each.label ?? null,
+      runs: each.runs,
+    })),
+    failures,
+  };
 }
 
 /** A stored table, as a footnote's cell anchor resolves against one. */

@@ -21,6 +21,7 @@ import {
   type OutputReportEntry,
 } from '../publishing/outputs.js';
 import type {
+  PublishedBibliography,
   PublishedBlock,
   PublishedCell,
   PublishedDocument,
@@ -577,6 +578,8 @@ function bookmarksOf(
     each.children.forEach(node);
   };
   document.nodes.forEach(node);
+  // Each bibliography entry after them, where its paragraph begins (CIc): its citations link there.
+  for (const entry of document.back.bibliography?.entries ?? []) add(entry.anchor, 'block');
   return named;
 }
 
@@ -754,6 +757,14 @@ export function writeDocx(input: WordWriting): WrittenDocx {
       pageNumbering: pageNumbering(segment.matter),
       footnotes: segment.matter,
     });
+  }
+  // The bibliography after the last node, in its section (CIc).
+  const bibliography = document.back.bibliography;
+  if (bibliography !== null) {
+    sections
+      .filter((section) => section.footnotes !== null)
+      .at(-1)
+      ?.body.push(...writer.bibliography(bibliography));
   }
   if (front !== null) {
     front.push(...writer.listsAfterContents(generated, front.length > 0, textBlockWidth(format)));
@@ -1237,6 +1248,35 @@ class Writer {
   /** Plain words as one run, in the paragraph's style, where they are set. */
   runs(text: string, passage: Passage): string {
     return runXml(text, languageProperties(passage, null, this.document.tag));
+  }
+
+  /**
+   * **The bibliography** (CIc; PUB-040): its title in the first heading's style, outside Word's
+   * headings and so its contents, as the PDF keeps it out of its own; then each entry a paragraph of
+   * running text, bookmarked where it begins, its label before its words.
+   */
+  bibliography(bibliography: PublishedBibliography): Paragraph[] {
+    this.at = '';
+    const place = this.theme.places.text;
+    return [
+      this.paragraph(this.theme.roles.heading1, this.runs(bibliography.title, this.words)),
+      ...bibliography.entries.map((entry) =>
+        this.paragraph(
+          place,
+          bookmarked(this.bookmarkOf(entry.anchor, 'block'), '') +
+            (entry.label === null
+              ? ''
+              : this.inlineRuns(
+                  [...entry.label, { text: ' ', marks: [] }],
+                  place,
+                  this.document,
+                  null,
+                )) +
+            this.inlineRuns(entry.runs, place, this.document, null),
+          { bidi: this.document.rtl },
+        ),
+      ),
+    ];
   }
 
   /** A node's heading, its blocks and every node beneath it, each in its own language. */
@@ -2277,6 +2317,8 @@ class Writer {
         words += run.text;
       } else if ('reference' in run) {
         words += run.reference.text ?? '';
+      } else if ('citation' in run) {
+        words += run.citation.runs.map((each) => each.text).join('');
       }
     }
     return xml + this.runs(words, passage);
@@ -2809,6 +2851,27 @@ class Writer {
         xml += to === null ? letter : `<w:hyperlink w:anchor="${to.name}">${letter}</w:hyperlink>`;
         continue;
       }
+      if ('citation' in run) {
+        // Its runs as its style rendered them (CIc), a link to the bookmark on its entry where the
+        // PDF's is one (PUB-097): a hyperlink, since a `REF` would print the entry's words.
+        if (linking !== null) xml += '</w:hyperlink>';
+        linking = null;
+        const words = run.citation.runs
+          .map((each) =>
+            this.textRun(
+              each.text,
+              each.marks.map((mark) => mark.kind),
+              styleId,
+              passage,
+              null,
+              strong,
+            ),
+          )
+          .join('');
+        const to = this.bookmarkOf(run.citation.link, 'block');
+        xml += to === null ? words : `<w:hyperlink w:anchor="${to.name}">${words}</w:hyperlink>`;
+        continue;
+      }
       if ('reference' in run) {
         // A field of its own, no part of a link before it: where it links, it links to its target.
         if (linking !== null) xml += '</w:hyperlink>';
@@ -3301,7 +3364,9 @@ function captionText(captioned: Captioned): string {
           ? (run.reference.text ?? '')
           : 'equation' in run
             ? run.equation.alternative.text
-            : '',
+            : 'citation' in run
+              ? run.citation.runs.map((each) => each.text).join('')
+              : '',
     )
     .join('');
   return captioned.label === null ? own : `${captioned.label} ${own}`;

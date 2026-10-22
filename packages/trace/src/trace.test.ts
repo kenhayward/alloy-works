@@ -956,7 +956,8 @@ describe('the citations in the committed model', () => {
     // 1813 (2026-10-22): FRb's final review, a check never answering unchanged by a stale revision.
     // 1834 (2026-10-22): CIa's bibliography entries, their keys, matches, import and export.
     // 1847 (2026-10-22): CIb's citation styles, the citations module and the styles' routes.
-    expect(model.citations).toHaveLength(1847);
+    // 1859 (2026-10-22): CIc's citations published, in assemble, the PDF, Word and at a baseline.
+    expect(model.citations).toHaveLength(1859);
   });
 
   it('cites no identifier the corpus does not hold', () => {

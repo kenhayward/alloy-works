@@ -4,6 +4,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { parseContentDocument, type ContentDocument } from '../content/model/document.js';
 import { scanXml } from '../content/ooxml/xml.js';
 import type { Column } from '../data/definition.js';
+import { renderCitations, SEEDED_STYLE_FILES } from '../library/citations.js';
+import type { CslItem } from '../library/entry.js';
 import {
   assemble,
   figureImageKey,
@@ -5338,5 +5340,81 @@ describe('writeDocx: an approved publication (the WF2 plan, WF2-I, WF2-J)', () =
       'Approvals',
       'Grace, 2026-10-14, Approve',
     ]);
+  });
+});
+
+describe('writeDocx: citations and the bibliography (the CI plan, CIc)', () => {
+  const MARLOW = '0b0e2c4b-3f1d-4e8a-9b2c-5d6e7f8a9c11';
+  const RECORDS = '0b0e2c4b-3f1d-4e8a-9b2c-5d6e7f8a9c12';
+  const entries = new Map<string, CslItem>([
+    [
+      MARLOW,
+      {
+        type: 'book',
+        title: 'Sediment and its movement',
+        author: [{ family: 'Marlow', given: 'Ada' }],
+        issued: { 'date-parts': [[2020]] },
+      },
+    ],
+    [
+      RECORDS,
+      {
+        type: 'report',
+        title: 'Annual flood bulletin',
+        author: [{ literal: 'Coastal Records Office' }],
+        issued: { 'date-parts': [[2023]] },
+      },
+    ],
+  ]);
+  const cite = (entry: string) => ({ type: 'citation', entry });
+  const citing = component('Sources', [
+    paragraph('c1', text('Sediment moves '), cite(MARLOW), text('.')),
+    paragraph('c2', text('Floods recur '), cite(RECORDS), text(' and '), cite(MARLOW), text('.')),
+  ]);
+  const outline = parseOutlineDocument({
+    schemaVersion: OUTLINE_SCHEMA_VERSION,
+    title: 'The estuary report',
+    language: 'en-GB',
+    direction: 'ltr',
+    nodes: [reference('sources', 6)],
+  });
+  const withBibliography = layoutWith((layout) => {
+    layout.matter.bibliography = { title: 'References' };
+  });
+  const cited = () =>
+    written({
+      outline,
+      occurrences: new Map([[id('sources'), citing]]),
+      layout: withBibliography,
+      citations: {
+        style: { csl: SEEDED_STYLE_FILES['nlm-citation-sequence'], requires: {} },
+        entries: new Map([[id('sources'), entries]]),
+        render: renderCitations,
+      },
+    });
+
+  it('PUB-040 writes the bibliography after the last node, its title and then each entry as a paragraph', () => {
+    const { docx } = cited();
+    const said = paragraphs(docx).map(textOf);
+    const at = said.indexOf('References');
+    expect(at).toBeGreaterThan(said.indexOf('Floods recur (2) and (1).'));
+    expect(said.slice(at + 1)).toEqual([
+      expect.stringMatching(/^1\. Marlow A\. Sediment and its movement/),
+      expect.stringMatching(/^2\. Coastal Records Office\. Annual flood bulletin/),
+    ]);
+  });
+
+  it('PUB-097 writes each citation as its runs in a link to the bookmark on its entry in the bibliography', () => {
+    const { docx } = cited();
+    const entry = (text: RegExp) => paragraphs(docx).find((each) => text.test(textOf(each)))!;
+    const bookmarkOf = (paragraph: Element) => first(paragraph, 'w:bookmarkStart')!.attrs['w:name'];
+    const marlow = bookmarkOf(entry(/^1\. Marlow/));
+    const records = bookmarkOf(entry(/^2\. Coastal/));
+    const links = all(paragraphSaying(docx, 'Floods recur (2) and (1).'), 'w:hyperlink');
+    expect(links.map((each) => [each.attrs['w:anchor'], textOf(each)])).toEqual([
+      [records, '(2)'],
+      [marlow, '(1)'],
+    ]);
+    expect(new Set([marlow, records]).size).toBe(2);
   });
 });

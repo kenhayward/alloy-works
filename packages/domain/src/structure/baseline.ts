@@ -14,6 +14,11 @@ export interface BaselinePins {
   readonly template: PinnedVersion | null;
   readonly occurrences: readonly (PinnedVersion & { readonly node: string })[];
   readonly assets: readonly PinnedVersion[];
+  /**
+   * The bibliography entry versions its citations read (CIc; LIB-047); absent where it cites none, so
+   * a baseline made before them hashes as it did.
+   */
+  readonly entries?: readonly PinnedVersion[];
   readonly bindings: readonly {
     readonly node: string;
     readonly binding: string;
@@ -46,6 +51,9 @@ export function baselineDigestInput(pins: BaselinePins): string {
     occurrences: [...pins.occurrences].sort(byKey((each) => each.node)),
     assets: [...pins.assets].sort(byKey((each) => each.version)),
     bindings: [...pins.bindings].sort(byKey((each) => `${each.node} ${each.binding}`)),
+    ...(pins.entries === undefined
+      ? {}
+      : { entries: [...pins.entries].sort(byKey((each) => each.version)) }),
   });
 }
 
