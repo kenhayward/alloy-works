@@ -127,10 +127,13 @@ import {
   type RevisionCell,
   type Provenance,
   type QueryDefinition,
+  type RevisionAnswer,
+  type RevisionRequest,
   type RunAnswer,
   type RunRequest,
   type TakeOutcome,
   type ContentDocument,
+  capabilitiesOf,
   capabilityProblems,
 } from '@alloy-works/domain';
 import { tenantPrefix, type ObjectStores, type TenantStore } from '@alloy-works/objects';
@@ -155,7 +158,7 @@ import { refused } from '../wire-codes.js';
 import { actingKey, ownViewOf, provenanceIdentity, runIdentity, type Acting } from './acting.js';
 import { failureViewFor, type FailureIn } from './failure-words.js';
 import { carryRevisions, keptProblem, recordRevisionEvent, revisionsDecided } from './revisions.js';
-import { connectionFacts, requireSqlPermitted } from './sql-access.js';
+import { asWritten, connectionFacts, requireSqlPermitted } from './sql-access.js';
 import { datasetOf, datasetProblems, type ReadSource } from './dataset-source.js';
 
 /**
@@ -280,6 +283,14 @@ export interface RunsThrough {
     limits: Limits,
     queryDefinition: string,
   ) => Promise<RunAsked>;
+  /**
+   * Whether a source moved since a revision (DAT-073; the FR plan, FR-D): no run, so no slot of the
+   * tenant's runs, and nothing recorded as one. Undefined where it could not be asked.
+   */
+  readonly revision: (
+    request: RevisionRequest,
+    signal: AbortSignal,
+  ) => Promise<RevisionAnswer | undefined>;
   readonly runnable: (trx: TenantTransaction, id: string) => Promise<StoredConnection>;
   readonly usableSealed: (
     trx: TenantTransaction,
@@ -859,7 +870,7 @@ async function prepare(
         ? refusedBy(error, using, atConnection, { kind: 'artifact', id: connection.id }, false)
         : error;
     }
-    await requireSqlPermitted(trx, connection, definition.fetch);
+    await requireSqlPermitted(trx, connection, asWritten(definition));
     // Saved against a connection since saved again to a source that binds no parameters (DAT-079).
     if (capabilityProblems(definition, connection.settings).length > 0) {
       throw refused(
@@ -988,22 +999,7 @@ async function runOnce(
         prepared.limits,
         prepared.definition.id,
       )
-    : await through.run(
-        {
-          requestId: randomUUID(),
-          tenant: tenant.id,
-          connection: { id: prepared.connection!.id, version: prepared.connection!.version.id },
-          settings: prepared.connection!.settings,
-          sealed: prepared.sealed!,
-          definition: prepared.draft,
-          values: prepared.values as RunRequest['values'],
-          limits: prepared.limits,
-          deadlineMs: prepared.limits.seconds * 1000,
-          ...runIdentity(prepared.acting),
-        },
-        signal,
-        prepared.definition.id,
-      );
+    : await through.run(runRequestOf(tenant, prepared), signal, prepared.definition.id);
   // Nothing of a run whose authority ended is kept, its rows among them (IAM-082).
   if (signal.aborted) throw signal.reason;
   if ('refused' in asked) return { ok: false, failure: { code: asked.refused.code } };
@@ -1069,8 +1065,81 @@ async function runOnce(
       canonical: 1,
       checksum,
       images: {},
+      // What a check asks the source about next time (FR-C).
+      ...(ran.revision === undefined ? {} : { revision: ran.revision }),
     },
   };
+}
+
+/** The run a prepared binding sends its connection's connector: none for a stored result's query. */
+function runRequestOf(tenant: Tenant, prepared: Prepared): RunRequest {
+  return {
+    requestId: randomUUID(),
+    tenant: tenant.id,
+    connection: { id: prepared.connection!.id, version: prepared.connection!.version.id },
+    settings: prepared.connection!.settings,
+    sealed: prepared.sealed!,
+    definition: prepared.draft,
+    values: prepared.values as RunRequest['values'],
+    limits: prepared.limits,
+    deadlineMs: prepared.limits.seconds * 1000,
+    ...runIdentity(prepared.acting),
+  };
+}
+
+/**
+ * The revision a check may ask a binding's source about before it runs (DAT-073; the FR plan, FR-D):
+ * the one its held result was made at, where that result names a connection - never a stored
+ * result's (R21) - of a type that reports one, and was made by the definition version, connection
+ * version and values this check would run. Undefined where any differs: it runs as it would.
+ */
+function revisionHeld(prepared: Prepared, holding: HeldResolution | undefined): string | undefined {
+  const provenance = holding?.held.provenance;
+  const { connection } = prepared;
+  if (provenance?.revision === undefined || connection === null || prepared.source) {
+    return undefined;
+  }
+  if (!capabilitiesOf(connection.settings).revision) return undefined;
+  return provenance.connection?.artifact === connection.id &&
+    provenance.connection.version === connection.version.id &&
+    provenance.queryDefinition.version === prepared.definition.version &&
+    parametersDigestInput(provenance.parameters) === parametersDigestInput(prepared.values)
+    ? provenance.revision
+    : undefined;
+}
+
+/**
+ * The questions whose source says it has not moved since every binding asking it was resolved
+ * (DAT-073; FR-D), each asked once, in turn as runs are. A binding held at no revision, at another,
+ * or by another run, and the question is not asked, and runs; a source that cannot say has moved.
+ */
+async function unmovedQuestions(
+  tenant: Tenant,
+  asking: readonly Prepared[],
+  toRun: readonly Prepared[],
+  held: ReadonlyMap<string, HeldResolution>,
+  through: RunsThrough,
+  signal: AbortSignal,
+): Promise<Set<string>> {
+  const askable = asking.flatMap((each) => {
+    const revisions = new Set(
+      toRun
+        .filter((other) => other.question === each.question)
+        .map((other) =>
+          revisionHeld(other, held.get(key(other.placed.node, other.placed.binding.id))),
+        ),
+    );
+    const [revision] = revisions;
+    return revisions.size === 1 && revision !== undefined ? [{ each, revision }] : [];
+  });
+  const answers = await inTurn(askable, AT_ONCE, ({ each, revision }) =>
+    through.revision({ ...runRequestOf(tenant, each), revision }, signal),
+  );
+  return new Set(
+    askable.flatMap(({ each }, at) =>
+      answers[at]?.outcome === 'unchanged' ? [each.question] : [],
+    ),
+  );
 }
 
 /**
@@ -1999,6 +2068,8 @@ async function recordBindingEvent(
     readonly dataset: string;
     readonly version: string;
     readonly outcome?: 'unchanged' | 'revision';
+    /** A check's finding by the source's revision alone, nothing run (FR-D). */
+    readonly by?: 'revision';
   },
 ): Promise<void> {
   const place = await artifactPlace(trx, at.document);
@@ -2421,30 +2492,59 @@ export async function checkAct(
       const store = async () =>
         (opened ??= await db.withTenant(tenant, (open) => objects.forTenant(open, tenant)));
       const takes = takesByQuestion(toRun);
-      const outcomes = await inTurn(asking, AT_ONCE, (each) =>
+      // Asked first where the source says cheaply whether it moved, and run only where it has.
+      const unmoved = await unmovedQuestions(tenant, asking, toRun, held, through, signal);
+      const running = asking.filter((each) => !unmoved.has(each.question));
+      const outcomes = await inTurn(running, AT_ONCE, (each) =>
         runOnce(tenant, each, takes.get(each.question)!, through, store, signal),
       );
-      const ran = new Map(asking.map((each, at) => [each.question, outcomes[at]!]));
+      const ran = new Map(running.map((each, at) => [each.question, outcomes[at]!]));
       if (signal.aborted) throw signal.reason;
       return db.withTenant(
         tenant,
         async (record) => {
           const succeeded = toRun.filter((each) => ran.get(each.question)?.ok === true);
+          const asked = toRun.filter((each) => unmoved.has(each.question));
+          const answered = [...succeeded, ...asked];
           await lockBindings(
             record,
             id,
-            succeeded.map(({ placed: { node, binding } }) => ({ node, binding: binding.id })),
+            answered.map(({ placed: { node, binding } }) => ({ node, binding: binding.id })),
           );
-          await decideAgain(record, request, { id, permission: 'read' }, succeeded);
+          await decideAgain(record, request, { id, permission: 'read' }, answered);
           await unchangedSince(
             record,
             id,
             principalId,
-            succeeded.map((each) => each.placed),
+            answered.map((each) => each.placed),
           );
           // What each holds now, under the lock: an accept while the source answered moves what the
           // result is compared with, so what was read before the run is not the comparison.
           const holdingNow = await heldBy(record, id, placed);
+          // Unchanged by its revision: nothing run, and nothing recorded but the check (FR-D).
+          for (const each of asked) {
+            const { node, binding } = each.placed;
+            const was = held.get(key(node, binding.id));
+            const holding = holdingNow.get(key(node, binding.id));
+            if (!holding || holding.held.version !== was?.held.version) {
+              results.set(key(node, binding.id), {
+                node,
+                binding: binding.id,
+                outcome: 'unchecked',
+                reason: 'unresolved',
+              });
+              continue;
+            }
+            await recordBindingEvent(record, 'binding.checked', {
+              document: id,
+              node,
+              binding: binding.id,
+              dataset: holding.held.dataset,
+              version: holding.held.version,
+              outcome: 'unchanged',
+              by: 'revision',
+            });
+          }
           const seesSource = await seeingSourceNow(record, caller, toRun);
           await lockDatasetQuestions(record, recordable(succeeded, ran));
           const versions = new Map<string, Awaited<ReturnType<typeof recordDatasetVersion>>>();

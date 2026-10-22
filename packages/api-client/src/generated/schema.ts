@@ -13015,6 +13015,7 @@ export interface operations {
                                     images: {
                                         [key: string]: string;
                                     };
+                                    revision?: string;
                                 };
                                 /** @description The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none */
                                 key: string[];
@@ -13265,6 +13266,7 @@ export interface operations {
                                     images: {
                                         [key: string]: string;
                                     };
+                                    revision?: string;
                                 };
                                 /** @description The value the binding would take from it */
                                 taken: {
@@ -23235,6 +23237,9 @@ export interface operations {
                                 [key: string]: unknown;
                             };
                         };
+                        revision?: {
+                            text: string;
+                        };
                         columns: {
                             name: string;
                             from: {
@@ -26920,6 +26925,9 @@ export interface operations {
                                 [key: string]: unknown;
                             };
                         };
+                        revision?: {
+                            text: string;
+                        };
                         columns: {
                             name: string;
                             from: {
@@ -30563,6 +30571,7 @@ export interface operations {
                                     images: {
                                         [key: string]: string;
                                     };
+                                    revision?: string;
                                 };
                                 /** @description The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none */
                                 key: string[];
@@ -30813,6 +30822,7 @@ export interface operations {
                                     images: {
                                         [key: string]: string;
                                     };
+                                    revision?: string;
                                 };
                                 /** @description The value the binding would take from it */
                                 taken: {
@@ -31344,6 +31354,7 @@ export interface operations {
                                     images: {
                                         [key: string]: string;
                                     };
+                                    revision?: string;
                                 };
                                 /** @description The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none */
                                 key: string[];
@@ -31594,6 +31605,7 @@ export interface operations {
                                     images: {
                                         [key: string]: string;
                                     };
+                                    revision?: string;
                                 };
                                 /** @description The value the binding would take from it */
                                 taken: {
@@ -32040,6 +32052,7 @@ export interface operations {
                                     images: {
                                         [key: string]: string;
                                     };
+                                    revision?: string;
                                 };
                                 /** @description The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none */
                                 key: string[];
@@ -32290,6 +32303,7 @@ export interface operations {
                                     images: {
                                         [key: string]: string;
                                     };
+                                    revision?: string;
                                 };
                                 /** @description The value the binding would take from it */
                                 taken: {
@@ -32850,6 +32864,7 @@ export interface operations {
                                 images: {
                                     [key: string]: string;
                                 };
+                                revision?: string;
                             };
                             /** @description The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none */
                             key: string[];
@@ -33100,6 +33115,7 @@ export interface operations {
                                 images: {
                                     [key: string]: string;
                                 };
+                                revision?: string;
                             };
                             /** @description The value the binding would take from it */
                             taken: {
@@ -33473,6 +33489,7 @@ export interface operations {
                                     images: {
                                         [key: string]: string;
                                     };
+                                    revision?: string;
                                 };
                                 /** @description The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none */
                                 key: string[];
@@ -33723,6 +33740,7 @@ export interface operations {
                                     images: {
                                         [key: string]: string;
                                     };
+                                    revision?: string;
                                 };
                                 /** @description The value the binding would take from it */
                                 taken: {
@@ -34129,6 +34147,7 @@ export interface operations {
                                     images: {
                                         [key: string]: string;
                                     };
+                                    revision?: string;
                                 };
                                 /** @description The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none */
                                 key: string[];
@@ -34379,6 +34398,7 @@ export interface operations {
                                     images: {
                                         [key: string]: string;
                                     };
+                                    revision?: string;
                                 };
                                 /** @description The value the binding would take from it */
                                 taken: {
@@ -34785,6 +34805,7 @@ export interface operations {
                                     images: {
                                         [key: string]: string;
                                     };
+                                    revision?: string;
                                 };
                                 /** @description The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none */
                                 key: string[];
@@ -35035,6 +35056,7 @@ export interface operations {
                                     images: {
                                         [key: string]: string;
                                     };
+                                    revision?: string;
                                 };
                                 /** @description The value the binding would take from it */
                                 taken: {
@@ -35688,6 +35710,7 @@ export interface operations {
                                     images: {
                                         [key: string]: string;
                                     };
+                                    revision?: string;
                                 };
                                 /** @description The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none */
                                 key: string[];
@@ -35938,6 +35961,7 @@ export interface operations {
                                     images: {
                                         [key: string]: string;
                                     };
+                                    revision?: string;
                                 };
                                 /** @description The value the binding would take from it */
                                 taken: {
@@ -36324,6 +36348,7 @@ export interface operations {
                                     images: {
                                         [key: string]: string;
                                     };
+                                    revision?: string;
                                 };
                                 /** @description The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none */
                                 key: string[];
@@ -36574,6 +36599,7 @@ export interface operations {
                                     images: {
                                         [key: string]: string;
                                     };
+                                    revision?: string;
                                 };
                                 /** @description The value the binding would take from it */
                                 taken: {
@@ -37116,6 +37142,7 @@ export interface operations {
                                 images: {
                                     [key: string]: string;
                                 };
+                                revision?: string;
                             };
                             /** @description The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none */
                             key: string[];
@@ -37366,6 +37393,7 @@ export interface operations {
                                 images: {
                                     [key: string]: string;
                                 };
+                                revision?: string;
                             };
                             /** @description The value the binding would take from it */
                             taken: {
@@ -37739,6 +37767,7 @@ export interface operations {
                                     images: {
                                         [key: string]: string;
                                     };
+                                    revision?: string;
                                 };
                                 /** @description The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none */
                                 key: string[];
@@ -37989,6 +38018,7 @@ export interface operations {
                                     images: {
                                         [key: string]: string;
                                     };
+                                    revision?: string;
                                 };
                                 /** @description The value the binding would take from it */
                                 taken: {
@@ -38435,6 +38465,7 @@ export interface operations {
                                     images: {
                                         [key: string]: string;
                                     };
+                                    revision?: string;
                                 };
                                 /** @description The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none */
                                 key: string[];
@@ -38685,6 +38716,7 @@ export interface operations {
                                     images: {
                                         [key: string]: string;
                                     };
+                                    revision?: string;
                                 };
                                 /** @description The value the binding would take from it */
                                 taken: {
@@ -39277,6 +39309,7 @@ export interface operations {
                                     images: {
                                         [key: string]: string;
                                     };
+                                    revision?: string;
                                 };
                                 /** @description The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none */
                                 key: string[];
@@ -39527,6 +39560,7 @@ export interface operations {
                                     images: {
                                         [key: string]: string;
                                     };
+                                    revision?: string;
                                 };
                                 /** @description The value the binding would take from it */
                                 taken: {
@@ -39935,6 +39969,7 @@ export interface operations {
                                     images: {
                                         [key: string]: string;
                                     };
+                                    revision?: string;
                                 };
                                 /** @description The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none */
                                 key: string[];
@@ -40185,6 +40220,7 @@ export interface operations {
                                     images: {
                                         [key: string]: string;
                                     };
+                                    revision?: string;
                                 };
                                 /** @description The value the binding would take from it */
                                 taken: {
@@ -40591,6 +40627,7 @@ export interface operations {
                                     images: {
                                         [key: string]: string;
                                     };
+                                    revision?: string;
                                 };
                                 /** @description The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none */
                                 key: string[];
@@ -40841,6 +40878,7 @@ export interface operations {
                                     images: {
                                         [key: string]: string;
                                     };
+                                    revision?: string;
                                 };
                                 /** @description The value the binding would take from it */
                                 taken: {
@@ -41227,6 +41265,7 @@ export interface operations {
                                     images: {
                                         [key: string]: string;
                                     };
+                                    revision?: string;
                                 };
                                 /** @description The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none */
                                 key: string[];
@@ -41477,6 +41516,7 @@ export interface operations {
                                     images: {
                                         [key: string]: string;
                                     };
+                                    revision?: string;
                                 };
                                 /** @description The value the binding would take from it */
                                 taken: {
@@ -42025,6 +42065,7 @@ export interface operations {
                                 images: {
                                     [key: string]: string;
                                 };
+                                revision?: string;
                             };
                             /** @description The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none */
                             key: string[];
@@ -42275,6 +42316,7 @@ export interface operations {
                                 images: {
                                     [key: string]: string;
                                 };
+                                revision?: string;
                             };
                             /** @description The value the binding would take from it */
                             taken: {
@@ -42648,6 +42690,7 @@ export interface operations {
                                     images: {
                                         [key: string]: string;
                                     };
+                                    revision?: string;
                                 };
                                 /** @description The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none */
                                 key: string[];
@@ -42898,6 +42941,7 @@ export interface operations {
                                     images: {
                                         [key: string]: string;
                                     };
+                                    revision?: string;
                                 };
                                 /** @description The value the binding would take from it */
                                 taken: {
@@ -43344,6 +43388,7 @@ export interface operations {
                                     images: {
                                         [key: string]: string;
                                     };
+                                    revision?: string;
                                 };
                                 /** @description The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none */
                                 key: string[];
@@ -43594,6 +43639,7 @@ export interface operations {
                                     images: {
                                         [key: string]: string;
                                     };
+                                    revision?: string;
                                 };
                                 /** @description The value the binding would take from it */
                                 taken: {
@@ -44110,6 +44156,7 @@ export interface operations {
                             images: {
                                 [key: string]: string;
                             };
+                            revision?: string;
                         };
                         result: {
                             /** @description Each column's name and its type's base */
@@ -73576,6 +73623,9 @@ export interface operations {
                                     [key: string]: unknown;
                                 };
                             };
+                            revision?: {
+                                text: string;
+                            };
                             columns: {
                                 name: string;
                                 from: {
@@ -74855,6 +74905,9 @@ export interface operations {
                                 [key: string]: unknown;
                             };
                         };
+                        revision?: {
+                            text: string;
+                        };
                         columns: {
                             name: string;
                             from: {
@@ -75176,6 +75229,9 @@ export interface operations {
                                 request: {
                                     [key: string]: unknown;
                                 };
+                            };
+                            revision?: {
+                                text: string;
                             };
                             columns: {
                                 name: string;
@@ -75537,6 +75593,9 @@ export interface operations {
                                     request: {
                                         [key: string]: unknown;
                                     };
+                                };
+                                revision?: {
+                                    text: string;
                                 };
                                 columns: {
                                     name: string;
@@ -75959,6 +76018,9 @@ export interface operations {
                                     request: {
                                         [key: string]: unknown;
                                     };
+                                };
+                                revision?: {
+                                    text: string;
                                 };
                                 columns: {
                                     name: string;
@@ -84840,6 +84902,9 @@ export interface operations {
                                 [key: string]: unknown;
                             };
                         };
+                        revision?: {
+                            text: string;
+                        };
                         columns: {
                             name: string;
                             from: {
@@ -85161,6 +85226,9 @@ export interface operations {
                                 request: {
                                     [key: string]: unknown;
                                 };
+                            };
+                            revision?: {
+                                text: string;
                             };
                             columns: {
                                 name: string;
@@ -85522,6 +85590,9 @@ export interface operations {
                                     request: {
                                         [key: string]: unknown;
                                     };
+                                };
+                                revision?: {
+                                    text: string;
                                 };
                                 columns: {
                                     name: string;
@@ -85944,6 +86015,9 @@ export interface operations {
                                     request: {
                                         [key: string]: unknown;
                                     };
+                                };
+                                revision?: {
+                                    text: string;
                                 };
                                 columns: {
                                     name: string;

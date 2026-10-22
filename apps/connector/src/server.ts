@@ -17,6 +17,7 @@ import {
   webhookSecretContext,
   describeRequestSchema,
   describeSqlRequestSchema,
+  revisionRequestSchema,
   runRequestSchema,
   sealRequestSchema,
   testRequestSchema,
@@ -45,6 +46,8 @@ const bodyLimits: Readonly<Record<string, number>> = {
   '/v1/test': MAX_BODY_BYTES,
   '/v1/describe': RUN_REQUEST_MAX_BYTES,
   '/v1/run': RUN_REQUEST_MAX_BYTES,
+  // Whether a source moved: the run a check would send, and the revision it holds (the FR plan, FR-D).
+  '/v1/revision': RUN_REQUEST_MAX_BYTES,
   // A model's key, and a model call, which holds a whole conversation (the G1 plan, G1-C).
   '/v1/model/seal': MAX_BODY_BYTES,
   // A webhook subscription's signing secret (the WB plan, WB-G).
@@ -282,6 +285,10 @@ export function createConnectorServer(options: {
       const parsed = runRequestSchema.safeParse(body);
       if (!parsed.success) return send(400, { code: 'request_invalid' });
       answer = await supervisor.run('run', parsed.data, gone.signal);
+    } else if (path === '/v1/revision') {
+      const parsed = revisionRequestSchema.safeParse(body);
+      if (!parsed.success) return send(400, { code: 'request_invalid' });
+      answer = await supervisor.run('revision', parsed.data, gone.signal);
     } else if (
       path === '/v1/describe' &&
       typeof body === 'object' &&

@@ -197,6 +197,10 @@ export interface DefinitionDraft {
   readonly http: HttpDraft;
   readonly file: FileDraft;
   readonly sql: string;
+  /**
+   * A PostgreSQL query's revision statement, as typed: blank for none (DAT-073; the FR plan, FR-B).
+   */
+  readonly revision: string;
   /** An extension's request, as typed: a JSON object, its own (the EX plan, EX-G). */
   readonly extension: string;
   readonly parameters: readonly ParameterDraft[];
@@ -257,6 +261,7 @@ export function newDraft(limits: {
     http: NEW_HTTP,
     file: NEW_FILE,
     sql: '',
+    revision: '',
     extension: '{}',
     parameters: [],
     columns: [],
@@ -816,6 +821,11 @@ function parts(draft: DefinitionDraft) {
   }
   const where = draft.mode === 'file' ? whereOf(draft.file, columns) : undefined;
   if (typeof where === 'string') return where;
+  // Asked of a database alone: a written or built query's (FR-B).
+  const revision =
+    (draft.mode === 'sql' || draft.mode === 'builder') && draft.revision.trim() !== ''
+      ? { text: draft.revision }
+      : undefined;
   return {
     schemaVersion: 1 as const,
     // A query over a stored result runs on no connection (R21-A).
@@ -842,6 +852,7 @@ function parts(draft: DefinitionDraft) {
               : query === null
                 ? { kind: 'sql' as const, text: draft.sql }
                 : { kind: 'builder' as const, format: 1 as const, query },
+    ...(revision === undefined ? {} : { revision }),
     columns,
     key: [...draft.key],
     order:
@@ -917,6 +928,7 @@ export function draftOf(definition: QueryDefinition): DefinitionDraft {
     http: http === null || 'reason' in http ? NEW_HTTP : http,
     file: file === null || 'reason' in file ? NEW_FILE : file,
     sql: statement.kind === 'sql' ? statement.text : '',
+    revision: definition.revision?.text ?? '',
     extension: statement.kind === 'extension' ? JSON.stringify(statement.request, null, 2) : '{}',
     parameters: definition.parameters.map((parameter) => {
       const permitted = parameter.permitted;

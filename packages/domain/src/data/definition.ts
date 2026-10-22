@@ -173,6 +173,17 @@ export const sqlTextSchema = storable('SQL').refine(
 );
 
 /**
+ * A PostgreSQL definition's revision statement (DAT-073; the FR plan, FR-B): the author's SQL whose one
+ * value moves when the data does, binding no parameter, read before a run and asked alone at a check.
+ */
+export const revisionStatementSchema = z.strictObject({
+  text: storable('A revision statement').refine(
+    (value) => characters(value) >= 1 && characters(value) <= 4000,
+    { message: 'A revision statement is 1 to 4,000 characters' },
+  ),
+});
+
+/**
  * The formats a response or an object is read in, whatever carried it (the D6 plan, D6-F): JSON at a
  * pointer to an array of objects, with a pointer to a row count it states where it states one
  * (DAT-108); JSON Lines; or CSV, its delimiter named, whether its first record is a header, and its
@@ -270,6 +281,8 @@ const members = {
   connection: z.uuid().optional(),
   parameters: z.array(parameterSchema).max(50),
   fetch: fetchSchema,
+  // Absent on every definition before FR, and on any source but PostgreSQL (`capabilityProblems`).
+  revision: revisionStatementSchema.optional(),
   columns: z.array(columnSchema).min(1).max(MAX_COLUMNS),
   key: z.array(z.string()).max(32),
   order: z.union([
@@ -514,6 +527,20 @@ export function checkQueryDefinition(
     }
   }
 
+  // A revision statement is SQL as the author wrote it, lexing whole and binding nothing (FR-B); a
+  // stored result's query has no source to ask.
+  if (definition.revision !== undefined) {
+    if (fetch.kind === 'dataset') {
+      problem('revision', 'A stored result is queried on no source, so it has no revision');
+    }
+    const lexed = lexPostgres(definition.revision.text);
+    if (!Array.isArray(lexed)) {
+      problem('revision.text', `${lexed.problem} (line ${lexed.line})`);
+    } else if (lexed.some((piece) => piece.kind !== 'text')) {
+      problem('revision.text', 'A revision statement binds no parameter');
+    }
+  }
+
   // A column is read as its fetch reads (D6-F): a database's by its name, JSON's by a pointer, a
   // CSV field by its letter or, where the first record names them, its header.
   for (const [at, column] of definition.columns.entries()) {
@@ -753,20 +780,29 @@ export function parseDraftDefinition(value: unknown): DraftDefinition {
  */
 /**
  * What a definition relies on that its connection's type does not declare (DAT-079; the EX plan,
- * EX-F): parameters bound on a source that binds none. Checked at its write and at its run.
+ * EX-F): parameters bound on a source that binds none; and a revision statement on any source but
+ * PostgreSQL, the one whose revision an author writes (FR-B). Checked at its write and at its run.
  */
 export function capabilityProblems(
-  definition: Pick<DraftDefinition, 'parameters'>,
+  definition: Pick<DraftDefinition, 'parameters'> & Partial<Pick<DraftDefinition, 'revision'>>,
   settings: Pick<ConnectionSettings, 'type' | 'source'>,
 ): DefinitionProblem[] {
-  if (definition.parameters.length === 0 || capabilitiesOf(settings).parameters) return [];
-  return [
-    {
+  const problems: DefinitionProblem[] = [];
+  if (definition.parameters.length > 0 && !capabilitiesOf(settings).parameters) {
+    problems.push({
       rule: 'definition_invalid',
       path: 'parameters',
       message: 'This source declares no parameters, so a definition on it binds none',
-    },
-  ];
+    });
+  }
+  if (definition.revision !== undefined && settings.type !== 'postgres') {
+    problems.push({
+      rule: 'definition_invalid',
+      path: 'revision',
+      message: 'A revision statement is written for a PostgreSQL source alone',
+    });
+  }
+  return problems;
 }
 
 export function connectionFetchProblems(

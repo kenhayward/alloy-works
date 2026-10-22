@@ -113,7 +113,13 @@ import {
   type ReadSource,
 } from './dataset-source.js';
 import { failureView, failureViewFor, type FailureIn } from './failure-words.js';
-import { fetchRefused, mayRunFetch, maySqlWith, requireSqlPermitted } from './sql-access.js';
+import {
+  asWritten,
+  fetchRefused,
+  mayRunFetch,
+  maySqlWith,
+  requireSqlPermitted,
+} from './sql-access.js';
 
 /** Where the connector answers, the key the service presents, and, in a test, a fetch of its own. */
 export interface ConnectorOptions {
@@ -665,6 +671,11 @@ export function connectionHandlers(
     return {
       run: metered(request, act, document),
       runDataset: datasetRun(request, act, document),
+      // Asked of the connector alone: no run, so no slot and no run recorded (FR-D).
+      revision: async (asked, signal) => {
+        const answered = await connected().revision(asked, signal);
+        return 'answer' in answered ? answered.answer : undefined;
+      },
       runnable,
       usableSealed,
       acting: (trx, connection) => actingOn(trx, request, connection),
@@ -1237,7 +1248,7 @@ export function connectionHandlers(
       // use_connection is the route's; a sample of SQL runs SQL, so write_sql as well, at the
       // connection (DAT-101); a built query needs no more (D4-J). The contract has held the draft's
       // fetch to its shape, so its kind is known before the draft is checked whole.
-      const asFetched = (body.definition as DraftDefinition).fetch;
+      const asFetched = asWritten(body.definition as DraftDefinition);
       if (!mayRunFetch(facts, asFetched)) throw fetchRefused(facts, asFetched, id);
       const seesSource = decide('write_sql', facts).allowed;
       const connection = await runnable(trx, id);
@@ -1283,7 +1294,7 @@ export function connectionHandlers(
           problems,
         });
       }
-      await requireSqlPermitted(trx, connection, draft.fetch);
+      await requireSqlPermitted(trx, connection, asWritten(draft));
       const built = draft.fetch.kind === 'builder';
       const { sealed } = await usableSealed(trx, id);
       connected();

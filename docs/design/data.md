@@ -104,6 +104,7 @@ checksummed result or one named failure.
 | **DAT-093** | Accepting adds a resolution row for that document's binding alone; another document holding the same dataset keeps its row, and its version, until somebody accepts there                                                                                                                                                                                                                                                                                    |
 | **DAT-094** | A query definition's fetch may be `dataset`: the builder's tree over one stored result, run in the service from the result's stored rows, never the source; `read` on the dataset governs listing, sampling and resolving one ([A dataset as a source](#a-dataset-as-a-source))                                                                                                                                                                              |
 | **DAT-084** | A check compares a fresh result with the one held only where the opener's identity key is the dataset's; a different checksum is recorded as a dataset version and answered as a waiting revision                                                                                                                                                                                                                                                            |
+| **DAT-073** | HTTP, S3 and PostgreSQL declare a `revision` capability; a run captures the source's revision (an ETag or Last-Modified, a version id or ETag, a revision statement's value) and a check asks it first, running nothing where it is unchanged ([Check](#check))                                                                                                                                                                                              |
 | **DAT-037** | Accepting is its own route, and its resolution row names the version the binding held, the version it holds after, who and when                                                                                                                                                                                                                                                                                                                              |
 | **DAT-089** | Only the service calls the connector, only from a route a person calls - resolve, check, a sample run, describe and test - and neither the worker nor a publish nor a preview has a route to it                                                                                                                                                                                                                                                              |
 | **DAT-086** | Each act succeeds whole or fails by one named failure identifying the definition and, where the act has them, the binding and the document; a failed act records nothing                                                                                                                                                                                                                                                                                     |
@@ -140,7 +141,8 @@ checksummed result or one named failure.
 | PUB-049, PUB-108                   | `bindings.md`'s                                                                                                                                                                                                                                                                                                                                                                                                     |
 
 The superseded rows - DAT-002, DAT-006, DAT-008, DAT-011, DAT-017, DAT-023, DAT-034, DAT-035,
-DAT-036, DAT-040, DAT-044 and IAM-020 - are claimed by nobody. DAT-054, DAT-073 and DAT-079 are T5's.
+DAT-036, DAT-040, DAT-044 and IAM-020 - are claimed by nobody. DAT-054 and DAT-079 are
+[extensions.md](extensions.md)'s.
 
 ## Limits and cost
 
@@ -1040,6 +1042,17 @@ bindings are never checked. **Each distinct question runs once**, however many b
 most two at a time of the connector's four run slots and at most fifty a check; past that the rest
 are answered unchecked, `limit`, never a failure, and each binding's answer stands alone (D3-I).
 
+**A source that says cheaply whether it moved is asked first** (DAT-073; the
+[FR plan](../plans/2026-10-22-fr-freshness.md), FR-B to FR-D). A run captures an opaque `revision`
+into provenance, outside the dataset's identity: HTTP's `ETag`, else `Last-Modified`; S3's version
+id, else its `ETag`; PostgreSQL's optional **revision statement**, SQL the author writes, read in the
+run's transaction before the data, exactly one row of one column, else `definition_invalid`. A check
+whose held version names a connection and a revision, made by the definition version, connection
+version and values it would run, sends the run it would send to the connector's `/v1/revision`: a
+conditional request, a signed `HEAD`, or the statement alone. Unchanged records `binding.checked`
+with the held version and `by: 'revision'`, and nothing else; changed, no revision or any failure
+runs as before. A token proves less than a checksum, and a revision statement is the author's word.
+
 ### Accept
 
 Adds a resolution row naming the waiting version and the one it replaces (DAT-037, DAT-093). It needs
@@ -1136,6 +1149,7 @@ the act has them, the binding and the document (DAT-086). A failed act records n
 | `source_refused`          | query       | The source refused the statement - a syntax error, a permission, a division by zero - with its SQLSTATE and its message, cut to 1,000 characters; an HTTP source's refusal is its status alone, never its body                                      |
 | `value_unrepresentable`   | query       | A value no canonical form of its declared type can hold: `NaN`, an infinity, a date out of range                                                                                                                                                    |
 | `definition_unbindable`   | query       | The binder refused the definition's binding: a fragment, unsound on its own, runs into the SQL around it where it is placed. The definition's checks refuse it when it is written; one reaching a run unchecked is answered so, and nothing is sent |
+| `definition_invalid`      | query       | A revision statement answered other than exactly one row of one column (DAT-073)                                                                                                                                                                    |
 | `describe_not_supported`  | product     | A describe of tables asked of a source that lists none: an HTTP or S3 connection, whose columns a sample proposes (the D6 plan, D6-A)                                                                                                               |
 
 The four before those two were added by the D1 plan (D1-M, D1-Q), and the last two by the D2 plan

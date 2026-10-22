@@ -11,6 +11,7 @@ import {
   dataFailure,
   describeAnswerSchema,
   describeSqlAnswerSchema,
+  revisionAnswerSchema,
   runAnswerSchema,
   sealAnswerSchema,
   testAnswerSchema,
@@ -20,6 +21,8 @@ import {
   type DescribeRequest,
   type DescribeSqlAnswer,
   type DescribeSqlRequest,
+  type RevisionAnswer,
+  type RevisionRequest,
   type RunAnswer,
   type RunRequest,
   type SealAnswer,
@@ -70,6 +73,8 @@ export interface ConnectorClient {
   ): Promise<Answered<DescribeSqlAnswer>>;
   /** A definition run against values the service has checked (D2-I). */
   run(request: RunRequest, signal?: AbortSignal): Promise<Answered<RunAnswer>>;
+  /** Whether a source moved since a revision, asked by the run a check would send (FR-D). */
+  revision(request: RevisionRequest, signal?: AbortSignal): Promise<Answered<RevisionAnswer>>;
   /** Seals a model endpoint's key, bound to the endpoint and its origin (the G1 plan, G1-B). */
   sealModel(request: ModelSealRequest): Promise<Answered<SealAnswer>>;
   /** Seals a webhook's signing secret to its subscription and URL (the WB plan, WB-G). */
@@ -178,6 +183,8 @@ export function createConnectorClient(options: {
       ask('/v1/describe', request, describeSqlAnswerSchema, request.deadlineMs + SLACK_MS, signal),
     run: (request, signal) =>
       ask('/v1/run', request, runAnswerSchema, request.deadlineMs + SLACK_MS, signal),
+    revision: (request, signal) =>
+      ask('/v1/revision', request, revisionAnswerSchema, request.deadlineMs + SLACK_MS, signal),
     sealModel: (request) => ask('/v1/model/seal', request, sealAnswerSchema, SEAL_MS),
     sealWebhook: (request) => ask('/v1/webhook/seal', request, sealAnswerSchema, SEAL_MS),
     manifest: (request) => ask('/v1/manifest', request, manifestAnswerSchema, MANIFEST_MS),

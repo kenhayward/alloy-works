@@ -304,10 +304,12 @@ export const runRequestSchema = testRequestSchema
     message: 'A run binds parameters only on a source that declares them',
   })
   .refine(assertsAsDeclared, AS_DECLARED)
-  // Only text the product generated runs as a person (DAT-113, the D7 plan's D7-F).
+  // Only text the product generated runs as a person (DAT-113, the D7 plan's D7-F): never an author's
+  // revision statement either (FR-B).
   .refine(
     (request) =>
-      request.identity?.kind !== 'asserted' || request.definition.fetch.kind === 'builder',
+      request.identity?.kind !== 'asserted' ||
+      (request.definition.fetch.kind === 'builder' && request.definition.revision === undefined),
     { message: "A run as a person runs the builder's text alone" },
   )
   // The service checks both before it asks (DAT-020); the connector holds a request to them again at
@@ -322,6 +324,38 @@ export const runRequestSchema = testRequestSchema
     { message: 'A run binds values that pass their declarations' },
   );
 export type RunRequest = z.infer<typeof runRequestSchema>;
+
+/** The most a source's revision may be, in characters (the FR plan, FR-C). */
+export const REVISION_MAX_CHARACTERS = 256;
+
+/**
+ * A source's revision as a run captured it (DAT-073; FR-C): opaque - an ETag, a Last-Modified, an S3
+ * version id, or a digest of a revision statement's value - and only ever compared by the source type
+ * that made it.
+ */
+export const revisionTokenSchema = z
+  .string()
+  .refine((value) => storableText(value) && value !== '', { message: 'A revision is text' })
+  .refine((value) => [...value].length <= REVISION_MAX_CHARACTERS, {
+    message: `A revision is at most ${REVISION_MAX_CHARACTERS} characters`,
+  });
+
+/**
+ * Whether a source moved since a revision (FR-D): the run the check would send, identity included,
+ * and the revision the held result was made at. The connector asks it as cheaply as its type can.
+ */
+export const revisionRequestSchema = runRequestSchema.safeExtend({
+  revision: revisionTokenSchema,
+});
+export type RevisionRequest = z.infer<typeof revisionRequestSchema>;
+
+/** Unchanged, changed, or a failure: which a check takes as changed, and runs (FR-D). */
+export const revisionAnswerSchema = z.discriminatedUnion('outcome', [
+  z.strictObject({ outcome: z.literal('unchanged') }),
+  z.strictObject({ outcome: z.literal('changed') }),
+  z.strictObject({ outcome: z.literal('failed'), failure: dataFailureSchema }),
+]);
+export type RevisionAnswer = z.infer<typeof revisionAnswerSchema>;
 
 /** A base as a canonical result names a column's type: the eight and image (ADR-0035, form 1). */
 const columnBase = z.enum([
@@ -442,6 +476,8 @@ export const runAnswerSchema = z.discriminatedUnion('outcome', [
       images: imagesSchema.optional(),
       // The identity as the source saw it, `current_user`, where the run was a person's (D7-A).
       asSeen: sourceName.optional(),
+      // The source's revision as the run read it, where its type reports one (FR-C).
+      revision: revisionTokenSchema.optional(),
     })
     .refine((answer) => answer.rowCount === answer.result.rows.length, {
       message: 'The row count is the number of rows',
@@ -708,6 +744,7 @@ export const childRequestSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('test'), request: testRequestSchema, ...childMembers }),
   z.strictObject({ kind: z.literal('describe'), request: describeRequestSchema, ...childMembers }),
   z.strictObject({ kind: z.literal('run'), request: runRequestSchema, ...childMembers }),
+  z.strictObject({ kind: z.literal('revision'), request: revisionRequestSchema, ...childMembers }),
   z.strictObject({
     kind: z.literal('describeSql'),
     request: describeSqlRequestSchema,

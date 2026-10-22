@@ -9,6 +9,7 @@ import { httpTemplateSchema, type HttpTemplate } from './http-template.js';
 import {
   ranDatasetSchema,
   ranObjectSchema,
+  revisionTokenSchema,
   sourceNameSchema,
   type RanDataset,
   type RanObject,
@@ -102,6 +103,9 @@ export const provenanceSchema = z.strictObject({
   checksum: z.string().regex(/^[0-9a-f]{64}$/),
   // Each image hash the result's cells hold, to the asset version admitted for it (D8-D).
   images: z.record(z.string().regex(/^[0-9a-f]{64}$/), artifactIdentifierSchema),
+  // The source's revision as the run read it (FR-C): outside the dataset's identity, which is the
+  // question alone, and what a check asks the source about (FR-D).
+  revision: revisionTokenSchema.optional(),
 });
 
 /** A dataset version's provenance, as D3 records it. */
@@ -124,6 +128,7 @@ export type Provenance = {
   readonly canonical: 1;
   readonly checksum: string;
   readonly images: Readonly<Record<string, string>>;
+  readonly revision?: string;
 };
 
 /** The shape alone: what a stored version is read back by. Throws on a record that is not one. */

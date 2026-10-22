@@ -99,12 +99,12 @@ prompt's output is not built, and is the gap.
 | Left unclaimed                                                            | Why                                                                                                     |
 | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | GEN-002                                                                   | A prompt declares components, metadata and parameters: a query's results as context are a later slice's |
-| ADM-033                                                                   | The trend lacks ADM-011's storage, publication and asset measures (T7)                                  |
-| ADM-048                                                                   | Translation, scanning, email and webhooks cost nothing yet; it is claimed when the last of them exists  |
+| ADM-033                                                                   | T7: the trend lacks ADM-011's storage, publication and asset measures                                   |
+| ADM-048                                                                   | T7: translation, scanning, email and webhooks cost nothing yet                                          |
 | SCH-013, SCH-014, SCH-035, VER-039 (designed elsewhere), SCH-067, GEN-044 | Meaning (G7's later PRs)                                                                                |
 | LIF-071                                                                   | Tool use is `tool.used`; webhook subscription changes wait for webhooks (GN-D)                          |
 | API-028, API-029, API-046, API-055, API-060, COL-037                      | Webhooks: their own design (GN-D)                                                                       |
-| API-030, API-031, API-034, API-048, API-059, DAT-054, DAT-073, DAT-079    | Extensions: their own design (GN-D)                                                                     |
+| API-030, API-031, API-034, API-048, API-059, DAT-054, DAT-079             | Extensions: their own design (GN-D)                                                                     |
 
 ## Decisions
 

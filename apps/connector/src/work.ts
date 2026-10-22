@@ -16,6 +16,7 @@ import {
   type DescribeAnswer,
   type DescribeSqlAnswer,
   type ParameterValues,
+  type RevisionAnswer,
   type RunAnswer,
   type TestAnswer,
   type TestFinding,
@@ -31,7 +32,7 @@ import {
 } from './describe.js';
 import { guardedAddress, type Lookup } from './guard.js';
 import { describeExtension, runExtension, testExtension } from './extension-source.js';
-import { describeHttp, runHttp, testHttp, type HttpPolicy } from './http-source.js';
+import { describeHttp, revisionHttp, runHttp, testHttp, type HttpPolicy } from './http-source.js';
 import {
   accountHoldsPrivilege,
   assertRole,
@@ -44,8 +45,8 @@ import {
   hasRootCollation,
   serverVersion,
 } from './postgres.js';
-import { runStatement } from './run.js';
-import { describeS3, runS3, testS3 } from './s3.js';
+import { readRevision, runStatement } from './run.js';
+import { describeS3, revisionS3, runS3, testS3 } from './s3.js';
 
 /** A failure the child answers with, thrown inside it and caught once. */
 class Failed extends Error {
@@ -58,7 +59,7 @@ const failedWith = (code: DataFailureCode) => new Failed(dataFailure(code));
 
 const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, Math.max(0, ms)));
 
-type Answer = TestAnswer | DescribeAnswer | RunAnswer | DescribeSqlAnswer;
+type Answer = TestAnswer | DescribeAnswer | RunAnswer | DescribeSqlAnswer | RevisionAnswer;
 
 /**
  * What a test finds of the account (D1-M): whether it may write, and, on a connection that asserts a
@@ -76,9 +77,11 @@ async function testFindings(
   return findings;
 }
 
-/** A failure in the shape of the request's answer: a test's and a run's say `failed`. */
+/** A failure in the shape of the request's answer: a test's, a run's and a revision's say `failed`. */
 function failureAnswer(kind: ChildRequest['kind'], failure: DataFailure): Answer {
-  return kind === 'test' || kind === 'run' ? { outcome: 'failed', failure } : { failure };
+  return kind === 'test' || kind === 'run' || kind === 'revision'
+    ? { outcome: 'failed', failure }
+    : { failure };
 }
 
 /** The person's role a request asserts (D7-G), or undefined for one run as the account. */
@@ -207,6 +210,14 @@ async function answerHttp(
             ? await runS3(request.request, request.secret, policy, deadline)
             : await runHttp(request.request, request.secret, policy, deadline);
         break;
+      case 'revision':
+        // An extension reports no revision (FR-B), so a check never asks one.
+        answer = extension
+          ? { outcome: 'changed' }
+          : s3
+            ? await revisionS3(request.request, request.secret, policy, deadline)
+            : await revisionHttp(request.request, request.secret, policy, deadline);
+        break;
       case 'describeSql': {
         const asked = request.request;
         answer =
@@ -298,6 +309,19 @@ async function answerPostgres(
             () => cancelBackend(address.address, settings.source.port, client!),
             role,
           );
+        case 'revision': {
+          // The revision statement alone, as the person a run would assert, never the data (FR-D).
+          await client.query('begin transaction read only');
+          if (role !== undefined) {
+            const asserted = await assertRole(client, role);
+            if ('refused' in asserted) throw failedWith(asserted.refused);
+          }
+          const read = await readRevision(client, request.request.definition, deadline);
+          if ('failure' in read) throw new Failed(read.failure);
+          return read.revision !== undefined && read.revision === request.request.revision
+            ? { outcome: 'unchanged' }
+            : { outcome: 'changed' };
+        }
         default:
           throw failedWith('connector_error');
       }

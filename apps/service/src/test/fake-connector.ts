@@ -15,12 +15,14 @@ import {
   webhookSecretContext,
   type ModelEvent,
   type ModelRequest,
+  revisionRequestSchema,
   runRequestSchema,
   testRequestSchema,
   type Parameter,
   type Query,
   type DescribeAnswer,
   type DescribeSqlAnswer,
+  type RevisionAnswer,
   type RunAnswer,
   type TestAnswer,
   type ManifestAnswer,
@@ -47,6 +49,8 @@ export interface FakeConnector {
   describeSql: DescribeSqlAnswer;
   /** A run (D2-I). */
   run: RunAnswer;
+  /** Whether a source moved since a revision (the FR plan, FR-D): changed, unless a test says. */
+  revision: RevisionAnswer;
   /** What a model call streams, a line an event (the G1 plan, G1-C). */
   model: ModelEvent[];
   /** Where set, a model call's events by what it was sent, in place of `model`: a model's turns. */
@@ -86,6 +90,7 @@ export function fakeConnector(): FakeConnector {
     describe: { relations: [], truncated: false, leftOut: { relations: 0, columns: 0 } },
     describeSql: { columns: [], parameters: [] },
     run: { outcome: 'failed', failure: { code: 'connector_error', attribution: 'connector' } },
+    revision: { outcome: 'changed' },
     model: [
       { type: 'text', text: 'ready' },
       { type: 'text', text: '.' },
@@ -98,7 +103,7 @@ export function fakeConnector(): FakeConnector {
       const path = new URL(String(url)).pathname;
       // A run's and a describe's body are held to the real connector's limit, as its door holds them.
       if (
-        (path === '/v1/run' || path === '/v1/describe') &&
+        (path === '/v1/run' || path === '/v1/describe' || path === '/v1/revision') &&
         Buffer.byteLength(String(init?.body ?? ''), 'utf8') > RUN_REQUEST_MAX_BYTES
       ) {
         return new Response(null, { status: 413 });
@@ -122,25 +127,27 @@ export function fakeConnector(): FakeConnector {
       const door =
         path === '/v1/run'
           ? runRequestSchema
-          : path === '/v1/test'
-            ? testRequestSchema
-            : path === '/v1/describe'
-              ? 'sql' in body ||
-                'builder' in body ||
-                'http' in body ||
-                'file' in body ||
-                'extension' in body
-                ? describeSqlRequestSchema
-                : describeRequestSchema
-              : path === '/v1/model'
-                ? modelRequestSchema
-                : path === '/v1/embed'
-                  ? embedRequestSchema
-                  : path === '/v1/model/seal'
-                    ? modelSealRequestSchema
-                    : path === '/v1/webhook/seal'
-                      ? webhookSealRequestSchema
-                      : undefined;
+          : path === '/v1/revision'
+            ? revisionRequestSchema
+            : path === '/v1/test'
+              ? testRequestSchema
+              : path === '/v1/describe'
+                ? 'sql' in body ||
+                  'builder' in body ||
+                  'http' in body ||
+                  'file' in body ||
+                  'extension' in body
+                  ? describeSqlRequestSchema
+                  : describeRequestSchema
+                : path === '/v1/model'
+                  ? modelRequestSchema
+                  : path === '/v1/embed'
+                    ? embedRequestSchema
+                    : path === '/v1/model/seal'
+                      ? modelSealRequestSchema
+                      : path === '/v1/webhook/seal'
+                        ? webhookSealRequestSchema
+                        : undefined;
       if (door && !door.safeParse(body).success) {
         return Response.json({ code: 'request_invalid' }, { status: 400 });
       }
@@ -202,6 +209,7 @@ export function fakeConnector(): FakeConnector {
         });
       }
       if (path === '/v1/test') return Response.json(fake.test);
+      if (path === '/v1/revision') return Response.json(fake.revision);
       if (path === '/v1/embed') {
         return Response.json(
           fake.embedFor

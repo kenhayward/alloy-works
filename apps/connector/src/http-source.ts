@@ -10,14 +10,18 @@ import {
   type HttpTemplate,
   type Parameter,
   type ParameterValues,
+  type RevisionAnswer,
+  type RevisionRequest,
   type RunAnswer,
   type RunRequest,
   type TestAnswer,
 } from '@alloy-works/domain';
+import type { IncomingHttpHeaders } from 'node:http';
 
 import { bodyLimit, proposeColumns, readRows } from './formats/rows.js';
 import { baseUrlParts, exchange, type ExchangePolicy } from './https.js';
 import { finishResult } from './result.js';
+import { revisionOf } from './revision.js';
 
 /**
  * The HTTP source (the D6 plan, D6-A, D6-D and D6-L): a test, a run and a sample for columns over
@@ -44,7 +48,32 @@ class Refused extends Error {
   }
 }
 
-/** A bound template sent to the connection's base URL, the secret in its header, under the limits. */
+/**
+ * A response's revision (FR-C): its ETag, else its Last-Modified, each sendable back as a condition,
+ * else none.
+ */
+function httpRevision(headers: IncomingHttpHeaders): string | undefined {
+  const etag = headers.etag;
+  const modified = headers['last-modified'];
+  return (
+    (typeof etag === 'string' ? revisionOf('etag', etag) : undefined) ??
+    (typeof modified === 'string' ? revisionOf('modified', modified) : undefined)
+  );
+}
+
+/** The condition a revision is asked by: `If-None-Match` for an ETag, else `If-Modified-Since`. */
+function conditionOf(revision: string): readonly [string, string] | undefined {
+  const at = revision.indexOf(':');
+  const value = revision.slice(at + 1);
+  if (revision.startsWith('etag:')) return ['if-none-match', value];
+  if (revision.startsWith('modified:')) return ['if-modified-since', value];
+  return undefined;
+}
+
+/**
+ * A bound template sent to the connection's base URL, the secret in its header, under the limits;
+ * with a condition, its own in place of any the template names, its answer's headers alone (FR-D).
+ */
 async function send(
   settings: HttpSettings,
   secret: string,
@@ -54,7 +83,12 @@ async function send(
   policy: HttpPolicy,
   deadline: number,
   maxBytes: number,
-): Promise<Buffer> {
+  condition?: readonly [string, string],
+): Promise<{
+  readonly status: number;
+  readonly headers: IncomingHttpHeaders;
+  readonly body: Buffer;
+}> {
   let bound;
   try {
     bound = bindHttp(template, parameters, values);
@@ -73,7 +107,12 @@ async function send(
       method: bound.method,
       headers: [
         ['accept', 'application/json, application/x-ndjson, application/jsonl'],
-        ...bound.headers,
+        ...(condition === undefined
+          ? bound.headers
+          : bound.headers.filter(
+              ([name]) => name !== 'if-none-match' && name !== 'if-modified-since',
+            )),
+        ...(condition === undefined ? [] : [condition]),
         [settings.source.secretHeader, secret],
       ],
       ...(bound.body === undefined ? {} : { body: bound.body }),
@@ -85,10 +124,11 @@ async function send(
       deadline,
       connectTimeoutMs: policy.connectTimeoutMs,
       maxBytes,
+      ...(condition === undefined ? {} : { conditional: true }),
     },
   );
   if (!exchanged.ok) throw new Refused(exchanged.failure);
-  return exchanged.body;
+  return exchanged;
 }
 
 /**
@@ -144,7 +184,7 @@ export async function runHttp(
   const { definition, limits } = request;
   const fetch = definition.fetch as HttpFetch;
   try {
-    let body: Buffer | undefined = await send(
+    const sent = await send(
       request.settings as HttpSettings,
       secret,
       fetch.request,
@@ -154,6 +194,8 @@ export async function runHttp(
       deadline,
       bodyLimit(fetch.format, limits.bytes),
     );
+    let body: Buffer | undefined = sent.body;
+    const revision = httpRevision(sent.headers);
     const read = readRows(body, fetch.format, definition.columns, limits);
     // The body is let go before the result is finished, which holds the rows twice more.
     body = undefined;
@@ -170,7 +212,42 @@ export async function runHttp(
       images: Object.fromEntries(
         [...read.images].map(([hash, bytes]) => [hash, bytes.toString('base64')]),
       ),
+      ...(revision === undefined ? {} : { revision }),
     };
+  } catch (error) {
+    if (error instanceof Refused) return { outcome: 'failed', failure: error.failure };
+    throw error;
+  }
+}
+
+/**
+ * Whether the source moved since a revision (DAT-073; FR-D): the run's request made conditional, its
+ * body never read. A 304, or a 2xx stating the same revision, is unchanged.
+ */
+export async function revisionHttp(
+  request: RevisionRequest,
+  secret: string,
+  policy: HttpPolicy,
+  deadline: number,
+): Promise<RevisionAnswer> {
+  const condition = conditionOf(request.revision);
+  if (condition === undefined) return { outcome: 'changed' };
+  const fetch = request.definition.fetch as HttpFetch;
+  try {
+    const sent = await send(
+      request.settings as HttpSettings,
+      secret,
+      fetch.request,
+      request.definition.parameters,
+      request.values as ParameterValues,
+      policy,
+      deadline,
+      0,
+      condition,
+    );
+    return sent.status === 304 || httpRevision(sent.headers) === request.revision
+      ? { outcome: 'unchanged' }
+      : { outcome: 'changed' };
   } catch (error) {
     if (error instanceof Refused) return { outcome: 'failed', failure: error.failure };
     throw error;
@@ -189,7 +266,7 @@ export async function describeHttp(
   maxBytes: number,
 ): Promise<DescribeSqlAnswer> {
   try {
-    const body = await send(
+    const { body } = await send(
       request.settings as HttpSettings,
       secret,
       request.http.request,

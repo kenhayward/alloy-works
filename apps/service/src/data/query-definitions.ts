@@ -35,7 +35,13 @@ import { versionView } from '../components.js';
 import { cursorFor, pageAsked } from '../listing.js';
 import type { SessionPrincipal } from '../sessions.js';
 import { refused } from '../wire-codes.js';
-import { connectionFacts, decideFetchAt, mayRunFetch, requireSqlPermitted } from './sql-access.js';
+import {
+  asWritten,
+  connectionFacts,
+  decideFetchAt,
+  mayRunFetch,
+  requireSqlPermitted,
+} from './sql-access.js';
 
 /**
  * The query definition routes (data.md, "Routes"; the D2 plan, task 4). None reaches the connector:
@@ -74,7 +80,8 @@ async function definitionView(
   const connection = await readConnection(trx, stored.definition.connection!);
   const atConnection = await connectionFacts(trx, caller, stored.definition.connection!);
   // Decided by the latest version's own fetch: a built query needs no write_sql (D4-J).
-  const mayRun = atConnection !== undefined && mayRunFetch(atConnection, stored.definition.fetch);
+  const mayRun =
+    atConnection !== undefined && mayRunFetch(atConnection, asWritten(stored.definition));
   const mayReadConnection = atConnection !== undefined && decide('read', atConnection).allowed;
   return {
     id: stored.id,
@@ -115,7 +122,7 @@ async function connectionFor(
     await datasetFor(trx, caller, definition);
     return null;
   }
-  await decideFetchAt(trx, caller, definition.connection!, definition.fetch);
+  await decideFetchAt(trx, caller, definition.connection!, asWritten(definition));
   const connection = await readConnection(trx, definition.connection!);
   if (!connection) {
     throw refused(400, 'definition.invalid', 'The query definition is not valid.', {
@@ -142,7 +149,7 @@ async function connectionFor(
   if (connection.settings.retired) {
     throw refused(409, 'connection.retired', 'This connection is retired, so it runs nothing.');
   }
-  if (!definition.retired) await requireSqlPermitted(trx, connection, definition.fetch);
+  if (!definition.retired) await requireSqlPermitted(trx, connection, asWritten(definition));
   return connection;
 }
 

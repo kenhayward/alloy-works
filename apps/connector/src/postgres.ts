@@ -286,6 +286,15 @@ export async function accountHoldsPrivilege(client: pg.Client): Promise<boolean>
  * text, so no name reads as SQL; then `current_user`, the identity as the source saw it.
  */
 const ASSERT_ROLE = `select pg_catalog.set_config('role', $1, true)`;
+
+const LF = String.fromCharCode(10);
+
+/**
+ * A revision statement as it is read (the FR plan, FR-C): the author's text in a subquery, on lines of
+ * its own so a trailing comment closes nothing, and no more than two rows asked of it.
+ */
+export const revisionRead = (text: string) =>
+  `select * from (${LF}${text}${LF}) as revision limit 2`;
 const CURRENT_USER = `select current_user::pg_catalog.text as name`;
 
 /** The SQLSTATEs of a role the source lacks (22023) and one the account may not set (42501). */
@@ -416,6 +425,8 @@ export const CATALOGUE_QUERIES: Readonly<Record<string, string>> = {
   RELATIONS,
   COLUMNS,
   FORMATTED,
+  // Naming nothing but the author's text, which is theirs to qualify.
+  REVISION_READ: revisionRead(''),
 };
 
 /** A numeric's precision and scale from its type modifier, as PostgreSQL packs them. */

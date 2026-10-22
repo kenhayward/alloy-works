@@ -574,6 +574,10 @@ describe('the domain package', () => {
         'describeSqlRequestSchema',
         'runAnswerSchema',
         'runRequestSchema',
+        // A source's revision, asked before a check runs (the FR plan, FR-D).
+        'REVISION_MAX_CHARACTERS',
+        'revisionAnswerSchema',
+        'revisionRequestSchema',
         'effectiveLimits',
         // A tenant's runs at once and how long a run waits for a slot (the R18 plan, R18-A).
         'runsAtOnce',

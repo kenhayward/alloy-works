@@ -546,6 +546,19 @@ describe('datasets and resolutions', () => {
     query = cut.definition;
   });
 
+  it("reuses the latest version only at the source's revision it holds, so the revision a check asks about is the newest (the FR plan, FR-C)", async () => {
+    const site = { site: 'revised' };
+    const first = await recorded({ parameters: site, revision: 'etag:"1"' });
+    expect((await recorded({ parameters: site, revision: 'etag:"1"' })).version.id).toBe(
+      first.version.id,
+    );
+    const moved = await recorded({ parameters: site, revision: 'etag:"2"' });
+    expect(moved.reused).toBe(false);
+    expect((await tenant((trx) => latestVersion(trx, moved.dataset.id)))!.content).toMatchObject({
+      revision: 'etag:"2"',
+    });
+  });
+
   it('keeps every resolution, and refuses one replacing a version of another dataset', async () => {
     const one = await recorded({ parameters: { site: 'resolution-one' } });
     const later = await recorded({
