@@ -96,6 +96,26 @@ describe('the citation style routes (the CI plan, CI-D)', () => {
       code: 'style_invalid',
       problems: [{ path: 'csl', message: 'The style declares no citation form' }],
     });
+    // Macros each calling the one before twice: refused before citeproc expands them.
+    const macros = Array.from({ length: 40 }, (_, n) =>
+      n === 0
+        ? '<macro name="m0"><text variable="title"/></macro>'
+        : `<macro name="m${n}"><group><text macro="m${n - 1}"/><text macro="m${n - 1}"/></group></macro>`,
+    ).join('');
+    const doubling = coastal
+      .replace(/<macro[\s\S]*<\/macro>/, macros)
+      .replace(/<layout([^>]*)>[\s\S]*?<\/layout>/g, '<layout$1><text macro="m39"/></layout>');
+    for (const path of ['/v1/citation-styles', '/v1/citation-styles/preview']) {
+      const answered = await h.call(
+        'ada',
+        'POST',
+        path,
+        path.endsWith('preview') ? { csl: doubling } : { style: style(doubling) },
+      );
+      expect(answered.json(), path).toMatchObject({
+        problems: [{ rule: 'style_invalid', message: expect.stringMatching(/more than 50000/) }],
+      });
+    }
     // No `requires`, refused at the door.
     const unrequired: Record<string, unknown> = style();
     delete unrequired['requires'];
@@ -124,6 +144,10 @@ describe('the citation style routes (the CI plan, CI-D)', () => {
     );
     expect(body.sample.bibliography).toHaveLength(4);
 
+    // Previewing runs citeproc on a file, so needs design as uploading does.
+    expect(
+      (await h.call('grace', 'POST', '/v1/citation-styles/preview', { csl: coastal })).statusCode,
+    ).toBe(403);
     const broken = await h.call('ada', 'POST', '/v1/citation-styles/preview', { csl: 'not CSL' });
     expect(broken.json()).toMatchObject({
       problems: [{ rule: 'style_invalid' }],

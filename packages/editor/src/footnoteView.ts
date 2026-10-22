@@ -14,6 +14,7 @@ import { DecorationSet, EditorView, type NodeView } from 'prosemirror-view';
 
 import { bindingsShown } from './bindings.js';
 import { bindingContextOf, bindingDecorations, bindingView } from './bindingView.js';
+import { citationDecorations, citationFormsOf, citationView } from './citations.js';
 import { equationView } from './equationView.js';
 import { pasteInto, readClipboard, type ClipboardSource, type PasteOutcome } from './clipboard.js';
 import { footnoteAt, openFootnote, recordOpenFootnote } from './footnotes.js';
@@ -167,6 +168,8 @@ export function footnoteView(
         equation: (node) => equationView(node, document),
         // And a binding as one in the component's is (B1-D), from the surface's context.
         binding: (node, _view, _getPos, decorations) => bindingView(node, document, decorations),
+        // And a citation, from the surface's forms (CId).
+        citation: (node, _view, _getPos, decorations) => citationView(node, document, decorations),
       },
       decorations: (state) => {
         const pos = getPos();
@@ -180,6 +183,7 @@ export function footnoteView(
         const references = DecorationSet.create(state.doc, [
           ...shown.find(),
           ...bindingDecorations(state.doc, bindingContextOf(outer.state)).find(),
+          ...citationDecorations(state.doc, citationFormsOf(outer.state)).find(),
         ]);
         // What will not resolve in the footnote's own text, by the component's check (ET-I): made again
         // only when the footnote's text or the check changes, not on every draw.

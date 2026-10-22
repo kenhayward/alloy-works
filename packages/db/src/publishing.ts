@@ -556,13 +556,24 @@ async function resolveImages(
   return { assets, failures };
 }
 
-/** Every entry a citation anywhere in this content names: a paragraph's, a cell's, a note's. */
+/**
+ * Every entry a citation anywhere in this content names: a paragraph's, a cell's, a note's; and a
+ * cross-reference to an entry, which is published as one (STR-069; CId).
+ */
 function citedIn(value: unknown): string[] {
   if (Array.isArray(value)) return value.flatMap(citedIn);
   if (typeof value !== 'object' || value === null) return [];
   const record = value as Record<string, unknown>;
   if (record['type'] === 'citation' && typeof record['entry'] === 'string')
     return [record['entry']];
+  const target = record['target'] as Record<string, unknown> | null | undefined;
+  if (
+    record['type'] === 'crossReference' &&
+    target?.['kind'] === 'entry' &&
+    typeof target['entry'] === 'string'
+  ) {
+    return [target['entry']];
+  }
   return Object.values(record).flatMap(citedIn);
 }
 

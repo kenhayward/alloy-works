@@ -15,6 +15,8 @@ import {
 import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
 import { actOn, archivedAs, isArchived, notArchivedAs, type ArchivalAnswer } from './archival.js';
+import { lockBibliography } from './bibliography-lock.js';
+import { isDeleted, notDeletedAs } from './deletion.js';
 import {
   checkedLimit,
   countOf,
@@ -215,9 +217,7 @@ const contentOf = (input: EntryInput, key: string): Entry => ({
  * keys so two made at once never take the same one.
  */
 async function freeKey(trx: TenantTransaction, spaceId: string, csl: CslItem): Promise<string> {
-  await sql`select pg_advisory_xact_lock(hashtextextended(${`bibliography:${spaceId}`}, 0))`.execute(
-    trx,
-  );
+  await lockBibliography(trx, spaceId);
   const base = entryKey(csl);
   const taken = new Set(
     (
@@ -401,8 +401,12 @@ export interface EntryUses {
   };
 }
 
-/** The citation path over a version's content, the entry passed as `$entry`. */
-const CITES = 'strict $.** ? (@.type == "citation" && @.entry == $entry)';
+/**
+ * The citation path over a version's content, the entry passed as `$entry`: a citation, or a
+ * cross-reference to the entry (STR-069; CId).
+ */
+const CITES =
+  'strict $.** ? ((@.type == "citation" && @.entry == $entry) || (@.type == "crossReference" && @.target.kind == "entry" && @.target.entry == $entry))';
 
 /**
  * Where an entry is used (citations.md, "Kept while cited"): the components whose latest version
@@ -479,8 +483,13 @@ export async function archiveEntry(
   by: string,
   act: 'archived' | 'unarchived',
 ): Promise<ArchivalAnswer | 'cited' | undefined> {
-  if (!(await readEntry(trx, entryId))) return undefined;
-  if (act === 'archived' && (await entryCited(trx, entryId))) return 'cited';
+  const entry = await readEntry(trx, entryId);
+  if (!entry) return undefined;
+  if (act === 'archived') {
+    // After any version citing it that commits first (`indexReferences`).
+    await lockBibliography(trx, entry.space.id);
+    if (await entryCited(trx, entryId)) return 'cited';
+  }
   return actOn(trx, entryId, by, act, ['bibliographyEntry']);
 }
 
@@ -585,8 +594,8 @@ export async function importEntries(
 }
 
 /**
- * The entries of a space a principal may read, archived or not, for export (LIB-009), each by its key
- * and CSL, in key order; only those named where `ids` is given.
+ * The entries of a space a principal may read, archived or not but never deleted, for export
+ * (LIB-009), each by its key and CSL, in key order; only those named where `ids` is given.
  */
 export async function entriesForExport(
   trx: TenantTransaction,
@@ -604,6 +613,7 @@ export async function entriesForExport(
     .where('a.kind', '=', 'bibliographyEntry')
     .where('a.space_id', '=', spaceId)
     .where((eb) => readableArtifacts(eb, readable))
+    .where(notDeletedAs('a'))
     .$if(ids !== undefined, (query) => query.where('a.id', 'in', [...ids!]))
     .orderBy('k.key')
     .execute();
@@ -612,4 +622,32 @@ export async function entriesForExport(
     rows.map((row) => row.id),
   );
   return rows.map((row) => ({ key: row.key, csl: found.get(row.id)!.csl }));
+}
+
+/**
+ * The entries among `ids` that are a space's and that a principal may read, each at its latest
+ * version (CI-B, CI-H): what a citation in a component of that space may name. Anything else - an
+ * entry of another space, one withheld or deleted, or no entry at all - is simply absent.
+ */
+export async function readableEntries(
+  trx: TenantTransaction,
+  principalId: string,
+  spaceId: string,
+  ids: readonly string[],
+): Promise<Map<string, CslItem>> {
+  const wanted = [...new Set(ids)].filter((id) => UUID.test(id));
+  const readable = wanted.length === 0 ? undefined : await loadReadableSet(trx, principalId);
+  if (!readable) return new Map();
+  const rows = await trx
+    .selectFrom('artifact as a')
+    .select('a.id')
+    .where('a.kind', '=', 'bibliographyEntry')
+    .where('a.space_id', '=', spaceId)
+    .where('a.id', 'in', wanted)
+    .where((eb) => readableArtifacts(eb, readable))
+    .execute();
+  const kept: string[] = [];
+  for (const row of rows) if (!(await isDeleted(trx, row.id))) kept.push(row.id);
+  const found = await summaries(trx, kept);
+  return new Map(kept.flatMap((id) => (found.has(id) ? [[id, found.get(id)!.csl]] : [])));
 }

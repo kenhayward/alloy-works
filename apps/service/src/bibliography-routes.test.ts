@@ -126,6 +126,23 @@ describe('the bibliography routes (the CI plan, CI-B, CI-C)', () => {
     );
     expect(unreadable.statusCode).toBe(400);
     expect(unreadable.json()).toMatchObject({ code: 'import_unreadable' });
+    // More records than one import takes: refused before any is written.
+    const before = await h.call('grace', 'GET', `/v1/spaces/${h.general}/bibliography-entries`);
+    const many = await h.call(
+      'grace',
+      'POST',
+      `/v1/spaces/${h.general}/bibliography-entries/import`,
+      {
+        format: 'csl-json',
+        text: JSON.stringify(
+          Array.from({ length: 501 }, (_, n) => ({ type: 'book', title: `Numbats ${n}` })),
+        ),
+      },
+    );
+    expect(many.statusCode).toBe(400);
+    expect(many.json()).toMatchObject({ code: 'import_too_many' });
+    const after = await h.call('grace', 'GET', `/v1/spaces/${h.general}/bibliography-entries`);
+    expect(after.json<{ total: number }>().total).toBe(before.json<{ total: number }>().total);
 
     const exported = await h.call(
       'alice',

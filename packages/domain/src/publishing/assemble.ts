@@ -512,6 +512,7 @@ export function assemble(given: AssembleInput): Assembled {
   }
   /** Whether a target that did not resolve is one a condition took out (STR-030; R11-D). */
   const excludedTarget = (target: CrossReferenceTarget, node: string): boolean => {
+    if (target.kind === 'entry') return false;
     if (target.kind === 'node') return excludedNodes.has(target.node);
     if (target.kind === 'block') return removedBlocks.get(node)?.has(target.block) === true;
     // Only where every placement of the component leaves the target out (the R11 final review).
@@ -1084,7 +1085,7 @@ export function assemble(given: AssembleInput): Assembled {
         if (published !== null) runs.push(published);
         continue;
       }
-      if (inline.type === 'crossReference' && layout !== null) {
+      if (inline.type === 'crossReference' && inline.target.kind !== 'entry' && layout !== null) {
         const key = referenceKey(node, inline.id);
         const printed = resolved.printed.get(key);
         // A header row is set again on every page the table reaches, as an artifact, where the engine
@@ -1101,8 +1102,11 @@ export function assemble(given: AssembleInput): Assembled {
       }
       // A citation as its style rendered it (CIc), a link to its entry where a reference here would
       // be one and the layout places the bibliography (PUB-097). One that failed is not set.
-      if (inline.type === 'citation' && layout !== null) {
-        const form = citations?.forms.get(node)?.get(inline);
+      // A cross-reference to an entry is set as the citation it was rendered as (STR-069; CId).
+      const asCitation =
+        inline.type === 'crossReference' ? resolved.asCitations.get(inline) : undefined;
+      if ((inline.type === 'citation' || asCitation !== undefined) && layout !== null) {
+        const form = citations?.forms.get(node)?.get(asCitation ?? (inline as CitationNode));
         if (form === undefined) continue;
         for (const run of form.runs) check(run.text, node, block, runFamilies(run.marks, families));
         const link = bibliography !== null && inParagraph !== null && !inParagraph.heading;
@@ -2706,6 +2710,8 @@ interface ResolvedReferences {
   readonly forWord: readonly PublishFailure[];
   /** Every citation in a component, in reading order (CIc), with the block a failure names. */
   readonly cited: readonly Cited[];
+  /** Each cross-reference to an entry, as the citation it is rendered as (STR-069; CId). */
+  readonly asCitations: ReadonlyMap<ReferenceNode, CitationNode>;
 }
 
 /** A citation as the content model stores it. */
@@ -2727,6 +2733,7 @@ const NO_REFERENCES: ResolvedReferences = {
   forms: new Map(),
   forWord: [],
   cited: [],
+  asCitations: new Map(),
 };
 
 /**
@@ -2752,6 +2759,8 @@ function targetNamed(target: CrossReferenceTarget): string {
       return `component ${target.component} block ${target.block}`;
     case 'node':
       return `node ${target.node}`;
+    case 'entry':
+      return `entry ${target.entry}`;
     default: {
       const unreachable: never = target;
       throw new Error(`No name for a target of kind ${(unreachable as CrossReferenceTarget).kind}`);
@@ -2841,6 +2850,8 @@ function resolveReferences(
   let at = 0;
   // Each citation where the walk meets it, which is the order a reader meets it (CIc).
   const cited: Cited[] = [];
+  // Each cross-reference to an entry, as the citation it is rendered as (CId).
+  const asCitations = new Map<ReferenceNode, CitationNode>();
 
   const place = (anchor: string, inHeader: boolean) => {
     positions.set(anchor, at++);
@@ -2862,7 +2873,13 @@ function resolveReferences(
     block: string | null = null,
   ) => {
     for (const inline of content) {
-      if (inline.type === 'crossReference') {
+      if (inline.type === 'crossReference' && inline.target.kind === 'entry') {
+        // Rendered as a citation of its entry, in reading order with the rest (STR-069; CId).
+        if (block === null) continue;
+        const citation: CitationNode = { type: 'citation', entry: inline.target.entry };
+        asCitations.set(inline, citation);
+        cited.push({ node, block, citation });
+      } else if (inline.type === 'crossReference') {
         found.push({ node, reference: inline, inTitle, at: at++, inNote, inCaption });
       } else if (inline.type === 'citation' && block !== null) {
         cited.push({ node, block, citation: inline });
@@ -3136,7 +3153,7 @@ function resolveReferences(
     );
     forms.set(key, { display, label: target.label, title: target.title });
   }
-  return { printed, named, failures, pdfsOwn, forms, forWord, cited };
+  return { printed, named, failures, pdfsOwn, forms, forWord, cited, asCitations };
 }
 
 /** Every citation rendered (CIc): each one's in-text form by node and stored node, and the entries. */
@@ -3162,10 +3179,16 @@ export function citationPlaces(
   const counted = new Map<string, number>();
   const inlines = (each: readonly InlineNode[] | undefined, block: string) => {
     for (const inline of each ?? []) {
-      if (inline.type === 'citation') {
+      const entry =
+        inline.type === 'citation'
+          ? inline.entry
+          : inline.type === 'crossReference' && inline.target.kind === 'entry'
+            ? inline.target.entry
+            : undefined;
+      if (entry !== undefined) {
         const n = (counted.get(block) ?? 0) + 1;
         counted.set(block, n);
-        found.push({ block, n, entry: inline.entry });
+        found.push({ block, n, entry });
       } else if (inline.type === 'footnote') {
         for (const paragraph of inline.content as readonly BlockNode[]) {
           if (paragraph.type === 'paragraph') inlines(paragraph.content, inline.id);

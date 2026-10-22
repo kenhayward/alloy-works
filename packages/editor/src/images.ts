@@ -16,11 +16,12 @@ const crossReferenceNode = editorSchema.nodes.crossReference!;
 const equationNode = editorSchema.nodes.equation!;
 const bindingNode = editorSchema.nodes.binding!;
 const variableNode = editorSchema.nodes.variable!;
+const citationNode = editorSchema.nodes.citation!;
 
 /**
  * An inline node that carries no marks and ends no annotation: an image, a footnote's mark, a
  * cross-reference (cross-references 1, ruling R6), an equation (equations 1, ruling R3) and a binding
- * (the B1 plan, BI-A), and a variable (the R5 plan, R5b). Asked of a
+ * (the B1 plan, BI-A), a variable (the R5 plan, R5b) and a citation (CId). Asked of a
  * node wherever it stands, so the rule reaches every inline home a reference has - a caption and a
  * term among them, where no image stands.
  */
@@ -30,7 +31,8 @@ const unmarkedInline = (node: { type: unknown }) =>
   node.type === crossReferenceNode ||
   node.type === equationNode ||
   node.type === bindingNode ||
-  node.type === variableNode;
+  node.type === variableNode ||
+  node.type === citationNode;
 const paragraphNode = editorSchema.nodes.paragraph!;
 
 /** The image selected whole, as the panel reads it: where it stands, what it shows, how it is described. */

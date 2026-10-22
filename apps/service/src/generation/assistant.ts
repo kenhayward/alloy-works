@@ -67,6 +67,7 @@ import { contextOf } from '../audit.js';
 import { createConnectorClient } from '../data/connector.js';
 import type { ConnectorOptions } from '../data/connections.js';
 import { liveBindingStates } from '../data/bindings.js';
+import { mayCite } from '../bibliography/citing.js';
 import { mayNameColumns, storableContent } from '../editing.js';
 import { markdownReader } from '../markdown.js';
 import { AppError } from '../errors.js';
@@ -1140,6 +1141,7 @@ export function assistantHandlers(
     // The save's checks, as a person's suggestion meets them (SG-B; the final review).
     const proposed = storableContent(proposal.proposed);
     await mayNameColumns(trx, request, proposed, proposal.madeAgainst!);
+    await mayCite(trx, request, proposed, proposal.madeAgainst!);
     const made = await makeSuggestion(trx, {
       component: proposal.componentId!,
       version: proposal.madeAgainst!,
@@ -1155,6 +1157,7 @@ export function assistantHandlers(
         check: async (content, current) => {
           storableContent(content);
           await mayNameColumns(trx, request, content, current.id);
+          await mayCite(trx, request, content, current.id);
         },
       });
       if (accepted.answer !== 'accepted') throw suggestionRefused(accepted.answer);

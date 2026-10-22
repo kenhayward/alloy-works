@@ -12,7 +12,7 @@ import {
 import { resolved } from '../theme/theme.fixture.js';
 
 import { assemble, citationPlaces, type AssembleInput } from './assemble.js';
-import { defaultLayout, parseLayout, type Layout } from './layout.js';
+import { defaultLayout, NINTH_DEFAULT_LAYOUT, parseLayout, type Layout } from './layout.js';
 import type {
   PublishedBlock,
   PublishedDocument,
@@ -252,8 +252,9 @@ describe('citations published (CIc)', () => {
   });
 
   it('places no bibliography under a layout declaring none, and links no citation to one', () => {
+    expect(NINTH_DEFAULT_LAYOUT.matter.bibliography).toBeUndefined();
     const document = published(
-      publish(component(paragraph('p1', cite(MARLOW))), { layout: defaultLayout }),
+      publish(component(paragraph('p1', cite(MARLOW))), { layout: NINTH_DEFAULT_LAYOUT }),
     );
     expect(citationsOf(document)).toEqual([{ text: '(1)', link: null }]);
     expect(document.back.bibliography).toBeNull();
@@ -347,6 +348,12 @@ describe('citations published (CIc)', () => {
   });
 });
 
+describe('the default layout (CId)', () => {
+  it('places a bibliography titled References, from version 0.10', () => {
+    expect(defaultLayout.matter.bibliography).toEqual({ title: 'References' });
+  });
+});
+
 describe("a component's citations by place (CIc)", () => {
   it('names each by the block a failure names and its place there, as assemble does', () => {
     const content = component(
@@ -360,5 +367,73 @@ describe("a component's citations by place (CIc)", () => {
       { block: 't1', n: 1, entry: PENHALLOW },
       { block: 'c1', n: 1, entry: MARLOW },
     ]);
+  });
+});
+
+/** A cross-reference to an entry (STR-069; the CI plan, CId). */
+const refer = (name: string, entry: string) => ({
+  type: 'crossReference',
+  id: name,
+  target: { kind: 'entry', entry },
+  display: 'number',
+});
+
+describe('a cross-reference to an entry (CId)', () => {
+  it("STR-069 prints a cross-reference to an entry as the entry's in-text form, linked to it in the bibliography, numbered with the citations", () => {
+    const document = published(
+      publish(
+        component(
+          paragraph('p1', text('Sediment moves '), cite(MARLOW)),
+          paragraph('p2', text('See '), refer('x1', PENHALLOW), text(' and '), refer('x2', MARLOW)),
+        ),
+      ),
+    );
+    expect(citationsOf(document)).toEqual([
+      { text: '(1)', link: anchor(MARLOW) },
+      { text: '(2)', link: anchor(PENHALLOW) },
+      { text: '(1)', link: anchor(MARLOW) },
+    ]);
+    expect(document.back.bibliography?.entries.map((each) => each.anchor)).toEqual([
+      anchor(MARLOW),
+      anchor(PENHALLOW),
+    ]);
+  });
+
+  it("STR-069 fails a cross-reference to an entry that cannot be resolved as a citation is, by its place among the block's citations", () => {
+    const content = component(paragraph('p1', cite(MARLOW), refer('x1', UNCITED)));
+    const assembled = publish(content, {
+      citations: { entries: new Map([[NODE, new Map([[MARLOW, ENTRIES[MARLOW]!]])]]) },
+    });
+    expect(assembled).toEqual({
+      ok: false,
+      failures: [
+        {
+          stage: 'compose',
+          code: 'citation_unresolved',
+          node: NODE,
+          block: 'p1',
+          detail: `2: ${UNCITED}`,
+        },
+      ],
+    });
+    expect(citationPlaces(content)).toEqual([
+      { block: 'p1', n: 1, entry: MARLOW },
+      { block: 'p1', n: 2, entry: UNCITED },
+    ]);
+  });
+
+  it('STR-069 refuses a cross-reference to an entry in a title, or showing anything but its in-text form', () => {
+    expect(() =>
+      component(paragraph('p1', { ...refer('x1', MARLOW), display: 'title' })),
+    ).toThrow();
+    expect(() =>
+      parseContentDocument({
+        schemaVersion: 1,
+        title: [text('Sources '), refer('x1', MARLOW)],
+        language: 'en-GB',
+        direction: 'ltr',
+        content: [],
+      }),
+    ).toThrow();
   });
 });

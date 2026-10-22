@@ -62,9 +62,11 @@ export const inlineEquationNodeSchema = z.strictObject({
  *   It belongs to one document's outline, so a component's resolves in that document and fails by
  *   name in any other the component is placed in (STR-029).
  *
+ * - `entry`: a bibliography entry of the component's space, by its identity (STR-069; the CI plan,
+ *   CId), printed as its style's in-text form and linked to the entry in the bibliography.
+ *
  * Which kind may stand where is `checkInlineContent`'s rule, not this schema's, because the schema
- * does not know whether it is parsing a component or a title. A bibliography entry (STR-026) is not
- * here until LIB says what an entry's identity is; adding a kind changes nothing stored.
+ * does not know whether it is parsing a component or a title.
  */
 export const crossReferenceTargetSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('block'), block: z.string().min(1) }),
@@ -74,6 +76,7 @@ export const crossReferenceTargetSchema = z.discriminatedUnion('kind', [
     block: z.string().min(1),
   }),
   z.strictObject({ kind: z.literal('node'), node: nodeIdentifierSchema }),
+  z.strictObject({ kind: z.literal('entry'), entry: z.string().min(1) }),
 ]);
 
 /** The forms a reference to a page may fall back to where the output has no pages (STR-055). */

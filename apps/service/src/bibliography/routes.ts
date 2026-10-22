@@ -11,6 +11,7 @@ import type {
   ImportEntriesBody,
   SpaceParams,
 } from '@alloy-works/api-contract';
+import { IMPORT_RECORDS_MOST } from '@alloy-works/api-contract';
 import {
   archiveEntry,
   createEntry,
@@ -152,6 +153,13 @@ export function bibliographyHandlers() {
       const records = readRecords(body.format, body.text);
       if (records === undefined) {
         throw refused(400, 'import.unreadable', 'The text holds no record in that format.');
+      }
+      if (records.length > IMPORT_RECORDS_MOST) {
+        throw refused(
+          400,
+          'import.too_many',
+          `The text holds ${records.length} records; import at most ${IMPORT_RECORDS_MOST} at a time.`,
+        );
       }
       const done = await importEntries(trx, { author: principalId, spaceId: space, records });
       if (!done) throw notFound();

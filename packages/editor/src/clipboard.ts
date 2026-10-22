@@ -26,6 +26,7 @@ const crossReferenceNode = editorSchema.nodes.crossReference!;
 const equationNode = editorSchema.nodes.equation!;
 const bindingNode = editorSchema.nodes.binding!;
 const variableNode = editorSchema.nodes.variable!;
+const citationNode = editorSchema.nodes.citation!;
 const figureNode = editorSchema.nodes.figure!;
 const boundTableNode = editorSchema.nodes.boundTable!;
 
@@ -172,7 +173,8 @@ export function pasteInto(
           child.type !== crossReferenceNode &&
           child.type !== equationNode &&
           child.type !== bindingNode &&
-          child.type !== variableNode
+          child.type !== variableNode &&
+          child.type !== citationNode
         ) {
           refused.add(child.type.name);
         }

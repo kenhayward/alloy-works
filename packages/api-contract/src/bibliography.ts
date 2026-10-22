@@ -1,6 +1,6 @@
 import { cslItemSchema, entrySchema } from '@alloy-works/domain';
 import { z } from 'zod';
-import { SpaceParams, VersionSummary } from './components.js';
+import { ComponentParams, SpaceParams, VersionSummary } from './components.js';
 import type { RouteContract } from './contract.js';
 import { idsFilter, listingQuery, listingTotal, nextCursor } from './listing.js';
 import { ErrorBody, LowercaseUuid, SPACE_ARCHIVED } from './schemas.js';
@@ -94,6 +94,8 @@ export const INTERCHANGE_FORMATS = ['csl-json', 'bibtex', 'ris'] as const;
 
 /** The most an import's text may be, in characters. */
 export const IMPORT_MOST = 2_000_000;
+/** The most records one import takes, each matched and written in one transaction. */
+export const IMPORT_RECORDS_MOST = 500;
 
 export const ImportEntriesBody = z.strictObject({
   format: z.enum(INTERCHANGE_FORMATS),
@@ -123,6 +125,32 @@ export const ExportAnswer = z.object({
   format: z.enum(INTERCHANGE_FORMATS),
   text: z.string().describe('The entries in the format, each named by its key'),
 });
+
+/** The citations a component's editor shows, in order (the CI plan, CId). */
+export const CitationPreviewBody = z.strictObject({
+  citations: z
+    .array(
+      z.strictObject({
+        entry: z.string().min(1).max(200),
+        locator: z.string().min(1).max(200).optional(),
+      }),
+    )
+    .max(500)
+    .describe('Each citation in the order the component holds them'),
+  document: LowercaseUuid.optional().describe(
+    "The document it is edited in, whose theme's style renders them; absent, the environment's theme's",
+  ),
+});
+export type CitationPreviewBody = z.infer<typeof CitationPreviewBody>;
+
+export const CitationPreview = z.object({
+  forms: z
+    .array(z.string().nullable())
+    .describe(
+      "Each citation's in-text form, in order; null where it names no entry of the component's space the caller may read, or the theme names no style",
+    ),
+});
+export type CitationPreview = z.infer<typeof CitationPreview>;
 
 export const ArchivalAnswer = z.object({
   archived: z.boolean().describe('Whether it is archived now'),
@@ -216,7 +244,8 @@ export const bibliographyRoutes = {
     responses: {
       200: { description: 'What became of each record, in order', schema: ImportAnswer },
       400: {
-        description: '`import_unreadable`: the text does not read as the format',
+        description:
+          '`import_unreadable`: the text does not read as the format. `import_too_many`: it holds more than 500 records',
         schema: ErrorBody,
       },
       401: unauthenticated,
@@ -332,6 +361,29 @@ export const bibliographyRoutes = {
       404: notFound,
       409: {
         description: "`entry_cited`: a component's latest version, or a baseline's, cites it",
+        schema: ErrorBody,
+      },
+    },
+  },
+  previewComponentCitations: {
+    operationId: 'previewComponentCitations',
+    method: 'POST',
+    path: '/v1/components/{id}/citations/preview',
+    summary: "A component's citations in their in-text form, as its editor shows them",
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
+    params: ComponentParams,
+    body: CitationPreviewBody,
+    responses: {
+      200: { description: 'Each citation in its in-text form, in order', schema: CitationPreview },
+      401: unauthenticated,
+      403: {
+        description: 'Never answered: a component the caller may not read is not found',
+        schema: ErrorBody,
+      },
+      404: {
+        description:
+          'No such component in this environment, or none the caller may read; or a document the caller may not read',
         schema: ErrorBody,
       },
     },

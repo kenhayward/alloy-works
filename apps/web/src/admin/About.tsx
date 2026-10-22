@@ -18,6 +18,13 @@ export function About({ about }: { about: React.ReactNode }) {
           Citations are formatted by citeproc-js, Copyright (c) 2009-2019 Frank Bennett, under the
           Common Public Attribution License 1.0.
         </p>
+        <p>
+          Citation styles and locales from the{' '}
+          <a href="https://citationstyles.org" target="_blank" rel="noreferrer">
+            Citation Style Language project
+          </a>
+          , under the Creative Commons Attribution-ShareAlike 3.0 licence.
+        </p>
       </section>
       {notes !== null && (
         <section aria-labelledby="release-notes" className={styles['notes']}>

@@ -4,7 +4,7 @@ import { describe, expect, it, vi, type TaskMeta } from 'vitest';
 import { SERVICE } from './testing/addresses.js';
 import { api, edit, makeDocument, nodesOf, type Client } from './testing/api.js';
 import { checkAxe, type Arrival, type Sign } from './testing/axe.js';
-import { makeComponent, uploadImage } from './testing/component.js';
+import { generalSpace, makeComponent, uploadImage } from './testing/component.js';
 import { everyBlock } from './testing/every-block.js';
 import { allowPageNoise, withPage } from './testing/page.js';
 
@@ -50,6 +50,28 @@ function surfaceOf(page: Page): Locator {
 }
 
 /** Escape pressed until no dialog stands over the page. */
+/** A bibliography entry in General, made despite any match a run before left (the CI plan, CId). */
+async function bibliographyEntry(client: Client): Promise<{ id: string; key: string }> {
+  const space = await generalSpace(client);
+  const made = await client.POST('/v1/spaces/{space}/bibliography-entries', {
+    params: { path: { space } },
+    body: {
+      entry: {
+        csl: {
+          type: 'book',
+          title: 'Sediment and its movement',
+          author: [{ family: 'Marlow', given: 'Ada' }],
+          issued: { 'date-parts': [[2020]] },
+          publisher: 'Harbour Press',
+        },
+      },
+      despiteMatches: true,
+    } as never,
+  });
+  if (!made.data?.entry) throw new Error(`an entry answered ${made.response.status}`);
+  return { id: made.data.entry.id, key: made.data.entry.entry.key };
+}
+
 async function closeDialog(page: Page): Promise<void> {
   await page.keyboard.press('Escape');
   await page.getByRole('dialog').waitFor({ state: 'detached' });
@@ -567,11 +589,52 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
     });
   });
 
+  it("passes axe on the bibliography, an entry's page and its edit form (the CI plan, CId)", async ({
+    task,
+  }) => {
+    const entry = await bibliographyEntry(api());
+    await withPage(async (page) => {
+      const check = async (state: string, arrival: Arrival) => {
+        await arrive(arrival);
+        await checkAxe(page, state, task.meta, arrival);
+      };
+      await page.goto(`${SERVICE}/#/bibliography`);
+      await check('the bibliography', {
+        shows: [
+          page.getByRole('heading', { name: 'Bibliography', level: 1 }),
+          page.getByRole('link', { name: entry.key, exact: true }),
+        ],
+      });
+      await page.getByRole('button', { name: 'New entry' }).click();
+      await check('a new bibliography entry', {
+        shows: page.getByRole('form', { name: 'New entry' }),
+      });
+      await page.getByRole('button', { name: 'Import' }).click();
+      await check('importing bibliography records', {
+        shows: page.getByRole('form', { name: 'Import' }),
+        hides: [page.getByRole('form', { name: 'New entry' })],
+      });
+      await page.getByRole('link', { name: entry.key, exact: true }).click();
+      await check("a bibliography entry's page", {
+        shows: [
+          page.getByRole('heading', { name: entry.key, level: 1 }),
+          page.getByRole('button', { name: 'Export' }),
+        ],
+      });
+      await page.getByRole('button', { name: 'Edit', exact: true }).click();
+      await check('a bibliography entry being edited', {
+        shows: page.getByRole('form', { name: 'Edit entry' }),
+      });
+    });
+  });
+
   it('CNT-176 the component editor passes axe with every block and mark, each dialog and each panel', async ({
     task,
   }) => {
     const client = api();
     const made = await everyBlockComponent(client, 'Every block', { withFields: true });
+    // An entry for the Cite dialog to offer (CId).
+    await bibliographyEntry(client);
     const meta: TaskMeta = task.meta;
 
     await withPage(async (page) => {
@@ -710,6 +773,16 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       await page.keyboard.press('ControlOrMeta+Alt+x');
       await check('the Reference dialog', {
         shows: page.getByRole('dialog', { name: 'Reference' }).getByRole('radio').first(),
+      });
+      await closeDialog(page);
+
+      // The Cite dialog, its entries found (CId).
+      await last.click();
+      await page.keyboard.press('End');
+      await page.keyboard.press('ControlOrMeta+Shift+2');
+      const cite = page.getByRole('dialog', { name: 'Cite' });
+      await check('the Cite dialog', {
+        shows: [cite.getByRole('searchbox'), cite.getByRole('radio').first()],
       });
       await closeDialog(page);
 

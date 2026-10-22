@@ -261,6 +261,7 @@ describe('migration 0047, over an environment made before it', () => {
       '0145_bibliography_entries',
       '0146_citation_styles',
       '0147_publication_citations',
+      '0148_default_layout_bibliography',
     ]);
     // Every row still there, and what 0048 seeds beside them: the value catalogue, its 0.1 and the
     // default theme's 0.6 (B1); and what 0055 seeds: the table catalogue's fifth version, the default
@@ -270,7 +271,8 @@ describe('migration 0047, over an environment made before it', () => {
       // And 0124's default prompt library at its 0.1 (the G4 plan, G4-G); and 0146's three citation
       // styles, the citation catalogue's second version and the theme's 0.9 (the CI plan, CI-D).
       artifact: counts.artifact! + 5,
-      artifact_version: counts.artifact_version! + 14,
+      // And 0148's default layout 0.10 (the CI plan, CId).
+      artifact_version: counts.artifact_version! + 15,
     });
 
     fresh = await createTenant(db.adminUrl, db.migratorUrl, {

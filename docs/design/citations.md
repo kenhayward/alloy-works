@@ -15,8 +15,8 @@ entry by its identity (`citation { entry, locator? }`, in the content model sinc
 cross-reference may target one. A **citation style** is a CSL file, a tenant's managed artifact; CSE,
 Vancouver and Harvard are seeded, and a theme names the one its documents use. At publish, citeproc-js
 renders each citation's in-text form and the bibliography of what is cited, in the style's order and
-with its disambiguation, the same for the editor, PDF and Word; each citation links to its entry in
-the bibliography. A citation whose entry cannot be read, or an entry missing a field its style needs,
+with its disambiguation, the same for PDF and Word; each citation links to its entry in the
+bibliography. The editor's form is indicative (see "Built in CId"). A citation whose entry cannot be read, or an entry missing a field its style needs,
 fails the publish, naming both.
 
 ## Requirements owned
@@ -123,3 +123,34 @@ the publisher's, as with every other record.
   none), so 0022's and 0073's checks hold them. A publication records its theme's style version. A
   baseline's publish by someone who may not read a pinned entry fails each citation of it by name;
   the pin is recorded and never read.
+
+## Built in CId
+
+- **Editable.** The editor's `citation` node holds `entry` and `locator` (null where none), mapped
+  both ways; a component holding citations opens for editing. **Cite** (Ctrl or Cmd, Shift and 2)
+  opens a picker over the space's entries, read through the list API and found by key, author or
+  title in the browser.
+- **Drawn by the service.** `POST /v1/components/{id}/citations/preview` renders a component's
+  citations, in order, in the style of the document named (one placing the component, else 404), else
+  the environment's theme's; null for one naming no entry of the space the caller may read, drawn
+  _Citation unavailable_, as is every citation of a failed preview. The editor asks 500 at a time.
+- **Indicative in the editor.** The preview renders one component alone, so its form is not the
+  published one: numbering and disambiguation (`2020a`) are the document's, set at publish over every
+  citation it places. The Reference dialog says so.
+- **The save check** (CI-H) runs on a save, a suggestion and an assistant's proposal: an entry the
+  opened version did not cite must be one of the space the author may read, else
+  `citation_unreadable`. A component's restore is checked as a save is, against the latest version.
+- **Archiving and citing serialise** on the space's bibliography lock, taken by `archiveEntry` and by
+  `indexReferences` for every version citing an entry, so an archive never misses a citation
+  committing beside it (LIB-006).
+- **A style's size is bounded.** citeproc-js expands every macro call in place, so `checkStyle`
+  refuses a style expanding past 50,000 elements, or a macro calling itself, `style_invalid`; and
+  `renderCitations` refuses the same before every render, so a style stored earlier cannot hang a
+  preview or the worker.
+- **An import** takes at most 500 records, else `import_too_many` before anything is written.
+- **An `entry` cross-reference** (STR-069) prints the entry's in-text form, never its key (the key is
+  the author's name for it, not the reader's): publishing renders it as a citation of the entry, so it
+  is numbered, linked to `e-<entry>` and failed `citation_unresolved` as a citation is, counted among
+  its block's citations. Its one `display` is `number`.
+- **The default layout's 0.10** (migration 0148) places the bibliography, titled _References_, on
+  0.9 alone, as 0056 guarded; a request, publication or baseline made under 0.9 keeps it.

@@ -14,6 +14,7 @@ import { equationView } from './equationView.js';
 import { figureView } from './figureView.js';
 import { bindingsShown, type BindingShown } from './bindings.js';
 import { bindingContextOf, bindingView } from './bindingView.js';
+import { citationView } from './citations.js';
 import { holdBoundTableColumn } from './boundTableFocus.js';
 import { boundTableBodyView } from './boundTableView.js';
 import { footnoteView } from './footnoteView.js';
@@ -114,6 +115,9 @@ export function mountEditor(place: HTMLElement, options: MountOptions): EditorVi
       // A binding, drawn with what its decoration carries (the B1 plan, B1-D).
       binding: (node, owner, _getPos, decorations) =>
         bindingView(node, owner.dom.ownerDocument, decorations),
+      // A citation, drawn with the form its decoration carries (CId).
+      citation: (node, owner, _getPos, decorations) =>
+        citationView(node, owner.dom.ownerDocument, decorations),
       equationBlock: (node, owner) => equationView(node, owner.dom.ownerDocument),
       // A table, its column group set from the widths its decoration carries (TG3).
       table: (node, owner, _getPos, decorations) =>

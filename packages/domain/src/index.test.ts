@@ -743,6 +743,8 @@ describe('the domain package', () => {
         'SEVENTH_DEFAULT_LAYOUT',
         // TB3: the default layout's 0.8 frozen as 0.9 adds `words.note` (TB3-F).
         'EIGHTH_DEFAULT_LAYOUT',
+        // CId: the default layout's 0.9 frozen as 0.10 places a bibliography.
+        'NINTH_DEFAULT_LAYOUT',
         'SIXTH_DEFAULT_CATALOGUES',
         'SIXTH_DEFAULT_CATALOGUES_BY_VERSION',
         'SIXTH_DEFAULT_CATALOGUE_VERSIONS',

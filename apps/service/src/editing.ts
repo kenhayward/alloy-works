@@ -46,6 +46,7 @@ import {
 } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import { callerOf, notFound, type Authorised } from './access.js';
+import { mayCite } from './bibliography/citing.js';
 import { lockView, shownVersionView, versionView } from './components.js';
 import { definitionReader } from './data/bindings.js';
 import type { AppError } from './errors.js';
@@ -351,6 +352,7 @@ export function editingHandlers() {
       const body = request.body as IterationBody;
       const content = storableContent(body.content);
       await mayNameColumns(trx, request, content, body.openedFrom);
+      await mayCite(trx, request, content, body.openedFrom);
       const answer = await saveIteration(trx, {
         artifactId: params.id,
         principal: principalId,

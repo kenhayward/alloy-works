@@ -15,6 +15,7 @@ import {
   findEntryMatches,
   importEntries,
   listEntries,
+  readableEntries,
   readEntry,
   recordEntryVersion,
   type StoredEntry,
@@ -79,8 +80,13 @@ describe('a bibliography entry', () => {
       return answer.entry;
     });
 
-  /** A component in General citing the entry, at its second version. */
-  const citing = (entry: string, title: string) =>
+  /** A component in General citing the entry, at its second version; `before` runs ere it commits. */
+  const citing = (
+    entry: string,
+    title: string,
+    inline: unknown = { type: 'citation', entry, locator: 'p. 3' },
+    before: () => Promise<void> = async () => {},
+  ) =>
     tenant(async (trx) => {
       const first = await createComponent(trx, {
         spaceId: general,
@@ -99,10 +105,7 @@ describe('a bibliography entry', () => {
             type: 'paragraph',
             id: 'p1',
             style: 'body',
-            content: [
-              { type: 'text', value: 'As shown ', marks: [] },
-              { type: 'citation', entry, locator: 'p. 3' },
-            ],
+            content: [{ type: 'text', value: 'As shown ', marks: [] }, inline],
           },
         ] as ContentDocument['content'],
       };
@@ -113,6 +116,7 @@ describe('a bibliography entry', () => {
         substance: { ...substance, content },
       });
       if (next.answer !== 'recorded') throw new Error(next.answer);
+      await before();
       return next.version;
     });
 
@@ -427,6 +431,90 @@ describe('a bibliography entry', () => {
     );
     expect(keys).not.toContain('echidnas');
     expect(keys).toContain('wombat');
+  });
+
+  it('archives an entry only after a save citing it at the same time commits, and then refuses', async () => {
+    const entry = await made({
+      type: 'book',
+      title: 'Bandicoot Burrows',
+      ISBN: '978-0-14-303943-3',
+    });
+    let commit = () => {};
+    let cut = () => {};
+    const gate = new Promise<void>((resolve) => (commit = resolve));
+    const recorded = new Promise<void>((resolve) => (cut = resolve));
+    const saving = citing(entry.id, 'The bandicoot section', undefined, async () => {
+      cut();
+      await gate;
+    });
+    await recorded;
+    let settled = false;
+    const archiving = tenant((trx) => archiveEntry(trx, entry.id, ada, 'archived')).then(
+      (answer) => ((settled = true), answer),
+    );
+    // Without the space's lock the archive would see no citation yet, and archive it.
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    expect(settled).toBe(false);
+    commit();
+    await saving;
+    expect(await archiving).toBe('cited');
+  });
+
+  it('STR-069 lists a cross-reference to an entry as a use, and keeps the entry from archiving while it stands', async () => {
+    const entry = await made({ type: 'book', title: 'Quoll Country', ISBN: '978-1-4028-9462-6' });
+    const refers = await citing(entry.id, 'The quoll section', {
+      type: 'crossReference',
+      id: 'x1',
+      target: { kind: 'entry', entry: entry.id },
+      display: 'number',
+    });
+    expect((await tenant((trx) => entryUses(trx, ada, entry.id))).components.named).toEqual([
+      { id: refers.artifactId, title: 'The quoll section' },
+    ]);
+    expect(await tenant((trx) => archiveEntry(trx, entry.id, ada, 'archived'))).toBe('cited');
+  });
+
+  it("answers the entries of one space a reader may read, by id, and nothing of another space's or one withheld", async () => {
+    const own = await made(
+      { type: 'book', title: 'Numbat Notes', ISBN: '978-0-14-044913-6' },
+      quality,
+    );
+    const elsewhere = await made({
+      type: 'book',
+      title: 'Echidna Evenings',
+      ISBN: '978-0-394-80001-1',
+    });
+    const asked = [own.id, elsewhere.id, '00000000-0000-4000-8000-0000000000aa', 'ada-1843'];
+    const graces = await tenant((trx) => readableEntries(trx, grace, quality, asked));
+    expect([...graces.keys()]).toEqual([own.id]);
+    expect(graces.get(own.id)?.title).toBe('Numbat Notes');
+    // Ada reads both spaces, and is answered only the space asked about.
+    const adas = await tenant((trx) => readableEntries(trx, ada, elsewhere.space.id, asked));
+    expect([...adas.keys()]).toEqual([elsewhere.id]);
+  });
+
+  it('exports no entry since deleted, which the database refuses an entry anyway', async () => {
+    const kept = await made(
+      { type: 'book', title: 'Quoll Quarters', ISBN: '978-0-14-118776-1' },
+      quality,
+    );
+    // Only a component or a document is deleted (0085): an entry's tombstone is refused, so the
+    // export's guard, as `readableEntries`'s, holds against a later change to that.
+    await expect(
+      tenant((trx) =>
+        trx
+          .insertInto('artifact_deletion')
+          .values({
+            artifact_id: kept.id,
+            kind: 'bibliographyEntry',
+            act: 'deleted',
+            by: ada,
+          } as never)
+          .execute(),
+      ),
+    ).rejects.toThrow('artifact_deletion_kind_check');
+    const exported = await tenant((trx) => entriesForExport(trx, grace, quality, [kept.id]));
+    expect(exported?.map((each) => each.csl.title)).toEqual(['Quoll Quarters']);
   });
 
   /** The component's next version, citing nothing. */

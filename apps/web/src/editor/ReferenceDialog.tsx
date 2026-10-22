@@ -157,7 +157,8 @@ export function ReferenceDialog({
                   ))}
                 </div>
               </fieldset>
-              {option !== undefined && (
+              {/* An entry shows its style's in-text form alone (STR-069), so no form is asked. */}
+              {option !== undefined && option.target.kind !== 'entry' && (
                 <fieldset className={own['group']}>
                   <legend>Show as</legend>
                   <div className={own['forms']}>

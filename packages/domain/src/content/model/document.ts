@@ -356,7 +356,13 @@ export function checkInlineContent(
     }
     if (inline.type === 'crossReference') {
       claim(inline.id, claimed.ids);
-      if (inline.target.kind !== 'node') refuseUnnormalised(inline.target.block, 'Target');
+      if (inline.target.kind === 'block' || inline.target.kind === 'component') {
+        refuseUnnormalised(inline.target.block, 'Target');
+      }
+      // An entry prints its style's in-text form and nothing else (STR-069; the CI plan, CId).
+      if (inline.target.kind === 'entry' && inline.display !== 'number') {
+        throw new Error(`Cross-reference ${inline.id} to an entry shows its in-text form alone`);
+      }
       if (home === 'title' && inline.target.kind !== 'node') {
         throw new Error(`Cross-reference ${inline.id} in a title targets what a title cannot name`);
       }

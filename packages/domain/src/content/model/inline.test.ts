@@ -99,7 +99,7 @@ describe('the inline vocabulary', () => {
     expect(() => alternativeSchema.parse({})).toThrow();
   });
 
-  it('names what a cross-reference points at as one of three kinds, and never as a bare string', () => {
+  it('STR-069 names what a cross-reference points at as one of four kinds, an entry among them, and never as a bare string', () => {
     const reference = (target: unknown) => ({
       type: 'crossReference',
       id: 'x1',
@@ -112,6 +112,7 @@ describe('the inline vocabulary', () => {
       { kind: 'block', block: 'b7' },
       { kind: 'component', component, block: 'b7' },
       { kind: 'node', node },
+      { kind: 'entry', entry: 'bib-1' },
     ]) {
       expect(inlineNodeSchema.parse(reference(target))).toMatchObject({ target });
     }
@@ -119,11 +120,11 @@ describe('the inline vocabulary', () => {
     // first and says nothing when it is wrong.
     expect(() => inlineNodeSchema.parse(reference('b7'))).toThrow();
     // Closed: no occurrence on a block of this component, which the component cannot know, and no
-    // fourth kind.
+    // fifth kind.
     expect(() =>
       inlineNodeSchema.parse(reference({ kind: 'block', block: 'b7', occurrence: node })),
     ).toThrow();
-    expect(() => inlineNodeSchema.parse(reference({ kind: 'entry', entry: 'bib-1' }))).toThrow();
+    expect(() => inlineNodeSchema.parse(reference({ kind: 'page', page: '4' }))).toThrow();
     // Each identity spelled as the product spells it.
     expect(() =>
       inlineNodeSchema.parse(

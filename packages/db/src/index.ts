@@ -721,6 +721,7 @@ export {
   findEntryMatches,
   importEntries,
   listEntries,
+  readableEntries,
   readEntry,
   recordEntryVersion,
   type EntryAnswer,

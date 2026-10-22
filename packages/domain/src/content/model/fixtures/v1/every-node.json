@@ -117,6 +117,12 @@
           "display": "number"
         },
         { "type": "citation", "entry": "bib-1", "locator": "p. 12" },
+        {
+          "type": "crossReference",
+          "id": "x3",
+          "target": { "kind": "entry", "entry": "bib-1" },
+          "display": "number"
+        },
         { "type": "variable", "name": "productName" },
         {
           "type": "binding",

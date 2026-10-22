@@ -403,6 +403,7 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   createCitationStyle: writes('content.version_cut'),
   // Renders the sample entries, keeping nothing.
   previewCitationStyle: read,
+  previewComponentCitations: read,
   getCitationStyle: read,
   recordCitationStyleVersion: writes('content.version_cut'),
   listPromptLibraries: read,

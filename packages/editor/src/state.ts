@@ -31,6 +31,12 @@ import { imagesUnmarked, marksPastImages } from './images.js';
 import { commandKeymap, spansOf } from './marks.js';
 import type { BindingContext } from './bindings.js';
 import { bindingContextOf, bindingDecorations, bindingsPlugin } from './bindingView.js';
+import {
+  citationDecorations,
+  citationFormsOf,
+  citationsPlugin,
+  type CitationForms,
+} from './citations.js';
 import { conditionAxesPlugin, conditionedBlocksPlugin } from './conditions.js';
 import { boundTableFocusDecorations, boundTableFocusPlugin } from './boundTableFocus.js';
 import type { ReferenceContext } from './referenceText.js';
@@ -388,6 +394,8 @@ export interface EditorStateOptions {
    * host making a fresh state carries the one it had across with `bindingContextOf`.
    */
   readonly bindingContext?: BindingContext | null;
+  /** Each citation's in-text form as the service rendered it (CId), carried across as the binding context is. */
+  readonly citationForms?: CitationForms | null;
   /** The axes the environment declares, by key, carried across as the binding context is. */
   readonly conditionAxes?: readonly string[];
 }
@@ -575,6 +583,8 @@ export function createEditorState(options: EditorStateOptions): EditorState {
       referencesPlugin(options.referenceContext ?? null),
       // The host's binding context (B1-D), changed and held as the reference context is.
       bindingsPlugin(options.bindingContext ?? null),
+      // The host's citation forms (CId), held as the reference context is.
+      citationsPlugin(options.citationForms ?? null),
       // The environment's declared axes, which a paste keeps conditions on (the R6 plan, R6-H).
       conditionAxesPlugin(options.conditionAxes ?? []),
       // A block its conditions keep for some readers, drawn as such (REU-026; the R12 plan).
@@ -600,6 +610,7 @@ export function createEditorState(options: EditorStateOptions): EditorState {
               ...unresolvedOf(state).find(),
               ...referenceDecorations(state.doc, referenceContextOf(state)).find(),
               ...bindingDecorations(state.doc, bindingContextOf(state)).find(),
+              ...citationDecorations(state.doc, citationFormsOf(state)).find(),
               // The bound table the cursor stands in, outlined, and its focused column (ADR-0051).
               ...boundTableFocusDecorations(state).find(),
               // Each table's columns as wide as what they hold, where its style says so (TG3).

@@ -7,7 +7,7 @@ import { Empty } from '../states/Empty.js';
 import { Notice } from '../states/Notice.js';
 import styles from '../structure/DocumentList.module.css';
 import { entryLink } from './links.js';
-import { authorsShort, FOUND_BY, TYPES, yearOf, type Csl } from './shape.js';
+import { authorsShort, authorsTyped, FOUND_BY, TYPES, yearOf, type Csl } from './shape.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -47,20 +47,6 @@ const isSummary = (value: unknown): value is Summary =>
   typeof value.id === 'string' &&
   typeof value.key === 'string' &&
   isRecord(value.csl);
-
-/** Authors typed one a line, family name first: `Smith, Ada`, or a body's name whole. */
-function authorsTyped(text: string): Csl['author'] {
-  return text
-    .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => line !== '')
-    .map((line) => {
-      const comma = line.indexOf(',');
-      if (comma < 0) return { family: line };
-      const given = line.slice(comma + 1).trim();
-      return { family: line.slice(0, comma).trim(), ...(given === '' ? {} : { given }) };
-    });
-}
 
 /** What one record of an import came to, as a sentence. */
 function importedLine(record: Imported): string {

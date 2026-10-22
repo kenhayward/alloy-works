@@ -461,6 +461,7 @@ const operationTags = {
     'getBibliographyEntryUses',
     'archiveBibliographyEntry',
     'unarchiveBibliographyEntry',
+    'previewComponentCitations',
     'listCitationStyles',
     'createCitationStyle',
     'previewCitationStyle',
@@ -961,7 +962,7 @@ const descriptions: Readonly<Record<string, string>> = {
   createBibliographyEntry:
     'Makes a bibliography entry in the space from its CSL-JSON, without an id, and where it was obtained and when last checked. It is first matched against the entries already there: by DOI, PubMed identifier, ISBN or ISSN where it has one, else by its title, year and first author. A match is offered and nothing made, unless the request says to make it despite the match. Its key is made from its first author and year, suffixed a, b and on where the space holds it, and never changes. It needs edit in the space.',
   importBibliographyEntries:
-    'Imports CSL-JSON, BibTeX or RIS text as entries of the space. Each record is matched as making one by hand is: a match is given the fields it lacked, in a new version, and the answer names them; otherwise an entry is made. Fields an entry cannot hold are left out and named. It needs edit in the space.',
+    'Imports CSL-JSON, BibTeX or RIS text as entries of the space. Each record is matched as making one by hand is: a match is given the fields it lacked, in a new version, and the answer names them; otherwise an entry is made. Fields an entry cannot hold are left out and named. At most 500 records are taken at a time. It needs edit in the space.',
   exportBibliographyEntries:
     "Exports the space's entries the caller may read, or those named, as CSL-JSON, BibTeX or RIS, each named by its key.",
   getBibliographyEntry:
@@ -972,6 +973,8 @@ const descriptions: Readonly<Record<string, string>> = {
     'Returns where an entry is cited: the components whose latest version cites it, and the baselines pinning a component version that does. One the caller may not read is said to exist, never named.',
   archiveBibliographyEntry:
     "Archives an entry, leaving it out of the space's listing. Refused while a component's latest version, or a version a baseline pins, cites it. It needs retire on the entry.",
+  previewComponentCitations:
+    "Renders a component's citations, in order, in the in-text form of the citation style its document's theme names, or the environment's theme's where no document is named, as its editor shows them. A citation naming no entry of the component's space the caller may read is answered null. Nothing is kept.",
   listCitationStyles:
     "Lists the environment's citation styles by name: CSE, Vancouver and Harvard, which every environment is given, and any uploaded.",
   createCitationStyle:

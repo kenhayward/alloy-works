@@ -34,3 +34,19 @@ incomplete entry.
 - **citeproc-js's size and speed** in the worker and the service: measured in CIb against the range preview's budget.
 - **CPAL's attribution** is shown in About, which meets its terms (Ken); a reading that asks more is ADR-0067's revisit.
 - **A style a tenant uploads** may render badly: shown in a preview on its page before it is named by a theme.
+
+## Built
+
+CI in four PRs: CIa #756, CIb #758, CIc #760 and the close #761. Departures: the seeded Vancouver is
+NLM citation-sequence and CSE is its name-year form, upstream having renamed both; citeproc-js lives
+behind domain's `citations` subpath, never the renderer's bundle; Word links a citation by a
+hyperlink to its entry's bookmark, a REF field printing the whole entry; the pinned Typst tags a
+citation `Link` and the bibliography `L`, having no `Reference` or `BibEntry`; a cross-reference to an
+entry prints the style's in-text form; the default layout's 0.10 places a bibliography titled
+References. Two automated security reviews and the final review found no leak; they fixed an
+unchecked link scheme, entries read beyond the publisher's or a baseline maker's reach, a style whose
+macros double without bound (refused past 50,000 expanded elements, before every render), an
+unbounded import (500 records), a restore that skipped the citing check, an archive racing a citing
+save, and a title decoding past Unicode. Left, named: the editor's form is indicative, numbering and
+disambiguation the document's at publish; citations in section titles; locators are free text;
+LIB-006, LIB-007 and LIB-047 are honoured for entries but claimed with the library's other records.
