@@ -3,6 +3,24 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.206.0 - 2026-10-22 (PR #761)
+
+Citations (the CI plan).
+
+### Added
+
+- **Bibliography entries.** A space keeps its sources as entries, each with a key made once from its fields. Make one by hand and the same source already there is offered; import CSL-JSON, BibTeX or RIS, merging each match; export them again; see where each is cited.
+- **Citation styles.** Administration lists the citation styles a theme may name: CSE, Vancouver and Harvard are given, and any published CSL style is added by uploading its file, previewed first with invented sources and saying what an entry of each type must hold. The default theme names Harvard. About names the citation processor and its licence.
+- **Citations published.** A publish sets each citation in the theme's citation style and, where the layout declares a bibliography, prints the entries cited after the last section, each citation a link to its entry in the PDF and in Word. A baseline keeps the entry versions it read. A citation whose entry cannot be read, an entry missing a field its style needs, or a style that no longer renders fails the publish, naming it.
+- **Citing in the editor.** **Cite** on the toolbar, or Ctrl or Cmd, Shift and 2, finds an entry of the component's space by key, author or title and places a citation with an optional locator, shown in its in-text form. A citation is changed or deleted like any other part of the text, and one whose entry you may not read shows as Citation unavailable. A component holding citations can now be edited.
+- **A cross-reference to an entry.** The Reference dialog offers the space's bibliography entries; the reference prints the entry's in-text form and links to it in the bibliography.
+- **A bibliography by default.** The default layout places a bibliography titled References after the last section.
+- **Changing and exporting an entry.** An entry's page edits it as a new version and exports it alone as CSL-JSON, BibTeX or RIS.
+- A save or a restore citing an entry you may not read in the component's space is refused.
+- An import takes at most 500 records at a time.
+- A citation style too large to render, or whose macros call themselves, is refused.
+- About names the Citation Style Language project, whose styles and locales are bundled.
+
 ## 0.205.0 - 2026-10-22 (PR #754)
 
 Freshness (the FR plan).

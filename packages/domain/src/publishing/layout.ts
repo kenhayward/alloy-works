@@ -680,12 +680,22 @@ export const EIGHTH_DEFAULT_LAYOUT: Layout = parseLayout({
 });
 
 /**
- * The default layout as it stands, **version 0.9**: 0.8 with the word a table's whole-table note
- * follows (TB3-F), at schema version 7, seeded by migration 0056.
+ * **The default layout's version 0.9, as migration 0056 stored it**: 0.8 with the word a table's
+ * whole-table note follows (TB3-F), at schema version 7. Frozen for 0.2's reason.
  */
-export const defaultLayout: Layout = parseLayout({
+export const NINTH_DEFAULT_LAYOUT: Layout = parseLayout({
   ...EIGHTH_DEFAULT_LAYOUT,
   words: { ...EIGHTH_DEFAULT_LAYOUT.words, note: 'Note:' },
+});
+
+/**
+ * The default layout as it stands, **version 0.10**: 0.9 placing a bibliography titled _References_
+ * (the CI plan, CId), at schema version 7, where the member was added in place, seeded by migration
+ * 0148. A document citing nothing prints none.
+ */
+export const defaultLayout: Layout = parseLayout({
+  ...NINTH_DEFAULT_LAYOUT,
+  matter: { ...NINTH_DEFAULT_LAYOUT.matter, bibliography: { title: 'References' } },
 });
 
 /**

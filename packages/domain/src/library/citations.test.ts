@@ -187,6 +187,15 @@ describe('the citations module', () => {
     ]);
   });
 
+  it('decodes only character references to a code point, keeping any other as written', () => {
+    expect(runsOf('A&#66;&#x43;&#x1F600;').runs).toEqual([
+      { text: `ABC${String.fromCodePoint(0x1f600)}`, marks: [] },
+    ]);
+    for (const literal of ['&#x110000;', '&#xD800;', '&#99999999999;', '&#xDFFF;']) {
+      expect(runsOf(`a${literal}`).runs).toEqual([{ text: `a${literal}`, marks: [] }]);
+    }
+  });
+
   it('links only to an http or https address, never a script an entry names', () => {
     expect(runsOf('<a href="javascript:alert(1)">here</a>').runs).toEqual([
       { text: 'here', marks: [] },
@@ -305,6 +314,46 @@ describe('a style checked as CSL 1.0.2', () => {
 </style>`;
     expect(checkStyle(dependent).map((each) => each.message)).toEqual([
       'The style is a dependent style: upload its parent, http://www.zotero.org/styles/harvard-cite-them-right',
+    ]);
+  });
+});
+
+/** A style whose macros each call the one before twice: `depth` macros expand to 2^depth texts. */
+export function doublingStyle(depth: number, recursive = false): string {
+  const macros = Array.from({ length: depth }, (_, n) =>
+    n === 0
+      ? `<macro name="m0"><text ${recursive ? `macro="m${depth - 1}"` : 'variable="title"'}/></macro>`
+      : `<macro name="m${n}"><group><text macro="m${n - 1}"/><text macro="m${n - 1}"/></group></macro>`,
+  ).join('');
+  return `<style xmlns="http://purl.org/net/xbiblio/csl" class="in-text" version="1.0">
+<info><title>Doubling</title><id>doubling</id><updated>2026-01-01T00:00:00+00:00</updated></info>
+${macros}
+<citation><layout><text macro="m${depth - 1}"/></layout></citation>
+<bibliography><layout><text macro="m${depth - 1}"/></layout></bibliography>
+</style>`;
+}
+
+describe('a style too large to expand', () => {
+  it('passes a style whose macros expand to a modest size', () => {
+    expect(checkStyle(doublingStyle(8))).toEqual([]);
+  });
+
+  it('refuses a style whose macros expand exponentially, before citeproc reads it', () => {
+    const style = doublingStyle(40);
+    const started = performance.now();
+    expect(checkStyle(style).map((each) => each.message)).toEqual([
+      'The style expands to more than 50000 elements once its macros are followed',
+    ]);
+    expect(() =>
+      renderCitations({ style, entries: SAMPLE_ENTRIES, citations: SAMPLE_CITATIONS }),
+    ).toThrow('more than 50000 elements');
+    // Measured at a few milliseconds; the bound only catches citeproc having read it.
+    expect(performance.now() - started).toBeLessThan(2000);
+  });
+
+  it('refuses a macro that calls itself, however indirectly', () => {
+    expect(checkStyle(doublingStyle(3, true)).map((each) => each.message)).toEqual([
+      "The style's macro m2 calls itself",
     ]);
   });
 });

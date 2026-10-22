@@ -43,6 +43,8 @@ const PATHS: Record<string, readonly string[]> = {
     'M9.5 2.5h4v4h-4z',
     'M3.5 7.8c0-2 1.4-3.3 3.8-3.3M5.9 3.1l1.4 1.4-1.4 1.4',
   ],
+  // A numbered citation in its brackets, [1], as a numeric style prints one (CId).
+  Cite: ['M5.5 3H3.5v10h2M10.5 3h2v10h-2', 'M7 5.4 8.3 4.4v7.2'],
   // A value standing in a line of text, drawn from a cylinder: a value bound to a source (B2).
   Value: [
     'M2 13h12',

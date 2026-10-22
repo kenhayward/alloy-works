@@ -85,6 +85,7 @@ const LABELS = [
   'Table',
   'Footnote',
   'Reference',
+  'Cite',
   'Value',
   'Variable',
   'Condition',

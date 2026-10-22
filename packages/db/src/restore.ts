@@ -60,7 +60,9 @@ export interface Restoration {
 
 /** The save's content checks, as a component's restore answers them (the RS final review). */
 export type ContentRefusal =
-  { readonly answer: 'content.invalid' } | { readonly answer: 'definition.unreadable' };
+  | { readonly answer: 'content.invalid' }
+  | { readonly answer: 'definition.unreadable' }
+  | { readonly answer: 'citation.unreadable' };
 
 /** A value a restore changes, by field: absent on a side that holds none. */
 export interface RestoredValue {

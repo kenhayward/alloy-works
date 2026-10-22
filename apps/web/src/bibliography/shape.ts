@@ -61,3 +61,27 @@ export const TYPES: readonly { readonly value: string; readonly label: string }[
   { value: 'standard', label: 'Standard' },
   { value: 'document', label: 'Other document' },
 ];
+
+/** Authors typed one a line, family name first: `Smith, Ada`, or a body's name whole. */
+export function authorsTyped(text: string): Csl['author'] {
+  return text
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line !== '')
+    .map((line) => {
+      const comma = line.indexOf(',');
+      if (comma < 0) return { family: line };
+      const given = line.slice(comma + 1).trim();
+      return { family: line.slice(0, comma).trim(), ...(given === '' ? {} : { given }) };
+    });
+}
+
+/** The authors as the edit form shows them: one a line, family name first, as they are typed. */
+export const authorsLines = (csl: Csl) =>
+  (csl.author ?? [])
+    .map(
+      (each) =>
+        each.literal ??
+        (each.given === undefined ? (each.family ?? '') : `${each.family ?? ''}, ${each.given}`),
+    )
+    .join('\n');

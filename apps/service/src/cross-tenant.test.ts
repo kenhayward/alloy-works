@@ -375,6 +375,7 @@ const OTHER_TENANT_IDS: Readonly<
   listComponentApprovals: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   listDocumentApprovals: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   readComponentEffective: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
+  previewComponentCitations: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   divergeComponent: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   listComponentLines: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   compareComponentLine: async (tenant, db) => ({
@@ -616,6 +617,7 @@ const VALID_INPUT: Readonly<
   createPromptLibrary: { payload: { library: { schemaVersion: 1, name: 'Probe', prompts: [] } } },
   createCitationStyle: { payload: { style: aStyle } },
   previewCitationStyle: { payload: { csl: aStyle.csl } },
+  previewComponentCitations: { payload: { citations: [] } },
   recordCitationStyleVersion: { payload: { openedFrom: SESSION, style: aStyle } },
   recordPromptLibraryVersion: {
     payload: { openedFrom: SESSION, library: { schemaVersion: 1, name: 'Probe', prompts: [] } },

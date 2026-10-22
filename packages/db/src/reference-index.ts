@@ -1,5 +1,6 @@
 import { referencesIn } from '@alloy-works/domain';
 import { sql } from 'kysely';
+import { lockBibliography } from './bibliography-lock.js';
 import type { TenantTransaction } from './tables.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -64,13 +65,20 @@ export async function indexReferences(
       ),
     ),
   ];
-  const kindOf = new Map(
+  const targets =
     named.length === 0
       ? []
-      : (
-          await trx.selectFrom('artifact').select(['id', 'kind']).where('id', 'in', named).execute()
-        ).map((row) => [row.id, row.kind]),
+      : await trx
+          .selectFrom('artifact')
+          .select(['id', 'kind', 'space_id'])
+          .where('id', 'in', named)
+          .execute();
+  const kindOf = new Map(targets.map((row) => [row.id, row.kind]));
+  // A version citing an entry and an archive of it serialise (`archiveEntry`), in one order.
+  const bibliographies = targets.flatMap((row) =>
+    row.kind === 'bibliographyEntry' && row.space_id !== null ? [row.space_id] : [],
   );
+  for (const space of [...new Set(bibliographies)].sort()) await lockBibliography(trx, space);
   const pins = [
     ...new Set(
       found.flatMap((each) => (each.version && UUID.test(each.version) ? [each.version] : [])),

@@ -957,7 +957,8 @@ describe('the citations in the committed model', () => {
     // 1834 (2026-10-22): CIa's bibliography entries, their keys, matches, import and export.
     // 1847 (2026-10-22): CIb's citation styles, the citations module and the styles' routes.
     // 1859 (2026-10-22): CIc's citations published, in assemble, the PDF, Word and at a baseline.
-    expect(model.citations).toHaveLength(1859);
+    // 1865 (2026-10-22): CId's citing: STR-069 in four files, CNT-051's save check, LIB-009's export.
+    expect(model.citations).toHaveLength(1865);
   });
 
   it('cites no identifier the corpus does not hold', () => {
@@ -1075,6 +1076,8 @@ describe('scanning the repository for test files', () => {
     // 120, from 119 (2026-10-21): admin/Extensions.test.tsx, citing API-030 and API-048.
     // 121, from 120 (2026-10-22): bibliography/bibliography.test.tsx, citing LIB-010 and LIB-044.
     // 122, from 121 (2026-10-22): admin/CitationStyles.test.tsx, citing STY-023.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(122);
+    // 124, from 122 (2026-10-22): editor/ComponentEditor.citations.test.tsx, citing STR-069, and
+    // editor/CitationDialog.test.tsx, citing nothing.
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(124);
   });
 });

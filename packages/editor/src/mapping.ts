@@ -73,8 +73,8 @@ function namesWithNoNode(blocks: readonly BlockNode[], found: Set<string>): void
         // A string, not runs: nothing inside it can lack a node.
         break;
       case 'blockquote':
-        // Its attribution is inline content, walked as a paragraph's is: a citation in one - which
-        // no control writes yet - opens the component read-only by name rather than being dropped.
+        // Its attribution is inline content, walked as a paragraph's is: an image in one opens the
+        // component read-only by name rather than being dropped.
         namesWithNoNode(block.content, found);
         if (block.attribution !== undefined) marksWithNoType(block.attribution, found);
         break;
@@ -130,7 +130,8 @@ function marksWithNoType(
       inline.type === 'crossReference' ||
       inline.type === 'equation' ||
       inline.type === 'binding' ||
-      inline.type === 'variable'
+      inline.type === 'variable' ||
+      inline.type === 'citation'
     ) {
       continue;
     }
@@ -262,6 +263,12 @@ function toRun(inline: InlineNode): Node[] {
   if (inline.type === 'variable') {
     return [editorSchema.nodes.variable!.create({ name: inline.name })];
   }
+  if (inline.type === 'citation') {
+    // Its entry, and its locator null where none is stored (CId).
+    return [
+      editorSchema.nodes.citation!.create({ entry: inline.entry, locator: inline.locator ?? null }),
+    ];
+  }
   if (inline.type === 'equation') {
     // The MathML as stored, and the LaTeX null where none was typed (ruling R4).
     return [
@@ -275,8 +282,8 @@ function toRun(inline: InlineNode): Node[] {
 
 /**
  * The stored document as the editor holds it. Total over what it accepts and refuses the rest by name,
- * so opening never loses anything: a component holding a citation or a mark this schema has
- * no counterpart for opens read-only, saying why, rather than being edited into something without them.
+ * so opening never loses anything: a component holding a node or a mark this schema has
+ * no counterpart for where it stands opens read-only, saying why, rather than being edited into something without them.
  */
 export function toEditor(document: ContentDocument): Opened {
   const unsupported = unsupportedIn(document.content);
@@ -553,6 +560,12 @@ function runsOf(textblock: Node, id: string): unknown[] {
     }
     if (child.type.name === 'variable') {
       runs.push({ type: 'variable', name: child.attrs.name as string });
+      return;
+    }
+    if (child.type.name === 'citation') {
+      // Its locator only where one was typed: absent is the stored spelling of none.
+      const { entry, locator } = child.attrs;
+      runs.push({ type: 'citation', entry, ...(locator === null ? {} : { locator }) });
       return;
     }
     if (child.type.name === 'equation') {

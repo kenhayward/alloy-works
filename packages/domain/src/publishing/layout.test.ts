@@ -18,6 +18,7 @@ import {
   SECOND_DEFAULT_LAYOUT,
   SEVENTH_DEFAULT_LAYOUT,
   EIGHTH_DEFAULT_LAYOUT,
+  NINTH_DEFAULT_LAYOUT,
   SIXTH_DEFAULT_LAYOUT,
   speaksFor,
   THIRD_DEFAULT_LAYOUT,
@@ -109,6 +110,8 @@ describe('a layout', () => {
           { sequence: 'figure', title: 'Figures' },
           { sequence: 'table', title: 'Tables' },
         ],
+        // Version 0.10's bibliography (CId).
+        bibliography: { title: 'References' },
       },
       // Version 0.6's Word page is its PDF page, copied (Word 1, ruling R4).
       formats: { pdf: page, docx: page },
@@ -191,12 +194,18 @@ describe('a layout', () => {
     });
   });
 
-  it("keeps the default layout's 0.8, as migration 0055 stored it, and 0.9 is 0.8 with the word a table's note follows (TB3-F)", () => {
+  it("keeps the default layout's 0.8, as migration 0055 stored it, 0.9 is 0.8 with the word a table's note follows (TB3-F), and 0.10 places a bibliography", () => {
     expect(EIGHTH_DEFAULT_LAYOUT.schemaVersion).toBe(7);
     expect(EIGHTH_DEFAULT_LAYOUT.words).not.toHaveProperty('note');
-    expect(defaultLayout).toEqual({
+    expect(NINTH_DEFAULT_LAYOUT).toEqual({
       ...EIGHTH_DEFAULT_LAYOUT,
       words: { ...EIGHTH_DEFAULT_LAYOUT.words, note: 'Note:' },
+    });
+    // And 0.10 is 0.9 placing a bibliography (CId).
+    expect(NINTH_DEFAULT_LAYOUT.matter).not.toHaveProperty('bibliography');
+    expect(defaultLayout).toEqual({
+      ...NINTH_DEFAULT_LAYOUT,
+      matter: { ...NINTH_DEFAULT_LAYOUT.matter, bibliography: { title: 'References' } },
     });
     // Optional at schema 7, in place: a layout without it reads, and fails nothing for its absence.
     expect(parseLayout(JSON.parse(JSON.stringify(EIGHTH_DEFAULT_LAYOUT)))).toEqual(
@@ -604,7 +613,7 @@ describe('a layout', () => {
     const placed = copy();
     placed.matter.bibliography = { title: 'References' };
     expect(parseLayout(placed).matter.bibliography).toEqual({ title: 'References' });
-    expect(parseLayout(copy()).matter.bibliography).toBeUndefined();
+    expect(parseLayout(NINTH_DEFAULT_LAYOUT).matter.bibliography).toBeUndefined();
 
     const blank = copy();
     blank.matter.bibliography = { title: '  ' };

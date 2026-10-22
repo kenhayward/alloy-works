@@ -107,6 +107,29 @@ describe('the references a version holds (the R2 plan, R2-A)', () => {
     ]);
   });
 
+  it('lists a cross-reference to an entry as a use of the entry, as a citation is (CId)', () => {
+    const content = {
+      blocks: [
+        {
+          type: 'paragraph',
+          id: 'p1',
+          content: [
+            {
+              type: 'crossReference',
+              id: 'x1',
+              target: { kind: 'entry', entry: ENTRY },
+              display: 'number',
+            },
+            { type: 'crossReference', id: 'x2', target: { kind: 'block', block: 'p1' } },
+          ],
+        },
+      ],
+    };
+    expect(referencesIn('component', content)).toEqual([
+      { node: 'x1', target: { artifact: ENTRY, kind: 'bibliographyEntry' }, mode: 'latest' },
+    ]);
+  });
+
   it("lists a query definition's connection, and nothing for a kind that refers to nothing", () => {
     expect(referencesIn('queryDefinition', { connection: CONNECTION })).toEqual([
       { node: null, target: { artifact: CONNECTION, kind: 'connection' }, mode: 'latest' },

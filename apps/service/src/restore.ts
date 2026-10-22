@@ -30,6 +30,7 @@ import {
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
 import { afterVersion, versionsPage, versionView } from './components.js';
+import { citesUnreadable } from './bibliography/citing.js';
 import { namesUnreadableColumn, storable } from './editing.js';
 import type { AppError } from './errors.js';
 import { refused } from './wire-codes.js';
@@ -55,6 +56,8 @@ function refusalView(refusal: RestoreRefusal): RestorationView['refusals'][numbe
       return { code: 'content_invalid' };
     case 'definition.unreadable':
       return { code: 'definition_unreadable' };
+    case 'citation.unreadable':
+      return { code: 'citation_unreadable' };
     // A document's: never previewed for a component, whose resolver refuses none of them.
     case 'outline.invalid':
     case 'template.unresolved':
@@ -85,6 +88,7 @@ function documentRefusalView(refusal: RestoreRefusal): DocumentRestorationView['
       throw new Error('A document has no lock, so its restore is not refused one (COL-N02)');
     case 'content.invalid':
     case 'definition.unreadable':
+    case 'citation.unreadable':
       throw new Error(`A document's restore is not refused ${refusal.answer}`);
   }
 }
@@ -118,6 +122,12 @@ function refuse(refusal: RestoreRefusal): AppError {
         'definition.unreadable',
         'A bound table names a column of a query definition you may not read.',
       );
+    case 'citation.unreadable':
+      return refused(
+        400,
+        'citation.unreadable',
+        "A citation names no bibliography entry of this component's space that you may read.",
+      );
     // A document's, in the words its outline acts are refused in (documents.ts).
     case 'outline.invalid':
       return refused(
@@ -144,8 +154,9 @@ function refuse(refusal: RestoreRefusal): AppError {
 
 /**
  * A component's restore checked as a save is, for whoever restores (the RS final review): the
- * content storable, and no bound table naming a column the latest does not of a query definition
- * they may not read (`mayNameColumns`). A document's outline has its own guards (RS-F).
+ * content storable, no bound table naming a column the latest does not of a query definition they
+ * may not read (`mayNameColumns`), and no citation the latest does not hold of an entry they may not
+ * read (`mayCite`). A document's outline has its own guards (RS-F).
  */
 const savedChecks =
   (trx: TenantTransaction, request: FastifyRequest): NonNullable<RestoreAsked['check']> =>
@@ -153,6 +164,9 @@ const savedChecks =
     if (!storable(content)) return { answer: 'content.invalid' };
     if (await namesUnreadableColumn(trx, request, content, latest.id)) {
       return { answer: 'definition.unreadable' };
+    }
+    if (await citesUnreadable(trx, request, content, latest.id)) {
+      return { answer: 'citation.unreadable' };
     }
     return undefined;
   };

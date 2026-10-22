@@ -61,6 +61,8 @@ const FALLBACK = 'en-US';
 
 /** Renders every citation of a document and its bibliography. Throws on an entry not given. */
 export function renderCitations(request: RenderRequest): Rendered {
+  const tooLarge = expansionProblem(CSL.parseXml(request.style));
+  if (tooLarge !== undefined) throw new Error(tooLarge);
   const locales: Readonly<Record<string, string>> = request.locales ?? CSL_LOCALES;
   const held = request.language !== undefined && locales[request.language] !== undefined;
   for (const citation of request.citations) {
@@ -118,12 +120,16 @@ const ENTITY: Readonly<Record<string, string>> = {
   nbsp: ' ',
 };
 
+/** A character reference's code point, or the reference as written where it names none. */
+const character = (whole: string, code: number) =>
+  code > 0x10ffff || (code >= 0xd800 && code <= 0xdfff) ? whole : String.fromCodePoint(code);
+
 const decode = (text: string) =>
   text.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (whole, name: string) =>
     name.startsWith('#x') || name.startsWith('#X')
-      ? String.fromCodePoint(parseInt(name.slice(2), 16))
+      ? character(whole, parseInt(name.slice(2), 16))
       : name.startsWith('#')
-        ? String.fromCodePoint(parseInt(name.slice(1), 10))
+        ? character(whole, parseInt(name.slice(1), 10))
         : (ENTITY[name] ?? whole),
   );
 
@@ -292,6 +298,51 @@ const elements = (node: CslNode) =>
 
 type CslNode = ReturnType<typeof CSL.parseXml>;
 
+/** The most elements a style may expand to once its macros are followed: the seeded ones, a few thousand. */
+const MOST_EXPANDED = 50_000;
+
+/**
+ * Why a style is too large to render, or undefined: citeproc expands every macro call in place, so
+ * macros each calling the one before twice grow exponentially and hang it. Each macro's expanded size
+ * is counted once, and a macro that calls itself is refused.
+ */
+function expansionProblem(root: CslNode): string | undefined {
+  const macros = new Map(
+    elements(root)
+      .filter((each) => each.name === 'macro')
+      .map((each) => [each.attrs.name, each]),
+  );
+  const sizes = new Map<string, number>();
+  const open = new Set<string>();
+  let recursive: string | undefined;
+  const size = (node: CslNode): number => {
+    let total = 1;
+    const called = node.attrs.macro === undefined ? undefined : macros.get(node.attrs.macro);
+    if (called !== undefined) {
+      const name = node.attrs.macro!;
+      if (open.has(name)) recursive ??= name;
+      else {
+        if (!sizes.has(name)) {
+          open.add(name);
+          sizes.set(name, size(called));
+          open.delete(name);
+        }
+        total += sizes.get(name)!;
+      }
+    }
+    for (const child of elements(node)) total += size(child);
+    return total;
+  };
+  const expanded = elements(root)
+    .filter((each) => each.name !== 'macro')
+    .reduce((sum, each) => sum + size(each), 1);
+  if (recursive !== undefined) return `The style's macro ${recursive} calls itself`;
+  if (expanded > MOST_EXPANDED) {
+    return `The style expands to more than ${MOST_EXPANDED} elements once its macros are followed`;
+  }
+  return undefined;
+}
+
 /**
  * Every way `xml` is not a CSL 1.0.2 style this processor renders (STY-023): well formed; its root a
  * `style` in CSL's namespace at version 1.0, with both forms (STY-020); and rendering the sample entries
@@ -328,6 +379,8 @@ export function checkStyle(xml: string): StyleProblem[] {
     }
   }
   if (problems.length > 0) return problems;
+  const tooLarge = expansionProblem(root);
+  if (tooLarge !== undefined) return [problem(tooLarge)];
   try {
     renderCitations({ style: xml, entries: SAMPLE_ENTRIES, citations: SAMPLE_CITATIONS });
   } catch (error) {

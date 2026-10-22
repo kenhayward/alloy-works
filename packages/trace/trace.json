@@ -20935,13 +20935,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 598,
+      "line": 599,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 611,
+      "line": 612,
       "kind": "title"
     },
     {
@@ -21215,6 +21215,12 @@
       "kind": "title"
     },
     {
+      "id": "CNT-051",
+      "file": "apps/service/src/citing-routes.test.ts",
+      "line": 96,
+      "kind": "title"
+    },
+    {
       "id": "REU-032",
       "file": "apps/service/src/cohort-routes.test.ts",
       "line": 148,
@@ -21409,7 +21415,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1967,
+      "line": 1969,
       "kind": "title"
     },
     {
@@ -23287,13 +23293,13 @@
     {
       "id": "ADM-049",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1513,
+      "line": 1519,
       "kind": "title"
     },
     {
       "id": "LIF-022",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1655,
+      "line": 1661,
       "kind": "title"
     },
     {
@@ -23531,15 +23537,21 @@
       "kind": "title"
     },
     {
+      "id": "LIB-009",
+      "file": "apps/web/src/bibliography/bibliography.test.tsx",
+      "line": 232,
+      "kind": "title"
+    },
+    {
       "id": "LIB-010",
       "file": "apps/web/src/bibliography/bibliography.test.tsx",
-      "line": 160,
+      "line": 172,
       "kind": "title"
     },
     {
       "id": "LIB-044",
       "file": "apps/web/src/bibliography/bibliography.test.tsx",
-      "line": 126,
+      "line": 138,
       "kind": "title"
     },
     {
@@ -23783,6 +23795,12 @@
       "kind": "title"
     },
     {
+      "id": "STR-069",
+      "file": "apps/web/src/editor/ComponentEditor.citations.test.tsx",
+      "line": 185,
+      "kind": "title"
+    },
+    {
       "id": "LIF-023",
       "file": "apps/web/src/editor/ComponentEditor.deletion.test.tsx",
       "line": 33,
@@ -23815,37 +23833,37 @@
     {
       "id": "CNT-082",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2160,
+      "line": 2167,
       "kind": "title"
     },
     {
       "id": "CNT-094",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2631,
+      "line": 2638,
       "kind": "title"
     },
     {
       "id": "CNT-097",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2149,
+      "line": 2156,
       "kind": "title"
     },
     {
       "id": "CNT-115",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2177,
+      "line": 2184,
       "kind": "title"
     },
     {
       "id": "CNT-122",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2215,
+      "line": 2222,
       "kind": "title"
     },
     {
       "id": "CNT-169",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 1450,
+      "line": 1457,
       "kind": "title"
     },
     {
@@ -23857,13 +23875,13 @@
     {
       "id": "COL-044",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 1039,
+      "line": 1046,
       "kind": "title"
     },
     {
       "id": "DAT-098",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 3060,
+      "line": 3067,
       "kind": "title"
     },
     {
@@ -23875,19 +23893,19 @@
     {
       "id": "SCH-057",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2037,
+      "line": 2044,
       "kind": "title"
     },
     {
       "id": "STY-070",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2425,
+      "line": 2432,
       "kind": "title"
     },
     {
       "id": "STY-079",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2315,
+      "line": 2322,
       "kind": "title"
     },
     {
@@ -23989,13 +24007,13 @@
     {
       "id": "CNT-077",
       "file": "apps/web/src/editor/EditorToolbar.test.tsx",
-      "line": 218,
+      "line": 219,
       "kind": "title"
     },
     {
       "id": "CNT-164",
       "file": "apps/web/src/editor/EditorToolbar.test.tsx",
-      "line": 663,
+      "line": 664,
       "kind": "title"
     },
     {
@@ -26515,43 +26533,49 @@
     {
       "id": "LIB-008",
       "file": "packages/db/src/bibliography.test.ts",
-      "line": 190,
+      "line": 194,
       "kind": "title"
     },
     {
       "id": "LIB-009",
       "file": "packages/db/src/bibliography.test.ts",
-      "line": 336,
+      "line": 340,
       "kind": "title"
     },
     {
       "id": "LIB-010",
       "file": "packages/db/src/bibliography.test.ts",
-      "line": 291,
+      "line": 295,
       "kind": "title"
     },
     {
       "id": "LIB-011",
       "file": "packages/db/src/bibliography.test.ts",
-      "line": 164,
+      "line": 168,
       "kind": "title"
     },
     {
       "id": "LIB-044",
       "file": "packages/db/src/bibliography.test.ts",
-      "line": 224,
+      "line": 228,
       "kind": "title"
     },
     {
       "id": "LIB-045",
       "file": "packages/db/src/bibliography.test.ts",
-      "line": 251,
+      "line": 255,
       "kind": "title"
     },
     {
       "id": "LIB-046",
       "file": "packages/db/src/bibliography.test.ts",
-      "line": 201,
+      "line": 205,
+      "kind": "title"
+    },
+    {
+      "id": "STR-069",
+      "file": "packages/db/src/bibliography.test.ts",
+      "line": 463,
       "kind": "title"
     },
     {
@@ -28855,7 +28879,13 @@
     {
       "id": "CNT-123",
       "file": "packages/domain/src/content/model/inline.test.ts",
-      "line": 178,
+      "line": 179,
+      "kind": "title"
+    },
+    {
+      "id": "STR-069",
+      "file": "packages/domain/src/content/model/inline.test.ts",
+      "line": 102,
       "kind": "title"
     },
     {
@@ -29305,7 +29335,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 913,
+      "line": 915,
       "kind": "title"
     },
     {
@@ -29833,13 +29863,13 @@
     {
       "id": "CNT-054",
       "file": "packages/domain/src/publishing/bibliography.test.ts",
-      "line": 262,
+      "line": 263,
       "kind": "title"
     },
     {
       "id": "LIB-012",
       "file": "packages/domain/src/publishing/bibliography.test.ts",
-      "line": 298,
+      "line": 299,
       "kind": "title"
     },
     {
@@ -29852,6 +29882,12 @@
       "id": "PUB-097",
       "file": "packages/domain/src/publishing/bibliography.test.ts",
       "line": 238,
+      "kind": "title"
+    },
+    {
+      "id": "STR-069",
+      "file": "packages/domain/src/publishing/bibliography.test.ts",
+      "line": 382,
       "kind": "title"
     },
     {
@@ -29971,19 +30007,19 @@
     {
       "id": "PUB-011",
       "file": "packages/domain/src/publishing/layout.test.ts",
-      "line": 36,
+      "line": 37,
       "kind": "title"
     },
     {
       "id": "PUB-012",
       "file": "packages/domain/src/publishing/layout.test.ts",
-      "line": 342,
+      "line": 351,
       "kind": "title"
     },
     {
       "id": "PUB-040",
       "file": "packages/domain/src/publishing/layout.test.ts",
-      "line": 603,
+      "line": 612,
       "kind": "title"
     },
     {
@@ -31129,67 +31165,67 @@
     {
       "id": "CNT-003",
       "file": "packages/editor/src/mapping.test.ts",
-      "line": 174,
+      "line": 181,
       "kind": "title"
     },
     {
       "id": "CNT-014",
       "file": "packages/editor/src/mapping.test.ts",
-      "line": 1238,
+      "line": 1245,
       "kind": "title"
     },
     {
       "id": "CNT-018",
       "file": "packages/editor/src/mapping.test.ts",
-      "line": 740,
+      "line": 747,
       "kind": "title"
     },
     {
       "id": "CNT-031",
       "file": "packages/editor/src/mapping.test.ts",
-      "line": 154,
+      "line": 161,
       "kind": "title"
     },
     {
       "id": "CNT-117",
       "file": "packages/editor/src/mapping.test.ts",
-      "line": 323,
+      "line": 330,
       "kind": "title"
     },
     {
       "id": "CNT-118",
       "file": "packages/editor/src/mapping.test.ts",
-      "line": 356,
+      "line": 363,
       "kind": "title"
     },
     {
       "id": "CNT-126",
       "file": "packages/editor/src/mapping.test.ts",
-      "line": 197,
+      "line": 204,
       "kind": "title"
     },
     {
       "id": "REU-021",
       "file": "packages/editor/src/mapping.test.ts",
-      "line": 1321,
+      "line": 1328,
       "kind": "title"
     },
     {
       "id": "CNT-004",
       "file": "packages/editor/src/marks.test.ts",
-      "line": 199,
+      "line": 200,
       "kind": "title"
     },
     {
       "id": "CNT-077",
       "file": "packages/editor/src/marks.test.ts",
-      "line": 638,
+      "line": 639,
       "kind": "title"
     },
     {
       "id": "CNT-127",
       "file": "packages/editor/src/marks.test.ts",
-      "line": 317,
+      "line": 318,
       "kind": "title"
     },
     {
@@ -31285,13 +31321,13 @@
     {
       "id": "CNT-155",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 937,
+      "line": 1010,
       "kind": "title"
     },
     {
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 570,
+      "line": 631,
       "kind": "title"
     },
     {

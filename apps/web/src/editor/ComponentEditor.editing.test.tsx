@@ -830,19 +830,26 @@ describe('the component editor', () => {
   });
 
   it('opens content this editor cannot change for reading only, saying what it holds', async () => {
-    // A citation: every block is carried since equations 1, and this is about content the editor
-    // still has no node for.
+    // An image in a quotation's attribution: every node is carried since CId gave a citation one,
+    // and an image stands in a paragraph alone.
     const withCitation = content('Before');
     withCitation.content.push({
-      type: 'paragraph',
+      type: 'blockquote',
       id: 't1',
-      style: 'body',
-      content: [{ type: 'citation', entry: 'ada-1843' }],
+      content: [{ type: 'paragraph', id: 't2', style: 'body', content: [] }],
+      attribution: [
+        {
+          type: 'image',
+          asset: '0b0e2c4b-3f1d-4e8a-9b2c-5d6e7f8a9c01',
+          imageStyle: 'inline',
+          alternative: { kind: 'decorative' },
+        },
+      ],
     } as never);
     open({ 'GET /v1/components/{id}': () => json(200, opened({ content: withCitation })) });
     expect(
       await screen.findByText(
-        'This component holds content this editor cannot change yet (citation), so it is shown for reading only.',
+        'This component holds content this editor cannot change yet (image), so it is shown for reading only.',
       ),
     ).toBeInTheDocument();
     expect(screen.queryByRole('textbox')).toBeNull();

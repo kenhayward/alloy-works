@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url';
 import {
   defaultLayout as productDefaultLayout,
   EIGHTH_DEFAULT_LAYOUT,
+  NINTH_DEFAULT_LAYOUT,
   type Layout,
 } from '@alloy-works/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -182,16 +183,25 @@ describe("migration 0056, which gives the default layout the word a table's note
       '0145_bibliography_entries',
       '0146_citation_styles',
       '0147_publication_citations',
+      '0148_default_layout_bibliography',
     ]);
-    expect((await layoutChain(tenant)).at(-1)).toMatchObject({
+    expect((await layoutChain(tenant)).at(-2)).toMatchObject({
       version_no: 9,
+      author_id: null,
+      schema_version: 7,
+      content: NINTH_DEFAULT_LAYOUT,
+    });
+    // And 0148's 0.10 on top of it, placing a bibliography (CId).
+    expect((await layoutChain(tenant)).at(-1)).toMatchObject({
+      version_no: 10,
       author_id: null,
       schema_version: 7,
       content: productDefaultLayout,
     });
     const declared = await service.withTenant(tenant, (trx) => defaultLayout(trx));
-    expect(declared).toMatchObject({ number: '0.9', layout: productDefaultLayout });
+    expect(declared).toMatchObject({ number: '0.10', layout: productDefaultLayout });
     expect(declared.layout.words.note).toBe('Note:');
+    expect(declared.layout.matter.bibliography).toEqual({ title: 'References' });
   });
 
   it('leaves a layout an environment recorded after the product its own, giving it no version on top', async () => {

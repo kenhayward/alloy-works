@@ -26,7 +26,12 @@ import {
   changeEquation,
   changeBinding,
   changeFigureBinding,
+  changeCitation,
   changeReference,
+  citationAt,
+  citationFormsOf,
+  insertCitation,
+  type CitationAt,
   createEditorState,
   EDITOR_COMMANDS,
   equationAt,
@@ -155,6 +160,9 @@ import { ReferenceDialog } from './ReferenceDialog.js';
 import { ValueDialog, type DocumentOffer } from './ValueDialog.js';
 import { SymbolPalette } from './SymbolPalette.js';
 import { VariableDialog } from './VariableDialog.js';
+import { CitationDialog } from './CitationDialog.js';
+import { entryOptions, useCitationForms } from './citing.js';
+import { spaceEntries, type EntryOffered } from '../bibliography/entries.js';
 import { ConditionDialog, declaredAxisKeys } from './ConditionDialog.js';
 import { SaveIndicator } from './SaveIndicator.js';
 import { uploadImage } from './upload.js';
@@ -751,6 +759,15 @@ export function ComponentEditor({
   // The Variable dialog, as the palette is: open over the view it was asked from (the R5 plan, R5b).
   const [variabling, setVariabling] = useState<EditorView | null>(null);
   const variablesBack = useRef<EditorView | null>(null);
+  // The Cite dialog, open over the view it was asked from on the citation selected whole there or
+  // none (the CI plan, CId), or closed; and the view the focus goes back to.
+  const [citing, setCiting] = useState<{
+    readonly view: EditorView;
+    readonly current: CitationAt | null;
+  } | null>(null);
+  const citingBack = useRef<EditorView | null>(null);
+  // The space's entries, read as the Reference dialog opens, which it offers beside the rest (STR-069).
+  const [entriesOffered, setEntriesOffered] = useState<readonly EntryOffered[] | null>(null);
   // The Condition dialog, open over the view it was asked from with the conditions its selection
   // carries (the R6 plan, R6-H), or closed.
   const [conditioning, setConditioning] = useState<{
@@ -1084,6 +1101,22 @@ export function ComponentEditor({
     if (back !== null && !back.isDestroyed) back.focus();
   }, [variabling]);
 
+  /** Opens the Cite dialog over `editing`, on the citation selected whole there or none (CId). */
+  const openCitation = (editing: EditorView): boolean => {
+    setCiting({ view: editing, current: citationAt(editing.state) });
+    return true;
+  };
+  const closeCitation = () => {
+    citingBack.current = citing?.view ?? null;
+    setCiting(null);
+  };
+  useEffect(() => {
+    if (citing !== null) return;
+    const back = citingBack.current;
+    citingBack.current = null;
+    if (back !== null && !back.isDestroyed) back.focus();
+  }, [citing]);
+
   /** Runs a condition's command where the dialog was asked from, as the palette inserts (R6-H). */
   const conditionWith = (
     command: ReturnType<typeof setCondition>,
@@ -1163,6 +1196,8 @@ export function ComponentEditor({
   openSymbolsRef.current = openSymbols;
   const openVariablesRef = useRef(openVariables);
   openVariablesRef.current = openVariables;
+  const openCitationRef = useRef(openCitation);
+  openCitationRef.current = openCitation;
   const openConditionsRef = useRef(openConditions);
   openConditionsRef.current = openConditions;
   // The page's latest context, which every fresh state starts from: a state rebuilt after a version is
@@ -1329,6 +1364,8 @@ export function ComponentEditor({
           if (name === 'value') return openValueRef.current(into);
           // **Variable** too (the R5 plan, R5b).
           if (name === 'variable') return openVariablesRef.current(into);
+          // **Cite** too (CId), on a citation selected whole to change it.
+          if (name === 'cite') return openCitationRef.current(into);
           // **Condition** too (the R6 plan, R6-H).
           if (name === 'condition') return openConditionsRef.current(into);
           const command = EDITOR_COMMANDS.find(
@@ -1339,6 +1376,7 @@ export function ComponentEditor({
         },
         referenceContext: referenceContextRef.current,
         bindingContext: bindingContextRef.current,
+        citationForms: surfaceForms.current,
         conditionAxes: axisKeysRef.current,
         ...(selection ? { selection } : {}),
       });
@@ -1782,6 +1820,26 @@ export function ComponentEditor({
     }
   }, [surface, referenceContext]);
 
+  // Each citation's in-text form, rendered by the service as the citations change (CId); kept for a
+  // fresh state, as the contexts are.
+  const citationForms = useCitationForms(client, componentId, hostDocument, surface);
+  const surfaceForms = useRef(citationForms);
+  surfaceForms.current =
+    surface !== null && !surface.isDestroyed ? citationFormsOf(surface.state) : citationForms;
+
+  // The space's entries, read once the Reference dialog opens, which it offers too (STR-069).
+  useEffect(() => {
+    if (referring === null || entriesOffered !== null || spaceId === null) return;
+    let live = true;
+    void spaceEntries(client, spaceId).then(
+      (found) => live && setEntriesOffered(found ?? []),
+      () => live && setEntriesOffered([]),
+    );
+    return () => {
+      live = false;
+    };
+  }, [client, referring, entriesOffered, spaceId]);
+
   // The page reads what the document holds again, or the component's own page hears a definition's
   // title: every binding on the surface, and in a footnote's open editor, is drawn again (B1-D, B1-N).
   useEffect(() => {
@@ -2170,6 +2228,7 @@ export function ComponentEditor({
     equating !== null ||
     symbolizing !== null ||
     variabling !== null ||
+    citing !== null ||
     conditioning !== null ||
     valuing !== null ||
     formatting;
@@ -2666,6 +2725,7 @@ export function ComponentEditor({
               (action === 'symbol' && openSymbols(view)) ||
               (action === 'value' && openValue(view)) ||
               (action === 'variable' && openVariables(view)) ||
+              (action === 'cite' && openCitation(view)) ||
               (action === 'condition' && openConditions(view)))
           }
         />
@@ -3048,10 +3108,12 @@ export function ComponentEditor({
           document.body,
         )}
       {referring !== null &&
+        // Once the space's entries are read, which it offers after the rest (STR-069).
+        (spaceId === null || entriesOffered !== null) &&
         // Beside the article, as the prompt is, and for the same reason.
         createPortal(
           <ReferenceDialog
-            options={referring.options}
+            options={[...referring.options, ...entryOptions(entriesOffered ?? [], citationForms)]}
             inDocument={referring.inDocument}
             current={referring.current}
             onDone={(choice) => {
@@ -3245,6 +3307,41 @@ export function ComponentEditor({
               closeVariables();
             }}
             onCancel={closeVariables}
+          />,
+          document.body,
+        )}
+      {citing !== null &&
+        // Beside the article, as the palette is.
+        createPortal(
+          <CitationDialog
+            client={client}
+            space={shown.space.id}
+            current={citing.current}
+            onDone={(choice) => {
+              // As the Reference dialog asks: the phase as it is now.
+              const now = controls.current?.view().phase;
+              const into = citing.view;
+              if (
+                !shown.mayEdit ||
+                now === undefined ||
+                !isEditablePhase(now) ||
+                into.isDestroyed
+              ) {
+                return 'This component can no longer be edited here, so the citation was not placed.';
+              }
+              const command =
+                citing.current === null
+                  ? insertCitation(choice)
+                  : changeCitation(citing.current.pos, choice);
+              if (!command(into.state, into.dispatch.bind(into))) {
+                return citing.current === null
+                  ? 'A citation cannot be placed where the cursor is.'
+                  : 'That citation is not there any more.';
+              }
+              closeCitation();
+              return null;
+            }}
+            onCancel={closeCitation}
           />,
           document.body,
         )}

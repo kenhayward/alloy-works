@@ -252,23 +252,31 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   one source held as CSL-JSON, with where it was obtained and when last checked, its key made once
   from its first author and year (`smith2020`, then `smith2020a`) and never changed. **New entry**
   first looks for the same source in the space, by DOI, PubMed identifier, ISBN or ISSN, else by
-  title, year and first author, and offers it; **Import** reads pasted CSL-JSON, BibTeX or RIS,
-  merges each match, saying what it gave it and what it could not keep. An entry's page lists where
+  title, year and first author, and offers it; **Import** reads pasted CSL-JSON, BibTeX or RIS, up
+  to 500 records at a time, merges each match, saying what it gave it and what it could not keep. An entry's page lists where
   it is cited, and it is archived only when nothing cites it
-  (`/v1/spaces/{space}/bibliography-entries`). Citing an entry from the editor is not built yet.
+  (`/v1/spaces/{space}/bibliography-entries`). An entry's page changes it as a new version, its key
+  kept, and exports it alone as CSL-JSON, BibTeX or RIS.
 - **Citation styles.** Administration's **Citation styles** lists the CSL styles a theme may name:
   CSE (name-year), Vancouver (NLM) and Harvard (Cite Them Right) are given, and **CSL file** uploads
   any other, refused unless it is a CSL 1.0.2 style with both forms that renders. Each upload is
   previewed with invented sources and proposes what an entry of each type must hold (`requires`);
   every change is a version (`/v1/citation-styles`). The default theme names Harvard at its version.
-  About names citeproc-js and its licence.
+  About names citeproc-js, the Citation Style Language project's styles and locales, and their
+  licences.
 - **Citations published.** A publish sets each citation in its theme's style, numbered and told apart
   across the whole document, and where the layout declares a bibliography (`matter.bibliography`)
   prints it after the last section, each citation linking to its entry in the PDF and in Word; the
-  default layout declares none yet. The entry versions read are recorded, and a baseline keeps its
-  own. A citation whose entry the publisher may not read, an entry missing a field its style needs,
-  or a style that no longer renders fails the publish by name. A component holding a citation is
-  still read-only in the editor.
+  default layout's 0.10 declares one, titled References. The entry versions read are recorded, and a
+  baseline keeps its own. A citation whose entry the publisher may not read, an entry missing a field
+  its style needs, or a style that no longer renders fails the publish by name.
+- **Citing.** **Cite** on the editor's toolbar, or Ctrl or Cmd, Shift and 2, finds an entry of the
+  component's space by key, author or title and places a citation with an optional locator, drawn in
+  its in-text form as the service renders it for the component alone, the document numbering and
+  telling citations apart at publish (`/v1/components/{id}/citations/preview`), or _Citation
+  unavailable_ where you may not read the entry; selected, it is changed the same way or deleted. The
+  Reference dialog offers the space's entries too, a reference to one printing its in-text form and
+  linking to it in the bibliography. A save or restore citing an entry you may not read in the space is refused.
 - **Groups, and your organisation's directory.** An administrator of the whole environment makes groups
   in Administration's **Groups** and grants a role to one as to a person, from any access page: everybody
   in it holds that role there. Groups lists each group in a table you can search, with where its members come from and who

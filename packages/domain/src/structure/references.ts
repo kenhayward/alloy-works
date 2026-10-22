@@ -471,9 +471,12 @@ export function referenceResolver(
           },
         };
       }
+      // An entry is no numbered thing: publishing renders it as a citation (STR-069; CId).
+      case 'entry':
+        return { ok: false, reason: 'missing' };
       default: {
-        // **Unreachable, and named rather than left to fall through**: a fourth kind of target - a
-        // bibliography entry, when LIB says what one is - fails to compile here until it resolves.
+        // **Unreachable, and named rather than left to fall through**: a fifth kind of target fails
+        // to compile here until it resolves.
         const unreachable: never = target;
         throw new Error(
           `No resolution for a target of kind ${(unreachable as CrossReferenceTarget).kind}`,

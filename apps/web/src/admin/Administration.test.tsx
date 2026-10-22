@@ -813,7 +813,7 @@ describe("Administration's Overview, Roles and About", () => {
     expect(within(grid).getAllByRole('row')).toHaveLength(2);
   });
 
-  it('names in About the citation processor and its licence, as its terms ask (ADR-0067)', async () => {
+  it('names in About the citation processor, the bundled styles and locales, and their licences, as their terms ask (ADR-0067)', async () => {
     const { client } = service(everything);
     render(<Administration client={client} about={null} />);
     await userEvent.click(section('About and release notes'));
@@ -821,6 +821,12 @@ describe("Administration's Overview, Roles and About", () => {
     expect(notices).toHaveTextContent(
       'Citations are formatted by citeproc-js, Copyright (c) 2009-2019 Frank Bennett, under the Common Public Attribution License 1.0.',
     );
+    expect(notices).toHaveTextContent(
+      'Citation styles and locales from the Citation Style Language project, under the Creative Commons Attribution-ShareAlike 3.0 licence.',
+    );
+    expect(
+      within(notices).getByRole('link', { name: 'Citation Style Language project' }),
+    ).toHaveAttribute('href', 'https://citationstyles.org');
   });
 
   it("says in About what changed in this version, from the changelog's newest entry", async () => {

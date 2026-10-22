@@ -148,6 +148,8 @@ export function referencesShown(
     held ??= identified(component);
     offered ??= new Map(context?.targets.map((each) => [keyOf(each.target), each]));
     const stored = node.attrs.target as CrossReferenceTarget;
+    // An entry is drawn from the citation forms, as a citation is (STR-069; CId).
+    if (stored.kind === 'entry') return false;
     const display = node.attrs.display as CrossReferenceDisplay;
     const target: CrossReferenceTarget =
       stored.kind === 'component' && stored.component === context?.component
@@ -350,5 +352,7 @@ const keyOf = (target: CrossReferenceTarget): string => {
       return `component\u{0}${target.component}\u{0}${target.block}`;
     case 'node':
       return `node\u{0}${target.node}`;
+    case 'entry':
+      return `entry\u{0}${target.entry}`;
   }
 };

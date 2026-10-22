@@ -37,9 +37,10 @@ const RestoreRefusalView = z.object({
       'restore_unchanged',
       'content_invalid',
       'definition_unreadable',
+      'citation_unreadable',
     ])
     .describe(
-      "restore_unreadable: the version no longer reads. restore_locked: somebody is editing it, the caller included. values_invalid: a value its field now fixes at another. restore_unchanged: it would make what the latest already is. content_invalid and definition_unreadable: a save's checks on its content refuse it, the second where a bound table names a column of a query definition the caller may not read that the latest does not name",
+      "restore_unreadable: the version no longer reads. restore_locked: somebody is editing it, the caller included. values_invalid: a value its field now fixes at another. restore_unchanged: it would make what the latest already is. content_invalid, definition_unreadable and citation_unreadable: a save's checks on its content refuse it, the second where a bound table names a column of a query definition the caller may not read that the latest does not name, the third where a citation the latest does not hold names no entry of the component's space the caller may read",
     ),
   holder: z
     .object({ id: z.string(), name: z.string().nullable() })
@@ -198,7 +199,7 @@ export const restoreRoutes = {
       200: { description: 'Restored, as a new version', schema: RestoreAnswer },
       400: {
         description:
-          "values_invalid: a value its field now fixes at another. content_invalid: a save's checks on its content refuse it",
+          "values_invalid: a value its field now fixes at another. content_invalid: a save's checks on its content refuse it. citation_unreadable: a citation the latest does not hold names no entry of the component's space the caller may read",
         schema: EditingRefusal,
       },
       401: unauthenticated,

@@ -215,6 +215,16 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     shortcutSaid: 'Ctrl or Cmd, Alt and X',
     prompts: true,
   },
+  // The CI plan, CId: beside Reference, prompting as it does, for the entry and locator only the
+  // author can choose. On Value's Shift and digits, with 2: no browser and no platform takes it.
+  {
+    kind: 'block',
+    action: 'cite',
+    label: 'Cite',
+    shortcut: 'Mod-Shift-2',
+    shortcutSaid: 'Ctrl or Cmd, Shift and 2',
+    prompts: true,
+  },
   // B2-A: beside Reference, prompting as it does, for the definition, parameters and value only the
   // author can choose. On Shift and 6, beside the list family's 7 to 0, rather than V (paste as plain
   // text), X (Firefox's text direction) or a Ctrl-Alt chord (AltGr). Checked for its plan: nothing in
@@ -490,6 +500,7 @@ function rangeToMark(state: EditorState, type: MarkType): { from: number; to: nu
       state.selection.node.type.name === 'crossReference' ||
       state.selection.node.type.name === 'binding' ||
       state.selection.node.type.name === 'variable' ||
+      state.selection.node.type.name === 'citation' ||
       state.selection.node.type.name === 'equation' ||
       state.selection.node.type.name === 'equationBlock' ||
       isFootnote(state.selection.node))

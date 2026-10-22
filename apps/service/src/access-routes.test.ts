@@ -789,6 +789,11 @@ describe('routes that check a permission', () => {
     listComponentApprovals: () => ({ url: `/v1/components/${dosing}/approvals`, status: 404 }),
     listDocumentApprovals: () => ({ url: `/v1/documents/${MISSING}/approvals`, status: 404 }),
     readComponentEffective: () => ({ url: `/v1/components/${dosing}/effective`, status: 404 }),
+    previewComponentCitations: () => ({
+      url: `/v1/components/${dosing}/citations/preview`,
+      status: 404,
+      payload: { citations: [] },
+    }),
     listComponentLines: () => ({ url: `/v1/components/${dosing}/lines`, status: 404 }),
     compareComponentLine: () => ({
       url: `/v1/components/${dosing}/lines/${MISSING}/comparison`,

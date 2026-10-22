@@ -78,6 +78,18 @@ export function referencesIn(kind: string, content: unknown): IndexedReference[]
           ...(version === undefined ? {} : { version }),
         });
       }
+      // A cross-reference to an entry uses it as a citation does (STR-069; CId).
+      const target = node['target'];
+      if (node['type'] === 'crossReference' && isObject(target) && target['kind'] === 'entry') {
+        const named = text(target['entry']);
+        if (named !== undefined) {
+          found.push({
+            node: text(node['id']) ?? null,
+            target: { artifact: named, kind: 'bibliographyEntry' },
+            mode: 'latest',
+          });
+        }
+      }
       const entry = text(node['entry']);
       if (node['type'] === 'citation' && entry !== undefined) {
         found.push({

@@ -41,14 +41,21 @@ const openedDoc = (stored: ContentDocument): Node => {
 const root = { title: 'Install the printer', language: 'en-GB', direction: 'ltr' };
 
 /**
- * A paragraph holding a citation: every block has a node since equations 1 gave an equation one, and
- * a citation is among the inline nodes nothing in T1 can write, which the editor still has none for.
+ * A quotation attributed with an image: every block and inline node has a node since CId gave a
+ * citation one, and an image stands in a paragraph alone, so one in an attribution has no counterpart.
  */
 const cited = (id: string): BlockNode => ({
-  type: 'paragraph',
+  type: 'blockquote',
   id,
-  style: 'body',
-  content: [{ type: 'citation', entry: 'ada-1843' }],
+  content: [paragraph(`${id}p`, 'Words.')],
+  attribution: [
+    {
+      type: 'image',
+      asset: '0b0e2c4b-3f1d-4e8a-9b2c-5d6e7f8a9c01',
+      imageStyle: 'inline',
+      alternative: { kind: 'decorative' },
+    },
+  ],
 });
 
 /** One unordered list of one item per line of text. */
@@ -272,8 +279,8 @@ describe('the mapping between the stored model and the editor', () => {
   });
 
   it('refuses to open for editing anything it has no counterpart for, naming what it found', () => {
-    // A citation, not a list, a table, a figure or an equation: every block is carried now, and an
-    // inline node this schema still has no counterpart for is the one the promise is about.
+    // An image where an image cannot stand: every block and inline node is carried now, and one in a
+    // home this schema has no counterpart for is the one the promise is about.
     const stored = document([
       paragraph('b1', 'Before'),
       cited('t1'),
@@ -293,7 +300,7 @@ describe('the mapping between the stored model and the editor', () => {
     ]);
     expect(toEditor(stored)).toEqual({
       editable: false,
-      unsupported: ['citation', 'mark:suggestion'],
+      unsupported: ['image', 'mark:suggestion'],
     });
   });
 
@@ -545,7 +552,7 @@ describe('the mapping carries a list, both ways', () => {
   it('opens read-only for a node it cannot edit that is inside a list item, naming it', () => {
     expect(toEditor(document([listHolding(cited('t1'))]))).toEqual({
       editable: false,
-      unsupported: ['citation'],
+      unsupported: ['image'],
     });
   });
 
@@ -777,11 +784,11 @@ describe('quotations and preformatted text through the mapping (editor 5)', () =
     expect(roundTrip(stored)).toEqual(stored);
   });
 
-  it('opens read-only a quotation whose attribution holds a citation, naming it', () => {
+  it('opens for editing a quotation whose attribution holds a citation, and stores it as it came', () => {
     const stored = document([
       quotation('q1', [paragraph('b1', 'Words.')], [{ type: 'citation', entry: 'ada-1843' }]),
     ]);
-    expect(toEditor(stored)).toEqual({ editable: false, unsupported: ['citation'] });
+    expect(fromEditor(openedDoc(stored))).toEqual(stored);
   });
 
   it('refuses to store a preformatted block or a quotation the editor has not identified', () => {
@@ -1402,5 +1409,63 @@ describe('a numbered block with conditions (the R11 plan, R11-B)', () => {
       }),
     });
     expect(fromEditor(openedDoc(plain))).toEqual(plain);
+  });
+});
+
+describe('a citation through the mapping (the CI plan, CId)', () => {
+  const ENTRY = '0b0e2c4b-3f1d-4e8a-9b2c-5d6e7f8a9c01';
+  const cite = { type: 'citation' as const, entry: ENTRY };
+  const located = { type: 'citation' as const, entry: ENTRY, locator: 'p. 12' };
+
+  it('opens for editing a component citing an entry in a paragraph, a cell, a footnote and a caption, and stores each as it came, its locator absent where it has none', () => {
+    const stored = parseContentDocument(
+      document([
+        {
+          type: 'paragraph',
+          id: 'p0',
+          style: 'body',
+          content: [
+            { type: 'text', value: 'Sediment moves ', marks: [] },
+            cite,
+            {
+              type: 'footnote',
+              id: 'f1',
+              anchor: { kind: 'span' },
+              content: [{ type: 'paragraph', id: 'fp1', style: 'body', content: [located] }],
+            },
+          ],
+        },
+        {
+          type: 'table',
+          id: 't1',
+          style: 'table',
+          caption: [{ type: 'text', value: 'After ', marks: [] }, located],
+          headerRows: 0,
+          headerColumns: 0,
+          rows: [
+            {
+              cells: [
+                {
+                  content: [{ type: 'paragraph', id: 'c1', style: 'body', content: [cite] }],
+                  colspan: 1,
+                  rowspan: 1,
+                },
+              ],
+            },
+          ],
+        },
+      ]),
+    );
+    const opened = openedDoc(stored);
+    expect(() => opened.check()).not.toThrow();
+    expect(fromEditor(opened)).toEqual(stored);
+  });
+
+  it('is an inline atom with no marks, never in preformatted text, never guessed from an element', () => {
+    const node = editorSchema.nodes.citation!;
+    expect(editorSchema.nodes.preformatted!.contentMatch.matchType(node)).toBeNull();
+    expect(node.spec.marks).toBe('');
+    expect(node.isAtom && node.isInline).toBe(true);
+    expect(node.spec.parseDOM).toBeUndefined();
   });
 });

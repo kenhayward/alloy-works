@@ -105,10 +105,12 @@ describe('the rule behind a refusal', () => {
       'prompt.invalid',
       'library.invalid',
       // An entry outside CSL, one cited kept from archiving (LIB-006, which no design claims), and an
-      // import that does not read as its format: the CI plan's own guards (CI-B, CI-C).
+      // import that does not read as its format or holds too many records: the CI plan's own guards
+      // (CI-B, CI-C).
       'entry.invalid',
       'entry.cited',
       'import.unreadable',
+      'import.too_many',
       // A citation style that is not CSL 1.0.2 with both forms, which STY-020 and STY-023 shape and no
       // requirement names as a refusal (CI-D).
       'style.invalid',
@@ -150,6 +152,8 @@ describe('the rule behind a refusal', () => {
       // A column named by somebody who may not read its definition (the TB2 final review): a guard
       // of tables.md's own, which no requirement names.
       'definition.unreadable',
+      // A citation of no entry its author may read in the space (CI-H): citations.md's guard.
+      'citation.unreadable',
       // A space's own guards (the SP1 plan, SP-B to SP-D): a name past its shape or taken, the last
       // live space, and a creation in an archived one. ADM-049 asks that a space can be archived;
       // what archiving refuses is the design's.

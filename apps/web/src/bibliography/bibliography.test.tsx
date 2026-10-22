@@ -10,6 +10,7 @@ const GENERAL = '11111111-1111-4111-8111-111111111111';
 const ENTRY = '22222222-2222-4222-8222-222222222222';
 const VERSION = '33333333-3333-4333-8333-333333333333';
 const COMPONENT = '44444444-4444-4444-8444-444444444444';
+const VERSION_NEXT = '55555555-5555-4555-8555-555555555555';
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
@@ -57,7 +58,7 @@ function service() {
     const text = await request.text();
     const body = text === '' ? undefined : (JSON.parse(text) as unknown);
     const path = url.pathname;
-    asked.push({ method: request.method, path, body });
+    asked.push({ method: request.method, path: `${path}${url.search}`, body });
     if (path === '/v1/spaces') {
       return json(200, {
         items: [{ id: GENERAL, name: 'General', archived: false, mayCreate: true }],
@@ -89,6 +90,17 @@ function service() {
           },
         ],
       });
+    }
+    if (request.method === 'POST' && path === `/v1/bibliography-entries/${ENTRY}/versions`) {
+      const { entry } = body as { entry: { csl: unknown } };
+      return json(200, {
+        ...view,
+        version: { ...view.version, id: VERSION_NEXT, number: '0.2' },
+        entry: { ...view.entry, csl: entry.csl },
+      });
+    }
+    if (path === `/v1/spaces/${GENERAL}/bibliography-entries/export`) {
+      return json(200, { format: url.searchParams.get('format'), text: '@book{smith2020}' });
     }
     if (path === `/v1/bibliography-entries/${ENTRY}`) return json(200, view);
     if (path === `/v1/bibliography-entries/${ENTRY}/uses`) {
@@ -190,5 +202,51 @@ describe('an entry page', () => {
       `#/components/${COMPONENT}`,
     );
     expect(uses).toHaveTextContent('Cited in more you may not read.');
+  });
+});
+
+describe('changing and exporting an entry (the CI plan, CId)', () => {
+  it('cuts its next version from the version opened, its other fields kept and its key never asked', async () => {
+    const user = userEvent.setup();
+    const { client, asked } = service();
+    render(<EntryPage client={client} id={ENTRY} />);
+    await user.click(await screen.findByRole('button', { name: 'Edit' }));
+    const form = screen.getByRole('form', { name: 'Edit entry' });
+    expect(within(form).queryByRole('textbox', { name: 'Key' })).toBeNull();
+    const title = within(form).getByRole('textbox', { name: 'Title' });
+    expect(title).toHaveValue('The Dunnart in Winter');
+    expect(within(form).getByRole('textbox', { name: /^Authors/ })).toHaveValue(
+      'Smith, Ada\nOkafor, Grace',
+    );
+    await user.clear(title);
+    await user.type(title, 'The Dunnart in Spring');
+    await user.click(within(form).getByRole('button', { name: 'Save version' }));
+    expect(await screen.findByText('0.2')).toBeInTheDocument();
+    expect(screen.getByText('The Dunnart in Spring')).toBeInTheDocument();
+    expect(asked.find((each) => each.path.endsWith('/versions'))?.body).toEqual({
+      openedFrom: VERSION,
+      entry: { csl: { ...csl, title: 'The Dunnart in Spring' } },
+    });
+  });
+
+  it('LIB-009 exports the entry alone as CSL-JSON, BibTeX or RIS, saved as a file', async () => {
+    const user = userEvent.setup();
+    const { client, asked } = service();
+    const saved: Blob[] = [];
+    URL.createObjectURL = vi.fn((blob: Blob) => {
+      saved.push(blob);
+      return 'blob:entry';
+    });
+    URL.revokeObjectURL = vi.fn();
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    render(<EntryPage client={client} id={ENTRY} />);
+    await user.selectOptions(await screen.findByRole('combobox', { name: 'Export as' }), 'BibTeX');
+    await user.click(screen.getByRole('button', { name: 'Export' }));
+    await waitFor(() => expect(click).toHaveBeenCalled());
+    expect(asked.map((each) => each.path)).toContain(
+      `/v1/spaces/${GENERAL}/bibliography-entries/export?format=bibtex&ids=${ENTRY}`,
+    );
+    expect(await saved[0]!.text()).toBe('@book{smith2020}');
+    expect((click.mock.contexts[0] as HTMLAnchorElement).download).toBe('smith2020.bib');
   });
 });

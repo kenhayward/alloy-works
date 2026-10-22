@@ -137,6 +137,21 @@ export {
   type BoundImage,
 } from './bindings.js';
 export { bindingContextOf, setBindingContext } from './bindingView.js';
+// A citation, placed from the space's entries and drawn as the service renders it (CId).
+export {
+  CITATION_UNAVAILABLE,
+  changeCitation,
+  citationAt,
+  citationFormsOf,
+  citationKey,
+  citationPlaceable,
+  citationsIn,
+  insertCitation,
+  setCitationForms,
+  type CitationAt,
+  type CitationChoice,
+  type CitationForms,
+} from './citations.js';
 // A variable, placed from the declared ones (the R5 plan, R5b).
 export { insertVariable, variablePlaceable, variableSelected } from './variables.js';
 // Conditions, set over text and given alternatives (the R6 plan, R6-H).

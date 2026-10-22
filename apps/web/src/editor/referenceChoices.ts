@@ -69,6 +69,8 @@ export function keyOf(target: CrossReferenceTarget): string {
       return `component\u{0}${target.component}\u{0}${target.block}`;
     case 'node':
       return `node\u{0}${target.node}`;
+    case 'entry':
+      return `entry\u{0}${target.entry}`;
   }
 }
 
@@ -157,7 +159,12 @@ export function referenceOptions(
       ...others.slice(at).map((each) => option(each, true)),
     ];
   }
-  if (standing !== null && !options.some((each) => each.key === keyOf(standing.target))) {
+  // An entry is offered from the space's entries, which the page adds (STR-069; CId).
+  if (
+    standing !== null &&
+    standing.target.kind !== 'entry' &&
+    !options.some((each) => each.key === keyOf(standing.target))
+  ) {
     const kind: ReferenceKind = standing.target.kind === 'node' ? 'section' : 'block';
     const has = formsFor(kind);
     const name = standing.named ?? standing.shown ?? kindWord(kind);

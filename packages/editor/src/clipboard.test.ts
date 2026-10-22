@@ -189,16 +189,23 @@ describe('pasting', () => {
   });
 
   it('refuses what the pipeline admits and this editor cannot hold, by name', () => {
-    // A citation: every block has a node since equations 1, and a citation is among the inline
-    // nodes the editor still has none for.
+    // An image in a quotation's attribution: every node has a counterpart since CId, and an image
+    // stands in a paragraph alone.
     const cited = JSON.stringify({
       format: 'alloy-works/content',
       schemaVersion: 1,
       content: [
         {
-          type: 'paragraph',
-          style: 'body',
-          content: [{ type: 'citation', entry: 'ada-1843' }],
+          type: 'blockquote',
+          content: [{ type: 'paragraph', style: 'body', content: [] }],
+          attribution: [
+            {
+              type: 'image',
+              asset: '0b0e2c4b-3f1d-4e8a-9b2c-5d6e7f8a9c01',
+              imageStyle: 'inline',
+              alternative: { kind: 'decorative' },
+            },
+          ],
         },
       ],
     });
@@ -209,7 +216,7 @@ describe('pasting', () => {
     );
     expect(outcome.ok).toBe(false);
     expect(outcome.report.slice(-2)).toMatchObject([
-      { action: 'discarded', subject: 'unrepresentable', detail: 'citation' },
+      { action: 'discarded', subject: 'unrepresentable', detail: 'image' },
       { action: 'refused', subject: 'invalid' },
     ]);
   });
