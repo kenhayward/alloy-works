@@ -88,6 +88,7 @@ import { webhookHandlers } from './webhooks.js';
 import { extensionHandlers } from './extensions.js';
 import { registerMcp } from './mcp/route.js';
 import { promptHandlers, promptLibraryHandlers } from './generation/prompts.js';
+import { bibliographyHandlers } from './bibliography/routes.js';
 import { promptRunHandlers } from './generation/prompt-runs.js';
 import { guardrailHandlers } from './generation/guardrails.js';
 import { modelLimitHandlers } from './generation/limits.js';
@@ -593,6 +594,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...modelEndpointHandlers(db, tenantOf, options.connector),
     ...promptHandlers(db, tenantOf, principalOf),
     ...promptLibraryHandlers(),
+    ...bibliographyHandlers(),
     ...guardrailHandlers(),
     ...modelLimitHandlers(),
     ...modelBudgetHandlers(),

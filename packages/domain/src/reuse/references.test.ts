@@ -7,6 +7,7 @@ const ASSET_VERSION = '00000000-0000-4000-8000-00000000a551';
 const QUERY = '00000000-0000-4000-8000-00000000d001';
 const QUERY_VERSION = '00000000-0000-4000-8000-00000000d002';
 const CONNECTION = '00000000-0000-4000-8000-00000000c001';
+const ENTRY = '00000000-0000-4000-8000-00000000b1b1';
 
 describe('the references a version holds (the R2 plan, R2-A)', () => {
   it("lists a document's references to components, at any depth, each with its mode and pin", () => {
@@ -83,6 +84,26 @@ describe('the references a version holds (the R2 plan, R2-A)', () => {
         version: QUERY_VERSION,
       },
       { node: 'b3', target: { artifact: QUERY, kind: 'queryDefinition' }, mode: 'latest' },
+    ]);
+  });
+
+  it("lists a component's citations by their bibliography entries, as its latest version follows them", () => {
+    const content = {
+      blocks: [
+        {
+          type: 'paragraph',
+          id: 'p1',
+          content: [
+            { type: 'citation', entry: ENTRY, locator: 'p. 12' },
+            // The fixtures' entries are no artifacts' ids: the index keeps only what names one.
+            { type: 'citation', entry: 'bib-1' },
+          ],
+        },
+      ],
+    };
+    expect(referencesIn('component', content)).toEqual([
+      { node: null, target: { artifact: ENTRY, kind: 'bibliographyEntry' }, mode: 'latest' },
+      { node: null, target: { artifact: 'bib-1', kind: 'bibliographyEntry' }, mode: 'latest' },
     ]);
   });
 

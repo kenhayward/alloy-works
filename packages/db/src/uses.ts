@@ -223,7 +223,7 @@ export async function styleUses(
   };
 }
 
-async function readableAmong<
+export async function readableAmong<
   T extends { readonly id: string; readonly space_id: string; readonly subject?: string },
 >(
   trx: TenantTransaction,

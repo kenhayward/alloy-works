@@ -55,11 +55,13 @@ export async function archivalStored(trx: TenantTransaction): Promise<boolean> {
 
 export type ArchivalAnswer = 'changed' | 'unchanged';
 
-async function act(
+/** Archives or unarchives an artifact of one of these kinds: undefined for any other. */
+export async function actOn(
   trx: TenantTransaction,
   artifactId: string,
   by: string,
   act: 'archived' | 'unarchived',
+  kinds: readonly ('component' | 'document' | 'bibliographyEntry')[] = ['component', 'document'],
 ): Promise<ArchivalAnswer | undefined> {
   if (!UUID.test(artifactId)) return undefined;
   const artifact = await trx
@@ -67,8 +69,8 @@ async function act(
     .select('kind')
     .where('id', '=', artifactId)
     .executeTakeFirst();
-  if (artifact?.kind !== 'component' && artifact?.kind !== 'document') return undefined;
-  const kind = artifact.kind;
+  const kind = kinds.find((each) => each === artifact?.kind);
+  if (kind === undefined) return undefined;
   // Under the artifact's lock, as a version is recorded: two acts at once record one between them,
   // and an edit indexes it as the act left it.
   await lockArtifact(trx, artifactId);
@@ -105,7 +107,7 @@ export function archiveArtifact(
   artifactId: string,
   by: string,
 ): Promise<ArchivalAnswer | undefined> {
-  return act(trx, artifactId, by, 'archived');
+  return actOn(trx, artifactId, by, 'archived');
 }
 
 /** Unarchives one, as `archiveArtifact` archives it: unarchiving the live changes nothing. */
@@ -114,5 +116,5 @@ export function unarchiveArtifact(
   artifactId: string,
   by: string,
 ): Promise<ArchivalAnswer | undefined> {
-  return act(trx, artifactId, by, 'unarchived');
+  return actOn(trx, artifactId, by, 'unarchived');
 }

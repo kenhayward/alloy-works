@@ -248,6 +248,15 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   (`POST /v1/prompts/{id}/versions/{version}/trials`), and approving a prompt needs a finished trial of
   the version approved, whatever a tenant's workflow says. With a part open, the document's **Assistant** tab lists
   the library's approved prompts, each with **Run**; a prompt's page has **Try it**.
+- **Bibliography.** **Bibliography** lists a space's entries by key, authors, title and year: each
+  one source held as CSL-JSON, with where it was obtained and when last checked, its key made once
+  from its first author and year (`smith2020`, then `smith2020a`) and never changed. **New entry**
+  first looks for the same source in the space, by DOI, PubMed identifier, ISBN or ISSN, else by
+  title, year and first author, and offers it; **Import** reads pasted CSL-JSON, BibTeX or RIS,
+  merges each match, saying what it gave it and what it could not keep. An entry's page lists where
+  it is cited, and it is archived only when nothing cites it
+  (`/v1/spaces/{space}/bibliography-entries`). Citing an entry from the editor, and printing
+  citations, are not built yet.
 - **Groups, and your organisation's directory.** An administrator of the whole environment makes groups
   in Administration's **Groups** and grants a role to one as to a person, from any access page: everybody
   in it holds that role there. Groups lists each group in a table you can search, with where its members come from and who

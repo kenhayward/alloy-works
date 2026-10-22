@@ -559,6 +559,106 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/bibliography-entries/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A bibliography entry at its latest version
+         * @description Returns an entry at its latest version, whether it is archived, and whether the caller may change or archive it.
+         */
+        get: operations["getBibliographyEntry"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/bibliography-entries/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Archive an entry nothing cites
+         * @description Archives an entry, leaving it out of the space's listing. Refused while a component's latest version, or a version a baseline pins, cites it. It needs retire on the entry.
+         */
+        post: operations["archiveBibliographyEntry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/bibliography-entries/{id}/unarchive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unarchive an entry
+         * @description Unarchives an entry, returning it to the space's listing. It needs retire on the entry.
+         */
+        post: operations["unarchiveBibliographyEntry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/bibliography-entries/{id}/uses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Where an entry is cited: components, and baselines pinning a version that cites it
+         * @description Returns where an entry is cited: the components whose latest version cites it, and the baselines pinning a component version that does. One the caller may not read is said to exist, never named.
+         */
+        get: operations["getBibliographyEntryUses"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/bibliography-entries/{id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cut an entry's next version from the one the caller opened, its key kept
+         * @description Records the next entry version from the version the caller opened, checked as a new entry is. Its key is kept.
+         */
+        post: operations["recordBibliographyEntryVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/changes": {
         parameters: {
             query?: never;
@@ -5105,6 +5205,70 @@ export interface paths {
          * @description Starts an image upload in a space and records its description or decorative status. Upload bytes separately to finish it.
          */
         post: operations["createAssetUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/spaces/{space}/bibliography-entries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The space's bibliography entries the caller may read
+         * @description Lists a space's bibliography entries the caller may read, by key or the newest changed, each with its key and its CSL. Archived entries are left out, or listed alone when asked.
+         */
+        get: operations["listBibliographyEntries"];
+        put?: never;
+        /**
+         * Make a bibliography entry in this space, or be offered the one already there
+         * @description Makes a bibliography entry in the space from its CSL-JSON, without an id, and where it was obtained and when last checked. It is first matched against the entries already there: by DOI, PubMed identifier, ISBN or ISSN where it has one, else by its title, year and first author. A match is offered and nothing made, unless the request says to make it despite the match. Its key is made from its first author and year, suffixed a, b and on where the space holds it, and never changes. It needs edit in the space.
+         */
+        post: operations["createBibliographyEntry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/spaces/{space}/bibliography-entries/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The space's entries the caller may read, as CSL-JSON, BibTeX or RIS
+         * @description Exports the space's entries the caller may read, or those named, as CSL-JSON, BibTeX or RIS, each named by its key.
+         */
+        get: operations["exportBibliographyEntries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/spaces/{space}/bibliography-entries/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import CSL-JSON, BibTeX or RIS as entries of this space, merging each match
+         * @description Imports CSL-JSON, BibTeX or RIS text as entries of the space. Each record is matched as making one by hand is: a match is given the fields it lacked, in a new version, and the answer names them; otherwise an entry is made. Fields an entry cannot hold are left out and named. It needs edit in the space.
+         */
+        post: operations["importBibliographyEntries"];
         delete?: never;
         options?: never;
         head?: never;
@@ -13480,6 +13644,2942 @@ export interface operations {
                         rule?: string;
                         /** @description Quote this when reporting a problem */
                         traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getBibliographyEntry: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The entry */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "entry": {
+                     *         "schemaVersion": 1,
+                     *         "csl": {
+                     *           "type": "article"
+                     *         },
+                     *         "key": "example"
+                     *       },
+                     *       "archived": false,
+                     *       "mayEdit": false,
+                     *       "mayRetire": false
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        space: {
+                            id: string;
+                            name: string;
+                        };
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        entry: {
+                            /** @constant */
+                            schemaVersion: 1;
+                            csl: {
+                                /** @enum {string} */
+                                type: "article" | "article-journal" | "article-magazine" | "article-newspaper" | "bill" | "book" | "broadcast" | "chapter" | "classic" | "collection" | "dataset" | "document" | "entry" | "entry-dictionary" | "entry-encyclopedia" | "event" | "figure" | "graphic" | "hearing" | "interview" | "legal_case" | "legislation" | "manuscript" | "map" | "motion_picture" | "musical_score" | "pamphlet" | "paper-conference" | "patent" | "performance" | "periodical" | "personal_communication" | "post" | "post-weblog" | "regulation" | "report" | "review" | "review-book" | "software" | "song" | "speech" | "standard" | "thesis" | "treaty" | "webpage";
+                                author?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                chair?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                "collection-editor"?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                compiler?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                composer?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                "container-author"?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                contributor?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                curator?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                director?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                editor?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                "editorial-director"?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                "editor-translator"?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                "executive-producer"?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                guest?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                host?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                illustrator?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                interviewer?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                narrator?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                organizer?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                "original-author"?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                performer?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                producer?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                recipient?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                "reviewed-author"?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                "script-writer"?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                "series-creator"?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                translator?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                accessed?: {
+                                    "date-parts"?: (number | string)[][];
+                                    season?: number | string;
+                                    circa?: string | number | boolean;
+                                    literal?: string;
+                                    raw?: string;
+                                };
+                                "available-date"?: {
+                                    "date-parts"?: (number | string)[][];
+                                    season?: number | string;
+                                    circa?: string | number | boolean;
+                                    literal?: string;
+                                    raw?: string;
+                                };
+                                "event-date"?: {
+                                    "date-parts"?: (number | string)[][];
+                                    season?: number | string;
+                                    circa?: string | number | boolean;
+                                    literal?: string;
+                                    raw?: string;
+                                };
+                                issued?: {
+                                    "date-parts"?: (number | string)[][];
+                                    season?: number | string;
+                                    circa?: string | number | boolean;
+                                    literal?: string;
+                                    raw?: string;
+                                };
+                                "original-date"?: {
+                                    "date-parts"?: (number | string)[][];
+                                    season?: number | string;
+                                    circa?: string | number | boolean;
+                                    literal?: string;
+                                    raw?: string;
+                                };
+                                submitted?: {
+                                    "date-parts"?: (number | string)[][];
+                                    season?: number | string;
+                                    circa?: string | number | boolean;
+                                    literal?: string;
+                                    raw?: string;
+                                };
+                                "chapter-number"?: string | number;
+                                "citation-number"?: string | number;
+                                "collection-number"?: string | number;
+                                edition?: string | number;
+                                "first-reference-note-number"?: string | number;
+                                issue?: string | number;
+                                number?: string | number;
+                                "number-of-pages"?: string | number;
+                                "number-of-volumes"?: string | number;
+                                page?: string | number;
+                                "page-first"?: string | number;
+                                part?: string | number;
+                                printing?: string | number;
+                                section?: string | number;
+                                supplement?: string | number;
+                                version?: string | number;
+                                volume?: string | number;
+                                abstract?: string;
+                                annote?: string;
+                                archive?: string;
+                                archive_collection?: string;
+                                archive_location?: string;
+                                "archive-place"?: string;
+                                authority?: string;
+                                "call-number"?: string;
+                                "citation-key"?: string;
+                                "citation-label"?: string;
+                                "collection-title"?: string;
+                                "container-title"?: string;
+                                "container-title-short"?: string;
+                                dimensions?: string;
+                                division?: string;
+                                DOI?: string;
+                                event?: string;
+                                "event-title"?: string;
+                                "event-place"?: string;
+                                genre?: string;
+                                ISBN?: string;
+                                ISSN?: string;
+                                jurisdiction?: string;
+                                keyword?: string;
+                                language?: string;
+                                license?: string;
+                                locator?: string;
+                                medium?: string;
+                                note?: string;
+                                "original-publisher"?: string;
+                                "original-publisher-place"?: string;
+                                "original-title"?: string;
+                                "part-title"?: string;
+                                PMCID?: string;
+                                PMID?: string;
+                                publisher?: string;
+                                "publisher-place"?: string;
+                                references?: string;
+                                "reviewed-genre"?: string;
+                                "reviewed-title"?: string;
+                                scale?: string;
+                                source?: string;
+                                status?: string;
+                                title?: string;
+                                "title-short"?: string;
+                                URL?: string;
+                                "volume-title"?: string;
+                                "volume-title-short"?: string;
+                                "year-suffix"?: string;
+                                journalAbbreviation?: string;
+                                shortTitle?: string;
+                                categories?: string[];
+                            };
+                            key: string;
+                            obtained?: {
+                                from: string;
+                                /** Format: date-time */
+                                at: string;
+                            };
+                            /** Format: date-time */
+                            checkedAt?: string;
+                        };
+                        /** @description Whether it is archived: left out of the listing, still citable */
+                        archived: boolean;
+                        /** @description Whether the caller may cut its next version: edit on it */
+                        mayEdit: boolean;
+                        /** @description Whether the caller may archive it: retire on it */
+                        mayRetire: boolean;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: an entry the caller may not read is not found */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such entry in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    archiveBibliographyEntry: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Archived, or already so, which changes nothing */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "archived": false
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Whether it is archived now */
+                        archived: boolean;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the entry but may not retire it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such entry in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `entry_cited`: a component's latest version, or a baseline's, cites it */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    unarchiveBibliographyEntry: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Unarchived, or already so, which changes nothing */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "archived": false
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Whether it is archived now */
+                        archived: boolean;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the entry but may not retire it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such entry in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getBibliographyEntryUses: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The components and baselines citing it the caller may read, and whether there are more */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "components": {
+                     *         "named": [],
+                     *         "unreadable": false
+                     *       },
+                     *       "baselines": {
+                     *         "named": [],
+                     *         "unreadable": false
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        components: {
+                            named: {
+                                id: string;
+                                title: string;
+                            }[];
+                            /** @description Whether a component the caller may not read cites it too */
+                            unreadable: boolean;
+                        };
+                        baselines: {
+                            named: {
+                                id: string;
+                                name: string;
+                                document: string;
+                            }[];
+                            /** @description Whether a baseline the caller may not read pins one too */
+                            unreadable: boolean;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: an entry the caller may not read is not found */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such entry in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    recordBibliographyEntryVersion: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "openedFrom": "00000000-0000-4000-8000-000000000001",
+                 *       "entry": {
+                 *         "csl": {
+                 *           "type": "article"
+                 *         }
+                 *       }
+                 *     }
+                 */
+                "application/json": {
+                    openedFrom: string & (unknown & unknown);
+                    entry: {
+                        csl: {
+                            /** @enum {string} */
+                            type: "article" | "article-journal" | "article-magazine" | "article-newspaper" | "bill" | "book" | "broadcast" | "chapter" | "classic" | "collection" | "dataset" | "document" | "entry" | "entry-dictionary" | "entry-encyclopedia" | "event" | "figure" | "graphic" | "hearing" | "interview" | "legal_case" | "legislation" | "manuscript" | "map" | "motion_picture" | "musical_score" | "pamphlet" | "paper-conference" | "patent" | "performance" | "periodical" | "personal_communication" | "post" | "post-weblog" | "regulation" | "report" | "review" | "review-book" | "software" | "song" | "speech" | "standard" | "thesis" | "treaty" | "webpage";
+                            author?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            chair?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            "collection-editor"?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            compiler?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            composer?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            "container-author"?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            contributor?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            curator?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            director?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            editor?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            "editorial-director"?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            "editor-translator"?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            "executive-producer"?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            guest?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            host?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            illustrator?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            interviewer?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            narrator?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            organizer?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            "original-author"?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            performer?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            producer?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            recipient?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            "reviewed-author"?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            "script-writer"?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            "series-creator"?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            translator?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            accessed?: {
+                                "date-parts"?: (number | string)[][];
+                                season?: number | string;
+                                circa?: string | number | boolean;
+                                literal?: string;
+                                raw?: string;
+                            };
+                            "available-date"?: {
+                                "date-parts"?: (number | string)[][];
+                                season?: number | string;
+                                circa?: string | number | boolean;
+                                literal?: string;
+                                raw?: string;
+                            };
+                            "event-date"?: {
+                                "date-parts"?: (number | string)[][];
+                                season?: number | string;
+                                circa?: string | number | boolean;
+                                literal?: string;
+                                raw?: string;
+                            };
+                            issued?: {
+                                "date-parts"?: (number | string)[][];
+                                season?: number | string;
+                                circa?: string | number | boolean;
+                                literal?: string;
+                                raw?: string;
+                            };
+                            "original-date"?: {
+                                "date-parts"?: (number | string)[][];
+                                season?: number | string;
+                                circa?: string | number | boolean;
+                                literal?: string;
+                                raw?: string;
+                            };
+                            submitted?: {
+                                "date-parts"?: (number | string)[][];
+                                season?: number | string;
+                                circa?: string | number | boolean;
+                                literal?: string;
+                                raw?: string;
+                            };
+                            "chapter-number"?: string | number;
+                            "citation-number"?: string | number;
+                            "collection-number"?: string | number;
+                            edition?: string | number;
+                            "first-reference-note-number"?: string | number;
+                            issue?: string | number;
+                            number?: string | number;
+                            "number-of-pages"?: string | number;
+                            "number-of-volumes"?: string | number;
+                            page?: string | number;
+                            "page-first"?: string | number;
+                            part?: string | number;
+                            printing?: string | number;
+                            section?: string | number;
+                            supplement?: string | number;
+                            version?: string | number;
+                            volume?: string | number;
+                            abstract?: string;
+                            annote?: string;
+                            archive?: string;
+                            archive_collection?: string;
+                            archive_location?: string;
+                            "archive-place"?: string;
+                            authority?: string;
+                            "call-number"?: string;
+                            "citation-key"?: string;
+                            "citation-label"?: string;
+                            "collection-title"?: string;
+                            "container-title"?: string;
+                            "container-title-short"?: string;
+                            dimensions?: string;
+                            division?: string;
+                            DOI?: string;
+                            event?: string;
+                            "event-title"?: string;
+                            "event-place"?: string;
+                            genre?: string;
+                            ISBN?: string;
+                            ISSN?: string;
+                            jurisdiction?: string;
+                            keyword?: string;
+                            language?: string;
+                            license?: string;
+                            locator?: string;
+                            medium?: string;
+                            note?: string;
+                            "original-publisher"?: string;
+                            "original-publisher-place"?: string;
+                            "original-title"?: string;
+                            "part-title"?: string;
+                            PMCID?: string;
+                            PMID?: string;
+                            publisher?: string;
+                            "publisher-place"?: string;
+                            references?: string;
+                            "reviewed-genre"?: string;
+                            "reviewed-title"?: string;
+                            scale?: string;
+                            source?: string;
+                            status?: string;
+                            title?: string;
+                            "title-short"?: string;
+                            URL?: string;
+                            "volume-title"?: string;
+                            "volume-title-short"?: string;
+                            "year-suffix"?: string;
+                            journalAbbreviation?: string;
+                            shortTitle?: string;
+                            categories?: string[];
+                        };
+                        obtained?: {
+                            from: string;
+                            /** Format: date-time */
+                            at: string;
+                        };
+                        /** Format: date-time */
+                        checkedAt?: string;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description The entry at its latest version: the one cut, or the one before where nothing changed */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "entry": {
+                     *         "schemaVersion": 1,
+                     *         "csl": {
+                     *           "type": "article"
+                     *         },
+                     *         "key": "example"
+                     *       },
+                     *       "archived": false,
+                     *       "mayEdit": false,
+                     *       "mayRetire": false
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        space: {
+                            id: string;
+                            name: string;
+                        };
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        entry: {
+                            /** @constant */
+                            schemaVersion: 1;
+                            csl: {
+                                /** @enum {string} */
+                                type: "article" | "article-journal" | "article-magazine" | "article-newspaper" | "bill" | "book" | "broadcast" | "chapter" | "classic" | "collection" | "dataset" | "document" | "entry" | "entry-dictionary" | "entry-encyclopedia" | "event" | "figure" | "graphic" | "hearing" | "interview" | "legal_case" | "legislation" | "manuscript" | "map" | "motion_picture" | "musical_score" | "pamphlet" | "paper-conference" | "patent" | "performance" | "periodical" | "personal_communication" | "post" | "post-weblog" | "regulation" | "report" | "review" | "review-book" | "software" | "song" | "speech" | "standard" | "thesis" | "treaty" | "webpage";
+                                author?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                chair?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                "collection-editor"?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                compiler?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                composer?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                "container-author"?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                contributor?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                curator?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                director?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                editor?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                "editorial-director"?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                "editor-translator"?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                "executive-producer"?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                guest?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                host?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                illustrator?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                interviewer?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                narrator?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                organizer?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                "original-author"?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                performer?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                producer?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                recipient?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                "reviewed-author"?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                "script-writer"?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                "series-creator"?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                translator?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                accessed?: {
+                                    "date-parts"?: (number | string)[][];
+                                    season?: number | string;
+                                    circa?: string | number | boolean;
+                                    literal?: string;
+                                    raw?: string;
+                                };
+                                "available-date"?: {
+                                    "date-parts"?: (number | string)[][];
+                                    season?: number | string;
+                                    circa?: string | number | boolean;
+                                    literal?: string;
+                                    raw?: string;
+                                };
+                                "event-date"?: {
+                                    "date-parts"?: (number | string)[][];
+                                    season?: number | string;
+                                    circa?: string | number | boolean;
+                                    literal?: string;
+                                    raw?: string;
+                                };
+                                issued?: {
+                                    "date-parts"?: (number | string)[][];
+                                    season?: number | string;
+                                    circa?: string | number | boolean;
+                                    literal?: string;
+                                    raw?: string;
+                                };
+                                "original-date"?: {
+                                    "date-parts"?: (number | string)[][];
+                                    season?: number | string;
+                                    circa?: string | number | boolean;
+                                    literal?: string;
+                                    raw?: string;
+                                };
+                                submitted?: {
+                                    "date-parts"?: (number | string)[][];
+                                    season?: number | string;
+                                    circa?: string | number | boolean;
+                                    literal?: string;
+                                    raw?: string;
+                                };
+                                "chapter-number"?: string | number;
+                                "citation-number"?: string | number;
+                                "collection-number"?: string | number;
+                                edition?: string | number;
+                                "first-reference-note-number"?: string | number;
+                                issue?: string | number;
+                                number?: string | number;
+                                "number-of-pages"?: string | number;
+                                "number-of-volumes"?: string | number;
+                                page?: string | number;
+                                "page-first"?: string | number;
+                                part?: string | number;
+                                printing?: string | number;
+                                section?: string | number;
+                                supplement?: string | number;
+                                version?: string | number;
+                                volume?: string | number;
+                                abstract?: string;
+                                annote?: string;
+                                archive?: string;
+                                archive_collection?: string;
+                                archive_location?: string;
+                                "archive-place"?: string;
+                                authority?: string;
+                                "call-number"?: string;
+                                "citation-key"?: string;
+                                "citation-label"?: string;
+                                "collection-title"?: string;
+                                "container-title"?: string;
+                                "container-title-short"?: string;
+                                dimensions?: string;
+                                division?: string;
+                                DOI?: string;
+                                event?: string;
+                                "event-title"?: string;
+                                "event-place"?: string;
+                                genre?: string;
+                                ISBN?: string;
+                                ISSN?: string;
+                                jurisdiction?: string;
+                                keyword?: string;
+                                language?: string;
+                                license?: string;
+                                locator?: string;
+                                medium?: string;
+                                note?: string;
+                                "original-publisher"?: string;
+                                "original-publisher-place"?: string;
+                                "original-title"?: string;
+                                "part-title"?: string;
+                                PMCID?: string;
+                                PMID?: string;
+                                publisher?: string;
+                                "publisher-place"?: string;
+                                references?: string;
+                                "reviewed-genre"?: string;
+                                "reviewed-title"?: string;
+                                scale?: string;
+                                source?: string;
+                                status?: string;
+                                title?: string;
+                                "title-short"?: string;
+                                URL?: string;
+                                "volume-title"?: string;
+                                "volume-title-short"?: string;
+                                "year-suffix"?: string;
+                                journalAbbreviation?: string;
+                                shortTitle?: string;
+                                categories?: string[];
+                            };
+                            key: string;
+                            obtained?: {
+                                from: string;
+                                /** Format: date-time */
+                                at: string;
+                            };
+                            /** Format: date-time */
+                            checkedAt?: string;
+                        };
+                        /** @description Whether it is archived: left out of the listing, still citable */
+                        archived: boolean;
+                        /** @description Whether the caller may cut its next version: edit on it */
+                        mayEdit: boolean;
+                        /** @description Whether the caller may archive it: retire on it */
+                        mayRetire: boolean;
+                    };
+                };
+            };
+            /** @description `entry_invalid`: a source type or field CSL 1.0.2 does not hold, or a field in another shape than CSL's, each problem named */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        problems?: {
+                            /** @constant */
+                            rule: "entry_invalid";
+                            path: string;
+                            message: string;
+                        }[];
+                        current?: {
+                            id: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            entry: {
+                                /** @constant */
+                                schemaVersion: 1;
+                                csl: {
+                                    /** @enum {string} */
+                                    type: "article" | "article-journal" | "article-magazine" | "article-newspaper" | "bill" | "book" | "broadcast" | "chapter" | "classic" | "collection" | "dataset" | "document" | "entry" | "entry-dictionary" | "entry-encyclopedia" | "event" | "figure" | "graphic" | "hearing" | "interview" | "legal_case" | "legislation" | "manuscript" | "map" | "motion_picture" | "musical_score" | "pamphlet" | "paper-conference" | "patent" | "performance" | "periodical" | "personal_communication" | "post" | "post-weblog" | "regulation" | "report" | "review" | "review-book" | "software" | "song" | "speech" | "standard" | "thesis" | "treaty" | "webpage";
+                                    author?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    chair?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "collection-editor"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    compiler?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    composer?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "container-author"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    contributor?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    curator?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    director?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    editor?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "editorial-director"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "editor-translator"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "executive-producer"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    guest?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    host?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    illustrator?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    interviewer?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    narrator?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    organizer?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "original-author"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    performer?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    producer?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    recipient?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "reviewed-author"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "script-writer"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "series-creator"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    translator?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    accessed?: {
+                                        "date-parts"?: (number | string)[][];
+                                        season?: number | string;
+                                        circa?: string | number | boolean;
+                                        literal?: string;
+                                        raw?: string;
+                                    };
+                                    "available-date"?: {
+                                        "date-parts"?: (number | string)[][];
+                                        season?: number | string;
+                                        circa?: string | number | boolean;
+                                        literal?: string;
+                                        raw?: string;
+                                    };
+                                    "event-date"?: {
+                                        "date-parts"?: (number | string)[][];
+                                        season?: number | string;
+                                        circa?: string | number | boolean;
+                                        literal?: string;
+                                        raw?: string;
+                                    };
+                                    issued?: {
+                                        "date-parts"?: (number | string)[][];
+                                        season?: number | string;
+                                        circa?: string | number | boolean;
+                                        literal?: string;
+                                        raw?: string;
+                                    };
+                                    "original-date"?: {
+                                        "date-parts"?: (number | string)[][];
+                                        season?: number | string;
+                                        circa?: string | number | boolean;
+                                        literal?: string;
+                                        raw?: string;
+                                    };
+                                    submitted?: {
+                                        "date-parts"?: (number | string)[][];
+                                        season?: number | string;
+                                        circa?: string | number | boolean;
+                                        literal?: string;
+                                        raw?: string;
+                                    };
+                                    "chapter-number"?: string | number;
+                                    "citation-number"?: string | number;
+                                    "collection-number"?: string | number;
+                                    edition?: string | number;
+                                    "first-reference-note-number"?: string | number;
+                                    issue?: string | number;
+                                    number?: string | number;
+                                    "number-of-pages"?: string | number;
+                                    "number-of-volumes"?: string | number;
+                                    page?: string | number;
+                                    "page-first"?: string | number;
+                                    part?: string | number;
+                                    printing?: string | number;
+                                    section?: string | number;
+                                    supplement?: string | number;
+                                    version?: string | number;
+                                    volume?: string | number;
+                                    abstract?: string;
+                                    annote?: string;
+                                    archive?: string;
+                                    archive_collection?: string;
+                                    archive_location?: string;
+                                    "archive-place"?: string;
+                                    authority?: string;
+                                    "call-number"?: string;
+                                    "citation-key"?: string;
+                                    "citation-label"?: string;
+                                    "collection-title"?: string;
+                                    "container-title"?: string;
+                                    "container-title-short"?: string;
+                                    dimensions?: string;
+                                    division?: string;
+                                    DOI?: string;
+                                    event?: string;
+                                    "event-title"?: string;
+                                    "event-place"?: string;
+                                    genre?: string;
+                                    ISBN?: string;
+                                    ISSN?: string;
+                                    jurisdiction?: string;
+                                    keyword?: string;
+                                    language?: string;
+                                    license?: string;
+                                    locator?: string;
+                                    medium?: string;
+                                    note?: string;
+                                    "original-publisher"?: string;
+                                    "original-publisher-place"?: string;
+                                    "original-title"?: string;
+                                    "part-title"?: string;
+                                    PMCID?: string;
+                                    PMID?: string;
+                                    publisher?: string;
+                                    "publisher-place"?: string;
+                                    references?: string;
+                                    "reviewed-genre"?: string;
+                                    "reviewed-title"?: string;
+                                    scale?: string;
+                                    source?: string;
+                                    status?: string;
+                                    title?: string;
+                                    "title-short"?: string;
+                                    URL?: string;
+                                    "volume-title"?: string;
+                                    "volume-title-short"?: string;
+                                    "year-suffix"?: string;
+                                    journalAbbreviation?: string;
+                                    shortTitle?: string;
+                                    categories?: string[];
+                                };
+                                key: string;
+                                obtained?: {
+                                    from: string;
+                                    /** Format: date-time */
+                                    at: string;
+                                };
+                                /** Format: date-time */
+                                checkedAt?: string;
+                            };
+                            /** @description Whether it is archived: left out of the listing, still citable */
+                            archived: boolean;
+                            /** @description Whether the caller may cut its next version: edit on it */
+                            mayEdit: boolean;
+                            /** @description Whether the caller may archive it: retire on it */
+                            mayRetire: boolean;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the entry but may not edit it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such entry in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `version_precondition`: the entry has a newer version than the one named, answered with it; `space_archived`: the space is archived, and nothing new is made in it */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        problems?: {
+                            /** @constant */
+                            rule: "entry_invalid";
+                            path: string;
+                            message: string;
+                        }[];
+                        current?: {
+                            id: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            entry: {
+                                /** @constant */
+                                schemaVersion: 1;
+                                csl: {
+                                    /** @enum {string} */
+                                    type: "article" | "article-journal" | "article-magazine" | "article-newspaper" | "bill" | "book" | "broadcast" | "chapter" | "classic" | "collection" | "dataset" | "document" | "entry" | "entry-dictionary" | "entry-encyclopedia" | "event" | "figure" | "graphic" | "hearing" | "interview" | "legal_case" | "legislation" | "manuscript" | "map" | "motion_picture" | "musical_score" | "pamphlet" | "paper-conference" | "patent" | "performance" | "periodical" | "personal_communication" | "post" | "post-weblog" | "regulation" | "report" | "review" | "review-book" | "software" | "song" | "speech" | "standard" | "thesis" | "treaty" | "webpage";
+                                    author?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    chair?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "collection-editor"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    compiler?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    composer?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "container-author"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    contributor?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    curator?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    director?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    editor?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "editorial-director"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "editor-translator"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "executive-producer"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    guest?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    host?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    illustrator?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    interviewer?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    narrator?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    organizer?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "original-author"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    performer?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    producer?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    recipient?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "reviewed-author"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "script-writer"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "series-creator"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    translator?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    accessed?: {
+                                        "date-parts"?: (number | string)[][];
+                                        season?: number | string;
+                                        circa?: string | number | boolean;
+                                        literal?: string;
+                                        raw?: string;
+                                    };
+                                    "available-date"?: {
+                                        "date-parts"?: (number | string)[][];
+                                        season?: number | string;
+                                        circa?: string | number | boolean;
+                                        literal?: string;
+                                        raw?: string;
+                                    };
+                                    "event-date"?: {
+                                        "date-parts"?: (number | string)[][];
+                                        season?: number | string;
+                                        circa?: string | number | boolean;
+                                        literal?: string;
+                                        raw?: string;
+                                    };
+                                    issued?: {
+                                        "date-parts"?: (number | string)[][];
+                                        season?: number | string;
+                                        circa?: string | number | boolean;
+                                        literal?: string;
+                                        raw?: string;
+                                    };
+                                    "original-date"?: {
+                                        "date-parts"?: (number | string)[][];
+                                        season?: number | string;
+                                        circa?: string | number | boolean;
+                                        literal?: string;
+                                        raw?: string;
+                                    };
+                                    submitted?: {
+                                        "date-parts"?: (number | string)[][];
+                                        season?: number | string;
+                                        circa?: string | number | boolean;
+                                        literal?: string;
+                                        raw?: string;
+                                    };
+                                    "chapter-number"?: string | number;
+                                    "citation-number"?: string | number;
+                                    "collection-number"?: string | number;
+                                    edition?: string | number;
+                                    "first-reference-note-number"?: string | number;
+                                    issue?: string | number;
+                                    number?: string | number;
+                                    "number-of-pages"?: string | number;
+                                    "number-of-volumes"?: string | number;
+                                    page?: string | number;
+                                    "page-first"?: string | number;
+                                    part?: string | number;
+                                    printing?: string | number;
+                                    section?: string | number;
+                                    supplement?: string | number;
+                                    version?: string | number;
+                                    volume?: string | number;
+                                    abstract?: string;
+                                    annote?: string;
+                                    archive?: string;
+                                    archive_collection?: string;
+                                    archive_location?: string;
+                                    "archive-place"?: string;
+                                    authority?: string;
+                                    "call-number"?: string;
+                                    "citation-key"?: string;
+                                    "citation-label"?: string;
+                                    "collection-title"?: string;
+                                    "container-title"?: string;
+                                    "container-title-short"?: string;
+                                    dimensions?: string;
+                                    division?: string;
+                                    DOI?: string;
+                                    event?: string;
+                                    "event-title"?: string;
+                                    "event-place"?: string;
+                                    genre?: string;
+                                    ISBN?: string;
+                                    ISSN?: string;
+                                    jurisdiction?: string;
+                                    keyword?: string;
+                                    language?: string;
+                                    license?: string;
+                                    locator?: string;
+                                    medium?: string;
+                                    note?: string;
+                                    "original-publisher"?: string;
+                                    "original-publisher-place"?: string;
+                                    "original-title"?: string;
+                                    "part-title"?: string;
+                                    PMCID?: string;
+                                    PMID?: string;
+                                    publisher?: string;
+                                    "publisher-place"?: string;
+                                    references?: string;
+                                    "reviewed-genre"?: string;
+                                    "reviewed-title"?: string;
+                                    scale?: string;
+                                    source?: string;
+                                    status?: string;
+                                    title?: string;
+                                    "title-short"?: string;
+                                    URL?: string;
+                                    "volume-title"?: string;
+                                    "volume-title-short"?: string;
+                                    "year-suffix"?: string;
+                                    journalAbbreviation?: string;
+                                    shortTitle?: string;
+                                    categories?: string[];
+                                };
+                                key: string;
+                                obtained?: {
+                                    from: string;
+                                    /** Format: date-time */
+                                    at: string;
+                                };
+                                /** Format: date-time */
+                                checkedAt?: string;
+                            };
+                            /** @description Whether it is archived: left out of the listing, still citable */
+                            archived: boolean;
+                            /** @description Whether the caller may cut its next version: edit on it */
+                            mayEdit: boolean;
+                            /** @description Whether the caller may archive it: retire on it */
+                            mayRetire: boolean;
+                        };
                     };
                 };
             };
@@ -81851,6 +84951,3249 @@ export interface operations {
             };
             /** @description No such thing in this environment, or none the caller may read */
             404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listBibliographyEntries: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: string;
+                sort?: "key" | "changed";
+                order?: "asc" | "desc";
+                archived?: "true";
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                space: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of entries */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "next": "example",
+                     *       "total": -9007199254740991
+                     *     }
+                     */
+                    "application/json": {
+                        items: {
+                            id: string;
+                            /** @description Its key, made from its fields at its creation and never changed */
+                            key: string;
+                            csl: {
+                                /** @enum {string} */
+                                type: "article" | "article-journal" | "article-magazine" | "article-newspaper" | "bill" | "book" | "broadcast" | "chapter" | "classic" | "collection" | "dataset" | "document" | "entry" | "entry-dictionary" | "entry-encyclopedia" | "event" | "figure" | "graphic" | "hearing" | "interview" | "legal_case" | "legislation" | "manuscript" | "map" | "motion_picture" | "musical_score" | "pamphlet" | "paper-conference" | "patent" | "performance" | "periodical" | "personal_communication" | "post" | "post-weblog" | "regulation" | "report" | "review" | "review-book" | "software" | "song" | "speech" | "standard" | "thesis" | "treaty" | "webpage";
+                                author?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                chair?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                "collection-editor"?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                compiler?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                composer?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                "container-author"?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                contributor?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                curator?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                director?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                editor?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                "editorial-director"?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                "editor-translator"?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                "executive-producer"?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                guest?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                host?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                illustrator?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                interviewer?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                narrator?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                organizer?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                "original-author"?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                performer?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                producer?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                recipient?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                "reviewed-author"?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                "script-writer"?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                "series-creator"?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                translator?: {
+                                    family?: string;
+                                    given?: string;
+                                    "dropping-particle"?: string;
+                                    "non-dropping-particle"?: string;
+                                    suffix?: string;
+                                    "comma-suffix"?: string | number | boolean;
+                                    "static-ordering"?: string | number | boolean;
+                                    literal?: string;
+                                    "parse-names"?: string | number | boolean;
+                                }[];
+                                accessed?: {
+                                    "date-parts"?: (number | string)[][];
+                                    season?: number | string;
+                                    circa?: string | number | boolean;
+                                    literal?: string;
+                                    raw?: string;
+                                };
+                                "available-date"?: {
+                                    "date-parts"?: (number | string)[][];
+                                    season?: number | string;
+                                    circa?: string | number | boolean;
+                                    literal?: string;
+                                    raw?: string;
+                                };
+                                "event-date"?: {
+                                    "date-parts"?: (number | string)[][];
+                                    season?: number | string;
+                                    circa?: string | number | boolean;
+                                    literal?: string;
+                                    raw?: string;
+                                };
+                                issued?: {
+                                    "date-parts"?: (number | string)[][];
+                                    season?: number | string;
+                                    circa?: string | number | boolean;
+                                    literal?: string;
+                                    raw?: string;
+                                };
+                                "original-date"?: {
+                                    "date-parts"?: (number | string)[][];
+                                    season?: number | string;
+                                    circa?: string | number | boolean;
+                                    literal?: string;
+                                    raw?: string;
+                                };
+                                submitted?: {
+                                    "date-parts"?: (number | string)[][];
+                                    season?: number | string;
+                                    circa?: string | number | boolean;
+                                    literal?: string;
+                                    raw?: string;
+                                };
+                                "chapter-number"?: string | number;
+                                "citation-number"?: string | number;
+                                "collection-number"?: string | number;
+                                edition?: string | number;
+                                "first-reference-note-number"?: string | number;
+                                issue?: string | number;
+                                number?: string | number;
+                                "number-of-pages"?: string | number;
+                                "number-of-volumes"?: string | number;
+                                page?: string | number;
+                                "page-first"?: string | number;
+                                part?: string | number;
+                                printing?: string | number;
+                                section?: string | number;
+                                supplement?: string | number;
+                                version?: string | number;
+                                volume?: string | number;
+                                abstract?: string;
+                                annote?: string;
+                                archive?: string;
+                                archive_collection?: string;
+                                archive_location?: string;
+                                "archive-place"?: string;
+                                authority?: string;
+                                "call-number"?: string;
+                                "citation-key"?: string;
+                                "citation-label"?: string;
+                                "collection-title"?: string;
+                                "container-title"?: string;
+                                "container-title-short"?: string;
+                                dimensions?: string;
+                                division?: string;
+                                DOI?: string;
+                                event?: string;
+                                "event-title"?: string;
+                                "event-place"?: string;
+                                genre?: string;
+                                ISBN?: string;
+                                ISSN?: string;
+                                jurisdiction?: string;
+                                keyword?: string;
+                                language?: string;
+                                license?: string;
+                                locator?: string;
+                                medium?: string;
+                                note?: string;
+                                "original-publisher"?: string;
+                                "original-publisher-place"?: string;
+                                "original-title"?: string;
+                                "part-title"?: string;
+                                PMCID?: string;
+                                PMID?: string;
+                                publisher?: string;
+                                "publisher-place"?: string;
+                                references?: string;
+                                "reviewed-genre"?: string;
+                                "reviewed-title"?: string;
+                                scale?: string;
+                                source?: string;
+                                status?: string;
+                                title?: string;
+                                "title-short"?: string;
+                                URL?: string;
+                                "volume-title"?: string;
+                                "volume-title-short"?: string;
+                                "year-suffix"?: string;
+                                journalAbbreviation?: string;
+                                shortTitle?: string;
+                                categories?: string[];
+                            };
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            /** @description When its latest version was made */
+                            changedAt: string;
+                        }[];
+                        /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
+                        next: string | null;
+                        /** @description How many there are with the filters in force, as of the walk this page belongs to */
+                        total: number;
+                    };
+                };
+            };
+            /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a space the caller may not read is not found */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such space in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    createBibliographyEntry: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                space: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "entry": {
+                 *         "csl": {
+                 *           "type": "article"
+                 *         }
+                 *       }
+                 *     }
+                 */
+                "application/json": {
+                    entry: {
+                        csl: {
+                            /** @enum {string} */
+                            type: "article" | "article-journal" | "article-magazine" | "article-newspaper" | "bill" | "book" | "broadcast" | "chapter" | "classic" | "collection" | "dataset" | "document" | "entry" | "entry-dictionary" | "entry-encyclopedia" | "event" | "figure" | "graphic" | "hearing" | "interview" | "legal_case" | "legislation" | "manuscript" | "map" | "motion_picture" | "musical_score" | "pamphlet" | "paper-conference" | "patent" | "performance" | "periodical" | "personal_communication" | "post" | "post-weblog" | "regulation" | "report" | "review" | "review-book" | "software" | "song" | "speech" | "standard" | "thesis" | "treaty" | "webpage";
+                            author?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            chair?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            "collection-editor"?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            compiler?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            composer?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            "container-author"?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            contributor?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            curator?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            director?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            editor?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            "editorial-director"?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            "editor-translator"?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            "executive-producer"?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            guest?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            host?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            illustrator?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            interviewer?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            narrator?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            organizer?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            "original-author"?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            performer?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            producer?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            recipient?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            "reviewed-author"?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            "script-writer"?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            "series-creator"?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            translator?: {
+                                family?: string;
+                                given?: string;
+                                "dropping-particle"?: string;
+                                "non-dropping-particle"?: string;
+                                suffix?: string;
+                                "comma-suffix"?: string | number | boolean;
+                                "static-ordering"?: string | number | boolean;
+                                literal?: string;
+                                "parse-names"?: string | number | boolean;
+                            }[];
+                            accessed?: {
+                                "date-parts"?: (number | string)[][];
+                                season?: number | string;
+                                circa?: string | number | boolean;
+                                literal?: string;
+                                raw?: string;
+                            };
+                            "available-date"?: {
+                                "date-parts"?: (number | string)[][];
+                                season?: number | string;
+                                circa?: string | number | boolean;
+                                literal?: string;
+                                raw?: string;
+                            };
+                            "event-date"?: {
+                                "date-parts"?: (number | string)[][];
+                                season?: number | string;
+                                circa?: string | number | boolean;
+                                literal?: string;
+                                raw?: string;
+                            };
+                            issued?: {
+                                "date-parts"?: (number | string)[][];
+                                season?: number | string;
+                                circa?: string | number | boolean;
+                                literal?: string;
+                                raw?: string;
+                            };
+                            "original-date"?: {
+                                "date-parts"?: (number | string)[][];
+                                season?: number | string;
+                                circa?: string | number | boolean;
+                                literal?: string;
+                                raw?: string;
+                            };
+                            submitted?: {
+                                "date-parts"?: (number | string)[][];
+                                season?: number | string;
+                                circa?: string | number | boolean;
+                                literal?: string;
+                                raw?: string;
+                            };
+                            "chapter-number"?: string | number;
+                            "citation-number"?: string | number;
+                            "collection-number"?: string | number;
+                            edition?: string | number;
+                            "first-reference-note-number"?: string | number;
+                            issue?: string | number;
+                            number?: string | number;
+                            "number-of-pages"?: string | number;
+                            "number-of-volumes"?: string | number;
+                            page?: string | number;
+                            "page-first"?: string | number;
+                            part?: string | number;
+                            printing?: string | number;
+                            section?: string | number;
+                            supplement?: string | number;
+                            version?: string | number;
+                            volume?: string | number;
+                            abstract?: string;
+                            annote?: string;
+                            archive?: string;
+                            archive_collection?: string;
+                            archive_location?: string;
+                            "archive-place"?: string;
+                            authority?: string;
+                            "call-number"?: string;
+                            "citation-key"?: string;
+                            "citation-label"?: string;
+                            "collection-title"?: string;
+                            "container-title"?: string;
+                            "container-title-short"?: string;
+                            dimensions?: string;
+                            division?: string;
+                            DOI?: string;
+                            event?: string;
+                            "event-title"?: string;
+                            "event-place"?: string;
+                            genre?: string;
+                            ISBN?: string;
+                            ISSN?: string;
+                            jurisdiction?: string;
+                            keyword?: string;
+                            language?: string;
+                            license?: string;
+                            locator?: string;
+                            medium?: string;
+                            note?: string;
+                            "original-publisher"?: string;
+                            "original-publisher-place"?: string;
+                            "original-title"?: string;
+                            "part-title"?: string;
+                            PMCID?: string;
+                            PMID?: string;
+                            publisher?: string;
+                            "publisher-place"?: string;
+                            references?: string;
+                            "reviewed-genre"?: string;
+                            "reviewed-title"?: string;
+                            scale?: string;
+                            source?: string;
+                            status?: string;
+                            title?: string;
+                            "title-short"?: string;
+                            URL?: string;
+                            "volume-title"?: string;
+                            "volume-title-short"?: string;
+                            "year-suffix"?: string;
+                            journalAbbreviation?: string;
+                            shortTitle?: string;
+                            categories?: string[];
+                        };
+                        obtained?: {
+                            from: string;
+                            /** Format: date-time */
+                            at: string;
+                        };
+                        /** Format: date-time */
+                        checkedAt?: string;
+                    };
+                    /** @description Make it though the same source is already in the space (LIB-044) */
+                    despiteMatches?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Made at version 0.1, or not made and the same source offered */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "entry": {
+                     *         "id": "example",
+                     *         "space": {
+                     *           "id": "example",
+                     *           "name": "example"
+                     *         },
+                     *         "version": {
+                     *           "id": "example",
+                     *           "number": "example",
+                     *           "author": "example",
+                     *           "createdAt": "example",
+                     *           "note": "example"
+                     *         },
+                     *         "entry": {
+                     *           "schemaVersion": 1,
+                     *           "csl": {
+                     *             "type": "article"
+                     *           },
+                     *           "key": "example"
+                     *         },
+                     *         "archived": false,
+                     *         "mayEdit": false,
+                     *         "mayRetire": false
+                     *       },
+                     *       "matches": []
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description The entry made; null where the same source was found and the caller did not make it despite it */
+                        entry: {
+                            id: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            entry: {
+                                /** @constant */
+                                schemaVersion: 1;
+                                csl: {
+                                    /** @enum {string} */
+                                    type: "article" | "article-journal" | "article-magazine" | "article-newspaper" | "bill" | "book" | "broadcast" | "chapter" | "classic" | "collection" | "dataset" | "document" | "entry" | "entry-dictionary" | "entry-encyclopedia" | "event" | "figure" | "graphic" | "hearing" | "interview" | "legal_case" | "legislation" | "manuscript" | "map" | "motion_picture" | "musical_score" | "pamphlet" | "paper-conference" | "patent" | "performance" | "periodical" | "personal_communication" | "post" | "post-weblog" | "regulation" | "report" | "review" | "review-book" | "software" | "song" | "speech" | "standard" | "thesis" | "treaty" | "webpage";
+                                    author?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    chair?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "collection-editor"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    compiler?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    composer?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "container-author"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    contributor?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    curator?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    director?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    editor?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "editorial-director"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "editor-translator"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "executive-producer"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    guest?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    host?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    illustrator?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    interviewer?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    narrator?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    organizer?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "original-author"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    performer?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    producer?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    recipient?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "reviewed-author"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "script-writer"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "series-creator"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    translator?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    accessed?: {
+                                        "date-parts"?: (number | string)[][];
+                                        season?: number | string;
+                                        circa?: string | number | boolean;
+                                        literal?: string;
+                                        raw?: string;
+                                    };
+                                    "available-date"?: {
+                                        "date-parts"?: (number | string)[][];
+                                        season?: number | string;
+                                        circa?: string | number | boolean;
+                                        literal?: string;
+                                        raw?: string;
+                                    };
+                                    "event-date"?: {
+                                        "date-parts"?: (number | string)[][];
+                                        season?: number | string;
+                                        circa?: string | number | boolean;
+                                        literal?: string;
+                                        raw?: string;
+                                    };
+                                    issued?: {
+                                        "date-parts"?: (number | string)[][];
+                                        season?: number | string;
+                                        circa?: string | number | boolean;
+                                        literal?: string;
+                                        raw?: string;
+                                    };
+                                    "original-date"?: {
+                                        "date-parts"?: (number | string)[][];
+                                        season?: number | string;
+                                        circa?: string | number | boolean;
+                                        literal?: string;
+                                        raw?: string;
+                                    };
+                                    submitted?: {
+                                        "date-parts"?: (number | string)[][];
+                                        season?: number | string;
+                                        circa?: string | number | boolean;
+                                        literal?: string;
+                                        raw?: string;
+                                    };
+                                    "chapter-number"?: string | number;
+                                    "citation-number"?: string | number;
+                                    "collection-number"?: string | number;
+                                    edition?: string | number;
+                                    "first-reference-note-number"?: string | number;
+                                    issue?: string | number;
+                                    number?: string | number;
+                                    "number-of-pages"?: string | number;
+                                    "number-of-volumes"?: string | number;
+                                    page?: string | number;
+                                    "page-first"?: string | number;
+                                    part?: string | number;
+                                    printing?: string | number;
+                                    section?: string | number;
+                                    supplement?: string | number;
+                                    version?: string | number;
+                                    volume?: string | number;
+                                    abstract?: string;
+                                    annote?: string;
+                                    archive?: string;
+                                    archive_collection?: string;
+                                    archive_location?: string;
+                                    "archive-place"?: string;
+                                    authority?: string;
+                                    "call-number"?: string;
+                                    "citation-key"?: string;
+                                    "citation-label"?: string;
+                                    "collection-title"?: string;
+                                    "container-title"?: string;
+                                    "container-title-short"?: string;
+                                    dimensions?: string;
+                                    division?: string;
+                                    DOI?: string;
+                                    event?: string;
+                                    "event-title"?: string;
+                                    "event-place"?: string;
+                                    genre?: string;
+                                    ISBN?: string;
+                                    ISSN?: string;
+                                    jurisdiction?: string;
+                                    keyword?: string;
+                                    language?: string;
+                                    license?: string;
+                                    locator?: string;
+                                    medium?: string;
+                                    note?: string;
+                                    "original-publisher"?: string;
+                                    "original-publisher-place"?: string;
+                                    "original-title"?: string;
+                                    "part-title"?: string;
+                                    PMCID?: string;
+                                    PMID?: string;
+                                    publisher?: string;
+                                    "publisher-place"?: string;
+                                    references?: string;
+                                    "reviewed-genre"?: string;
+                                    "reviewed-title"?: string;
+                                    scale?: string;
+                                    source?: string;
+                                    status?: string;
+                                    title?: string;
+                                    "title-short"?: string;
+                                    URL?: string;
+                                    "volume-title"?: string;
+                                    "volume-title-short"?: string;
+                                    "year-suffix"?: string;
+                                    journalAbbreviation?: string;
+                                    shortTitle?: string;
+                                    categories?: string[];
+                                };
+                                key: string;
+                                obtained?: {
+                                    from: string;
+                                    /** Format: date-time */
+                                    at: string;
+                                };
+                                /** Format: date-time */
+                                checkedAt?: string;
+                            };
+                            /** @description Whether it is archived: left out of the listing, still citable */
+                            archived: boolean;
+                            /** @description Whether the caller may cut its next version: edit on it */
+                            mayEdit: boolean;
+                            /** @description Whether the caller may archive it: retire on it */
+                            mayRetire: boolean;
+                        } | null;
+                        /** @description The entries in the space found to be the same source */
+                        matches: {
+                            /**
+                             * @description What found it: a canonical identifier, or `work`, its title, year and first author
+                             * @enum {string}
+                             */
+                            by: "doi" | "pmid" | "isbn" | "issn" | "work";
+                            entry: {
+                                id: string;
+                                /** @description Its key, made from its fields at its creation and never changed */
+                                key: string;
+                                csl: {
+                                    /** @enum {string} */
+                                    type: "article" | "article-journal" | "article-magazine" | "article-newspaper" | "bill" | "book" | "broadcast" | "chapter" | "classic" | "collection" | "dataset" | "document" | "entry" | "entry-dictionary" | "entry-encyclopedia" | "event" | "figure" | "graphic" | "hearing" | "interview" | "legal_case" | "legislation" | "manuscript" | "map" | "motion_picture" | "musical_score" | "pamphlet" | "paper-conference" | "patent" | "performance" | "periodical" | "personal_communication" | "post" | "post-weblog" | "regulation" | "report" | "review" | "review-book" | "software" | "song" | "speech" | "standard" | "thesis" | "treaty" | "webpage";
+                                    author?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    chair?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "collection-editor"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    compiler?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    composer?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "container-author"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    contributor?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    curator?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    director?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    editor?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "editorial-director"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "editor-translator"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "executive-producer"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    guest?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    host?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    illustrator?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    interviewer?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    narrator?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    organizer?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "original-author"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    performer?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    producer?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    recipient?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "reviewed-author"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "script-writer"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "series-creator"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    translator?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    accessed?: {
+                                        "date-parts"?: (number | string)[][];
+                                        season?: number | string;
+                                        circa?: string | number | boolean;
+                                        literal?: string;
+                                        raw?: string;
+                                    };
+                                    "available-date"?: {
+                                        "date-parts"?: (number | string)[][];
+                                        season?: number | string;
+                                        circa?: string | number | boolean;
+                                        literal?: string;
+                                        raw?: string;
+                                    };
+                                    "event-date"?: {
+                                        "date-parts"?: (number | string)[][];
+                                        season?: number | string;
+                                        circa?: string | number | boolean;
+                                        literal?: string;
+                                        raw?: string;
+                                    };
+                                    issued?: {
+                                        "date-parts"?: (number | string)[][];
+                                        season?: number | string;
+                                        circa?: string | number | boolean;
+                                        literal?: string;
+                                        raw?: string;
+                                    };
+                                    "original-date"?: {
+                                        "date-parts"?: (number | string)[][];
+                                        season?: number | string;
+                                        circa?: string | number | boolean;
+                                        literal?: string;
+                                        raw?: string;
+                                    };
+                                    submitted?: {
+                                        "date-parts"?: (number | string)[][];
+                                        season?: number | string;
+                                        circa?: string | number | boolean;
+                                        literal?: string;
+                                        raw?: string;
+                                    };
+                                    "chapter-number"?: string | number;
+                                    "citation-number"?: string | number;
+                                    "collection-number"?: string | number;
+                                    edition?: string | number;
+                                    "first-reference-note-number"?: string | number;
+                                    issue?: string | number;
+                                    number?: string | number;
+                                    "number-of-pages"?: string | number;
+                                    "number-of-volumes"?: string | number;
+                                    page?: string | number;
+                                    "page-first"?: string | number;
+                                    part?: string | number;
+                                    printing?: string | number;
+                                    section?: string | number;
+                                    supplement?: string | number;
+                                    version?: string | number;
+                                    volume?: string | number;
+                                    abstract?: string;
+                                    annote?: string;
+                                    archive?: string;
+                                    archive_collection?: string;
+                                    archive_location?: string;
+                                    "archive-place"?: string;
+                                    authority?: string;
+                                    "call-number"?: string;
+                                    "citation-key"?: string;
+                                    "citation-label"?: string;
+                                    "collection-title"?: string;
+                                    "container-title"?: string;
+                                    "container-title-short"?: string;
+                                    dimensions?: string;
+                                    division?: string;
+                                    DOI?: string;
+                                    event?: string;
+                                    "event-title"?: string;
+                                    "event-place"?: string;
+                                    genre?: string;
+                                    ISBN?: string;
+                                    ISSN?: string;
+                                    jurisdiction?: string;
+                                    keyword?: string;
+                                    language?: string;
+                                    license?: string;
+                                    locator?: string;
+                                    medium?: string;
+                                    note?: string;
+                                    "original-publisher"?: string;
+                                    "original-publisher-place"?: string;
+                                    "original-title"?: string;
+                                    "part-title"?: string;
+                                    PMCID?: string;
+                                    PMID?: string;
+                                    publisher?: string;
+                                    "publisher-place"?: string;
+                                    references?: string;
+                                    "reviewed-genre"?: string;
+                                    "reviewed-title"?: string;
+                                    scale?: string;
+                                    source?: string;
+                                    status?: string;
+                                    title?: string;
+                                    "title-short"?: string;
+                                    URL?: string;
+                                    "volume-title"?: string;
+                                    "volume-title-short"?: string;
+                                    "year-suffix"?: string;
+                                    journalAbbreviation?: string;
+                                    shortTitle?: string;
+                                    categories?: string[];
+                                };
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description When its latest version was made */
+                                changedAt: string;
+                            };
+                        }[];
+                    };
+                };
+            };
+            /** @description `entry_invalid`: a source type or field CSL 1.0.2 does not hold, or a field in another shape than CSL's, each problem named */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        problems?: {
+                            /** @constant */
+                            rule: "entry_invalid";
+                            path: string;
+                            message: string;
+                        }[];
+                        current?: {
+                            id: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            entry: {
+                                /** @constant */
+                                schemaVersion: 1;
+                                csl: {
+                                    /** @enum {string} */
+                                    type: "article" | "article-journal" | "article-magazine" | "article-newspaper" | "bill" | "book" | "broadcast" | "chapter" | "classic" | "collection" | "dataset" | "document" | "entry" | "entry-dictionary" | "entry-encyclopedia" | "event" | "figure" | "graphic" | "hearing" | "interview" | "legal_case" | "legislation" | "manuscript" | "map" | "motion_picture" | "musical_score" | "pamphlet" | "paper-conference" | "patent" | "performance" | "periodical" | "personal_communication" | "post" | "post-weblog" | "regulation" | "report" | "review" | "review-book" | "software" | "song" | "speech" | "standard" | "thesis" | "treaty" | "webpage";
+                                    author?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    chair?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "collection-editor"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    compiler?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    composer?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "container-author"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    contributor?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    curator?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    director?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    editor?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "editorial-director"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "editor-translator"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "executive-producer"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    guest?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    host?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    illustrator?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    interviewer?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    narrator?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    organizer?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "original-author"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    performer?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    producer?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    recipient?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "reviewed-author"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "script-writer"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "series-creator"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    translator?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    accessed?: {
+                                        "date-parts"?: (number | string)[][];
+                                        season?: number | string;
+                                        circa?: string | number | boolean;
+                                        literal?: string;
+                                        raw?: string;
+                                    };
+                                    "available-date"?: {
+                                        "date-parts"?: (number | string)[][];
+                                        season?: number | string;
+                                        circa?: string | number | boolean;
+                                        literal?: string;
+                                        raw?: string;
+                                    };
+                                    "event-date"?: {
+                                        "date-parts"?: (number | string)[][];
+                                        season?: number | string;
+                                        circa?: string | number | boolean;
+                                        literal?: string;
+                                        raw?: string;
+                                    };
+                                    issued?: {
+                                        "date-parts"?: (number | string)[][];
+                                        season?: number | string;
+                                        circa?: string | number | boolean;
+                                        literal?: string;
+                                        raw?: string;
+                                    };
+                                    "original-date"?: {
+                                        "date-parts"?: (number | string)[][];
+                                        season?: number | string;
+                                        circa?: string | number | boolean;
+                                        literal?: string;
+                                        raw?: string;
+                                    };
+                                    submitted?: {
+                                        "date-parts"?: (number | string)[][];
+                                        season?: number | string;
+                                        circa?: string | number | boolean;
+                                        literal?: string;
+                                        raw?: string;
+                                    };
+                                    "chapter-number"?: string | number;
+                                    "citation-number"?: string | number;
+                                    "collection-number"?: string | number;
+                                    edition?: string | number;
+                                    "first-reference-note-number"?: string | number;
+                                    issue?: string | number;
+                                    number?: string | number;
+                                    "number-of-pages"?: string | number;
+                                    "number-of-volumes"?: string | number;
+                                    page?: string | number;
+                                    "page-first"?: string | number;
+                                    part?: string | number;
+                                    printing?: string | number;
+                                    section?: string | number;
+                                    supplement?: string | number;
+                                    version?: string | number;
+                                    volume?: string | number;
+                                    abstract?: string;
+                                    annote?: string;
+                                    archive?: string;
+                                    archive_collection?: string;
+                                    archive_location?: string;
+                                    "archive-place"?: string;
+                                    authority?: string;
+                                    "call-number"?: string;
+                                    "citation-key"?: string;
+                                    "citation-label"?: string;
+                                    "collection-title"?: string;
+                                    "container-title"?: string;
+                                    "container-title-short"?: string;
+                                    dimensions?: string;
+                                    division?: string;
+                                    DOI?: string;
+                                    event?: string;
+                                    "event-title"?: string;
+                                    "event-place"?: string;
+                                    genre?: string;
+                                    ISBN?: string;
+                                    ISSN?: string;
+                                    jurisdiction?: string;
+                                    keyword?: string;
+                                    language?: string;
+                                    license?: string;
+                                    locator?: string;
+                                    medium?: string;
+                                    note?: string;
+                                    "original-publisher"?: string;
+                                    "original-publisher-place"?: string;
+                                    "original-title"?: string;
+                                    "part-title"?: string;
+                                    PMCID?: string;
+                                    PMID?: string;
+                                    publisher?: string;
+                                    "publisher-place"?: string;
+                                    references?: string;
+                                    "reviewed-genre"?: string;
+                                    "reviewed-title"?: string;
+                                    scale?: string;
+                                    source?: string;
+                                    status?: string;
+                                    title?: string;
+                                    "title-short"?: string;
+                                    URL?: string;
+                                    "volume-title"?: string;
+                                    "volume-title-short"?: string;
+                                    "year-suffix"?: string;
+                                    journalAbbreviation?: string;
+                                    shortTitle?: string;
+                                    categories?: string[];
+                                };
+                                key: string;
+                                obtained?: {
+                                    from: string;
+                                    /** Format: date-time */
+                                    at: string;
+                                };
+                                /** Format: date-time */
+                                checkedAt?: string;
+                            };
+                            /** @description Whether it is archived: left out of the listing, still citable */
+                            archived: boolean;
+                            /** @description Whether the caller may cut its next version: edit on it */
+                            mayEdit: boolean;
+                            /** @description Whether the caller may archive it: retire on it */
+                            mayRetire: boolean;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not edit in the space */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such space in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `space_archived`: the space is archived, and nothing new is made in it */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    exportBibliographyEntries: {
+        parameters: {
+            query: {
+                format: "csl-json" | "bibtex" | "ris";
+                ids?: string;
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                space: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The entries in the format */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "format": "csl-json",
+                     *       "text": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        /** @enum {string} */
+                        format: "csl-json" | "bibtex" | "ris";
+                        /** @description The entries in the format, each named by its key */
+                        text: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a space the caller may not read is not found */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such space in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    importBibliographyEntries: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                space: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "format": "csl-json",
+                 *       "text": "example"
+                 *     }
+                 */
+                "application/json": {
+                    /** @enum {string} */
+                    format: "csl-json" | "bibtex" | "ris";
+                    text: string;
+                };
+            };
+        };
+        responses: {
+            /** @description What became of each record, in order */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "records": []
+                     *     }
+                     */
+                    "application/json": {
+                        records: {
+                            /** @enum {string} */
+                            outcome: "created" | "merged" | "refused";
+                            entry: {
+                                id: string;
+                                /** @description Its key, made from its fields at its creation and never changed */
+                                key: string;
+                                csl: {
+                                    /** @enum {string} */
+                                    type: "article" | "article-journal" | "article-magazine" | "article-newspaper" | "bill" | "book" | "broadcast" | "chapter" | "classic" | "collection" | "dataset" | "document" | "entry" | "entry-dictionary" | "entry-encyclopedia" | "event" | "figure" | "graphic" | "hearing" | "interview" | "legal_case" | "legislation" | "manuscript" | "map" | "motion_picture" | "musical_score" | "pamphlet" | "paper-conference" | "patent" | "performance" | "periodical" | "personal_communication" | "post" | "post-weblog" | "regulation" | "report" | "review" | "review-book" | "software" | "song" | "speech" | "standard" | "thesis" | "treaty" | "webpage";
+                                    author?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    chair?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "collection-editor"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    compiler?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    composer?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "container-author"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    contributor?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    curator?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    director?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    editor?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "editorial-director"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "editor-translator"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "executive-producer"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    guest?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    host?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    illustrator?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    interviewer?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    narrator?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    organizer?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "original-author"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    performer?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    producer?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    recipient?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "reviewed-author"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "script-writer"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    "series-creator"?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    translator?: {
+                                        family?: string;
+                                        given?: string;
+                                        "dropping-particle"?: string;
+                                        "non-dropping-particle"?: string;
+                                        suffix?: string;
+                                        "comma-suffix"?: string | number | boolean;
+                                        "static-ordering"?: string | number | boolean;
+                                        literal?: string;
+                                        "parse-names"?: string | number | boolean;
+                                    }[];
+                                    accessed?: {
+                                        "date-parts"?: (number | string)[][];
+                                        season?: number | string;
+                                        circa?: string | number | boolean;
+                                        literal?: string;
+                                        raw?: string;
+                                    };
+                                    "available-date"?: {
+                                        "date-parts"?: (number | string)[][];
+                                        season?: number | string;
+                                        circa?: string | number | boolean;
+                                        literal?: string;
+                                        raw?: string;
+                                    };
+                                    "event-date"?: {
+                                        "date-parts"?: (number | string)[][];
+                                        season?: number | string;
+                                        circa?: string | number | boolean;
+                                        literal?: string;
+                                        raw?: string;
+                                    };
+                                    issued?: {
+                                        "date-parts"?: (number | string)[][];
+                                        season?: number | string;
+                                        circa?: string | number | boolean;
+                                        literal?: string;
+                                        raw?: string;
+                                    };
+                                    "original-date"?: {
+                                        "date-parts"?: (number | string)[][];
+                                        season?: number | string;
+                                        circa?: string | number | boolean;
+                                        literal?: string;
+                                        raw?: string;
+                                    };
+                                    submitted?: {
+                                        "date-parts"?: (number | string)[][];
+                                        season?: number | string;
+                                        circa?: string | number | boolean;
+                                        literal?: string;
+                                        raw?: string;
+                                    };
+                                    "chapter-number"?: string | number;
+                                    "citation-number"?: string | number;
+                                    "collection-number"?: string | number;
+                                    edition?: string | number;
+                                    "first-reference-note-number"?: string | number;
+                                    issue?: string | number;
+                                    number?: string | number;
+                                    "number-of-pages"?: string | number;
+                                    "number-of-volumes"?: string | number;
+                                    page?: string | number;
+                                    "page-first"?: string | number;
+                                    part?: string | number;
+                                    printing?: string | number;
+                                    section?: string | number;
+                                    supplement?: string | number;
+                                    version?: string | number;
+                                    volume?: string | number;
+                                    abstract?: string;
+                                    annote?: string;
+                                    archive?: string;
+                                    archive_collection?: string;
+                                    archive_location?: string;
+                                    "archive-place"?: string;
+                                    authority?: string;
+                                    "call-number"?: string;
+                                    "citation-key"?: string;
+                                    "citation-label"?: string;
+                                    "collection-title"?: string;
+                                    "container-title"?: string;
+                                    "container-title-short"?: string;
+                                    dimensions?: string;
+                                    division?: string;
+                                    DOI?: string;
+                                    event?: string;
+                                    "event-title"?: string;
+                                    "event-place"?: string;
+                                    genre?: string;
+                                    ISBN?: string;
+                                    ISSN?: string;
+                                    jurisdiction?: string;
+                                    keyword?: string;
+                                    language?: string;
+                                    license?: string;
+                                    locator?: string;
+                                    medium?: string;
+                                    note?: string;
+                                    "original-publisher"?: string;
+                                    "original-publisher-place"?: string;
+                                    "original-title"?: string;
+                                    "part-title"?: string;
+                                    PMCID?: string;
+                                    PMID?: string;
+                                    publisher?: string;
+                                    "publisher-place"?: string;
+                                    references?: string;
+                                    "reviewed-genre"?: string;
+                                    "reviewed-title"?: string;
+                                    scale?: string;
+                                    source?: string;
+                                    status?: string;
+                                    title?: string;
+                                    "title-short"?: string;
+                                    URL?: string;
+                                    "volume-title"?: string;
+                                    "volume-title-short"?: string;
+                                    "year-suffix"?: string;
+                                    journalAbbreviation?: string;
+                                    shortTitle?: string;
+                                    categories?: string[];
+                                };
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description When its latest version was made */
+                                changedAt: string;
+                            } | null;
+                            /** @description What matched it, where it was merged */
+                            by: ("doi" | "pmid" | "isbn" | "issn" | "work") | null;
+                            /** @description The fields the match lacked and was given */
+                            merged: string[];
+                            /** @description The fields an entry could not hold, left out */
+                            dropped: string[];
+                            /** @description Why it was refused */
+                            message: string | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description `import_unreadable`: the text does not read as the format */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not edit in the space */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such space in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `space_archived`: the space is archived, and nothing new is made in it */
+            409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;

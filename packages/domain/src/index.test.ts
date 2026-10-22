@@ -871,6 +871,21 @@ describe('the domain package', () => {
         'embedRequestSchema',
         'embedAnswerSchema',
         'childEmbedRequestSchema',
+        // CIa: a bibliography entry, its key, its identities and a record admitted.
+        'CSL_TYPES',
+        'CSL_VARIABLES',
+        'ENTRY_KEY',
+        'ENTRY_SCHEMA_VERSION',
+        'EntryRefused',
+        'admitCsl',
+        'cslItemSchema',
+        'entryIdentities',
+        'entryKey',
+        'entrySchema',
+        'issuedYear',
+        'keyCandidate',
+        'mergeCsl',
+        'parseEntry',
       ].sort(),
     );
   });

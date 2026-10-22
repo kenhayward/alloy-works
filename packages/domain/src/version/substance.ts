@@ -20,6 +20,7 @@ import type { QueryDefinition } from '../data/definition.js';
 import type { Provenance } from '../data/provenance.js';
 import type { PromptLibrary } from '../generation/library.js';
 import type { Prompt } from '../generation/prompt.js';
+import type { Entry } from '../library/entry.js';
 
 /**
  * What a component version says (ADR-0024): its content, its metadata values, the values it did not
@@ -132,6 +133,12 @@ export type PromptLibrarySubstance = {
   readonly content: PromptLibrary;
 };
 
+/** A bibliography entry version says its entry (citations.md, "The entry"; the CI plan, CI-B). */
+export type BibliographyEntrySubstance = {
+  readonly kind: 'bibliographyEntry';
+  readonly content: Entry;
+};
+
 export type VersionSubstance =
   | ComponentSubstance
   | DatasetSubstance
@@ -139,6 +146,7 @@ export type VersionSubstance =
   | QueryDefinitionSubstance
   | PromptSubstance
   | PromptLibrarySubstance
+  | BibliographyEntrySubstance
   | TemplateSubstance
   | DefinitionSubstance
   | DocumentSubstance

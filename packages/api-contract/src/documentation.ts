@@ -23,6 +23,11 @@ export const documentationGroups = [
       },
       { name: 'Definitions', description: 'Manage fields, metadata schemas and component types.' },
       { name: 'Templates', description: 'Create and version document templates.' },
+      {
+        name: 'Bibliography',
+        description:
+          "Keep a space's bibliography entries, import and export them, and see where each is cited.",
+      },
       { name: 'Assets', description: 'Upload and retrieve image assets.' },
       {
         name: 'Threads',
@@ -445,6 +450,17 @@ const operationTags = {
     'addConversationContext',
     'removeConversationContext',
     'takeTurn',
+  ],
+  Bibliography: [
+    'listBibliographyEntries',
+    'createBibliographyEntry',
+    'importBibliographyEntries',
+    'exportBibliographyEntries',
+    'getBibliographyEntry',
+    'recordBibliographyEntryVersion',
+    'getBibliographyEntryUses',
+    'archiveBibliographyEntry',
+    'unarchiveBibliographyEntry',
   ],
   Prompts: [
     'listPrompts',
@@ -935,6 +951,24 @@ const descriptions: Readonly<Record<string, string>> = {
   takeTurn:
     "Says something in a conversation of yours, with a signed-in session alone, on the endpoint named or the default. The earlier turns' words are sent with it, never their tool results. On a document, it reads what you may read of it and proposes edits as the assistant does; nothing is refused for being off the subject. One turn at a time, at most 20. Answered as Server-Sent Events, and recorded as a run of the conversation.",
   getPrompt: 'Returns the latest prompt version and whether the caller may change it.',
+  listBibliographyEntries:
+    "Lists a space's bibliography entries the caller may read, by key or the newest changed, each with its key and its CSL. Archived entries are left out, or listed alone when asked.",
+  createBibliographyEntry:
+    'Makes a bibliography entry in the space from its CSL-JSON, without an id, and where it was obtained and when last checked. It is first matched against the entries already there: by DOI, PubMed identifier, ISBN or ISSN where it has one, else by its title, year and first author. A match is offered and nothing made, unless the request says to make it despite the match. Its key is made from its first author and year, suffixed a, b and on where the space holds it, and never changes. It needs edit in the space.',
+  importBibliographyEntries:
+    'Imports CSL-JSON, BibTeX or RIS text as entries of the space. Each record is matched as making one by hand is: a match is given the fields it lacked, in a new version, and the answer names them; otherwise an entry is made. Fields an entry cannot hold are left out and named. It needs edit in the space.',
+  exportBibliographyEntries:
+    "Exports the space's entries the caller may read, or those named, as CSL-JSON, BibTeX or RIS, each named by its key.",
+  getBibliographyEntry:
+    'Returns an entry at its latest version, whether it is archived, and whether the caller may change or archive it.',
+  recordBibliographyEntryVersion:
+    'Records the next entry version from the version the caller opened, checked as a new entry is. Its key is kept.',
+  getBibliographyEntryUses:
+    'Returns where an entry is cited: the components whose latest version cites it, and the baselines pinning a component version that does. One the caller may not read is said to exist, never named.',
+  archiveBibliographyEntry:
+    "Archives an entry, leaving it out of the space's listing. Refused while a component's latest version, or a version a baseline pins, cites it. It needs retire on the entry.",
+  unarchiveBibliographyEntry:
+    "Unarchives an entry, returning it to the space's listing. It needs retire on the entry.",
   recordPromptVersion:
     'Records the next prompt version from the version the caller opened, checked as a new prompt is.',
   createAssetUpload:

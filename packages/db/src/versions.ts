@@ -22,6 +22,7 @@ import {
   parseProvenance,
   parseProvenanceForWrite,
   parsePrompt,
+  parseEntry,
   parsePromptForWrite,
   parsePromptLibrary,
   LibraryRefused,
@@ -56,6 +57,7 @@ import { isDeleted } from './deletion.js';
 import { checkedLimit } from './listing.js';
 import { indexVersion } from './search.js';
 import { indexReferences } from './reference-index.js';
+import { indexEntry } from './bibliography-index.js';
 import { checkSpaceLive } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
 import { versionDigests } from './version-digest.js';
@@ -138,7 +140,8 @@ type SpacedSubstanceKind =
   | 'connection'
   | 'queryDefinition'
   | 'dataset'
-  | 'prompt';
+  | 'prompt'
+  | 'bibliographyEntry';
 
 const spacedSubstanceKinds: readonly string[] = [
   'component',
@@ -149,6 +152,7 @@ const spacedSubstanceKinds: readonly string[] = [
   'queryDefinition',
   'dataset',
   'prompt',
+  'bibliographyEntry',
 ] satisfies readonly SpacedSubstanceKind[];
 
 /**
@@ -162,6 +166,7 @@ const archiveCheckedKinds: readonly string[] = [
   'connection',
   'queryDefinition',
   'prompt',
+  'bibliographyEntry',
 ] satisfies readonly SpacedSubstanceKind[];
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -256,6 +261,10 @@ function prepare(substance: VersionSubstance): VersionSubstance {
     // Nor does a prompt: it is in a space. Its shape, then its checks, on every write (G4-A); the
     // definitions it names are the writer's to check, with a transaction in hand.
     return { kind: 'prompt', content: parsePromptForWrite(substance.content) };
+  }
+  if (substance.kind === 'bibliographyEntry') {
+    // Nor does an entry: it is in a space. Its shape, CSL's types and variables, on every write (CI-B).
+    return { kind: 'bibliographyEntry', content: parseEntry(substance.content) };
   }
   if (substance.kind === 'promptLibrary') {
     // Nor does a library: it is the tenant's, identified by its artifact row (G4-F).
@@ -354,6 +363,8 @@ async function insertVersion(
     // Its references, replacing its previous version's (the R2 plan, R2-A).
     await indexReferences(trx, stored);
   }
+  // An entry's key and identities, with every version of it (LIB-045, LIB-046).
+  if (stored.kind === 'bibliographyEntry') await indexEntry(trx, stored);
   await recordVersionCut(trx, stored, parent);
   return stored;
 }
@@ -762,6 +773,9 @@ export function substanceOf(stored: StoredVersion): VersionSubstance {
   if (stored.kind === 'prompt') {
     // The shape alone, likewise.
     return { kind: 'prompt', content: parsePrompt(stored.content) };
+  }
+  if (stored.kind === 'bibliographyEntry') {
+    return { kind: 'bibliographyEntry', content: parseEntry(stored.content) };
   }
   if (stored.kind === 'promptLibrary') {
     return { kind: 'promptLibrary', content: parsePromptLibrary(stored.content) };

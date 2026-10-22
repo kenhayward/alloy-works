@@ -46,6 +46,11 @@ export const listingSorts = {
     title: { types: ['text'], order: 'asc' },
     changed: { types: ['timestamptz'], order: 'desc' },
   },
+  // A space's bibliography entries, by key or the newest changed (the CI plan, CI-B).
+  bibliography: {
+    key: { types: ['text'], order: 'asc' },
+    changed: { types: ['timestamptz'], order: 'desc' },
+  },
   // The small listings, each in one order: a space by its name, which a rename may change mid-walk
   // (the SP1 plan, SP-E); a definition by its latest name, read as of the snapshot; a person by when
   // they first appeared, since a name is changed in place at every sign-in.

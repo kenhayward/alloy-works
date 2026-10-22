@@ -104,6 +104,11 @@ describe('the rule behind a refusal', () => {
       // A prompt's own shape and checks (the G4 plan, G4-A), which no requirement names as a rule.
       'prompt.invalid',
       'library.invalid',
+      // An entry outside CSL, one cited kept from archiving (LIB-006, which no design claims), and an
+      // import that does not read as its format: the CI plan's own guards (CI-B, CI-C).
+      'entry.invalid',
+      'entry.cited',
+      'import.unreadable',
       // A connection's settings past their shape, which the contract checks at the door: made retired,
       // which the design refuses (data.md, "The connection") and no requirement names.
       'connection.invalid',

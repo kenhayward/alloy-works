@@ -2,7 +2,7 @@
  * What a subject is called, as an event's label keeps it for when the original is gone (audit.md,
  * "Labels"): a component's, document's, query definition's, prompt's or template's title; a definition's,
  * connection's, layout's, theme's or catalogue's name; a dataset's or asset's name where it has one; a
- * space's or group's name; a principal's display name. `row` is a version's content for an artifact,
+ * space's or group's name; a principal's display name; a bibliography entry's key. `row` is a version's content for an artifact,
  * and the stored row for anything else.
  */
 const LABELLED_BY = {
@@ -20,6 +20,7 @@ const LABELLED_BY = {
   theme: 'name',
   catalogue: 'name',
   promptLibrary: 'name',
+  bibliographyEntry: 'key',
   dataset: 'name',
   asset: 'name',
   space: 'name',

@@ -14,7 +14,8 @@ import { definitionKinds } from '@alloy-works/domain';
  * a person's act of resolving or checking a binding (the D3 plan, D3-A). A prompt, added by 0122, lives
  * in one space and is authored, `edit` in its space making and changing it (the G4 plan, G4-A). A
  * prompt library, added by 0124, is the tenant's, as a theme is, `design` at the tenant making and
- * changing it (G4-F).
+ * changing it (G4-F). A bibliography entry, added by 0145, lives in one space and is authored, `edit` in
+ * its space making and changing it (the CI plan, CI-B).
  */
 export const artifactKinds = [
   'component',
@@ -31,6 +32,7 @@ export const artifactKinds = [
   'dataset',
   'prompt',
   'promptLibrary',
+  'bibliographyEntry',
 ] as const;
 
 export type ArtifactKind = (typeof artifactKinds)[number];
@@ -50,4 +52,5 @@ export const spacedKinds = [
   'queryDefinition',
   'dataset',
   'prompt',
+  'bibliographyEntry',
 ] as const satisfies readonly ArtifactKind[];
