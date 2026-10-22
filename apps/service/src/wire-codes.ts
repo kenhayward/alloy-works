@@ -67,6 +67,9 @@ const WIRE_CODES = {
   'entry.invalid': 'entry_invalid',
   'style.invalid': 'style_invalid',
   'entry.cited': 'entry_cited',
+  // A term refused by its shape or relations, or kept while used (the TM plan, TM-A).
+  'term.invalid': 'term_invalid',
+  'term.used': 'term_used',
   'import.unreadable': 'import_unreadable',
   'import.too_many': 'import_too_many',
   'definition.name_taken': 'definition_name_taken',

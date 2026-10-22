@@ -11,6 +11,7 @@ import { isUserValue, type MetadataValues } from '../metadata/values.js';
 import { conditionsIn } from '../reuse/conditions.js';
 import type { OutlineDocument, OutlineNode } from '../structure/outline.js';
 import type { StartingSection, TemplateDefinition } from '../template/definition.js';
+import { termLabel, type Term } from '../library/term.js';
 
 /**
  * What search finds (search.md, "Searching words, in T1"; SCH-054): every kind the product holds, and
@@ -30,6 +31,8 @@ export const searchKinds = [
   'queryDefinition',
   // A thread, by its messages, as whoever may read what it is on (SCH-071; the SV plan, SV-K).
   'thread',
+  // A term, by its labels, abbreviations and definitions (SCH-056; the TM plan, TM-I).
+  'term',
 ] as const;
 
 export type SearchKind = (typeof searchKinds)[number];
@@ -137,7 +140,8 @@ export type SearchSource =
   | { readonly kind: 'field'; readonly content: FieldDefinition }
   | { readonly kind: 'metadataSchema'; readonly content: MetadataSchemaDefinition }
   | { readonly kind: 'componentType'; readonly content: ComponentTypeDefinition }
-  | { readonly kind: 'queryDefinition'; readonly content: QueryDefinition };
+  | { readonly kind: 'queryDefinition'; readonly content: QueryDefinition }
+  | { readonly kind: 'term'; readonly content: Term };
 
 /** The names a version's words are rendered with, read by the store. */
 export interface SearchContext {
@@ -432,6 +436,21 @@ export function entriesOf(source: SearchSource, context: SearchContext): SearchE
       add('description', content.description);
       add('columns', content.columns.map((column) => column.name).join(' '));
       return [entry(content.title, 'simple', titled(content.title, texts))];
+    }
+    case 'term': {
+      // In its base language's configuration, titled by its preferred label there.
+      const { content } = source;
+      const title = termLabel(content, content.base).preferred;
+      const texts: SearchText[] = [];
+      const labels = words(
+        content.labels
+          .flatMap((each) => [each.preferred, ...each.alternatives, each.abbreviation ?? ''])
+          .join(' '),
+      );
+      const definition = words(content.definition.map((each) => each.text).join(' '));
+      if (labels !== '') texts.push({ place: 'labels', text: labels });
+      if (definition !== '') texts.push({ place: 'definition', text: definition });
+      return [entry(title, configurationFor(content.base), titled(title, texts))];
     }
     case 'componentType': {
       const schemas = named(

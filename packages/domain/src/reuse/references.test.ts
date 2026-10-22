@@ -8,6 +8,7 @@ const QUERY = '00000000-0000-4000-8000-00000000d001';
 const QUERY_VERSION = '00000000-0000-4000-8000-00000000d002';
 const CONNECTION = '00000000-0000-4000-8000-00000000c001';
 const ENTRY = '00000000-0000-4000-8000-00000000b1b1';
+const TERM = '00000000-0000-4000-8000-00000000e1e1';
 
 describe('the references a version holds (the R2 plan, R2-A)', () => {
   it("lists a document's references to components, at any depth, each with its mode and pin", () => {
@@ -127,6 +128,30 @@ describe('the references a version holds (the R2 plan, R2-A)', () => {
     };
     expect(referencesIn('component', content)).toEqual([
       { node: 'x1', target: { artifact: ENTRY, kind: 'bibliographyEntry' }, mode: 'latest' },
+    ]);
+  });
+
+  it("lists a component's terms by its definedTerm marks, once each (the TM plan, TM-I)", () => {
+    const term = { type: 'definedTerm', id: 'm1', term: TERM };
+    const content = {
+      blocks: [
+        {
+          type: 'paragraph',
+          id: 'p1',
+          content: [
+            { type: 'text', value: 'FTD', marks: [term] },
+            { type: 'text', value: ' and ', marks: [] },
+            {
+              type: 'text',
+              value: 'dunnart',
+              marks: [{ ...term, id: 'm2' }, { type: 'emphasis' }],
+            },
+          ],
+        },
+      ],
+    };
+    expect(referencesIn('component', content)).toEqual([
+      { node: null, target: { artifact: TERM, kind: 'term' }, mode: 'latest' },
     ]);
   });
 

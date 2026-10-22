@@ -9,9 +9,15 @@ import { z } from 'zod';
 
 /**
  * The kinds a workflow is declared for, one each (WF-A); query definitions since WF2 (DAT-121), prompts
- * since G4 (GEN-045).
+ * since G4 (GEN-045), terms since TM (LIB-049).
  */
-export const WORKFLOW_KINDS = ['component', 'document', 'queryDefinition', 'prompt'] as const;
+export const WORKFLOW_KINDS = [
+  'component',
+  'document',
+  'queryDefinition',
+  'prompt',
+  'term',
+] as const;
 export type WorkflowKind = (typeof WORKFLOW_KINDS)[number];
 
 /** What a transition needs on the artifact: editing it, or approving it (WF-C). */
@@ -105,6 +111,7 @@ export const CONDITIONS_BY_KIND: Readonly<Record<WorkflowKind, readonly Transiti
   ],
   queryDefinition: [],
   prompt: ['trial'],
+  term: [],
 };
 
 const Transition = z.strictObject({
@@ -162,7 +169,8 @@ export type WorkflowRule =
   | 'gate_publication'
   | 'condition_kind'
   | 'condition_duplicate'
-  | 'trial_required';
+  | 'trial_required'
+  | 'deprecated_required';
 
 export interface WorkflowProblem {
   readonly rule: WorkflowRule;
@@ -226,6 +234,18 @@ export function parseWorkflowBody(
       });
     }
   });
+  // A term is deprecated by its state's key (the TM plan, TM-A), so its workflow keeps that state.
+  if (kind === 'term') {
+    const deprecated = body.states.findIndex((each) => each.key === 'deprecated');
+    const at = body.states[deprecated];
+    if (at === undefined || at.initial || at.approved) {
+      problems.push({
+        rule: 'deprecated_required',
+        path: at === undefined ? 'states' : `states.${deprecated}`,
+        message: "A term's workflow has a state keyed deprecated, neither initial nor approved",
+      });
+    }
+  }
   const keys = new Set(body.states.map((each) => each.key));
   body.transitions.forEach((each, index) => {
     for (const end of ['from', 'to'] as const) {
@@ -456,3 +476,58 @@ export function decidingDefinition<D extends { readonly body: WorkflowBody }>(
 export function transitionsFrom(body: WorkflowBody, state: string): WorkflowTransition[] {
   return body.transitions.filter((each) => each.from === state);
 }
+
+/**
+ * A term's version 1 (LIB-049; the TM plan, TM-A): Approve a gate of one approver, not an author,
+ * designating a revision and rejecting to Draft as Return; an approved term deprecated, reinstated or
+ * reopened, each with a reason.
+ */
+export const SEED_TERM_WORKFLOW: WorkflowBody = {
+  states: [
+    { key: 'draft', name: 'Draft', initial: true, approved: false },
+    { key: 'approved', name: 'Approved', initial: false, approved: true },
+    { key: 'deprecated', name: 'Deprecated', initial: false, approved: false },
+  ],
+  transitions: [
+    {
+      key: 'approve',
+      name: 'Approve',
+      from: 'draft',
+      to: 'approved',
+      permission: 'approve',
+      reasonRequired: false,
+      gate: {
+        approvals: 1,
+        notAuthor: true,
+        reject: { name: 'Return', to: 'draft' },
+        designates: true,
+        baseline: false,
+        publication: 'none',
+      },
+    },
+    {
+      key: 'deprecate',
+      name: 'Deprecate',
+      from: 'approved',
+      to: 'deprecated',
+      permission: 'approve',
+      reasonRequired: true,
+    },
+    {
+      key: 'reinstate',
+      name: 'Reinstate',
+      from: 'deprecated',
+      to: 'approved',
+      permission: 'approve',
+      reasonRequired: true,
+    },
+    {
+      key: 'reopen',
+      name: 'Reopen',
+      from: 'approved',
+      to: 'draft',
+      permission: 'edit',
+      reasonRequired: true,
+    },
+  ],
+};

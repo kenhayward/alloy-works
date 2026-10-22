@@ -9,7 +9,7 @@ export interface IndexedReference {
     | {
         readonly artifact: string;
         readonly kind:
-          'component' | 'queryDefinition' | 'connection' | 'dataset' | 'bibliographyEntry';
+          'component' | 'queryDefinition' | 'connection' | 'dataset' | 'bibliographyEntry' | 'term';
       }
     | { readonly version: string; readonly kind: 'asset' };
   /** `latest` follows each version, `approved` each approved revision, `pinned` one version. */
@@ -36,7 +36,8 @@ function* objectsIn(value: unknown): Generator<Json> {
 /**
  * The references a version of this kind holds, in content order: a document's to components, a
  * component's to asset versions (figures and images), query definitions (bindings) and bibliography
- * entries (citations, by their entry, held by no node of their own: the CI plan, CI-B), and a query
+ * entries (citations, by their entry, held by no node of their own: the CI plan, CI-B) and terms
+ * (`definedTerm` marks, once each: the TM plan, TM-I), and a query
  * definition's to its connection. Read from the stored content, which its writer has checked; a
  * document's template is not in its content, and the index adds it.
  */
@@ -59,7 +60,13 @@ export function referencesIn(kind: string, content: unknown): IndexedReference[]
       });
     }
   } else if (kind === 'component') {
+    const terms = new Set<string>();
     for (const node of objectsIn(content)) {
+      const term = text(node['term']);
+      if (node['type'] === 'definedTerm' && term !== undefined && !terms.has(term)) {
+        terms.add(term);
+        found.push({ node: null, target: { artifact: term, kind: 'term' }, mode: 'latest' });
+      }
       const asset = text(node['asset']);
       if ((node['type'] === 'figure' || node['type'] === 'image') && asset !== undefined) {
         found.push({

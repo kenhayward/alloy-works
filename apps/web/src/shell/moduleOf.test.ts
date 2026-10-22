@@ -27,6 +27,8 @@ describe('the module an address belongs to', () => {
   it('names Bibliography for the list and an entry', () => {
     expect(moduleOf('#/bibliography')).toBe('Bibliography');
     expect(moduleOf(`#/bibliography/${COMPONENT}`)).toBe('Bibliography');
+    expect(moduleOf('#/terms')).toBe('Terms');
+    expect(moduleOf(`#/terms/${COMPONENT}`)).toBe('Terms');
   });
 
   it('names Administration for its page and each of its sections, which no module holds', () => {

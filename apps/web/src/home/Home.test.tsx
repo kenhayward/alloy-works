@@ -93,6 +93,7 @@ describe('Home', () => {
       '#/templates',
       '#/prompts',
       '#/bibliography',
+      '#/terms',
       '#/conversations',
     ]);
     expect(within(group('Publish')).getAllByRole('link')).toHaveLength(1);

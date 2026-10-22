@@ -214,6 +214,25 @@ export {
   bibliographyRoutes,
 } from './bibliography.js';
 export {
+  CreateTermBody,
+  ImportTermsBody,
+  SKOS_FORMATS,
+  TERM_IMPORT_CONCEPTS_MOST,
+  TERM_IMPORT_MOST,
+  TermExportAnswer,
+  TermImportAnswer,
+  TermList,
+  TermListQuery,
+  TermParams,
+  TermRefusal,
+  TermSummary,
+  TermUsesView,
+  TermVersionBody,
+  TermView,
+  UNREPRESENTED_LISTED_MOST,
+  termRoutes,
+} from './terms.js';
+export {
   CreatePromptBody,
   PromptList,
   PromptListQuery,

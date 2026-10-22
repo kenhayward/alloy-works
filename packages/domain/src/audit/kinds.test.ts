@@ -337,5 +337,16 @@ describe('labelFor', () => {
     expect(labelFor('principal', { display_name: 'Ada' })).toBe('Ada');
     expect(labelFor('dataset', {})).toBeUndefined();
     expect(labelFor('component', { title: '  ' })).toBeUndefined();
+    // A term's is its preferred label in its base language.
+    expect(
+      labelFor('term', {
+        base: 'en',
+        labels: [
+          { language: 'fr', preferred: 'Dunnart à queue grasse' },
+          { language: 'en', preferred: 'Fat-tailed dunnart' },
+        ],
+      }),
+    ).toBe('Fat-tailed dunnart');
+    expect(labelFor('term', { base: 'en', labels: 'none' })).toBeUndefined();
   });
 });

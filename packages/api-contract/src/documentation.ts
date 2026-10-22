@@ -28,6 +28,11 @@ export const documentationGroups = [
         description:
           "Keep a space's bibliography entries, import and export them, see where each is cited, search Crossref and PubMed for a source to cite, and keep the environment's citation styles.",
       },
+      {
+        name: 'Terms',
+        description:
+          "Keep a space's governed terms, their labels per language, definitions and relations, see where each is used, and import and export them as SKOS.",
+      },
       { name: 'Assets', description: 'Upload and retrieve image assets.' },
       {
         name: 'Threads',
@@ -474,6 +479,17 @@ const operationTags = {
     'checkBibliographyEntry',
     'getDocumentFlaggedSources',
   ],
+  Terms: [
+    'listTerms',
+    'createTerm',
+    'importTerms',
+    'exportTerms',
+    'getTerm',
+    'recordTermVersion',
+    'getTermUses',
+    'archiveTerm',
+    'unarchiveTerm',
+  ],
   Prompts: [
     'listPrompts',
     'createPrompt',
@@ -592,6 +608,9 @@ const operationTags = {
     'transitionPrompt',
     'decidePromptGate',
     'listPromptApprovals',
+    'transitionTerm',
+    'decideTermGate',
+    'listTermApprovals',
     'setComponentDates',
     'setDocumentDates',
     'setComponentScope',
@@ -1004,6 +1023,24 @@ const descriptions: Readonly<Record<string, string>> = {
     "Checks an entry against the reference source its latest version was obtained from, sending the source its DOI or PubMed identifier alone, and records the entry's status beside it, never as a version: `current`, `changed` (naming the CSL variables the source now holds otherwise), `gone`, `retracted` or `corrected`, with the notice where the source names one. A retraction or correction tells the owner of each document citing it who may read it, at most once in thirty days. It needs edit on the entry; an entry made by hand is `entry_not_obtained`, and one checked or tried within the minute `entry_checked_recently`.",
   getDocumentFlaggedSources:
     "Lists the sources cited by the components a document's latest version places, at the version each is placed, that their source last said are retracted or corrected. Each names the entry to a reader of it, and only its flag to anybody else, with the components citing it the caller may read. It needs read on the document.",
+  listTerms:
+    "Lists a space's terms the caller may read, by their preferred label in their base language or the newest changed, each with its abbreviation and its workflow state. Archived terms are left out, or listed alone when asked.",
+  createTerm:
+    'Makes a term in the space, in draft: its base language, a preferred label, alternative labels and an abbreviation per language, the base language among them, a definition per language, and the broader, narrower and related terms it states, each a term of the same space, with a replacement where it has one. Nothing is inferred: a broader term says nothing of its narrower ones unless it states them. A replacement never closes a cycle, and a chain of them is at most five long. It needs edit in the space.',
+  importTerms:
+    "Imports SKOS concepts as terms of the space, from JSON-LD in the compact form `exportTerms` writes or from Turtle. A concept whose preferred label in its base language is a term's of the space, case aside, is merged into it: the answer names the labels, definitions and relations it was given. Each other concept is made, in draft. What no term can hold is reported rather than dropped: another predicate, a subject that is not a concept, a language tag the product does not read, an alternative label in a language with no preferred one, and a relation to a concept outside the file. Nothing a file names is fetched. At most 2,000 concepts are taken at a time. It needs edit in the space.",
+  exportTerms:
+    "Exports the space's terms the caller may read, archived or not, as SKOS in JSON-LD: each a `skos:Concept` identified `urn:uuid:` and its id, with `prefLabel`, `altLabel` and `definition` by language, an abbreviation as a `notation` in its label's language, `broader`, `narrower` and `related`, and a replacement as `dct:isReplacedBy`.",
+  getTerm:
+    'Returns a term at its latest version, its workflow state and the transitions and gates the caller may take, whether it is deprecated or archived, and whether the caller may change or archive it.',
+  recordTermVersion:
+    'Records the next term version from the version the caller opened, checked as a new term is.',
+  getTermUses:
+    'Returns where a term is used: the components whose latest version marks words as it. One the caller may not read is said to exist, never named.',
+  archiveTerm:
+    "Archives a term, leaving it out of the space's listing. Refused while a component's latest version uses it. It needs retire on the term.",
+  unarchiveTerm:
+    "Unarchives a term, returning it to the space's listing. It needs retire on the term.",
   unarchiveBibliographyEntry:
     "Unarchives an entry, returning it to the space's listing. It needs retire on the entry.",
   recordPromptVersion:
@@ -1225,6 +1262,12 @@ const descriptions: Readonly<Record<string, string>> = {
     'Approves or rejects a prompt at a gate from its state, against the version the approver saw, needing approve on the prompt. The gate passes once enough distinct approvers approve, none of them an author where the gate says so, and designates a revision, the version a library runs; a rejection needs a reason. Audited.',
   listPromptApprovals:
     'Lists every approval and rejection of a prompt at its gates, newest first: the gate, the decision, who, when, the version decided and a rejection’s reason. Needs read on the prompt.',
+  transitionTerm:
+    "Moves a term along a transition from its state, named as the caller saw it, needing the transition's permission on the term and a reason where the transition asks for one: as seeded, deprecating an approved term, reinstating a deprecated one, or reopening one to draft. Saving an approved term moves it back to draft on its own. Audited.",
+  decideTermGate:
+    'Approves or rejects a term at a gate from its state, against the version the approver saw, needing approve on the term. The gate passes once enough distinct approvers approve, none of them an author where the gate says so, and designates a revision, the version documents print; a rejection needs a reason. Audited.',
+  listTermApprovals:
+    'Lists every approval and rejection of a term at its gates, newest first: the gate, the decision, who, when, the version decided and a rejection’s reason. Needs read on the term.',
   setRetention:
     'Sets or clears one retention keep, for a kind, a space, or a kind in a space; null days clears it. Setting what is in force changes nothing. Undeleting is never refused by a keep. Needs administer at the environment. Audited.',
   listHolds:

@@ -73,6 +73,8 @@ export function resultLink(result: {
       return `#/publications/${result.artifactId}`;
     case 'queryDefinition':
       return `#/query-definitions/${result.artifactId}`;
+    case 'term':
+      return `#/terms/${result.artifactId}`;
     case 'thread':
       return result.thread
         ? threadLink(

@@ -42,7 +42,7 @@ export const SearchQuery = z.object({
   kind: z
     .string()
     .regex(
-      /^(?:component|document|section|publication|template|asset|field|metadataSchema|componentType|queryDefinition|thread)(?:,(?:component|document|section|publication|template|asset|field|metadataSchema|componentType|queryDefinition|thread)){0,10}$/,
+      /^(?:component|document|section|publication|template|asset|field|metadataSchema|componentType|queryDefinition|thread|term)(?:,(?:component|document|section|publication|template|asset|field|metadataSchema|componentType|queryDefinition|thread|term)){0,11}$/,
       'Expected kinds, separated by commas',
     )
     .optional()
@@ -118,6 +118,7 @@ export const SearchKind = z.enum([
   'componentType',
   'queryDefinition',
   'thread',
+  'term',
 ]);
 
 export const SearchResultView = z.object({

@@ -954,6 +954,15 @@ describe('the domain package', () => {
         'EIGHTH_DEFAULT_CATALOGUE_VERSIONS',
         'EIGHTH_DEFAULT_THEME',
         'EIGHTH_DEFAULT_THEME_VERSION',
+        // TMa: a term's shape, its label by language.
+        'TERM_LIMITS',
+        'TERM_SCHEMA_VERSION',
+        'TermRefused',
+        'isLanguageTag',
+        'parseTerm',
+        'termLabel',
+        'termSchema',
+        'SEED_TERM_WORKFLOW',
       ].sort(),
     );
   });

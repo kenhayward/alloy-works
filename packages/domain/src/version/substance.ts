@@ -22,6 +22,7 @@ import type { PromptLibrary } from '../generation/library.js';
 import type { Prompt } from '../generation/prompt.js';
 import type { Entry } from '../library/entry.js';
 import type { CitationStyle } from '../library/style.js';
+import type { Term } from '../library/term.js';
 
 /**
  * What a component version says (ADR-0024): its content, its metadata values, the values it did not
@@ -146,6 +147,9 @@ export type CitationStyleSubstance = {
   readonly content: CitationStyle;
 };
 
+/** A term version says its term (terms.md, "The term"; the TM plan, TM-A). */
+export type TermSubstance = { readonly kind: 'term'; readonly content: Term };
+
 export type VersionSubstance =
   | ComponentSubstance
   | DatasetSubstance
@@ -155,6 +159,7 @@ export type VersionSubstance =
   | PromptLibrarySubstance
   | BibliographyEntrySubstance
   | CitationStyleSubstance
+  | TermSubstance
   | TemplateSubstance
   | DefinitionSubstance
   | DocumentSubstance

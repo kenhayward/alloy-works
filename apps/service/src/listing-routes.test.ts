@@ -6,6 +6,7 @@ import {
   createConnection,
   createPrompt,
   createEntry,
+  createTerm,
   createQueryDefinition,
   createDocument,
   createTenant,
@@ -171,6 +172,20 @@ describe('the listings through the service', () => {
           entry: { csl: { type: 'book', title: `${name} readings` } },
         });
         if (cited.answer !== 'created') throw new Error(cited.answer);
+        // And a term, so the space's terms have pages to turn.
+        const termed = await createTerm(trx, {
+          spaceId: general.id,
+          author: grace,
+          term: {
+            base: 'en',
+            labels: [{ language: 'en', preferred: `${name} term`, alternatives: [] }],
+            definition: [],
+            broader: [],
+            narrower: [],
+            related: [],
+          },
+        });
+        if (termed.answer !== 'created') throw new Error(termed.answer);
         // And a stored result of each, so the stored results a query may take have pages too.
         await recordDatasetVersion(trx, {
           author: grace,
@@ -574,6 +589,7 @@ describe('the listings through the service', () => {
       listQueryDefinitions: '/v1/query-definitions',
       listPrompts: '/v1/prompts',
       listBibliographyEntries: `/v1/spaces/${general}/bibliography-entries`,
+      listTerms: `/v1/spaces/${general}/terms`,
       listDefinitions: '/v1/definitions',
       listPeople: '/v1/people',
       listTokens: '/v1/tokens',

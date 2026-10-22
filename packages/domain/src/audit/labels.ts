@@ -3,7 +3,7 @@
  * "Labels"): a component's, document's, query definition's, prompt's or template's title; a definition's,
  * connection's, layout's, theme's or catalogue's name; a dataset's or asset's name where it has one; a
  * space's or group's name; a principal's display name; a bibliography entry's key; a citation style's
- * name. `row` is a version's content for an artifact, and the stored row for anything else.
+ * name; a term's preferred label in its base language. `row` is a version's content for an artifact, and the stored row for anything else.
  */
 const LABELLED_BY = {
   component: 'title',
@@ -22,6 +22,7 @@ const LABELLED_BY = {
   promptLibrary: 'name',
   bibliographyEntry: 'key',
   citationStyle: 'name',
+  term: 'labels',
   dataset: 'name',
   asset: 'name',
   space: 'name',
@@ -40,6 +41,15 @@ export function labelFor(
   kind: LabelledKind,
   row: { readonly [member: string]: unknown },
 ): string | undefined {
+  if (kind === 'term') {
+    const labels = row['labels'];
+    const base = Array.isArray(labels)
+      ? (labels as { language?: unknown; preferred?: unknown }[]).find(
+          (each) => each?.language === row['base'],
+        )
+      : undefined;
+    return typeof base?.preferred === 'string' ? base.preferred : undefined;
+  }
   const value = row[LABELLED_BY[kind]];
   return typeof value === 'string' && value.trim() !== '' ? value : undefined;
 }

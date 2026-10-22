@@ -16,7 +16,8 @@ import { definitionKinds } from '@alloy-works/domain';
  * prompt library, added by 0124, is the tenant's, as a theme is, `design` at the tenant making and
  * changing it (G4-F). A bibliography entry, added by 0145, lives in one space and is authored, `edit` in
  * its space making and changing it (the CI plan, CI-B). A citation style, added by 0146, is the tenant's,
- * as a prompt library is, administered at the environment (CI-D).
+ * as a prompt library is, administered at the environment (CI-D). A term, added by 0153, lives in one
+ * space and is authored, as an entry is (the TM plan, TM-A).
  */
 export const artifactKinds = [
   'component',
@@ -35,6 +36,7 @@ export const artifactKinds = [
   'promptLibrary',
   'bibliographyEntry',
   'citationStyle',
+  'term',
 ] as const;
 
 export type ArtifactKind = (typeof artifactKinds)[number];
@@ -55,4 +57,5 @@ export const spacedKinds = [
   'dataset',
   'prompt',
   'bibliographyEntry',
+  'term',
 ] as const satisfies readonly ArtifactKind[];

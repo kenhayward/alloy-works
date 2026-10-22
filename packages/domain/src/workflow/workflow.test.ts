@@ -5,6 +5,7 @@ import {
   reviewPolicy,
   SEED_WORKFLOW,
   SEED_WORKFLOW_1,
+  SEED_TERM_WORKFLOW,
   transitionsFrom,
   type WorkflowBody,
 } from './workflow.js';
@@ -156,6 +157,41 @@ describe('a workflow definition (workflow.md)', () => {
     // A body stored before WF3 has none, and reads as it was.
     const plain = parseWorkflowBody(SEED_WORKFLOW, 'document');
     expect(plain.ok && plain.body).toEqual(SEED_WORKFLOW);
+  });
+
+  it("LIB-049 seeds a term's standing as draft, approved and deprecated, and keeps deprecated", () => {
+    const parsed = parseWorkflowBody(SEED_TERM_WORKFLOW, 'term');
+    expect(parsed.ok && parsed.body.states.map((each) => each.key)).toEqual([
+      'draft',
+      'approved',
+      'deprecated',
+    ]);
+    // Approving designates a revision, a gate of one approver, not an author.
+    expect(
+      SEED_TERM_WORKFLOW.transitions.find((each) => each.key === 'approve')?.gate,
+    ).toMatchObject({
+      approvals: 1,
+      notAuthor: true,
+      designates: true,
+    });
+    // Deprecation is read by the state's key, so a term's workflow keeps it, never approved.
+    const without = {
+      states: [state('draft', { initial: true }), state('approved', { approved: true })],
+      transitions: [move('approve', 'draft', 'approved')],
+    };
+    expect(parseWorkflowBody(without, 'term')).toMatchObject({
+      ok: false,
+      problems: [{ rule: 'deprecated_required', path: 'states' }],
+    });
+    expect(parseWorkflowBody(without, 'component')).toMatchObject({ ok: true });
+    const approvedDeprecated = {
+      states: [...without.states, state('deprecated', { approved: true })],
+      transitions: [...without.transitions, move('deprecate', 'approved', 'deprecated')],
+    };
+    expect(parseWorkflowBody(approvedDeprecated, 'term')).toMatchObject({
+      ok: false,
+      problems: [{ rule: 'deprecated_required', path: 'states.2' }],
+    });
   });
 
   it('LIF-059 declares what a lapsed review does: visibility alone, a move to a state, or an escalation to a person', () => {

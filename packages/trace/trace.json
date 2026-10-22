@@ -6988,7 +6988,7 @@
       "id": "LIB-058",
       "area": "LIB",
       "statement": "A vocabulary must be able to take its values from a declared external source (**LIB-032**) rather than being maintained by hand, each value held locally with the source it came from and the identifier the source gave it (**LIB-034**), re-checkable against that source (**LIB-035**), and never depended on at validation or publish (**LIB-033**, **MET-032**)",
-      "tranche": "T6",
+      "tranche": "T7",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
       "line": 179
@@ -7024,7 +7024,7 @@
       "id": "LIB-024",
       "area": "LIB",
       "statement": "A vocabulary must carry labels per language",
-      "tranche": "T6",
+      "tranche": "T7",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
       "line": 183
@@ -8284,7 +8284,7 @@
       "id": "MET-032",
       "area": "MET",
       "statement": "A field drawing on a vocabulary whose values come from an external source (**LIB-058**) must be validated against the values held in the tenant and never against the source, so that neither authoring nor publishing depends on reaching it",
-      "tranche": "T6",
+      "tranche": "T7",
       "status": "Specified",
       "document": "MET-metadata-and-component-types.md",
       "line": 112
@@ -19816,6 +19816,83 @@
       ]
     },
     {
+      "document": "terms.md",
+      "owns": [
+        {
+          "id": "LIB-013",
+          "howItIsMet": "A term holds a preferred label, alternative labels, an abbreviation, a definition and its standing"
+        },
+        {
+          "id": "LIB-014",
+          "howItIsMet": "Each label and abbreviation per language"
+        },
+        {
+          "id": "LIB-016",
+          "howItIsMet": "First use resolved at publish in reading order: the expansion once, the abbreviation after"
+        },
+        {
+          "id": "LIB-017",
+          "howItIsMet": "Expansion is the theme's: first use, always or never"
+        },
+        {
+          "id": "LIB-018",
+          "howItIsMet": "A deprecated term is flagged where it is used, its replacement named"
+        },
+        {
+          "id": "LIB-019",
+          "howItIsMet": "Typing an abbreviation or a label offers the term"
+        },
+        {
+          "id": "LIB-025",
+          "howItIsMet": "Broader, narrower and related terms, stated"
+        },
+        {
+          "id": "LIB-026",
+          "howItIsMet": "Search reaches content through a term's labels and narrower terms"
+        },
+        {
+          "id": "LIB-028",
+          "howItIsMet": "Exported as SKOS JSON-LD in a documented form; imported from it and from Turtle"
+        },
+        {
+          "id": "LIB-029",
+          "howItIsMet": "An import reports what it could not represent"
+        },
+        {
+          "id": "LIB-049",
+          "howItIsMet": "Standing is a declared workflow: draft, approved, deprecated"
+        },
+        {
+          "id": "LIB-050",
+          "howItIsMet": "A language with no label falls back to the term's base language, and the fallback is reported at publish"
+        },
+        {
+          "id": "LIB-057",
+          "howItIsMet": "A deprecated term is flagged as it is chosen"
+        },
+        {
+          "id": "CNT-165",
+          "howItIsMet": "A Term action on the toolbar and a shortcut apply and remove it"
+        },
+        {
+          "id": "PUB-039",
+          "howItIsMet": "A glossary and a list of abbreviations generated from the terms used"
+        },
+        {
+          "id": "SCH-015",
+          "howItIsMet": "As LIB-026"
+        },
+        {
+          "id": "SCH-056",
+          "howItIsMet": "Terms are searchable"
+        },
+        {
+          "id": "IMP-015",
+          "howItIsMet": "As LIB-028"
+        }
+      ]
+    },
+    {
       "document": "themes.md",
       "owns": [
         {
@@ -20986,13 +21063,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 608,
+      "line": 626,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 621,
+      "line": 639,
       "kind": "title"
     },
     {
@@ -21466,7 +21543,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1981,
+      "line": 2040,
       "kind": "title"
     },
     {
@@ -22006,7 +22083,7 @@
     {
       "id": "API-007",
       "file": "apps/service/src/listing-routes.test.ts",
-      "line": 355,
+      "line": 370,
       "kind": "title"
     },
     {
@@ -23042,6 +23119,60 @@
       "kind": "title"
     },
     {
+      "id": "IMP-015",
+      "file": "apps/service/src/term-routes.test.ts",
+      "line": 128,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-013",
+      "file": "apps/service/src/term-routes.test.ts",
+      "line": 46,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-025",
+      "file": "apps/service/src/term-routes.test.ts",
+      "line": 100,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-028",
+      "file": "apps/service/src/term-routes.test.ts",
+      "line": 128,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-029",
+      "file": "apps/service/src/term-routes.test.ts",
+      "line": 128,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-049",
+      "file": "apps/service/src/term-routes.test.ts",
+      "line": 46,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-015",
+      "file": "apps/service/src/terms/skos.test.ts",
+      "line": 78,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-028",
+      "file": "apps/service/src/terms/skos.test.ts",
+      "line": 57,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-029",
+      "file": "apps/service/src/terms/skos.test.ts",
+      "line": 106,
+      "kind": "title"
+    },
+    {
       "id": "COL-012",
       "file": "apps/service/src/thread-routes.test.ts",
       "line": 202,
@@ -23170,127 +23301,127 @@
     {
       "id": "LIF-004",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 874,
+      "line": 875,
       "kind": "rule"
     },
     {
       "id": "LIF-004",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 837,
+      "line": 838,
       "kind": "title"
     },
     {
       "id": "LIF-008",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 306,
+      "line": 307,
       "kind": "title"
     },
     {
       "id": "LIF-010",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 326,
+      "line": 327,
       "kind": "rule"
     },
     {
       "id": "LIF-010",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 306,
+      "line": 307,
       "kind": "title"
     },
     {
       "id": "LIF-015",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 784,
+      "line": 785,
       "kind": "title"
     },
     {
       "id": "LIF-016",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 784,
+      "line": 785,
       "kind": "title"
     },
     {
       "id": "LIF-018",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 784,
+      "line": 785,
       "kind": "title"
     },
     {
       "id": "LIF-042",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 429,
+      "line": 430,
       "kind": "title"
     },
     {
       "id": "LIF-043",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 429,
+      "line": 430,
       "kind": "title"
     },
     {
       "id": "LIF-044",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 542,
+      "line": 543,
       "kind": "title"
     },
     {
       "id": "LIF-045",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 697,
+      "line": 698,
       "kind": "title"
     },
     {
       "id": "LIF-046",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 542,
+      "line": 543,
       "kind": "title"
     },
     {
       "id": "LIF-047",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 429,
+      "line": 430,
       "kind": "title"
     },
     {
       "id": "LIF-050",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 349,
+      "line": 350,
       "kind": "title"
     },
     {
       "id": "LIF-051",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 398,
+      "line": 399,
       "kind": "title"
     },
     {
       "id": "LIF-052",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 398,
+      "line": 399,
       "kind": "title"
     },
     {
       "id": "LIF-054",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 176,
+      "line": 177,
       "kind": "title"
     },
     {
       "id": "LIF-061",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 281,
+      "line": 282,
       "kind": "rule"
     },
     {
       "id": "LIF-061",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 223,
+      "line": 224,
       "kind": "title"
     },
     {
       "id": "VER-059",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 349,
+      "line": 350,
       "kind": "title"
     },
     {
@@ -24352,25 +24483,25 @@
     {
       "id": "LIF-005",
       "file": "apps/web/src/home/Home.test.tsx",
-      "line": 208,
+      "line": 209,
       "kind": "title"
     },
     {
       "id": "LIF-017",
       "file": "apps/web/src/home/Home.test.tsx",
-      "line": 175,
+      "line": 176,
       "kind": "title"
     },
     {
       "id": "LIF-059",
       "file": "apps/web/src/home/Home.test.tsx",
-      "line": 175,
+      "line": 176,
       "kind": "title"
     },
     {
       "id": "SCH-070",
       "file": "apps/web/src/home/Home.test.tsx",
-      "line": 131,
+      "line": 132,
       "kind": "title"
     },
     {
@@ -25607,6 +25738,30 @@
       "id": "DAT-060",
       "file": "apps/web/src/structure/settleBinding.test.ts",
       "line": 388,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-014",
+      "file": "apps/web/src/terms/terms.test.tsx",
+      "line": 216,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-025",
+      "file": "apps/web/src/terms/terms.test.tsx",
+      "line": 240,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-029",
+      "file": "apps/web/src/terms/terms.test.tsx",
+      "line": 193,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-049",
+      "file": "apps/web/src/terms/terms.test.tsx",
+      "line": 160,
       "kind": "title"
     },
     {
@@ -28256,6 +28411,60 @@
       "kind": "title"
     },
     {
+      "id": "LIB-013",
+      "file": "packages/db/src/terms.test.ts",
+      "line": 171,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-014",
+      "file": "packages/db/src/terms.test.ts",
+      "line": 171,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-025",
+      "file": "packages/db/src/terms.test.ts",
+      "line": 205,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-026",
+      "file": "packages/db/src/terms.test.ts",
+      "line": 320,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-028",
+      "file": "packages/db/src/terms.test.ts",
+      "line": 400,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-029",
+      "file": "packages/db/src/terms.test.ts",
+      "line": 400,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-049",
+      "file": "packages/db/src/terms.test.ts",
+      "line": 255,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-015",
+      "file": "packages/db/src/terms.test.ts",
+      "line": 320,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-056",
+      "file": "packages/db/src/terms.test.ts",
+      "line": 320,
+      "kind": "title"
+    },
+    {
       "id": "STY-005",
       "file": "packages/db/src/themes.test.ts",
       "line": 161,
@@ -28570,55 +28779,55 @@
     {
       "id": "LIF-003",
       "file": "packages/db/src/workflow-migration.test.ts",
-      "line": 217,
+      "line": 219,
       "kind": "title"
     },
     {
       "id": "LIF-007",
       "file": "packages/db/src/workflow-migration.test.ts",
-      "line": 61,
+      "line": 62,
       "kind": "title"
     },
     {
       "id": "SCH-060",
       "file": "packages/db/src/workflow-migration.test.ts",
-      "line": 61,
+      "line": 62,
       "kind": "title"
     },
     {
       "id": "LIF-001",
       "file": "packages/db/src/workflow.test.ts",
-      "line": 205,
+      "line": 206,
       "kind": "title"
     },
     {
       "id": "LIF-002",
       "file": "packages/db/src/workflow.test.ts",
-      "line": 205,
+      "line": 206,
       "kind": "title"
     },
     {
       "id": "LIF-007",
       "file": "packages/db/src/workflow.test.ts",
-      "line": 236,
+      "line": 244,
       "kind": "title"
     },
     {
       "id": "LIF-054",
       "file": "packages/db/src/workflow.test.ts",
-      "line": 205,
+      "line": 206,
       "kind": "title"
     },
     {
       "id": "LIF-061",
       "file": "packages/db/src/workflow.test.ts",
-      "line": 264,
+      "line": 272,
       "kind": "title"
     },
     {
       "id": "SCH-060",
       "file": "packages/db/src/workflow.test.ts",
-      "line": 631,
+      "line": 639,
       "kind": "title"
     },
     {
@@ -29554,7 +29763,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 961,
+      "line": 970,
       "kind": "title"
     },
     {
@@ -29633,6 +29842,24 @@
       "id": "LIB-036",
       "file": "packages/domain/src/library/sources.test.ts",
       "line": 295,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-013",
+      "file": "packages/domain/src/library/term.test.ts",
+      "line": 37,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-014",
+      "file": "packages/domain/src/library/term.test.ts",
+      "line": 47,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-025",
+      "file": "packages/domain/src/library/term.test.ts",
+      "line": 69,
       "kind": "title"
     },
     {
@@ -30524,9 +30751,15 @@
       "kind": "title"
     },
     {
+      "id": "SCH-056",
+      "file": "packages/domain/src/search/entries.test.ts",
+      "line": 378,
+      "kind": "title"
+    },
+    {
       "id": "SCH-061",
       "file": "packages/domain/src/search/entries.test.ts",
-      "line": 421,
+      "line": 457,
       "kind": "title"
     },
     {
@@ -31232,45 +31465,51 @@
       "kind": "title"
     },
     {
+      "id": "LIB-049",
+      "file": "packages/domain/src/workflow/workflow.test.ts",
+      "line": 162,
+      "kind": "title"
+    },
+    {
       "id": "LIF-002",
       "file": "packages/domain/src/workflow/workflow.test.ts",
-      "line": 29,
+      "line": 30,
       "kind": "title"
     },
     {
       "id": "LIF-003",
       "file": "packages/domain/src/workflow/workflow.test.ts",
-      "line": 59,
+      "line": 60,
       "kind": "title"
     },
     {
       "id": "LIF-004",
       "file": "packages/domain/src/workflow/workflow.test.ts",
-      "line": 118,
+      "line": 119,
       "kind": "title"
     },
     {
       "id": "LIF-007",
       "file": "packages/domain/src/workflow/workflow.test.ts",
-      "line": 287,
+      "line": 323,
       "kind": "title"
     },
     {
       "id": "LIF-009",
       "file": "packages/domain/src/workflow/workflow.test.ts",
-      "line": 59,
+      "line": 60,
       "kind": "title"
     },
     {
       "id": "LIF-010",
       "file": "packages/domain/src/workflow/workflow.test.ts",
-      "line": 59,
+      "line": 60,
       "kind": "title"
     },
     {
       "id": "LIF-059",
       "file": "packages/domain/src/workflow/workflow.test.ts",
-      "line": 161,
+      "line": 197,
       "kind": "title"
     },
     {

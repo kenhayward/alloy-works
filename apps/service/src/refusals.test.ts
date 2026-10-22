@@ -111,6 +111,10 @@ describe('the rule behind a refusal', () => {
       'entry.cited',
       'import.unreadable',
       'import.too_many',
+      // A term refused by its shape or relations, and one used kept from archiving: the TM plan's own
+      // guards (TM-A).
+      'term.invalid',
+      'term.used',
       // A citation style that is not CSL 1.0.2 with both forms, which STY-020 and STY-023 shape and no
       // requirement names as a refusal (CI-D).
       'style.invalid',

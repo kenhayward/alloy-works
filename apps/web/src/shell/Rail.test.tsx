@@ -36,7 +36,7 @@ describe('the module rail', () => {
 
     const rail = screen.getByRole('navigation', { name: 'Modules' });
     const reached: string[] = [];
-    for (let presses = 0; presses < 11; presses += 1) {
+    for (let presses = 0; presses < 12; presses += 1) {
       await userEvent.tab();
       reached.push(document.activeElement?.textContent ?? '');
     }
@@ -47,6 +47,7 @@ describe('the module rail', () => {
       'Templates',
       'Prompts',
       'Bibliography',
+      'Terms',
       'Conversations',
       'Publications',
       'Connections',
@@ -63,7 +64,7 @@ describe('the module rail', () => {
     );
     expect(
       within(within(rail).getByRole('list', { name: 'Author' })).getAllByRole('link'),
-    ).toHaveLength(6);
+    ).toHaveLength(7);
     expect(
       within(within(rail).getByRole('list', { name: 'Publish' })).getAllByRole('link'),
     ).toHaveLength(1);

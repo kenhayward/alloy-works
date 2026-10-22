@@ -72,6 +72,7 @@ describe('search and commands', () => {
       'Go to Templates',
       'Go to Prompts',
       'Go to Bibliography',
+      'Go to Terms',
       'Go to Conversations',
       'Go to Publications',
       'Go to Connections',

@@ -733,6 +733,27 @@ export {
   type StoredEntry,
 } from './bibliography.js';
 export {
+  archiveTerm,
+  createTerm,
+  importTerms,
+  IMPORT_CONCEPTS_MOST,
+  listTerms,
+  readTerm,
+  recordTermVersion,
+  termsForExport,
+  termUses,
+  type ImportConcept,
+  type ImportedTerm,
+  type StoredTerm,
+  type TermAnswer,
+  type TermInput,
+  type TermStanding,
+  type TermSummary,
+  type TermUses,
+} from './terms.js';
+export { MOST_REPLACEMENTS } from './term-relations.js';
+export { NARROWER_LEVELS } from './search-terms.js';
+export {
   createLibrary,
   defaultLibraryId,
   documentLibrary,
