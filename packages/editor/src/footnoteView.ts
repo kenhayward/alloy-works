@@ -14,7 +14,12 @@ import { DecorationSet, EditorView, type NodeView } from 'prosemirror-view';
 
 import { bindingsShown } from './bindings.js';
 import { bindingContextOf, bindingDecorations, bindingView } from './bindingView.js';
-import { citationDecorations, citationFormsOf, citationView } from './citations.js';
+import {
+  citationDecorations,
+  citationFlagsOf,
+  citationFormsOf,
+  citationView,
+} from './citations.js';
 import { equationView } from './equationView.js';
 import { pasteInto, readClipboard, type ClipboardSource, type PasteOutcome } from './clipboard.js';
 import { footnoteAt, openFootnote, recordOpenFootnote } from './footnotes.js';
@@ -183,7 +188,11 @@ export function footnoteView(
         const references = DecorationSet.create(state.doc, [
           ...shown.find(),
           ...bindingDecorations(state.doc, bindingContextOf(outer.state)).find(),
-          ...citationDecorations(state.doc, citationFormsOf(outer.state)).find(),
+          ...citationDecorations(
+            state.doc,
+            citationFormsOf(outer.state),
+            citationFlagsOf(outer.state),
+          ).find(),
         ]);
         // What will not resolve in the footnote's own text, by the component's check (ET-I): made again
         // only when the footnote's text or the check changes, not on every draw.

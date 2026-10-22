@@ -33,6 +33,8 @@ export interface ConnectorConfig {
   readonly embedKeyDigest?: Buffer;
   /** SHA-256 of the key the worker presents to deliver webhooks, which opens `/v1/deliver` alone (WB-F). */
   readonly deliverKeyDigest?: Buffer;
+  /** SHA-256 of the key the worker presents to re-check entries, which opens `/v1/reference`'s `check` alone (XR-E). */
+  readonly referenceKeyDigest?: Buffer;
   /**
    * Whether a webhook may reach a private address: never in production, where the reply an
    * administrator reads would read an internal service (the WB plan, WB-F); development's and the
@@ -134,6 +136,13 @@ export function loadConnectorConfig(
       'CONNECTOR_DELIVER_KEY',
       'must not be the same key as CONNECTOR_KEY, CONNECTOR_SEALING_KEY or CONNECTOR_EMBED_KEY',
     );
+  // The worker's, for re-checking entries alone (the XR plan, XR-E): optional, and never any other.
+  const reference = env.CONNECTOR_REFERENCE_KEY ? key(env, 'CONNECTOR_REFERENCE_KEY') : undefined;
+  if (reference && [service, sealing, embed, deliver].some((each) => each?.equals(reference)))
+    refuse(
+      'CONNECTOR_REFERENCE_KEY',
+      'must not be the same key as CONNECTOR_KEY, CONNECTOR_SEALING_KEY, CONNECTOR_EMBED_KEY or CONNECTOR_DELIVER_KEY',
+    );
   const webhookPrivate = env.CONNECTOR_WEBHOOK_PRIVATE ?? 'deny';
   if (!['deny', 'allow'].includes(webhookPrivate))
     refuse('CONNECTOR_WEBHOOK_PRIVATE', 'must be deny or allow');
@@ -173,6 +182,13 @@ export function loadConnectorConfig(
             .update(env.CONNECTOR_DELIVER_KEY!, 'utf8')
             .digest(),
         }),
+    ...(reference === undefined
+      ? {}
+      : {
+          referenceKeyDigest: createHash('sha256')
+            .update(env.CONNECTOR_REFERENCE_KEY!, 'utf8')
+            .digest(),
+        }),
     webhookPrivate: webhookPrivate === 'allow',
     sealingKey: sealing,
     deny,
@@ -210,6 +226,7 @@ export function takeConnectorConfig(env: Record<string, string | undefined>): Co
     delete env.CONNECTOR_SEALING_KEY;
     delete env.CONNECTOR_EMBED_KEY;
     delete env.CONNECTOR_DELIVER_KEY;
+    delete env.CONNECTOR_REFERENCE_KEY;
   }
 }
 

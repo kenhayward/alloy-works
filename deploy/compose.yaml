@@ -153,6 +153,9 @@ services:
       # And the key that opens its webhook delivery alone, the connector's CONNECTOR_DELIVER_KEY (the
       # WB plan, WB-F).
       SECRET_CONNECTOR_DELIVER_KEY: ZGV2ZWxvcG1lbnQtb25seS1kZWxpdmVyLWtleS0wMDE=
+      # And the key that opens its re-checks of cited entries alone, the connector's
+      # CONNECTOR_REFERENCE_KEY (the XR plan, XR-E).
+      SECRET_CONNECTOR_REFERENCE_KEY: ZGV2ZWxvcG1lbnQtb25seS1yZWZlcmVuY2Uta2V5LTE=
     networks:
       - default
       - connector-private
@@ -181,6 +184,8 @@ services:
       CONNECTOR_EMBED_KEY: ZGV2ZWxvcG1lbnQtb25seS1lbWJlZC1rZXktMDAwMDE=
       # The worker's, which opens `/v1/deliver` alone (the WB plan, WB-F).
       CONNECTOR_DELIVER_KEY: ZGV2ZWxvcG1lbnQtb25seS1kZWxpdmVyLWtleS0wMDE=
+      # The worker's, which opens `/v1/reference`'s checks alone (the XR plan, XR-E).
+      CONNECTOR_REFERENCE_KEY: ZGV2ZWxvcG1lbnQtb25seS1yZWZlcmVuY2Uta2V5LTE=
       # A webhook's receiver is public in production; the suites' is on a private network, so a stack
       # running them says `allow` (deploy/README.md).
       CONNECTOR_WEBHOOK_PRIVATE: ${CONNECTOR_WEBHOOK_PRIVATE:-deny}

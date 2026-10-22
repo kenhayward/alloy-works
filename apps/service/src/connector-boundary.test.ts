@@ -100,8 +100,11 @@ describe("the connector's one caller", () => {
       if (!file.endsWith('.test.ts') && file !== 'config.ts') {
         expect(text, file).not.toMatch(/CONNECTOR_/);
       }
-      if (!file.endsWith('.test.ts') && file !== 'embedder.ts' && file !== 'deliverer.ts') {
-        expect(text, file).not.toMatch(/\/v1\/(?!embed\b|deliver\b)\w+/);
+      if (
+        !file.endsWith('.test.ts') &&
+        !['embedder.ts', 'deliverer.ts', 'referencer.ts'].includes(file)
+      ) {
+        expect(text, file).not.toMatch(/\/v1\/(?!embed\b|deliver\b|reference\b)\w+/);
       }
     }
     const embedder = readFileSync(join(worker, 'embedder.ts'), 'utf8');
@@ -112,11 +115,20 @@ describe("the connector's one caller", () => {
     expect([...new Set([...deliverer.matchAll(/\/v1\/\w+/g)].map((match) => match[0]))]).toEqual([
       '/v1/deliver',
     ]);
+    const referencer = readFileSync(join(worker, 'referencer.ts'), 'utf8');
+    expect([...new Set([...referencer.matchAll(/\/v1\/\w+/g)].map((match) => match[0]))]).toEqual([
+      '/v1/reference',
+    ]);
     expect(
       [...readFileSync(join(worker, 'config.ts'), 'utf8').matchAll(/\b(?:SECRET_)?CONNECTOR_\w+/g)]
         .map((match) => match[0])
         .filter((name, at, all) => all.indexOf(name) === at)
         .sort(),
-    ).toEqual(['CONNECTOR_URL', 'SECRET_CONNECTOR_DELIVER_KEY', 'SECRET_CONNECTOR_EMBED_KEY']);
+    ).toEqual([
+      'CONNECTOR_URL',
+      'SECRET_CONNECTOR_DELIVER_KEY',
+      'SECRET_CONNECTOR_EMBED_KEY',
+      'SECRET_CONNECTOR_REFERENCE_KEY',
+    ]);
   });
 });

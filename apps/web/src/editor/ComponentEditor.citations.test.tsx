@@ -114,6 +114,25 @@ describe('citing in the editor (the CI plan, CId)', () => {
     });
   });
 
+  it('LIB-036 flags a citation whose source is retracted, the flag alone where the reader cannot read its entry', async () => {
+    const { surface } = open(
+      {
+        ...answers(citing(cite(MARLOW), cite(WITHHELD))),
+        'POST /v1/components/{id}/citations/preview': () =>
+          json(200, { forms: [FORMS[MARLOW], null], flags: ['retracted', 'corrected'] }),
+      },
+      quick,
+    );
+    await surface();
+    await waitFor(() =>
+      expect(drawn()).toEqual(['(Marlow, 2020) (retracted)', 'Citation unavailable (corrected)']),
+    );
+    expect(document.querySelector('[data-flag="retracted"]')).toHaveAttribute(
+      'title',
+      'Its source says it is retracted',
+    );
+  });
+
   it("draws every citation as 'Citation unavailable' where the preview fails", async () => {
     const { surface } = open(
       {

@@ -908,6 +908,13 @@ describe('the domain package', () => {
         'referenceResultSchema',
         'referenceSource',
         'searchIdentifiers',
+        // XRb: a re-check's notices, its outcome, and where an entry was obtained.
+        'ENTRY_CHECKED_VARIABLES',
+        'ENTRY_CHECK_OUTCOMES',
+        'REFERENCE_NOTICE_KINDS',
+        'entryCheck',
+        'obtainedFrom',
+        'referenceNoticeSchema',
         // CIb: a citation style's shape, what it requires of an entry, and the three seeded.
         'CITATION_STYLE_SCHEMA_VERSION',
         'CitationStyleRefused',

@@ -2,17 +2,24 @@ import { describe, expect, it } from 'vitest';
 
 import {
   crossrefChapter,
+  crossrefChapterCorrection,
   crossrefMarsh,
+  crossrefMarshRetraction,
   crossrefSearch,
+  crossrefUpdates,
   crossrefWork,
+  pubmedCorrected,
   pubmedDunnart,
   pubmedRetracted,
+  pubmedRetractedLinked,
   pubmedSearch,
   pubmedSummary,
 } from './sources-fixtures.js';
 import {
   REFERENCE_SOURCES,
   REFERENCE_SOURCES_VERSION,
+  entryCheck,
+  obtainedFrom,
   readReferenceAnswer,
   referenceAnswerSchema,
   referencePath,
@@ -211,5 +218,139 @@ describe('the reference sources (the XR plan, XR-A)', () => {
         reason: 'too_large',
       }).success,
     ).toBe(true);
+  });
+});
+
+describe('a re-check against the source (the XR plan, XR-E, XR-F)', () => {
+  const marsh = readReferenceAnswer('crossref', 'fetch', crossrefWork())![0]!.csl;
+
+  it('asks Crossref for the notices updating a work, by its DOI in an encoded filter', () => {
+    expect(referencePath('crossref', { step: 'updates', identifier: '10.5555/a?b' })).toBe(
+      '/works?filter=updates%3A10.5555%2Fa%3Fb&rows=20',
+    );
+  });
+
+  it("reads a Crossref retraction from a notice's update-to naming the work, once, whatever its case", () => {
+    const read = readReferenceAnswer(
+      'crossref',
+      'check',
+      crossrefWork(),
+      crossrefUpdates([crossrefMarshRetraction, crossrefChapterCorrection]),
+    );
+    expect(read?.[0]?.notices).toEqual([
+      { kind: 'retraction', identifier: '10.5555/marsh.2021.017.retraction', date: '2026-04-22' },
+    ]);
+  });
+
+  it("reads a Crossref correction from the work's own updated-by and relation", () => {
+    const work = {
+      ...crossrefChapter,
+      'updated-by': [
+        {
+          DOI: '10.5555/quolls.ch4.correction',
+          type: 'correction',
+          updated: { 'date-parts': [[2025, 2, 3]] },
+        },
+      ],
+      relation: {
+        'is-retracted-by': [
+          { 'id-type': 'doi', id: '10.5555/quolls.ch4.r', 'asserted-by': 'subject' },
+        ],
+      },
+    };
+    const read = readReferenceAnswer('crossref', 'check', crossrefWork(work), crossrefUpdates());
+    expect(read?.[0]?.notices).toEqual([
+      { kind: 'correction', identifier: '10.5555/quolls.ch4.correction', date: '2025-02-03' },
+      { kind: 'retraction', identifier: '10.5555/quolls.ch4.r' },
+    ]);
+    // A fetch reads no notices.
+    expect(readReferenceAnswer('crossref', 'fetch', crossrefWork(work))?.[0]).not.toHaveProperty(
+      'notices',
+    );
+  });
+
+  it('reads a PubMed retraction from its publication type and its Retraction in, and a correction from Erratum in', () => {
+    expect(
+      readReferenceAnswer('pubmed', 'check', pubmedSummary([pubmedRetracted]))?.[0]?.notices,
+    ).toEqual([{ kind: 'retraction' }]);
+    expect(
+      readReferenceAnswer('pubmed', 'check', pubmedSummary([pubmedRetractedLinked]))?.[0]?.notices,
+    ).toEqual([{ kind: 'retraction', identifier: '99000003' }]);
+    expect(
+      readReferenceAnswer('pubmed', 'check', pubmedSummary([pubmedCorrected]))?.[0]?.notices,
+    ).toEqual([{ kind: 'correction', identifier: '99000005' }]);
+    expect(
+      readReferenceAnswer('pubmed', 'check', pubmedSummary([pubmedDunnart]))?.[0]?.notices,
+    ).toEqual([]);
+  });
+
+  it('LIB-036 decides the outcome: gone, retracted, corrected, changed or current, and what differs', () => {
+    const result = (csl: object, notices: object[] = []) =>
+      ({ identifier: '10.5555/marsh.2021.017', csl, dropped: [], notices }) as never;
+    expect(entryCheck(marsh, [])).toEqual({ outcome: 'gone', differs: [], notice: null });
+    expect(entryCheck(marsh, [result(marsh)])).toEqual({
+      outcome: 'current',
+      differs: [],
+      notice: null,
+    });
+    // Case and spacing alone are no change; a DOI's case is none.
+    expect(
+      entryCheck(marsh, [
+        result({
+          ...marsh,
+          title: ' Salt  Marsh Accretion Under Rising Tides',
+          DOI: '10.5555/MARSH.2021.017',
+        }),
+      ]),
+    ).toMatchObject({ outcome: 'current' });
+    expect(
+      entryCheck(marsh, [
+        result({
+          ...marsh,
+          title: 'Salt Marsh Accretion',
+          issued: { 'date-parts': [[2022]] },
+          author: [{ family: 'Marlowe', given: 'Ada' }],
+          'container-title': 'Elsewhere',
+          volume: '99',
+        }),
+      ]),
+    ).toEqual({
+      outcome: 'changed',
+      differs: ['title', 'issued', 'author', 'container-title'],
+      notice: null,
+    });
+    // What the source does not hold is no difference.
+    expect(
+      entryCheck(marsh, [result({ type: 'article-journal', title: marsh.title })]).outcome,
+    ).toBe('current');
+    const notice = { kind: 'retraction', identifier: '10.5555/r', date: '2026-04-22' };
+    expect(
+      entryCheck(marsh, [result({ ...marsh, title: 'Other' }, [{ kind: 'correction' }, notice])]),
+    ).toEqual({ outcome: 'retracted', differs: ['title'], notice });
+    expect(entryCheck(marsh, [result(marsh, [{ kind: 'correction' }])])).toEqual({
+      outcome: 'corrected',
+      differs: [],
+      notice: { kind: 'correction' },
+    });
+  });
+
+  it('reads where an entry was obtained as a source and an identifier it fetches by', () => {
+    expect(obtainedFrom('crossref:10.5555/marsh.2021.017')).toEqual({
+      source: 'crossref',
+      identifier: '10.5555/marsh.2021.017',
+    });
+    expect(obtainedFrom('pubmed:99000001')).toEqual({ source: 'pubmed', identifier: '99000001' });
+    expect(obtainedFrom('pubmed:10.5555/x')).toBeUndefined();
+    expect(obtainedFrom('A shelf in the library')).toBeUndefined();
+    expect(obtainedFrom('elsewhere:1')).toBeUndefined();
+  });
+
+  it('holds a result’s notices to their shape', () => {
+    const result = { identifier: '99000001', csl: { type: 'book', title: 'A' }, dropped: [] };
+    const ok = (notices: unknown) =>
+      referenceAnswerSchema.safeParse({ type: 'found', results: [{ ...result, notices }] }).success;
+    expect(ok([{ kind: 'retraction', identifier: '99000003', date: '2026-04-22' }])).toBe(true);
+    expect(ok([{ kind: 'withdrawal' }])).toBe(false);
+    expect(ok([{ kind: 'retraction', date: 'soon' }])).toBe(false);
   });
 });

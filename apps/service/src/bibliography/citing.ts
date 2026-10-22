@@ -4,12 +4,14 @@ import type {
   ComponentParams,
 } from '@alloy-works/api-contract';
 import {
+  citedFlags,
   defaultTheme,
   documentTheme,
   latestVersion,
   readableEntries,
   readStyleVersion,
   readVersion,
+  type EntryFlag,
   type TenantTransaction,
 } from '@alloy-works/db';
 import {
@@ -101,6 +103,24 @@ async function places(trx: TenantTransaction, document: string, component: strin
   return found;
 }
 
+/** The flags of those of these entries that are the space's (XR-G), whoever may read them. */
+async function spaceFlags(
+  trx: TenantTransaction,
+  space: string,
+  ids: readonly string[],
+): Promise<Map<string, EntryFlag>> {
+  const flags = await citedFlags(trx, ids);
+  if (flags.size === 0) return flags;
+  const ours = await trx
+    .selectFrom('artifact')
+    .select('id')
+    .where('id', 'in', [...flags.keys()])
+    .where('space_id', '=', space)
+    .execute();
+  const kept = new Set(ours.map((row) => row.id));
+  return new Map([...flags].filter(([id]) => kept.has(id)));
+}
+
 export function citingHandlers() {
   return {
     /**
@@ -139,9 +159,19 @@ export function citingHandlers() {
               space.space_id,
               body.citations.map((each) => each.entry),
             );
+      // A flag is shown on every citation of an entry of the space, read or not (XR-G).
+      const flagged =
+        space?.space_id == null
+          ? new Map<string, EntryFlag>()
+          : await spaceFlags(
+              trx,
+              space.space_id,
+              body.citations.map((each) => each.entry),
+            );
+      const flags = body.citations.map((each) => flagged.get(each.entry) ?? null);
       const shown = body.citations.filter((each) => entries.has(each.entry));
       if (style === undefined || shown.length === 0) {
-        return { forms: body.citations.map(() => null) };
+        return { forms: body.citations.map(() => null), flags };
       }
       const language = (component.content as { language?: string }).language;
       let rendered: ReturnType<typeof renderCitations>;
@@ -156,7 +186,7 @@ export function citingHandlers() {
         });
       } catch {
         // A style that no longer renders shows nothing; the publish names it (`style_invalid`).
-        return { forms: body.citations.map(() => null) };
+        return { forms: body.citations.map(() => null), flags };
       }
       let at = 0;
       return {
@@ -165,6 +195,7 @@ export function citingHandlers() {
             ? (rendered.citations[at++] ?? []).map((run) => run.text).join('')
             : null,
         ),
+        flags,
       };
     },
   };

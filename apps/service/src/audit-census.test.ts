@@ -29,6 +29,8 @@ const REASONS = {
   iteration: 'An iteration, which is never a version (VER-005)',
   upload: 'An upload waiting for its bytes: its asset is ingested, or the upload refused, later',
   source: "Reads the source through the connector: nothing of the tenant's changes",
+  checked:
+    "An entry checked against its source through the connector: its status, the system's word beside it and never a version (XR-F), and its document owners told",
   platform: "The platform's own provisioning, outside the tenant's acts",
   presence: 'Where a window is, which is presence, not an act: unlogged, and gone in a minute',
   inbox:
@@ -410,6 +412,8 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   setReferenceSource: writes('settings.changed'),
   searchReferenceSource: { none: 'source' },
   createBibliographyEntryFromSource: writes('content.version_cut'),
+  checkBibliographyEntry: { none: 'checked' },
+  getDocumentFlaggedSources: read,
   listPromptLibraries: read,
   createPromptLibrary: writes('content.version_cut'),
   getPromptLibrary: read,

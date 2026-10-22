@@ -45,6 +45,22 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
+/**
+ * What a publish is warned of, which never stops it (the XR plan, XR-G): the cited sources their
+ * source says are retracted or corrected, counted. Null where there are none.
+ */
+function warnedWords(warnings: unknown): string | null {
+  if (!Array.isArray(warnings)) return null;
+  const counted = warnings.flatMap((each) =>
+    isRecord(each) && typeof each.count === 'number' && typeof each.code === 'string'
+      ? [`${each.count} ${each.code.replace('source_', '')}`]
+      : [],
+  );
+  return counted.length === 0
+    ? null
+    : `Cited sources flagged by their source: ${counted.join(', ')}. Review lists them.`;
+}
+
 function listedIn(value: unknown): Listed[] | undefined {
   if (!isRecord(value) || !Array.isArray(value.items)) return undefined;
   return value.items.flatMap((item) =>
@@ -153,6 +169,8 @@ export function Publishing({
   const [listed, setListed] = useState<Listed[] | 'failed' | null>(null);
   const [listAttempt, setListAttempt] = useState(0);
   const [publish, setPublish] = useState<Publish>({ state: 'idle' });
+  // A publish's warnings: flagged sources it cites, which never stop it (XR-G).
+  const [warned, setWarned] = useState<string | null>(null);
   const { follow, mounted } = useFollowing(client);
 
   useEffect(() => {
@@ -216,6 +234,7 @@ export function Publishing({
 
   const start = async () => {
     setPublish({ state: 'working' });
+    setWarned(null);
     try {
       const { data, error, response } = await client.POST('/v1/documents/{id}/publications', {
         params: { path: { id: document } },
@@ -228,6 +247,7 @@ export function Publishing({
       });
       if (!mounted.current) return;
       if (isRecord(data) && typeof data.id === 'string') {
+        setWarned(warnedWords(data.warnings));
         follow(data.id, followMs, settle);
         return;
       }
@@ -294,6 +314,7 @@ export function Publishing({
           </p>
         )}
         {publish.state === 'refused' && <p>{publish.words}</p>}
+        {warned !== null && publish.state !== 'refused' && <p>{warned}</p>}
         {publish.state === 'failed' && (
           <>
             <p>{failedIntro(publish.failures)}</p>

@@ -23,7 +23,7 @@ interface Place {
 
 interface Notification {
   readonly id: string;
-  readonly kind: Kind | 'digest' | 'budget' | 'webhook';
+  readonly kind: Kind | 'digest' | 'budget' | 'webhook' | 'reference';
   readonly actor: { readonly id: string; readonly name: string | null } | null;
   readonly thread: string | null;
   /** A round a person was named a reviewer on (RR-H). */
@@ -43,6 +43,11 @@ interface Notification {
     readonly spent: string;
     readonly limit: string;
     readonly month: string;
+  } | null;
+  /** A source cited in the document `on` names, retracted or corrected (XR-G). */
+  readonly reference?: {
+    readonly entry: string;
+    readonly outcome: 'retracted' | 'corrected';
   } | null;
   readonly at: string;
   readonly read: boolean;
@@ -108,6 +113,8 @@ function said(each: Notification): string {
     }
     case 'webhook':
       return 'A webhook you made was turned off after three days of failed deliveries.';
+    case 'reference':
+      return `A source cited in ${placeWords(each.on)} was ${each.reference?.outcome ?? 'flagged'} by its source.`;
   }
 }
 
@@ -258,6 +265,12 @@ export function Inbox({ client, onClose }: { client: Client; onClose: () => void
                   )}
                   {/* A round opens its document, in Review, where its rounds are listed (RR-E). */}
                   {each.kind === 'round' && each.round != null && each.on !== null && (
+                    <a href={`#/documents/${each.on.id}`} onClick={() => void markRead(each)}>
+                      Open the document
+                    </a>
+                  )}
+                  {/* A flagged source opens its document, whose Review lists it (XR-G). */}
+                  {each.kind === 'reference' && each.on?.title != null && (
                     <a href={`#/documents/${each.on.id}`} onClick={() => void markRead(each)}>
                       Open the document
                     </a>

@@ -14,18 +14,23 @@ import type {
 import { IMPORT_RECORDS_MOST } from '@alloy-works/api-contract';
 import {
   archiveEntry,
+  citedFlags,
   createEntry,
   entriesForExport,
   entryUses,
   importEntries,
   listEntries,
   readEntry,
+  readEntryStatus,
   recordEntryVersion,
   type EntryAnswer,
   type EntryInput,
   type EntryMatch,
+  type EntryFlag,
+  type EntryStatus,
   type EntrySummary,
   type StoredEntry,
+  type TenantTransaction,
 } from '@alloy-works/db';
 import { decide, type AccessFacts } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
@@ -49,7 +54,17 @@ export function entryView(stored: StoredEntry, facts: AccessFacts): EntryView {
   };
 }
 
-const summaryView = (summary: EntrySummary) => ({
+/** An entry's status, as the API shows it (XR-F). */
+export const statusView = (status: EntryStatus) => ({
+  source: status.source,
+  checkedAt: status.checkedAt.toISOString(),
+  outcome: status.outcome,
+  differs: [...status.differs],
+  notice: status.notice,
+});
+
+const summaryView = (summary: EntrySummary, flags?: ReadonlyMap<string, EntryFlag>) => ({
+  ...(flags === undefined ? {} : { flag: flags.get(summary.id) ?? null }),
   id: summary.id,
   key: summary.key,
   csl: summary.csl,
@@ -60,7 +75,17 @@ const summaryView = (summary: EntrySummary) => ({
   changedAt: summary.changedAt.toISOString(),
 });
 
-export const matchView = (match: EntryMatch) => ({ by: match.by, entry: summaryView(match.entry) });
+export const matchView = (match: EntryMatch, flags?: ReadonlyMap<string, EntryFlag>) => ({
+  by: match.by,
+  entry: summaryView(match.entry, flags),
+});
+
+/** The flags of the entries matched (XR-G), to show beside each. */
+export const matchFlags = (trx: TenantTransaction, matches: readonly EntryMatch[]) =>
+  citedFlags(
+    trx,
+    matches.map((each) => each.entry.id),
+  );
 
 /** What a stored entry is summarised as. */
 const summaryOf = (stored: StoredEntry): EntrySummary => ({
@@ -112,8 +137,13 @@ export function bibliographyHandlers() {
         archived: query.archived === 'true',
       });
       if (!listed) throw new Error('A signed-in principal is not in its own tenant');
+      // Each flagged where its source says it is retracted or corrected (XR-G).
+      const flags = await citedFlags(
+        trx,
+        listed.items.map((each) => each.id),
+      );
       return {
-        items: listed.items.map(summaryView),
+        items: listed.items.map((each) => summaryView(each, flags)),
         next: cursorFor('bibliography', asked.sort, asked.order, listed.snapshot, listed.next),
         total: listed.total,
       };
@@ -132,11 +162,14 @@ export function bibliographyHandlers() {
         ...(body.despiteMatches === undefined ? {} : { despiteMatches: body.despiteMatches }),
       });
       if (answer.answer === 'matched') {
-        return { entry: null, matches: answer.matches.map(matchView) };
+        return { entry: null, matches: answer.matches.map((each) => matchView(each)) };
       }
       if (answer.answer === 'created') {
         // Decided at the space, which a new entry inherits from.
-        return { entry: entryView(answer.entry, facts), matches: answer.matches.map(matchView) };
+        return {
+          entry: entryView(answer.entry, facts),
+          matches: answer.matches.map((each) => matchView(each)),
+        };
       }
       if (answer.answer === 'recorded' || answer.answer === 'version.unchanged') {
         throw new Error(`Making an entry was answered ${answer.answer}`);
@@ -166,7 +199,7 @@ export function bibliographyHandlers() {
       return {
         records: done.map((each) => ({
           outcome: each.outcome,
-          entry: each.outcome === 'refused' ? null : summaryView(summaryOf(each.entry)),
+          entry: each.outcome === 'refused' ? null : summaryView(summaryOf(each.entry), undefined),
           by: each.outcome === 'merged' ? each.by : null,
           merged: each.outcome === 'merged' ? [...each.merged] : [],
           dropped: [...each.dropped],
@@ -196,7 +229,11 @@ export function bibliographyHandlers() {
       const { id } = request.params as EntryParams;
       const stored = await readEntry(trx, id);
       if (!stored) throw notFound();
-      return entryView(stored, facts);
+      const status = await readEntryStatus(trx, id);
+      return {
+        ...entryView(stored, facts),
+        status: status === undefined ? null : statusView(status),
+      };
     },
 
     recordBibliographyEntryVersion: async (

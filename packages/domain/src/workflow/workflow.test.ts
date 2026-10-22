@@ -138,6 +138,12 @@ describe('a workflow definition (workflow.md)', () => {
       ok: false,
       problems: [{ rule: 'condition_kind', path: 'transitions.0.requires.1' }],
     });
+    // No retracted source cited is a document's alone (LIB-036; the XR plan, XR-H).
+    expect(parseWorkflowBody(body(['noRetracted']), 'document')).toMatchObject({ ok: true });
+    expect(parseWorkflowBody(body(['noRetracted']), 'component')).toMatchObject({
+      ok: false,
+      problems: [{ rule: 'condition_kind', path: 'transitions.0.requires.0' }],
+    });
     expect(parseWorkflowBody(body(['threads']), 'queryDefinition')).toMatchObject({
       ok: false,
       problems: [{ rule: 'condition_kind', path: 'transitions.0.requires.0' }],

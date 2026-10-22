@@ -20576,6 +20576,12 @@
       "kind": "title"
     },
     {
+      "id": "LIB-036",
+      "file": "apps/connector/src/reference.test.ts",
+      "line": 88,
+      "kind": "title"
+    },
+    {
       "id": "DAT-069",
       "file": "apps/connector/src/result.test.ts",
       "line": 22,
@@ -20962,13 +20968,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 603,
+      "line": 607,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 616,
+      "line": 620,
       "kind": "title"
     },
     {
@@ -21442,7 +21448,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1977,
+      "line": 1979,
       "kind": "title"
     },
     {
@@ -21653,6 +21659,12 @@
       "id": "GEN-044",
       "file": "apps/service/src/embedding-routes.test.ts",
       "line": 58,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-036",
+      "file": "apps/service/src/entry-check-routes.test.ts",
+      "line": 54,
       "kind": "title"
     },
     {
@@ -23258,6 +23270,12 @@
       "kind": "title"
     },
     {
+      "id": "LIB-036",
+      "file": "apps/service/src/workflows.test.ts",
+      "line": 26,
+      "kind": "title"
+    },
+    {
       "id": "LIF-039",
       "file": "apps/service/src/workflows.test.ts",
       "line": 5,
@@ -23296,7 +23314,7 @@
     {
       "id": "COL-034",
       "file": "apps/web/src/account/Inbox.test.tsx",
-      "line": 183,
+      "line": 210,
       "kind": "title"
     },
     {
@@ -23308,13 +23326,19 @@
     {
       "id": "COL-062",
       "file": "apps/web/src/account/Inbox.test.tsx",
-      "line": 173,
+      "line": 200,
       "kind": "title"
     },
     {
       "id": "COL-063",
       "file": "apps/web/src/account/Inbox.test.tsx",
       "line": 113,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-036",
+      "file": "apps/web/src/account/Inbox.test.tsx",
+      "line": 173,
       "kind": "title"
     },
     {
@@ -23510,6 +23534,12 @@
       "kind": "title"
     },
     {
+      "id": "LIB-036",
+      "file": "apps/web/src/admin/Workflows.test.tsx",
+      "line": 264,
+      "kind": "title"
+    },
+    {
       "id": "LIF-001",
       "file": "apps/web/src/admin/Workflows.test.tsx",
       "line": 52,
@@ -23548,7 +23578,7 @@
     {
       "id": "LIF-017",
       "file": "apps/web/src/admin/Workflows.test.tsx",
-      "line": 264,
+      "line": 287,
       "kind": "title"
     },
     {
@@ -23566,7 +23596,7 @@
     {
       "id": "LIF-059",
       "file": "apps/web/src/admin/Workflows.test.tsx",
-      "line": 264,
+      "line": 287,
       "kind": "title"
     },
     {
@@ -23584,19 +23614,25 @@
     {
       "id": "LIB-009",
       "file": "apps/web/src/bibliography/bibliography.test.tsx",
-      "line": 232,
+      "line": 280,
       "kind": "title"
     },
     {
       "id": "LIB-010",
       "file": "apps/web/src/bibliography/bibliography.test.tsx",
-      "line": 172,
+      "line": 193,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-036",
+      "file": "apps/web/src/bibliography/bibliography.test.tsx",
+      "line": 230,
       "kind": "title"
     },
     {
       "id": "LIB-044",
       "file": "apps/web/src/bibliography/bibliography.test.tsx",
-      "line": 138,
+      "line": 159,
       "kind": "title"
     },
     {
@@ -23728,7 +23764,13 @@
     {
       "id": "LIB-031",
       "file": "apps/web/src/editor/CitationDialog.search.test.tsx",
-      "line": 129,
+      "line": 137,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-036",
+      "file": "apps/web/src/editor/CitationDialog.search.test.tsx",
+      "line": 168,
       "kind": "title"
     },
     {
@@ -23846,9 +23888,15 @@
       "kind": "title"
     },
     {
+      "id": "LIB-036",
+      "file": "apps/web/src/editor/ComponentEditor.citations.test.tsx",
+      "line": 117,
+      "kind": "title"
+    },
+    {
       "id": "STR-069",
       "file": "apps/web/src/editor/ComponentEditor.citations.test.tsx",
-      "line": 185,
+      "line": 204,
       "kind": "title"
     },
     {
@@ -24430,13 +24478,19 @@
     {
       "id": "DAT-063",
       "file": "apps/web/src/publishing/Publishing.test.tsx",
-      "line": 820,
+      "line": 847,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-036",
+      "file": "apps/web/src/publishing/Publishing.test.tsx",
+      "line": 154,
       "kind": "title"
     },
     {
       "id": "REU-027",
       "file": "apps/web/src/publishing/Publishing.test.tsx",
-      "line": 154,
+      "line": 181,
       "kind": "title"
     },
     {
@@ -24581,6 +24635,12 @@
       "id": "IAM-045",
       "file": "apps/web/src/review/RoundsPanel.test.tsx",
       "line": 123,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-036",
+      "file": "apps/web/src/review/SourcesPanel.test.tsx",
+      "line": 23,
       "kind": "title"
     },
     {
@@ -26018,6 +26078,12 @@
       "kind": "title"
     },
     {
+      "id": "LIB-036",
+      "file": "apps/worker/src/rechecks.test.ts",
+      "line": 216,
+      "kind": "title"
+    },
+    {
       "id": "PUB-096",
       "file": "apps/worker/src/references.test.ts",
       "line": 389,
@@ -26279,6 +26345,12 @@
       "id": "DAT-003",
       "file": "packages/api-contract/src/openapi.test.ts",
       "line": 91,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-036",
+      "file": "packages/api-contract/src/publishing.test.ts",
+      "line": 287,
       "kind": "title"
     },
     {
@@ -27053,6 +27125,12 @@
       "id": "VER-039",
       "file": "packages/db/src/embeddings.test.ts",
       "line": 57,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-036",
+      "file": "packages/db/src/entry-status.test.ts",
+      "line": 224,
       "kind": "title"
     },
     {
@@ -29386,7 +29464,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 933,
+      "line": 940,
       "kind": "title"
     },
     {
@@ -29452,13 +29530,19 @@
     {
       "id": "LIB-031",
       "file": "packages/domain/src/library/sources.test.ts",
-      "line": 81,
+      "line": 88,
       "kind": "title"
     },
     {
       "id": "LIB-032",
       "file": "packages/domain/src/library/sources.test.ts",
-      "line": 27,
+      "line": 34,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-036",
+      "file": "packages/domain/src/library/sources.test.ts",
+      "line": 287,
       "kind": "title"
     },
     {
@@ -31078,7 +31162,7 @@
     {
       "id": "LIF-007",
       "file": "packages/domain/src/workflow/workflow.test.ts",
-      "line": 281,
+      "line": 287,
       "kind": "title"
     },
     {
@@ -31096,7 +31180,7 @@
     {
       "id": "LIF-059",
       "file": "packages/domain/src/workflow/workflow.test.ts",
-      "line": 155,
+      "line": 161,
       "kind": "title"
     },
     {
@@ -31151,6 +31235,12 @@
       "id": "TAB-008",
       "file": "packages/editor/src/boundTables.test.ts",
       "line": 403,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-036",
+      "file": "packages/editor/src/citations.test.ts",
+      "line": 143,
       "kind": "title"
     },
     {

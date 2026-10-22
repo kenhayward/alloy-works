@@ -7,11 +7,13 @@ import {
   changeCitation,
   citationAt,
   citationDecorations,
+  citationFlagsOf,
   citationFormsOf,
   citationKey,
   citationPlaceable,
   citationsIn,
   insertCitation,
+  setCitationFlags,
   setCitationForms,
 } from './citations.js';
 import { fromEditor, toEditor } from './mapping.js';
@@ -135,6 +137,62 @@ describe('citing an entry (the CI plan, CId)', () => {
       [CITATION_UNAVAILABLE, { class: 'aw-citation-unavailable' }],
     ]);
     // A form arriving is no change to the document, and the history never holds it.
+    expect(fromEditor(view.state.doc)).toEqual(fromEditor(next.doc));
+  });
+
+  it('LIB-036 flags a citation whose source is retracted or corrected, read or not, in its text and its class', () => {
+    let next = caretAt(10);
+    insertCitation({ entry: MARLOW, locator: null })(next, (tr) => (next = next.apply(tr)));
+    insertCitation({ entry: PENHALLOW, locator: null })(next, (tr) => (next = next.apply(tr)));
+    const view = {
+      state: next,
+      dispatch: (tr: Transaction) => {
+        view.state = view.state.apply(tr);
+      },
+    };
+    setCitationForms(
+      view,
+      new Map([
+        [citationKey(MARLOW, null), '(Marlow 2020)'],
+        [citationKey(PENHALLOW, null), null],
+      ]),
+    );
+    setCitationFlags(
+      view,
+      new Map([
+        [MARLOW, 'retracted'],
+        [PENHALLOW, 'corrected'],
+      ]),
+    );
+    expect(citationFlagsOf(view.state)?.get(MARLOW)).toBe('retracted');
+    const drawn = citationDecorations(
+      view.state.doc,
+      citationFormsOf(view.state),
+      citationFlagsOf(view.state),
+    )
+      .find()
+      .map((each) => [
+        each.spec.citationText,
+        (each as unknown as { type: { attrs: object } }).type.attrs,
+      ]);
+    expect(drawn).toEqual([
+      [
+        '(Marlow 2020) (retracted)',
+        {
+          class: 'aw-citation-flagged',
+          'data-flag': 'retracted',
+          title: 'Its source says it is retracted',
+        },
+      ],
+      [
+        `${CITATION_UNAVAILABLE} (corrected)`,
+        {
+          class: 'aw-citation-unavailable aw-citation-flagged',
+          'data-flag': 'corrected',
+          title: 'Its source says it is corrected',
+        },
+      ],
+    ]);
     expect(fromEditor(view.state.doc)).toEqual(fromEditor(next.doc));
   });
 

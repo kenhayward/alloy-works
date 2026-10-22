@@ -50,7 +50,8 @@ type Condition =
   | 'components'
   | 'profile'
   | 'generated'
-  | 'trial';
+  | 'trial'
+  | 'noRetracted';
 
 /** Each condition, as a transition's row offers it: "Submit requires no open threads". */
 const CONDITIONS: Readonly<Record<Condition, string>> = {
@@ -66,6 +67,8 @@ const CONDITIONS: Readonly<Record<Condition, string>> = {
   generated: 'no generated content waiting to be accepted',
   // GEN-045 (the G4 plan, G4-E): a prompt's approval attests a trial of it.
   trial: 'a finished trial run of the version',
+  // LIB-036 (the XR plan, XR-H): a source its source says is retracted, cited by what is placed.
+  noRetracted: 'no retracted sources cited',
 };
 
 /** What each kind's transitions may require: a query definition has nothing to (WF3-A). */
@@ -80,6 +83,7 @@ const CONDITIONS_OF: Readonly<Record<Kind, readonly Condition[]>> = {
     'components',
     'profile',
     'generated',
+    'noRetracted',
   ],
   queryDefinition: [],
   prompt: ['trial'],

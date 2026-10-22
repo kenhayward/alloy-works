@@ -70,6 +70,8 @@ export const REFERENCE_CONTACT = /^[^\s@]{1,64}@[^\s@]{1,190}$/;
 export type ReferenceStep =
   | { readonly step: 'search'; readonly terms: string }
   | { readonly step: 'work'; readonly identifier: string }
+  /** Crossref's notices updating a work, by its DOI (XRb): `filter=updates:{doi}`. */
+  | { readonly step: 'updates'; readonly identifier: string }
   | { readonly step: 'summary'; readonly ids: readonly string[] };
 
 /** A step's path and query on the source's host, every value encoded as a query parameter or segment. */
@@ -84,6 +86,10 @@ export function referencePath(
     if (step.step === 'search') {
       path = '/works';
       query.set('query', step.terms);
+      query.set('rows', String(REFERENCE_RESULTS_MOST));
+    } else if (step.step === 'updates') {
+      path = '/works';
+      query.set('filter', `updates:${step.identifier}`);
       query.set('rows', String(REFERENCE_RESULTS_MOST));
     } else {
       path = `/works/${encodeURIComponent(step.step === 'work' ? step.identifier : (step.ids[0] ?? ''))}`;
@@ -135,11 +141,27 @@ export const referenceRequestSchema = z
   );
 export type ReferenceRequest = z.infer<typeof referenceRequestSchema>;
 
+/** What a source reports of a record (XR-F): retracted, or corrected. */
+export const REFERENCE_NOTICE_KINDS = ['retraction', 'correction'] as const;
+
+/** A retraction or correction a source reports: the notice's own identifier and date, where given. */
+export const referenceNoticeSchema = z.strictObject({
+  kind: z.enum(REFERENCE_NOTICE_KINDS),
+  identifier: z.string().min(1).max(300).optional(),
+  date: z
+    .string()
+    .regex(/^\d{4}(-\d{2}(-\d{2})?)?$/)
+    .optional(),
+});
+export type ReferenceNotice = z.infer<typeof referenceNoticeSchema>;
+
 export const referenceResultSchema = z.strictObject({
   identifier: z.string().min(1).max(300),
   csl: cslItemSchema,
   /** The fields the source gave that an entry cannot hold, left out. */
   dropped: z.array(z.string().max(200)).max(200),
+  /** A check's retractions and corrections (XRb); absent from a search or fetch. */
+  notices: z.array(referenceNoticeSchema).max(50).optional(),
 });
 export type ReferenceResult = z.infer<typeof referenceResultSchema>;
 
@@ -332,27 +354,232 @@ export function searchIdentifiers(answer: unknown): string[] {
     .slice(0, REFERENCE_RESULTS_MOST);
 }
 
+/** Crossref's update types, as a notice's kind; any other (a comment, a concern) none. */
+const CROSSREF_UPDATES: Readonly<Record<string, ReferenceNotice['kind']>> = {
+  retraction: 'retraction',
+  withdrawal: 'retraction',
+  removal: 'retraction',
+  correction: 'correction',
+  corrigendum: 'correction',
+  erratum: 'correction',
+  addendum: 'correction',
+  clarification: 'correction',
+};
+
+/** Crossref's relations naming a notice of the subject (XRb). */
+const CROSSREF_RELATIONS: Readonly<Record<string, ReferenceNotice['kind']>> = {
+  'is-retracted-by': 'retraction',
+  'is-corrected-by': 'correction',
+};
+
+const crossrefDay = (value: unknown): string | undefined => {
+  const parts = isRecord(value) && Array.isArray(value['date-parts']) ? value['date-parts'][0] : [];
+  if (!Array.isArray(parts) || typeof parts[0] !== 'number') return undefined;
+  return parts
+    .slice(0, 3)
+    .map((each, at) => String(each).padStart(at === 0 ? 4 : 2, '0'))
+    .join('-');
+};
+
+const sameDoi = (a: unknown, b: string) =>
+  typeof a === 'string' && a.trim().toLowerCase() === b.toLowerCase();
+
+/** One notice per kind and identifier, the first kept. */
+function distinct(notices: readonly ReferenceNotice[]): ReferenceNotice[] {
+  const seen = new Set<string>();
+  return notices.filter((each) => {
+    const key = `${each.kind} ${each.identifier?.toLowerCase() ?? ''}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+/** A notice, its identifier and date kept only where they are in shape. */
+const notice = (
+  kind: ReferenceNotice['kind'],
+  identifier: unknown,
+  date?: string,
+): ReferenceNotice =>
+  referenceNoticeSchema.safeParse({
+    kind,
+    ...(textOf(identifier) === undefined ? {} : { identifier: textOf(identifier) }),
+    ...(date === undefined ? {} : { date }),
+  }).data ?? { kind };
+
+/**
+ * A Crossref work's retractions and corrections (XRb): each notice in `updates` (the answer to
+ * `filter=updates:{doi}`) whose `update-to` names the work, and the work's own `updated-by` and
+ * `relation` (`is-retracted-by`, `is-corrected-by`). Retraction Watch's entries are among them.
+ */
+function crossrefNotices(work: Json, updates: unknown): ReferenceNotice[] {
+  const doi = textOf(work.DOI) ?? '';
+  const found: ReferenceNotice[] = [];
+  const message = isRecord(updates) && isRecord(updates.message) ? updates.message : {};
+  for (const item of Array.isArray(message.items) ? message.items.filter(isRecord) : []) {
+    for (const update of Array.isArray(item['update-to']) ? item['update-to'] : []) {
+      const kind = isRecord(update) ? CROSSREF_UPDATES[String(update.type)] : undefined;
+      if (kind && sameDoi(update.DOI, doi)) {
+        found.push(notice(kind, item.DOI, crossrefDay(update.updated)));
+      }
+    }
+  }
+  for (const update of Array.isArray(work['updated-by']) ? work['updated-by'] : []) {
+    const kind = isRecord(update) ? CROSSREF_UPDATES[String(update.type)] : undefined;
+    if (kind) found.push(notice(kind, update.DOI, crossrefDay(update.updated)));
+  }
+  const relation = isRecord(work.relation) ? work.relation : {};
+  for (const [name, kind] of Object.entries(CROSSREF_RELATIONS)) {
+    const related = relation[name];
+    for (const each of Array.isArray(related) ? related.filter(isRecord) : []) {
+      found.push(notice(kind, each.id));
+    }
+  }
+  return distinct(found);
+}
+
+/** PubMed's links to a notice, by `reftype` (XRb). */
+const PUBMED_REFERENCES: Readonly<Record<string, ReferenceNotice['kind']>> = {
+  'Retraction in': 'retraction',
+  'Erratum in': 'correction',
+  'Corrected and republished in': 'correction',
+};
+
+/**
+ * A PubMed summary's retractions and corrections (XRb): its `references` linking a notice, and its
+ * publication type `Retracted Publication` where no notice is linked.
+ */
+function pubmedNotices(record: Json): ReferenceNotice[] {
+  const found: ReferenceNotice[] = [];
+  for (const each of Array.isArray(record.references) ? record.references.filter(isRecord) : []) {
+    const kind = PUBMED_REFERENCES[String(each.reftype)];
+    if (kind) found.push(notice(kind, PMID.test(String(each.pmid)) ? each.pmid : undefined));
+  }
+  const types = Array.isArray(record.pubtype) ? record.pubtype : [];
+  if (
+    types.includes('Retracted Publication') &&
+    !found.some((each) => each.kind === 'retraction')
+  ) {
+    found.unshift({ kind: 'retraction' });
+  }
+  return distinct(found);
+}
+
 /**
  * A source's answer, as parsed JSON, mapped to CSL-JSON results: Crossref's work or work list, or
  * PubMed's summaries. Undefined where it is not the source's shape; a record that does not map is
- * left out.
+ * left out. A check's results carry their notices, Crossref's read also from `updates`, its answer to
+ * `filter=updates:{doi}`.
  */
 export function readReferenceAnswer(
   source: ReferenceSourceId,
   op: ReferenceOperation,
   answer: unknown,
+  updates?: unknown,
 ): ReferenceResult[] | undefined {
   if (!isRecord(answer)) return undefined;
+  const checked = (results: ReferenceResult[], notices: () => ReferenceNotice[]) =>
+    op === 'check' ? results.map((each) => ({ ...each, notices: notices() })) : results;
   if (source === 'crossref') {
     const message = answer.message;
     if (!isRecord(message)) return undefined;
-    if (op !== 'search') return crossrefItem(message);
+    if (op !== 'search') {
+      return checked(crossrefItem(message), () => crossrefNotices(message, updates));
+    }
     if (!Array.isArray(message.items)) return undefined;
     return message.items.slice(0, REFERENCE_RESULTS_MOST).flatMap(crossrefItem);
   }
   const result = answer.result;
   if (!isRecord(result) || !Array.isArray(result.uids)) return undefined;
-  return result.uids
-    .slice(0, REFERENCE_RESULTS_MOST)
-    .flatMap((uid) => (typeof uid === 'string' ? pubmedItem(result[uid]) : []));
+  return result.uids.slice(0, REFERENCE_RESULTS_MOST).flatMap((uid) => {
+    const record = typeof uid === 'string' ? result[uid] : undefined;
+    return isRecord(record) ? checked(pubmedItem(record), () => pubmedNotices(record)) : [];
+  });
+}
+
+/** What a check found of an entry (XR-F): the status's outcome. */
+export const ENTRY_CHECK_OUTCOMES = [
+  'current',
+  'changed',
+  'gone',
+  'retracted',
+  'corrected',
+] as const;
+export type EntryCheckOutcome = (typeof ENTRY_CHECK_OUTCOMES)[number];
+
+/** The CSL variables a check compares, in this order (XRb). */
+export const ENTRY_CHECKED_VARIABLES = [
+  'title',
+  'issued',
+  'author',
+  'container-title',
+  'DOI',
+] as const;
+
+export interface EntryCheck {
+  readonly outcome: EntryCheckOutcome;
+  /** The variables the source now holds otherwise. */
+  readonly differs: string[];
+  /** The retraction or correction decided on, where there is one. */
+  readonly notice: ReferenceNotice | null;
+}
+
+/** A variable's value as a check compares it: spacing and case aside, authors by family name. */
+function compared(
+  name: (typeof ENTRY_CHECKED_VARIABLES)[number],
+  csl: CslItem,
+): string | undefined {
+  const value = (csl as Record<string, unknown>)[name];
+  if (value === undefined) return undefined;
+  if (name === 'author') {
+    if (!Array.isArray(value) || value.length === 0) return undefined;
+    return JSON.stringify(
+      value.map((each: Record<string, unknown>) =>
+        String(each.family ?? each.literal ?? '')
+          .trim()
+          .toLowerCase(),
+      ),
+    );
+  }
+  if (name === 'issued') return JSON.stringify((value as Record<string, unknown>)['date-parts']);
+  return String(value).replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
+/**
+ * An entry's latest CSL held against what its source now answers (XR-F): `gone` where the source
+ * holds no record; else `retracted` or `corrected` where it reports so, a retraction first; else
+ * `changed` where a compared variable the source holds differs; else `current`.
+ */
+export function entryCheck(held: CslItem, results: readonly ReferenceResult[]): EntryCheck {
+  const found = results[0];
+  if (found === undefined) return { outcome: 'gone', differs: [], notice: null };
+  const differs = ENTRY_CHECKED_VARIABLES.filter((name) => {
+    const now = compared(name, found.csl);
+    return now !== undefined && now !== compared(name, held);
+  });
+  const notices = found.notices ?? [];
+  const notice =
+    notices.find((each) => each.kind === 'retraction') ??
+    notices.find((each) => each.kind === 'correction') ??
+    null;
+  const outcome: EntryCheckOutcome = notice
+    ? notice.kind === 'retraction'
+      ? 'retracted'
+      : 'corrected'
+    : differs.length > 0
+      ? 'changed'
+      : 'current';
+  return { outcome, differs: [...differs], notice };
+}
+
+/** Where an entry was obtained, as `source:identifier` (XRa), read back; undefined if not a source's. */
+export function obtainedFrom(
+  from: string,
+): { readonly source: ReferenceSourceId; readonly identifier: string } | undefined {
+  const at = from.indexOf(':');
+  const source = REFERENCE_SOURCE_IDS.find((each) => each === from.slice(0, at));
+  const identifier = from.slice(at + 1);
+  return at > 0 && source !== undefined && identifierFits(source, identifier)
+    ? { source, identifier }
+    : undefined;
 }

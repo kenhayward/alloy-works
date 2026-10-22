@@ -45,8 +45,8 @@ export interface NotificationTable {
   id: ColumnType<string, string | undefined, never>;
   recipient: ColumnType<string, string, never>;
   kind: ColumnType<
-    'mention' | 'reply' | 'resolution' | 'round' | 'digest' | 'budget' | 'webhook',
-    'mention' | 'reply' | 'resolution' | 'round' | 'digest' | 'budget' | 'webhook',
+    'mention' | 'reply' | 'resolution' | 'round' | 'digest' | 'budget' | 'webhook' | 'reference',
+    'mention' | 'reply' | 'resolution' | 'round' | 'digest' | 'budget' | 'webhook' | 'reference',
     never
   >;
   actor: ColumnType<string | null, string | null, never>;

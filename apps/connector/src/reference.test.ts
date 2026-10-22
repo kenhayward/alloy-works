@@ -85,6 +85,53 @@ describe('a reference source asked through the connector (the XR plan, XR-B)', (
     });
   });
 
+  it('LIB-036 checks a Crossref work, its notices read from the works updating it', async () => {
+    const before = fake.seen.length;
+    const answer = await ask({
+      source: 'crossref',
+      op: 'check',
+      identifier: '10.5555/marsh.2021.017',
+    });
+    expect(answer).toMatchObject({
+      type: 'found',
+      results: [
+        {
+          identifier: '10.5555/marsh.2021.017',
+          notices: [
+            {
+              kind: 'retraction',
+              identifier: '10.5555/marsh.2021.017.retraction',
+              date: '2026-04-22',
+            },
+          ],
+        },
+      ],
+    });
+    expect(fake.seen.slice(before)).toEqual([
+      '/works/10.5555%2Fmarsh.2021.017?mailto=desk%40example.test',
+      '/works?filter=updates%3A10.5555%2Fmarsh.2021.017&rows=20&mailto=desk%40example.test',
+    ]);
+    // A fetch asks for no notices.
+    expect(
+      await ask({ source: 'crossref', op: 'fetch', identifier: '10.5555/quolls.ch4' }),
+    ).not.toHaveProperty('results.0.notices');
+  });
+
+  it('LIB-036 checks a PubMed record, its retraction and its erratum read from its summary', async () => {
+    expect(await ask({ source: 'pubmed', op: 'check', identifier: '99000002' })).toMatchObject({
+      type: 'found',
+      results: [{ identifier: '99000002', notices: [{ kind: 'retraction' }] }],
+    });
+    expect(await ask({ source: 'pubmed', op: 'check', identifier: '99000004' })).toMatchObject({
+      type: 'found',
+      results: [{ notices: [{ kind: 'correction', identifier: '99000005' }] }],
+    });
+    expect(await ask({ source: 'pubmed', op: 'check', identifier: '99000009' })).toEqual({
+      type: 'found',
+      results: [],
+    });
+  });
+
   it('sends no contact where the deployment names none', async () => {
     const plain = createSupervisor({
       sealingKey: SEALING_KEY,
@@ -206,5 +253,79 @@ describe("the connector's /v1/reference", () => {
     } finally {
       await new Promise<void>((resolve) => server.close(() => resolve()));
     }
+  });
+});
+
+describe("the connector's reference key (the XR plan, XR-E)", () => {
+  const SERVICE_KEY = Buffer.alloc(32, 1).toString('base64');
+  const DELIVER_KEY = Buffer.alloc(32, 5).toString('base64');
+  const REFERENCE_KEY = Buffer.alloc(32, 6).toString('base64');
+  let url = '';
+  let close = () => Promise.resolve();
+
+  beforeAll(async () => {
+    const server = createConnectorServer({
+      config: loadConnectorConfig({
+        CONNECTOR_KEY: SERVICE_KEY,
+        CONNECTOR_SEALING_KEY: SEALING_KEY.toString('base64'),
+        CONNECTOR_DELIVER_KEY: DELIVER_KEY,
+        CONNECTOR_REFERENCE_KEY: REFERENCE_KEY,
+        CONNECTOR_DENY: 'none',
+        LOG_LEVEL: 'silent',
+      }),
+      supervisor,
+      log: () => {},
+    });
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+    const address = server.address() as AddressInfo;
+    url = `http://127.0.0.1:${address.port}`;
+    close = () => new Promise((resolve) => server.close(() => resolve()));
+  });
+  afterAll(() => close());
+
+  const post = (path: string, body: unknown, key: string) =>
+    fetch(`${url}${path}`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  const check = {
+    requestId: randomUUID(),
+    tenant: TENANT,
+    source: 'pubmed',
+    op: 'check',
+    identifier: '99000002',
+  };
+
+  it('opens a check alone to the reference key, which no other path takes', async () => {
+    const checked = await post('/v1/reference', check, REFERENCE_KEY);
+    expect(checked.status).toBe(200);
+    expect(await checked.json()).toMatchObject({ type: 'found' });
+    // A search sends terms, which the sweep never does.
+    expect(
+      (
+        await post(
+          '/v1/reference',
+          { ...check, op: 'search', identifier: undefined, query: 'dunnart' },
+          REFERENCE_KEY,
+        )
+      ).status,
+    ).toBe(403);
+    expect((await post('/v1/reference', check, DELIVER_KEY)).status).toBe(401);
+    for (const path of ['/v1/embed', '/v1/deliver', '/v1/seal', '/v1/run', '/v1/manifest']) {
+      expect((await post(path, { tenant: TENANT }, REFERENCE_KEY)).status, path).toBe(401);
+    }
+  });
+
+  it('refuses a reference key that is one of the others', () => {
+    expect(() =>
+      loadConnectorConfig({
+        CONNECTOR_KEY: SERVICE_KEY,
+        CONNECTOR_SEALING_KEY: SEALING_KEY.toString('base64'),
+        CONNECTOR_DELIVER_KEY: DELIVER_KEY,
+        CONNECTOR_REFERENCE_KEY: DELIVER_KEY,
+        CONNECTOR_DENY: 'none',
+      }),
+    ).toThrow(/CONNECTOR_REFERENCE_KEY/);
   });
 });

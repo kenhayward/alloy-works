@@ -39,7 +39,14 @@ function service(mayCreate: boolean) {
     if (url.pathname === `/v1/spaces/${SPACE}/bibliography-entries`) {
       return json(200, {
         items: [
-          { id: MARLOW, key: 'marlow2021', csl: marsh, version, changedAt: '2026-10-22T09:00:00Z' },
+          {
+            id: MARLOW,
+            key: 'marlow2021',
+            csl: marsh,
+            version,
+            changedAt: '2026-10-22T09:00:00Z',
+            flag: 'retracted',
+          },
         ],
         next: null,
         total: 1,
@@ -82,6 +89,7 @@ function service(mayCreate: boolean) {
                   csl: marsh,
                   version,
                   changedAt: '2026-10-22T09:00:00Z',
+                  flag: 'retracted',
                 },
               },
             ],
@@ -155,5 +163,16 @@ describe("the Cite dialog's Search tab (the XR plan, XR-D)", () => {
     await userEvent.click(screen.getByRole('button', { name: 'Insert' }));
     expect(done).toHaveBeenCalledWith({ entry: MARLOW, locator: null });
     expect(asked.some((each) => each.path.endsWith('/from-source'))).toBe(false);
+  });
+
+  it('LIB-036 flags an entry its source says is retracted, in the list and among the results', async () => {
+    await searched(true);
+    expect(
+      screen.getByRole('radio', { name: /Salt Marsh Accretion/ }).closest('label'),
+    ).toHaveTextContent('In the bibliography as marlow2021, retracted by its source');
+    await userEvent.click(screen.getByRole('tab', { name: 'Entries' }));
+    expect(
+      (await screen.findByRole('radio', { name: /marlow2021/ })).closest('label'),
+    ).toHaveTextContent('Retracted by its source');
   });
 });

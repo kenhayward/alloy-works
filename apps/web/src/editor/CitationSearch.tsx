@@ -1,7 +1,7 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import { useEffect, useId, useState, type KeyboardEvent } from 'react';
 
-import { entryName } from '../bibliography/entries.js';
+import { entryName, flagSaid, type EntryFlag } from '../bibliography/entries.js';
 import type { Csl } from '../bibliography/shape.js';
 import styles from './MarkPrompt.module.css';
 import own from './ReferenceDialog.module.css';
@@ -22,7 +22,9 @@ interface Result {
   readonly identifier: string;
   readonly csl: Csl;
   /** The space's entry for the same source, where there is one. */
-  readonly match: { readonly id: string; readonly key: string } | undefined;
+  readonly match:
+    | { readonly id: string; readonly key: string; readonly flag?: EntryFlag | undefined }
+    | undefined;
 }
 
 /**
@@ -97,7 +99,11 @@ export function CitationSearch({
           identifier: each.identifier,
           csl: each.csl as Csl,
           match: each.matches[0]
-            ? { id: each.matches[0].entry.id, key: each.matches[0].entry.key }
+            ? {
+                id: each.matches[0].entry.id,
+                key: each.matches[0].entry.key,
+                flag: each.matches[0].entry.flag ?? undefined,
+              }
             : undefined,
         })),
       });
@@ -176,7 +182,8 @@ export function CitationSearch({
                         onChange={() => choose(each)}
                       />
                       {entryName({ id: each.identifier, key: '', csl: each.csl })}
-                      {each.match && ` (In the bibliography as ${each.match.key})`}
+                      {each.match &&
+                        ` (In the bibliography as ${each.match.key}${each.match.flag ? `, ${flagSaid(each.match.flag)}` : ''})`}
                     </label>
                   );
                 })}

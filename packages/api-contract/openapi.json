@@ -24286,6 +24286,31 @@
                         ]
                       }
                     },
+                    "warnings": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string",
+                            "enum": [
+                              "source_retracted",
+                              "source_corrected"
+                            ]
+                          },
+                          "count": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "code",
+                          "count"
+                        ]
+                      },
+                      "description": "What does not stop it (LIB-036): the sources cited by what the document places that their source says are retracted or corrected, counted, whoever may read them"
+                    },
                     "publication": {
                       "description": "The publication it made, once done",
                       "type": [
@@ -24330,6 +24355,7 @@
                     "kind",
                     "state",
                     "failures",
+                    "warnings",
                     "publication",
                     "preview"
                   ]
@@ -24340,6 +24366,7 @@
                   "kind": "publish",
                   "state": "queued",
                   "failures": [],
+                  "warnings": [],
                   "publication": "example",
                   "preview": {
                     "view": "example",
@@ -31227,6 +31254,87 @@
                     "mayRetire": {
                       "type": "boolean",
                       "description": "Whether the caller may archive it: retire on it"
+                    },
+                    "status": {
+                      "description": "Its status from its last check, on a read of it; null where never checked",
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "source": {
+                              "type": "string",
+                              "enum": [
+                                "crossref",
+                                "pubmed"
+                              ]
+                            },
+                            "checkedAt": {
+                              "type": "string",
+                              "description": "When it was last checked"
+                            },
+                            "outcome": {
+                              "type": "string",
+                              "enum": [
+                                "current",
+                                "changed",
+                                "gone",
+                                "retracted",
+                                "corrected"
+                              ],
+                              "description": "`current`: as held; `changed`: the source now holds `differs` otherwise; `gone`: the source holds no such record; `retracted` or `corrected`: the source reports so"
+                            },
+                            "differs": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "The CSL variables the source now holds otherwise"
+                            },
+                            "notice": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "enum": [
+                                        "retraction",
+                                        "correction"
+                                      ]
+                                    },
+                                    "identifier": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 300
+                                    },
+                                    "date": {
+                                      "type": "string",
+                                      "pattern": "^\\d{4}(-\\d{2}(-\\d{2})?)?$"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind"
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "The retraction or correction: its kind, and the notice's identifier and date where given"
+                            }
+                          },
+                          "required": [
+                            "source",
+                            "checkedAt",
+                            "outcome",
+                            "differs",
+                            "notice"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   },
                   "required": [
@@ -31661,6 +31769,499 @@
           },
           "409": {
             "description": "`entry_cited`: a component's latest version, or a baseline's, cites it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/bibliography-entries/{id}/check": {
+      "post": {
+        "operationId": "checkBibliographyEntry",
+        "summary": "Check an entry against the source it was obtained from, and record its status",
+        "description": "Checks an entry against the reference source its latest version was obtained from, sending the source its DOI or PubMed identifier alone, and records the entry's status beside it, never as a version: `current`, `changed` (naming the CSL variables the source now holds otherwise), `gone`, `retracted` or `corrected`, with the notice where the source names one. A retraction or correction tells the owner of each document citing it, once. It needs read on the entry; an entry made by hand is `entry_not_obtained`.",
+        "tags": [
+          "Bibliography"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "read",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Its status, recorded beside it and never as a version: the source is sent its identifier alone",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "crossref",
+                        "pubmed"
+                      ]
+                    },
+                    "checkedAt": {
+                      "type": "string",
+                      "description": "When it was last checked"
+                    },
+                    "outcome": {
+                      "type": "string",
+                      "enum": [
+                        "current",
+                        "changed",
+                        "gone",
+                        "retracted",
+                        "corrected"
+                      ],
+                      "description": "`current`: as held; `changed`: the source now holds `differs` otherwise; `gone`: the source holds no such record; `retracted` or `corrected`: the source reports so"
+                    },
+                    "differs": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "The CSL variables the source now holds otherwise"
+                    },
+                    "notice": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "retraction",
+                                "correction"
+                              ]
+                            },
+                            "identifier": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 300
+                            },
+                            "date": {
+                              "type": "string",
+                              "pattern": "^\\d{4}(-\\d{2}(-\\d{2})?)?$"
+                            }
+                          },
+                          "required": [
+                            "kind"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "The retraction or correction: its kind, and the notice's identifier and date where given"
+                    }
+                  },
+                  "required": [
+                    "source",
+                    "checkedAt",
+                    "outcome",
+                    "differs",
+                    "notice"
+                  ]
+                },
+                "example": {
+                  "source": "crossref",
+                  "checkedAt": "example",
+                  "outcome": "current",
+                  "differs": [],
+                  "notice": {
+                    "kind": "retraction"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Never answered: an entry the caller may not read is not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such entry in this environment, or none the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`reference_source_off`: this environment has switched the source off",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`entry_not_obtained`: its latest version was not obtained from a source",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "`reference_unavailable`: the source could not be reached or answered out of shape, which is the source's",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`connector_unavailable` or `connector_busy`: the connector cannot ask the source now",
             "content": {
               "application/json": {
                 "schema": {
@@ -36457,6 +37058,87 @@
                     "mayRetire": {
                       "type": "boolean",
                       "description": "Whether the caller may archive it: retire on it"
+                    },
+                    "status": {
+                      "description": "Its status from its last check, on a read of it; null where never checked",
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "source": {
+                              "type": "string",
+                              "enum": [
+                                "crossref",
+                                "pubmed"
+                              ]
+                            },
+                            "checkedAt": {
+                              "type": "string",
+                              "description": "When it was last checked"
+                            },
+                            "outcome": {
+                              "type": "string",
+                              "enum": [
+                                "current",
+                                "changed",
+                                "gone",
+                                "retracted",
+                                "corrected"
+                              ],
+                              "description": "`current`: as held; `changed`: the source now holds `differs` otherwise; `gone`: the source holds no such record; `retracted` or `corrected`: the source reports so"
+                            },
+                            "differs": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "The CSL variables the source now holds otherwise"
+                            },
+                            "notice": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "enum": [
+                                        "retraction",
+                                        "correction"
+                                      ]
+                                    },
+                                    "identifier": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 300
+                                    },
+                                    "date": {
+                                      "type": "string",
+                                      "pattern": "^\\d{4}(-\\d{2}(-\\d{2})?)?$"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind"
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "The retraction or correction: its kind, and the notice's identifier and date where given"
+                            }
+                          },
+                          "required": [
+                            "source",
+                            "checkedAt",
+                            "outcome",
+                            "differs",
+                            "notice"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   },
                   "required": [
@@ -38600,6 +39282,87 @@
                         "mayRetire": {
                           "type": "boolean",
                           "description": "Whether the caller may archive it: retire on it"
+                        },
+                        "status": {
+                          "description": "Its status from its last check, on a read of it; null where never checked",
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "source": {
+                                  "type": "string",
+                                  "enum": [
+                                    "crossref",
+                                    "pubmed"
+                                  ]
+                                },
+                                "checkedAt": {
+                                  "type": "string",
+                                  "description": "When it was last checked"
+                                },
+                                "outcome": {
+                                  "type": "string",
+                                  "enum": [
+                                    "current",
+                                    "changed",
+                                    "gone",
+                                    "retracted",
+                                    "corrected"
+                                  ],
+                                  "description": "`current`: as held; `changed`: the source now holds `differs` otherwise; `gone`: the source holds no such record; `retracted` or `corrected`: the source reports so"
+                                },
+                                "differs": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "The CSL variables the source now holds otherwise"
+                                },
+                                "notice": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "retraction",
+                                            "correction"
+                                          ]
+                                        },
+                                        "identifier": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 300
+                                        },
+                                        "date": {
+                                          "type": "string",
+                                          "pattern": "^\\d{4}(-\\d{2}(-\\d{2})?)?$"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "The retraction or correction: its kind, and the notice's identifier and date where given"
+                                }
+                              },
+                              "required": [
+                                "source",
+                                "checkedAt",
+                                "outcome",
+                                "differs",
+                                "notice"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       },
                       "required": [
@@ -40840,6 +41603,87 @@
                         "mayRetire": {
                           "type": "boolean",
                           "description": "Whether the caller may archive it: retire on it"
+                        },
+                        "status": {
+                          "description": "Its status from its last check, on a read of it; null where never checked",
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "source": {
+                                  "type": "string",
+                                  "enum": [
+                                    "crossref",
+                                    "pubmed"
+                                  ]
+                                },
+                                "checkedAt": {
+                                  "type": "string",
+                                  "description": "When it was last checked"
+                                },
+                                "outcome": {
+                                  "type": "string",
+                                  "enum": [
+                                    "current",
+                                    "changed",
+                                    "gone",
+                                    "retracted",
+                                    "corrected"
+                                  ],
+                                  "description": "`current`: as held; `changed`: the source now holds `differs` otherwise; `gone`: the source holds no such record; `retracted` or `corrected`: the source reports so"
+                                },
+                                "differs": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "The CSL variables the source now holds otherwise"
+                                },
+                                "notice": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "retraction",
+                                            "correction"
+                                          ]
+                                        },
+                                        "identifier": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 300
+                                        },
+                                        "date": {
+                                          "type": "string",
+                                          "pattern": "^\\d{4}(-\\d{2}(-\\d{2})?)?$"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "The retraction or correction: its kind, and the notice's identifier and date where given"
+                                }
+                              },
+                              "required": [
+                                "source",
+                                "checkedAt",
+                                "outcome",
+                                "differs",
+                                "notice"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       },
                       "required": [
@@ -48556,9 +49400,10 @@
                               "components",
                               "profile",
                               "generated",
-                              "trial"
+                              "trial",
+                              "noRetracted"
                             ],
-                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires"
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires; noRetracted: no source cited by what a document places at the version moving retracted, as its source last said"
                           },
                           "count": {
                             "type": "integer",
@@ -49314,14 +50159,34 @@
                         ]
                       },
                       "description": "Each citation's in-text form, in order; null where it names no entry of the component's space the caller may read, or the theme names no style"
+                    },
+                    "flags": {
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "retracted",
+                              "corrected"
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "description": "Each citation's flag, in order: its entry retracted or corrected, shown whether or not the caller may read the entry; null otherwise"
                     }
                   },
                   "required": [
-                    "forms"
+                    "forms",
+                    "flags"
                   ]
                 },
                 "example": {
-                  "forms": []
+                  "forms": [],
+                  "flags": []
                 }
               }
             },
@@ -60222,9 +61087,10 @@
                               "components",
                               "profile",
                               "generated",
-                              "trial"
+                              "trial",
+                              "noRetracted"
                             ],
-                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires"
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires; noRetracted: no source cited by what a document places at the version moving retracted, as its source last said"
                           },
                           "count": {
                             "type": "integer",
@@ -87569,9 +88435,10 @@
                               "components",
                               "profile",
                               "generated",
-                              "trial"
+                              "trial",
+                              "noRetracted"
                             ],
-                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires"
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires; noRetracted: no source cited by what a document places at the version moving retracted, as its source last said"
                           },
                           "count": {
                             "type": "integer",
@@ -149628,6 +150495,320 @@
         }
       }
     },
+    "/v1/documents/{id}/flagged-sources": {
+      "get": {
+        "operationId": "getDocumentFlaggedSources",
+        "summary": "The retracted and corrected sources cited by what a document places",
+        "description": "Lists the sources cited by the components a document's latest version places, at the version each is placed, that their source last said are retracted or corrected. Each names the entry to a reader of it, and only its flag to anybody else, with the components citing it the caller may read. It needs read on the document.",
+        "tags": [
+          "Bibliography"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "read",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Each flagged entry cited by a component the latest version places, at the version it places",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "flag": {
+                            "type": "string",
+                            "enum": [
+                              "retracted",
+                              "corrected"
+                            ]
+                          },
+                          "entry": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "key": {
+                                    "type": "string"
+                                  },
+                                  "title": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "key",
+                                  "title"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "The entry, to a reader of it; null to anybody else, who sees the flag alone"
+                          },
+                          "components": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "title": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "title"
+                              ]
+                            },
+                            "description": "The components citing it the caller may read"
+                          },
+                          "unreadable": {
+                            "type": "boolean",
+                            "description": "Whether components citing it the caller may not read do"
+                          }
+                        },
+                        "required": [
+                          "flag",
+                          "entry",
+                          "components",
+                          "unreadable"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ]
+                },
+                "example": {
+                  "items": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Never answered: a document the caller may not read is not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such document in this environment, or none the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/documents/{id}/generated": {
       "get": {
         "operationId": "getDocumentGenerated",
@@ -166058,6 +167239,31 @@
                         ]
                       }
                     },
+                    "warnings": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string",
+                            "enum": [
+                              "source_retracted",
+                              "source_corrected"
+                            ]
+                          },
+                          "count": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "code",
+                          "count"
+                        ]
+                      },
+                      "description": "What does not stop it (LIB-036): the sources cited by what the document places that their source says are retracted or corrected, counted, whoever may read them"
+                    },
                     "publication": {
                       "description": "The publication it made, once done",
                       "type": [
@@ -166102,6 +167308,7 @@
                     "kind",
                     "state",
                     "failures",
+                    "warnings",
                     "publication",
                     "preview"
                   ]
@@ -166112,6 +167319,7 @@
                   "kind": "publish",
                   "state": "queued",
                   "failures": [],
+                  "warnings": [],
                   "publication": "example",
                   "preview": {
                     "view": "example",
@@ -172045,6 +173253,31 @@
                         ]
                       }
                     },
+                    "warnings": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string",
+                            "enum": [
+                              "source_retracted",
+                              "source_corrected"
+                            ]
+                          },
+                          "count": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "code",
+                          "count"
+                        ]
+                      },
+                      "description": "What does not stop it (LIB-036): the sources cited by what the document places that their source says are retracted or corrected, counted, whoever may read them"
+                    },
                     "publication": {
                       "description": "The publication it made, once done",
                       "type": [
@@ -172089,6 +173322,7 @@
                     "kind",
                     "state",
                     "failures",
+                    "warnings",
                     "publication",
                     "preview"
                   ]
@@ -172099,6 +173333,7 @@
                   "kind": "publish",
                   "state": "queued",
                   "failures": [],
+                  "warnings": [],
                   "publication": "example",
                   "preview": {
                     "view": "example",
@@ -180176,9 +181411,10 @@
                               "components",
                               "profile",
                               "generated",
-                              "trial"
+                              "trial",
+                              "noRetracted"
                             ],
-                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires"
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires; noRetracted: no source cited by what a document places at the version moving retracted, as its source last said"
                           },
                           "count": {
                             "type": "integer",
@@ -197812,7 +199048,8 @@
                               "round",
                               "digest",
                               "budget",
-                              "webhook"
+                              "webhook",
+                              "reference"
                             ]
                           },
                           "actor": {
@@ -198145,6 +199382,42 @@
                             ],
                             "description": "A webhook disabled after three days of failures (API-028); null otherwise"
                           },
+                          "reference": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "entry": {
+                                    "type": "string",
+                                    "allOf": [
+                                      {
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      {
+                                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                      }
+                                    ],
+                                    "description": "The bibliography entry"
+                                  },
+                                  "outcome": {
+                                    "type": "string",
+                                    "enum": [
+                                      "retracted",
+                                      "corrected"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "entry",
+                                  "outcome"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "A source cited in the document `on` names, retracted or corrected (LIB-036); null otherwise"
+                          },
                           "at": {
                             "type": "string",
                             "format": "date-time",
@@ -198164,6 +199437,7 @@
                           "counts",
                           "budget",
                           "webhook",
+                          "reference",
                           "at",
                           "read"
                         ]
@@ -218892,9 +220166,10 @@
                               "components",
                               "profile",
                               "generated",
-                              "trial"
+                              "trial",
+                              "noRetracted"
                             ],
-                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires"
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires; noRetracted: no source cited by what a document places at the version moving retracted, as its source last said"
                           },
                           "count": {
                             "type": "integer",
@@ -219548,9 +220823,10 @@
                               "components",
                               "profile",
                               "generated",
-                              "trial"
+                              "trial",
+                              "noRetracted"
                             ],
-                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires"
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires; noRetracted: no source cited by what a document places at the version moving retracted, as its source last said"
                           },
                           "count": {
                             "type": "integer",
@@ -222308,6 +223584,31 @@
                         ]
                       }
                     },
+                    "warnings": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string",
+                            "enum": [
+                              "source_retracted",
+                              "source_corrected"
+                            ]
+                          },
+                          "count": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "code",
+                          "count"
+                        ]
+                      },
+                      "description": "What does not stop it (LIB-036): the sources cited by what the document places that their source says are retracted or corrected, counted, whoever may read them"
+                    },
                     "publication": {
                       "description": "The publication it made, once done",
                       "type": [
@@ -222352,6 +223653,7 @@
                     "kind",
                     "state",
                     "failures",
+                    "warnings",
                     "publication",
                     "preview"
                   ]
@@ -222362,6 +223664,7 @@
                   "kind": "publish",
                   "state": "queued",
                   "failures": [],
+                  "warnings": [],
                   "publication": "example",
                   "preview": {
                     "view": "example",
@@ -229603,9 +230906,10 @@
                               "components",
                               "profile",
                               "generated",
-                              "trial"
+                              "trial",
+                              "noRetracted"
                             ],
-                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires"
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires; noRetracted: no source cited by what a document places at the version moving retracted, as its source last said"
                           },
                           "count": {
                             "type": "integer",
@@ -230259,9 +231563,10 @@
                               "components",
                               "profile",
                               "generated",
-                              "trial"
+                              "trial",
+                              "noRetracted"
                             ],
-                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires"
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires; noRetracted: no source cited by what a document places at the version moving retracted, as its source last said"
                           },
                           "count": {
                             "type": "integer",
@@ -241123,6 +242428,21 @@
                                     "changedAt": {
                                       "type": "string",
                                       "description": "When its latest version was made"
+                                    },
+                                    "flag": {
+                                      "description": "Retracted or corrected, as its source last said (XR-G); null otherwise",
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "retracted",
+                                            "corrected"
+                                          ]
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
                                     }
                                   },
                                   "required": [
@@ -257450,6 +258770,21 @@
                           "changedAt": {
                             "type": "string",
                             "description": "When its latest version was made"
+                          },
+                          "flag": {
+                            "description": "Retracted or corrected, as its source last said (XR-G); null otherwise",
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "retracted",
+                                  "corrected"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           }
                         },
                         "required": [
@@ -261836,6 +263171,87 @@
                             "mayRetire": {
                               "type": "boolean",
                               "description": "Whether the caller may archive it: retire on it"
+                            },
+                            "status": {
+                              "description": "Its status from its last check, on a read of it; null where never checked",
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "source": {
+                                      "type": "string",
+                                      "enum": [
+                                        "crossref",
+                                        "pubmed"
+                                      ]
+                                    },
+                                    "checkedAt": {
+                                      "type": "string",
+                                      "description": "When it was last checked"
+                                    },
+                                    "outcome": {
+                                      "type": "string",
+                                      "enum": [
+                                        "current",
+                                        "changed",
+                                        "gone",
+                                        "retracted",
+                                        "corrected"
+                                      ],
+                                      "description": "`current`: as held; `changed`: the source now holds `differs` otherwise; `gone`: the source holds no such record; `retracted` or `corrected`: the source reports so"
+                                    },
+                                    "differs": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      },
+                                      "description": "The CSL variables the source now holds otherwise"
+                                    },
+                                    "notice": {
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "enum": [
+                                                "retraction",
+                                                "correction"
+                                              ]
+                                            },
+                                            "identifier": {
+                                              "type": "string",
+                                              "minLength": 1,
+                                              "maxLength": 300
+                                            },
+                                            "date": {
+                                              "type": "string",
+                                              "pattern": "^\\d{4}(-\\d{2}(-\\d{2})?)?$"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind"
+                                          ]
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ],
+                                      "description": "The retraction or correction: its kind, and the notice's identifier and date where given"
+                                    }
+                                  },
+                                  "required": [
+                                    "source",
+                                    "checkedAt",
+                                    "outcome",
+                                    "differs",
+                                    "notice"
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             }
                           },
                           "required": [
@@ -263832,6 +265248,21 @@
                               "changedAt": {
                                 "type": "string",
                                 "description": "When its latest version was made"
+                              },
+                              "flag": {
+                                "description": "Retracted or corrected, as its source last said (XR-G); null otherwise",
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "retracted",
+                                      "corrected"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
                               }
                             },
                             "required": [
@@ -265990,6 +267421,87 @@
                         "mayRetire": {
                           "type": "boolean",
                           "description": "Whether the caller may archive it: retire on it"
+                        },
+                        "status": {
+                          "description": "Its status from its last check, on a read of it; null where never checked",
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "source": {
+                                  "type": "string",
+                                  "enum": [
+                                    "crossref",
+                                    "pubmed"
+                                  ]
+                                },
+                                "checkedAt": {
+                                  "type": "string",
+                                  "description": "When it was last checked"
+                                },
+                                "outcome": {
+                                  "type": "string",
+                                  "enum": [
+                                    "current",
+                                    "changed",
+                                    "gone",
+                                    "retracted",
+                                    "corrected"
+                                  ],
+                                  "description": "`current`: as held; `changed`: the source now holds `differs` otherwise; `gone`: the source holds no such record; `retracted` or `corrected`: the source reports so"
+                                },
+                                "differs": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "The CSL variables the source now holds otherwise"
+                                },
+                                "notice": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "retraction",
+                                            "correction"
+                                          ]
+                                        },
+                                        "identifier": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 300
+                                        },
+                                        "date": {
+                                          "type": "string",
+                                          "pattern": "^\\d{4}(-\\d{2}(-\\d{2})?)?$"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "The retraction or correction: its kind, and the notice's identifier and date where given"
+                                }
+                              },
+                              "required": [
+                                "source",
+                                "checkedAt",
+                                "outcome",
+                                "differs",
+                                "notice"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       },
                       "required": [
@@ -268649,6 +270161,87 @@
                             "mayRetire": {
                               "type": "boolean",
                               "description": "Whether the caller may archive it: retire on it"
+                            },
+                            "status": {
+                              "description": "Its status from its last check, on a read of it; null where never checked",
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "source": {
+                                      "type": "string",
+                                      "enum": [
+                                        "crossref",
+                                        "pubmed"
+                                      ]
+                                    },
+                                    "checkedAt": {
+                                      "type": "string",
+                                      "description": "When it was last checked"
+                                    },
+                                    "outcome": {
+                                      "type": "string",
+                                      "enum": [
+                                        "current",
+                                        "changed",
+                                        "gone",
+                                        "retracted",
+                                        "corrected"
+                                      ],
+                                      "description": "`current`: as held; `changed`: the source now holds `differs` otherwise; `gone`: the source holds no such record; `retracted` or `corrected`: the source reports so"
+                                    },
+                                    "differs": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      },
+                                      "description": "The CSL variables the source now holds otherwise"
+                                    },
+                                    "notice": {
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "enum": [
+                                                "retraction",
+                                                "correction"
+                                              ]
+                                            },
+                                            "identifier": {
+                                              "type": "string",
+                                              "minLength": 1,
+                                              "maxLength": 300
+                                            },
+                                            "date": {
+                                              "type": "string",
+                                              "pattern": "^\\d{4}(-\\d{2}(-\\d{2})?)?$"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind"
+                                          ]
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ],
+                                      "description": "The retraction or correction: its kind, and the notice's identifier and date where given"
+                                    }
+                                  },
+                                  "required": [
+                                    "source",
+                                    "checkedAt",
+                                    "outcome",
+                                    "differs",
+                                    "notice"
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             }
                           },
                           "required": [
@@ -270645,6 +272238,21 @@
                               "changedAt": {
                                 "type": "string",
                                 "description": "When its latest version was made"
+                              },
+                              "flag": {
+                                "description": "Retracted or corrected, as its source last said (XR-G); null otherwise",
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "retracted",
+                                      "corrected"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
                               }
                             },
                             "required": [
@@ -273171,6 +274779,21 @@
                                   "changedAt": {
                                     "type": "string",
                                     "description": "When its latest version was made"
+                                  },
+                                  "flag": {
+                                    "description": "Retracted or corrected, as its source last said (XR-G); null otherwise",
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "retracted",
+                                          "corrected"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
                                   }
                                 },
                                 "required": [
@@ -301897,9 +303520,10 @@
                                               "components",
                                               "profile",
                                               "generated",
-                                              "trial"
+                                              "trial",
+                                              "noRetracted"
                                             ],
-                                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires"
+                                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires; noRetracted: no source cited by what a document places at the version moving retracted, as its source last said"
                                           }
                                         }
                                       },
@@ -302400,9 +304024,10 @@
                               "components",
                               "profile",
                               "generated",
-                              "trial"
+                              "trial",
+                              "noRetracted"
                             ],
-                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires"
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires; noRetracted: no source cited by what a document places at the version moving retracted, as its source last said"
                           }
                         }
                       },
@@ -302670,9 +304295,10 @@
                                     "components",
                                     "profile",
                                     "generated",
-                                    "trial"
+                                    "trial",
+                                    "noRetracted"
                                   ],
-                                  "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires"
+                                  "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires; noRetracted: no source cited by what a document places at the version moving retracted, as its source last said"
                                 }
                               }
                             },
@@ -303263,9 +304889,10 @@
                                     "components",
                                     "profile",
                                     "generated",
-                                    "trial"
+                                    "trial",
+                                    "noRetracted"
                                   ],
-                                  "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires"
+                                  "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires; noRetracted: no source cited by what a document places at the version moving retracted, as its source last said"
                                 }
                               }
                             },

@@ -11,6 +11,7 @@ const ENTRY = '22222222-2222-4222-8222-222222222222';
 const VERSION = '33333333-3333-4333-8333-333333333333';
 const COMPONENT = '44444444-4444-4444-8444-444444444444';
 const VERSION_NEXT = '55555555-5555-4555-8555-555555555555';
+const OBTAINED = '66666666-6666-4666-8666-666666666666';
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
@@ -101,6 +102,26 @@ function service() {
     }
     if (path === `/v1/spaces/${GENERAL}/bibliography-entries/export`) {
       return json(200, { format: url.searchParams.get('format'), text: '@book{smith2020}' });
+    }
+    if (path === `/v1/bibliography-entries/${OBTAINED}`) {
+      return json(200, {
+        ...view,
+        id: OBTAINED,
+        entry: {
+          ...view.entry,
+          obtained: { from: 'crossref:10.1234/dunnart.2020', at: '2026-01-02T03:04:05Z' },
+        },
+        status: null,
+      });
+    }
+    if (path === `/v1/bibliography-entries/${OBTAINED}/check`) {
+      return json(200, {
+        source: 'crossref',
+        checkedAt: '2026-10-22T10:00:00.000Z',
+        outcome: 'retracted',
+        differs: ['title'],
+        notice: { kind: 'retraction', identifier: '10.1234/dunnart.r', date: '2026-04-22' },
+      });
     }
     if (path === `/v1/bibliography-entries/${ENTRY}`) return json(200, view);
     if (path === `/v1/bibliography-entries/${ENTRY}/uses`) {
@@ -202,6 +223,33 @@ describe('an entry page', () => {
       `#/components/${COMPONENT}`,
     );
     expect(uses).toHaveTextContent('Cited in more you may not read.');
+  });
+});
+
+describe("an entry's source (the XR plan, XRb)", () => {
+  it('LIB-036 checks an entry obtained from a source now, showing its status and the notice', async () => {
+    const user = userEvent.setup();
+    const { client, asked } = service();
+    render(<EntryPage client={client} id={OBTAINED} />);
+    const source = await screen.findByRole('region', { name: 'Its source' });
+    expect(source).toHaveTextContent('Not yet checked against Crossref.');
+    await user.click(within(source).getByRole('button', { name: 'Check now' }));
+    expect(asked.at(-1)).toMatchObject({
+      method: 'POST',
+      path: `/v1/bibliography-entries/${OBTAINED}/check`,
+    });
+    expect(await within(source).findByText(/Retracted by its source/)).toHaveTextContent(
+      'Retracted by its source: 10.1234/dunnart.r, 2026-04-22.',
+    );
+    expect(source).toHaveTextContent('The source now holds otherwise: title.');
+    expect(source).toHaveTextContent('Checked 2026-10-22.');
+  });
+
+  it('offers no check for an entry made by hand', async () => {
+    const { client } = service();
+    render(<EntryPage client={client} id={ENTRY} />);
+    await screen.findByRole('heading', { name: 'smith2020' });
+    expect(screen.queryByRole('button', { name: 'Check now' })).toBeNull();
   });
 });
 

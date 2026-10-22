@@ -142,14 +142,17 @@ export {
   CITATION_UNAVAILABLE,
   changeCitation,
   citationAt,
+  citationFlagsOf,
   citationFormsOf,
   citationKey,
   citationPlaceable,
   citationsIn,
   insertCitation,
+  setCitationFlags,
   setCitationForms,
   type CitationAt,
   type CitationChoice,
+  type CitationFlags,
   type CitationForms,
 } from './citations.js';
 // A variable, placed from the declared ones (the R5 plan, R5b).

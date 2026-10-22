@@ -47,7 +47,7 @@ export interface DigestCounts {
 /** A notification as its recipient holds it (COL-063): identifiers, never the text (COL-036). */
 export interface StoredNotification {
   readonly id: string;
-  readonly kind: NotificationKind | 'digest' | 'budget' | 'webhook';
+  readonly kind: NotificationKind | 'digest' | 'budget' | 'webhook' | 'reference';
   readonly actor: { readonly id: string; readonly name: string | null } | null;
   readonly thread: string | null;
   /** A round's notification names it (RR-H). */
@@ -58,6 +58,11 @@ export interface StoredNotification {
   readonly budget: BudgetCounts | null;
   /** A webhook disabled for failing names it (WB-E); null on every other. */
   readonly webhook: { readonly id: string } | null;
+  /** A cited entry retracted or corrected names it and the outcome (XR-G); null on every other. */
+  readonly reference: {
+    readonly entry: string;
+    readonly outcome: 'retracted' | 'corrected';
+  } | null;
   readonly at: Date;
   readonly readAt: Date | null;
 }
@@ -261,13 +266,17 @@ export async function listInbox(
       round: row.round_id,
       artifact: row.artifact_id,
       counts:
-        row.kind === 'budget' || row.kind === 'webhook'
+        row.kind === 'budget' || row.kind === 'webhook' || row.kind === 'reference'
           ? null
           : (row.counts as DigestCounts | null),
       budget: row.kind === 'budget' ? (row.counts as BudgetCounts) : null,
       webhook:
         row.kind === 'webhook'
           ? { id: (row.counts as { readonly webhook: string }).webhook }
+          : null,
+      reference:
+        row.kind === 'reference'
+          ? (row.counts as { entry: string; outcome: 'retracted' | 'corrected' })
           : null,
       at: row.at,
       readAt: row.read_at,
