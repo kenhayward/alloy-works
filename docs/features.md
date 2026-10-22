@@ -257,6 +257,12 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   it is cited, and it is archived only when nothing cites it
   (`/v1/spaces/{space}/bibliography-entries`). Citing an entry from the editor, and printing
   citations, are not built yet.
+- **Citation styles.** Administration's **Citation styles** lists the CSL styles a theme may name:
+  CSE (name-year), Vancouver (NLM) and Harvard (Cite Them Right) are given, and **CSL file** uploads
+  any other, refused unless it is a CSL 1.0.2 style with both forms that renders. Each upload is
+  previewed with invented sources and proposes what an entry of each type must hold (`requires`);
+  every change is a version (`/v1/citation-styles`). The default theme names Harvard at its version;
+  publishing in a style is not built yet. About names citeproc-js and its licence.
 - **Groups, and your organisation's directory.** An administrator of the whole environment makes groups
   in Administration's **Groups** and grants a role to one as to a person, from any access page: everybody
   in it holds that role there. Groups lists each group in a table you can search, with where its members come from and who

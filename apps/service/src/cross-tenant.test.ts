@@ -10,6 +10,7 @@ import {
   createGroup,
   createConnection,
   createLibrary,
+  createStyle,
   createPrompt,
   createEntry,
   startConversation,
@@ -69,6 +70,7 @@ import {
   type ComponentTypeDefinition,
   type ContentDocument,
 } from '@alloy-works/domain';
+import { SEEDED_STYLE_FILES } from '@alloy-works/domain/citations';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -97,6 +99,14 @@ const aPrompt = {
   context: [{ source: 'outline', scope: 'part' }],
   output: { componentType: null },
   models: { purpose: 'drafting', accepts: ['m'] },
+};
+
+/** A citation style, Harvard's file under another name. */
+const aStyle = {
+  schemaVersion: 1,
+  name: 'Probe',
+  csl: SEEDED_STYLE_FILES['harvard-cite-them-right'],
+  requires: {},
 };
 
 const aQueryDefinition = (connection: string) => ({
@@ -476,6 +486,8 @@ const OTHER_TENANT_IDS: Readonly<
   recordPromptVersion: async (tenant, db) => ({ id: await promptIdIn(tenant, db) }),
   getPromptLibrary: async (tenant, db) => ({ id: await libraryIdIn(tenant, db) }),
   recordPromptLibraryVersion: async (tenant, db) => ({ id: await libraryIdIn(tenant, db) }),
+  getCitationStyle: async (tenant, db) => ({ id: await styleIdIn(tenant, db) }),
+  recordCitationStyleVersion: async (tenant, db) => ({ id: await styleIdIn(tenant, db) }),
   getQueryDefinition: async (tenant, db) => ({ id: await queryDefinitionIdIn(tenant, db) }),
   transitionQueryDefinition: async (tenant, db) => ({ id: await queryDefinitionIdIn(tenant, db) }),
   decideQueryDefinitionGate: async (tenant, db) => ({ id: await queryDefinitionIdIn(tenant, db) }),
@@ -602,6 +614,9 @@ const VALID_INPUT: Readonly<
   },
   recordPromptVersion: { payload: { openedFrom: SESSION, prompt: aPrompt } },
   createPromptLibrary: { payload: { library: { schemaVersion: 1, name: 'Probe', prompts: [] } } },
+  createCitationStyle: { payload: { style: aStyle } },
+  previewCitationStyle: { payload: { csl: aStyle.csl } },
+  recordCitationStyleVersion: { payload: { openedFrom: SESSION, style: aStyle } },
   recordPromptLibraryVersion: {
     payload: { openedFrom: SESSION, library: { schemaVersion: 1, name: 'Probe', prompts: [] } },
   },
@@ -1160,6 +1175,24 @@ const libraryIdIn = (tenant: Tenant, db: TenantDatabase) =>
     });
     if (made.answer !== 'created') throw new Error(`refused: ${made.answer}`);
     return made.library.id;
+  });
+
+/** An uploaded citation style in environment B: the seeded three share their ids across environments. */
+const styleIdIn = (tenant: Tenant, db: TenantDatabase) =>
+  db.withTenant(tenant, async (trx) => {
+    const author = await trx
+      .insertInto('principal')
+      .values({
+        issuer: 'https://idp.example',
+        subject: `ivy-${randomUUID()}`,
+        email: null,
+        display_name: null,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    const made = await createStyle(trx, { style: aStyle, author: author.id });
+    if (made.answer !== 'created') throw new Error(`refused: ${made.answer}`);
+    return made.style.id;
   });
 
 /** A dataset in environment B, with one version: a result of a definition made there. */

@@ -745,6 +745,16 @@ export {
   type StoredLibrary,
 } from './prompt-libraries.js';
 export {
+  createStyle,
+  listStyles,
+  readStyle,
+  readStyleVersion,
+  recordStyleVersion,
+  STYLES_LISTED_MOST,
+  type StoredStyle,
+  type StyleAnswer,
+} from './citation-styles.js';
+export {
   CONTEXT_PARTS_MOST,
   partComponentType,
   resolveContext,

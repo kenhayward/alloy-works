@@ -19,6 +19,7 @@ import { generatedRoutes } from './generated.js';
 import { promptRoutes } from './prompts.js';
 import { bibliographyRoutes } from './bibliography.js';
 import { promptLibraryRoutes } from './prompt-libraries.js';
+import { citationStyleRoutes } from './citation-styles.js';
 import { promptRunRoutes } from './prompt-runs.js';
 import { conversationRoutes } from './conversations.js';
 import { guardrailRoutes } from './guardrails.js';
@@ -401,6 +402,7 @@ type Routes = typeof ownRoutes &
   typeof promptRoutes &
   typeof bibliographyRoutes &
   typeof promptLibraryRoutes &
+  typeof citationStyleRoutes &
   typeof promptRunRoutes &
   typeof conversationRoutes &
   typeof guardrailRoutes &
@@ -471,6 +473,7 @@ export const routes: Routes = {
   ...promptRoutes,
   ...bibliographyRoutes,
   ...promptLibraryRoutes,
+  ...citationStyleRoutes,
   ...promptRunRoutes,
   ...conversationRoutes,
   ...guardrailRoutes,

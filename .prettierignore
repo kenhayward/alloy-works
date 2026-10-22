@@ -11,6 +11,10 @@ packages/api-contract/asyncapi.json
 # with a fresh generation in a test: one family to a line, which formatting would break up.
 packages/fonts/src/coverage.ts
 
+# Generated from the CSL files beside it by `pnpm --filter @alloy-works/domain generate`, and compared
+# with them in a test: one file to a line.
+packages/domain/src/library/csl/files.ts
+
 # Per-package Vitest JSON reports, read by `pnpm trace verify`. A build artifact of a test run,
 # never committed.
 .trace-results/

@@ -886,6 +886,24 @@ describe('the domain package', () => {
         'keyCandidate',
         'mergeCsl',
         'parseEntry',
+        // CIb: a citation style's shape, what it requires of an entry, and the three seeded.
+        'CITATION_STYLE_SCHEMA_VERSION',
+        'CitationStyleRefused',
+        'DEFAULT_CITATION_STYLE',
+        'SEEDED_CITATION_STYLES',
+        'SEEDED_REQUIRES',
+        'STYLE_CHARACTERS_MOST',
+        'citationStyleSchema',
+        'parseCitationStyle',
+        'requiredProblems',
+        'requiresSchema',
+        // CIb: the citation catalogue's own version, and the default theme's 0.8 frozen beside 0.9.
+        'CITATION_CATALOGUE_SCHEMA_VERSION',
+        'EIGHTH_DEFAULT_CATALOGUES',
+        'EIGHTH_DEFAULT_CATALOGUES_BY_VERSION',
+        'EIGHTH_DEFAULT_CATALOGUE_VERSIONS',
+        'EIGHTH_DEFAULT_THEME',
+        'EIGHTH_DEFAULT_THEME_VERSION',
       ].sort(),
     );
   });

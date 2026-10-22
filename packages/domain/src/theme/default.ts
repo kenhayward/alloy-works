@@ -1,9 +1,11 @@
 import { DEFAULT_TABLE_ALIGN, DEFAULT_TABLE_FIELDS } from '../data/field-format.js';
+import { DEFAULT_CITATION_STYLE } from '../library/style.js';
 import { VALUE_CATALOGUE_KIND } from './schema.js';
 import type {
   AdmonitionCatalogue1,
   CatalogueKind,
   CharacterCatalogue1,
+  CitationCatalogue,
   CitationCatalogue1,
   ImageCatalogue,
   ImageCatalogue1,
@@ -1083,34 +1085,85 @@ const sixthTable: TableCatalogue = {
 
 /**
  * The catalogue versions the theme's 0.8 binds: 0.7's, and a new, fixed identifier for the table
- * catalogue's sixth version, which 0064 seeds and the theme's content names.
+ * catalogue's sixth version, which 0064 seeds and the theme's content names. Frozen by 0.9.
  */
-export const DEFAULT_CATALOGUE_VERSIONS: Readonly<
+export const EIGHTH_DEFAULT_CATALOGUE_VERSIONS: Readonly<
   Record<CatalogueKind | typeof VALUE_CATALOGUE_KIND, string>
 > = {
   ...SEVENTH_DEFAULT_CATALOGUE_VERSIONS,
   table: '90004ad2-e4bc-49d4-b0bd-95375853953d',
 };
 
-/** **The catalogues the default theme binds as it stands, 0.8**: 0.7's, the table catalogue's sixth. */
-export const DEFAULT_CATALOGUES: DefaultCatalogues = {
+/** **The catalogues the default theme's 0.8 binds**: 0.7's, the table catalogue's sixth. Frozen. */
+export const EIGHTH_DEFAULT_CATALOGUES: DefaultCatalogues = {
   ...SEVENTH_DEFAULT_CATALOGUES,
   table: sixthTable,
 };
 
 /** The same seven, by the version identifier the theme's 0.8 names each by. */
+export const EIGHTH_DEFAULT_CATALOGUES_BY_VERSION: ReadonlyMap<string, unknown> = new Map(
+  (Object.keys(EIGHTH_DEFAULT_CATALOGUE_VERSIONS) as (keyof DefaultCatalogues)[]).map((kind) => [
+    EIGHTH_DEFAULT_CATALOGUE_VERSIONS[kind],
+    EIGHTH_DEFAULT_CATALOGUES[kind],
+  ]),
+);
+
+/** The fixed identifier the store seeds the default theme's 0.8 under, by 0064, as 0.7's is fixed. */
+export const EIGHTH_DEFAULT_THEME_VERSION = 'f8a6e5fc-4241-4c7c-a2b6-7709edbaacc4';
+
+/** **The default theme's 0.8, as 0064 stored it**: 0.7 naming the table catalogue's sixth. Frozen. */
+export const EIGHTH_DEFAULT_THEME: Theme = {
+  ...SEVENTH_DEFAULT_THEME,
+  catalogues: { ...EIGHTH_DEFAULT_CATALOGUE_VERSIONS },
+};
+
+// ---------------------------------------------------------------------------------------------------
+// Version 0.9 (the CI plan, CI-E): the citation catalogue's second version, at catalogue/4, naming
+// Harvard at its seeded version, and the theme naming it. Nothing published without a citation moves.
+// ---------------------------------------------------------------------------------------------------
+
+/** The citation catalogue the theme's 0.9 binds, its second version: Harvard, at its seeded 0.1. */
+const secondCitation: CitationCatalogue = {
+  schemaVersion: 4,
+  kind: 'citation',
+  style: { id: DEFAULT_CITATION_STYLE.id, version: DEFAULT_CITATION_STYLE.version },
+};
+
+/**
+ * The catalogue versions the theme's 0.9 binds: 0.8's, and a new, fixed identifier for the citation
+ * catalogue's second version, which 0146 seeds and the theme's content names.
+ */
+export const DEFAULT_CATALOGUE_VERSIONS: Readonly<
+  Record<CatalogueKind | typeof VALUE_CATALOGUE_KIND, string>
+> = {
+  ...EIGHTH_DEFAULT_CATALOGUE_VERSIONS,
+  citation: '5c7e9a1b-2d4f-4a6c-8e0b-3d5f7a9c1e2b',
+};
+
+/** The catalogues' contents at 0.9, by kind, each as its row holds it. */
+type DefaultCatalogues9 = Omit<DefaultCatalogues, 'citation'> & {
+  readonly citation: CitationCatalogue;
+};
+
+/** **The catalogues the default theme binds as it stands, 0.9**: 0.8's, the citation catalogue's second. */
+export const DEFAULT_CATALOGUES: DefaultCatalogues9 = {
+  ...EIGHTH_DEFAULT_CATALOGUES,
+  citation: secondCitation,
+};
+
+/** The same seven, by the version identifier the theme's 0.9 names each by. */
 export const DEFAULT_CATALOGUES_BY_VERSION: ReadonlyMap<string, unknown> = new Map(
-  (Object.keys(DEFAULT_CATALOGUE_VERSIONS) as (keyof DefaultCatalogues)[]).map((kind) => [
+  (Object.keys(DEFAULT_CATALOGUE_VERSIONS) as (keyof DefaultCatalogues9)[]).map((kind) => [
     DEFAULT_CATALOGUE_VERSIONS[kind],
     DEFAULT_CATALOGUES[kind],
   ]),
 );
 
-/** The fixed identifier the store seeds the default theme's 0.8 under, by 0064, as 0.7's is fixed. */
-export const DEFAULT_THEME_VERSION = 'f8a6e5fc-4241-4c7c-a2b6-7709edbaacc4';
+/** The fixed identifier the store seeds the default theme's 0.9 under, by 0146, as 0.8's is fixed. */
+export const DEFAULT_THEME_VERSION = '6d8f0b2c-3e5a-4b7d-9f1c-4e6a8b0d2f3c';
 
-/** **The default theme as it stands, 0.8**: 0.7 naming the table catalogue's sixth version. */
+/** **The default theme as it stands, 0.9**: 0.8 naming the citation catalogue's second version. */
 export const DEFAULT_THEME: Theme = {
-  ...SEVENTH_DEFAULT_THEME,
+  ...EIGHTH_DEFAULT_THEME,
   catalogues: { ...DEFAULT_CATALOGUE_VERSIONS },
 };

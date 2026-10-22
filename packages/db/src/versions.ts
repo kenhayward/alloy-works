@@ -23,6 +23,7 @@ import {
   parseProvenanceForWrite,
   parsePrompt,
   parseEntry,
+  parseCitationStyle,
   parsePromptForWrite,
   parsePromptLibrary,
   LibraryRefused,
@@ -41,6 +42,7 @@ import {
   labelFor,
   nameKey,
 } from '@alloy-works/domain';
+import { parseCitationStyleForWrite } from '@alloy-works/domain/citations';
 import { sql } from 'kysely';
 import type { ArtifactKind } from './artifact-kind.js';
 import {
@@ -270,6 +272,11 @@ function prepare(substance: VersionSubstance): VersionSubstance {
     // Nor does a library: it is the tenant's, identified by its artifact row (G4-F).
     return { kind: 'promptLibrary', content: parsePromptLibrary(substance.content) };
   }
+  if (substance.kind === 'citationStyle') {
+    // Nor does a citation style: the tenant's, as a library is. Its shape, and its CSL checked as CSL
+    // 1.0.2 that renders, on every write (STY-023; the CI plan, CI-D).
+    return { kind: 'citationStyle', content: parseCitationStyleForWrite(substance.content) };
+  }
   if (substance.kind === 'dataset') {
     // Nor does a dataset version: it is in its definition's space. Its provenance record, strict, with
     // every string in NFC, on every write (the D3 plan's stored-shape check, row 8); what it names is
@@ -476,8 +483,11 @@ export async function createArtifact(
   const artifact = await trx
     .insertInto('artifact')
     .values(
-      // A library is in no space, and carries no identity of its own, as a template carries none.
-      spacedSubstanceKinds.includes(substance.kind) || substance.kind === 'promptLibrary'
+      // A library or a citation style is in no space, and carries no identity of its own, as a template
+      // carries none.
+      spacedSubstanceKinds.includes(substance.kind) ||
+        substance.kind === 'promptLibrary' ||
+        substance.kind === 'citationStyle'
         ? {
             ...('artifactId' in input && input.artifactId !== undefined
               ? { id: input.artifactId }
@@ -779,6 +789,9 @@ export function substanceOf(stored: StoredVersion): VersionSubstance {
   }
   if (stored.kind === 'promptLibrary') {
     return { kind: 'promptLibrary', content: parsePromptLibrary(stored.content) };
+  }
+  if (stored.kind === 'citationStyle') {
+    return { kind: 'citationStyle', content: parseCitationStyle(stored.content) };
   }
   if (stored.kind === 'dataset') {
     // The shape alone, likewise: an arm added later (D6's request, D7's identity) reads every one stored.

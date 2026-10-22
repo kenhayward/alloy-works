@@ -26,7 +26,7 @@ export const documentationGroups = [
       {
         name: 'Bibliography',
         description:
-          "Keep a space's bibliography entries, import and export them, and see where each is cited.",
+          "Keep a space's bibliography entries, import and export them, see where each is cited, and keep the environment's citation styles.",
       },
       { name: 'Assets', description: 'Upload and retrieve image assets.' },
       {
@@ -461,6 +461,11 @@ const operationTags = {
     'getBibliographyEntryUses',
     'archiveBibliographyEntry',
     'unarchiveBibliographyEntry',
+    'listCitationStyles',
+    'createCitationStyle',
+    'previewCitationStyle',
+    'getCitationStyle',
+    'recordCitationStyleVersion',
   ],
   Prompts: [
     'listPrompts',
@@ -967,6 +972,16 @@ const descriptions: Readonly<Record<string, string>> = {
     'Returns where an entry is cited: the components whose latest version cites it, and the baselines pinning a component version that does. One the caller may not read is said to exist, never named.',
   archiveBibliographyEntry:
     "Archives an entry, leaving it out of the space's listing. Refused while a component's latest version, or a version a baseline pins, cites it. It needs retire on the entry.",
+  listCitationStyles:
+    "Lists the environment's citation styles by name: CSE, Vancouver and Harvard, which every environment is given, and any uploaded.",
+  createCitationStyle:
+    'Uploads a citation style: a CSL 1.0.2 file, a name, and what an entry of each CSL type must hold to be cited in it, since CSL itself declares none. A file that is not a CSL style with both an in-text and a bibliography form, or that does not render, is refused. A theme names a style at a version. It needs design here.',
+  previewCitationStyle:
+    'Renders a set of invented sample entries in a CSL file, before or after it is uploaded, and proposes what it requires: for each type, the variables a reader needs that the style always prints. A file that would be refused answers why, and no sample. Nothing is kept. It needs design here.',
+  getCitationStyle:
+    'Returns a citation style at its latest version: its CSL, its name, what it requires, and whether it is one every environment is given.',
+  recordCitationStyleVersion:
+    'Records the next citation style version from the version the caller opened, checked as an upload is. A theme naming an earlier version goes on rendering in it. It needs design here.',
   unarchiveBibliographyEntry:
     "Unarchives an entry, returning it to the space's listing. It needs retire on the entry.",
   recordPromptVersion:

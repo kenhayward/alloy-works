@@ -438,6 +438,21 @@ export const imageStyleSchema = z.discriminatedUnion('placement', [
 const version = z.literal(CATALOGUE_SCHEMA_VERSION);
 
 /**
+ * **`catalogue/4`, the citation catalogue's alone** (the CI plan, CI-E): it names the theme's citation
+ * style **at a version**, so a baseline's output never moves, or none. Every other kind stays at
+ * `catalogue/3`; the reader reads a citation catalogue at 1 to 3, empty, as 4 naming none.
+ */
+export const CITATION_CATALOGUE_SCHEMA_VERSION = 4;
+
+export const citationCatalogueSchema = z.strictObject({
+  schemaVersion: z.literal(CITATION_CATALOGUE_SCHEMA_VERSION),
+  kind: z.literal('citation'),
+  style: z
+    .strictObject({ id: artifactIdentifierSchema, version: artifactIdentifierSchema })
+    .optional(),
+});
+
+/**
  * **The value catalogue's kind** (bindings.md, "Formatting"; the B1 plan, B1-F): a catalogue the
  * theme binds **beside the six kinds, not as a seventh**, so STY-003's six, every map over the kinds
  * and every loop over them stay as they are. A theme names one optionally (`catalogues.value`), and
@@ -558,12 +573,22 @@ export const catalogueSchema = z
       kind: z.literal('image'),
       styles: z.array(imageStyleSchema),
     }),
-    // Nothing to style yet: no admonition exists, and citations arrive with their processor (TH-C).
+    // Nothing to style yet: no admonition exists (TH-C).
     z.strictObject({ schemaVersion: version, kind: z.literal('admonition'), styles: z.tuple([]) }),
-    z.strictObject({ schemaVersion: version, kind: z.literal('citation'), styles: z.tuple([]) }),
+    citationCatalogueSchema,
     valueCatalogueSchema,
   ])
   .refine(storableEverywhere, 'holds a character that cannot be stored');
+
+/**
+ * **A citation catalogue before `catalogue/4`, frozen**: empty at versions 1 to 3 (TH-C), which the
+ * reader holds a stored one to before it reads it as version 4 naming no style.
+ */
+export const citationCatalogueSchemaBefore4 = z.strictObject({
+  schemaVersion: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+  kind: z.literal('citation'),
+  styles: z.tuple([]),
+});
 
 /**
  * **`catalogue/2`, frozen**: exactly the parse themes 2 and the theme in the editor stored rows

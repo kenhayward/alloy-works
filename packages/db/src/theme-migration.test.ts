@@ -8,6 +8,7 @@ import {
   DEFAULT_CATALOGUES_BY_VERSION,
   DEFAULT_THEME,
   DEFAULT_THEME_VERSION,
+  EIGHTH_DEFAULT_THEME_VERSION,
   DEFAULT_VALUE_FORMATS,
   defaultNumberingScheme,
   FIFTH_DEFAULT_CATALOGUES_BY_VERSION,
@@ -436,6 +437,7 @@ describe('migration 0024, which gives every environment its default theme', () =
       '0143_publication_generated',
       '0144_embedding_lag',
       '0145_bibliography_entries',
+      '0146_citation_styles',
     ]);
 
     // The one trigger held off during the migration stands enabled again, as does every other.
@@ -1217,6 +1219,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       '0143_publication_generated',
       '0144_embedding_lag',
       '0145_bibliography_entries',
+      '0146_citation_styles',
     ]);
 
     expect((await themeChain(tenant)).map((each) => each.id)).toEqual([
@@ -1369,6 +1372,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       '0143_publication_generated',
       '0144_embedding_lag',
       '0145_bibliography_entries',
+      '0146_citation_styles',
     ]);
 
     const chain = await themeChain(tenant);
@@ -2150,6 +2154,7 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
       '0143_publication_generated',
       '0144_embedding_lag',
       '0145_bibliography_entries',
+      '0146_citation_styles',
     ]);
 
     // The theme is at 0.6, under its fixed identifier, unauthored, on top of 0.5; the value catalogue
@@ -2179,9 +2184,17 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
       },
       // And 0064's 0.8 on top of that (TG3), naming the table catalogue's sixth.
       {
-        id: DEFAULT_THEME_VERSION,
+        id: EIGHTH_DEFAULT_THEME_VERSION,
         revision_no: 0,
         version_no: 8,
+        author_id: null,
+        schema_version: 1,
+      },
+      // And 0146's 0.9 (CI-E), naming the citation catalogue's second.
+      {
+        id: DEFAULT_THEME_VERSION,
+        revision_no: 0,
+        version_no: 9,
         author_id: null,
         schema_version: 1,
       },
@@ -2198,8 +2211,8 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
     for (const kind of CATALOGUE_KINDS) {
       const chain = await chainOf(tenant, DEFAULT_CATALOGUE_IDS[kind]);
       expect(chain.at(-1)!.id, kind).toBe(
-        kind === 'table'
-          ? DEFAULT_CATALOGUE_VERSIONS.table
+        kind === 'table' || kind === 'citation'
+          ? DEFAULT_CATALOGUE_VERSIONS[kind]
           : FIFTH_DEFAULT_CATALOGUE_VERSIONS[kind],
       );
     }
@@ -2208,7 +2221,7 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
     expect(await service.withTenant(tenant, (trx) => defaultTheme(trx))).toEqual({
       artifactId: DEFAULT_THEME_ID,
       versionId: DEFAULT_THEME_VERSION,
-      number: '0.8',
+      number: '0.9',
       content: DEFAULT_THEME,
       theme: now,
       catalogues: DEFAULT_CATALOGUES_BY_VERSION,
@@ -2345,6 +2358,7 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
       '0143_publication_generated',
       '0144_embedding_lag',
       '0145_bibliography_entries',
+      '0146_citation_styles',
     ]);
 
     // The theme is left at the environment's own version, with nothing of the product's on top; the
@@ -2467,6 +2481,7 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
       '0143_publication_generated',
       '0144_embedding_lag',
       '0145_bibliography_entries',
+      '0146_citation_styles',
     ]);
     return (await chainOf(tenant, DEFAULT_THEME_ID)).slice(4).map((each) => each.id);
   };

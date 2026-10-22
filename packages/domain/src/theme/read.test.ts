@@ -102,6 +102,7 @@ describe('readTheme', () => {
     expect(theme.catalogues).toEqual({
       ...FIFTH_DEFAULT_CATALOGUE_VERSIONS,
       table: DEFAULT_CATALOGUE_VERSIONS.table,
+      citation: DEFAULT_CATALOGUE_VERSIONS.citation,
     });
 
     // Another version of the paragraph catalogue, one that would refuse, stands beside the one named:
@@ -1055,12 +1056,17 @@ describe('readCatalogue', () => {
         base: { ...FIRST_DEFAULT_CATALOGUES.paragraph.base, contextualSpacing: false },
       },
     });
-    for (const kind of ['character', 'admonition', 'citation'] as const) {
+    for (const kind of ['character', 'admonition'] as const) {
       expect(readCatalogue(FIRST_DEFAULT_CATALOGUES[kind]), kind).toEqual({
         ok: true,
         catalogue: { ...FIRST_DEFAULT_CATALOGUES[kind], schemaVersion: 3 },
       });
     }
+    // The citation catalogue reads at its own version, 4, naming no style (CI-E).
+    expect(readCatalogue(FIRST_DEFAULT_CATALOGUES.citation)).toEqual({
+      ok: true,
+      catalogue: { schemaVersion: 4, kind: 'citation' },
+    });
 
     // Any table style, and each image style by what it applies to.
     const upgraded = readCatalogue({
@@ -1222,5 +1228,51 @@ describe('readTheme and the value catalogue', () => {
     const malformed = new Map(DEFAULT_CATALOGUES_BY_VERSION);
     malformed.set(inputs.theme.catalogues.value!, { ...inputs.catalogues.value, byLanguage: 'de' });
     expect(codes(readTheme(inputs.theme, malformed))).toEqual(['catalogue_malformed']);
+  });
+});
+
+describe('the citation catalogue at catalogue/4 (the CI plan, CI-E)', () => {
+  const harvard = {
+    id: 'a6c1e2f4-3b5d-4e7a-8c9b-1d2e3f4a5b6c',
+    version: 'd1f4a7c2-6e8b-4b1d-9f3e-5a7c9e1b3d5f',
+  };
+
+  it('names one citation style at a version, or none', () => {
+    const named = { schemaVersion: 4, kind: 'citation', style: harvard };
+    expect(readCatalogue(named)).toEqual({ ok: true, catalogue: named });
+    expect(readCatalogue({ schemaVersion: 4, kind: 'citation' })).toEqual({
+      ok: true,
+      catalogue: { schemaVersion: 4, kind: 'citation' },
+    });
+    // A style by its artifact alone, or with anything beside it, is refused.
+    for (const style of [{ id: harvard.id }, { ...harvard, colour: 'red' }]) {
+      expect(readCatalogue({ schemaVersion: 4, kind: 'citation', style }).ok).toBe(false);
+    }
+    expect(readCatalogue({ schemaVersion: 4, kind: 'citation', styles: [] }).ok).toBe(false);
+  });
+
+  it('reads one stored empty at versions 1 to 3 as naming none, and names none at them', () => {
+    for (const schemaVersion of [1, 2, 3]) {
+      expect(readCatalogue({ schemaVersion, kind: 'citation', styles: [] })).toEqual({
+        ok: true,
+        catalogue: { schemaVersion: 4, kind: 'citation' },
+      });
+      expect(
+        readCatalogue({ schemaVersion, kind: 'citation', styles: [], style: harvard }).ok,
+      ).toBe(false);
+    }
+  });
+
+  it('is the citation catalogue alone: no other kind is written at version 4', () => {
+    expect(readCatalogue({ ...FIRST_DEFAULT_CATALOGUES.admonition, schemaVersion: 4 }).ok).toBe(
+      false,
+    );
+  });
+
+  it('gives the theme read the style its citation catalogue names, or none', () => {
+    const theme = resolved();
+    expect(theme.citationStyle).toEqual(DEFAULT_CATALOGUES.citation.style);
+    const first = readTheme(FIRST_DEFAULT_THEME, FIRST_DEFAULT_CATALOGUES_BY_VERSION);
+    expect(first.ok && first.theme.citationStyle).toBeNull();
   });
 });

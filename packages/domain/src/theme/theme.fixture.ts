@@ -7,6 +7,8 @@ import {
 import { readTheme, upgradeCatalogue2, type ResolvedTheme, type ThemeReadOutcome } from './read.js';
 import {
   CATALOGUE_KINDS,
+  type CitationCatalogue,
+  type CitationCatalogue1,
   type ImageCatalogue,
   type TableCatalogue,
   type Theme,
@@ -30,7 +32,10 @@ export function defaultInputs(): ThemeInputs {
  */
 export type ThemeInputs = {
   theme: Theme;
-  catalogues: Omit<typeof DEFAULT_CATALOGUES, 'value'> & { value?: ValueCatalogue };
+  catalogues: Omit<typeof DEFAULT_CATALOGUES, 'value' | 'citation'> & {
+    value?: ValueCatalogue;
+    citation: CitationCatalogue | CitationCatalogue1;
+  };
 };
 
 /**

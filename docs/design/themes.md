@@ -153,8 +153,9 @@ face in Word therefore reaches no run.** The claim stands on the projection, whi
 `theme/ooxml.test.ts` shows; the restyling half, for those two values, waits for a character style
 per scaled mark and per pair of marks, which no slice has planned.
 
-Citation styles (STY-020 to STY-023) are bound by a theme but rendered by a citation processor, and
-belong to the design that covers citations and references. How numbering looks - heading numbers,
+Citation styles (STY-020 to STY-023) are bound by a theme, its citation catalogue naming one style at
+a version from `catalogue/4` ([The citation catalogue](#the-citation-catalogue)), and rendered by
+citeproc-js, as [citations.md](citations.md) designs. How numbering looks - heading numbers,
 figure numbers - belongs with the layout (PUB-011) and structure (STR), which this design supplies
 typefaces and paragraph styles to.
 
@@ -1039,6 +1040,21 @@ recorded its own table or image catalogue, or its own theme, after 0.4 keeps it,
 styles read with their captions where they always stood.
 
 **Every output reads the side from the style it already reads.**
+
+## The citation catalogue
+
+Built by CIb of [the CI plan](../plans/2026-10-22-ci-citations.md), under CI-E. **`catalogue/4` is the
+citation catalogue's alone**: `{ schemaVersion: 4, kind: 'citation', style?: { id, version } }`,
+naming a citation style at one version, so a baseline's output never moves, or none. Every other kind
+stays at `catalogue/3`. A citation catalogue stored empty at 1 to 3 is held to that frozen shape
+(`citationCatalogueSchemaBefore4`) and read as 4 naming none, so every theme before reads as it did;
+the reader answers the style as `citationStyle`, or null. The store refuses a catalogue naming what is
+no version of that style (`citation_style_missing`).
+
+**The default theme's 0.9**, seeded by migration 0146 beside the three styles, binds the citation
+catalogue's second version, naming Harvard at its seeded 0.1, and is otherwise 0.8. Its guard is
+0064's, one version on: an environment that recorded its own theme or citation catalogue keeps it, and
+cites in no style until one is named.
 
 - **The PDF.** `publishing/15` carries each table style's `captionPosition` in the theme's
   projection, and a figure's own from its image style, in the engine's terms, `top` or `bottom`.

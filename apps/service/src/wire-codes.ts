@@ -63,6 +63,7 @@ const WIRE_CODES = {
   'prompt.invalid': 'prompt_invalid',
   'library.invalid': 'library_invalid',
   'entry.invalid': 'entry_invalid',
+  'style.invalid': 'style_invalid',
   'entry.cited': 'entry_cited',
   'import.unreadable': 'import_unreadable',
   'definition.name_taken': 'definition_name_taken',

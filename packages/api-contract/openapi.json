@@ -41,7 +41,7 @@
     },
     {
       "name": "Bibliography",
-      "description": "Keep a space's bibliography entries, import and export them, and see where each is cited."
+      "description": "Keep a space's bibliography entries, import and export them, see where each is cited, and keep the environment's citation styles."
     },
     {
       "name": "Assets",
@@ -41197,6 +41197,2669 @@
           },
           "404": {
             "description": "No such document or space the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/citation-styles": {
+      "get": {
+        "operationId": "listCitationStyles",
+        "summary": "The environment's citation styles, by name",
+        "description": "Lists the environment's citation styles by name: CSE, Vancouver and Harvard, which every environment is given, and any uploaded.",
+        "tags": [
+          "Bibliography"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "read",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The styles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "seeded": {
+                            "type": "boolean"
+                          },
+                          "version": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "number": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "number"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "seeded",
+                          "version"
+                        ]
+                      },
+                      "description": "By name: an environment's handful"
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ]
+                },
+                "example": {
+                  "items": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may not read the environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createCitationStyle",
+        "summary": "Upload a CSL style, at version 0.1",
+        "description": "Uploads a citation style: a CSL 1.0.2 file, a name, and what an entry of each CSL type must hold to be cited in it, since CSL itself declares none. A file that is not a CSL style with both an in-text and a bibliography form, or that does not render, is refused. A theme names a style at a version. It needs design here.",
+        "tags": [
+          "Bibliography"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "design",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "style": {
+                    "type": "object",
+                    "properties": {
+                      "schemaVersion": {
+                        "type": "number",
+                        "const": 1
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "csl": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "requires": {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string",
+                          "enum": [
+                            "article",
+                            "article-journal",
+                            "article-magazine",
+                            "article-newspaper",
+                            "bill",
+                            "book",
+                            "broadcast",
+                            "chapter",
+                            "classic",
+                            "collection",
+                            "dataset",
+                            "document",
+                            "entry",
+                            "entry-dictionary",
+                            "entry-encyclopedia",
+                            "event",
+                            "figure",
+                            "graphic",
+                            "hearing",
+                            "interview",
+                            "legal_case",
+                            "legislation",
+                            "manuscript",
+                            "map",
+                            "motion_picture",
+                            "musical_score",
+                            "pamphlet",
+                            "paper-conference",
+                            "patent",
+                            "performance",
+                            "periodical",
+                            "personal_communication",
+                            "post",
+                            "post-weblog",
+                            "regulation",
+                            "report",
+                            "review",
+                            "review-book",
+                            "software",
+                            "song",
+                            "speech",
+                            "standard",
+                            "thesis",
+                            "treaty",
+                            "webpage"
+                          ]
+                        },
+                        "additionalProperties": {
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "required": [
+                      "schemaVersion",
+                      "name",
+                      "csl",
+                      "requires"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "style"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "style": {
+                  "schemaVersion": 1,
+                  "name": "example",
+                  "csl": "example",
+                  "requires": {}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Made, at version 0.1",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "number": {
+                          "type": "string",
+                          "description": "`revision.version`, as `0.2`"
+                        },
+                        "author": {
+                          "description": "The principal who cut it; null for a starter definition",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "note": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "number",
+                        "author",
+                        "createdAt",
+                        "note"
+                      ]
+                    },
+                    "style": {
+                      "type": "object",
+                      "properties": {
+                        "schemaVersion": {
+                          "type": "number",
+                          "const": 1
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "csl": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "requires": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string",
+                            "enum": [
+                              "article",
+                              "article-journal",
+                              "article-magazine",
+                              "article-newspaper",
+                              "bill",
+                              "book",
+                              "broadcast",
+                              "chapter",
+                              "classic",
+                              "collection",
+                              "dataset",
+                              "document",
+                              "entry",
+                              "entry-dictionary",
+                              "entry-encyclopedia",
+                              "event",
+                              "figure",
+                              "graphic",
+                              "hearing",
+                              "interview",
+                              "legal_case",
+                              "legislation",
+                              "manuscript",
+                              "map",
+                              "motion_picture",
+                              "musical_score",
+                              "pamphlet",
+                              "paper-conference",
+                              "patent",
+                              "performance",
+                              "periodical",
+                              "personal_communication",
+                              "post",
+                              "post-weblog",
+                              "regulation",
+                              "report",
+                              "review",
+                              "review-book",
+                              "software",
+                              "song",
+                              "speech",
+                              "standard",
+                              "thesis",
+                              "treaty",
+                              "webpage"
+                            ]
+                          },
+                          "additionalProperties": {
+                            "maxItems": 100,
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      },
+                      "required": [
+                        "schemaVersion",
+                        "name",
+                        "csl",
+                        "requires"
+                      ]
+                    },
+                    "seeded": {
+                      "type": "boolean",
+                      "description": "One of the three every environment is given: CSE, Vancouver, Harvard"
+                    },
+                    "mayEdit": {
+                      "type": "boolean",
+                      "description": "Whether the caller may cut its next version: design here"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "version",
+                    "style",
+                    "seeded",
+                    "mayEdit"
+                  ]
+                },
+                "example": {
+                  "id": "example",
+                  "version": {
+                    "id": "example",
+                    "number": "example",
+                    "author": "example",
+                    "createdAt": "example",
+                    "note": "example"
+                  },
+                  "style": {
+                    "schemaVersion": 1,
+                    "name": "example",
+                    "csl": "example",
+                    "requires": {}
+                  },
+                  "seeded": false,
+                  "mayEdit": false
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`style_invalid`: not a CSL 1.0.2 style with both forms that renders, or a `requires` naming what is not a CSL type or variable, each problem named",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    },
+                    "problems": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "rule": {
+                            "type": "string",
+                            "const": "style_invalid"
+                          },
+                          "path": {
+                            "type": "string",
+                            "description": "The member refused, dotted, as `csl` or `requires.book.0`"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "rule",
+                          "path",
+                          "message"
+                        ]
+                      }
+                    },
+                    "current": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "number": {
+                              "type": "string",
+                              "description": "`revision.version`, as `0.2`"
+                            },
+                            "author": {
+                              "description": "The principal who cut it; null for a starter definition",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "createdAt": {
+                              "type": "string"
+                            },
+                            "note": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number",
+                            "author",
+                            "createdAt",
+                            "note"
+                          ]
+                        },
+                        "style": {
+                          "type": "object",
+                          "properties": {
+                            "schemaVersion": {
+                              "type": "number",
+                              "const": 1
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "csl": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "requires": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string",
+                                "enum": [
+                                  "article",
+                                  "article-journal",
+                                  "article-magazine",
+                                  "article-newspaper",
+                                  "bill",
+                                  "book",
+                                  "broadcast",
+                                  "chapter",
+                                  "classic",
+                                  "collection",
+                                  "dataset",
+                                  "document",
+                                  "entry",
+                                  "entry-dictionary",
+                                  "entry-encyclopedia",
+                                  "event",
+                                  "figure",
+                                  "graphic",
+                                  "hearing",
+                                  "interview",
+                                  "legal_case",
+                                  "legislation",
+                                  "manuscript",
+                                  "map",
+                                  "motion_picture",
+                                  "musical_score",
+                                  "pamphlet",
+                                  "paper-conference",
+                                  "patent",
+                                  "performance",
+                                  "periodical",
+                                  "personal_communication",
+                                  "post",
+                                  "post-weblog",
+                                  "regulation",
+                                  "report",
+                                  "review",
+                                  "review-book",
+                                  "software",
+                                  "song",
+                                  "speech",
+                                  "standard",
+                                  "thesis",
+                                  "treaty",
+                                  "webpage"
+                                ]
+                              },
+                              "additionalProperties": {
+                                "maxItems": 100,
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "required": [
+                            "schemaVersion",
+                            "name",
+                            "csl",
+                            "requires"
+                          ]
+                        },
+                        "seeded": {
+                          "type": "boolean",
+                          "description": "One of the three every environment is given: CSE, Vancouver, Harvard"
+                        },
+                        "mayEdit": {
+                          "type": "boolean",
+                          "description": "Whether the caller may cut its next version: design here"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "version",
+                        "style",
+                        "seeded",
+                        "mayEdit"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may not design here",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/citation-styles/{id}": {
+      "get": {
+        "operationId": "getCitationStyle",
+        "summary": "A citation style at its latest version",
+        "description": "Returns a citation style at its latest version: its CSL, its name, what it requires, and whether it is one every environment is given.",
+        "tags": [
+          "Bibliography"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "read",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The style",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "number": {
+                          "type": "string",
+                          "description": "`revision.version`, as `0.2`"
+                        },
+                        "author": {
+                          "description": "The principal who cut it; null for a starter definition",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "note": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "number",
+                        "author",
+                        "createdAt",
+                        "note"
+                      ]
+                    },
+                    "style": {
+                      "type": "object",
+                      "properties": {
+                        "schemaVersion": {
+                          "type": "number",
+                          "const": 1
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "csl": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "requires": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string",
+                            "enum": [
+                              "article",
+                              "article-journal",
+                              "article-magazine",
+                              "article-newspaper",
+                              "bill",
+                              "book",
+                              "broadcast",
+                              "chapter",
+                              "classic",
+                              "collection",
+                              "dataset",
+                              "document",
+                              "entry",
+                              "entry-dictionary",
+                              "entry-encyclopedia",
+                              "event",
+                              "figure",
+                              "graphic",
+                              "hearing",
+                              "interview",
+                              "legal_case",
+                              "legislation",
+                              "manuscript",
+                              "map",
+                              "motion_picture",
+                              "musical_score",
+                              "pamphlet",
+                              "paper-conference",
+                              "patent",
+                              "performance",
+                              "periodical",
+                              "personal_communication",
+                              "post",
+                              "post-weblog",
+                              "regulation",
+                              "report",
+                              "review",
+                              "review-book",
+                              "software",
+                              "song",
+                              "speech",
+                              "standard",
+                              "thesis",
+                              "treaty",
+                              "webpage"
+                            ]
+                          },
+                          "additionalProperties": {
+                            "maxItems": 100,
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      },
+                      "required": [
+                        "schemaVersion",
+                        "name",
+                        "csl",
+                        "requires"
+                      ]
+                    },
+                    "seeded": {
+                      "type": "boolean",
+                      "description": "One of the three every environment is given: CSE, Vancouver, Harvard"
+                    },
+                    "mayEdit": {
+                      "type": "boolean",
+                      "description": "Whether the caller may cut its next version: design here"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "version",
+                    "style",
+                    "seeded",
+                    "mayEdit"
+                  ]
+                },
+                "example": {
+                  "id": "example",
+                  "version": {
+                    "id": "example",
+                    "number": "example",
+                    "author": "example",
+                    "createdAt": "example",
+                    "note": "example"
+                  },
+                  "style": {
+                    "schemaVersion": 1,
+                    "name": "example",
+                    "csl": "example",
+                    "requires": {}
+                  },
+                  "seeded": false,
+                  "mayEdit": false
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may not read the environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such citation style in this environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/citation-styles/{id}/versions": {
+      "post": {
+        "operationId": "recordCitationStyleVersion",
+        "summary": "Cut a citation style's next version from the one the caller opened",
+        "description": "Records the next citation style version from the version the caller opened, checked as an upload is. A theme naming an earlier version goes on rendering in it. It needs design here.",
+        "tags": [
+          "Bibliography"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "design",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "openedFrom": {
+                    "type": "string",
+                    "allOf": [
+                      {
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      {
+                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                      }
+                    ]
+                  },
+                  "style": {
+                    "type": "object",
+                    "properties": {
+                      "schemaVersion": {
+                        "type": "number",
+                        "const": 1
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "csl": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "requires": {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string",
+                          "enum": [
+                            "article",
+                            "article-journal",
+                            "article-magazine",
+                            "article-newspaper",
+                            "bill",
+                            "book",
+                            "broadcast",
+                            "chapter",
+                            "classic",
+                            "collection",
+                            "dataset",
+                            "document",
+                            "entry",
+                            "entry-dictionary",
+                            "entry-encyclopedia",
+                            "event",
+                            "figure",
+                            "graphic",
+                            "hearing",
+                            "interview",
+                            "legal_case",
+                            "legislation",
+                            "manuscript",
+                            "map",
+                            "motion_picture",
+                            "musical_score",
+                            "pamphlet",
+                            "paper-conference",
+                            "patent",
+                            "performance",
+                            "periodical",
+                            "personal_communication",
+                            "post",
+                            "post-weblog",
+                            "regulation",
+                            "report",
+                            "review",
+                            "review-book",
+                            "software",
+                            "song",
+                            "speech",
+                            "standard",
+                            "thesis",
+                            "treaty",
+                            "webpage"
+                          ]
+                        },
+                        "additionalProperties": {
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "required": [
+                      "schemaVersion",
+                      "name",
+                      "csl",
+                      "requires"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "openedFrom",
+                  "style"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "openedFrom": "00000000-0000-4000-8000-000000000001",
+                "style": {
+                  "schemaVersion": 1,
+                  "name": "example",
+                  "csl": "example",
+                  "requires": {}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The style at its latest version: the one cut, or the one before where nothing changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "number": {
+                          "type": "string",
+                          "description": "`revision.version`, as `0.2`"
+                        },
+                        "author": {
+                          "description": "The principal who cut it; null for a starter definition",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "note": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "number",
+                        "author",
+                        "createdAt",
+                        "note"
+                      ]
+                    },
+                    "style": {
+                      "type": "object",
+                      "properties": {
+                        "schemaVersion": {
+                          "type": "number",
+                          "const": 1
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "csl": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "requires": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string",
+                            "enum": [
+                              "article",
+                              "article-journal",
+                              "article-magazine",
+                              "article-newspaper",
+                              "bill",
+                              "book",
+                              "broadcast",
+                              "chapter",
+                              "classic",
+                              "collection",
+                              "dataset",
+                              "document",
+                              "entry",
+                              "entry-dictionary",
+                              "entry-encyclopedia",
+                              "event",
+                              "figure",
+                              "graphic",
+                              "hearing",
+                              "interview",
+                              "legal_case",
+                              "legislation",
+                              "manuscript",
+                              "map",
+                              "motion_picture",
+                              "musical_score",
+                              "pamphlet",
+                              "paper-conference",
+                              "patent",
+                              "performance",
+                              "periodical",
+                              "personal_communication",
+                              "post",
+                              "post-weblog",
+                              "regulation",
+                              "report",
+                              "review",
+                              "review-book",
+                              "software",
+                              "song",
+                              "speech",
+                              "standard",
+                              "thesis",
+                              "treaty",
+                              "webpage"
+                            ]
+                          },
+                          "additionalProperties": {
+                            "maxItems": 100,
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      },
+                      "required": [
+                        "schemaVersion",
+                        "name",
+                        "csl",
+                        "requires"
+                      ]
+                    },
+                    "seeded": {
+                      "type": "boolean",
+                      "description": "One of the three every environment is given: CSE, Vancouver, Harvard"
+                    },
+                    "mayEdit": {
+                      "type": "boolean",
+                      "description": "Whether the caller may cut its next version: design here"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "version",
+                    "style",
+                    "seeded",
+                    "mayEdit"
+                  ]
+                },
+                "example": {
+                  "id": "example",
+                  "version": {
+                    "id": "example",
+                    "number": "example",
+                    "author": "example",
+                    "createdAt": "example",
+                    "note": "example"
+                  },
+                  "style": {
+                    "schemaVersion": 1,
+                    "name": "example",
+                    "csl": "example",
+                    "requires": {}
+                  },
+                  "seeded": false,
+                  "mayEdit": false
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`style_invalid`: not a CSL 1.0.2 style with both forms that renders, or a `requires` naming what is not a CSL type or variable, each problem named",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    },
+                    "problems": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "rule": {
+                            "type": "string",
+                            "const": "style_invalid"
+                          },
+                          "path": {
+                            "type": "string",
+                            "description": "The member refused, dotted, as `csl` or `requires.book.0`"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "rule",
+                          "path",
+                          "message"
+                        ]
+                      }
+                    },
+                    "current": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "number": {
+                              "type": "string",
+                              "description": "`revision.version`, as `0.2`"
+                            },
+                            "author": {
+                              "description": "The principal who cut it; null for a starter definition",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "createdAt": {
+                              "type": "string"
+                            },
+                            "note": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number",
+                            "author",
+                            "createdAt",
+                            "note"
+                          ]
+                        },
+                        "style": {
+                          "type": "object",
+                          "properties": {
+                            "schemaVersion": {
+                              "type": "number",
+                              "const": 1
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "csl": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "requires": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string",
+                                "enum": [
+                                  "article",
+                                  "article-journal",
+                                  "article-magazine",
+                                  "article-newspaper",
+                                  "bill",
+                                  "book",
+                                  "broadcast",
+                                  "chapter",
+                                  "classic",
+                                  "collection",
+                                  "dataset",
+                                  "document",
+                                  "entry",
+                                  "entry-dictionary",
+                                  "entry-encyclopedia",
+                                  "event",
+                                  "figure",
+                                  "graphic",
+                                  "hearing",
+                                  "interview",
+                                  "legal_case",
+                                  "legislation",
+                                  "manuscript",
+                                  "map",
+                                  "motion_picture",
+                                  "musical_score",
+                                  "pamphlet",
+                                  "paper-conference",
+                                  "patent",
+                                  "performance",
+                                  "periodical",
+                                  "personal_communication",
+                                  "post",
+                                  "post-weblog",
+                                  "regulation",
+                                  "report",
+                                  "review",
+                                  "review-book",
+                                  "software",
+                                  "song",
+                                  "speech",
+                                  "standard",
+                                  "thesis",
+                                  "treaty",
+                                  "webpage"
+                                ]
+                              },
+                              "additionalProperties": {
+                                "maxItems": 100,
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "required": [
+                            "schemaVersion",
+                            "name",
+                            "csl",
+                            "requires"
+                          ]
+                        },
+                        "seeded": {
+                          "type": "boolean",
+                          "description": "One of the three every environment is given: CSE, Vancouver, Harvard"
+                        },
+                        "mayEdit": {
+                          "type": "boolean",
+                          "description": "Whether the caller may cut its next version: design here"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "version",
+                        "style",
+                        "seeded",
+                        "mayEdit"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may not design here",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such citation style in this environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`version_precondition`: the style has a newer version than the one named, answered with it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    },
+                    "problems": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "rule": {
+                            "type": "string",
+                            "const": "style_invalid"
+                          },
+                          "path": {
+                            "type": "string",
+                            "description": "The member refused, dotted, as `csl` or `requires.book.0`"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "rule",
+                          "path",
+                          "message"
+                        ]
+                      }
+                    },
+                    "current": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "number": {
+                              "type": "string",
+                              "description": "`revision.version`, as `0.2`"
+                            },
+                            "author": {
+                              "description": "The principal who cut it; null for a starter definition",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "createdAt": {
+                              "type": "string"
+                            },
+                            "note": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number",
+                            "author",
+                            "createdAt",
+                            "note"
+                          ]
+                        },
+                        "style": {
+                          "type": "object",
+                          "properties": {
+                            "schemaVersion": {
+                              "type": "number",
+                              "const": 1
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "csl": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "requires": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string",
+                                "enum": [
+                                  "article",
+                                  "article-journal",
+                                  "article-magazine",
+                                  "article-newspaper",
+                                  "bill",
+                                  "book",
+                                  "broadcast",
+                                  "chapter",
+                                  "classic",
+                                  "collection",
+                                  "dataset",
+                                  "document",
+                                  "entry",
+                                  "entry-dictionary",
+                                  "entry-encyclopedia",
+                                  "event",
+                                  "figure",
+                                  "graphic",
+                                  "hearing",
+                                  "interview",
+                                  "legal_case",
+                                  "legislation",
+                                  "manuscript",
+                                  "map",
+                                  "motion_picture",
+                                  "musical_score",
+                                  "pamphlet",
+                                  "paper-conference",
+                                  "patent",
+                                  "performance",
+                                  "periodical",
+                                  "personal_communication",
+                                  "post",
+                                  "post-weblog",
+                                  "regulation",
+                                  "report",
+                                  "review",
+                                  "review-book",
+                                  "software",
+                                  "song",
+                                  "speech",
+                                  "standard",
+                                  "thesis",
+                                  "treaty",
+                                  "webpage"
+                                ]
+                              },
+                              "additionalProperties": {
+                                "maxItems": 100,
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "required": [
+                            "schemaVersion",
+                            "name",
+                            "csl",
+                            "requires"
+                          ]
+                        },
+                        "seeded": {
+                          "type": "boolean",
+                          "description": "One of the three every environment is given: CSE, Vancouver, Harvard"
+                        },
+                        "mayEdit": {
+                          "type": "boolean",
+                          "description": "Whether the caller may cut its next version: design here"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "version",
+                        "style",
+                        "seeded",
+                        "mayEdit"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/citation-styles/preview": {
+      "post": {
+        "operationId": "previewCitationStyle",
+        "summary": "Render the sample entries in a CSL style, and propose what it requires",
+        "description": "Renders a set of invented sample entries in a CSL file, before or after it is uploaded, and proposes what it requires: for each type, the variables a reader needs that the style always prints. A file that would be refused answers why, and no sample. Nothing is kept. It needs design here.",
+        "tags": [
+          "Bibliography"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "design",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "csl": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "language": {
+                    "description": "A language tag; a locale not bundled falls back to en-US",
+                    "type": "string",
+                    "pattern": "^[a-z]{2,3}(-[A-Z]{2})?$"
+                  }
+                },
+                "required": [
+                  "csl"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "csl": "example"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The preview, or why the style would be refused",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "title": {
+                      "description": "The style's own title, from its `info`",
+                      "type": "string"
+                    },
+                    "problems": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "rule": {
+                            "type": "string",
+                            "const": "style_invalid"
+                          },
+                          "path": {
+                            "type": "string",
+                            "description": "The member refused, dotted, as `csl` or `requires.book.0`"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "rule",
+                          "path",
+                          "message"
+                        ]
+                      },
+                      "description": "Why it would be refused; empty where it would not"
+                    },
+                    "proposed": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string",
+                        "enum": [
+                          "article",
+                          "article-journal",
+                          "article-magazine",
+                          "article-newspaper",
+                          "bill",
+                          "book",
+                          "broadcast",
+                          "chapter",
+                          "classic",
+                          "collection",
+                          "dataset",
+                          "document",
+                          "entry",
+                          "entry-dictionary",
+                          "entry-encyclopedia",
+                          "event",
+                          "figure",
+                          "graphic",
+                          "hearing",
+                          "interview",
+                          "legal_case",
+                          "legislation",
+                          "manuscript",
+                          "map",
+                          "motion_picture",
+                          "musical_score",
+                          "pamphlet",
+                          "paper-conference",
+                          "patent",
+                          "performance",
+                          "periodical",
+                          "personal_communication",
+                          "post",
+                          "post-weblog",
+                          "regulation",
+                          "report",
+                          "review",
+                          "review-book",
+                          "software",
+                          "song",
+                          "speech",
+                          "standard",
+                          "thesis",
+                          "treaty",
+                          "webpage"
+                        ]
+                      },
+                      "additionalProperties": {
+                        "maxItems": 100,
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "description": "A `requires` to start from: for each type, the variables a reader needs that the style always prints"
+                    },
+                    "sample": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "citations": {
+                              "type": "array",
+                              "items": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "text": {
+                                      "type": "string"
+                                    },
+                                    "marks": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "description": "`emphasis`, `strong`, `underline`, `subscript`, `superscript` or `hyperlink`"
+                                          },
+                                          "href": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind"
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "text",
+                                    "marks"
+                                  ]
+                                }
+                              },
+                              "description": "Each sample citation in reading order"
+                            },
+                            "bibliography": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "entry": {
+                                    "type": "string"
+                                  },
+                                  "label": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "text": {
+                                          "type": "string"
+                                        },
+                                        "marks": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "kind": {
+                                                "type": "string",
+                                                "description": "`emphasis`, `strong`, `underline`, `subscript`, `superscript` or `hyperlink`"
+                                              },
+                                              "href": {
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "kind"
+                                            ]
+                                          }
+                                        }
+                                      },
+                                      "required": [
+                                        "text",
+                                        "marks"
+                                      ]
+                                    }
+                                  },
+                                  "runs": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "text": {
+                                          "type": "string"
+                                        },
+                                        "marks": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "kind": {
+                                                "type": "string",
+                                                "description": "`emphasis`, `strong`, `underline`, `subscript`, `superscript` or `hyperlink`"
+                                              },
+                                              "href": {
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "kind"
+                                            ]
+                                          }
+                                        }
+                                      },
+                                      "required": [
+                                        "text",
+                                        "marks"
+                                      ]
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "entry",
+                                  "runs"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "citations",
+                            "bibliography"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "The invented sample entries rendered, or null where the style is refused"
+                    }
+                  },
+                  "required": [
+                    "problems",
+                    "proposed",
+                    "sample"
+                  ]
+                },
+                "example": {
+                  "problems": [],
+                  "proposed": {},
+                  "sample": {
+                    "citations": [],
+                    "bibliography": []
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may not design here",
             "content": {
               "application/json": {
                 "schema": {

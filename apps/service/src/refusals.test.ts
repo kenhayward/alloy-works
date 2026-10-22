@@ -109,6 +109,9 @@ describe('the rule behind a refusal', () => {
       'entry.invalid',
       'entry.cited',
       'import.unreadable',
+      // A citation style that is not CSL 1.0.2 with both forms, which STY-020 and STY-023 shape and no
+      // requirement names as a refusal (CI-D).
+      'style.invalid',
       // A connection's settings past their shape, which the contract checks at the door: made retired,
       // which the design refuses (data.md, "The connection") and no requirement names.
       'connection.invalid',

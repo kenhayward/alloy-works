@@ -679,6 +679,90 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/citation-styles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The environment's citation styles, by name
+         * @description Lists the environment's citation styles by name: CSE, Vancouver and Harvard, which every environment is given, and any uploaded.
+         */
+        get: operations["listCitationStyles"];
+        put?: never;
+        /**
+         * Upload a CSL style, at version 0.1
+         * @description Uploads a citation style: a CSL 1.0.2 file, a name, and what an entry of each CSL type must hold to be cited in it, since CSL itself declares none. A file that is not a CSL style with both an in-text and a bibliography form, or that does not render, is refused. A theme names a style at a version. It needs design here.
+         */
+        post: operations["createCitationStyle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/citation-styles/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A citation style at its latest version
+         * @description Returns a citation style at its latest version: its CSL, its name, what it requires, and whether it is one every environment is given.
+         */
+        get: operations["getCitationStyle"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/citation-styles/{id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cut a citation style's next version from the one the caller opened
+         * @description Records the next citation style version from the version the caller opened, checked as an upload is. A theme naming an earlier version goes on rendering in it. It needs design here.
+         */
+        post: operations["recordCitationStyleVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/citation-styles/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Render the sample entries in a CSL style, and propose what it requires
+         * @description Renders a set of invented sample entries in a CSL file, before or after it is uploaded, and proposes what it requires: for each type, the variables a reader needs that the style always prints. A file that would be refused answers why, and no sample. Nothing is kept. It needs design here.
+         */
+        post: operations["previewCitationStyle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/cohorts": {
         parameters: {
             query?: never;
@@ -16719,6 +16803,910 @@ export interface operations {
             };
             /** @description No such document or space the caller may read */
             404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listCitationStyles: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The styles */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": []
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description By name: an environment's handful */
+                        items: {
+                            id: string;
+                            name: string;
+                            seeded: boolean;
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not read the environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    createCitationStyle: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "style": {
+                 *         "schemaVersion": 1,
+                 *         "name": "example",
+                 *         "csl": "example",
+                 *         "requires": {}
+                 *       }
+                 *     }
+                 */
+                "application/json": {
+                    style: {
+                        /** @constant */
+                        schemaVersion: 1;
+                        name: string;
+                        csl: string;
+                        requires: {
+                            [key: string]: string[];
+                        };
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Made, at version 0.1 */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "style": {
+                     *         "schemaVersion": 1,
+                     *         "name": "example",
+                     *         "csl": "example",
+                     *         "requires": {}
+                     *       },
+                     *       "seeded": false,
+                     *       "mayEdit": false
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        style: {
+                            /** @constant */
+                            schemaVersion: 1;
+                            name: string;
+                            csl: string;
+                            requires: {
+                                [key: string]: string[];
+                            };
+                        };
+                        /** @description One of the three every environment is given: CSE, Vancouver, Harvard */
+                        seeded: boolean;
+                        /** @description Whether the caller may cut its next version: design here */
+                        mayEdit: boolean;
+                    };
+                };
+            };
+            /** @description `style_invalid`: not a CSL 1.0.2 style with both forms that renders, or a `requires` naming what is not a CSL type or variable, each problem named */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        problems?: {
+                            /** @constant */
+                            rule: "style_invalid";
+                            /** @description The member refused, dotted, as `csl` or `requires.book.0` */
+                            path: string;
+                            message: string;
+                        }[];
+                        current?: {
+                            id: string;
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            style: {
+                                /** @constant */
+                                schemaVersion: 1;
+                                name: string;
+                                csl: string;
+                                requires: {
+                                    [key: string]: string[];
+                                };
+                            };
+                            /** @description One of the three every environment is given: CSE, Vancouver, Harvard */
+                            seeded: boolean;
+                            /** @description Whether the caller may cut its next version: design here */
+                            mayEdit: boolean;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not design here */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getCitationStyle: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The style */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "style": {
+                     *         "schemaVersion": 1,
+                     *         "name": "example",
+                     *         "csl": "example",
+                     *         "requires": {}
+                     *       },
+                     *       "seeded": false,
+                     *       "mayEdit": false
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        style: {
+                            /** @constant */
+                            schemaVersion: 1;
+                            name: string;
+                            csl: string;
+                            requires: {
+                                [key: string]: string[];
+                            };
+                        };
+                        /** @description One of the three every environment is given: CSE, Vancouver, Harvard */
+                        seeded: boolean;
+                        /** @description Whether the caller may cut its next version: design here */
+                        mayEdit: boolean;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not read the environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such citation style in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    recordCitationStyleVersion: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "openedFrom": "00000000-0000-4000-8000-000000000001",
+                 *       "style": {
+                 *         "schemaVersion": 1,
+                 *         "name": "example",
+                 *         "csl": "example",
+                 *         "requires": {}
+                 *       }
+                 *     }
+                 */
+                "application/json": {
+                    openedFrom: string & (unknown & unknown);
+                    style: {
+                        /** @constant */
+                        schemaVersion: 1;
+                        name: string;
+                        csl: string;
+                        requires: {
+                            [key: string]: string[];
+                        };
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description The style at its latest version: the one cut, or the one before where nothing changed */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "style": {
+                     *         "schemaVersion": 1,
+                     *         "name": "example",
+                     *         "csl": "example",
+                     *         "requires": {}
+                     *       },
+                     *       "seeded": false,
+                     *       "mayEdit": false
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        style: {
+                            /** @constant */
+                            schemaVersion: 1;
+                            name: string;
+                            csl: string;
+                            requires: {
+                                [key: string]: string[];
+                            };
+                        };
+                        /** @description One of the three every environment is given: CSE, Vancouver, Harvard */
+                        seeded: boolean;
+                        /** @description Whether the caller may cut its next version: design here */
+                        mayEdit: boolean;
+                    };
+                };
+            };
+            /** @description `style_invalid`: not a CSL 1.0.2 style with both forms that renders, or a `requires` naming what is not a CSL type or variable, each problem named */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        problems?: {
+                            /** @constant */
+                            rule: "style_invalid";
+                            /** @description The member refused, dotted, as `csl` or `requires.book.0` */
+                            path: string;
+                            message: string;
+                        }[];
+                        current?: {
+                            id: string;
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            style: {
+                                /** @constant */
+                                schemaVersion: 1;
+                                name: string;
+                                csl: string;
+                                requires: {
+                                    [key: string]: string[];
+                                };
+                            };
+                            /** @description One of the three every environment is given: CSE, Vancouver, Harvard */
+                            seeded: boolean;
+                            /** @description Whether the caller may cut its next version: design here */
+                            mayEdit: boolean;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not design here */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such citation style in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `version_precondition`: the style has a newer version than the one named, answered with it */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        problems?: {
+                            /** @constant */
+                            rule: "style_invalid";
+                            /** @description The member refused, dotted, as `csl` or `requires.book.0` */
+                            path: string;
+                            message: string;
+                        }[];
+                        current?: {
+                            id: string;
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            style: {
+                                /** @constant */
+                                schemaVersion: 1;
+                                name: string;
+                                csl: string;
+                                requires: {
+                                    [key: string]: string[];
+                                };
+                            };
+                            /** @description One of the three every environment is given: CSE, Vancouver, Harvard */
+                            seeded: boolean;
+                            /** @description Whether the caller may cut its next version: design here */
+                            mayEdit: boolean;
+                        };
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    previewCitationStyle: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "csl": "example"
+                 *     }
+                 */
+                "application/json": {
+                    csl: string;
+                    /** @description A language tag; a locale not bundled falls back to en-US */
+                    language?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The preview, or why the style would be refused */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "problems": [],
+                     *       "proposed": {},
+                     *       "sample": {
+                     *         "citations": [],
+                     *         "bibliography": []
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description The style's own title, from its `info` */
+                        title?: string;
+                        /** @description Why it would be refused; empty where it would not */
+                        problems: {
+                            /** @constant */
+                            rule: "style_invalid";
+                            /** @description The member refused, dotted, as `csl` or `requires.book.0` */
+                            path: string;
+                            message: string;
+                        }[];
+                        /** @description A `requires` to start from: for each type, the variables a reader needs that the style always prints */
+                        proposed: {
+                            [key: string]: string[];
+                        };
+                        /** @description The invented sample entries rendered, or null where the style is refused */
+                        sample: {
+                            /** @description Each sample citation in reading order */
+                            citations: {
+                                text: string;
+                                marks: {
+                                    /** @description `emphasis`, `strong`, `underline`, `subscript`, `superscript` or `hyperlink` */
+                                    kind: string;
+                                    href?: string;
+                                }[];
+                            }[][];
+                            bibliography: {
+                                entry: string;
+                                label?: {
+                                    text: string;
+                                    marks: {
+                                        /** @description `emphasis`, `strong`, `underline`, `subscript`, `superscript` or `hyperlink` */
+                                        kind: string;
+                                        href?: string;
+                                    }[];
+                                }[];
+                                runs: {
+                                    text: string;
+                                    marks: {
+                                        /** @description `emphasis`, `strong`, `underline`, `subscript`, `superscript` or `hyperlink` */
+                                        kind: string;
+                                        href?: string;
+                                    }[];
+                                }[];
+                            }[];
+                        } | null;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not design here */
+            403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;

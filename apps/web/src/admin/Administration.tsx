@@ -5,6 +5,7 @@ import { administersAt } from '../access/ManageAccessLink.js';
 import { everyPage } from '../paging.js';
 import styles from './Administration.module.css';
 import { About } from './About.js';
+import { CitationStyles } from './CitationStyles.js';
 import { AuditLog } from './AuditLog.js';
 import { Guardrails } from './Guardrails.js';
 import { ModelSpending } from './ModelSpending.js';
@@ -42,6 +43,8 @@ const SECTIONS = [
   { slug: 'models', title: 'Models', group: 'Environment' },
   // Phrases forbidden in what a model is sent and returns (GEN-049; the G5 plan, G5-F).
   { slug: 'guardrails', title: 'Guardrails', group: 'Environment' },
+  // The CSL styles a theme may name, CSE, Vancouver and Harvard given (the CI plan, CI-D).
+  { slug: 'citation-styles', title: 'Citation styles', group: 'Environment' },
   // How often each person may call a model, the budget, and what models cost (the G6 plan).
   { slug: 'spending', title: 'Model spending', group: 'Environment' },
   // Events posted to a service identity's endpoint, and every delivery (the WB plan, WB-J).
@@ -122,6 +125,10 @@ function useCounts(client: Client): Partial<Record<Section, number>> {
     count('retention', async () => {
       const { data } = await client.GET('/v1/retention');
       return data?.keeps.length;
+    });
+    count('citation-styles', async () => {
+      const { data } = await client.GET('/v1/citation-styles');
+      return data?.items.length;
     });
     count('roles', async () => {
       const read = await everyPage((cursor) =>
@@ -296,6 +303,7 @@ export function Administration({
         {shown === 'export' && <TenantExport client={client} />}
         {shown === 'models' && <Models client={client} />}
         {shown === 'guardrails' && <Guardrails client={client} />}
+        {shown === 'citation-styles' && <CitationStyles client={client} />}
         {shown === 'spending' && <ModelSpending client={client} />}
         {shown === 'webhooks' && <Webhooks client={client} />}
         {shown === 'extensions' && <Extensions client={client} />}

@@ -296,6 +296,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0143_publication_generated',
       '0144_embedding_lag',
       '0145_bibliography_entries',
+      '0146_citation_styles',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,

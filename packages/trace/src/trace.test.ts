@@ -955,7 +955,8 @@ describe('the citations in the committed model', () => {
     // 1812 (2026-10-22): FRb's meaning lag, recorded, read, shown and held to its budget.
     // 1813 (2026-10-22): FRb's final review, a check never answering unchanged by a stale revision.
     // 1834 (2026-10-22): CIa's bibliography entries, their keys, matches, import and export.
-    expect(model.citations).toHaveLength(1834);
+    // 1847 (2026-10-22): CIb's citation styles, the citations module and the styles' routes.
+    expect(model.citations).toHaveLength(1847);
   });
 
   it('cites no identifier the corpus does not hold', () => {
@@ -1072,6 +1073,7 @@ describe('scanning the repository for test files', () => {
     // 116, from 115 (2026-10-18): structure/PersonalPrompts.test.tsx, citing nothing.
     // 120, from 119 (2026-10-21): admin/Extensions.test.tsx, citing API-030 and API-048.
     // 121, from 120 (2026-10-22): bibliography/bibliography.test.tsx, citing LIB-010 and LIB-044.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(121);
+    // 122, from 121 (2026-10-22): admin/CitationStyles.test.tsx, citing STY-023.
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(122);
   });
 });
