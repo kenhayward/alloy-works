@@ -82,7 +82,9 @@ export function createFakeApi(options = {}) {
       const key = headers['x-api-key'];
       delete headers['x-api-key'];
       // The stand-in extension's key rides as a bearer: whether it was its own is kept, never the key.
-      const bearer = headers.authorization === `Bearer ${EXTENSION_KEY}`;
+      const bearer =
+        headers.authorization === `Bearer ${EXTENSION_KEY}` ||
+        headers.authorization === `Bearer ${REFERENCE_EXTENSION_KEY}`;
       // The stand-in model's key rides here in OpenAI's protocol, and is never remembered either.
       delete headers.authorization;
       seen.push({
@@ -120,6 +122,28 @@ export function createFakeApi(options = {}) {
         return send(422, json({ error: 'no such reading' }));
       }
       if (url.pathname.startsWith('/extension-invalid/')) return send(200, Buffer.from('not json'));
+      // The stand-in reference extension (the XR plan, XR-J): its manifest, and CSL-JSON answered to
+      // a search by its terms and to a fetch by its `id`, behind its own key.
+      if (url.pathname === '/reference-extension/manifest.json') {
+        return send(
+          200,
+          json(standInReferenceManifest(`https://${request.headers.host ?? 'source-http'}`)),
+        );
+      }
+      if (url.pathname.startsWith('/reference-extension/')) {
+        if (!bearer) return send(401, json({ error: 'key' }));
+        if (url.pathname === '/reference-extension/search') {
+          const terms = (url.searchParams.get('query') ?? '').toLowerCase();
+          return send(
+            200,
+            json(HERBARIUM.filter((each) => each.title.toLowerCase().includes(terms))),
+          );
+        }
+        if (url.pathname === '/reference-extension/records') {
+          const found = HERBARIUM.filter((each) => each.id === url.searchParams.get('id'));
+          return found.length === 0 ? send(404, json([])) : send(200, json(found));
+        }
+      }
       // An extension's manifest (the EX plan): a stand-in source's, and one past 64 KiB.
       if (url.pathname === '/extension/manifest.json') {
         return send(200, json(standInManifest(`https://${request.headers.host ?? 'source-http'}`)));
@@ -344,6 +368,45 @@ const GAUGES = [
   { region: 'north', site: 'north-bridge', level: 1.75 },
   { region: 'south', site: 'south-ford', level: 0.5 },
 ];
+
+/** The stand-in reference extension's key: invented. */
+const REFERENCE_EXTENSION_KEY = 'stand-in-reference-key';
+
+/** The stand-in reference extension's records (the XR plan, XR-J): invented, as CSL-JSON. */
+const HERBARIUM = [
+  {
+    id: 'STAND-0001',
+    type: 'article-journal',
+    title: 'Saltbush specimens of the eastern plains',
+    author: [{ family: 'Pell', given: 'Ada' }],
+    'container-title': 'Invented Herbarium Notes',
+    issued: { 'date-parts': [[2019, 5]] },
+  },
+  {
+    id: 'STAND-0002',
+    type: 'article-journal',
+    title: 'Bluebush hybrids reconsidered',
+    author: [{ family: 'Marsh', given: 'Grace' }],
+    issued: { 'date-parts': [[2020]] },
+    'x-alloy-notices': [{ kind: 'retraction', identifier: 'STAND-R-0001', date: '2026-03-01' }],
+  },
+];
+
+/** The stand-in reference extension's manifest (the XR plan, XR-J): invented, behind this server. */
+export function standInReferenceManifest(origin) {
+  return {
+    manifest: 1,
+    name: 'Stand-in herbarium',
+    version: '1.0.0',
+    publisher: 'Alloy Works development',
+    description: 'Invented herbarium papers, for development and the suites.',
+    kind: 'reference',
+    endpoint: `${origin}/reference-extension`,
+    reference: { search: '/search', fetch: '/records' },
+    authentication: { label: 'Stand-in key' },
+    outbound: [],
+  };
+}
 
 /** The stand-in extension's manifest (the EX plan): an invented gauge source behind this server. */
 export function standInManifest(origin) {

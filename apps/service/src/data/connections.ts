@@ -330,6 +330,11 @@ async function extensionSnapshotProblems(
     return [problem('extension', 'This extension is removed: a connection to it may only retire')];
   }
   const { manifest } = held;
+  if (manifest.kind !== 'source') {
+    return [
+      problem('extension', 'This extension is a reference source: a connection is to a source'),
+    ];
+  }
   const problems: ConnectionProblem[] = [];
   if (manifest.authentication === 'none') {
     problems.push(

@@ -11,6 +11,7 @@ import {
   deliverAnswerSchema,
   manifestAnswerSchema,
   referenceAnswerSchema,
+  referenceCredentialContext,
   referenceSource,
   type ChildReferenceRequest,
   type ReferenceAnswer,
@@ -396,6 +397,8 @@ export function createSupervisor(options: {
   readonly maxDeliveries?: number;
   /** The ranges a webhook is refused besides `deny`: production's private ones, unless it allows them. */
   readonly webhookDeny?: readonly string[];
+  /** Whether a reference extension, never a built-in source, may reach a private address (XR-J). */
+  readonly referencePrivate?: boolean;
   /** How a child is started, fixed or by its slot: production's own users unless a test says. */
   readonly spec?: ChildSpec | ((slot: number) => ChildSpec);
   readonly spawn?: SpawnChild;
@@ -650,7 +653,9 @@ export function createSupervisor(options: {
 
   /**
    * A reference call's child (XR-B): no secret; the host domain's list declares, never the request's;
-   * the private ranges always among the guard's, whatever `deny` holds.
+   * the private ranges always among the guard's, whatever `deny` holds. A reference extension's (XR-J)
+   * the host of the endpoint its installed manifest declares, and its secret opened here only for that
+   * extension and endpoint; the private ranges lifted for it alone where the deployment allows.
    */
   async function referenceWork(
     request: ReferenceRequest,
@@ -658,16 +663,51 @@ export function createSupervisor(options: {
     sweeping: (done: Promise<void>) => void,
     signal: AbortSignal | undefined,
   ): Promise<ReferenceAnswer> {
-    const origin = options.referenceOrigins?.[request.source] ?? {
-      host: referenceSource(request.source)!.host,
-      port: 443,
-    };
+    const { extension } = request;
+    let origin: { readonly host: string; readonly port: number };
+    let secret: string | undefined;
+    if (extension === undefined) {
+      const source = request.source as ReferenceSourceId;
+      origin = options.referenceOrigins?.[source] ?? {
+        host: referenceSource(source)!.host,
+        port: 443,
+      };
+    } else {
+      const url = new URL(extension.endpoint);
+      origin = {
+        host: url.hostname.replace(/^\[|\]$/g, ''),
+        port: url.port === '' ? 443 : Number(url.port),
+      };
+      try {
+        secret =
+          extension.sealed === undefined
+            ? undefined
+            : openSecret(
+                options.sealingKey,
+                'reference-credential',
+                request.tenant,
+                extension.sealed,
+                referenceCredentialContext(request.source as `ext:${string}`, extension.endpoint),
+              );
+      } catch {
+        return {
+          type: 'failed',
+          code: 'reference_unavailable',
+          source: request.source,
+          reason: 'refused',
+        };
+      }
+    }
     const input: ChildReferenceRequest = {
       kind: 'reference',
       request,
       host: origin.host,
       port: origin.port,
-      deny: [...options.deny, ...PRIVATE_RANGES],
+      ...(secret === undefined ? {} : { secret }),
+      deny:
+        extension !== undefined && options.referencePrivate === true
+          ? [...options.deny]
+          : [...options.deny, ...PRIVATE_RANGES],
       connectTimeoutMs,
       ...(options.referenceContact === undefined ? {} : { contact: options.referenceContact }),
       ...(options.ca === undefined ? {} : { ca: options.ca }),

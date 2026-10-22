@@ -1,11 +1,15 @@
 import type { REFERENCE_FAILURES } from '@alloy-works/domain';
 import {
   REFERENCE_MOST_BYTES,
+  extensionReferencePath,
+  isExtensionSource,
+  readExtensionAnswer,
   readReferenceAnswer,
   referencePath,
   searchIdentifiers,
   type ChildReferenceRequest,
   type ReferenceAnswer,
+  type ReferenceSourceId,
   type ReferenceStep,
 } from '@alloy-works/domain';
 
@@ -55,13 +59,15 @@ function tooLong(value: unknown): boolean {
  * supervisor gave from domain's list, over TLS, held to the guard with the private ranges among its
  * deny list, no redirect followed, no credential, the terms only as encoded query parameters, at most
  * the operation's bytes, under one deadline. The answer mapped to CSL in domain; a failure answered as
- * the source's, by reason alone.
+ * the source's, by reason alone. A reference extension (XR-J) the same, at its endpoint's paths, its
+ * secret alone as a bearer where it takes one, its CSL-JSON admitted in domain.
  */
 export async function answerReference(
   input: ChildReferenceRequest,
   options: { readonly lookup?: ExchangePolicy['lookup'] } = {},
 ): Promise<ReferenceAnswer> {
   const { request } = input;
+  const extension = request.extension;
   const deadline = Date.now() + REFERENCE_DEADLINE_MS;
   const maxBytes = REFERENCE_MOST_BYTES[request.op];
 
@@ -71,12 +77,18 @@ export async function answerReference(
       {
         host: input.host,
         port: input.port,
-        path: referencePath(request.source, step, input.contact),
+        path:
+          extension === undefined
+            ? referencePath(request.source as ReferenceSourceId, step, input.contact)
+            : extensionReferencePath(extension, step as Extract<ReferenceStep, { step: 'work' }>),
         method: 'GET',
         secure: true,
         headers: [
           ['accept', 'application/json'],
           ['user-agent', 'Alloy-Works-References/1'],
+          ...(input.secret === undefined
+            ? []
+            : [['authorization', `Bearer ${input.secret}`] as [string, string]]),
         ],
       },
       {
@@ -86,6 +98,8 @@ export async function answerReference(
         deadline,
         connectTimeoutMs: input.connectTimeoutMs,
         maxBytes,
+        // An extension's 404 is read: no such record only where it answers an empty list.
+        ...(extension !== undefined && step.step !== 'search' ? { answered: [404] } : {}),
       },
     );
     if (!fetched.ok) {
@@ -104,6 +118,10 @@ export async function answerReference(
       }
     }
     const text = fetched.body.toString('utf8');
+    if (fetched.status === 404) {
+      if (/^\s*\[\s*\]\s*$/.test(text)) return undefined;
+      throw new Failed('status');
+    }
     if (tooDeep(text)) throw new Failed('unreadable');
     let parsed: unknown;
     try {
@@ -116,7 +134,9 @@ export async function answerReference(
   };
 
   const found = (answer: unknown, updates?: unknown): ReferenceAnswer => {
-    const results = readReferenceAnswer(request.source, request.op, answer, updates);
+    const results = isExtensionSource(request.source)
+      ? readExtensionAnswer(request.op, answer, request.identifier)
+      : readReferenceAnswer(request.source, request.op, answer, updates);
     if (results === undefined) throw new Failed('unreadable');
     return { type: 'found', results };
   };
@@ -124,7 +144,9 @@ export async function answerReference(
   try {
     if (request.op === 'search') {
       const terms = request.query!;
-      if (request.source === 'crossref') return found(await get({ step: 'search', terms }));
+      if (request.source === 'crossref' || extension !== undefined) {
+        return found(await get({ step: 'search', terms }));
+      }
       const ids = searchIdentifiers(await get({ step: 'search', terms }));
       if (ids.length === 0) return { type: 'found', results: [] };
       return found(await get({ step: 'summary', ids }));

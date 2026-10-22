@@ -35,3 +35,24 @@ gate can refuse to move a document citing a retracted one.
 
 - **Rate limits and availability** of public APIs: answered `reference_unavailable`, the source's.
 - **Mapping quality** varies by record: a result is admitted as an import is, reporting what it could not represent.
+
+## Built
+
+XR in three PRs: XRa #762, XRb #764 and the close #766, which holds XRc and XRd. Departures: a tenant's
+switch is one route over every source; a search names its space in its body; CIa's reference index
+already held each citation, so no index was added; Crossref's notices are read from the work's
+`updated-by` and `relation` and from `works?filter=updates:`, PubMed's from esummary's `references`
+and `pubtype`; a publish warning is a request's `warnings`, counts alone; an assistant's citation
+carries its record until a person accepts it, when the entry is matched (by source, then DOI or PMID,
+never by title alone) or made; a reference extension's secret is the extension's own, sealed to its
+endpoint. The final review found no leak of content and no route to a host a request names; it fixed a
+reader able to run a check (now an editor's, once a minute), notices to people no longer able to read
+the document, a sweep a failing source could starve, a secret still sent once a manifest stopped
+asking for one or the endpoint moved, an extension answering for another record, a 404 taken as every
+entry gone, an owner told of a flapping outcome nightly (now once in 30 days), a first check and the
+sweep both telling, an accepted citation matched by title alone, and an assistant searching without
+limit (five a run). `CONNECTOR_REFERENCE_PRIVATE=allow` lets the suites' stand-in extension be reached
+on a private network, extensions alone, as webhooks' flag does. Left, named: LIB-035's supersession,
+reported by neither built-in source; an injected document steering the assistant's search terms, held
+by the tool's description alone; the per-source budget is each worker's; an approved reference gated at
+its component's latest version.

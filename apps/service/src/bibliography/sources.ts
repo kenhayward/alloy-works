@@ -15,8 +15,10 @@ import type {
   SpaceParams,
 } from '@alloy-works/api-contract';
 import {
+  attemptEntryCheck,
   createEntry,
   entryCheckable,
+  extensionTarget,
   findEntryMatches,
   flaggedCited,
   latestVersion,
@@ -25,39 +27,115 @@ import {
   readEntry,
   recordEntryCheck,
   titlesFor,
-  referenceSourcesOn,
   setReferenceSource,
+  tenantReferenceSources,
   type Tenant,
+  type TenantReferenceSource,
   type TenantDatabase,
   type TenantTransaction,
 } from '@alloy-works/db';
 import {
-  REFERENCE_SOURCES,
   decide,
   entryCheck,
   referenceRequestSchema,
-  referenceSource,
   type ReferenceRequest,
   type ReferenceResult,
-  type ReferenceSourceId,
+  type ReferenceSourceKey,
 } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from '../access.js';
-import { createConnectorClient } from '../data/connector.js';
+import { createConnectorClient, type ConnectorClient } from '../data/connector.js';
 import type { ConnectorOptions } from '../data/connections.js';
 import { AppError } from '../errors.js';
 import { recordSettingsChanged } from '../settings.js';
 import { entryView, matchFlags, matchView, refusedEntry, statusView } from './routes.js';
 
-const viewOf = (id: ReferenceSourceId, enabled: boolean) => {
-  const { name, host, identifier } = referenceSource(id)!;
-  return { id, name, host, identifier, enabled };
-};
+const viewOf = ({ id, name, host, identifier, enabled }: TenantReferenceSource) => ({
+  id,
+  name,
+  host,
+  identifier,
+  enabled,
+});
+
+/** One of the tenant's sources, a reference extension installed and not removed among them (XR-J). */
+async function sourceOf(
+  trx: TenantTransaction,
+  key: ReferenceSourceKey,
+): Promise<TenantReferenceSource | undefined> {
+  return (await tenantReferenceSources(trx)).find((each) => each.id === key);
+}
+
+/**
+ * The source, refused `reference_source_off` unless it is switched on (XR-C) and still installed
+ * (XR-J).
+ */
+export async function sourceSwitchedOn(
+  trx: TenantTransaction,
+  key: ReferenceSourceKey,
+): Promise<TenantReferenceSource> {
+  const source = await sourceOf(trx, key);
+  if (!source?.enabled) {
+    throw new AppError(
+      409,
+      'reference_source_off',
+      source
+        ? `${source.name} is switched off in this environment.`
+        : 'This reference source is no longer installed in this environment.',
+    );
+  }
+  return source;
+}
+
+/** What the source answered, mapped to CSL by the connector; its failure the source's. */
+export async function askSource(
+  client: ConnectorClient | undefined,
+  tenant: Tenant,
+  source: TenantReferenceSource,
+  ask: Omit<ReferenceRequest, 'requestId' | 'tenant' | 'source' | 'extension'>,
+): Promise<ReferenceResult[]> {
+  const extension = extensionTarget(source);
+  const parsed = referenceRequestSchema.safeParse({
+    requestId: randomUUID(),
+    tenant: tenant.id,
+    source: source.id,
+    ...ask,
+    ...(extension === undefined ? {} : { extension }),
+  });
+  if (!parsed.success) {
+    throw new AppError(
+      400,
+      'invalid_request',
+      ask.op === 'search'
+        ? 'The terms are empty, or hold a control character.'
+        : `${source.name} fetches by ${source.identifier}, and this is not one.`,
+    );
+  }
+  if (!client) {
+    throw new AppError(503, 'connector_unavailable', 'The connector cannot be reached.');
+  }
+  const answer = await client.reference(parsed.data);
+  if ('refused' in answer) {
+    throw new AppError(503, answer.refused.code, 'The connector cannot ask the source now.');
+  }
+  if (answer.answer.type === 'failed') {
+    throw new AppError(
+      502,
+      'reference_unavailable',
+      `${source.name} could not be reached, or answered out of shape: ${answer.answer.reason}.`,
+    );
+  }
+  // An extension's fetch or check answers the record asked for alone: another is none (XR-J).
+  return extension === undefined || ask.op === 'search'
+    ? answer.answer.results
+    : answer.answer.results.filter((each) => each.identifier === ask.identifier);
+}
 
 /**
  * Reference sources (reference-sources.md; the XR plan, XR-C, XR-D): each switched on or off by an
  * administrator of the environment, and asked through the connector by its id and an operation, so
- * the service names no URL (ADR-0068). A source's failure is answered as the source's.
+ * the service names no URL (ADR-0068); a reference extension's, the endpoint its installed manifest
+ * declares (XR-J). A source's failure is answered as the source's.
  */
 export function referenceSourceHandlers(
   db: TenantDatabase,
@@ -65,70 +143,39 @@ export function referenceSourceHandlers(
   connector?: ConnectorOptions,
 ) {
   const client = connector ? createConnectorClient(connector) : undefined;
-
-  async function switchedOn(trx: TenantTransaction, source: ReferenceSourceId): Promise<void> {
-    if (!(await referenceSourcesOn(trx))[source]) {
-      throw new AppError(
-        409,
-        'reference_source_off',
-        `${referenceSource(source)!.name} is switched off in this environment.`,
-      );
-    }
-  }
-
-  /** What the source answered, mapped to CSL by the connector. */
-  async function asked(
+  const switchedOn = sourceSwitchedOn;
+  const asked = (
     request: FastifyRequest,
-    ask: Omit<ReferenceRequest, 'requestId' | 'tenant'>,
-  ): Promise<ReferenceResult[]> {
-    const parsed = referenceRequestSchema.safeParse({
-      requestId: randomUUID(),
-      tenant: tenantOf(request).id,
-      ...ask,
-    });
-    if (!parsed.success) {
-      throw new AppError(
-        400,
-        'invalid_request',
-        ask.op === 'search'
-          ? 'The terms are empty, or hold a control character.'
-          : `${referenceSource(ask.source)!.name} fetches by ${referenceSource(ask.source)!.identifier}, and this is not one.`,
-      );
-    }
-    if (!client) {
-      throw new AppError(503, 'connector_unavailable', 'The connector cannot be reached.');
-    }
-    const answer = await client.reference(parsed.data);
-    if ('refused' in answer) {
-      throw new AppError(503, answer.refused.code, 'The connector cannot ask the source now.');
-    }
-    if (answer.answer.type === 'failed') {
-      throw new AppError(
-        502,
-        'reference_unavailable',
-        `${referenceSource(ask.source)!.name} could not be reached, or answered out of shape: ${answer.answer.reason}.`,
-      );
-    }
-    return answer.answer.results;
-  }
+    source: TenantReferenceSource,
+    ask: Parameters<typeof askSource>[3],
+  ) => askSource(client, tenantOf(request), source, ask);
+  /** The source switched on, or 404 where the tenant holds no such one. */
+  const held = async (trx: TenantTransaction, key: ReferenceSourceKey) => {
+    if (!(await sourceOf(trx, key))) throw notFound();
+    return switchedOn(trx, key);
+  };
 
   return {
     listReferenceSources: async (request: FastifyRequest): Promise<ReferenceSourceList> =>
-      db.withTenant(tenantOf(request), async (trx) => {
-        const on = await referenceSourcesOn(trx);
-        return { items: REFERENCE_SOURCES.map((each) => viewOf(each.id, on[each.id])) };
-      }),
+      db.withTenant(tenantOf(request), async (trx) => ({
+        items: (await tenantReferenceSources(trx)).map(viewOf),
+      })),
 
     setReferenceSource: async (request: FastifyRequest, { trx }: Authorised) => {
       const { source, enabled } = request.body as ReferenceSourceBody;
-      const before = await referenceSourcesOn(trx);
+      const sources = await tenantReferenceSources(trx);
+      const switched = sources.find((each) => each.id === source);
+      if (!switched) throw notFound();
+      // An extension's by `ext_` and its id's hex, as an audited name is spelled.
+      const named = (key: string) => key.replace(/^ext:/, 'ext_').replaceAll('-', '');
+      const before = Object.fromEntries(sources.map((each) => [named(each.id), each.enabled]));
       await setReferenceSource(trx, source, enabled);
       // By name, as every settings change is, and nothing where nothing changed (ADM-002).
       await recordSettingsChanged(trx, 'referenceSources', before, {
         ...before,
-        [source]: enabled,
+        [named(source)]: enabled,
       });
-      return viewOf(source, enabled);
+      return viewOf({ ...switched, enabled });
     },
 
     searchReferenceSource: async (
@@ -138,8 +185,10 @@ export function referenceSourceHandlers(
       const { source } = request.params as SourceParams;
       const body = request.body as ReferenceSearchBody;
       const spaceId = body.space.slice('space:'.length);
-      await switchedOn(trx, source);
-      const results = await asked(request, { source, op: 'search', query: body.terms });
+      const results = await asked(request, await held(trx, source), {
+        op: 'search',
+        query: body.terms,
+      });
       const matched = [];
       for (const each of results) {
         const matches = await findEntryMatches(trx, principalId, spaceId, each.csl);
@@ -157,18 +206,14 @@ export function referenceSourceHandlers(
     ): Promise<FromSourceAnswer> => {
       const { space } = request.params as SpaceParams;
       const body = request.body as FromSourceBody;
-      await switchedOn(trx, body.source);
-      const found = await asked(request, {
-        source: body.source,
-        op: 'fetch',
-        identifier: body.identifier,
-      });
+      const source = await held(trx, body.source);
+      const found = await asked(request, source, { op: 'fetch', identifier: body.identifier });
       const record = found[0];
       if (record === undefined) {
         throw new AppError(
           422,
           'reference_missing',
-          `${referenceSource(body.source)!.name} holds no record by that identifier.`,
+          `${source.name} holds no record by that identifier.`,
         );
       }
       const answer = await createEntry(trx, {
@@ -202,9 +247,10 @@ export function referenceSourceHandlers(
     },
 
     /**
-     * Check now (the XR plan, XR-E): the entry's latest version checked against the source it was
-     * obtained from, its identifier alone sent, and its status recorded beside it by the system,
-     * telling each document's owner of a retraction or correction once (XR-F, XR-G).
+     * Check now (the XR plan, XR-E): by an editor of the entry, at most once a minute, the attempt
+     * kept in a transaction of its own so a failure counts too; its latest version checked against
+     * the source it was obtained from, its identifier alone sent, and its status recorded beside it by
+     * the system, telling each document's owner of a retraction or correction (XR-F, XR-G).
      */
     checkBibliographyEntry: async (
       request: FastifyRequest,
@@ -220,9 +266,15 @@ export function referenceSourceHandlers(
           'This entry was not obtained from a reference source, so there is nothing to check it against.',
         );
       }
-      await switchedOn(trx, target.source);
-      const results = await asked(request, {
-        source: target.source,
+      const source = await switchedOn(trx, target.source);
+      if (!(await db.withTenant(tenantOf(request), (own) => attemptEntryCheck(own, id, 60)))) {
+        throw new AppError(
+          429,
+          'entry_checked_recently',
+          'This entry was checked within the minute. Try again shortly.',
+        );
+      }
+      const results = await asked(request, source, {
         op: 'check',
         identifier: target.identifier,
       });

@@ -960,7 +960,9 @@ describe('the citations in the committed model', () => {
     // 1865 (2026-10-22): CId's citing: STR-069 in four files, CNT-051's save check, LIB-009's export.
     // 1872 (2026-10-22): XRa's reference sources: LIB-031 in five files, LIB-032 in three.
     // 1887 (2026-10-22): XRb's re-checks: LIB-036's notices, status, flags, owner told and gate.
-    expect(model.citations).toHaveLength(1887);
+    // 1891 (2026-10-22): XRc's assistant tools: LIB-040 in four files.
+    // 1903 (2026-10-22): XRd's reference extensions: LIB-032 across the stack.
+    expect(model.citations).toHaveLength(1903);
   });
 
   it('cites no identifier the corpus does not hold', () => {

@@ -144,6 +144,7 @@ describe('what each route checks', () => {
         'updateExtension',
         'listExtensionUses',
         'removeExtension',
+        'setExtensionSecret',
         'listWebhookDeliveries',
         'getWebhookDelivery',
       ].sort(),

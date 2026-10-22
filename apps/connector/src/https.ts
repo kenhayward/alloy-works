@@ -53,6 +53,8 @@ export interface ExchangePolicy {
    * and a 2xx's headers are, its body destroyed unread once they arrive. Both answer no body.
    */
   readonly conditional?: boolean;
+  /** Statuses but a 2xx whose bodies are read as an answer's, under the same caps. */
+  readonly answered?: readonly number[];
 }
 
 export type Exchanged =
@@ -167,7 +169,7 @@ export async function exchange(asked: Exchange, policy: ExchangePolicy): Promise
         finish(failed(dataFailure('connection_failed')));
         return;
       }
-      if (status < 200 || status >= 300) {
+      if ((status < 200 || status >= 300) && !policy.answered?.includes(status)) {
         finish(failed(dataFailure('source_refused', { status })));
         return;
       }

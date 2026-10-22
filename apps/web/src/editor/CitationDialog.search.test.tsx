@@ -29,7 +29,10 @@ const quolls = {
 };
 
 /** A space holding Marlow's entry; Crossref on and PubMed off; a search finding both records. */
-function service(mayCreate: boolean) {
+/** A reference extension the tenant installed (the XR plan, XR-J), by its key. */
+const HERBARIUM = 'ext:3c4d5e6f-7a8b-4c9d-8e0f-2a3b4c5d6e7f';
+
+function service(mayCreate: boolean, herbarium = false) {
   const asked: { path: string; body: unknown }[] = [];
   const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
@@ -68,6 +71,30 @@ function service(mayCreate: boolean) {
             host: 'eutils.ncbi.nlm.nih.gov',
             identifier: 'PMID',
             enabled: false,
+          },
+          ...(herbarium
+            ? [
+                {
+                  id: HERBARIUM,
+                  name: 'Herbarium records',
+                  host: 'herbarium.example.test',
+                  identifier: 'Identifier',
+                  enabled: true,
+                },
+              ]
+            : []),
+        ],
+      });
+    }
+    if (decodeURIComponent(url.pathname) === `/v1/reference-sources/${HERBARIUM}/search`) {
+      return json(200, {
+        mayCreate,
+        results: [
+          {
+            identifier: 'HERB-0042',
+            csl: { type: 'article-journal', title: 'Saltbush specimens of the eastern plains' },
+            dropped: [],
+            matches: [],
           },
         ],
       });
@@ -174,5 +201,38 @@ describe("the Cite dialog's Search tab (the XR plan, XR-D)", () => {
     expect(
       (await screen.findByRole('radio', { name: /marlow2021/ })).closest('label'),
     ).toHaveTextContent('Retracted by its source');
+  });
+
+  it('LIB-032 lists a reference extension among the sources, searches it by its key and cites from it', async () => {
+    const { client, asked } = service(true, true);
+    const done = vi.fn(() => null);
+    render(
+      <CitationDialog
+        client={client}
+        space={SPACE}
+        current={null}
+        onDone={done}
+        onCancel={() => undefined}
+      />,
+    );
+    await screen.findByRole('radio', { name: /marlow2021/ });
+    await userEvent.click(screen.getByRole('tab', { name: 'Search' }));
+    const source = await screen.findByRole('combobox', { name: 'Source' });
+    expect(
+      within(source)
+        .getAllByRole('option')
+        .map((each) => each.textContent),
+    ).toEqual(['Crossref', 'Herbarium records']);
+    await userEvent.selectOptions(source, HERBARIUM);
+    expect(screen.getByText('Your search is sent to Herbarium records.')).toBeInTheDocument();
+    await userEvent.type(screen.getByRole('searchbox', { name: 'Search terms' }), 'saltbush');
+    await userEvent.click(screen.getByRole('button', { name: 'Search' }));
+    await userEvent.click(await screen.findByRole('radio', { name: /Saltbush/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Insert' }));
+    expect(asked.at(-1)).toEqual({
+      path: `/v1/spaces/${SPACE}/bibliography-entries/from-source`,
+      body: { source: HERBARIUM, identifier: 'HERB-0042' },
+    });
+    expect(done).toHaveBeenCalledWith({ entry: MADE, locator: null });
   });
 });

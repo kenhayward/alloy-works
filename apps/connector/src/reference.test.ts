@@ -1,7 +1,13 @@
 import { randomUUID } from 'node:crypto';
 import type { AddressInfo } from 'node:net';
 
-import type { ChildReferenceRequest, ReferenceRequest } from '@alloy-works/domain';
+import {
+  referenceCredentialContext,
+  type ChildReferenceRequest,
+  type ReferenceRequest,
+} from '@alloy-works/domain';
+import { extensionHerbarium } from '@alloy-works/domain/sources-fixtures';
+import { openSecret, sealSecret } from '@alloy-works/sealing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { loadConnectorConfig, PRIVATE_RANGES } from './config.js';
@@ -208,6 +214,205 @@ describe('a reference source asked through the connector (the XR plan, XR-B)', (
   });
 });
 
+describe('a reference extension asked through the connector (the XR plan, XR-J)', () => {
+  const HERBARIUM = 'ext:0a1b2c3d-0000-4000-8000-0000000000aa' as const;
+  const target = (sealed?: string) => ({
+    endpoint: `https://127.0.0.1:${fake.port}/reference-extension`,
+    search: '/search',
+    fetch: '/records',
+    ...(sealed === undefined ? {} : { sealed }),
+  });
+  const sealedFor = (source: `ext:${string}`, endpoint: string, secret = 'herbarium-token') =>
+    sealSecret(
+      SEALING_KEY,
+      'reference-credential',
+      TENANT,
+      secret,
+      referenceCredentialContext(source, endpoint),
+    );
+
+  it('LIB-032 searches a reference extension at its endpoint, the terms encoded, its secret a bearer, and answers CSL', async () => {
+    const before = fake.seen.length;
+    const extension = target();
+    const answer = await ask({
+      source: HERBARIUM,
+      op: 'search',
+      query: 'salt & bush',
+      extension: { ...extension, sealed: sealedFor(HERBARIUM, extension.endpoint) },
+    });
+    expect(answer).toMatchObject({
+      type: 'found',
+      results: [
+        {
+          identifier: 'HERB-0042',
+          csl: { type: 'article-journal', title: extensionHerbarium.title },
+        },
+        { identifier: 'HERB-0043' },
+      ],
+    });
+    expect(fake.seen.slice(before)).toEqual(['/reference-extension/search?query=salt+%26+bush']);
+    expect(fake.bearers.at(-1)).toBe('Bearer herbarium-token');
+  });
+
+  it('LIB-032 fetches and checks a record by its identifier, a check reading its notices, and none for one it does not hold', async () => {
+    expect(
+      await ask({ source: HERBARIUM, op: 'fetch', identifier: 'HERB-0042', extension: target() }),
+    ).toMatchObject({ type: 'found', results: [{ identifier: 'HERB-0042' }] });
+    expect(fake.seen.at(-1)).toBe('/reference-extension/records?id=HERB-0042');
+    expect(fake.bearers.at(-1)).toBeUndefined();
+    expect(
+      await ask({ source: HERBARIUM, op: 'check', identifier: 'HERB-0043', extension: target() }),
+    ).toMatchObject({
+      type: 'found',
+      results: [{ identifier: 'HERB-0043', notices: [{ kind: 'retraction' }] }],
+    });
+    expect(
+      await ask({ source: HERBARIUM, op: 'check', identifier: 'HERB-9999', extension: target() }),
+    ).toEqual({ type: 'found', results: [] });
+  });
+
+  it("answers an extension's 404 as no such record only where its body is an empty list, else as failed", async () => {
+    expect(
+      await ask({ source: HERBARIUM, op: 'check', identifier: 'HERB-ASTRAY', extension: target() }),
+    ).toEqual({
+      type: 'failed',
+      code: 'reference_unavailable',
+      source: HERBARIUM,
+      reason: 'status',
+    });
+  });
+
+  it("refuses an extension's redirect, its answer past the cap, and a name resolving to a private address", async () => {
+    const failed = (reason: string) => ({
+      type: 'failed',
+      code: 'reference_unavailable',
+      source: HERBARIUM,
+      reason,
+    });
+    expect(
+      await ask({ source: HERBARIUM, op: 'search', query: 'redirect', extension: target() }),
+    ).toEqual(failed('refused'));
+    expect(
+      await ask({ source: HERBARIUM, op: 'search', query: 'oversized', extension: target() }),
+    ).toEqual(failed('too_large'));
+    const answer = await answerReference(
+      {
+        kind: 'reference',
+        request: {
+          requestId: randomUUID(),
+          tenant: TENANT,
+          source: HERBARIUM,
+          op: 'search',
+          query: 'saltbush',
+          extension: { ...target(), endpoint: 'https://herbarium.example.test/alloy' },
+        },
+        host: 'herbarium.example.test',
+        port: 443,
+        deny: [...PRIVATE_RANGES],
+        connectTimeoutMs: 1000,
+      },
+      { lookup: () => Promise.resolve([{ address: '10.20.30.40', family: 4 }]) },
+    );
+    expect(answer).toEqual(failed('refused'));
+  });
+
+  it("reaches the extension's endpoint host, the private ranges among the guard's, and opens a secret only for the extension and endpoint it was sealed for", async () => {
+    const written: ChildReferenceRequest[] = [];
+    const capturing = createSupervisor({
+      sealingKey: SEALING_KEY,
+      deny: suiteDeny,
+      maxChildren: 2,
+      streamSpawn: (_spec, input) => {
+        written.push(JSON.parse(input) as ChildReferenceRequest);
+        return Promise.resolve({ kind: 'ended', pid: 0 });
+      },
+    });
+    const extension = { ...target(), endpoint: 'https://herbarium.example.test:8443/alloy' };
+    await ask(
+      {
+        source: HERBARIUM,
+        op: 'fetch',
+        identifier: 'HERB-0042',
+        extension: { ...extension, sealed: sealedFor(HERBARIUM, extension.endpoint) },
+      },
+      capturing,
+    );
+    expect(written[0]).toMatchObject({
+      host: 'herbarium.example.test',
+      port: 8443,
+      secret: 'herbarium-token',
+    });
+    expect(written[0]?.deny).toEqual(expect.arrayContaining([...PRIVATE_RANGES]));
+    const elsewhere = 'ext:0a1b2c3d-0000-4000-8000-0000000000bb' as const;
+    expect(
+      await ask(
+        {
+          source: HERBARIUM,
+          op: 'fetch',
+          identifier: 'HERB-0042',
+          extension: { ...extension, sealed: sealedFor(elsewhere, extension.endpoint) },
+        },
+        capturing,
+      ),
+    ).toEqual({
+      type: 'failed',
+      code: 'reference_unavailable',
+      source: HERBARIUM,
+      reason: 'refused',
+    });
+    expect(written).toHaveLength(1);
+  });
+});
+
+describe('a reference extension at a private address, where the deployment allows one', () => {
+  const capture = (referencePrivate: boolean) => {
+    const written: ChildReferenceRequest[] = [];
+    const supervisor = createSupervisor({
+      sealingKey: SEALING_KEY,
+      deny: suiteDeny,
+      maxChildren: 2,
+      referencePrivate,
+      streamSpawn: (_spec, input) => {
+        written.push(JSON.parse(input) as ChildReferenceRequest);
+        return Promise.resolve({ kind: 'ended', pid: 0 });
+      },
+    });
+    return { supervisor, written };
+  };
+  const extension = {
+    endpoint: 'https://source-http/reference-extension',
+    search: '/search',
+    fetch: '/records',
+  };
+
+  it('lifts the private ranges for an extension alone, never for a built-in source, and only where allowed', async () => {
+    const allowed = capture(true);
+    await ask(
+      {
+        source: 'ext:0a1b2c3d-0000-4000-8000-0000000000cc',
+        op: 'search',
+        query: 'saltbush',
+        extension,
+      },
+      allowed.supervisor,
+    );
+    await ask({ source: 'crossref', op: 'search', query: 'marsh' }, allowed.supervisor);
+    expect(allowed.written[0]?.deny).toEqual([...suiteDeny]);
+    expect(allowed.written[1]?.deny).toEqual(expect.arrayContaining([...PRIVATE_RANGES]));
+    const denied = capture(false);
+    await ask(
+      {
+        source: 'ext:0a1b2c3d-0000-4000-8000-0000000000cc',
+        op: 'search',
+        query: 'saltbush',
+        extension,
+      },
+      denied.supervisor,
+    );
+    expect(denied.written[0]?.deny).toEqual(expect.arrayContaining([...PRIVATE_RANGES]));
+  });
+});
+
 describe("the connector's /v1/reference", () => {
   const KEY = Buffer.alloc(32, 3).toString('base64');
   const config = loadConnectorConfig({
@@ -315,6 +520,32 @@ describe("the connector's reference key (the XR plan, XR-E)", () => {
     for (const path of ['/v1/embed', '/v1/deliver', '/v1/seal', '/v1/run', '/v1/manifest']) {
       expect((await post(path, { tenant: TENANT }, REFERENCE_KEY)).status, path).toBe(401);
     }
+  });
+
+  it("seals a reference extension's secret for it and its endpoint, to the service's key alone", async () => {
+    const seal = {
+      tenant: TENANT,
+      source: 'ext:0a1b2c3d-0000-4000-8000-0000000000aa',
+      endpoint: 'https://herbarium.example.test/alloy',
+      secret: 'herbarium-token',
+    } as const;
+    const sealed = await post('/v1/reference/seal', seal, SERVICE_KEY);
+    expect(sealed.status).toBe(200);
+    const { sealed: text } = (await sealed.json()) as { sealed: string };
+    expect(text).not.toContain('herbarium-token');
+    expect(
+      openSecret(
+        SEALING_KEY,
+        'reference-credential',
+        TENANT,
+        text,
+        referenceCredentialContext(seal.source, seal.endpoint),
+      ),
+    ).toBe('herbarium-token');
+    expect((await post('/v1/reference/seal', seal, REFERENCE_KEY)).status).toBe(401);
+    expect(
+      (await post('/v1/reference/seal', { ...seal, source: 'crossref' }, SERVICE_KEY)).status,
+    ).toBe(400);
   });
 
   it('refuses a reference key that is one of the others', () => {

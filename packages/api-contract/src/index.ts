@@ -171,6 +171,7 @@ export {
   ExtensionParams,
   ExtensionPreview,
   ExtensionRemoved,
+  ExtensionSecretBody,
   ExtensionUses,
   ExtensionView,
   InstallExtensionBody,

@@ -46,7 +46,7 @@ removal waits until no connection uses it.
 | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | `manifest`                                    | `1`                                                                                                          |
 | `name`, `version`, `publisher`, `description` | What it is, as the extension says                                                                            |
-| `kind`                                        | `source`                                                                                                     |
+| `kind`                                        | `source`, or `reference` (below)                                                                             |
 | `endpoint`                                    | The HTTPS base its calls go to                                                                               |
 | `settings`                                    | The fields a connection gives it, each `{ key, label, type: text, number or boolean, required }`, at most 20 |
 | `authentication`                              | `none`, or `{ label }`: one secret, sent as `Authorization: Bearer`                                          |
@@ -67,6 +67,14 @@ source's JSON is, so the product's canonical form, checksum and limits hold; any
 `extension_invalid`. As an HTTP source's: 401, 403 and a redirect are `connection_failed`, another 4xx
 `extension_refused`, a 5xx or no answer `extension_failed`, and no body but a 2xx's is read. Every run is
 the connection's own account (DAT-078): no person's identity is ever sent.
+
+## Reference extensions
+
+A manifest of kind `reference` (the XR plan, XR-J; LIB-032) declares `reference { search, fetch }`,
+paths under its endpoint, in place of `settings` and `capabilities`. It is a reference source, not a
+source of rows: the tenant's sources hold it as `ext:<id>`, its secret is the install's, and its switch
+is its use, so it is removed once off. [reference-sources.md](reference-sources.md#built-in-xrd) has
+the rest.
 
 ## Ruled out
 

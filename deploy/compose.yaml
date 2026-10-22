@@ -189,6 +189,8 @@ services:
       # A webhook's receiver is public in production; the suites' is on a private network, so a stack
       # running them says `allow` (deploy/README.md).
       CONNECTOR_WEBHOOK_PRIVATE: ${CONNECTOR_WEBHOOK_PRIVATE:-deny}
+      # A reference extension's endpoint likewise: the suites' stand-in is `source-http` (deploy/README.md).
+      CONNECTOR_REFERENCE_PRIVATE: ${CONNECTOR_REFERENCE_PRIVATE:-deny}
       # Sent to Crossref and PubMed as their polite use asks; empty sends none (deploy/README.md).
       CONNECTOR_REFERENCE_CONTACT: ${CONNECTOR_REFERENCE_CONTACT:-}
       CONNECTOR_DENY: none

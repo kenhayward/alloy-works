@@ -1176,12 +1176,20 @@ export {
   installExtension,
   listExtensions,
   removeExtension,
+  setExtensionCredential,
   updateExtension,
   type ExtensionUse,
   type InstalledExtension,
 } from './extensions.js';
-export { referenceSourcesOn, setReferenceSource } from './reference-sources.js';
 export {
+  extensionTarget,
+  referenceSourcesOn,
+  setReferenceSource,
+  tenantReferenceSources,
+  type TenantReferenceSource,
+} from './reference-sources.js';
+export {
+  attemptEntryCheck,
   citedFlags,
   entriesDue,
   entryCheckable,

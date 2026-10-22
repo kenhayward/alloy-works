@@ -11,6 +11,8 @@ import {
   crossrefSearch,
   crossrefUpdates,
   crossrefWork,
+  extensionHerbarium,
+  extensionHerbariumRetracted,
   pubmedCorrected,
   pubmedDunnart,
   pubmedRetracted,
@@ -23,6 +25,8 @@ import {
  * certificate the development CA's as `fake-api.mjs`'s is, answering domain's invented fixtures at
  * each source's own paths. The supervisor reaches it through `referenceOrigins`, a test's parameter
  * that production's server never takes. Terms answer hostile shapes: `redirect`, `oversized`, `deep`.
+ * A reference extension answers CSL-JSON under `/reference-extension` (XR-J), the token it was given
+ * as a bearer kept in `bearers`.
  */
 const SOURCES = new URL('../../../../deploy/sources/http/', import.meta.url);
 const read = (name: string) => readFileSync(fileURLToPath(new URL(name, SOURCES)));
@@ -31,6 +35,8 @@ export interface FakeReferences {
   readonly port: number;
   /** Each request's target, as it arrived. */
   readonly seen: string[];
+  /** Each request's authorization header, or none. */
+  readonly bearers: (string | undefined)[];
   close(): Promise<void>;
 }
 
@@ -51,12 +57,14 @@ const DEEP = `${'['.repeat(200)}${']'.repeat(200)}`;
 
 export async function startFakeReferences(): Promise<FakeReferences> {
   const seen: string[] = [];
+  const bearers: (string | undefined)[] = [];
   const sockets = new Set<Duplex>();
   const server: Server = createServer(
     { key: read('server-key.pem'), cert: read('server.pem') },
     (request, response) => {
       const target = request.url ?? '/';
       seen.push(target);
+      bearers.push(request.headers.authorization);
       const url = new URL(target, 'https://fake.test');
       const send = (status: number, body: string, headers: Record<string, string> = {}) => {
         response.writeHead(status, {
@@ -70,6 +78,17 @@ export async function startFakeReferences(): Promise<FakeReferences> {
       if (terms === 'redirect') return send(302, '{}', { location: '/works' });
       if (terms === 'oversized') return send(200, OVERSIZED);
       if (terms === 'deep') return send(200, DEEP);
+      if (url.pathname === '/reference-extension/search') {
+        return send(200, JSON.stringify([extensionHerbarium, extensionHerbariumRetracted]));
+      }
+      if (url.pathname === '/reference-extension/records') {
+        const record = [extensionHerbarium, extensionHerbariumRetracted].find(
+          (each) => each.id === url.searchParams.get('id'),
+        );
+        // A 404 that is no empty list: a proxy's page, say, in front of a moved endpoint.
+        if (url.searchParams.get('id') === 'HERB-ASTRAY') return send(404, 'Not Found');
+        return record ? send(200, JSON.stringify([record])) : send(404, '[]');
+      }
       const updates = /^updates:(.+)$/.exec(url.searchParams.get('filter') ?? '');
       if (url.pathname === '/works' && updates) {
         return send(200, JSON.stringify(crossrefUpdates(UPDATES[updates[1]!] ?? [])));
@@ -103,6 +122,7 @@ export async function startFakeReferences(): Promise<FakeReferences> {
   return {
     port: (server.address() as AddressInfo).port,
     seen,
+    bearers,
     close: () =>
       new Promise<void>((resolve) => {
         for (const socket of sockets) socket.destroy();

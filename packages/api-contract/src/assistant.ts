@@ -122,11 +122,14 @@ const actOn = (operationId: string, path: string, summary: string, needs: string
     responses: {
       200: { description: 'Acted on, once', schema: ProposalActed },
       401: unauthenticated,
-      403: { description: `The caller may not ${needs} the component`, schema: ErrorBody },
+      403: {
+        description: `The caller may not ${needs} the component; or \`entry_not_writable\`: a citation of a source accepted, no entry of the component’s space holds it, and the caller may not make one there`,
+        schema: ErrorBody,
+      },
       404: proposalMissing,
       409: {
         description:
-          '`proposal_resolved`, or the suggestion’s own refusals: `suggestion.empty`, `suggestion.limit`, `suggestion.stale`, `lock.held`, `edits.pending`, `values.invalid`',
+          '`proposal_resolved`; `proposal_cites`: a citation of a source kept, which is accepted or discarded alone; `entry_refused`: its entry could not be made; or the suggestion’s own refusals: `suggestion.empty`, `suggestion.limit`, `suggestion.stale`, `lock.held`, `edits.pending`, `values.invalid`',
         schema: ErrorBody,
       },
     },

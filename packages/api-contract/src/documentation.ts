@@ -527,6 +527,7 @@ const operationTags = {
     'updateExtension',
     'listExtensionUses',
     'removeExtension',
+    'setExtensionSecret',
   ],
   Webhooks: [
     'listWebhooks',
@@ -992,15 +993,15 @@ const descriptions: Readonly<Record<string, string>> = {
   recordCitationStyleVersion:
     'Records the next citation style version from the version the caller opened, checked as an upload is. A theme naming an earlier version goes on rendering in it. It needs design here.',
   listReferenceSources:
-    'Lists the reference sources the product declares, Crossref and PubMed, each with the one host it is reached at, what a record is fetched by, and whether this environment searches it. Each is on until an administrator switches it off.',
+    'Lists the reference sources the product declares, Crossref and PubMed, and the reference extensions installed here, keyed `ext:` and the extension’s id, each with the one host it is reached at, what a record is fetched by, and whether this environment searches it. Each is on until an administrator switches it off.',
   setReferenceSource:
-    'Switches a reference source on or off for the environment. Off, it is neither searched nor made an entry from. It needs administer on the environment.',
+    'Switches a reference source, or a reference extension installed here, on or off for the environment. Off, it is neither searched, made an entry from nor re-checked; a reference extension is removed only once off. It needs administer on the environment.',
   searchReferenceSource:
     "Searches a reference source for the terms given, which are sent to the source, and answers at most 20 results as CSL-JSON, each matched against the space's entries by DOI, PubMed identifier, ISBN or ISSN, else by title, year and first author. It says whether the caller may make an entry in the space. It needs read in the space. A source that cannot be reached, or answers out of shape, is `reference_unavailable`.",
   createBibliographyEntryFromSource:
     'Fetches a record from a reference source by its DOI or PubMed identifier and makes it an entry of the space, recording where and when it was obtained. It is first matched against the entries already there, as making an entry by hand is: a match is offered and nothing made, unless the request says to make it despite the match. It needs edit in the space.',
   checkBibliographyEntry:
-    "Checks an entry against the reference source its latest version was obtained from, sending the source its DOI or PubMed identifier alone, and records the entry's status beside it, never as a version: `current`, `changed` (naming the CSL variables the source now holds otherwise), `gone`, `retracted` or `corrected`, with the notice where the source names one. A retraction or correction tells the owner of each document citing it, once. It needs read on the entry; an entry made by hand is `entry_not_obtained`.",
+    "Checks an entry against the reference source its latest version was obtained from, sending the source its DOI or PubMed identifier alone, and records the entry's status beside it, never as a version: `current`, `changed` (naming the CSL variables the source now holds otherwise), `gone`, `retracted` or `corrected`, with the notice where the source names one. A retraction or correction tells the owner of each document citing it who may read it, at most once in thirty days. It needs edit on the entry; an entry made by hand is `entry_not_obtained`, and one checked or tried within the minute `entry_checked_recently`.",
   getDocumentFlaggedSources:
     "Lists the sources cited by the components a document's latest version places, at the version each is placed, that their source last said are retracted or corrected. Each names the entry to a reader of it, and only its flag to anybody else, with the components citing it the caller may read. It needs read on the document.",
   unarchiveBibliographyEntry:
@@ -1130,7 +1131,9 @@ const descriptions: Readonly<Record<string, string>> = {
   listExtensionUses:
     'Lists the connections using an extension, retired ones too, each with the manifest it was saved against. Needs administer at the environment, with a signed-in session.',
   removeExtension:
-    'Removes an extension once no connection uses it but a retired one; kept, so what used it still names it. Recorded as an extension changed. Needs administer at the environment, with a signed-in session.',
+    'Removes an extension once no connection uses it but a retired one, and a reference extension once it is switched off as a reference source; kept, so what used it still names it, and the bibliography entries obtained from it untouched, though no longer re-checked. Recorded as an extension changed. Needs administer at the environment, with a signed-in session.',
+  setExtensionSecret:
+    'Sets the secret a reference extension is sent as a bearer, where its manifest declares one: sealed by the connector for the extension and its endpoint, so it opens nowhere else, and never answered again; an endpoint changed by an update needs it set again. Recorded as an extension changed. Needs administer at the environment, with a signed-in session.',
   listWebhooks:
     'Lists the environment’s webhook subscriptions: each one’s service identity, URL, event types and whether it is disabled, never its secret. Needs administer at the environment, with a signed-in session.',
   createWebhook:

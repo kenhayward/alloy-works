@@ -51,9 +51,12 @@ describe('re-checking an entry against its source (the XR plan, XRb)', () => {
   const check = (as: string, entry: string) =>
     h.call(as, 'POST', `/v1/bibliography-entries/${entry}/check`);
 
-  it('LIB-036 checks an entry against its source as a reader of it, its status recorded beside it and never a version', async () => {
+  it('LIB-036 checks an entry against its source as an editor of it, its status recorded beside it and never a version', async () => {
     const entry = await obtained();
-    const checked = await check('alice', entry);
+    // Alice reads General and edits nothing: she may not write a status.
+    const reader = await check('alice', entry);
+    expect(reader.statusCode).toBe(403);
+    const checked = await check('grace', entry);
     expect(checked.statusCode, checked.body).toBe(200);
     expect(checked.json()).toMatchObject({
       source: 'crossref',
@@ -74,6 +77,16 @@ describe('re-checking an entry against its source (the XR plan, XRb)', () => {
     });
     // Ivy reads nothing of it.
     expect((await check('ivy', entry)).statusCode).toBe(404);
+  });
+
+  it('checks an entry at most once a minute, asking nothing the second time', async () => {
+    const entry = await obtained();
+    expect((await check('grace', entry)).statusCode).toBe(200);
+    const asked = h.connector.asked.length;
+    const again = await check('grace', entry);
+    expect(again.statusCode).toBe(429);
+    expect(again.json()).toMatchObject({ code: 'entry_checked_recently' });
+    expect(h.connector.asked.length).toBe(asked);
   });
 
   it('refuses an entry made by hand, and a source switched off, asking nothing', async () => {

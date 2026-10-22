@@ -9,7 +9,7 @@ import styles from './Administration.module.css';
 type Client = ReturnType<typeof createApiClient>;
 
 interface Source {
-  readonly id: 'crossref' | 'pubmed';
+  readonly id: string;
   readonly name: string;
   readonly host: string;
   readonly enabled: boolean;

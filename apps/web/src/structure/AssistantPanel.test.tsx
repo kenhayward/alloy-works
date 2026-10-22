@@ -353,6 +353,59 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
     expect(within(proposal).queryByRole('button', { name: 'Discard' })).toBeNull();
   });
 
+  it('LIB-040 shows a proposed citation by its source’s title, accepted or discarded but never kept', async () => {
+    const user = userEvent.setup();
+    const { client } = service();
+    const stream = running([
+      ['run', { run: 'r1', endpoint: { name: 'Drafting', boundary: 'inside' } }],
+      [
+        'proposal',
+        {
+          id: PROPOSAL,
+          number: 1,
+          component: SITES,
+          against: 'v1',
+          cites: { source: 'crossref', identifier: '10.5555/weir.1', title: 'Spring Floods' },
+          proposed: {
+            content: [
+              {
+                type: 'paragraph',
+                id: 'p1',
+                content: [
+                  { type: 'text', value: 'It floods.' },
+                  { type: 'citation', entry: '00000000-0000-0000-0000-000000000000' },
+                ],
+              },
+            ],
+          },
+        },
+      ],
+      ended(),
+    ]);
+    render(
+      <AssistantPanel
+        client={client}
+        document={DOCUMENT}
+        component={SITES}
+        nameOf={() => 'Sites'}
+        onCite={() => {}}
+        stream={stream}
+        origin="http://doc.test"
+      />,
+    );
+    await user.type(screen.getByLabelText('Ask the assistant'), 'Cite the weir paper.');
+    await user.click(screen.getByRole('button', { name: 'Ask' }));
+    const proposal = await screen.findByRole('article', { name: 'Proposal 1' });
+    expect(within(proposal).getByText('It floods.[Spring Floods]')).toBeVisible();
+    expect(
+      within(proposal).getByText(
+        'Cites Spring Floods, DOI 10.5555/weir.1 from crossref. Its entry is found or made in the space as you accept.',
+      ),
+    ).toBeVisible();
+    expect(within(proposal).getByRole('button', { name: 'Accept' })).toBeVisible();
+    expect(within(proposal).queryByRole('button', { name: 'Keep as suggestion' })).toBeNull();
+  });
+
   it('says why it was not asked, in the service’s words', async () => {
     const user = userEvent.setup();
     const { client } = service();

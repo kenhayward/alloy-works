@@ -226,7 +226,7 @@ describe('the drafting assistant through the service (the G2 plan)', () => {
     conforms(frames);
   });
 
-  it('GEN-007 GEN-010 offers the model the five tools alone, and streams each call and what came back, kept on the run', async () => {
+  it("GEN-007 GEN-010 offers the model the product's own tools alone, and streams each call and what came back, kept on the run", async () => {
     h.connector.modelFor = turns(
       [tool('t1', 'read_outline', {}), ended('tool_use')],
       [tool('t2', 'fetch_url', { url: 'https://elsewhere.example.test' }), ended('tool_use')],
@@ -239,11 +239,13 @@ describe('the drafting assistant through the service (the G2 plan)', () => {
       ASSISTANT_TOOLS.map((each) => each.name),
     );
     expect(sent.call.tools?.map((each) => each.name).sort()).toEqual([
+      'cite_reference',
       'propose_edit',
       'read_component',
       'read_outline',
       'read_values',
       'search_document',
+      'search_references',
     ]);
     const results = frames
       .filter((frame) => frame.event === 'tool_result')

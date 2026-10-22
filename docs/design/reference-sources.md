@@ -53,7 +53,8 @@ when a person takes a new version.
 ## Who is told
 
 A document's review owner, else the person who made it, else the space's administrators, skipping
-anyone erased or disabled; once per entry, outcome and person, in the inbox. A reader who cannot read
+anyone erased or disabled or who may not read the document; once per entry, outcome and person in
+thirty days, however often it flaps, in the inbox. A reader who cannot read
 an entry sees a citation's flag, never the entry.
 
 ## The gate
@@ -92,14 +93,67 @@ version moving cite, read by the system so every actor gets one answer; a correc
   `Erratum in`, `Corrected and republished in`) and `pubtype` `Retracted Publication`. `entryCheck`
   in domain decides the outcome; `changed` compares title, issued, author family names,
   container-title and DOI where the source holds them.
-- **The status** is `bibliography_entry_status` (0150); `notified` holds who was told of the outcome
-  and is emptied when it changes, so current then retracted again tells again. The notification kind
+- **The status** is `bibliography_entry_status` (0150), recorded under the entry's advisory lock;
+  `notified` holds who was told of the outcome, and `bibliography_entry_told` (0152) who was told what
+  and when, so a flap tells again only thirty days on. `bibliography_entry_attempt` (0152) holds each
+  entry's last attempt, answered or not. The notification kind
   is `reference`, on the document, its counts the entry and outcome.
-- **Check now** is `POST /v1/bibliography-entries/{id}/check`, a read of the entry; the entry page
-  shows the status. **The sweep** is the worker's `recheckEntries`, once a UTC night from 02:00, with
+- **Check now** is `POST /v1/bibliography-entries/{id}/check`, needing edit on the entry and refused
+  `entry_checked_recently` within a minute of its last attempt; the entry page shows the status, and
+  Check now to an editor. **The sweep** is the worker's `recheckEntries`, once a UTC night from 02:00, with
   `CONNECTOR_REFERENCE_KEY`, which opens `/v1/reference`'s `check` alone. Each source's lane takes one
-  entry from each tenant in turn at its rate; the budget is held per worker process, so two workers
+  entry from each tenant in turn at its rate, each source's due its own and longest since attempted
+  first, so a failing one goes to the back; the budget is held per worker process, so two workers
   would each spend it.
 - **Flags** ride the citation preview (`flags`), the entry listing and matches (`flag`), and
   `GET /v1/documents/{id}/flagged-sources`, Review's **Sources** panel. A publish request answers
   `warnings`, counts alone. The gate reads each placed component at its pin, else its latest.
+
+## Built in XRc
+
+- **The tools** are domain's `search_references` and `cite_reference`, in the assistant's tools and
+  both conversations' (instructions `assistant-2`, `conversation-2`). Each runs as the person in the
+  run's transaction, refused `reference_source_off` while the source is off; a search answers each
+  result's title, authors, year, container and identifier as data.
+- **A citation proposal** is an edit proposal (0151's `cites`, domain's `citedSourceSchema`: the
+  source, identifier, CSL and when fetched) whose citation names `PENDING_ENTRY`, the nil UUID, in a
+  paragraph after the words given or at its end. **Accepting** it, in the acceptance's transaction,
+  takes the entry of the component's space the accepter may read obtained from the same source and
+  identifier, else one matching by DOI or PubMed identifier, never by title, year and author alone;
+  else makes one there, `obtained` the source, which needs the space's `edit` (`entry_not_writable`),
+  then puts that id in the placeholder's place and accepts as any proposal is. It is never kept
+  (`proposal_cites`): a suggestion holds no unresolved citation. The `proposal` event carries
+  `cites { source, identifier, title }`, which the panel shows.
+- **A run searches at most five times** (`REFERENCE_SEARCHES_PER_RUN`); past that the model is
+  answered `reference_searches_spent`.
+- **Left open**: a search's terms leave the product, so injected text could ask the model to search
+  with the document's words; the tool's description forbids it, and nothing enforces it.
+
+## Built in XRd
+
+- **A reference extension** is an extension whose manifest's `kind` is `reference`, declaring
+  `reference { search, fetch }`, paths under its endpoint, its `authentication` and `outbound`, and
+  no settings or capabilities; a source manifest reads, and digests, as before. It installs, updates
+  and is removed through the EX routes, and joins the tenant's sources as `ext:<extension id>`: the
+  list, the switch, the Search tab, re-checks and the assistant's tools, whose `source` choices are
+  the sources the tenant has on. A connection to one is refused.
+- **Its secret** is the install's, set by an administrator of the environment at
+  `PUT /v1/extensions/{id}/secret`, sealed by the connector (`/v1/reference/seal`,
+  `reference-credential`) to the key and endpoint, kept in `extension_credential` (0152), the latest
+  its own, with the endpoint it was set for. An update moving the endpoint needs it set again, and one
+  dropping authentication sends none.
+- **Its uses are its switch**: removal is refused `extension_in_use` while it is on. Removed, the
+  entries obtained from it are untouched and no longer checked; Check now answers
+  `reference_source_off`.
+- **The call**: the service sends the installed manifest's endpoint and paths, and the sealed
+  secret, in `/v1/reference`'s `extension`; the connector opens the secret for that key and endpoint
+  alone and holds the call to XR-B's guard, the private ranges among it unless the deployment sets
+  `CONNECTOR_REFERENCE_PRIVATE=allow`, as the suites do for their stand-in; Crossref and PubMed never
+  take it. `search` sends `?query=`,
+  `fetch` and `check` `?id=`; each answers a CSL-JSON list, admitted as an import is, each record by
+  its `id`, a `fetch` or `check` keeping the one asked for alone; a 404 is no such record only where it
+  answers `[]`, else a failure. A `check` reads `x-alloy-notices` (`{ kind, identifier?, date? }`) on the record; an
+  extension giving none is never seen retracted. Each extension has a lane of its own in the sweep,
+  one call a second.
+- **Left open**: an extension's name is its own words, shown in the Search tab and never given to
+  the model.

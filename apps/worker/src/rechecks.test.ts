@@ -5,6 +5,7 @@ import {
   createTenant,
   findRole,
   grant,
+  installExtension,
   migrate,
   prepareDatabase,
   readEntryStatus,
@@ -15,9 +16,15 @@ import {
   type TenantDatabase,
   type TenantTransaction,
 } from '@alloy-works/db';
-import { freshDatabase, type TestDatabase, testTenantDatabase } from '@alloy-works/db/testing';
+import {
+  freshDatabase,
+  queryAs,
+  type TestDatabase,
+  testTenantDatabase,
+} from '@alloy-works/db/testing';
 import {
   blockIdentifierFrom,
+  readExtensionAnswer,
   readReferenceAnswer,
   type ContentDocument,
   type CslItem,
@@ -29,6 +36,7 @@ import {
   crossrefMarshRetraction,
   crossrefUpdates,
   crossrefWork,
+  extensionHerbariumRetracted,
   pubmedDunnart,
   pubmedSummary,
 } from '@alloy-works/domain/sources-fixtures';
@@ -265,17 +273,135 @@ describe('the nightly re-check (the XR plan, XR-E)', () => {
     expect(told).toHaveLength(1);
   });
 
-  it('records nothing for a source that fails, and leaves it for the next night', async () => {
+  it('records no status for a source that fails, only the attempt, so the entry goes behind those not yet tried', async () => {
     const referencer: Referencer = async (request) =>
       request.source === 'crossref'
         ? { type: 'failed', code: 'reference_unavailable', source: 'crossref', reason: 'timeout' }
         : 'busy';
     const production = entries.get(tenants[0]!)!;
     const before = await as(tenants[0]!, (trx) => readEntryStatus(trx, production.crossref));
+    const attempted = async () =>
+      (
+        await queryAs(
+          db.adminUrl,
+          `select last_attempt_at as at from "${tenants[0]!.schema}".bibliography_entry_attempt
+            where entry_id = $1`,
+          [production.crossref],
+        )
+      ).rows as { at: Date }[];
+    const earlier = (await attempted())[0]?.at;
     expect(await recheckEntries(worker, referencer, quiet, { sleep: async () => {} })).toBe(0);
     expect(await as(tenants[0]!, (trx) => readEntryStatus(trx, production.crossref))).toEqual(
       before,
     );
+    const later = (await attempted())[0]?.at;
+    expect(later).toBeInstanceOf(Date);
+    if (earlier) expect(later!.getTime()).toBeGreaterThan(earlier.getTime());
+  });
+
+  it('LIB-032 checks an entry a reference extension obtained, in a lane of its own, sending where it is reached', async () => {
+    const tenant = tenants[0]!;
+    const { key, entry } = await as(tenant, async (trx) => {
+      const ada = (
+        await trx
+          .selectFrom('principal')
+          .select('id')
+          .where('subject', '=', 'ada')
+          .executeTakeFirstOrThrow()
+      ).id;
+      const general = (
+        await trx
+          .selectFrom('space')
+          .select('id')
+          .where('name', '=', 'General')
+          .executeTakeFirstOrThrow()
+      ).id;
+      const extension = await installExtension(trx, {
+        url: 'https://herbarium.example.test/manifest.json',
+        digest: 'c'.repeat(64),
+        manifest: {
+          manifest: 1,
+          name: 'Herbarium records',
+          version: '0.3.0',
+          publisher: 'Invented Herbarium',
+          description: 'Specimen papers by catalogue number.',
+          kind: 'reference',
+          endpoint: 'https://herbarium.example.test/alloy',
+          reference: { search: '/search', fetch: '/records' },
+          authentication: 'none',
+          outbound: [],
+        },
+        by: ada,
+      });
+      const key = `ext:${extension.id}` as const;
+      const made = await createEntry(trx, {
+        author: ada,
+        spaceId: general,
+        entry: {
+          csl: readExtensionAnswer('fetch', [extensionHerbariumRetracted])![0]!.csl,
+          obtained: { from: `${key}:HERB-0043`, at: '2026-01-02T03:04:05Z' },
+        },
+        despiteMatches: true,
+      });
+      if (made.answer !== 'created') throw new Error(made.answer);
+      const component = await createComponent(trx, {
+        spaceId: general,
+        title: 'Specimens',
+        language: 'en-GB',
+        direction: 'ltr',
+        author: ada,
+      });
+      if (component.answer !== 'created') throw new Error(component.answer);
+      const substance = substanceOf(component.version);
+      if (substance.kind !== 'component') throw new Error('not a component');
+      const cited = await recordVersion(trx, {
+        artifactId: component.version.artifactId,
+        openedFrom: component.version.id,
+        author: ada,
+        substance: {
+          ...substance,
+          content: {
+            ...substance.content,
+            content: [
+              {
+                type: 'paragraph',
+                id: 'p1',
+                style: 'body',
+                content: [{ type: 'citation', entry: made.entry.id }],
+              },
+            ] as ContentDocument['content'],
+          },
+        },
+      });
+      if (cited.answer !== 'recorded') throw new Error(cited.answer);
+      return { key, entry: made.entry.id };
+    });
+    const asked: ReferenceRequest[] = [];
+    const referencer: Referencer = async (request) => {
+      asked.push(request);
+      return request.source === key
+        ? {
+            type: 'found',
+            results: readExtensionAnswer('check', [extensionHerbariumRetracted]) ?? [],
+          }
+        : answering(request);
+    };
+    await recheckEntries(worker, referencer, quiet, { sleep: async () => {} });
+    expect(asked.filter((each) => each.source === key)).toEqual([
+      expect.objectContaining({
+        op: 'check',
+        identifier: 'HERB-0043',
+        extension: {
+          endpoint: 'https://herbarium.example.test/alloy',
+          search: '/search',
+          fetch: '/records',
+        },
+      }),
+    ]);
+    expect(await as(tenant, (trx) => readEntryStatus(trx, entry))).toMatchObject({
+      source: key,
+      outcome: 'retracted',
+    });
   });
 
   it('runs once a night, after two in the morning UTC', () => {

@@ -735,12 +735,13 @@ export const auditKindSpecs = {
     }),
     'packages/db/src/webhooks.ts',
   ),
-  // An extension installed, updated or removed (the EX plan, EX-B): its digest, never its URL or
-  // what its manifest says, which is whatever its host answered (LIF-030).
+  // An extension installed, updated or removed (the EX plan, EX-B), or a reference extension's secret
+  // set (XR-J): its digest, never its URL, its secret or what its manifest says, which is whatever
+  // its host answered (LIF-030).
   'extension.changed': kind(
     ['API-059'],
     z.strictObject({
-      change: z.enum(['installed', 'updated', 'removed']),
+      change: z.enum(['installed', 'updated', 'removed', 'credential_set']),
       digest: z.string().regex(/^[0-9a-f]{64}$/),
     }),
     'packages/db/src/extensions.ts',

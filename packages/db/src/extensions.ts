@@ -17,6 +17,8 @@ export interface InstalledExtension {
   readonly installedAt: Date;
   readonly updatedAt: Date;
   readonly removedAt: Date | null;
+  /** A reference extension's: whether its secret is set (XR-J). */
+  readonly secretSet: boolean;
 }
 
 /** A connection that uses an extension, at its latest version, retired or not. */
@@ -36,12 +38,16 @@ type Row = {
   installed_at: Date;
   fetched_at: Date;
   removed_at: Date | null;
+  secret_set: boolean;
 };
 
 const latest = () =>
   sql<Row>`
     select e.id, e.url, v.digest, v.manifest, e.installed_by, e.installed_at, v.fetched_at,
-           e.removed_at
+           e.removed_at,
+           -- Set for the endpoint it has now: a moved one's must be set again.
+           exists (select from extension_credential c where c.extension_id = e.id
+                     and c.endpoint = v.manifest ->> 'endpoint') as secret_set
       from extension e
       join lateral (select digest, manifest, fetched_at from extension_version
                      where extension_id = e.id order by id desc limit 1) v on true`;
@@ -55,13 +61,14 @@ const installed = (row: Row): InstalledExtension => ({
   installedAt: row.installed_at,
   updatedAt: row.fetched_at,
   removedAt: row.removed_at,
+  secretSet: row.secret_set,
 });
 
 /** Records an extension's change (API-059): the extension, the change and its digest, never its URL or words. */
 async function recordChange(
   trx: TenantTransaction,
   id: string,
-  change: 'installed' | 'updated' | 'removed',
+  change: 'installed' | 'updated' | 'removed' | 'credential_set',
   digest: string,
 ): Promise<void> {
   await recordEvent(trx, {
@@ -128,7 +135,11 @@ export async function listExtensions(
 export async function updateExtension(
   trx: TenantTransaction,
   id: string,
-  input: { readonly digest: string; readonly manifest: ExtensionManifest; readonly by: string },
+  input: {
+    readonly digest: string;
+    readonly manifest: ExtensionManifest;
+    readonly by: string | null;
+  },
 ): Promise<InstalledExtension> {
   // Held against a concurrent update or removal, as a removal holds it.
   await sql`select 1 from extension where id = ${id} for update`.execute(trx);
@@ -172,18 +183,30 @@ export async function extensionUses(
 }
 
 /**
- * Removes an extension once no connection uses it but a retired one (EX-E, API-048): refused with
- * the uses that stand in the way; its versions kept, so what used it still reads.
+ * Removes an extension once no connection uses it but a retired one (EX-E, API-048), and a reference
+ * extension once it is switched off (XR-J): refused with what stands in the way; its versions kept,
+ * so what used it still reads, and the entries obtained from it untouched.
  */
 export async function removeExtension(
   trx: TenantTransaction,
   id: string,
-  by: string,
-): Promise<{ readonly removed: true } | { readonly inUse: readonly ExtensionUse[] }> {
+  by: string | null,
+): Promise<
+  | { readonly removed: true }
+  | { readonly inUse: readonly ExtensionUse[] }
+  | { readonly switchedOn: true }
+> {
   await sql`select 1 from extension where id = ${id} for update`.execute(trx);
   const standing = (await extensionUses(trx, id)).filter((each) => !each.retired);
   if (standing.length > 0) return { inUse: standing };
   const held = (await installedExtension(trx, id))!;
+  if (held.removedAt === null && held.manifest.kind === 'reference') {
+    // Its switch is on unless a row says off, as every source's is; the row held against a switch.
+    const { rows } = await sql<{ enabled: boolean }>`
+      select enabled from reference_source_policy where source = ${`ext:${id}`}
+         for update`.execute(trx);
+    if (rows[0]?.enabled !== false) return { switchedOn: true };
+  }
   if (held.removedAt === null) {
     await trx
       .updateTable('extension')
@@ -215,4 +238,20 @@ export async function extensionAtDigest(
   return row
     ? { manifest: row.manifest as ExtensionManifest, removed: row.removed_at !== null }
     : undefined;
+}
+
+/**
+ * Keeps a reference extension's secret as the connector sealed it, for its endpoint now, the latest its
+ * own (XR-J); recorded as the extension changed, with its manifest's digest, never the secret.
+ */
+export async function setExtensionCredential(
+  trx: TenantTransaction,
+  id: string,
+  sealed: string,
+  by: string | null,
+): Promise<void> {
+  await sql`insert into extension_credential (extension_id, sealed, endpoint, set_by)
+    select ${id}, ${sealed}, v.manifest ->> 'endpoint', ${by} from extension_version v
+     where v.extension_id = ${id} order by v.id desc limit 1`.execute(trx);
+  await recordChange(trx, id, 'credential_set', (await installedExtension(trx, id))!.digest);
 }

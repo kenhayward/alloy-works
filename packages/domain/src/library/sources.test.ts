@@ -8,6 +8,8 @@ import {
   crossrefSearch,
   crossrefUpdates,
   crossrefWork,
+  extensionHerbarium,
+  extensionHerbariumRetracted,
   pubmedCorrected,
   pubmedDunnart,
   pubmedRetracted,
@@ -19,12 +21,18 @@ import {
   REFERENCE_SOURCES,
   REFERENCE_SOURCES_VERSION,
   entryCheck,
+  extensionReferencePath,
+  identifierFits,
   obtainedFrom,
+  readExtensionAnswer,
   readReferenceAnswer,
   referenceAnswerSchema,
+  referenceCredentialContext,
   referencePath,
   referenceRequestSchema,
+  referenceSealRequestSchema,
   referenceSource,
+  referenceSourceKeySchema,
   searchIdentifiers,
 } from './sources.js';
 
@@ -352,5 +360,116 @@ describe('a re-check against the source (the XR plan, XR-E, XR-F)', () => {
     expect(ok([{ kind: 'retraction', identifier: '99000003', date: '2026-04-22' }])).toBe(true);
     expect(ok([{ kind: 'withdrawal' }])).toBe(false);
     expect(ok([{ kind: 'retraction', date: 'soon' }])).toBe(false);
+  });
+});
+
+const HERBARIUM = 'ext:0a1b2c3d-0000-4000-8000-0000000000aa';
+const TARGET = {
+  endpoint: 'https://herbarium.example.test/alloy',
+  search: '/search',
+  fetch: '/records',
+};
+
+describe('a reference extension among the sources (the XR plan, XR-J)', () => {
+  it('LIB-032 keys an extension as ext and its id, fetched by its own identifiers', () => {
+    expect(referenceSourceKeySchema.safeParse(HERBARIUM).success).toBe(true);
+    expect(referenceSourceKeySchema.safeParse('crossref').success).toBe(true);
+    for (const key of ['ext:herbarium', 'ext:0A1B2C3D-0000-4000-8000-0000000000AA', 'elsewhere']) {
+      expect(referenceSourceKeySchema.safeParse(key).success, key).toBe(false);
+    }
+    expect(identifierFits(HERBARIUM, 'HERB-0042')).toBe(true);
+    expect(identifierFits(HERBARIUM, 'HERB\n0042')).toBe(false);
+    expect(obtainedFrom(`${HERBARIUM}:HERB:0042`)).toEqual({
+      source: HERBARIUM,
+      identifier: 'HERB:0042',
+    });
+    expect(obtainedFrom('ext:herbarium:HERB-0042')).toBeUndefined();
+  });
+
+  it('asks an extension only with its target, and a built-in source never with one', () => {
+    const ask = { requestId: REQUEST, tenant: 'acme', op: 'fetch', identifier: 'HERB-0042' };
+    expect(
+      referenceRequestSchema.safeParse({ ...ask, source: HERBARIUM, extension: TARGET }).success,
+    ).toBe(true);
+    expect(referenceRequestSchema.safeParse({ ...ask, source: HERBARIUM }).success).toBe(false);
+    expect(
+      referenceRequestSchema.safeParse({
+        ...ask,
+        source: 'pubmed',
+        identifier: '99000001',
+        extension: TARGET,
+      }).success,
+    ).toBe(false);
+  });
+
+  it('LIB-032 puts the terms and the identifier in encoded query parameters under its endpoint', () => {
+    expect(extensionReferencePath(TARGET, { step: 'search', terms: 'salt & bush/?#' })).toBe(
+      '/alloy/search?query=salt+%26+bush%2F%3F%23',
+    );
+    expect(extensionReferencePath(TARGET, { step: 'work', identifier: 'HERB/0042' })).toBe(
+      '/alloy/records?id=HERB%2F0042',
+    );
+    expect(
+      extensionReferencePath(
+        { ...TARGET, endpoint: 'https://herbarium.example.test' },
+        { step: 'work', identifier: 'a' },
+      ),
+    ).toBe('/records?id=a');
+  });
+
+  it('LIB-032 admits CSL-JSON as an import is, by its id, a check reading its notices', () => {
+    const found = readExtensionAnswer('search', [
+      extensionHerbarium,
+      { ...extensionHerbarium, id: undefined },
+      { ...extensionHerbarium, id: 'HERB-0050', shelf: 'B4' },
+    ]);
+    expect(found?.map((each) => [each.identifier, each.dropped])).toEqual([
+      ['HERB-0042', []],
+      ['HERB-0050', ['shelf']],
+    ]);
+    expect(found?.[0]?.csl).toMatchObject({
+      type: 'article-journal',
+      title: extensionHerbarium.title,
+    });
+    expect(found?.[0]).not.toHaveProperty('notices');
+    expect(readExtensionAnswer('fetch', [extensionHerbariumRetracted])?.[0]).toMatchObject({
+      dropped: [],
+    });
+    expect(readExtensionAnswer('fetch', [extensionHerbariumRetracted])?.[0]).not.toHaveProperty(
+      'notices',
+    );
+    expect(readExtensionAnswer('check', [extensionHerbariumRetracted])?.[0]?.notices).toEqual([
+      { kind: 'retraction', identifier: 'HERB-R-0001', date: '2026-03-01' },
+    ]);
+    expect(readExtensionAnswer('check', [extensionHerbarium])?.[0]?.notices).toEqual([]);
+    expect(readExtensionAnswer('fetch', { items: [] })).toBeUndefined();
+  });
+
+  it('keeps for a fetch or a check only the record by the identifier asked, else none', () => {
+    const both = [extensionHerbarium, extensionHerbariumRetracted];
+    for (const op of ['fetch', 'check'] as const) {
+      expect(readExtensionAnswer(op, both, 'HERB-0043')?.map((each) => each.identifier)).toEqual([
+        'HERB-0043',
+      ]);
+      expect(readExtensionAnswer(op, [extensionHerbarium], 'HERB-0043')).toEqual([]);
+    }
+    expect(readExtensionAnswer('search', both)?.map((each) => each.identifier)).toEqual([
+      'HERB-0042',
+      'HERB-0043',
+    ]);
+  });
+});
+
+describe("a reference extension's secret (the XR plan, XR-J)", () => {
+  it('is sealed to the extension and its endpoint, asked of the connector with them', () => {
+    expect(referenceCredentialContext(HERBARIUM, TARGET.endpoint)).toBe(
+      JSON.stringify([HERBARIUM, TARGET.endpoint]),
+    );
+    const seal = { tenant: 'acme', source: HERBARIUM, endpoint: TARGET.endpoint, secret: 'tok' };
+    expect(referenceSealRequestSchema.safeParse(seal).success).toBe(true);
+    expect(referenceSealRequestSchema.safeParse({ ...seal, source: 'crossref' }).success).toBe(
+      false,
+    );
+    expect(referenceSealRequestSchema.safeParse({ ...seal, secret: ' tok' }).success).toBe(false);
   });
 });

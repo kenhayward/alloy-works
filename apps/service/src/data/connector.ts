@@ -35,6 +35,7 @@ import {
   referenceAnswerSchema,
   type ReferenceAnswer,
   type ReferenceRequest,
+  type ReferenceSealRequest,
 } from '@alloy-works/domain';
 import type { z } from 'zod';
 
@@ -86,6 +87,8 @@ export interface ConnectorClient {
   manifest(request: ManifestRequest): Promise<Answered<ManifestAnswer>>;
   /** Asks a reference source by its id and an operation, never a URL (the XR plan, XR-B). */
   reference(request: ReferenceRequest): Promise<Answered<ReferenceAnswer>>;
+  /** Seals a reference extension's secret to it and its endpoint (the XR plan, XR-J). */
+  sealReference(request: ReferenceSealRequest): Promise<Answered<SealAnswer>>;
   /**
    * A model call (the G1 plan, G1-C): each event as the connector streams it, the last `ended` or
    * `failed`, which is also answered. A connector that cannot be reached, is full, or ends without a
@@ -196,6 +199,7 @@ export function createConnectorClient(options: {
     sealWebhook: (request) => ask('/v1/webhook/seal', request, sealAnswerSchema, SEAL_MS),
     manifest: (request) => ask('/v1/manifest', request, manifestAnswerSchema, MANIFEST_MS),
     reference: (request) => ask('/v1/reference', request, referenceAnswerSchema, REFERENCE_MS),
+    sealReference: (request) => ask('/v1/reference/seal', request, sealAnswerSchema, SEAL_MS),
     embed: (request, signal) =>
       ask('/v1/embed', request, embedAnswerSchema, request.deadlineMs + SLACK_MS, signal),
     model: async (request, onEvent, signal) => {

@@ -19,6 +19,8 @@ interface Installed {
   readonly digest: string;
   readonly manifest: ExtensionManifest;
   readonly removedAt: string | null;
+  /** A reference extension's: whether its secret is set (XR-J). */
+  readonly secretSet?: boolean;
 }
 
 interface Preview {
@@ -40,8 +42,15 @@ const CHANGES: Readonly<Record<string, string>> = {
   settings: 'the settings a connection gives it',
   authentication: 'the secret it takes',
   capabilities: 'what it can do',
+  reference: 'where it is searched and fetched',
   outbound: 'the hosts it sends data to',
   about: 'what it says it is',
+};
+
+/** What kind of extension it is, in words (XR-J). */
+const KINDS: Readonly<Record<ExtensionManifest['kind'], string>> = {
+  source: 'Data source',
+  reference: 'Reference source',
 };
 
 /** Everything a manifest declares, in words, read before it is installed or updated (EX-B). */
@@ -52,7 +61,6 @@ function Declared({
   manifest: ExtensionManifest;
   children?: React.ReactNode;
 }) {
-  const { capabilities } = manifest;
   return (
     <section aria-label={`What ${manifest.name} declares`}>
       <h3>{manifest.name}</h3>
@@ -63,37 +71,24 @@ function Declared({
         <dd>{manifest.publisher}</dd>
         <dt>What it is</dt>
         <dd>{manifest.description}</dd>
+        <dt>Kind</dt>
+        <dd>{KINDS[manifest.kind]}</dd>
         <dt>Endpoint</dt>
         <dd className={styles['code']}>{manifest.endpoint}</dd>
-        <dt>Settings</dt>
-        <dd>
-          {manifest.settings.length === 0 ? (
-            'None'
-          ) : (
-            <ul>
-              {manifest.settings.map((field) => (
-                <li key={field.key}>
-                  {`${field.label} (${field.type}, ${field.required ? 'required' : 'not required'})`}
-                </li>
-              ))}
-            </ul>
-          )}
-        </dd>
-        <dt>Credential</dt>
-        <dd>
-          {manifest.authentication === 'none'
-            ? 'Takes no secret, so no connection can be made to it yet'
-            : `Takes one secret: ${manifest.authentication.label}`}
-        </dd>
-        <dt>Can</dt>
-        <dd>
-          {[
-            capabilities.parameters ? 'Binds parameters' : 'Binds no parameters',
-            capabilities.keyColumns ? 'Declares key columns' : 'Declares no key columns',
-            capabilities.rowLimit ? 'Takes the row limit' : 'Takes no row limit',
-          ].join('. ')}
-          .
-        </dd>
+        {manifest.kind === 'source' ? (
+          <SourceDeclared manifest={manifest} />
+        ) : (
+          <>
+            <dt>Reference</dt>
+            <dd>{readsAt(manifest.reference)}</dd>
+            <dt>Credential</dt>
+            <dd>
+              {manifest.authentication === 'none'
+                ? 'Takes no secret'
+                : `Takes one secret: ${manifest.authentication.label}`}
+            </dd>
+          </>
+        )}
         <dt>Sends data to</dt>
         <dd>
           {manifest.outbound.length === 0 ? (
@@ -114,11 +109,65 @@ function Declared({
   );
 }
 
+/** A source extension's settings, credential and capabilities (EX-B). */
+function SourceDeclared({
+  manifest,
+}: {
+  manifest: Extract<ExtensionManifest, { kind: 'source' }>;
+}) {
+  const { capabilities } = manifest;
+  return (
+    <>
+      <dt>Settings</dt>
+      <dd>
+        {manifest.settings.length === 0 ? (
+          'None'
+        ) : (
+          <ul>
+            {manifest.settings.map((field) => (
+              <li key={field.key}>
+                {`${field.label} (${field.type}, ${field.required ? 'required' : 'not required'})`}
+              </li>
+            ))}
+          </ul>
+        )}
+      </dd>
+      <dt>Credential</dt>
+      <dd>
+        {manifest.authentication === 'none'
+          ? 'Takes no secret, so no connection can be made to it yet'
+          : `Takes one secret: ${manifest.authentication.label}`}
+      </dd>
+      <dt>Can</dt>
+      <dd>
+        {[
+          capabilities.parameters ? 'Binds parameters' : 'Binds no parameters',
+          capabilities.keyColumns ? 'Declares key columns' : 'Declares no key columns',
+          capabilities.rowLimit ? 'Takes the row limit' : 'Takes no row limit',
+        ].join('. ')}
+        .
+      </dd>
+    </>
+  );
+}
+
+/** A secret a reference extension takes, as its manifest names it; none where it takes none. */
+const secretLabel = (manifest: ExtensionManifest): string | undefined =>
+  manifest.kind === 'reference' && manifest.authentication !== 'none'
+    ? manifest.authentication.label
+    : undefined;
+
 /**
  * Administration's **Extensions** (extensions.md; the EX plan, EXc): an extension installed by its
  * manifest's URL after reading what it declares; each one's update shown before it is made, its uses,
- * and removing it, after asking, once nothing but a retired connection uses it.
+ * and removing it, after asking, once nothing but a retired connection uses it. A reference
+ * extension's secret is set here, write-only (the XR plan, XR-J).
  */
+/** Where a reference extension is searched and a record fetched, as its manifest says. */
+function readsAt({ search, fetch: record }: { search: string; fetch: string }): string {
+  return `Searched at ${search}, a record fetched at ${record}`;
+}
+
 export function Extensions({ client }: { client: Client }) {
   const [generation, setGeneration] = useState(0);
   const [load] = useState(
@@ -135,6 +184,8 @@ export function Extensions({ client }: { client: Client }) {
   const [update, setUpdate] = useState<{ of: Installed; to: Preview } | null>(null);
   const [uses, setUses] = useState<{ of: Installed; items: readonly Use[] } | null>(null);
   const [removing, setRemoving] = useState<Installed | null>(null);
+  const [secretOf, setSecretOf] = useState<Installed | null>(null);
+  const [secret, setSecret] = useState('');
   const again = () => setGeneration((was) => was + 1);
 
   const look = async (event: FormEvent) => {
@@ -203,6 +254,20 @@ export function Extensions({ client }: { client: Client }) {
     again();
   };
 
+  const keep = async (event: FormEvent, extension: Installed) => {
+    event.preventDefault();
+    const { data, error } = await client.PUT('/v1/extensions/{id}/secret', {
+      params: { path: { id: extension.id } },
+      body: { secret },
+    });
+    setSecret('');
+    if (data) {
+      setSecretOf(null);
+      setSaid(`The secret of ${extension.manifest.name} is set.`);
+      again();
+    } else setSaid(refusal(error, 'The secret could not be set.'));
+  };
+
   const changed = update?.to.changes ?? [];
   return (
     <>
@@ -244,6 +309,7 @@ export function Extensions({ client }: { client: Client }) {
               <thead>
                 <tr>
                   <th scope="col">Name</th>
+                  <th scope="col">Kind</th>
                   <th scope="col">Version</th>
                   <th scope="col">Publisher</th>
                   <th scope="col">Status</th>
@@ -258,6 +324,7 @@ export function Extensions({ client }: { client: Client }) {
                   return (
                     <tr key={extension.id}>
                       <td className={styles['strong']}>{name}</td>
+                      <td>{KINDS[extension.manifest.kind]}</td>
                       <td>{extension.manifest.version}</td>
                       <td>{extension.manifest.publisher}</td>
                       <td>
@@ -293,6 +360,20 @@ export function Extensions({ client }: { client: Client }) {
                             >
                               Check for update
                             </button>{' '}
+                            {secretLabel(extension.manifest) !== undefined && (
+                              <>
+                                <button
+                                  type="button"
+                                  aria-label={`Set the secret of ${name}`}
+                                  onClick={() => {
+                                    setSecret('');
+                                    setSecretOf(extension);
+                                  }}
+                                >
+                                  {extension.secretSet ? 'Replace secret' : 'Set secret'}
+                                </button>{' '}
+                              </>
+                            )}
                             <button
                               type="button"
                               aria-label={`Remove ${name}`}
@@ -313,6 +394,29 @@ export function Extensions({ client }: { client: Client }) {
       </Shown>
       {opened !== null && read !== null && typeof read === 'object' && (
         <OpenedDeclared rows={read.rows} id={opened} />
+      )}
+      {secretOf !== null && (
+        <form
+          aria-label={`The secret of ${secretOf.manifest.name}`}
+          onSubmit={(event) => void keep(event, secretOf)}
+          noValidate
+        >
+          <label className={styles['filter']}>
+            {secretLabel(secretOf.manifest)}
+            <input
+              type="password"
+              autoComplete="off"
+              value={secret}
+              onChange={(change) => setSecret(change.target.value)}
+            />
+          </label>
+          <button type="submit" className="primary" disabled={secret.trim() === ''}>
+            Set
+          </button>{' '}
+          <button type="button" onClick={() => setSecretOf(null)}>
+            Cancel
+          </button>
+        </form>
       )}
       {update !== null && (
         <section aria-label={`Update ${update.of.manifest.name}`}>
@@ -363,7 +467,11 @@ export function Extensions({ client }: { client: Client }) {
       {removing !== null && (
         <ConfirmDialog
           question={`Remove ${removing.manifest.name}?`}
-          sentence="No connection can be made to it again. Its manifests are kept, so what used it still names it; a connection not retired keeps it installed."
+          sentence={
+            removing.manifest.kind === 'reference'
+              ? 'It can no longer be searched, and the entries obtained from it are kept but no longer checked. It must be switched off under Reference sources first.'
+              : 'No connection can be made to it again. Its manifests are kept, so what used it still names it; a connection not retired keeps it installed.'
+          }
           keep="Keep it"
           act="Remove"
           onKeep={() => setRemoving(null)}

@@ -316,6 +316,14 @@ export function streamedRun(input: {
               component: answered.proposal.componentId,
               against: answered.proposal.madeAgainst,
               creates: answered.proposal.creates,
+              cites:
+                answered.proposal.cites === null
+                  ? null
+                  : {
+                      source: answered.proposal.cites.source,
+                      identifier: answered.proposal.cites.identifier,
+                      title: answered.proposal.cites.csl.title ?? null,
+                    },
               proposed: answered.proposal.proposed,
             });
           }

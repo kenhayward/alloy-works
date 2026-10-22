@@ -12,6 +12,8 @@ const VERSION = '33333333-3333-4333-8333-333333333333';
 const COMPONENT = '44444444-4444-4444-8444-444444444444';
 const VERSION_NEXT = '55555555-5555-4555-8555-555555555555';
 const OBTAINED = '66666666-6666-4666-8666-666666666666';
+const FROM_EXTENSION = '77777777-7777-4777-8777-777777777777';
+const READ_ONLY = '88888888-8888-4888-8888-888888888888';
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
@@ -110,6 +112,33 @@ function service() {
         entry: {
           ...view.entry,
           obtained: { from: 'crossref:10.1234/dunnart.2020', at: '2026-01-02T03:04:05Z' },
+        },
+        status: null,
+      });
+    }
+    if (path === `/v1/bibliography-entries/${READ_ONLY}`) {
+      return json(200, {
+        ...view,
+        id: READ_ONLY,
+        entry: {
+          ...view.entry,
+          obtained: { from: 'crossref:10.1234/dunnart.2020', at: '2026-01-02T03:04:05Z' },
+        },
+        mayEdit: false,
+        mayRetire: false,
+        status: null,
+      });
+    }
+    if (path === `/v1/bibliography-entries/${FROM_EXTENSION}`) {
+      return json(200, {
+        ...view,
+        id: FROM_EXTENSION,
+        entry: {
+          ...view.entry,
+          obtained: {
+            from: 'ext:3c4d5e6f-7a8b-4c9d-8e0f-2a3b4c5d6e7f:HERB-0042',
+            at: '2026-01-02T03:04:05Z',
+          },
         },
         status: null,
       });
@@ -243,6 +272,23 @@ describe("an entry's source (the XR plan, XRb)", () => {
     );
     expect(source).toHaveTextContent('The source now holds otherwise: title.');
     expect(source).toHaveTextContent('Checked 2026-10-22.');
+  });
+
+  it('LIB-032 offers a check of an entry a reference extension obtained, naming it so, never by its key', async () => {
+    const { client } = service();
+    render(<EntryPage client={client} id={FROM_EXTENSION} />);
+    const source = await screen.findByRole('region', { name: 'Its source' });
+    expect(source).toHaveTextContent('Not yet checked against its reference extension.');
+    expect(source).not.toHaveTextContent('ext:');
+    expect(within(source).getByRole('button', { name: 'Check now' })).toBeInTheDocument();
+  });
+
+  it('offers no check to one who may read the entry but not edit it', async () => {
+    const { client } = service();
+    render(<EntryPage client={client} id={READ_ONLY} />);
+    const source = await screen.findByRole('region', { name: 'Its source' });
+    expect(source).toHaveTextContent('Not yet checked against Crossref.');
+    expect(within(source).queryByRole('button', { name: 'Check now' })).toBeNull();
   });
 
   it('offers no check for an entry made by hand', async () => {
