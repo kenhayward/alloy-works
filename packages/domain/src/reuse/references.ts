@@ -8,7 +8,8 @@ export interface IndexedReference {
   readonly target:
     | {
         readonly artifact: string;
-        readonly kind: 'component' | 'queryDefinition' | 'connection' | 'dataset';
+        readonly kind:
+          'component' | 'queryDefinition' | 'connection' | 'dataset' | 'bibliographyEntry';
       }
     | { readonly version: string; readonly kind: 'asset' };
   /** `latest` follows each version, `approved` each approved revision, `pinned` one version. */
@@ -34,7 +35,8 @@ function* objectsIn(value: unknown): Generator<Json> {
 
 /**
  * The references a version of this kind holds, in content order: a document's to components, a
- * component's to asset versions (figures and images) and query definitions (bindings), and a query
+ * component's to asset versions (figures and images), query definitions (bindings) and bibliography
+ * entries (citations, by their entry, held by no node of their own: the CI plan, CI-B), and a query
  * definition's to its connection. Read from the stored content, which its writer has checked; a
  * document's template is not in its content, and the index adds it.
  */
@@ -74,6 +76,14 @@ export function referencesIn(kind: string, content: unknown): IndexedReference[]
           target: { artifact: query, kind: 'queryDefinition' },
           mode: version === undefined ? 'latest' : 'pinned',
           ...(version === undefined ? {} : { version }),
+        });
+      }
+      const entry = text(node['entry']);
+      if (node['type'] === 'citation' && entry !== undefined) {
+        found.push({
+          node: null,
+          target: { artifact: entry, kind: 'bibliographyEntry' },
+          mode: 'latest',
         });
       }
     }

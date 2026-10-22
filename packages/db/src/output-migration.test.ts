@@ -295,6 +295,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0142_webhook_delivery_ids',
       '0143_publication_generated',
       '0144_embedding_lag',
+      '0145_bibliography_entries',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,

@@ -5,6 +5,7 @@ import {
   createComponent,
   createConnection,
   createPrompt,
+  createEntry,
   createQueryDefinition,
   createDocument,
   createTenant,
@@ -163,6 +164,13 @@ describe('the listings through the service', () => {
           },
         });
         if (prompted.answer !== 'created') throw new Error(prompted.answer);
+        // And an entry beside each, so the space's bibliography has pages to turn.
+        const cited = await createEntry(trx, {
+          spaceId: general.id,
+          author: grace,
+          entry: { csl: { type: 'book', title: `${name} readings` } },
+        });
+        if (cited.answer !== 'created') throw new Error(cited.answer);
         // And a stored result of each, so the stored results a query may take have pages too.
         await recordDatasetVersion(trx, {
           author: grace,
@@ -565,6 +573,7 @@ describe('the listings through the service', () => {
       listDatasetSources: '/v1/datasets',
       listQueryDefinitions: '/v1/query-definitions',
       listPrompts: '/v1/prompts',
+      listBibliographyEntries: `/v1/spaces/${general}/bibliography-entries`,
       listDefinitions: '/v1/definitions',
       listPeople: '/v1/people',
       listTokens: '/v1/tokens',

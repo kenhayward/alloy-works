@@ -1,0 +1,103 @@
+# Citations
+
+How a document cites a source and prints its bibliography: T6's first slice. Ken's answers of
+2026-10-22 shaped it, [ADR-0067](../decisions/0067-citations-are-csl-rendered-by-citeproc-js.md)
+records the engine, and [the CI plan](../plans/2026-10-22-ci-citations.md) builds it. External
+reference sources (LIB-031 onwards) are the next slice's.
+
+## The shape in one paragraph
+
+A **bibliography entry** is an artifact in a space, versioned on the chain as any other, holding one
+source as CSL-JSON, a citation key fixed at its creation, and where it was obtained and when last
+checked. Making one, by hand or by import, looks for the same source first: by DOI, PubMed identifier,
+ISBN or ISSN, else by title, year and first author, and offers the one found. A component **cites** an
+entry by its identity (`citation { entry, locator? }`, in the content model since T1), and a
+cross-reference may target one. A **citation style** is a CSL file, a tenant's managed artifact; CSE,
+Vancouver and Harvard are seeded, and a theme names the one its documents use. At publish, citeproc-js
+renders each citation's in-text form and the bibliography of what is cited, in the style's order and
+with its disambiguation, the same for the editor, PDF and Word; each citation links to its entry in
+the bibliography. A citation whose entry cannot be read, or an entry missing a field its style needs,
+fails the publish, naming both.
+
+## Requirements owned
+
+| ID          | How it is met                                                                                                                  |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| **CNT-053** | Formatted at publish from the theme's citation style, by citeproc-js                                                           |
+| **CNT-102** | CSE, Vancouver and Harvard seeded; any CSL style uploaded                                                                      |
+| **STY-020** | A CSL style declares both forms                                                                                                |
+| **STY-021** | As CNT-102                                                                                                                     |
+| **STY-022** | A CSL style declares its ordering and disambiguation; citeproc-js applies them across the document                             |
+| **STY-023** | A style is uploaded as a CSL file, no release                                                                                  |
+| **API-032** | As STY-023, through `/v1/citation-styles`                                                                                      |
+| **LIB-008** | An entry holds CSL-JSON, typed by CSL's source types                                                                           |
+| **LIB-009** | Imported and exported as CSL-JSON, BibTeX and RIS                                                                              |
+| **LIB-010** | Import finds an existing record and says what it merged                                                                        |
+| **LIB-011** | `obtained { from, at }` and `checkedAt` on the entry                                                                           |
+| **LIB-012** | A style declares the fields it requires by source type; an entry lacking one fails the publish, naming the entry and the field |
+| **LIB-044** | Making one by hand runs the same search and offers the existing record                                                         |
+| **LIB-045** | Canonical identifiers first, then title, year and first author, normalised                                                     |
+| **LIB-046** | The key is made from the fields at creation, unique in the space (so in any document), and never changes                       |
+| **PUB-040** | The bibliography is generated from the citations present, in the style's form                                                  |
+| **PUB-097** | Each citation links to its entry in the bibliography: PDF a link, Word a REF field to the entry's bookmark                     |
+| **STR-069** | A cross-reference's target gains an `entry` arm, by identity                                                                   |
+| **IMP-014** | As LIB-009                                                                                                                     |
+
+CNT-051 (content-model.md) and CNT-054 (publishing.md) are claimed where they were designed; this
+slice builds them. LIB-006, LIB-007 and LIB-047 are the library's constraints, honoured here for
+entries and claimed by the library's design once every kind of record keeps them.
+
+## The entry
+
+`bibliographyEntry`, an artifact kind in a space. Its version holds `{ schemaVersion, csl, key,
+obtained?: { from, at }, checkedAt? }`: `csl` a CSL-JSON item without its `id` (the artifact's identity
+is its id), checked against CSL's types and variables; `key` fixed at the first version. Fields beyond
+CSL's are refused, never kept.
+
+**The key** (LIB-046) is the first author's family name and the issued year (`smith2020`), else the
+first significant word of the title and the year, else `entry`; lower-cased ASCII, then `a`, `b` and on
+where the space already holds it, under a unique index on the space and key. It names the entry to an
+author and in an export; the printed label is the style's (`Smith 2020a`), never the key.
+
+**Kept while cited** (LIB-006): an entry cited by any component's latest version, or a version a
+baseline pins, cannot be deleted or archived; its uses are listed by component, from an index kept as
+cross-references' are. A change reaches an unpinned citation at the next publish and never a baseline's
+pin (LIB-047).
+
+**The citation** keeps its stored shape (`entry` a string, as fixtures hold): a save is refused where a
+new or changed citation names no entry the author may read in the component's space, and at publish an
+entry that cannot be resolved is `citation_unresolved` (LIB-007).
+
+**Duplicates** (LIB-010, LIB-044, LIB-045): `DOI` (lower-cased, prefix stripped), `PMID`, `ISBN`
+(digits, ISBN-10 as 13) and `ISSN` are each a match; otherwise the normalised title, the issued year and
+the first author's family name. A match is offered, never refused; import merges into the match the
+fields it lacks and says which.
+
+## The style
+
+`citationStyle`, a tenant's managed artifact (no space), its version `{ csl: <the XML>, requires }`:
+`requires` maps a CSL type to the variables an entry of that type must hold, since CSL itself declares none:
+seeded for the three, and given with every upload, the page proposing one from the variables the style
+prints. A file that does not parse as CSL 1.0.2 is
+refused. The theme's citation style catalogue, empty since T1, gains a version naming one style **at a
+version**, so a baseline's output never moves; the default theme names
+Harvard.
+
+## Rendering
+
+The domain's `citations` module builds a citeproc-js engine from data it is given, never a file: the
+style's XML, the entries cited, and the CSL locale for the document's language (bundled by the caller,
+falling back to `en-US`), registers the citations in reading order, and answers each citation's in-text
+form and the bibliography's entries as the published document's runs. Typst and Word draw those runs;
+neither formats a citation. A bibliography is placed where the layout's matter says, as the lists are.
+The editor shows a citation's form as the service renders it, so citeproc-js never reaches the browser;
+a citation whose entry a reader cannot read shows as unavailable. **Whose read decides** at publish is
+the publisher's, as with every other record.
+
+## Failures
+
+| Code                  | When                                                                                        |
+| --------------------- | ------------------------------------------------------------------------------------------- |
+| `citation_unresolved` | A citation's entry does not exist, or the publisher may not read it                         |
+| `entry_incomplete`    | An entry lacks a variable its style requires for its type: the entry and the variable named |
+| `style_invalid`       | The theme's style no longer renders (never at upload, where it is refused)                  |

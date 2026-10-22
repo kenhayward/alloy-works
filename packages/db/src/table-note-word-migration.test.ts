@@ -179,6 +179,7 @@ describe("migration 0056, which gives the default layout the word a table's note
       '0142_webhook_delivery_ids',
       '0143_publication_generated',
       '0144_embedding_lag',
+      '0145_bibliography_entries',
     ]);
     expect((await layoutChain(tenant)).at(-1)).toMatchObject({
       version_no: 9,

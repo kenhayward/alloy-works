@@ -856,6 +856,26 @@ export interface ReferenceTable {
   to_version: string | null;
 }
 
+/** A bibliography entry's key, fixed at its first version, unique in its space (0145; LIB-046). */
+export interface BibliographyKeyTable {
+  entry_id: ColumnType<string, string, never>;
+  entry_kind: ColumnType<'bibliographyEntry', never, never>;
+  space_id: ColumnType<string, string, never>;
+  key: ColumnType<string, string, never>;
+}
+
+/** One identity of an entry's latest version, a match is found by (0145; LIB-045). */
+export interface BibliographyIdentityTable {
+  entry_id: ColumnType<string, string, never>;
+  space_id: ColumnType<string, string, never>;
+  by: ColumnType<
+    'doi' | 'pmid' | 'isbn' | 'issn' | 'work',
+    'doi' | 'pmid' | 'isbn' | 'issn' | 'work',
+    never
+  >;
+  value: ColumnType<string, string, never>;
+}
+
 /** A section the template requires, removed with a reason (0100; the WF6 plan, WF6-B). */
 export interface SectionWaiverTable {
   id: ColumnType<string, never, never>;
@@ -873,7 +893,7 @@ export interface SectionWaiverTable {
 export interface ArtifactArchivalTable {
   id: ColumnType<string, never, never>;
   artifact_id: string;
-  kind: 'component' | 'document';
+  kind: 'component' | 'document' | 'bibliographyEntry';
   act: 'archived' | 'unarchived';
   by: string;
   at: ColumnType<Date, never, never>;
@@ -1211,6 +1231,8 @@ export interface TenantTables {
   section_waiver: SectionWaiverTable;
   document_template_move: DocumentTemplateMoveTable;
   reference: ReferenceTable;
+  bibliography_key: BibliographyKeyTable;
+  bibliography_identity: BibliographyIdentityTable;
   search_text: SearchTextTable;
   search_earlier: SearchEarlierTable;
   search_earlier_text: SearchEarlierTextTable;

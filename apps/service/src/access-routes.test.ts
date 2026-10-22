@@ -1166,6 +1166,42 @@ describe('routes that check a permission', () => {
       },
     }),
     getPrompt: () => ({ url: `/v1/prompts/${MISSING}`, status: 404 }),
+    listBibliographyEntries: () => ({
+      url: `/v1/spaces/${clinical}/bibliography-entries`,
+      status: 404,
+    }),
+    createBibliographyEntry: () => ({
+      url: `/v1/spaces/${clinical}/bibliography-entries`,
+      status: 404,
+      payload: { entry: { csl: { type: 'book', title: 'Probe' } } },
+    }),
+    importBibliographyEntries: () => ({
+      url: `/v1/spaces/${clinical}/bibliography-entries/import`,
+      status: 404,
+      payload: { format: 'csl-json', text: '[]' },
+    }),
+    exportBibliographyEntries: () => ({
+      url: `/v1/spaces/${clinical}/bibliography-entries/export?format=bibtex`,
+      status: 404,
+    }),
+    getBibliographyEntry: () => ({ url: `/v1/bibliography-entries/${MISSING}`, status: 404 }),
+    recordBibliographyEntryVersion: () => ({
+      url: `/v1/bibliography-entries/${MISSING}/versions`,
+      status: 404,
+      payload: { openedFrom: MISSING, entry: { csl: { type: 'book', title: 'Probe' } } },
+    }),
+    getBibliographyEntryUses: () => ({
+      url: `/v1/bibliography-entries/${MISSING}/uses`,
+      status: 404,
+    }),
+    archiveBibliographyEntry: () => ({
+      url: `/v1/bibliography-entries/${MISSING}/archive`,
+      status: 404,
+    }),
+    unarchiveBibliographyEntry: () => ({
+      url: `/v1/bibliography-entries/${MISSING}/unarchive`,
+      status: 404,
+    }),
     listPromptLibraries: () => ({ url: '/v1/prompt-libraries', status: 403 }),
     listGuardrails: () => ({ url: '/v1/guardrails', status: 403 }),
     setGuardrail: () => ({

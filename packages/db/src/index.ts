@@ -713,6 +713,25 @@ export {
   type StoredPrompt,
 } from './prompts.js';
 export {
+  archiveEntry,
+  createEntry,
+  entriesForExport,
+  entryCited,
+  entryUses,
+  findEntryMatches,
+  importEntries,
+  listEntries,
+  readEntry,
+  recordEntryVersion,
+  type EntryAnswer,
+  type EntryInput,
+  type EntryMatch,
+  type EntrySummary,
+  type EntryUses,
+  type ImportedRecord,
+  type StoredEntry,
+} from './bibliography.js';
+export {
   createLibrary,
   defaultLibraryId,
   documentLibrary,

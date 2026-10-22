@@ -39,6 +39,11 @@ export const MODULE_GROUPS: readonly ModuleGroup[] = [
         about: 'Instructions a model runs on a part, declaring what it reads and writes.',
       },
       {
+        name: 'Bibliography',
+        href: '#/bibliography',
+        about: 'The sources a space cites, kept once, imported and exported.',
+      },
+      {
         name: 'Conversations',
         href: '#/conversations',
         about: 'Talk with a model in your own words, about what you may read.',

@@ -16388,6 +16388,87 @@
       ]
     },
     {
+      "document": "citations.md",
+      "owns": [
+        {
+          "id": "CNT-053",
+          "howItIsMet": "Formatted at publish from the theme's citation style, by citeproc-js"
+        },
+        {
+          "id": "CNT-102",
+          "howItIsMet": "CSE, Vancouver and Harvard seeded; any CSL style uploaded"
+        },
+        {
+          "id": "STY-020",
+          "howItIsMet": "A CSL style declares both forms"
+        },
+        {
+          "id": "STY-021",
+          "howItIsMet": "As CNT-102"
+        },
+        {
+          "id": "STY-022",
+          "howItIsMet": "A CSL style declares its ordering and disambiguation; citeproc-js applies them across the document"
+        },
+        {
+          "id": "STY-023",
+          "howItIsMet": "A style is uploaded as a CSL file, no release"
+        },
+        {
+          "id": "API-032",
+          "howItIsMet": "As STY-023, through `/v1/citation-styles`"
+        },
+        {
+          "id": "LIB-008",
+          "howItIsMet": "An entry holds CSL-JSON, typed by CSL's source types"
+        },
+        {
+          "id": "LIB-009",
+          "howItIsMet": "Imported and exported as CSL-JSON, BibTeX and RIS"
+        },
+        {
+          "id": "LIB-010",
+          "howItIsMet": "Import finds an existing record and says what it merged"
+        },
+        {
+          "id": "LIB-011",
+          "howItIsMet": "`obtained { from, at }` and `checkedAt` on the entry"
+        },
+        {
+          "id": "LIB-012",
+          "howItIsMet": "A style declares the fields it requires by source type; an entry lacking one fails the publish, naming the entry and the field"
+        },
+        {
+          "id": "LIB-044",
+          "howItIsMet": "Making one by hand runs the same search and offers the existing record"
+        },
+        {
+          "id": "LIB-045",
+          "howItIsMet": "Canonical identifiers first, then title, year and first author, normalised"
+        },
+        {
+          "id": "LIB-046",
+          "howItIsMet": "The key is made from the fields at creation, unique in the space (so in any document), and never changes"
+        },
+        {
+          "id": "PUB-040",
+          "howItIsMet": "The bibliography is generated from the citations present, in the style's form"
+        },
+        {
+          "id": "PUB-097",
+          "howItIsMet": "Each citation links to its entry in the bibliography: PDF a link, Word a REF field to the entry's bookmark"
+        },
+        {
+          "id": "STR-069",
+          "howItIsMet": "A cross-reference's target gains an `entry` arm, by identity"
+        },
+        {
+          "id": "IMP-014",
+          "howItIsMet": "As LIB-009"
+        }
+      ]
+    },
+    {
       "document": "collaboration.md",
       "owns": [
         {
@@ -20854,13 +20935,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 582,
+      "line": 592,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 595,
+      "line": 605,
       "kind": "title"
     },
     {
@@ -20987,6 +21068,42 @@
       "id": "VER-058",
       "file": "apps/service/src/baseline-routes.test.ts",
       "line": 149,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-014",
+      "file": "apps/service/src/bibliography-routes.test.ts",
+      "line": 100,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-008",
+      "file": "apps/service/src/bibliography-routes.test.ts",
+      "line": 71,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-044",
+      "file": "apps/service/src/bibliography-routes.test.ts",
+      "line": 41,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-046",
+      "file": "apps/service/src/bibliography-routes.test.ts",
+      "line": 76,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-014",
+      "file": "apps/service/src/bibliography/interchange.test.ts",
+      "line": 21,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-009",
+      "file": "apps/service/src/bibliography/interchange.test.ts",
+      "line": 64,
       "kind": "title"
     },
     {
@@ -21268,7 +21385,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1891,
+      "line": 1934,
       "kind": "title"
     },
     {
@@ -21802,7 +21919,7 @@
     {
       "id": "API-007",
       "file": "apps/service/src/listing-routes.test.ts",
-      "line": 347,
+      "line": 355,
       "kind": "title"
     },
     {
@@ -23384,6 +23501,18 @@
       "kind": "title"
     },
     {
+      "id": "LIB-010",
+      "file": "apps/web/src/bibliography/bibliography.test.tsx",
+      "line": 160,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-044",
+      "file": "apps/web/src/bibliography/bibliography.test.tsx",
+      "line": 126,
+      "kind": "title"
+    },
+    {
       "id": "VER-024",
       "file": "apps/web/src/compare/BaselineComparisonPage.test.tsx",
       "line": 92,
@@ -24034,25 +24163,25 @@
     {
       "id": "LIF-005",
       "file": "apps/web/src/home/Home.test.tsx",
-      "line": 201,
+      "line": 208,
       "kind": "title"
     },
     {
       "id": "LIF-017",
       "file": "apps/web/src/home/Home.test.tsx",
-      "line": 168,
+      "line": 175,
       "kind": "title"
     },
     {
       "id": "LIF-059",
       "file": "apps/web/src/home/Home.test.tsx",
-      "line": 168,
+      "line": 175,
       "kind": "title"
     },
     {
       "id": "SCH-070",
       "file": "apps/web/src/home/Home.test.tsx",
-      "line": 124,
+      "line": 131,
       "kind": "title"
     },
     {
@@ -26333,6 +26462,48 @@
       "id": "VER-058",
       "file": "packages/db/src/baselines.test.ts",
       "line": 1087,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-008",
+      "file": "packages/db/src/bibliography.test.ts",
+      "line": 190,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-009",
+      "file": "packages/db/src/bibliography.test.ts",
+      "line": 336,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-010",
+      "file": "packages/db/src/bibliography.test.ts",
+      "line": 291,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-011",
+      "file": "packages/db/src/bibliography.test.ts",
+      "line": 164,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-044",
+      "file": "packages/db/src/bibliography.test.ts",
+      "line": 224,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-045",
+      "file": "packages/db/src/bibliography.test.ts",
+      "line": 251,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-046",
+      "file": "packages/db/src/bibliography.test.ts",
+      "line": 201,
       "kind": "title"
     },
     {
@@ -29056,7 +29227,43 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 878,
+      "line": 893,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-008",
+      "file": "packages/domain/src/library/entry.test.ts",
+      "line": 40,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-009",
+      "file": "packages/domain/src/library/entry.test.ts",
+      "line": 149,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-010",
+      "file": "packages/domain/src/library/entry.test.ts",
+      "line": 163,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-011",
+      "file": "packages/domain/src/library/entry.test.ts",
+      "line": 71,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-045",
+      "file": "packages/domain/src/library/entry.test.ts",
+      "line": 118,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-046",
+      "file": "packages/domain/src/library/entry.test.ts",
+      "line": 94,
       "kind": "title"
     },
     {

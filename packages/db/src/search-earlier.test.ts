@@ -742,6 +742,7 @@ describe('migration 0088, which keeps earlier versions searchable', () => {
         '0142_webhook_delivery_ids',
         '0143_publication_generated',
         '0144_embedding_lag',
+        '0145_bibliography_entries',
       ]);
       const kept = await service.withTenant(tenant, (trx) =>
         trx

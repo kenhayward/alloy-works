@@ -11,6 +11,7 @@ import {
   createConnection,
   createLibrary,
   createPrompt,
+  createEntry,
   startConversation,
   setGuardrail,
   savePersonalPrompt,
@@ -462,6 +463,15 @@ const OTHER_TENANT_IDS: Readonly<
   getPendingResult: async (tenant, db) => ({ id: await pendingIn(tenant, db) }),
   createQueryDefinition: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   createPrompt: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
+  listBibliographyEntries: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
+  createBibliographyEntry: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
+  importBibliographyEntries: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
+  exportBibliographyEntries: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
+  getBibliographyEntry: async (tenant, db) => ({ id: await entryIdIn(tenant, db) }),
+  recordBibliographyEntryVersion: async (tenant, db) => ({ id: await entryIdIn(tenant, db) }),
+  getBibliographyEntryUses: async (tenant, db) => ({ id: await entryIdIn(tenant, db) }),
+  archiveBibliographyEntry: async (tenant, db) => ({ id: await entryIdIn(tenant, db) }),
+  unarchiveBibliographyEntry: async (tenant, db) => ({ id: await entryIdIn(tenant, db) }),
   getPrompt: async (tenant, db) => ({ id: await promptIdIn(tenant, db) }),
   recordPromptVersion: async (tenant, db) => ({ id: await promptIdIn(tenant, db) }),
   getPromptLibrary: async (tenant, db) => ({ id: await libraryIdIn(tenant, db) }),
@@ -584,6 +594,12 @@ const VALID_INPUT: Readonly<
     payload: { openedFrom: SESSION, definition: aQueryDefinition(SESSION) },
   },
   createPrompt: { payload: { prompt: aPrompt } },
+  createBibliographyEntry: { payload: { entry: { csl: { type: 'book', title: 'Probe' } } } },
+  importBibliographyEntries: { payload: { format: 'csl-json', text: '[]' } },
+  exportBibliographyEntries: { query: 'format=bibtex' },
+  recordBibliographyEntryVersion: {
+    payload: { openedFrom: SESSION, entry: { csl: { type: 'book', title: 'Probe' } } },
+  },
   recordPromptVersion: { payload: { openedFrom: SESSION, prompt: aPrompt } },
   createPromptLibrary: { payload: { library: { schemaVersion: 1, name: 'Probe', prompts: [] } } },
   recordPromptLibraryVersion: {
@@ -1032,6 +1048,33 @@ const queryDefinitionIdIn = async (tenant: Tenant, db: TenantDatabase) => {
     return made.definition.id;
   });
 };
+
+/** A bibliography entry in environment B's General. */
+const entryIdIn = (tenant: Tenant, db: TenantDatabase) =>
+  db.withTenant(tenant, async (trx) => {
+    const general = await trx
+      .selectFrom('space')
+      .select('id')
+      .where('name', '=', 'General')
+      .executeTakeFirstOrThrow();
+    const author = await trx
+      .insertInto('principal')
+      .values({
+        issuer: 'https://idp.example',
+        subject: `ivy-${randomUUID()}`,
+        email: null,
+        display_name: null,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    const made = await createEntry(trx, {
+      spaceId: general.id,
+      entry: { csl: { type: 'book', title: `Probe ${randomUUID()}` } },
+      author: author.id,
+    });
+    if (made.answer !== 'created') throw new Error(`refused: ${made.answer}`);
+    return made.entry.id;
+  });
 
 /** A prompt in environment B's General. */
 const promptIdIn = (tenant: Tenant, db: TenantDatabase) =>

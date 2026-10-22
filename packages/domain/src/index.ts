@@ -81,6 +81,8 @@ export * from './review/index.js';
 export * from './workflow/index.js';
 // Generation: model endpoints, and the connector's model call and its events (docs/design/generation.md).
 export * from './generation/index.js';
+// Citations: a bibliography entry, its key and its identities (docs/design/citations.md).
+export * from './library/index.js';
 // Relationships (the R8 plan): declared types, and the ends a type permits.
 export {
   endsRefused,

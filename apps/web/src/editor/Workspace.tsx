@@ -20,6 +20,9 @@ import { Conversations, CONVERSATIONS } from '../conversations/Conversations.js'
 import { LibraryPage, PromptLibraries } from '../prompts/Libraries.js';
 import { LIBRARIES, libraryAddress, promptAddress, PROMPTS } from '../prompts/links.js';
 import { PromptPage } from '../prompts/PromptPage.js';
+import { Bibliography } from '../bibliography/Bibliography.js';
+import { EntryPage } from '../bibliography/EntryPage.js';
+import { BIBLIOGRAPHY, entryAddress } from '../bibliography/links.js';
 import { Prompts } from '../prompts/Prompts.js';
 import { Home } from '../home/Home.js';
 import { PublicationList } from '../publishing/PublicationList.js';
@@ -76,6 +79,7 @@ const LISTS = new Set([
   '#/query-definitions',
   '#/prompts',
   '#/prompts/libraries',
+  '#/bibliography',
 ]);
 const isWork = (hash: string) => !LISTS.has(hash) && !hash.startsWith('#/admin');
 
@@ -444,6 +448,9 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
     const prompt = promptAddress(hash);
     if (prompt !== null) return <PromptPage key={prompt} client={client} id={prompt} />;
     if (hash === PROMPTS) return <Prompts client={client} />;
+    const entry = entryAddress(hash);
+    if (entry !== null) return <EntryPage key={entry} client={client} id={entry} />;
+    if (hash === BIBLIOGRAPHY) return <Bibliography client={client} />;
     if (hash === '#/query-definitions') {
       return (
         <>

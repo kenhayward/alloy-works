@@ -17,6 +17,7 @@ import { extensionRoutes } from './extensions.js';
 import { assistantRoutes } from './assistant.js';
 import { generatedRoutes } from './generated.js';
 import { promptRoutes } from './prompts.js';
+import { bibliographyRoutes } from './bibliography.js';
 import { promptLibraryRoutes } from './prompt-libraries.js';
 import { promptRunRoutes } from './prompt-runs.js';
 import { conversationRoutes } from './conversations.js';
@@ -398,6 +399,7 @@ type Routes = typeof ownRoutes &
   typeof assistantRoutes &
   typeof generatedRoutes &
   typeof promptRoutes &
+  typeof bibliographyRoutes &
   typeof promptLibraryRoutes &
   typeof promptRunRoutes &
   typeof conversationRoutes &
@@ -467,6 +469,7 @@ export const routes: Routes = {
   ...assistantRoutes,
   ...generatedRoutes,
   ...promptRoutes,
+  ...bibliographyRoutes,
   ...promptLibraryRoutes,
   ...promptRunRoutes,
   ...conversationRoutes,

@@ -189,6 +189,25 @@ export {
 } from './assistant.js';
 export { GeneratedParams, GeneratedReport, generatedRoutes } from './generated.js';
 export {
+  CreateEntryAnswer,
+  CreateEntryBody,
+  EntryList,
+  EntryListQuery,
+  EntryParams,
+  EntryRefusal,
+  EntrySummary,
+  EntryUsesView,
+  EntryVersionBody,
+  EntryView,
+  ExportAnswer,
+  ExportQuery,
+  IMPORT_MOST,
+  INTERCHANGE_FORMATS,
+  ImportAnswer,
+  ImportEntriesBody,
+  bibliographyRoutes,
+} from './bibliography.js';
+export {
   CreatePromptBody,
   PromptList,
   PromptListQuery,
