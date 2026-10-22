@@ -36,7 +36,7 @@ removal waits until no connection uses it.
 | -------------- | --------------------------------------------------------------------------------------------------------------- |
 | API-059        | Permissioned, audited and its outbound hosts shown, but the outbound inventory (ADM-041) is T7's                |
 | DAT-073        | A cheap revision token needs a revision held in every result's provenance, for every source type: its own slice |
-| API-031        | Output formats follow under the same manifest                                                                   |
+| API-031        | Output formats follow under the same manifest, in T7                                                            |
 
 ## The manifest
 

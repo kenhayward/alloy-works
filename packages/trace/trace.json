@@ -625,7 +625,7 @@
       "id": "API-055",
       "area": "API",
       "statement": "Webhook subscriptions must be administrable: created, changed and removed by an entitled administrator, declaring the endpoint, the event types selected, and the signing key with a rotation path. Every such change must be audited (**LIF-071**), and subscriptions must be carried in the configuration export (**ADM-005**)",
-      "tranche": "T5",
+      "tranche": "T7",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
       "line": 55
@@ -661,7 +661,7 @@
       "id": "API-059",
       "area": "API",
       "statement": "Installing, updating and removing an extension must be permissioned, audited and visible to the tenant, and an extension must declare what leaves the tenant boundary so that it appears in the tenant's outbound inventory (**ADM-041**, API-033, **API-Q06**)",
-      "tranche": "T5",
+      "tranche": "T7",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
       "line": 59
@@ -976,7 +976,7 @@
       "id": "API-031",
       "area": "API",
       "statement": "Output formats should be addable as extensions",
-      "tranche": "T5",
+      "tranche": "T7",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
       "line": 191
