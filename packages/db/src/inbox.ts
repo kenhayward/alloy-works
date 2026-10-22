@@ -47,7 +47,7 @@ export interface DigestCounts {
 /** A notification as its recipient holds it (COL-063): identifiers, never the text (COL-036). */
 export interface StoredNotification {
   readonly id: string;
-  readonly kind: NotificationKind | 'digest' | 'budget' | 'webhook' | 'reference';
+  readonly kind: NotificationKind | 'digest' | 'budget' | 'webhook' | 'reference' | 'import';
   readonly actor: { readonly id: string; readonly name: string | null } | null;
   readonly thread: string | null;
   /** A round's notification names it (RR-H). */
@@ -63,6 +63,8 @@ export interface StoredNotification {
     readonly entry: string;
     readonly outcome: 'retracted' | 'corrected';
   } | null;
+  /** A proposal about to be swept names its import and when (the IM plan, IM-F); null on every other. */
+  readonly import: { readonly import: string; readonly sweepsAt: string } | null;
   readonly at: Date;
   readonly readAt: Date | null;
 }
@@ -266,7 +268,10 @@ export async function listInbox(
       round: row.round_id,
       artifact: row.artifact_id,
       counts:
-        row.kind === 'budget' || row.kind === 'webhook' || row.kind === 'reference'
+        row.kind === 'budget' ||
+        row.kind === 'webhook' ||
+        row.kind === 'reference' ||
+        row.kind === 'import'
           ? null
           : (row.counts as DigestCounts | null),
       budget: row.kind === 'budget' ? (row.counts as BudgetCounts) : null,
@@ -278,6 +283,7 @@ export async function listInbox(
         row.kind === 'reference'
           ? (row.counts as { entry: string; outcome: 'retracted' | 'corrected' })
           : null,
+      import: row.kind === 'import' ? (row.counts as { import: string; sweepsAt: string }) : null,
       at: row.at,
       readAt: row.read_at,
     })),

@@ -130,6 +130,9 @@ describe('the audit kinds', () => {
       'extension.changed',
       'organisation.changed',
       'import.restored',
+      // The IM plan's (IM-F): an import accepted, and one abandoned.
+      'import.accepted',
+      'import.abandoned',
       'library.changed',
       'line.merged',
       'revision.effective',
@@ -152,6 +155,8 @@ describe('the audit kinds', () => {
   it('takes the detail each kind emitted now describes', () => {
     const examples: Partial<Record<(typeof auditKinds)[number], unknown>> = {
       'authentication.signed_in': { route: 'organisation', session: ID },
+      'import.accepted': { import: ID, components: 3 },
+      'import.abandoned': { swept: true },
       'authentication.sign_in_failed': { route: 'google', failure: 'handoff_expired' },
       'authentication.signed_out': {
         ended: 'expired',

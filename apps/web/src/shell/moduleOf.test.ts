@@ -22,6 +22,7 @@ describe('the module an address belongs to', () => {
     expect(moduleOf('#/documents')).toBe('Documents');
     expect(moduleOf(`#/documents/${COMPONENT}`)).toBe('Documents');
     expect(moduleOf(`#/documents/${COMPONENT}/nodes/${NODE}`)).toBe('Documents');
+    expect(moduleOf(`#/imports/${COMPONENT}`)).toBe('Documents');
   });
 
   it('names Bibliography for the list and an entry', () => {

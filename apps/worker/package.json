@@ -20,6 +20,7 @@
     "@alloy-works/domain": "workspace:^",
     "@alloy-works/fonts": "workspace:^",
     "@alloy-works/objects": "workspace:^",
+    "@alloy-works/readers": "workspace:^",
     "fflate": "^0.8.3",
     "pdfjs-dist": "^6.3.289",
     "pg": "^8.23.0",

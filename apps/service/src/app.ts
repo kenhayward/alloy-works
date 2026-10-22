@@ -90,6 +90,7 @@ import { registerMcp } from './mcp/route.js';
 import { promptHandlers, promptLibraryHandlers } from './generation/prompts.js';
 import { bibliographyHandlers } from './bibliography/routes.js';
 import { termHandlers } from './terms/routes.js';
+import { importHandlers } from './imports.js';
 import { termEditingHandlers } from './terms/editing.js';
 import { referenceSourceHandlers } from './bibliography/sources.js';
 import { citationStyleHandlers } from './bibliography/styles.js';
@@ -601,6 +602,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...promptLibraryHandlers(),
     ...bibliographyHandlers(),
     ...termHandlers(),
+    ...importHandlers(db, tenantOf, options.objects),
     ...termEditingHandlers(),
     ...referenceSourceHandlers(db, tenantOf, options.connector),
     ...citationStyleHandlers(),

@@ -23,7 +23,7 @@ interface Place {
 
 interface Notification {
   readonly id: string;
-  readonly kind: Kind | 'digest' | 'budget' | 'webhook' | 'reference';
+  readonly kind: Kind | 'digest' | 'budget' | 'webhook' | 'reference' | 'import';
   readonly actor: { readonly id: string; readonly name: string | null } | null;
   readonly thread: string | null;
   /** A round a person was named a reviewer on (RR-H). */
@@ -49,6 +49,8 @@ interface Notification {
     readonly entry: string;
     readonly outcome: 'retracted' | 'corrected';
   } | null;
+  /** A proposal left alone, abandoned at `sweepsAt` (IM-F). */
+  readonly import?: { readonly id: string; readonly sweepsAt: string } | null;
   readonly at: string;
   readonly read: boolean;
 }
@@ -115,6 +117,8 @@ function said(each: Notification): string {
       return 'A webhook you made was turned off after three days of failed deliveries.';
     case 'reference':
       return `A source cited in ${placeWords(each.on)} was ${each.reference?.outcome ?? 'flagged'} by its source.`;
+    case 'import':
+      return 'An import you have not accepted is abandoned in seven days unless you act on it.';
   }
 }
 
@@ -278,6 +282,11 @@ export function Inbox({ client, onClose }: { client: Client; onClose: () => void
                   {each.kind === 'budget' && (
                     <a href="#/admin/spending" onClick={() => void markRead(each)}>
                       Open Model spending
+                    </a>
+                  )}
+                  {each.kind === 'import' && each.import && (
+                    <a href={`#/imports/${each.import.id}`} onClick={() => void markRead(each)}>
+                      Open the import
                     </a>
                   )}
                   {each.kind === 'webhook' && (

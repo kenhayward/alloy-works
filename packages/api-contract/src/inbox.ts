@@ -35,6 +35,7 @@ export const NotificationView = z.object({
     'budget',
     'webhook',
     'reference',
+    'import',
   ]),
   actor: z
     .object({
@@ -90,6 +91,13 @@ export const NotificationView = z.object({
     .describe(
       'A source cited in the document `on` names, retracted or corrected (LIB-036); null otherwise',
     ),
+  import: z
+    .object({
+      id: LowercaseUuid.describe('The import'),
+      sweepsAt: z.iso.datetime().describe('When it is abandoned unless it is acted on'),
+    })
+    .nullable()
+    .describe('A proposal left alone, abandoned in seven days; null otherwise'),
   at: z.iso.datetime(),
   read: z.boolean(),
 });

@@ -14,6 +14,7 @@ import {
   createPrompt,
   createEntry,
   createTerm,
+  createImport,
   startConversation,
   setGuardrail,
   savePersonalPrompt,
@@ -497,6 +498,13 @@ const OTHER_TENANT_IDS: Readonly<
   unarchiveBibliographyEntry: async (tenant, db) => ({ id: await entryIdIn(tenant, db) }),
   listTerms: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   createTerm: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
+  createImport: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
+  listImports: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
+  putImportFile: async (tenant, db) => ({ id: await importIdIn(tenant, db) }),
+  getImport: async (tenant, db) => ({ id: await importIdIn(tenant, db) }),
+  setImportLevels: async (tenant, db) => ({ id: await importIdIn(tenant, db) }),
+  acceptImport: async (tenant, db) => ({ id: await importIdIn(tenant, db) }),
+  abandonImport: async (tenant, db) => ({ id: await importIdIn(tenant, db) }),
   importTerms: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   exportTerms: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   getTerm: async (tenant, db) => ({ id: await termIdIn(tenant, db) }),
@@ -641,6 +649,9 @@ const VALID_INPUT: Readonly<
   importBibliographyEntries: { payload: { format: 'csl-json', text: '[]' } },
   exportBibliographyEntries: { query: 'format=bibtex' },
   createTerm: { payload: { term: aTerm } },
+  createImport: { payload: { fileName: 'Elsewhere.docx', fileType: 'docx' } },
+  setImportLevels: { payload: { section: 1, component: 2 } },
+  acceptImport: { payload: {} },
   importTerms: { payload: { format: 'json-ld', text: '{"@graph": []}' } },
   recordTermVersion: { payload: { openedFrom: SESSION, term: aTerm } },
   transitionTerm: { payload: { transition: 'deprecate', from: 'approved', reason: 'Probe' } },
@@ -1726,6 +1737,34 @@ const auditExportIdIn = (tenant: Tenant, db: TenantDatabase) =>
       .returning('id')
       .executeTakeFirstOrThrow();
     return (await requestAuditExport(trx, asker.id, {})).id;
+  });
+
+/** An import in an environment, awaiting its file, made by somebody there. */
+const importIdIn = (tenant: Tenant, db: TenantDatabase) =>
+  db.withTenant(tenant, async (trx) => {
+    const space = await trx
+      .selectFrom('space')
+      .select('id')
+      .where('name', '=', 'General')
+      .executeTakeFirstOrThrow();
+    const importer = await trx
+      .insertInto('principal')
+      .values({
+        issuer: 'https://idp.example',
+        subject: `ivy-${randomUUID()}`,
+        email: null,
+        display_name: null,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    return (
+      await createImport(trx, {
+        spaceId: space.id,
+        importer: importer.id,
+        fileName: 'Elsewhere.docx',
+        fileType: 'docx',
+      })
+    ).id;
   });
 
 const tenantExportIdIn = (tenant: Tenant, db: TenantDatabase) =>

@@ -156,6 +156,7 @@ A closed list in `packages/domain/src/audit/kinds.ts`, each naming the requireme
 | `section.waived`                                                                               | a section the template requires removed with a reason ([templates.md](templates.md)), `{ key }`; the reason on its row                             | TPL-029          |
 | `template.moved`                                                                               | a document moved to a newer version of its template ([templates.md](templates.md)), `{ template, from, to, notCarried }`                           | TPL-033          |
 | `review.lapsed`                                                                                | a review date passing unmet, by the system, `{ kind, reviewBy, action, to? }`                                                                      | LIF-059          |
+| `import.accepted`, `.abandoned`                                                                | an import accepted into a document, its subject, `{ import, components }`; or abandoned, `{ swept }` ([import.md](import.md))                      | LIF-067          |
 
 **Declared now, emitted by the design that builds the act:** `baseline.made`, `baseline.superseded`, `content.restored`, `reference.repointed` (CNT-161),
 `lock.taken` (COL-009), `suggestion.accepted`, `suggestion.rejected` (COL-024), `binding.revised` (DAT-058), `relationship.*`, `asset.replaced`, `asset.relicensed`, and those the AU1 review

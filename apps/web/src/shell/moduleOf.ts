@@ -21,6 +21,8 @@ export type ModuleName =
 export function moduleOf(hash: string): ModuleName | null {
   if (hash === '' || hash === '#' || hash === '#/') return null;
   if (/^#\/documents(?:\/|$)/.test(hash)) return 'Documents';
+  // An import becomes a document, and is begun from Documents (the IM plan).
+  if (/^#\/imports(?:\/|$)/.test(hash)) return 'Documents';
   if (/^#\/publications(?:\/|$)/.test(hash)) return 'Publications';
   if (/^#\/templates(?:\/|$)/.test(hash)) return 'Templates';
   // A cohort is generated from a template, and followed from Templates (the R7 plan, R7-G; R14-A).

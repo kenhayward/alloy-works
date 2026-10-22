@@ -979,6 +979,12 @@ describe('the domain package', () => {
         'termSpans',
         'termWarnings',
         'termLabelIn',
+        // IMa: an import's levels and the proposal broken out of what a reader read.
+        'DEFAULT_IMPORT_LEVELS',
+        'IMPORT_SOURCE_MOST',
+        'INTRODUCTION_TITLE',
+        'importLevelsSchema',
+        'proposeImport',
       ].sort(),
     );
   });

@@ -28,6 +28,8 @@ const REASONS = {
   lock: "A lock claimed or released: COL's lock-taking design records lock.taken (COL-009)",
   iteration: 'An iteration, which is never a version (VER-005)',
   upload: 'An upload waiting for its bytes: its asset is ingested, or the upload refused, later',
+  importing:
+    "An import's proposal, held apart from the space (IM-A): its acceptance and its abandonment are recorded",
   source: "Reads the source through the connector: nothing of the tenant's changes",
   checked:
     "An entry checked against its source through the connector: its status, the system's word beside it and never a version (XR-F), and its document owners told",
@@ -411,6 +413,14 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   unarchiveBibliographyEntry: writes('artifact.unarchived'),
   listTerms: read,
   createTerm: writes('content.version_cut'),
+  // An import held apart until accepted or abandoned (the IM plan, IM-A, IM-F).
+  createImport: { none: 'importing' },
+  putImportFile: { none: 'importing' },
+  listImports: read,
+  getImport: read,
+  setImportLevels: { none: 'importing' },
+  acceptImport: writes('import.accepted', 'content.version_cut'),
+  abandonImport: writes('import.abandoned'),
   // Each concept made or merged is a version, made or cut.
   importTerms: writes('content.version_cut'),
   exportTerms: read,
@@ -532,6 +542,8 @@ const WRITERS: Readonly<Record<string, Readonly<Record<string, Entry>>>> = {
     cohort: writes('content.version_cut'),
     // Each batch a run, recorded as every run is (the G7 plan, G7-F).
     embed: writes('generation.run'),
+    // A proposal written, or the import failed with nothing left (the IM plan, IM-C).
+    import: { none: 'importing' },
   },
   /** The worker's sweeps (apps/worker/src/sweep.ts). */
   sweeps: {
@@ -551,6 +563,8 @@ const WRITERS: Readonly<Record<string, Readonly<Record<string, Entry>>>> = {
     sweepDates: writes('revision.effective', 'review.lapsed', 'workflow.transitioned'),
     // Deliveries done with past 30 days, which the attempts they held go with (the WB plan, WB-I).
     sweepWebhookDeliveriesEverywhere: { none: 'derived' },
+    // A proposal left 30 days abandoned as the system, its importer told seven days before (IM-F).
+    sweepImportsEverywhere: writes('import.abandoned'),
   },
   /** The worker's webhook delivery loop (apps/worker/src/webhooks.ts; the WB plan, WB-I). */
   delivery: {

@@ -32,6 +32,7 @@
     "@modelcontextprotocol/sdk": "1.32.1",
     "@types/n3": "1.26.4",
     "@types/node": "^24.5.2",
+    "fflate": "^0.8.3",
     "tsx": "^4.23.13",
     "typescript": "^5.9.3",
     "vitest": "^5.0.0"

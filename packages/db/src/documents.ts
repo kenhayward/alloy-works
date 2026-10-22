@@ -105,6 +105,8 @@ export interface NewDocument {
    * queries run before it is made is prepared with these, then made again with them.
    */
   readonly identity?: { readonly artifactId: string; readonly newIdentifier: () => string };
+  /** Nodes placed after what its template makes, or as the whole of a blank one's (the IM plan, IM-F). */
+  readonly nodes?: readonly OutlineNode[];
 }
 
 /**
@@ -227,7 +229,7 @@ export async function createDocument(
     const content: OutlineDocument = {
       schemaVersion: OUTLINE_SCHEMA_VERSION,
       ...heading,
-      nodes: [],
+      nodes: [...(input.nodes ?? [])],
     };
     const version = await createArtifact(trx, {
       author: input.author,
@@ -369,7 +371,11 @@ export async function createFromResolution(
   const profile = templateProfile(template.definition, parameters);
   const unknownAxes = await profileUnknown(trx, profile);
   if (unknownAxes.length > 0) return { answer: 'profile.invalid', unknown: unknownAxes };
-  const outline = { ...materialised.outline, profile };
+  const outline = {
+    ...materialised.outline,
+    nodes: [...materialised.outline.nodes, ...(input.nodes ?? [])],
+    profile,
+  };
   const version = await createArtifact(trx, {
     author: input.author,
     spaceId: input.spaceId,

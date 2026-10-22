@@ -17,6 +17,7 @@ import {
   migrate,
   recordDatasetVersion,
   requestTenantExport,
+  createImport,
   recordPublication,
   requestPublication,
   seedDevelopmentContent,
@@ -562,6 +563,10 @@ describe('the listings through the service', () => {
     await tenantDb.withTenant(tenant, async (trx) => {
       await requestTenantExport(trx, asker);
       await requestTenantExport(trx, asker);
+      // And two imports, so a space's imports have pages to turn (the IM plan, IM-A).
+      for (const fileName of ['First.docx', 'Second.docx']) {
+        await createImport(trx, { spaceId: general, importer: asker, fileName, fileType: 'docx' });
+      }
     });
     const addressed: Record<string, string> = {
       listComponents: '/v1/components',
@@ -590,6 +595,7 @@ describe('the listings through the service', () => {
       listPrompts: '/v1/prompts',
       listBibliographyEntries: `/v1/spaces/${general}/bibliography-entries`,
       listTerms: `/v1/spaces/${general}/terms`,
+      listImports: `/v1/spaces/${general}/imports`,
       listDefinitions: '/v1/definitions',
       listPeople: '/v1/people',
       listTokens: '/v1/tokens',

@@ -67,6 +67,8 @@ export const listingSorts = {
   datasets: { name: { types: ['text'], order: 'asc' } },
   // The tenant's exports, the newest first (API-044; the R21 plan, R21-B).
   tenantExports: { requested: { types: ['timestamptz'], order: 'desc' } },
+  // A space's imports, the newest first (the IM plan, IM-A).
+  imports: { created: { types: ['timestamptz'], order: 'desc' } },
   // An author's own iterations of one component, the newest first (component-editor.md, "Recovery,
   // as W11 builds it"): what the Recovery panel lists.
   iterations: { saved: { types: ['timestamptz'], order: 'desc' } },

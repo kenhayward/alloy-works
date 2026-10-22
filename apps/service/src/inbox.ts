@@ -148,6 +148,11 @@ export function inboxHandlers(
             webhook: each.webhook,
             // A source cited in the document, retracted or corrected (XR-G): its id and outcome alone.
             reference: each.reference,
+            // A proposal about to be swept (IM-F): its import and when, never its file's name.
+            import:
+              each.import === null
+                ? null
+                : { id: each.import.import, sweepsAt: each.import.sweepsAt },
             at: each.at.toISOString(),
             read: each.readAt !== null,
           })),

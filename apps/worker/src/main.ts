@@ -12,6 +12,7 @@ import { createWarmPool, rangePreviewJob } from './jobs/range-preview.js';
 import { impactReportJob } from './jobs/impact-report.js';
 import { cohortJob } from './jobs/cohort.js';
 import { embedJob } from './jobs/embed.js';
+import { importJob } from './jobs/import.js';
 import { connectorDeliverer } from './deliverer.js';
 import { nightDue, recheckEntries } from './rechecks.js';
 import { connectorReferencer } from './referencer.js';
@@ -37,6 +38,7 @@ import {
   sweepStalePresence,
   sweepUncheckedPublications,
   sweepWebhookDeliveriesEverywhere,
+  sweepImportsEverywhere,
 } from './sweep.js';
 import { createTypst } from './typst.js';
 import { removeStaleVeraPdfDirectories, startLocalVeraPdf, veraPdfTimeouts } from './verapdf.js';
@@ -96,6 +98,8 @@ const handlers: Record<string, JobHandler> = {
   tenant_export: tenantExportJob({ db, stores }),
   range: rangePreviewJob({ db, stores, fonts, binary: config.typstBinary, pool: warmPool }),
   embed: embedJob({ db, embedder }),
+  // A read within a third of the lease, in a thread of its own (the IM plan, IM-C).
+  import: importJob({ db, stores, budget: { timeMs: config.leaseMs / 3, memoryMb: 512 } }),
 };
 
 // A connection of its own, held open: NOTIFY wakes the worker between polls.
@@ -168,6 +172,10 @@ const sweep = setInterval(() => {
         queued > 0 && log.warn({ queued }, 'queued checks that had given up or never ran'),
     )
     .catch((error: unknown) => log.error({ err: error }, 'check sweep failed'));
+  // Proposals left alone: told at 23 days, abandoned at 30 (the IM plan, IM-F).
+  void sweepImportsEverywhere(db, stores, log)
+    .then(({ warned, swept }) => warned + swept > 0 && log.info({ warned, swept }, 'swept imports'))
+    .catch((error: unknown) => log.error({ err: error }, 'import sweep failed'));
   // Webhook deliveries done with, past 30 days (the WB plan, WB-I).
   void sweepWebhookDeliveriesEverywhere(db, log)
     .then((removed) => removed > 0 && log.info({ removed }, 'swept old webhook deliveries'))
