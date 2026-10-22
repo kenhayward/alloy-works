@@ -47,6 +47,7 @@ understand the storage layer, rather than something to be thrown away.
 | [webhooks.md](webhooks.md)                             | Events posted to a service identity's endpoint, thin and signed, queued in the act's transaction and retried for a day                                                 |
 | [extensions.md](extensions.md)                         | A source type added as a manifest and a remote service, installed by an administrator, pinned by its digest                                                            |
 | [citations.md](citations.md)                           | A bibliography entry as a space's CSL-JSON artifact, its key and duplicates; citation styles as CSL rendered by citeproc-js; citations and the bibliography at publish |
+| [reference-sources.md](reference-sources.md)           | Crossref and PubMed searched through the connector and cited; a cited source's retraction or correction found, flagged and told                                        |
 
 ## Why these are not one per requirement area
 

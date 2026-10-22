@@ -23,9 +23,9 @@ import { AppError } from './errors.js';
  * Records the settings a change changed (ADM-002; the AU1 plan, AU1-I), by name and never by value:
  * nothing where none did.
  */
-async function recordSettingsChanged(
+export async function recordSettingsChanged(
   trx: TenantTransaction,
-  area: 'editing' | 'data',
+  area: 'editing' | 'data' | 'referenceSources',
   before: object,
   after: object,
 ): Promise<void> {

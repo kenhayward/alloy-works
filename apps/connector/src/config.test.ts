@@ -109,4 +109,15 @@ describe("the connector's configuration", () => {
       }
     }
   });
+
+  it('reads the contact address a reference source is sent, none by default, and refuses one that is not an address', () => {
+    expect(loadConnectorConfig(base).referenceContact).toBeUndefined();
+    expect(
+      loadConnectorConfig({ ...base, CONNECTOR_REFERENCE_CONTACT: 'desk@example.test' })
+        .referenceContact,
+    ).toBe('desk@example.test');
+    expect(refusal({ ...base, CONNECTOR_REFERENCE_CONTACT: 'not an address' })).toBe(
+      'CONNECTOR_REFERENCE_CONTACT must be an email address',
+    );
+  });
 });

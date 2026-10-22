@@ -259,6 +259,7 @@ describe('migration 0052, which widens dataset_take to an image', () => {
       '0146_citation_styles',
       '0147_publication_citations',
       '0148_default_layout_bibliography',
+      '0149_reference_sources',
     ]);
     const kept = await queryAs(
       db.adminUrl,

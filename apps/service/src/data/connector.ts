@@ -32,6 +32,9 @@ import {
   manifestAnswerSchema,
   type ManifestAnswer,
   type ManifestRequest,
+  referenceAnswerSchema,
+  type ReferenceAnswer,
+  type ReferenceRequest,
 } from '@alloy-works/domain';
 import type { z } from 'zod';
 
@@ -81,6 +84,8 @@ export interface ConnectorClient {
   sealWebhook(request: WebhookSealRequest): Promise<Answered<SealAnswer>>;
   /** Fetches an extension's manifest by its URL (the EX plan, EX-B). */
   manifest(request: ManifestRequest): Promise<Answered<ManifestAnswer>>;
+  /** Asks a reference source by its id and an operation, never a URL (the XR plan, XR-B). */
+  reference(request: ReferenceRequest): Promise<Answered<ReferenceAnswer>>;
   /**
    * A model call (the G1 plan, G1-C): each event as the connector streams it, the last `ended` or
    * `failed`, which is also answered. A connector that cannot be reached, is full, or ends without a
@@ -101,6 +106,8 @@ export interface ConnectorClient {
  */
 /** How long a manifest's fetch may take: its ten seconds, a child's start, and the way there. */
 const MANIFEST_MS = 15_000;
+/** How long a reference call may take: its fifteen seconds, a child's start, and the way there. */
+const REFERENCE_MS = 20_000;
 
 const SEAL_MS = 3_000;
 /** How long past a request's own deadline the service waits before giving up on the connector. */
@@ -188,6 +195,7 @@ export function createConnectorClient(options: {
     sealModel: (request) => ask('/v1/model/seal', request, sealAnswerSchema, SEAL_MS),
     sealWebhook: (request) => ask('/v1/webhook/seal', request, sealAnswerSchema, SEAL_MS),
     manifest: (request) => ask('/v1/manifest', request, manifestAnswerSchema, MANIFEST_MS),
+    reference: (request) => ask('/v1/reference', request, referenceAnswerSchema, REFERENCE_MS),
     embed: (request, signal) =>
       ask('/v1/embed', request, embedAnswerSchema, request.deadlineMs + SLACK_MS, signal),
     model: async (request, onEvent, signal) => {

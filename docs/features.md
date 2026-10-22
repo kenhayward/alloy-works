@@ -277,6 +277,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   unavailable_ where you may not read the entry; selected, it is changed the same way or deleted. The
   Reference dialog offers the space's entries too, a reference to one printing its in-text form and
   linking to it in the bibliography. A save or restore citing an entry you may not read in the space is refused.
+- **Reference search.** The Cite dialog's **Search** tab searches Crossref or PubMed, saying your terms are sent there, and cites a result: the space's entry for it where there is one, else an entry made from the record with where and when it was obtained, which needs the space's write (`/v1/reference-sources/{source}/search`, `/v1/spaces/{space}/bibliography-entries/from-source`). Administration's **Reference sources** switches each off (`/v1/reference-sources`); every call leaves through the connector to the source's declared host.
 - **Groups, and your organisation's directory.** An administrator of the whole environment makes groups
   in Administration's **Groups** and grants a role to one as to a person, from any access page: everybody
   in it holds that role there. Groups lists each group in a table you can search, with where its members come from and who

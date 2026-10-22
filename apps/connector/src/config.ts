@@ -2,6 +2,7 @@ import { createHash, X509Certificate } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { BlockList } from 'node:net';
 
+import { REFERENCE_CONTACT } from '@alloy-works/domain';
 import { sealingKey } from '@alloy-works/sealing';
 
 /**
@@ -49,6 +50,11 @@ export interface ConnectorConfig {
    * plan, task 1). Production names none.
    */
   readonly ca?: string;
+  /**
+   * The deployment's contact address, sent to Crossref as `mailto` and to PubMed as `email` (the XR
+   * plan, XR-B); none is sent where it names none.
+   */
+  readonly referenceContact?: string;
 }
 
 /** A configuration refused, naming the variable and never its value. */
@@ -147,8 +153,13 @@ export function loadConnectorConfig(
 
   const ca = certificates(env.CONNECTOR_CA_FILE, read);
 
+  const contact = env.CONNECTOR_REFERENCE_CONTACT?.trim() || undefined;
+  if (contact !== undefined && !REFERENCE_CONTACT.test(contact))
+    refuse('CONNECTOR_REFERENCE_CONTACT', 'must be an email address');
+
   return {
     ...(ca === undefined ? {} : { ca }),
+    ...(contact === undefined ? {} : { referenceContact: contact }),
     port: integer(env, 'CONNECTOR_PORT', 8090, [1, 65535]),
     host: env.CONNECTOR_HOST || '0.0.0.0',
     keyDigest: createHash('sha256').update(env.CONNECTOR_KEY!, 'utf8').digest(),

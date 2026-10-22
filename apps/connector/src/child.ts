@@ -3,12 +3,14 @@ import {
   childManifestRequestSchema,
   childEmbedRequestSchema,
   childModelRequestSchema,
+  childReferenceRequestSchema,
   childRequestSchema,
 } from '@alloy-works/domain';
 
 import { answerDeliver } from './deliver.js';
 import { answerManifest } from './manifest.js';
 import { answerEmbed, answerModel } from './model.js';
+import { answerReference } from './reference.js';
 import { answerRequest } from './work.js';
 
 /**
@@ -40,6 +42,12 @@ async function main(): Promise<number> {
   const manifest = childManifestRequestSchema.safeParse(input);
   if (manifest.success) {
     await line(await answerManifest(manifest.data));
+    return 0;
+  }
+  // A reference source asked (the XR plan, XR-B): one answer.
+  const reference = childReferenceRequestSchema.safeParse(input);
+  if (reference.success) {
+    await line(await answerReference(reference.data));
     return 0;
   }
   // A webhook delivery (the WB plan, WB-F): one answer.

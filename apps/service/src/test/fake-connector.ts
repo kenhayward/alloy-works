@@ -26,6 +26,9 @@ import {
   type RunAnswer,
   type TestAnswer,
   type ManifestAnswer,
+  referenceRequestSchema,
+  type ReferenceAnswer,
+  type ReferenceRequest,
 } from '@alloy-works/domain';
 
 /** The key a harness's service presents to its fake connector: invented, and made afresh. */
@@ -59,6 +62,8 @@ export interface FakeConnector {
   embedFor?: ((request: EmbedRequest) => EmbedAnswer) | undefined;
   /** What a manifest fetch answers, by its URL: refused unless a test says (the EX plan). */
   manifestFor?: ((url: string) => ManifestAnswer) | undefined;
+  /** What a reference source answers, by what it was asked: unavailable unless a test says (XR-B). */
+  referenceFor?: ((request: ReferenceRequest) => ReferenceAnswer) | undefined;
   /** Where set, a run's answer by what it was sent, in place of `run`. */
   runFor?: ((body: { readonly values: Record<string, unknown> }) => RunAnswer) | undefined;
   /** Where set, a test and a describe wait for it before answering: a source that is slow. */
@@ -147,7 +152,9 @@ export function fakeConnector(): FakeConnector {
                       ? modelSealRequestSchema
                       : path === '/v1/webhook/seal'
                         ? webhookSealRequestSchema
-                        : undefined;
+                        : path === '/v1/reference'
+                          ? referenceRequestSchema
+                          : undefined;
       if (door && !door.safeParse(body).success) {
         return Response.json({ code: 'request_invalid' }, { status: 400 });
       }
@@ -169,6 +176,17 @@ export function fakeConnector(): FakeConnector {
           code: 'manifest_refused',
         };
         return Response.json(answer);
+      }
+      if (path === '/v1/reference') {
+        const request = body as unknown as ReferenceRequest;
+        return Response.json(
+          fake.referenceFor?.(request) ?? {
+            type: 'failed',
+            code: 'reference_unavailable',
+            source: request.source,
+            reason: 'refused',
+          },
+        );
       }
       if (path === '/v1/webhook/seal') {
         return Response.json({

@@ -1208,6 +1208,21 @@ describe('routes that check a permission', () => {
       status: 404,
     }),
     listPromptLibraries: () => ({ url: '/v1/prompt-libraries', status: 403 }),
+    setReferenceSource: () => ({
+      url: '/v1/reference-sources',
+      status: 403,
+      payload: { source: 'crossref', enabled: false },
+    }),
+    searchReferenceSource: () => ({
+      url: '/v1/reference-sources/crossref/search',
+      status: 404,
+      payload: { space: `space:${clinical}`, terms: 'Probe' },
+    }),
+    createBibliographyEntryFromSource: () => ({
+      url: `/v1/spaces/${clinical}/bibliography-entries/from-source`,
+      status: 404,
+      payload: { source: 'crossref', identifier: '10.5555/probe' },
+    }),
     listCitationStyles: () => ({ url: '/v1/citation-styles', status: 403 }),
     createCitationStyle: () => ({
       url: '/v1/citation-styles',

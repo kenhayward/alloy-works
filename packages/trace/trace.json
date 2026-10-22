@@ -18515,6 +18515,27 @@
       ]
     },
     {
+      "document": "reference-sources.md",
+      "owns": [
+        {
+          "id": "LIB-031",
+          "howItIsMet": "The Cite dialog's **Search** tab queries a configured source and inserts a citation from a result, matched or made as an entry"
+        },
+        {
+          "id": "LIB-032",
+          "howItIsMet": "Sources are a declared, versioned list in domain; a further one is an extension of kind `reference`"
+        },
+        {
+          "id": "LIB-036",
+          "howItIsMet": "A retraction or correction is flagged on each citation and its document's owner told; a gate condition can refuse the move"
+        },
+        {
+          "id": "LIB-040",
+          "howItIsMet": "The assistant's `search_references` and `cite_reference` tools, as the calling person; the entry made, and the citation inserted, when a person accepts"
+        }
+      ]
+    },
+    {
       "document": "relationships.md",
       "owns": [
         {
@@ -20549,6 +20570,12 @@
       "kind": "title"
     },
     {
+      "id": "LIB-031",
+      "file": "apps/connector/src/reference.test.ts",
+      "line": 45,
+      "kind": "title"
+    },
+    {
       "id": "DAT-069",
       "file": "apps/connector/src/result.test.ts",
       "line": 22,
@@ -20935,13 +20962,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 599,
+      "line": 603,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 612,
+      "line": 616,
       "kind": "title"
     },
     {
@@ -21415,7 +21442,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1969,
+      "line": 1977,
       "kind": "title"
     },
     {
@@ -22412,6 +22439,18 @@
       "id": "PUB-080",
       "file": "apps/service/src/range-preview-routes.test.ts",
       "line": 30,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-031",
+      "file": "apps/service/src/reference-source-routes.test.ts",
+      "line": 107,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-032",
+      "file": "apps/service/src/reference-source-routes.test.ts",
+      "line": 55,
       "kind": "title"
     },
     {
@@ -23447,6 +23486,12 @@
       "kind": "title"
     },
     {
+      "id": "LIB-032",
+      "file": "apps/web/src/admin/ReferenceSources.test.tsx",
+      "line": 38,
+      "kind": "title"
+    },
+    {
       "id": "LIF-019",
       "file": "apps/web/src/admin/Retention.test.tsx",
       "line": 67,
@@ -23678,6 +23723,12 @@
       "id": "DAT-121",
       "file": "apps/web/src/data/query-definitions.test.tsx",
       "line": 798,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-031",
+      "file": "apps/web/src/editor/CitationDialog.search.test.tsx",
+      "line": 129,
       "kind": "title"
     },
     {
@@ -29335,7 +29386,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 915,
+      "line": 933,
       "kind": "title"
     },
     {
@@ -29396,6 +29447,18 @@
       "id": "LIB-046",
       "file": "packages/domain/src/library/entry.test.ts",
       "line": 94,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-031",
+      "file": "packages/domain/src/library/sources.test.ts",
+      "line": 81,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-032",
+      "file": "packages/domain/src/library/sources.test.ts",
+      "line": 27,
       "kind": "title"
     },
     {

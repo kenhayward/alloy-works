@@ -6,6 +6,7 @@ import { everyPage } from '../paging.js';
 import styles from './Administration.module.css';
 import { About } from './About.js';
 import { CitationStyles } from './CitationStyles.js';
+import { ReferenceSources } from './ReferenceSources.js';
 import { AuditLog } from './AuditLog.js';
 import { Guardrails } from './Guardrails.js';
 import { ModelSpending } from './ModelSpending.js';
@@ -45,6 +46,8 @@ const SECTIONS = [
   { slug: 'guardrails', title: 'Guardrails', group: 'Environment' },
   // The CSL styles a theme may name, CSE, Vancouver and Harvard given (the CI plan, CI-D).
   { slug: 'citation-styles', title: 'Citation styles', group: 'Environment' },
+  // Crossref and PubMed, each searched from the Cite dialog unless switched off (the XR plan, XR-C).
+  { slug: 'reference-sources', title: 'Reference sources', group: 'Environment' },
   // How often each person may call a model, the budget, and what models cost (the G6 plan).
   { slug: 'spending', title: 'Model spending', group: 'Environment' },
   // Events posted to a service identity's endpoint, and every delivery (the WB plan, WB-J).
@@ -304,6 +307,9 @@ export function Administration({
         {shown === 'models' && <Models client={client} />}
         {shown === 'guardrails' && <Guardrails client={client} />}
         {shown === 'citation-styles' && <CitationStyles client={client} />}
+        {shown === 'reference-sources' && (
+          <ReferenceSources client={client} mayChange={administers.get('tenant') === true} />
+        )}
         {shown === 'spending' && <ModelSpending client={client} />}
         {shown === 'webhooks' && <Webhooks client={client} />}
         {shown === 'extensions' && <Extensions client={client} />}

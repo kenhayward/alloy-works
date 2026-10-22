@@ -1004,6 +1004,12 @@ export interface DataPolicyTable {
   concurrent_runs: ColumnType<number | null, never, number | null>;
 }
 
+/** A reference source an administrator switched (0149; the XR plan, XR-C); none is on. */
+export interface ReferenceSourcePolicyTable {
+  source: ColumnType<string, string, never>;
+  enabled: ColumnType<boolean, boolean, boolean>;
+}
+
 /** A run's slot (0115; R18-B), leased for its deadline. */
 export interface QuerySlotTable {
   id: Generated<string>;
@@ -1241,6 +1247,7 @@ export interface TenantTables {
   connection_credential: ConnectionCredentialTable;
   connection_test: ConnectionTestTable;
   data_policy: DataPolicyTable;
+  reference_source_policy: ReferenceSourcePolicyTable;
   query_slot: QuerySlotTable;
   query_run: QueryRunTable;
   dataset: DatasetTable;

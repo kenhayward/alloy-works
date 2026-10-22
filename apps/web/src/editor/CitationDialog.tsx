@@ -9,6 +9,8 @@ import {
   type EntryOffered,
 } from '../bibliography/entries.js';
 import shell from '../layouts/Modal.module.css';
+import { PanelTabs } from '../parts/PanelTabs.js';
+import { CitationSearch, type Picked } from './CitationSearch.js';
 import { Icon } from './Icon.js';
 import styles from './MarkPrompt.module.css';
 import own from './ReferenceDialog.module.css';
@@ -19,6 +21,7 @@ type Client = ReturnType<typeof createApiClient>;
 export const NO_ENTRIES = 'This space holds no bibliography entries you may read.';
 /** What it says where the entries could not be read. */
 export const ENTRIES_UNREAD = 'The bibliography could not be read.';
+export { MAY_NOT_MAKE } from './CitationSearch.js';
 
 export interface CitationDialogProps {
   readonly client: Client;
@@ -40,6 +43,9 @@ export interface CitationDialogProps {
  *
  * Worked by keyboard as the Reference dialog is: the focus starts in the search, the one entry found
  * is chosen so Enter cites it, the arrow keys move among the entries, `Tab` wraps inside the dialog.
+ *
+ * Its **Search** tab finds a source in a reference source and cites it (the XR plan, XR-D): a result
+ * the space holds cites that entry, and another is first made one, `obtained` from the source.
  */
 export function CitationDialog({ client, space, current, onDone, onCancel }: CitationDialogProps) {
   const id = useId();
@@ -50,6 +56,9 @@ export function CitationDialog({ client, space, current, onDone, onCancel }: Cit
   const [chosen, setChosen] = useState<string | null>(current?.entry ?? null);
   const [locator, setLocator] = useState(current?.locator ?? '');
   const [said, setSaid] = useState<string | null>(null);
+  const [tab, setTab] = useState<'entries' | 'search'>('entries');
+  const [picked, setPicked] = useState<Picked | null>(null);
+  const [making, setMaking] = useState(false);
 
   useEffect(() => {
     let live = true;
@@ -71,6 +80,32 @@ export function CitationDialog({ client, space, current, onDone, onCancel }: Cit
   // What is chosen is always among what is found, so Insert never cites one out of sight.
   const choice = found.find((each) => each.id === chosen) ?? found[0];
 
+  /** A result cited: the space's entry, or one made from the source's record, a match offered first. */
+  const cite = async (chosen: Picked, trimmed: string | null) => {
+    if ('entry' in chosen) {
+      setSaid(onDone({ entry: chosen.entry, locator: trimmed }));
+      return;
+    }
+    setMaking(true);
+    try {
+      const { data } = await client.POST('/v1/spaces/{space}/bibliography-entries/from-source', {
+        params: { path: { space } },
+        body: { source: chosen.source, identifier: chosen.identifier },
+      });
+      const entry = data?.entry?.id ?? data?.matches[0]?.entry.id;
+      setSaid(
+        entry === undefined ? 'The entry could not be made.' : onDone({ entry, locator: trimmed }),
+      );
+    } catch {
+      setSaid('The entry could not be made.');
+    } finally {
+      setMaking(false);
+    }
+  };
+
+  const tabIds = (key: string) => ({ tab: `${id}-${key}-tab`, panel: `${id}-${key}-panel` });
+  const insertable = tab === 'search' ? picked !== null : choice !== undefined;
+
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Escape') {
       event.preventDefault();
@@ -80,7 +115,7 @@ export function CitationDialog({ client, space, current, onDone, onCancel }: Cit
     if (event.key !== 'Tab') return;
     const stops = [
       ...(dialog.current?.querySelectorAll<HTMLElement>(
-        'input[type="search"], input[type="radio"]:checked, input[type="text"], button',
+        'input[type="search"], input[type="radio"]:checked, input[type="text"], select, button:not([tabindex="-1"])',
       ) ?? []),
     ];
     if (stops.length === 0) return;
@@ -105,9 +140,13 @@ export function CitationDialog({ client, space, current, onDone, onCancel }: Cit
           className={styles['form']}
           onSubmit={(event) => {
             event.preventDefault();
+            const trimmed = locator.trim() === '' ? null : locator.trim();
+            if (tab === 'search') {
+              if (picked !== null) void cite(picked, trimmed);
+              return;
+            }
             if (choice === undefined) return;
-            const trimmed = locator.trim();
-            setSaid(onDone({ entry: choice.id, locator: trimmed === '' ? null : trimmed }));
+            setSaid(onDone({ entry: choice.id, locator: trimmed }));
           }}
         >
           <h2 id={`${id}-heading`} className={styles['heading']}>
@@ -116,45 +155,27 @@ export function CitationDialog({ client, space, current, onDone, onCancel }: Cit
             </span>
             Cite
           </h2>
-          {entries === null && <p role="status">Reading the bibliography.</p>}
-          {entries === 'unread' && <p role="alert">{ENTRIES_UNREAD}</p>}
-          {Array.isArray(entries) && entries.length === 0 && (
-            <p className={styles['note']}>{NO_ENTRIES}</p>
-          )}
-          {Array.isArray(entries) && entries.length > 0 && (
-            <>
-              <label className={styles['field']}>
-                Find an entry
-                <input
-                  ref={search}
-                  type="search"
-                  value={typed}
-                  aria-describedby={`${id}-found`}
-                  onChange={(event) => setTyped(event.target.value)}
-                />
-              </label>
-              <p id={`${id}-found`} className={styles['note']} aria-live="polite">
-                {found.length === 1 ? '1 entry found.' : `${found.length} entries found.`}
-              </p>
-              {found.length > 0 && (
-                <fieldset className={own['group']}>
-                  <legend>Entry</legend>
-                  <div className={own['targets']}>
-                    {found.map((each) => (
-                      <label key={each.id} className={own['choice']}>
-                        <input
-                          type="radio"
-                          name={`${id}-entry`}
-                          value={each.id}
-                          checked={each.id === choice?.id}
-                          onChange={() => setChosen(each.id)}
-                        />
-                        {entryName(each)}
-                      </label>
-                    ))}
-                  </div>
-                </fieldset>
-              )}
+          <PanelTabs
+            label="Cite from"
+            tabs={[
+              { key: 'entries', label: 'Entries' },
+              { key: 'search', label: 'Search' },
+            ]}
+            chosen={tab}
+            onChoose={(key) => {
+              setTab(key as 'entries' | 'search');
+              setSaid(null);
+            }}
+            ids={tabIds}
+          />
+          {tab === 'search' && (
+            <div
+              role="tabpanel"
+              id={tabIds('search').panel}
+              aria-labelledby={tabIds('search').tab}
+              className={styles['form']}
+            >
+              <CitationSearch client={client} space={space} onPick={setPicked} />
               <label className={styles['field']}>
                 Locator, such as a page (optional)
                 <input
@@ -163,7 +184,65 @@ export function CitationDialog({ client, space, current, onDone, onCancel }: Cit
                   onChange={(event) => setLocator(event.target.value)}
                 />
               </label>
-            </>
+            </div>
+          )}
+          {tab === 'entries' && (
+            <div
+              role="tabpanel"
+              id={tabIds('entries').panel}
+              aria-labelledby={tabIds('entries').tab}
+              className={styles['form']}
+            >
+              {entries === null && <p role="status">Reading the bibliography.</p>}
+              {entries === 'unread' && <p role="alert">{ENTRIES_UNREAD}</p>}
+              {Array.isArray(entries) && entries.length === 0 && (
+                <p className={styles['note']}>{NO_ENTRIES}</p>
+              )}
+              {Array.isArray(entries) && entries.length > 0 && (
+                <>
+                  <label className={styles['field']}>
+                    Find an entry
+                    <input
+                      ref={search}
+                      type="search"
+                      value={typed}
+                      aria-describedby={`${id}-found`}
+                      onChange={(event) => setTyped(event.target.value)}
+                    />
+                  </label>
+                  <p id={`${id}-found`} className={styles['note']} aria-live="polite">
+                    {found.length === 1 ? '1 entry found.' : `${found.length} entries found.`}
+                  </p>
+                  {found.length > 0 && (
+                    <fieldset className={own['group']}>
+                      <legend>Entry</legend>
+                      <div className={own['targets']}>
+                        {found.map((each) => (
+                          <label key={each.id} className={own['choice']}>
+                            <input
+                              type="radio"
+                              name={`${id}-entry`}
+                              value={each.id}
+                              checked={each.id === choice?.id}
+                              onChange={() => setChosen(each.id)}
+                            />
+                            {entryName(each)}
+                          </label>
+                        ))}
+                      </div>
+                    </fieldset>
+                  )}
+                  <label className={styles['field']}>
+                    Locator, such as a page (optional)
+                    <input
+                      type="text"
+                      value={locator}
+                      onChange={(event) => setLocator(event.target.value)}
+                    />
+                  </label>
+                </>
+              )}
+            </div>
           )}
           {said !== null && (
             <p role="alert" className={styles['complaint']}>
@@ -174,8 +253,8 @@ export function CitationDialog({ client, space, current, onDone, onCancel }: Cit
             <button type="button" onClick={onCancel}>
               Cancel
             </button>
-            {choice !== undefined && (
-              <button type="submit" className="primary">
+            {insertable && (
+              <button type="submit" className="primary" disabled={making}>
                 {current === null ? 'Insert' : 'Change'}
               </button>
             )}
