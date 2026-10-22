@@ -8,7 +8,9 @@ import type { MathsTree } from './maths.js';
 /**
  * The published document (docs/design/publishing.md, "The published document"): the one intermediate
  * every writer reads, holding everything a writer needs and nothing it must decide. Version
- * `publishing/23` is the document whose **runs may be citations** (the CI plan, CIc): each in-text
+ * `publishing/24` is the document whose **runs may be terms** (the TM plan, TMb): each use as its
+ * theme's rule prints it, a link to its glossary entry, and `back.glossary` and `back.abbreviations`.
+ * Otherwise it is `publishing/23`, the document whose **runs may be citations** (the CI plan, CIc): each in-text
  * form as citeproc rendered it, a link to its entry in `back.bibliography` where the layout places one.
  * Otherwise it is `publishing/22`, the document that may be approved (WF2b). Before that, version
  * `publishing/21` is the document whose **tables may say how wide each column is** (the TG plan,
@@ -46,7 +48,13 @@ import type { MathsTree } from './maths.js';
  * stored - only its digest is, on the publication - so a later shape is a new schema string and a new
  * template version, not a migration.
  */
-export const PUBLISHING_SCHEMA = 'publishing/23';
+export const PUBLISHING_SCHEMA = 'publishing/24';
+
+/**
+ * The document as it stood before a run could be a term, frozen by TMb for the reason
+ * `publishing/16` is: `apps/worker/templates/publication/23/` asserts it.
+ */
+export const PUBLISHING_SCHEMA_23 = 'publishing/23';
 
 /**
  * The document as it stood before a run could be a citation, frozen by CIc for the reason
@@ -224,9 +232,9 @@ export interface PublishedLanguage {
  * `publishedLanguage` reads it, refused by name where the engine cannot carry the tag rather than
  * shortened to something the author never wrote.
  *
- * The four that are not here - `definedTerm`, `condition`, `suggestion` and `comment` - are refused
- * by name by `assemble`, never dropped: nothing resolves a term, and a condition, a suggestion or a
- * comment carried through would set text a reader was not meant to be shown.
+ * The four that are not here - `definedTerm`, `condition`, `suggestion` and `comment` - are never
+ * carried: a term prints as a run of its own (TMb), and the other three are refused by name by
+ * `assemble`, since carried through they would set text a reader was not meant to be shown.
  */
 export type PublishedMark =
   | {
@@ -380,8 +388,21 @@ export interface PublishedCitationRun {
 }
 
 /**
+ * **A term** (TMb; LIB-016): the forms its theme's rule prints, in the other marks of the first
+ * character the author marked, and `link`, its glossary entry's anchor - null where none is placed, or
+ * where a reference there would be text.
+ */
+export interface PublishedTermRun {
+  readonly term: {
+    readonly text: string;
+    readonly marks: readonly PublishedMark[];
+    readonly link: string | null;
+  };
+}
+
+/**
  * One piece of a published run sequence: text with its marks, an image, a footnote, a reference, an
- * equation, a table's note's mark or a citation.
+ * equation, a table's note's mark, a citation or a term.
  */
 export type PublishedInline =
   | PublishedRun
@@ -390,7 +411,8 @@ export type PublishedInline =
   | PublishedReferenceRun
   | PublishedEquationRun
   | PublishedTableMarkRun
-  | PublishedCitationRun;
+  | PublishedCitationRun
+  | PublishedTermRun;
 
 /**
  * **A table's lettered note** (TB3-E), set beneath it after the whole table's note and before a bound
@@ -826,6 +848,22 @@ export interface PublishedBibliography {
   readonly entries: readonly PublishedBibliographyEntry[];
 }
 
+/** The glossary the layout places (TMb; PUB-039): each term used, its label and its definition. */
+export interface PublishedGlossary {
+  readonly title: string;
+  readonly entries: readonly {
+    readonly anchor: string;
+    readonly label: string;
+    readonly definition: string;
+  }[];
+}
+
+/** The list of abbreviations the layout places (TMb; PUB-039): each with its preferred label. */
+export interface PublishedAbbreviations {
+  readonly title: string;
+  readonly entries: readonly { readonly abbreviation: string; readonly label: string }[];
+}
+
 export interface PublishedDocument {
   readonly schema: typeof PUBLISHING_SCHEMA;
   readonly title: string;
@@ -858,6 +896,13 @@ export interface PublishedDocument {
   };
   readonly appendices: { readonly newPage: boolean };
   readonly nodes: readonly PublishedNode[];
-  /** After the last node: the bibliography, where the layout declares one and a citation stands. */
-  readonly back: { readonly bibliography: PublishedBibliography | null };
+  /**
+   * After the last node: the bibliography, where the layout declares one and a citation stands; then
+   * the glossary and the abbreviations, where it declares each and a term used has an entry in it.
+   */
+  readonly back: {
+    readonly bibliography: PublishedBibliography | null;
+    readonly glossary: PublishedGlossary | null;
+    readonly abbreviations: PublishedAbbreviations | null;
+  };
 }

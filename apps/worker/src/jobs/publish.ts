@@ -74,8 +74,9 @@ import type { JobHandler } from '../worker.js';
  * (TG3), 24 the first to print a value revised by hand and write `provenance.json` at its schema 4
  * (the RV plan, RV-F), 25 the first to publish a gate's baseline as approved, without the notice
  * and with its approval page (the WF2 plan, WF2-I, WF2-J), 26 the first to print a variable and
- * write `provenance.json` at its schema 5 (the R5 plan, R5-E), and 27 the first to print a citation
- * and its bibliography (the CI plan, CIc).
+ * write `provenance.json` at its schema 5 (the R5 plan, R5-E), 27 the first to print a citation
+ * and its bibliography (the CI plan, CIc), and 28 the first to print a term's forms, the glossary and
+ * the abbreviations (the TM plan, TMb).
  *
  * **Both keys are frozen.** Keyed by `PUBLISHING_SCHEMA` itself, a repoint moved the key while the
  * value stayed behind, and the `satisfies` clause could not catch it because `PublishedSchema`
@@ -87,7 +88,7 @@ import type { JobHandler } from '../worker.js';
  */
 export const PIPELINE_VERSION = {
   [PUBLISHING_SCHEMA_1]: '1',
-  [PUBLISHING_SCHEMA_CURRENT]: '27',
+  [PUBLISHING_SCHEMA_CURRENT]: '28',
 } as const satisfies Record<PublishedSchema, string>;
 
 /** The document's own failures, every one at once: the job is finished, never tried again. */
@@ -356,6 +357,8 @@ export async function assembleRequest(
     assets: new Map([...boundAssets, ...assets]),
     // Each entry version the request recorded and its theme's style, rendered by citeproc here (CIc).
     citations: { ...inputs.citations, render: renderCitations },
+    // Each term version the request recorded, by node, at its latest approved revision (TMb).
+    terms: { entries: inputs.terms },
     ...(deps.conditionContent ? { conditionContent: deps.conditionContent } : {}),
   });
 }

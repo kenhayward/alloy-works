@@ -163,6 +163,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0151_citation_proposals',
       '0152_reference_extensions',
       '0153_terms',
+      '0154_publication_terms',
     ]);
 
     const read = async () =>

@@ -132,7 +132,19 @@ import {
   type PublishedApproval,
   type PublishedBibliography,
   type PublishedBibliographyEntry,
+  type PublishedGlossary,
+  type PublishedAbbreviations,
 } from './published.js';
+import {
+  glossaryAnchor,
+  printTerms,
+  termLabelIn,
+  termSpans,
+  type PublishingTerm,
+  type TermSpan,
+  type TermUse,
+  type TermWarning,
+} from './terms.js';
 
 /**
  * What a publish is assembled from, all of it recorded before the job ran: the document version's
@@ -240,6 +252,14 @@ export interface AssembleInput {
     readonly style: { readonly csl: string; readonly requires: Requires } | null;
     readonly entries: ReadonlyMap<string, ReadonlyMap<string, CslItem>>;
     readonly render: (request: RenderRequest) => Rendered;
+  };
+  /**
+   * What terms print from (the TM plan, TMb): each term a use may resolve to, by node and then term -
+   * its latest approved revision, one the publisher may read, in the space of the component placed
+   * there (a section's, the document's). One not here prints the words it covers (TM-C).
+   */
+  readonly terms?: {
+    readonly entries: ReadonlyMap<string, ReadonlyMap<string, PublishingTerm>>;
   };
 }
 
@@ -389,6 +409,8 @@ export type Assembled<
        * the conditions took out that what they kept does not also hold. None where nothing was.
        */
       readonly probes: readonly string[];
+      /** What its terms report, never failing it (LIB-018, LIB-050; TM-C, TM-F). */
+      readonly terms: readonly TermWarning[];
     }
   | { readonly ok: false; readonly failures: readonly PublishFailure[] };
 
@@ -984,6 +1006,45 @@ export function assemble(given: AssembleInput): Assembled {
     layout?.matter.bibliography === undefined || (citations?.bibliography.length ?? 0) === 0
       ? null
       : { title: layout.matter.bibliography.title, entries: citations!.bibliography };
+  // Every term printed once in reading order, by the theme's rule (TMb): under a layout alone, as a
+  // citation is; without one a term is refused where it stands, as it always was.
+  const termEntries =
+    input.terms?.entries ?? new Map<string, ReadonlyMap<string, PublishingTerm>>();
+  const titleTerms: { node: string; term: string }[] = [];
+  walkOutline(input.outline.nodes, (node) => {
+    if (node.type !== 'section') return;
+    for (const span of termSpans(node.title)) titleTerms.push({ node: node.id, term: span.term });
+  });
+  const terms =
+    layout === null
+      ? null
+      : printTerms(
+          resolved.used,
+          titleTerms,
+          termEntries,
+          theme!.termExpansion,
+          input.outline.language,
+        );
+  // Placed where the layout declares each and a term used has an entry in it (PUB-039; TM-H).
+  const glossary: PublishedGlossary | null =
+    layout?.matter.glossary === undefined || (terms?.glossary.length ?? 0) === 0
+      ? null
+      : { title: layout.matter.glossary.title, entries: terms!.glossary };
+  const abbreviations: PublishedAbbreviations | null =
+    layout?.matter.abbreviations === undefined || (terms?.abbreviations.length ?? 0) === 0
+      ? null
+      : { title: layout.matter.abbreviations.title, entries: terms!.abbreviations };
+  const inGlossary = new Set(glossary?.entries.map((each) => each.anchor) ?? []);
+  /**
+   * What a heading prints for the words a term covers (TM-E): its preferred label, in the document's
+   * language, else the base language's; the words themselves where it does not resolve.
+   */
+  const headingTerm = (node: string, term: string, words: string): string => {
+    const found = termEntries.get(node)?.get(term);
+    return found === undefined
+      ? words
+      : termLabelIn(found.term, input.outline.language).label.preferred;
+  };
   /** A block's or a footnote's anchor where a reference names it, else null. */
   const anchorOf = (node: string, block: string): string | null => {
     const anchor = blockAnchor(node, block);
@@ -1050,7 +1111,39 @@ export function assemble(given: AssembleInput): Assembled {
   ): PublishedInline[] => {
     const runs: PublishedInline[] = [];
     const caption = site.kind === 'caption';
+    // Each use printed at its first text node (TMb); the rest of its span is in what it printed.
+    const printedAt = new Map(
+      (layout === null ? [] : termSpans(content)).flatMap((span) => {
+        const form = terms?.forms.get(node)?.get(span.nodes[0]);
+        return form === undefined ? [] : [[span.nodes[0] as InlineNode, { span, form }] as const];
+      }),
+    );
+    const swallowed = new Set<InlineNode>(
+      [...printedAt.values()].flatMap(({ span }) => span.nodes.slice(1)),
+    );
     for (const inline of content) {
+      const termed = printedAt.get(inline);
+      if (termed !== undefined) {
+        // The other marks of the span's first character (TM-C).
+        const outcome = publishedMarks(
+          termed.span.nodes[0].marks.filter((mark) => mark.type !== 'definedTerm'),
+          carriesMarks,
+        );
+        if (outcome.kind === 'refused') {
+          for (const { code, detail } of outcome.refusals) {
+            failures.push(failure('compose', code, node, block, detail));
+          }
+          continue;
+        }
+        check(termed.form, node, block, runFamilies(outcome.marks, families));
+        const anchor = glossaryAnchor(termed.span.term);
+        const link = inGlossary.has(anchor) && inParagraph !== null && !inParagraph.heading;
+        runs.push({
+          term: { text: termed.form, marks: outcome.marks, link: link ? anchor : null },
+        });
+        continue;
+      }
+      if (swallowed.has(inline)) continue;
       // A footnote in a table's cell is lettered in the table's own sequence and set beneath it
       // (TB3-D, TB3-E): its mark a link to its note in a body cell, a plain letter in a header row,
       // which the engine sets again on every page as an artifact.
@@ -1136,7 +1229,11 @@ export function assemble(given: AssembleInput): Assembled {
         failures.push(failure('compose', 'inline_not_publishable', node, block, inline.type));
         continue;
       }
-      const outcome = publishedMarks(inline.marks, carriesMarks);
+      // Under a layout a term that printed nothing of its own prints the words it covers (TM-C).
+      const outcome = publishedMarks(
+        layout === null ? inline.marks : inline.marks.filter((mark) => mark.type !== 'definedTerm'),
+        carriesMarks,
+      );
       if (outcome.kind === 'refused') {
         // Every reason this run cannot be published, in the order the marks are stored in, never
         // the first alone (PUB-052).
@@ -1818,6 +1915,7 @@ export function assemble(given: AssembleInput): Assembled {
               if ('reference' in run) return run.reference.text ?? '';
               if ('equation' in run) return mathsText(run.equation.tree);
               if ('citation' in run) return run.citation.runs.map((each) => each.text).join('');
+              if ('term' in run) return run.term.text;
               return '';
             })
             .join('');
@@ -2042,6 +2140,15 @@ export function assemble(given: AssembleInput): Assembled {
             strong: bold || run.marks.some((mark) => mark.kind === 'strong'),
             slanted: run.marks.some((mark) => mark.kind === 'emphasis'),
           }));
+        }
+        if ('term' in each) {
+          return [
+            {
+              text: each.term.text,
+              strong: bold || each.term.marks.some((mark) => mark.kind === 'strong'),
+              slanted: each.term.marks.some((mark) => mark.kind === 'emphasis'),
+            },
+          ];
         }
         // An image in a line is as wide as it is set.
         if ('image' in each)
@@ -2306,7 +2413,19 @@ export function assemble(given: AssembleInput): Assembled {
     equationOf: (equation: EquationNode) => PublishedEquation | null,
   ): WordTitleRun[] => {
     const runs: WordTitleRun[] = [];
+    // A term as the PDF's heading prints it (TM-E).
+    const spans = new Map(termSpans(title).map((span) => [span.nodes[0] as InlineNode, span]));
+    const swallowed = new Set<InlineNode>(
+      [...spans.values()].flatMap((span) => span.nodes.slice(1)),
+    );
     for (const inline of title) {
+      const span = spans.get(inline);
+      if (span !== undefined) {
+        const covered = span.nodes.map((each) => each.value).join('');
+        runs.push({ text: headingTerm(node, span.term, covered), marks: [] });
+        continue;
+      }
+      if (swallowed.has(inline)) continue;
       if (inline.type === 'text') runs.push({ text: inline.value, marks: [] });
       if (inline.type === 'equation') {
         const equation = equationOf(inline);
@@ -2371,6 +2490,7 @@ export function assemble(given: AssembleInput): Assembled {
               return printed?.text ?? '';
             },
         layout === null ? null : equationOf,
+        layout === null ? null : (term, covered) => headingTerm(node.id, term, covered),
       );
       // A reference is published as the words it prints, which the writer cannot tell from the title's
       // own, so where Word is asked for the title is carried beside the document too, as runs with each
@@ -2450,6 +2570,16 @@ export function assemble(given: AssembleInput): Assembled {
       }
     }
   }
+  // The glossary and the abbreviations after it, likewise (TM-H).
+  for (const title of [glossary?.title, abbreviations?.title]) {
+    if (title !== undefined) checkWords(title, roles('heading1'), (next) => failures.push(next));
+  }
+  for (const entry of glossary?.entries ?? []) {
+    check(`${entry.label} ${entry.definition}`, null, null, inPlace('text'));
+  }
+  for (const entry of abbreviations?.entries ?? []) {
+    check(`${entry.abbreviation} ${entry.label}`, null, null, inPlace('text'));
+  }
   /** Every failure said for the formats asked for: the PDF engine's own only where a PDF is. */
   const reported = () => (pdf ? failures : failures.filter((each) => !pdfsOwn.has(each)));
 
@@ -2462,6 +2592,7 @@ export function assemble(given: AssembleInput): Assembled {
       values,
       variables: printedVariables,
       probes,
+      terms: [],
       word: null,
       document: {
         schema: PUBLISHING_SCHEMA_1,
@@ -2529,6 +2660,7 @@ export function assemble(given: AssembleInput): Assembled {
     values,
     variables: printedVariables,
     probes,
+    terms: terms?.warnings ?? [],
     word:
       docx && docxFormat !== undefined
         ? {
@@ -2561,7 +2693,7 @@ export function assemble(given: AssembleInput): Assembled {
       front: { cover, contents: shownContents, lists, approvals },
       appendices: { newPage: layout.matter.appendices.newPage },
       nodes,
-      back: { bibliography },
+      back: { bibliography, glossary, abbreviations },
     },
   };
 }
@@ -2712,6 +2844,8 @@ interface ResolvedReferences {
   readonly cited: readonly Cited[];
   /** Each cross-reference to an entry, as the citation it is rendered as (STR-069; CId). */
   readonly asCitations: ReadonlyMap<ReferenceNode, CitationNode>;
+  /** Every use of a term, in reading order (TM-E): no title's, footnotes at their mark. */
+  readonly used: readonly TermUse[];
 }
 
 /** A citation as the content model stores it. */
@@ -2734,6 +2868,7 @@ const NO_REFERENCES: ResolvedReferences = {
   forWord: [],
   cited: [],
   asCitations: new Map(),
+  used: [],
 };
 
 /**
@@ -2852,6 +2987,8 @@ function resolveReferences(
   const cited: Cited[] = [];
   // Each cross-reference to an entry, as the citation it is rendered as (CId).
   const asCitations = new Map<ReferenceNode, CitationNode>();
+  // Each use of a term where the walk meets it, as a citation is (TM-E). A title's is no use.
+  const used: TermUse[] = [];
 
   const place = (anchor: string, inHeader: boolean) => {
     positions.set(anchor, at++);
@@ -2872,7 +3009,12 @@ function resolveReferences(
     /** The block a citation's failure names: a footnote's own for its text, as publishing names it. */
     block: string | null = null,
   ) => {
+    const starts = new Map<InlineNode, TermSpan>(
+      inTitle ? [] : termSpans(content).map((span) => [span.nodes[0], span]),
+    );
     for (const inline of content) {
+      const span = starts.get(inline);
+      if (span !== undefined) used.push({ node, term: span.term, first: inline });
       if (inline.type === 'crossReference' && inline.target.kind === 'entry') {
         // Rendered as a citation of its entry, in reading order with the rest (STR-069; CId).
         if (block === null) continue;
@@ -3153,7 +3295,7 @@ function resolveReferences(
     );
     forms.set(key, { display, label: target.label, title: target.title });
   }
-  return { printed, named, failures, pdfsOwn, forms, forWord, cited, asCitations };
+  return { printed, named, failures, pdfsOwn, forms, forWord, cited, asCitations, used };
 }
 
 /** Every citation rendered (CIc): each one's in-text form by node and stored node, and the entries. */
@@ -3447,7 +3589,8 @@ type MarksOutcome =
  * through, because three of the four refused - `condition`, `suggestion` and `comment` - are marks
  * the content model accepts from any source, and a condition mark that fell through would set
  * conditional text in a PDF unconditionally, which is text a reader was not meant to be shown. The
- * fourth, `definedTerm`, is refused because nothing resolves a term.
+ * fourth, `definedTerm`, is refused here too: under a layout `publishedRuns` takes it off first, a term
+ * printing as a run of its own (TMb).
  *
  * **A run carrying two marks of one kind is refused by that kind's name**, although the kind is
  * carried. CNT-003 lets two annotations of one kind cover one range and the parse stores both, so
@@ -3543,15 +3686,30 @@ function textOf(
   reference: ((inline: ReferenceNode) => string) | null,
   equation:
     ((inline: Extract<InlineNode, { type: 'equation' }>) => PublishedEquation | null) | null,
+  /** What a term prints in a heading, from the words it covers (TM-E); absent, a mark refused. */
+  term: ((term: string, words: string) => string) | null = null,
 ): { readonly runs: readonly PublishedTitleRun[] } | { readonly unpublishable: string } {
   const runs: PublishedTitleRun[] = [];
   let words = '';
+  // A span carrying no other mark, as a title's words carry none.
+  const spans = new Map(
+    (term === null ? [] : termSpans(title))
+      .filter((span) => span.nodes.every((each) => each.marks.length === 1))
+      .map((span) => [span.nodes[0] as InlineNode, span]),
+  );
+  const swallowed = new Set<InlineNode>([...spans.values()].flatMap((span) => span.nodes.slice(1)));
   /** The words met since the last equation, as one run: a title's words carry no mark. */
   const said = () => {
     if (words !== '') runs.push({ text: words, marks: [] });
     words = '';
   };
   for (const inline of title) {
+    const span = spans.get(inline);
+    if (span !== undefined) {
+      words += term!(span.term, span.nodes.map((each) => each.value).join(''));
+      continue;
+    }
+    if (swallowed.has(inline)) continue;
     if (inline.type === 'crossReference' && reference !== null) {
       words += reference(inline);
       continue;

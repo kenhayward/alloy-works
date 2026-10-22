@@ -19,6 +19,7 @@ import {
   SEVENTH_DEFAULT_LAYOUT,
   EIGHTH_DEFAULT_LAYOUT,
   NINTH_DEFAULT_LAYOUT,
+  TENTH_DEFAULT_LAYOUT,
   SIXTH_DEFAULT_LAYOUT,
   speaksFor,
   THIRD_DEFAULT_LAYOUT,
@@ -112,6 +113,9 @@ describe('a layout', () => {
         ],
         // Version 0.10's bibliography (CId).
         bibliography: { title: 'References' },
+        // Version 0.11's glossary and abbreviations (TMb).
+        glossary: { title: 'Glossary' },
+        abbreviations: { title: 'Abbreviations' },
       },
       // Version 0.6's Word page is its PDF page, copied (Word 1, ruling R4).
       formats: { pdf: page, docx: page },
@@ -201,11 +205,20 @@ describe('a layout', () => {
       ...EIGHTH_DEFAULT_LAYOUT,
       words: { ...EIGHTH_DEFAULT_LAYOUT.words, note: 'Note:' },
     });
-    // And 0.10 is 0.9 placing a bibliography (CId).
+    // And 0.10 is 0.9 placing a bibliography (CId), 0.11 0.10 placing a glossary and abbreviations.
     expect(NINTH_DEFAULT_LAYOUT.matter).not.toHaveProperty('bibliography');
-    expect(defaultLayout).toEqual({
+    expect(TENTH_DEFAULT_LAYOUT).toEqual({
       ...NINTH_DEFAULT_LAYOUT,
       matter: { ...NINTH_DEFAULT_LAYOUT.matter, bibliography: { title: 'References' } },
+    });
+    expect(TENTH_DEFAULT_LAYOUT.matter).not.toHaveProperty('glossary');
+    expect(defaultLayout).toEqual({
+      ...TENTH_DEFAULT_LAYOUT,
+      matter: {
+        ...TENTH_DEFAULT_LAYOUT.matter,
+        glossary: { title: 'Glossary' },
+        abbreviations: { title: 'Abbreviations' },
+      },
     });
     // Optional at schema 7, in place: a layout without it reads, and fails nothing for its absence.
     expect(parseLayout(JSON.parse(JSON.stringify(EIGHTH_DEFAULT_LAYOUT)))).toEqual(
@@ -618,6 +631,24 @@ describe('a layout', () => {
     const blank = copy();
     blank.matter.bibliography = { title: '  ' };
     expect(() => parseLayout(blank)).toThrow();
+  });
+
+  it('PUB-039 declares a glossary and a list of abbreviations, each under a title of its words, which a layout stored without them reads as placing neither', () => {
+    const placed = copy();
+    placed.matter.glossary = { title: 'Terms' };
+    placed.matter.abbreviations = { title: 'Short forms' };
+    const read = parseLayout(placed).matter;
+    expect([read.glossary, read.abbreviations]).toEqual([
+      { title: 'Terms' },
+      { title: 'Short forms' },
+    ]);
+    expect(parseLayout(TENTH_DEFAULT_LAYOUT).matter).not.toHaveProperty('glossary');
+    expect(parseLayout(TENTH_DEFAULT_LAYOUT).matter).not.toHaveProperty('abbreviations');
+    for (const member of ['glossary', 'abbreviations'] as const) {
+      const blank = copy();
+      blank.matter[member] = { title: ' ' };
+      expect(() => parseLayout(blank), member).toThrow();
+    }
   });
 
   it('refuses every member it does not declare, at every depth', () => {

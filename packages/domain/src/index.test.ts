@@ -745,6 +745,7 @@ describe('the domain package', () => {
         'EIGHTH_DEFAULT_LAYOUT',
         // CId: the default layout's 0.9 frozen as 0.10 places a bibliography.
         'NINTH_DEFAULT_LAYOUT',
+        'TENTH_DEFAULT_LAYOUT',
         'SIXTH_DEFAULT_CATALOGUES',
         'SIXTH_DEFAULT_CATALOGUES_BY_VERSION',
         'SIXTH_DEFAULT_CATALOGUE_VERSIONS',
@@ -963,6 +964,21 @@ describe('the domain package', () => {
         'termLabel',
         'termSchema',
         'SEED_TERM_WORKFLOW',
+        // TMb: the term catalogue, and the default theme's 0.9 frozen beside 0.10.
+        'TERM_CATALOGUE_KIND',
+        'TERM_CATALOGUE_SCHEMA_VERSION',
+        'TERM_EXPANSIONS',
+        'DEFAULT_TERM_CATALOGUE_ID',
+        'NINTH_DEFAULT_CATALOGUES',
+        'NINTH_DEFAULT_CATALOGUES_BY_VERSION',
+        'NINTH_DEFAULT_CATALOGUE_VERSIONS',
+        'NINTH_DEFAULT_THEME',
+        'NINTH_DEFAULT_THEME_VERSION',
+        'PUBLISHING_SCHEMA_23',
+        'termPlaces',
+        'termSpans',
+        'termWarnings',
+        'termLabelIn',
       ].sort(),
     );
   });

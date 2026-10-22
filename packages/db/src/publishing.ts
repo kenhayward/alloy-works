@@ -49,8 +49,10 @@ import {
   parseEntry,
   type CslItem,
   type Requires,
+  type TermWarning,
 } from '@alloy-works/domain';
 import { waivedKeys } from './waivers.js';
+import { recordedTerms, resolveTerms, usesIn, type NodeTerms } from './publication-terms.js';
 import { latestRevisionsOf } from './workflow.js';
 import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
@@ -848,6 +850,10 @@ export interface Publishable {
   readonly assets: readonly { readonly version: string; readonly asset: string }[];
   /** Each entry a citation reads, at its latest version (CIc), recorded and pinned as an image is. */
   readonly entries: readonly { readonly version: string; readonly entry: string }[];
+  /** Each term a use reads, at its latest approved revision (TMb), recorded and pinned as an entry is. */
+  readonly terms: readonly { readonly version: string; readonly term: string }[];
+  /** What its terms report, which never stops it (LIB-018, LIB-050). */
+  readonly termWarnings: readonly TermWarning[];
 }
 
 /** A refusal a request or a baseline is answered with before anything is recorded. */
@@ -1028,7 +1034,24 @@ export async function resolvePublishable(
     bindings: bindings.held,
     assets: images.assets,
     entries: await resolveEntries(trx, resolved, input.principal),
+    ...(await termsRead(
+      trx,
+      usesIn(resolved, read.outline, input.documentId),
+      input.principal,
+      read.outline.language,
+    )),
   };
+}
+
+/** `resolveTerms`, named as a publishable holds it. */
+async function termsRead(
+  trx: TenantTransaction,
+  uses: ReturnType<typeof usesIn>,
+  principal: string,
+  language: string,
+): Promise<Pick<Publishable, 'terms' | 'termWarnings'>> {
+  const { terms, warnings } = await resolveTerms(trx, uses, principal, language);
+  return { terms, termWarnings: warnings };
 }
 
 /**
@@ -1102,6 +1125,8 @@ export async function requestPublication(
       // A preview names its kind; a publish is the column's default, as every request before 0035 was.
       ...(kind === 'publish' ? {} : { kind }),
       ...(said ? { profile: JSON.stringify(profile) } : {}),
+      // What its terms report (TMb), where they report anything, as on a request before 0154.
+      ...(found.termWarnings.length === 0 ? {} : { warnings: JSON.stringify(found.termWarnings) }),
     })
     .returning(['id'])
     .executeTakeFirstOrThrow();
@@ -1126,6 +1151,20 @@ export async function requestPublication(
           request_id: request.id,
           version_id: each.version,
           asset_id: each.asset,
+        })),
+      )
+      .execute();
+  }
+  // And each term version its uses read (TMb), likewise.
+  if (found.terms.length > 0) {
+    await trx
+      .insertInto('publication_request_asset')
+      .values(
+        found.terms.map((each) => ({
+          request_id: request.id,
+          version_id: each.version,
+          asset_id: each.term,
+          asset_kind: 'term' as const,
         })),
       )
       .execute();
@@ -1309,6 +1348,11 @@ export interface PublicationInputs {
     readonly style: { readonly csl: string; readonly requires: Requires } | null;
     readonly entries: ReadonlyMap<string, ReadonlyMap<string, CslItem>>;
   };
+  /**
+   * Each term version the request recorded, by node and then term (TMb), offered to each node read in
+   * the term's space, but for one the request reported unresolved: its requester may not read a pin.
+   */
+  readonly terms: NodeTerms;
 }
 
 /** A binding as a request or a publication records it, with the dataset version it took. */
@@ -1569,6 +1613,8 @@ async function inputsOf(
       // Short of 0106 a request recorded no profile, and conditions nothing.
       sql<StoredProfile | null>`to_jsonb(r) -> 'profile'`.as('profile'),
       'l.content as layout_content',
+      // Short of 0154 a request recorded no warnings.
+      sql<unknown[] | null>`to_jsonb(r) -> 'warnings'`.as('warnings'),
     ])
     .where('r.id', '=', requestId)
     .executeTakeFirst();
@@ -1761,6 +1807,31 @@ async function inputsOf(
           ),
         )
       : { style: null, entries: new Map() },
+    terms: await recordedTerms(
+      trx,
+      usesIn(
+        rows.map((row) => ({
+          node: row.node,
+          component: row.component_id,
+          content: occurrences.get(row.node)!.content,
+        })),
+        read.outline,
+        request.document_id,
+      ),
+      (
+        await trx
+          .selectFrom('publication_request_asset')
+          .select(['asset_id as term', 'version_id as version'])
+          .where('request_id', '=', requestId)
+          .where('asset_kind', '=', 'term')
+          .execute()
+      ).map((row) => ({ term: row.term, version: row.version })),
+      new Set(
+        ((request.warnings ?? []) as TermWarning[]).flatMap((each) =>
+          each.code === 'term_unresolved' ? [each.term] : [],
+        ),
+      ),
+    ),
   };
 }
 
@@ -2307,6 +2378,8 @@ export interface StoredPublicationRequest {
   readonly kind: 'publish' | 'preview' | 'range';
   readonly state: 'queued' | 'done' | 'failed';
   readonly failures: readonly PublishFailure[];
+  /** What its terms reported as it was made (TMb), which never stopped it. */
+  readonly warnings: readonly TermWarning[];
   readonly publication: string | null;
   /**
    * A done preview's PDF and when it expires; null for anything else - a publish always, and a preview
@@ -2347,6 +2420,8 @@ export async function readPublicationRequest(
       'r.preview_bytes',
       'r.expires_at',
       'p.id as publication',
+      // Short of 0154 a request recorded no warnings.
+      sql<unknown[] | null>`to_jsonb(r) -> 'warnings'`.as('warnings'),
     ])
     .where('r.id', '=', id)
     .executeTakeFirst();
@@ -2358,6 +2433,7 @@ export async function readPublicationRequest(
       kind: row.kind,
       state: row.state,
       failures: row.failures as PublishFailure[],
+      warnings: (row.warnings ?? []) as TermWarning[],
       publication: row.publication,
       // 0035 holds all four to a done preview and to nothing else; read only there regardless, so
       // nothing can make a publish request read as a preview.

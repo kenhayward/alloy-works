@@ -31,10 +31,10 @@ export interface BaselinePinTable {
   node: ColumnType<string | null, string | null, never>;
   version_id: ColumnType<string, string, never>;
   artifact_id: ColumnType<string, string, never>;
-  /** A bibliography entry's since 0147 (CIc), with no node, as an image's. */
+  /** A bibliography entry's since 0147 (CIc), and a term's since 0154 (TMb), with no node. */
   kind: ColumnType<
-    'component' | 'asset' | 'bibliographyEntry',
-    'component' | 'asset' | 'bibliographyEntry',
+    'component' | 'asset' | 'bibliographyEntry' | 'term',
+    'component' | 'asset' | 'bibliographyEntry' | 'term',
     never
   >;
 }

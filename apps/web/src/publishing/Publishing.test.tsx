@@ -178,6 +178,37 @@ describe('publishing from the document page', () => {
     ).toBeInTheDocument();
   });
 
+  it('LIB-018 LIB-050 publishes despite what its terms reported, warning of each kind', async () => {
+    const term = '1c0e2c4b-3f1d-4e8a-9b2c-5d6e7f8a9c01';
+    const fake = service({
+      [`GET /v1/documents/${DOCUMENT}/publications`]: [listed([])],
+      [`POST /v1/documents/${DOCUMENT}/publications`]: [
+        {
+          ...queued(),
+          warnings: [
+            { code: 'source_retracted', count: 1 },
+            { code: 'term_unresolved', term, count: 1 },
+            { code: 'term_deprecated', term, count: 2, replacedBy: term },
+            { code: 'term_fallback', term, count: 3, language: 'de' },
+            { code: 'term_fallback', term, count: 1, language: 'de' },
+          ],
+        },
+      ],
+      [`GET /v1/publication-requests/${REQUEST}`]: [
+        { ...queued(), state: 'done', publication: PUBLICATION },
+      ],
+    });
+    open(fake.fetch);
+    await screen.findByText('Nothing has been published from this document.');
+    await userEvent.click(screen.getByRole('button', { name: 'Publish as PDF' }));
+    expect(await screen.findByRole('link', { name: 'Open the publication' })).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Cited sources flagged by their source: 1 retracted. Review lists them. Terms used: 1 printed as written, 2 deprecated, 4 in their base language.',
+      ),
+    ).toBeInTheDocument();
+  });
+
   it('REU-027 publishes under a profile given in place of the document own, saying so, and under the document own once put back', async () => {
     const fake = service({
       [`GET /v1/documents/${DOCUMENT}/publications`]: [listed([])],

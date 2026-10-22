@@ -89,6 +89,12 @@ export const BaselineView = BaselineSummaryView.extend({
         .describe(
           'The bibliography entry versions its citations read, the caller may read; absent where it cites none',
         ),
+      terms: z
+        .array(Pinned)
+        .optional()
+        .describe(
+          'The term versions its uses read, the caller may read; absent where it uses none',
+        ),
       bindings: z.array(
         z.object({
           node: z.string(),

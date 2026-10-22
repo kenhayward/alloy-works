@@ -12141,6 +12141,12 @@ export interface operations {
                                 /** @description The version's digest */
                                 digest: string;
                             }[];
+                            /** @description The term versions its uses read, the caller may read; absent where it uses none */
+                            terms?: {
+                                version: string & (unknown & unknown);
+                                /** @description The version's digest */
+                                digest: string;
+                            }[];
                             bindings: {
                                 node: string;
                                 binding: string;
@@ -12756,12 +12762,26 @@ export interface operations {
                             /** @description The kind of block or mark, the style, the language tag, or the character as U+XXXX; null where the place is one the publisher may not read */
                             detail: string | null;
                         }[];
-                        /** @description What does not stop it (LIB-036): the sources cited by what the document places that their source says are retracted or corrected, counted, whoever may read them */
-                        warnings: {
+                        /** @description What does not stop it: the sources cited by what the document places that their source says are retracted or corrected, counted, whoever may read them (LIB-036); and what its terms reported as it was asked for, each term once (LIB-018, LIB-050) */
+                        warnings: ({
                             /** @enum {string} */
                             code: "source_retracted" | "source_corrected";
                             count: number;
-                        }[];
+                        } | {
+                            /**
+                             * @description `term_unresolved`: a term printed as the words it covers, being draft, missing or one the requester may not read; `term_deprecated`: a deprecated term printed; `term_fallback`: a term printed in its base language, having no label in the document's
+                             * @enum {string}
+                             */
+                            code: "term_unresolved" | "term_deprecated" | "term_fallback";
+                            /** @description The term, by its identity */
+                            term: string;
+                            /** @description How many uses */
+                            count: number;
+                            /** @description For a fallback, the document's language the term has no label in */
+                            language?: string;
+                            /** @description For a deprecated term, the term it names as its replacement */
+                            replacedBy?: string;
+                        })[];
                         /** @description The publication it made, once done */
                         publication: string | null;
                         /** @description A done preview's links and expiry, until it expires; none for a publish, or a preview not done or expired */
@@ -54984,12 +55004,26 @@ export interface operations {
                             /** @description The kind of block or mark, the style, the language tag, or the character as U+XXXX; null where the place is one the publisher may not read */
                             detail: string | null;
                         }[];
-                        /** @description What does not stop it (LIB-036): the sources cited by what the document places that their source says are retracted or corrected, counted, whoever may read them */
-                        warnings: {
+                        /** @description What does not stop it: the sources cited by what the document places that their source says are retracted or corrected, counted, whoever may read them (LIB-036); and what its terms reported as it was asked for, each term once (LIB-018, LIB-050) */
+                        warnings: ({
                             /** @enum {string} */
                             code: "source_retracted" | "source_corrected";
                             count: number;
-                        }[];
+                        } | {
+                            /**
+                             * @description `term_unresolved`: a term printed as the words it covers, being draft, missing or one the requester may not read; `term_deprecated`: a deprecated term printed; `term_fallback`: a term printed in its base language, having no label in the document's
+                             * @enum {string}
+                             */
+                            code: "term_unresolved" | "term_deprecated" | "term_fallback";
+                            /** @description The term, by its identity */
+                            term: string;
+                            /** @description How many uses */
+                            count: number;
+                            /** @description For a fallback, the document's language the term has no label in */
+                            language?: string;
+                            /** @description For a deprecated term, the term it names as its replacement */
+                            replacedBy?: string;
+                        })[];
                         /** @description The publication it made, once done */
                         publication: string | null;
                         /** @description A done preview's links and expiry, until it expires; none for a publish, or a preview not done or expired */
@@ -56993,12 +57027,26 @@ export interface operations {
                             /** @description The kind of block or mark, the style, the language tag, or the character as U+XXXX; null where the place is one the publisher may not read */
                             detail: string | null;
                         }[];
-                        /** @description What does not stop it (LIB-036): the sources cited by what the document places that their source says are retracted or corrected, counted, whoever may read them */
-                        warnings: {
+                        /** @description What does not stop it: the sources cited by what the document places that their source says are retracted or corrected, counted, whoever may read them (LIB-036); and what its terms reported as it was asked for, each term once (LIB-018, LIB-050) */
+                        warnings: ({
                             /** @enum {string} */
                             code: "source_retracted" | "source_corrected";
                             count: number;
-                        }[];
+                        } | {
+                            /**
+                             * @description `term_unresolved`: a term printed as the words it covers, being draft, missing or one the requester may not read; `term_deprecated`: a deprecated term printed; `term_fallback`: a term printed in its base language, having no label in the document's
+                             * @enum {string}
+                             */
+                            code: "term_unresolved" | "term_deprecated" | "term_fallback";
+                            /** @description The term, by its identity */
+                            term: string;
+                            /** @description How many uses */
+                            count: number;
+                            /** @description For a fallback, the document's language the term has no label in */
+                            language?: string;
+                            /** @description For a deprecated term, the term it names as its replacement */
+                            replacedBy?: string;
+                        })[];
                         /** @description The publication it made, once done */
                         publication: string | null;
                         /** @description A done preview's links and expiry, until it expires; none for a publish, or a preview not done or expired */
@@ -77165,12 +77213,26 @@ export interface operations {
                             /** @description The kind of block or mark, the style, the language tag, or the character as U+XXXX; null where the place is one the publisher may not read */
                             detail: string | null;
                         }[];
-                        /** @description What does not stop it (LIB-036): the sources cited by what the document places that their source says are retracted or corrected, counted, whoever may read them */
-                        warnings: {
+                        /** @description What does not stop it: the sources cited by what the document places that their source says are retracted or corrected, counted, whoever may read them (LIB-036); and what its terms reported as it was asked for, each term once (LIB-018, LIB-050) */
+                        warnings: ({
                             /** @enum {string} */
                             code: "source_retracted" | "source_corrected";
                             count: number;
-                        }[];
+                        } | {
+                            /**
+                             * @description `term_unresolved`: a term printed as the words it covers, being draft, missing or one the requester may not read; `term_deprecated`: a deprecated term printed; `term_fallback`: a term printed in its base language, having no label in the document's
+                             * @enum {string}
+                             */
+                            code: "term_unresolved" | "term_deprecated" | "term_fallback";
+                            /** @description The term, by its identity */
+                            term: string;
+                            /** @description How many uses */
+                            count: number;
+                            /** @description For a fallback, the document's language the term has no label in */
+                            language?: string;
+                            /** @description For a deprecated term, the term it names as its replacement */
+                            replacedBy?: string;
+                        })[];
                         /** @description The publication it made, once done */
                         publication: string | null;
                         /** @description A done preview's links and expiry, until it expires; none for a publish, or a preview not done or expired */

@@ -1,5 +1,7 @@
+import { recordedTerms, usesIn } from './publication-terms.js';
 import {
   citationPlaces,
+  termWarnings,
   baselineDigestInput,
   baselineNameProblem,
   labelFor,
@@ -107,6 +109,7 @@ export async function makeBaseline(
     ...found.resolved.map((each) => each.version),
     ...found.assets.map((each) => each.version),
     ...found.entries.map((each) => each.version),
+    ...found.terms.map((each) => each.version),
     ...found.bindings.map((each) => each.datasetVersion),
   ];
   const digests = new Map(
@@ -133,6 +136,7 @@ export async function makeBaseline(
     ...(found.entries.length === 0
       ? {}
       : { entries: found.entries.map((each) => pinned(each.version)) }),
+    ...(found.terms.length === 0 ? {} : { terms: found.terms.map((each) => pinned(each.version)) }),
     bindings: found.bindings.map((each) => ({
       node: each.node,
       binding: each.binding,
@@ -187,6 +191,14 @@ export async function makeBaseline(
       version_id: each.version,
       artifact_id: each.entry,
       kind: 'bibliographyEntry' as const,
+    })),
+    // Each term version its uses read, decided as its maker (TMb; TM-G): only what the maker may read.
+    ...found.terms.map((each) => ({
+      baseline_id: made.id,
+      node: null,
+      version_id: each.version,
+      artifact_id: each.term,
+      kind: 'term' as const,
     })),
   ];
   if (parts.length > 0) await trx.insertInto('baseline_pin').values(parts).execute();
@@ -245,8 +257,8 @@ async function readableAssets(
   trx: TenantTransaction,
   principal: string,
   assets: readonly string[],
-  /** An entry's too (CIc), read by the same predicate. */
-  kind: 'asset' | 'bibliographyEntry' = 'asset',
+  /** An entry's too (CIc), and a term's (TMb), read by the same predicate. */
+  kind: 'asset' | 'bibliographyEntry' | 'term' = 'asset',
 ): Promise<ReadonlySet<string>> {
   if (assets.length === 0) return new Set();
   const readable = await loadReadableSet(trx, principal);
@@ -430,6 +442,13 @@ export async function readBaseline(
     entries.map((each) => each.artifact_id),
     'bibliographyEntry',
   );
+  const terms = pins.filter((each) => each.kind === 'term');
+  const readableTerms = await readableAssets(
+    trx,
+    reader,
+    terms.map((each) => each.artifact_id),
+    'term',
+  );
   return {
     ...summaryOf(row),
     pins: {
@@ -455,6 +474,13 @@ export async function readBaseline(
         : {
             entries: entries
               .filter((each) => readableEntries.has(each.artifact_id))
+              .map((each) => ({ version: each.version_id, digest: each.version_digest })),
+          }),
+      ...(terms.length === 0
+        ? {}
+        : {
+            terms: terms
+              .filter((each) => readableTerms.has(each.artifact_id))
               .map((each) => ({ version: each.version_id, digest: each.version_digest })),
           }),
       bindings: bindings
@@ -627,6 +653,7 @@ export async function requestBaselinePublication(
   const occurrences = pins.filter((each) => each.kind === 'component');
   const assets = pins.filter((each) => each.kind === 'asset');
   const entries = pins.filter((each) => each.kind === 'bibliographyEntry');
+  const terms = pins.filter((each) => each.kind === 'term');
   const readable = await readableComponents(
     trx,
     input.requester,
@@ -677,20 +704,50 @@ export async function requestBaselinePublication(
             }));
         });
 
+  const outline = readOutline(baseline.outline, {
+    artifact: baseline.document_id,
+    version: baseline.document_version_id,
+  });
+  if (!outline.ok) throw new Error(`The document ${baseline.document_id} does not read`);
+  const contents = occurrences.map((each) => {
+    const read = readContent(each.content, {
+      artifact: each.artifact_id,
+      version: each.version_id,
+    });
+    if (!read.ok) throw new Error(`The component ${each.artifact_id} does not read`);
+    return read.document;
+  });
+  // A term it pinned the requester may not read prints its words and is reported (TMb), as a publish
+  // of the latest does: the pin is recorded and never read.
+  const uses = usesIn(
+    occurrences.map((each, n) => ({
+      node: each.node!,
+      component: each.artifact_id,
+      content: contents[n]!,
+    })),
+    outline.outline,
+    baseline.document_id,
+  );
+  const readablePins = await readableAssets(
+    trx,
+    input.requester,
+    terms.map((each) => each.artifact_id),
+    'term',
+  );
+  const warnings = termWarnings(
+    uses,
+    await recordedTerms(
+      trx,
+      uses,
+      terms.map((each) => ({ term: each.artifact_id, version: each.version_id })),
+      new Set(
+        terms.filter((each) => !readablePins.has(each.artifact_id)).map((each) => each.artifact_id),
+      ),
+    ),
+    outline.outline.language,
+  );
+
   if (!input.formats.includes('pdf')) {
-    const outline = readOutline(baseline.outline, {
-      artifact: baseline.document_id,
-      version: baseline.document_version_id,
-    });
-    if (!outline.ok) throw new Error(`The document ${baseline.document_id} does not read`);
-    const contents = occurrences.map((each) => {
-      const read = readContent(each.content, {
-        artifact: each.artifact_id,
-        version: each.version_id,
-      });
-      if (!read.ok) throw new Error(`The component ${each.artifact_id} does not read`);
-      return read.document;
-    });
     // What its profile keeps alone: a title it leaves out is never set (the R11 final review).
     const kept = selectOutline(outline.outline, outline.outline.profile?.values ?? {}).outline;
     if (documentCitesAPage(kept, contents)) {
@@ -716,6 +773,7 @@ export async function requestBaselinePublication(
       theme_version_id: baseline.theme_version_id,
       baseline_id: input.baseline,
       ...(profile === undefined ? {} : { profile: JSON.stringify(profile) }),
+      ...(warnings.length === 0 ? {} : { warnings: JSON.stringify(warnings) }),
     })
     .returning('id')
     .executeTakeFirstOrThrow();
@@ -732,7 +790,7 @@ export async function requestBaselinePublication(
       )
       .execute();
   }
-  if (assets.length > 0 || entries.length > 0) {
+  if (assets.length > 0 || entries.length > 0 || terms.length > 0) {
     await trx
       .insertInto('publication_request_asset')
       .values([
@@ -747,6 +805,13 @@ export async function requestBaselinePublication(
           version_id: each.version_id,
           asset_id: each.artifact_id,
           asset_kind: 'bibliographyEntry' as const,
+        })),
+        // And the term versions it pinned (TMb).
+        ...terms.map((each) => ({
+          request_id: request.id,
+          version_id: each.version_id,
+          asset_id: each.artifact_id,
+          asset_kind: 'term' as const,
         })),
       ])
       .execute();

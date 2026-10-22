@@ -22405,6 +22405,35 @@
                             ]
                           }
                         },
+                        "terms": {
+                          "description": "The term versions its uses read, the caller may read; absent where it uses none",
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "version": {
+                                "type": "string",
+                                "allOf": [
+                                  {
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  {
+                                    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                  }
+                                ]
+                              },
+                              "digest": {
+                                "type": "string",
+                                "pattern": "^[0-9a-f]{64}$",
+                                "description": "The version's digest"
+                              }
+                            },
+                            "required": [
+                              "version",
+                              "digest"
+                            ]
+                          }
+                        },
                         "bindings": {
                           "type": "array",
                           "items": {
@@ -24294,27 +24323,68 @@
                     "warnings": {
                       "type": "array",
                       "items": {
-                        "type": "object",
-                        "properties": {
-                          "code": {
-                            "type": "string",
-                            "enum": [
-                              "source_retracted",
-                              "source_corrected"
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "code": {
+                                "type": "string",
+                                "enum": [
+                                  "source_retracted",
+                                  "source_corrected"
+                                ]
+                              },
+                              "count": {
+                                "type": "integer",
+                                "exclusiveMinimum": 0,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "code",
+                              "count"
                             ]
                           },
-                          "count": {
-                            "type": "integer",
-                            "exclusiveMinimum": 0,
-                            "maximum": 9007199254740991
+                          {
+                            "type": "object",
+                            "properties": {
+                              "code": {
+                                "type": "string",
+                                "enum": [
+                                  "term_unresolved",
+                                  "term_deprecated",
+                                  "term_fallback"
+                                ],
+                                "description": "`term_unresolved`: a term printed as the words it covers, being draft, missing or one the requester may not read; `term_deprecated`: a deprecated term printed; `term_fallback`: a term printed in its base language, having no label in the document's"
+                              },
+                              "term": {
+                                "type": "string",
+                                "description": "The term, by its identity"
+                              },
+                              "count": {
+                                "type": "integer",
+                                "exclusiveMinimum": 0,
+                                "maximum": 9007199254740991,
+                                "description": "How many uses"
+                              },
+                              "language": {
+                                "description": "For a fallback, the document's language the term has no label in",
+                                "type": "string"
+                              },
+                              "replacedBy": {
+                                "description": "For a deprecated term, the term it names as its replacement",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "code",
+                              "term",
+                              "count"
+                            ]
                           }
-                        },
-                        "required": [
-                          "code",
-                          "count"
                         ]
                       },
-                      "description": "What does not stop it (LIB-036): the sources cited by what the document places that their source says are retracted or corrected, counted, whoever may read them"
+                      "description": "What does not stop it: the sources cited by what the document places that their source says are retracted or corrected, counted, whoever may read them (LIB-036); and what its terms reported as it was asked for, each term once (LIB-018, LIB-050)"
                     },
                     "publication": {
                       "description": "The publication it made, once done",
@@ -167328,27 +167398,68 @@
                     "warnings": {
                       "type": "array",
                       "items": {
-                        "type": "object",
-                        "properties": {
-                          "code": {
-                            "type": "string",
-                            "enum": [
-                              "source_retracted",
-                              "source_corrected"
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "code": {
+                                "type": "string",
+                                "enum": [
+                                  "source_retracted",
+                                  "source_corrected"
+                                ]
+                              },
+                              "count": {
+                                "type": "integer",
+                                "exclusiveMinimum": 0,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "code",
+                              "count"
                             ]
                           },
-                          "count": {
-                            "type": "integer",
-                            "exclusiveMinimum": 0,
-                            "maximum": 9007199254740991
+                          {
+                            "type": "object",
+                            "properties": {
+                              "code": {
+                                "type": "string",
+                                "enum": [
+                                  "term_unresolved",
+                                  "term_deprecated",
+                                  "term_fallback"
+                                ],
+                                "description": "`term_unresolved`: a term printed as the words it covers, being draft, missing or one the requester may not read; `term_deprecated`: a deprecated term printed; `term_fallback`: a term printed in its base language, having no label in the document's"
+                              },
+                              "term": {
+                                "type": "string",
+                                "description": "The term, by its identity"
+                              },
+                              "count": {
+                                "type": "integer",
+                                "exclusiveMinimum": 0,
+                                "maximum": 9007199254740991,
+                                "description": "How many uses"
+                              },
+                              "language": {
+                                "description": "For a fallback, the document's language the term has no label in",
+                                "type": "string"
+                              },
+                              "replacedBy": {
+                                "description": "For a deprecated term, the term it names as its replacement",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "code",
+                              "term",
+                              "count"
+                            ]
                           }
-                        },
-                        "required": [
-                          "code",
-                          "count"
                         ]
                       },
-                      "description": "What does not stop it (LIB-036): the sources cited by what the document places that their source says are retracted or corrected, counted, whoever may read them"
+                      "description": "What does not stop it: the sources cited by what the document places that their source says are retracted or corrected, counted, whoever may read them (LIB-036); and what its terms reported as it was asked for, each term once (LIB-018, LIB-050)"
                     },
                     "publication": {
                       "description": "The publication it made, once done",
@@ -173342,27 +173453,68 @@
                     "warnings": {
                       "type": "array",
                       "items": {
-                        "type": "object",
-                        "properties": {
-                          "code": {
-                            "type": "string",
-                            "enum": [
-                              "source_retracted",
-                              "source_corrected"
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "code": {
+                                "type": "string",
+                                "enum": [
+                                  "source_retracted",
+                                  "source_corrected"
+                                ]
+                              },
+                              "count": {
+                                "type": "integer",
+                                "exclusiveMinimum": 0,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "code",
+                              "count"
                             ]
                           },
-                          "count": {
-                            "type": "integer",
-                            "exclusiveMinimum": 0,
-                            "maximum": 9007199254740991
+                          {
+                            "type": "object",
+                            "properties": {
+                              "code": {
+                                "type": "string",
+                                "enum": [
+                                  "term_unresolved",
+                                  "term_deprecated",
+                                  "term_fallback"
+                                ],
+                                "description": "`term_unresolved`: a term printed as the words it covers, being draft, missing or one the requester may not read; `term_deprecated`: a deprecated term printed; `term_fallback`: a term printed in its base language, having no label in the document's"
+                              },
+                              "term": {
+                                "type": "string",
+                                "description": "The term, by its identity"
+                              },
+                              "count": {
+                                "type": "integer",
+                                "exclusiveMinimum": 0,
+                                "maximum": 9007199254740991,
+                                "description": "How many uses"
+                              },
+                              "language": {
+                                "description": "For a fallback, the document's language the term has no label in",
+                                "type": "string"
+                              },
+                              "replacedBy": {
+                                "description": "For a deprecated term, the term it names as its replacement",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "code",
+                              "term",
+                              "count"
+                            ]
                           }
-                        },
-                        "required": [
-                          "code",
-                          "count"
                         ]
                       },
-                      "description": "What does not stop it (LIB-036): the sources cited by what the document places that their source says are retracted or corrected, counted, whoever may read them"
+                      "description": "What does not stop it: the sources cited by what the document places that their source says are retracted or corrected, counted, whoever may read them (LIB-036); and what its terms reported as it was asked for, each term once (LIB-018, LIB-050)"
                     },
                     "publication": {
                       "description": "The publication it made, once done",
@@ -225203,27 +225355,68 @@
                     "warnings": {
                       "type": "array",
                       "items": {
-                        "type": "object",
-                        "properties": {
-                          "code": {
-                            "type": "string",
-                            "enum": [
-                              "source_retracted",
-                              "source_corrected"
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "code": {
+                                "type": "string",
+                                "enum": [
+                                  "source_retracted",
+                                  "source_corrected"
+                                ]
+                              },
+                              "count": {
+                                "type": "integer",
+                                "exclusiveMinimum": 0,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "code",
+                              "count"
                             ]
                           },
-                          "count": {
-                            "type": "integer",
-                            "exclusiveMinimum": 0,
-                            "maximum": 9007199254740991
+                          {
+                            "type": "object",
+                            "properties": {
+                              "code": {
+                                "type": "string",
+                                "enum": [
+                                  "term_unresolved",
+                                  "term_deprecated",
+                                  "term_fallback"
+                                ],
+                                "description": "`term_unresolved`: a term printed as the words it covers, being draft, missing or one the requester may not read; `term_deprecated`: a deprecated term printed; `term_fallback`: a term printed in its base language, having no label in the document's"
+                              },
+                              "term": {
+                                "type": "string",
+                                "description": "The term, by its identity"
+                              },
+                              "count": {
+                                "type": "integer",
+                                "exclusiveMinimum": 0,
+                                "maximum": 9007199254740991,
+                                "description": "How many uses"
+                              },
+                              "language": {
+                                "description": "For a fallback, the document's language the term has no label in",
+                                "type": "string"
+                              },
+                              "replacedBy": {
+                                "description": "For a deprecated term, the term it names as its replacement",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "code",
+                              "term",
+                              "count"
+                            ]
                           }
-                        },
-                        "required": [
-                          "code",
-                          "count"
                         ]
                       },
-                      "description": "What does not stop it (LIB-036): the sources cited by what the document places that their source says are retracted or corrected, counted, whoever may read them"
+                      "description": "What does not stop it: the sources cited by what the document places that their source says are retracted or corrected, counted, whoever may read them (LIB-036); and what its terms reported as it was asked for, each term once (LIB-018, LIB-050)"
                     },
                     "publication": {
                       "description": "The publication it made, once done",

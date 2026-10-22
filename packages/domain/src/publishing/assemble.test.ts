@@ -61,6 +61,7 @@ import {
   PUBLISHING_SCHEMA_20,
   PUBLISHING_SCHEMA_21,
   PUBLISHING_SCHEMA_22,
+  PUBLISHING_SCHEMA_23,
   type PublishedBlock,
   type PublishedDocument,
   type PublishedInline,
@@ -448,8 +449,8 @@ describe('assemble', () => {
     expect([...PUBLISHED_MARK_ORDER].sort()).toEqual(
       markTypes.filter((each) => ordered.includes(each)).sort(),
     );
-    // The four are refused rather than carried, each for its own reason: nothing resolves a term,
-    // and a condition, a suggestion or a comment is text a reader was not meant to be shown.
+    // The four are not carried, each for its own reason: a term prints its own forms as a run of its
+    // own (TMb), and a condition, a suggestion or a comment is text a reader was not meant to be shown.
     expect(markTypes.filter((t) => !ordered.includes(t))).toEqual([
       'definedTerm',
       'condition',
@@ -458,12 +459,12 @@ describe('assemble', () => {
     ]);
   });
 
-  it('refuses a defined term, naming it, because nothing resolves a term', () => {
+  it('prints a defined term nothing resolves as the words it covers, refusing nothing (TMb)', () => {
     const result = assemble(
       oneParagraph(marked('the tray', { type: 'definedTerm', id: 'm1', term: 'tray' })),
     );
-    expect(failuresOf(result)).toEqual([
-      expect.objectContaining({ code: 'inline_not_publishable', detail: 'definedTerm' }),
+    expect(runsOf(result as Assembled<PublishedDocument>)).toEqual([
+      { text: 'the tray', marks: [] },
     ]);
   });
 
@@ -597,13 +598,13 @@ describe('assemble', () => {
         marked(
           'now',
           { type: 'language', id: 'm1', tag: 'zh-Hans' },
-          { type: 'definedTerm', id: 'm2', term: 'tray' },
+          { type: 'suggestion', id: 'm2', operation: 'insert', author: 'ada' },
         ),
       ),
     );
     expect(failuresOf(both).map((each) => [each.code, each.detail])).toEqual([
       ['language_not_publishable', 'zh-Hans'],
-      ['inline_not_publishable', 'definedTerm'],
+      ['inline_not_publishable', 'suggestion'],
     ]);
   });
 
@@ -732,7 +733,12 @@ describe('assemble', () => {
             component([
               paragraph(
                 'p1',
-                marked('Tray', { type: 'definedTerm', id: 'm1', term: 'tray' }),
+                marked('Tray', {
+                  type: 'suggestion',
+                  id: 'm1',
+                  operation: 'insert',
+                  author: 'ada',
+                }),
                 marked('Reworded', { type: 'comment', id: 'm2', threadId: 'thread-1' }),
               ),
               // An equation no one has given words to be spoken by (equations 2).
@@ -758,7 +764,7 @@ describe('assemble', () => {
         code: 'inline_not_publishable',
         node: id('calib'),
         block: 'p1',
-        detail: 'definedTerm',
+        detail: 'suggestion',
       },
       {
         stage: 'compose',
@@ -1168,8 +1174,8 @@ describe('assemble', () => {
     ]);
   });
 
-  it('assembles under a layout as publishing/23, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/23');
+  it('assembles under a layout as publishing/24, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/24');
     // Frozen with templates 3 and 4 and the publications made by them, exactly as `publishing/2` was
     // frozen when a run began to carry its marks: a template version is a record, not something to
     // migrate.
@@ -1755,8 +1761,8 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
     ]);
   });
 
-  it('makes publishing/23, and publishing/4 to publishing/22 are frozen', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/23');
+  it('makes publishing/24, and publishing/4 to publishing/23 are frozen', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/24');
     expect(PUBLISHING_SCHEMA_4).toBe('publishing/4');
     expect(PUBLISHING_SCHEMA_5).toBe('publishing/5');
     expect(PUBLISHING_SCHEMA_6).toBe('publishing/6');
@@ -1776,6 +1782,7 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
     expect(PUBLISHING_SCHEMA_20).toBe('publishing/20');
     expect(PUBLISHING_SCHEMA_21).toBe('publishing/21');
     expect(PUBLISHING_SCHEMA_22).toBe('publishing/22');
+    expect(PUBLISHING_SCHEMA_23).toBe('publishing/23');
   });
 });
 
@@ -2745,14 +2752,17 @@ describe('footnotes and the table note, published (footnotes 2)', () => {
             text('Visited'),
             footnote('f1', [
               styled('fp1', 'aside', text('Once')),
-              paragraph('fp2', marked('Twice', { type: 'definedTerm', id: 'm2', term: 'twice' })),
+              paragraph(
+                'fp2',
+                marked('Twice', { type: 'comment', id: 'm2', threadId: 'thread-1' }),
+              ),
             ]),
           ),
         ),
       ),
     ).toEqual([
       failed('style_missing', 'f1', 'aside'),
-      failed('inline_not_publishable', 'f1', 'definedTerm'),
+      failed('inline_not_publishable', 'f1', 'comment'),
     ]);
   });
 
@@ -4890,11 +4900,11 @@ describe('the theme a publication is set from (themes 1)', () => {
     return styles;
   };
 
-  it('makes publishing/23, carrying the Typst projection of every paragraph, table and image style the theme holds, used or not', () => {
+  it('makes publishing/24, carrying the Typst projection of every paragraph, table and image style the theme holds, used or not', () => {
     const theme = resolved();
     const assembled = assemble(oneParagraph(text('Set the tray.')));
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
-    expect(assembled.document.schema).toBe('publishing/23');
+    expect(assembled.document.schema).toBe('publishing/24');
     expect(assembled.document.theme).toEqual(projectTypst(theme));
     expect(Object.keys(assembled.document.theme.tables)).toEqual(['table', 'banded']);
     expect(Object.keys(assembled.document.theme.images)).toEqual([

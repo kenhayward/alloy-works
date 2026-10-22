@@ -5418,3 +5418,107 @@ describe('writeDocx: citations and the bibliography (the CI plan, CIc)', () => {
     expect(new Set([marlow, records]).size).toBe(2);
   });
 });
+
+describe('writeDocx: terms, the glossary and the abbreviations (the TM plan, TMb)', () => {
+  const RPM = '1c0e2c4b-3f1d-4e8a-9b2c-5d6e7f8a9c11';
+  const TORQUE = '1c0e2c4b-3f1d-4e8a-9b2c-5d6e7f8a9c12';
+  const termOf = (preferred: string, definition: string, abbreviation?: string) => ({
+    term: {
+      schemaVersion: 1 as const,
+      base: 'en',
+      labels: [
+        {
+          language: 'en',
+          preferred,
+          alternatives: [],
+          ...(abbreviation === undefined ? {} : { abbreviation }),
+        },
+      ],
+      definition: [{ language: 'en', text: definition }],
+      broader: [],
+      narrower: [],
+      related: [],
+    },
+    deprecated: false,
+  });
+  const terms = new Map([
+    [RPM, termOf('revolutions per minute', 'Turns of a shaft in one minute.', 'RPM')],
+    [TORQUE, termOf('Torque', 'A turning force.')],
+  ]);
+  const termed = (value: string, mark: string, of: string) => ({
+    type: 'text',
+    value,
+    marks: [{ type: 'definedTerm', id: mark, term: of }],
+  });
+  const pump = component('Pump', [
+    paragraph(
+      'c1',
+      text('At '),
+      termed('speed', 'm1', RPM),
+      text(' the '),
+      termed('t', 'm2', TORQUE),
+      text('.'),
+    ),
+    paragraph('c2', text('Then '), termed('rpm', 'm3', RPM), text('.')),
+  ]);
+  const outline = parseOutlineDocument({
+    schemaVersion: OUTLINE_SCHEMA_VERSION,
+    title: 'The pump report',
+    language: 'en-GB',
+    direction: 'ltr',
+    nodes: [reference('pump', 6)],
+  });
+  const termedDocx = () =>
+    written({
+      outline,
+      occurrences: new Map([[id('pump'), pump]]),
+      layout: defaultLayout,
+      terms: { entries: new Map([[id('pump'), terms]]) },
+    });
+
+  it('PUB-039 writes the glossary and then the abbreviations after the last node, each headed, an entry a paragraph', () => {
+    const { docx } = termedDocx();
+    const said = paragraphs(docx).map(textOf);
+    const at = said.indexOf('Glossary');
+    expect(at).toBeGreaterThan(said.indexOf('Then RPM.'));
+    expect(said.slice(at)).toEqual([
+      'Glossary',
+      'revolutions per minute Turns of a shaft in one minute.',
+      'Torque A turning force.',
+      'Abbreviations',
+      'RPM revolutions per minute',
+    ]);
+  });
+
+  it('LIB-016 writes each use as its forms in the term style, linked to the bookmark on its glossary entry', () => {
+    const { docx } = termedDocx();
+    expect(textOf(paragraphSaying(docx, 'At revolutions per minute (RPM) the Torque.'))).toBe(
+      'At revolutions per minute (RPM) the Torque.',
+    );
+    const bookmarkOf = (text: string) =>
+      first(
+        paragraphs(docx).find((each) => textOf(each) === text)!,
+        'w:bookmarkStart',
+      )!.attrs['w:name'];
+    const links = all(
+      paragraphSaying(docx, 'At revolutions per minute (RPM) the Torque.'),
+      'w:hyperlink',
+    );
+    expect(links.map((each) => [each.attrs['w:anchor'], textOf(each)])).toEqual([
+      [
+        bookmarkOf('revolutions per minute Turns of a shaft in one minute.'),
+        'revolutions per minute (RPM)',
+      ],
+      [bookmarkOf('Torque A turning force.'), 'Torque'],
+    ]);
+    const styled = all(paragraphSaying(docx, 'Then RPM.'), 'w:rStyle').map(
+      (each) => each.attrs['w:val'],
+    );
+    expect(styled).toEqual(['Term']);
+    expect(
+      all(docx.xml('word/styles.xml'), 'w:style').some(
+        (each) => each.attrs['w:styleId'] === 'Term',
+      ),
+    ).toBe(true);
+  });
+});

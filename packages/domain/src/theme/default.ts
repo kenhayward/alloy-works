@@ -15,6 +15,7 @@ import type {
   TableCatalogue,
   TableCatalogue1,
   TableCatalogue2,
+  TermCatalogue,
   Theme,
   Typeface,
   ValueCatalogue,
@@ -1131,9 +1132,9 @@ const secondCitation: CitationCatalogue = {
 
 /**
  * The catalogue versions the theme's 0.9 binds: 0.8's, and a new, fixed identifier for the citation
- * catalogue's second version, which 0146 seeds and the theme's content names.
+ * catalogue's second version, which 0146 seeds and the theme's content names. Frozen by 0.10.
  */
-export const DEFAULT_CATALOGUE_VERSIONS: Readonly<
+export const NINTH_DEFAULT_CATALOGUE_VERSIONS: Readonly<
   Record<CatalogueKind | typeof VALUE_CATALOGUE_KIND, string>
 > = {
   ...EIGHTH_DEFAULT_CATALOGUE_VERSIONS,
@@ -1145,25 +1146,70 @@ type DefaultCatalogues9 = Omit<DefaultCatalogues, 'citation'> & {
   readonly citation: CitationCatalogue;
 };
 
-/** **The catalogues the default theme binds as it stands, 0.9**: 0.8's, the citation catalogue's second. */
-export const DEFAULT_CATALOGUES: DefaultCatalogues9 = {
+/** **The catalogues the default theme's 0.9 binds**: 0.8's, the citation catalogue's second. Frozen. */
+export const NINTH_DEFAULT_CATALOGUES: DefaultCatalogues9 = {
   ...EIGHTH_DEFAULT_CATALOGUES,
   citation: secondCitation,
 };
 
 /** The same seven, by the version identifier the theme's 0.9 names each by. */
+export const NINTH_DEFAULT_CATALOGUES_BY_VERSION: ReadonlyMap<string, unknown> = new Map(
+  (Object.keys(NINTH_DEFAULT_CATALOGUE_VERSIONS) as (keyof DefaultCatalogues9)[]).map((kind) => [
+    NINTH_DEFAULT_CATALOGUE_VERSIONS[kind],
+    NINTH_DEFAULT_CATALOGUES[kind],
+  ]),
+);
+
+/** The fixed identifier the store seeds the default theme's 0.9 under, by 0146, as 0.8's is fixed. */
+export const NINTH_DEFAULT_THEME_VERSION = '6d8f0b2c-3e5a-4b7d-9f1c-4e6a8b0d2f3c';
+
+/** **The default theme's 0.9, as 0146 stored it**: 0.8 naming the citation catalogue's second. */
+export const NINTH_DEFAULT_THEME: Theme = {
+  ...EIGHTH_DEFAULT_THEME,
+  catalogues: { ...NINTH_DEFAULT_CATALOGUE_VERSIONS },
+};
+
+// ---------------------------------------------------------------------------------------------------
+// Version 0.10 (the TM plan, TM-D): the term catalogue's first version, beside the others, expanding a
+// term on its first use, and the theme naming it. Nothing published without a term moves.
+// ---------------------------------------------------------------------------------------------------
+
+/** The term catalogue the theme's 0.10 binds, its first version: first use (LIB-016, LIB-017). */
+const term: TermCatalogue = { schemaVersion: 5, kind: 'term', expand: 'firstUse' };
+
+/**
+ * The catalogue versions the theme's 0.10 binds: 0.9's, and a fixed identifier for the term
+ * catalogue's first version, which 0154 seeds and the theme's content names.
+ */
+export const DEFAULT_CATALOGUE_VERSIONS: Readonly<
+  Record<CatalogueKind | typeof VALUE_CATALOGUE_KIND | 'term', string>
+> = {
+  ...NINTH_DEFAULT_CATALOGUE_VERSIONS,
+  term: '7e3d71ca-e3a7-4f5e-87e1-01eb74e31826',
+};
+
+/** The catalogues' contents at 0.10, by kind, each as its row holds it. */
+type DefaultCatalogues10 = DefaultCatalogues9 & { readonly term: TermCatalogue };
+
+/** **The catalogues the default theme binds as it stands, 0.10**: 0.9's, and the term catalogue. */
+export const DEFAULT_CATALOGUES: DefaultCatalogues10 = { ...NINTH_DEFAULT_CATALOGUES, term };
+
+/** The same eight, by the version identifier the theme's 0.10 names each by. */
 export const DEFAULT_CATALOGUES_BY_VERSION: ReadonlyMap<string, unknown> = new Map(
-  (Object.keys(DEFAULT_CATALOGUE_VERSIONS) as (keyof DefaultCatalogues9)[]).map((kind) => [
+  (Object.keys(DEFAULT_CATALOGUE_VERSIONS) as (keyof DefaultCatalogues10)[]).map((kind) => [
     DEFAULT_CATALOGUE_VERSIONS[kind],
     DEFAULT_CATALOGUES[kind],
   ]),
 );
 
-/** The fixed identifier the store seeds the default theme's 0.9 under, by 0146, as 0.8's is fixed. */
-export const DEFAULT_THEME_VERSION = '6d8f0b2c-3e5a-4b7d-9f1c-4e6a8b0d2f3c';
+/** The fixed identifier the store seeds the default theme's 0.10 under, by 0154, as 0.9's is fixed. */
+export const DEFAULT_THEME_VERSION = '7d8fe493-5bf4-453b-82b0-fa854fb34604';
 
-/** **The default theme as it stands, 0.9**: 0.8 naming the citation catalogue's second version. */
+/** The term catalogue's artifact, in no space, under a fixed identifier 0154 seeds (TM-D). */
+export const DEFAULT_TERM_CATALOGUE_ID = '43a10f0a-dffc-4c32-9a43-0391addf2c4b';
+
+/** **The default theme as it stands, 0.10**: 0.9 naming the term catalogue too. */
 export const DEFAULT_THEME: Theme = {
-  ...EIGHTH_DEFAULT_THEME,
+  ...NINTH_DEFAULT_THEME,
   catalogues: { ...DEFAULT_CATALOGUE_VERSIONS },
 };
