@@ -188,7 +188,7 @@ Saying so, and giving them something to sort by, costs one field.
 | ID          | Requirement                                                                                                                                                                                                                                      | Tranche    | Status    |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | --------- |
 | **API-030** | Data source connectors must be addable without changing the product (**DAT-054**)                                                                                                                                                                | T5         | Specified |
-| **API-031** | Output formats should be addable as extensions                                                                                                                                                                                                   | T5         | Specified |
+| **API-031** | Output formats should be addable as extensions                                                                                                                                                                                                   | T7         | Specified |
 | **API-032** | Citation styles must be addable without a code change (**STY-023**)                                                                                                                                                                              | T6         | Specified |
 | **API-033** | An extension must declare what it needs and must run with no more authority than that                                                                                                                                                            | Constraint | Specified |
 | **API-034** | An extension failure must be attributable to the extension, never reported as a defect in the product                                                                                                                                            | T5         | Specified |
@@ -395,16 +395,17 @@ the rest becomes rows of their own.
 | ------------ | ------------------------- | ------------------------- |
 | Requirements | 62, of which 3 superseded | 64, of which 4 superseded |
 
-### Webhooks' export and extensions' outbound inventory moved to T7, 2026-10-22
+### Webhooks' export, extensions' outbound inventory and output formats moved to T7, 2026-10-22
 
-Not a review. Ken moved what T5 left of two rows to T7, where the configuration export (ADM-005) and
+Not a review. Ken moved what T5 left of three rows to T7, where the configuration export (ADM-005) and
 the outbound inventory (ADM-041) they depend on are built: webhook subscriptions are administrable
 and audited (the WB plan), and extensions are permissioned, audited and declare their outbound hosts
-(the EX plan). A row moving tranche whole keeps its identifier, and only its tranche changes.
+(the EX plan); and output formats as extensions (API-031), a second kind beside source types. A row moving tranche whole keeps its identifier, and only its tranche changes.
 
 | What was found                                                                                    | Change                              |
 | ------------------------------------------------------------------------------------------------- | ----------------------------------- |
 | API-055 asks for subscriptions in the configuration export, and API-059 for an outbound inventory | **API-055 and API-059 moved to T7** |
+| Output formats as extensions are a second extension kind, a 'should'                              | **API-031 moved to T7**             |
 
 | Counts       | Before                    | After                     |
 | ------------ | ------------------------- | ------------------------- |

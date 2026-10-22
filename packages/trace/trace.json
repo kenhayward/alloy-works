@@ -976,7 +976,7 @@
       "id": "API-031",
       "area": "API",
       "statement": "Output formats should be addable as extensions",
-      "tranche": "T5",
+      "tranche": "T7",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
       "line": 191
