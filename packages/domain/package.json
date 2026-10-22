@@ -13,6 +13,10 @@
     "./citations": {
       "types": "./dist/library/citations.d.ts",
       "default": "./dist/library/citations.js"
+    },
+    "./sources-fixtures": {
+      "types": "./dist/library/sources-fixtures.d.ts",
+      "default": "./dist/library/sources-fixtures.js"
     }
   },
   "files": [

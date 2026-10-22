@@ -489,6 +489,9 @@ const OTHER_TENANT_IDS: Readonly<
   recordPromptLibraryVersion: async (tenant, db) => ({ id: await libraryIdIn(tenant, db) }),
   getCitationStyle: async (tenant, db) => ({ id: await styleIdIn(tenant, db) }),
   recordCitationStyleVersion: async (tenant, db) => ({ id: await styleIdIn(tenant, db) }),
+  // A source is the product's, the same in every environment; what is asked of it is the tenant's.
+  searchReferenceSource: () => Promise.resolve({ source: 'crossref' }),
+  createBibliographyEntryFromSource: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   getQueryDefinition: async (tenant, db) => ({ id: await queryDefinitionIdIn(tenant, db) }),
   transitionQueryDefinition: async (tenant, db) => ({ id: await queryDefinitionIdIn(tenant, db) }),
   decideQueryDefinitionGate: async (tenant, db) => ({ id: await queryDefinitionIdIn(tenant, db) }),
@@ -619,6 +622,11 @@ const VALID_INPUT: Readonly<
   previewCitationStyle: { payload: { csl: aStyle.csl } },
   previewComponentCitations: { payload: { citations: [] } },
   recordCitationStyleVersion: { payload: { openedFrom: SESSION, style: aStyle } },
+  setReferenceSource: { payload: { source: 'crossref', enabled: false } },
+  searchReferenceSource: { payload: { space: `space:${SESSION}`, terms: 'Probe' } },
+  createBibliographyEntryFromSource: {
+    payload: { source: 'crossref', identifier: '10.5555/probe' },
+  },
   recordPromptLibraryVersion: {
     payload: { openedFrom: SESSION, library: { schemaVersion: 1, name: 'Probe', prompts: [] } },
   },

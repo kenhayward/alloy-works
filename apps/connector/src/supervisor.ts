@@ -10,6 +10,12 @@ import {
   embedAnswerSchema,
   deliverAnswerSchema,
   manifestAnswerSchema,
+  referenceAnswerSchema,
+  referenceSource,
+  type ChildReferenceRequest,
+  type ReferenceAnswer,
+  type ReferenceRequest,
+  type ReferenceSourceId,
   type ChildManifestRequest,
   type ManifestAnswer,
   type ManifestRequest,
@@ -46,6 +52,8 @@ import {
   type TestRequest,
 } from '@alloy-works/domain';
 import { openSecret } from '@alloy-works/sealing';
+
+import { PRIVATE_RANGES } from './config.js';
 
 /**
  * The supervisor (data.md, "A fresh process per request"; D1-H): it holds the sealing key, opens the
@@ -330,6 +338,8 @@ export const MAX_DELIVERIES = 4;
 
 /** How long a manifest's child may take: its ten seconds, and a start. */
 const MANIFEST_SPAWN_MS = 12_000;
+/** How long a reference call's child may take: its fifteen seconds, and a start. */
+const REFERENCE_SPAWN_MS = 17_000;
 
 export interface Supervisor {
   /**
@@ -354,6 +364,8 @@ export interface Supervisor {
   embed(request: EmbedRequest, signal?: AbortSignal): 'busy' | Promise<EmbedAnswer>;
   /** An extension's manifest fetched (the EX plan, EX-B): `busy` where every child is running. */
   manifest(request: ManifestRequest, signal?: AbortSignal): 'busy' | Promise<ManifestAnswer>;
+  /** A reference source asked (the XR plan, XR-B): `busy` where every child is running. */
+  reference(request: ReferenceRequest, signal?: AbortSignal): 'busy' | Promise<ReferenceAnswer>;
   /** A webhook delivery (the WB plan, WB-F): `busy` where its own cap is reached, else its answer. */
   deliver(request: DeliverRequest, signal?: AbortSignal): 'busy' | Promise<DeliverAnswer>;
   /** How many children are running. */
@@ -396,6 +408,15 @@ export function createSupervisor(options: {
   readonly onStderrBytes?: (bytes: number) => void;
   /** A development or CI source's certificate authority, handed to each child (the D6 plan). */
   readonly ca?: string;
+  /** The deployment's contact address, sent to a reference source as its etiquette asks (XR-B). */
+  readonly referenceContact?: string;
+  /**
+   * Where a test's fake sources listen, in place of domain's hosts: a parameter, never configuration,
+   * which production's server never passes.
+   */
+  readonly referenceOrigins?: Partial<
+    Record<ReferenceSourceId, { readonly host: string; readonly port: number }>
+  >;
 }): Supervisor {
   const given = options.spec;
   const specFor =
@@ -627,6 +648,67 @@ export function createSupervisor(options: {
     );
   }
 
+  /**
+   * A reference call's child (XR-B): no secret; the host domain's list declares, never the request's;
+   * the private ranges always among the guard's, whatever `deny` holds.
+   */
+  async function referenceWork(
+    request: ReferenceRequest,
+    slot: number,
+    sweeping: (done: Promise<void>) => void,
+    signal: AbortSignal | undefined,
+  ): Promise<ReferenceAnswer> {
+    const origin = options.referenceOrigins?.[request.source] ?? {
+      host: referenceSource(request.source)!.host,
+      port: 443,
+    };
+    const input: ChildReferenceRequest = {
+      kind: 'reference',
+      request,
+      host: origin.host,
+      port: origin.port,
+      deny: [...options.deny, ...PRIVATE_RANGES],
+      connectTimeoutMs,
+      ...(options.referenceContact === undefined ? {} : { contact: options.referenceContact }),
+      ...(options.ca === undefined ? {} : { ca: options.ca }),
+    };
+    const spec = specFor(slot);
+    let stderrBytes = 0;
+    let answer: ReferenceAnswer | undefined;
+    let outcome: StreamOutcome;
+    try {
+      outcome = await streamSpawn(
+        spec,
+        JSON.stringify(input),
+        REFERENCE_SPAWN_MS,
+        (line) => {
+          try {
+            const parsed = referenceAnswerSchema.safeParse(JSON.parse(line));
+            if (parsed.success) answer = parsed.data;
+          } catch {
+            // Not an answer: the child is at fault.
+          }
+          return false;
+        },
+        (chunk) => {
+          stderrBytes += chunk.length;
+        },
+        signal,
+      );
+    } finally {
+      if (spec.uid !== undefined) sweeping(sweep(spec.uid).catch(() => {}));
+    }
+    options.onStderrBytes?.(stderrBytes);
+    return (
+      answer ?? {
+        type: 'failed',
+        code: 'reference_unavailable',
+        source: request.source,
+        reason: outcome.kind === 'timeout' ? 'timeout' : 'connector',
+      }
+    );
+  }
+
   /** A delivery's child: its secrets opened here, bound to its subscription and URL (WB-G). */
   async function deliverWork(
     request: DeliverRequest,
@@ -760,6 +842,21 @@ export function createSupervisor(options: {
   }
 
   return {
+    reference(request, signal) {
+      const slot = free.shift();
+      if (slot === undefined) return 'busy';
+      active += 1;
+      let answer: ReferenceAnswer | undefined;
+      return holding(slot, (sweeping) =>
+        referenceWork(request, slot, sweeping, signal)
+          .then((each) => {
+            answer = each;
+          })
+          .finally(() => {
+            active -= 1;
+          }),
+      ).then(() => answer!);
+    },
     manifest(request, signal) {
       const slot = free.shift();
       if (slot === undefined) return 'busy';

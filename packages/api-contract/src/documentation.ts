@@ -26,7 +26,7 @@ export const documentationGroups = [
       {
         name: 'Bibliography',
         description:
-          "Keep a space's bibliography entries, import and export them, see where each is cited, and keep the environment's citation styles.",
+          "Keep a space's bibliography entries, import and export them, see where each is cited, search Crossref and PubMed for a source to cite, and keep the environment's citation styles.",
       },
       { name: 'Assets', description: 'Upload and retrieve image assets.' },
       {
@@ -467,6 +467,10 @@ const operationTags = {
     'previewCitationStyle',
     'getCitationStyle',
     'recordCitationStyleVersion',
+    'listReferenceSources',
+    'setReferenceSource',
+    'searchReferenceSource',
+    'createBibliographyEntryFromSource',
   ],
   Prompts: [
     'listPrompts',
@@ -985,6 +989,14 @@ const descriptions: Readonly<Record<string, string>> = {
     'Returns a citation style at its latest version: its CSL, its name, what it requires, and whether it is one every environment is given.',
   recordCitationStyleVersion:
     'Records the next citation style version from the version the caller opened, checked as an upload is. A theme naming an earlier version goes on rendering in it. It needs design here.',
+  listReferenceSources:
+    'Lists the reference sources the product declares, Crossref and PubMed, each with the one host it is reached at, what a record is fetched by, and whether this environment searches it. Each is on until an administrator switches it off.',
+  setReferenceSource:
+    'Switches a reference source on or off for the environment. Off, it is neither searched nor made an entry from. It needs administer on the environment.',
+  searchReferenceSource:
+    "Searches a reference source for the terms given, which are sent to the source, and answers at most 20 results as CSL-JSON, each matched against the space's entries by DOI, PubMed identifier, ISBN or ISSN, else by title, year and first author. It says whether the caller may make an entry in the space. It needs read in the space. A source that cannot be reached, or answers out of shape, is `reference_unavailable`.",
+  createBibliographyEntryFromSource:
+    'Fetches a record from a reference source by its DOI or PubMed identifier and makes it an entry of the space, recording where and when it was obtained. It is first matched against the entries already there, as making an entry by hand is: a match is offered and nothing made, unless the request says to make it despite the match. It needs edit in the space.',
   unarchiveBibliographyEntry:
     "Unarchives an entry, returning it to the space's listing. It needs retire on the entry.",
   recordPromptVersion:

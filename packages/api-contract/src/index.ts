@@ -231,6 +231,18 @@ export {
   promptLibraryRoutes,
 } from './prompt-libraries.js';
 export {
+  FromSourceAnswer,
+  FromSourceBody,
+  ReferenceResultView,
+  ReferenceSearchAnswer,
+  ReferenceSearchBody,
+  ReferenceSourceBody,
+  ReferenceSourceList,
+  ReferenceSourceView,
+  SourceParams,
+  referenceSourceRoutes,
+} from './reference-sources.js';
+export {
   citationStyleRoutes,
   CreateStyleBody,
   PreviewStyleBody,

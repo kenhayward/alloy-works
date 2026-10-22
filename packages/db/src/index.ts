@@ -1180,3 +1180,4 @@ export {
   type ExtensionUse,
   type InstalledExtension,
 } from './extensions.js';
+export { referenceSourcesOn, setReferenceSource } from './reference-sources.js';

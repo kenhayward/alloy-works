@@ -13,6 +13,7 @@ import {
   webhookSealRequestSchema,
   deliverRequestSchema,
   manifestRequestSchema,
+  referenceRequestSchema,
   DELIVERY_BODY_MOST,
   webhookSecretContext,
   describeRequestSchema,
@@ -56,6 +57,8 @@ const bodyLimits: Readonly<Record<string, number>> = {
   '/v1/deliver': 2 * DELIVERY_BODY_MOST,
   // An extension's manifest, by its URL (the EX plan, EX-B).
   '/v1/manifest': 8 * 1024,
+  // A reference source asked, by its id and an operation (the XR plan, XR-B).
+  '/v1/reference': 8 * 1024,
   '/v1/model': MODEL_REQUEST_MAX_BYTES,
   // An embedding call: up to 96 texts (the G7 plan, G7-E).
   '/v1/embed': EMBED_REQUEST_MAX_BYTES,
@@ -121,6 +124,9 @@ export function createConnectorServer(options: {
       // A webhook's receiver is public unless this deployment allows a private one (WB-F).
       ...(config.webhookPrivate ? {} : { webhookDeny: PRIVATE_RANGES }),
       ...(config.ca === undefined ? {} : { ca: config.ca }),
+      ...(config.referenceContact === undefined
+        ? {}
+        : { referenceContact: config.referenceContact }),
       // Production's children, each as its slot's own user, unless a test hands another.
       ...(options.spec ? { spec: options.spec } : {}),
       ...(options.spawn ? { spawn: options.spawn } : {}),
@@ -233,6 +239,14 @@ export function createConnectorServer(options: {
       const parsed = manifestRequestSchema.safeParse(body);
       if (!parsed.success) return send(400, { code: 'request_invalid' });
       const call = supervisor.manifest(parsed.data, gone.signal);
+      if (call === 'busy') return send(503, { code: 'connector_busy' });
+      send(200, await call);
+      return { status: 200, stderrBytes: stderrBytes - before };
+    }
+    if (path === '/v1/reference') {
+      const parsed = referenceRequestSchema.safeParse(body);
+      if (!parsed.success) return send(400, { code: 'request_invalid' });
+      const call = supervisor.reference(parsed.data, gone.signal);
       if (call === 'busy') return send(503, { code: 'connector_busy' });
       send(200, await call);
       return { status: 200, stderrBytes: stderrBytes - before };

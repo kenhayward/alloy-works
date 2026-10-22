@@ -184,6 +184,8 @@ services:
       # A webhook's receiver is public in production; the suites' is on a private network, so a stack
       # running them says `allow` (deploy/README.md).
       CONNECTOR_WEBHOOK_PRIVATE: ${CONNECTOR_WEBHOOK_PRIVATE:-deny}
+      # Sent to Crossref and PubMed as their polite use asks; empty sends none (deploy/README.md).
+      CONNECTOR_REFERENCE_CONTACT: ${CONNECTOR_REFERENCE_CONTACT:-}
       CONNECTOR_DENY: none
       LOG_LEVEL: info
       # The development CAs `source-http` and `source-s3` are signed by, trusted beside the system's:

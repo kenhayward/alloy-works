@@ -37,7 +37,7 @@ import { formatEntries, readRecords } from './interchange.js';
 
 /** The bibliography routes (citations.md, "The entry"; the CI plan, CI-B, CI-C). */
 
-function entryView(stored: StoredEntry, facts: AccessFacts): EntryView {
+export function entryView(stored: StoredEntry, facts: AccessFacts): EntryView {
   return {
     id: stored.id,
     space: stored.space,
@@ -60,7 +60,7 @@ const summaryView = (summary: EntrySummary) => ({
   changedAt: summary.changedAt.toISOString(),
 });
 
-const matchView = (match: EntryMatch) => ({ by: match.by, entry: summaryView(match.entry) });
+export const matchView = (match: EntryMatch) => ({ by: match.by, entry: summaryView(match.entry) });
 
 /** What a stored entry is summarised as. */
 const summaryOf = (stored: StoredEntry): EntrySummary => ({
@@ -76,7 +76,7 @@ const summaryOf = (stored: StoredEntry): EntrySummary => ({
 });
 
 /** A writer's answer that is not an entry: refused by name, or absent. */
-function refusedEntry(
+export function refusedEntry(
   answer: Extract<
     EntryAnswer,
     { answer: 'entry.refused' | 'version.precondition' | 'space.missing' | 'entry.missing' }

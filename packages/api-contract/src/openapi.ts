@@ -61,6 +61,8 @@ function exampleFor(schema: z.ZodType, io: 'input' | 'output', name = ''): unkno
       const pattern = JSON.stringify(node.allOf ?? node.pattern ?? '');
       // A level spelled `artifact:<id>`, as a bulk act's scope names one (the SG plan).
       if (pattern.includes('^artifact:')) return 'artifact:00000000-0000-4000-8000-000000000001';
+      // A space spelled `space:<id>`, as a reference search names one (the XR plan).
+      if (pattern.includes('^space:')) return 'space:00000000-0000-4000-8000-000000000001';
       if (pattern.includes('[0-9a-f]{8}-[0-9a-f]{4}'))
         return '00000000-0000-4000-8000-000000000001';
       if (pattern.includes('[0-9a-f]{64}')) return '0'.repeat(64);

@@ -32,6 +32,8 @@ describe("the connector's one caller", () => {
       importsOf(join(here, file)).some((spec) => /(^|\/)connector\.js$/.test(spec)),
     );
     expect(importers.sort()).toEqual([
+      // A reference source searched, or a result made an entry, as a person asks (the XR plan, XR-B).
+      'bibliography/sources.ts',
       'data/connections.ts',
       'data/connector.test.ts',
       // An extension's manifest fetched as an administrator previews, installs or updates it (EX-B).

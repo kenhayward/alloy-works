@@ -262,6 +262,7 @@ describe('migration 0047, over an environment made before it', () => {
       '0146_citation_styles',
       '0147_publication_citations',
       '0148_default_layout_bibliography',
+      '0149_reference_sources',
     ]);
     // Every row still there, and what 0048 seeds beside them: the value catalogue, its 0.1 and the
     // default theme's 0.6 (B1); and what 0055 seeds: the table catalogue's fifth version, the default
