@@ -10,7 +10,9 @@ const json = (status: number, body: unknown) =>
 
 const inside = { id: 'e1', name: 'Our embedder', boundary: 'inside', retired: false };
 
-function service() {
+const measured = { versions: 20, p95Seconds: 1.4, maxSeconds: 4.02 };
+
+function service(freshness: unknown = measured) {
   const sent: unknown[] = [];
   let view = {
     serving: { model: 'embed-small-768', dims: 768, endpoint: inside },
@@ -28,6 +30,7 @@ function service() {
     const request = input instanceof Request ? input : new Request(String(input), init);
     const path = new URL(request.url).pathname;
     if (path === '/v1/embedding') return json(200, view);
+    if (path === '/v1/search/meaning/freshness') return json(200, freshness);
     if (path === '/v1/embedding/confirmation') {
       sent.push(await request.json());
       view = { ...view, pending: { ...view.pending, confirmed: true, dims: 1024, missing: 11000 } };
@@ -53,6 +56,25 @@ describe("Models' searching by meaning", () => {
     expect(
       await within(panel).findByText(
         'embed-large-1024 is embedding the parts: 1000 of 12000 texts done. embed-small-768 serves until it is done.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('SCH-067 shows how long new versions took to be findable by meaning over the last seven days', async () => {
+    render(<EmbeddingPanel client={service().client} generation={0} />);
+    expect(
+      await screen.findByText(
+        'Findable by meaning within 2 s at p95, at most 5 s, over 20 versions in the last 7 days.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('says when nothing has been measured yet', async () => {
+    const none = { versions: 0, p95Seconds: null, maxSeconds: null };
+    render(<EmbeddingPanel client={service(none).client} generation={0} />);
+    expect(
+      await screen.findByText(
+        'How long new versions take to be findable by meaning has not been measured in the last 7 days.',
       ),
     ).toBeInTheDocument();
   });

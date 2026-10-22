@@ -16,6 +16,7 @@ import {
   sweepRangePreviews,
   sweepAbandonedRuns,
   sweepQueryEmbeddings,
+  sweepEmbeddingLag,
   sweepWebhookDeliveries,
   expireTenantExport,
   tenantExportsDue,
@@ -155,6 +156,22 @@ export async function sweepQueryEmbeddingsEverywhere(
       removed += await db.withTenant(tenant, (trx) => sweepQueryEmbeddings(trx));
     } catch (error) {
       log.error({ tenant: tenant.id, err: error }, 'the query vector sweep failed in a tenant');
+    }
+  }
+  return removed;
+}
+
+/** Meaning's lag measured 30 days ago and more, in every tenant (the FR plan, FR-E). */
+export async function sweepEmbeddingLagEverywhere(
+  db: TenantDatabase,
+  log: WorkerLog,
+): Promise<number> {
+  let removed = 0;
+  for (const tenant of await db.tenants()) {
+    try {
+      removed += await db.withTenant(tenant, (trx) => sweepEmbeddingLag(trx));
+    } catch (error) {
+      log.error({ tenant: tenant.id, err: error }, "the meaning's lag sweep failed in a tenant");
     }
   }
   return removed;

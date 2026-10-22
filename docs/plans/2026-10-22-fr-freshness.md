@@ -30,3 +30,17 @@ shown and tested (DAT-073, SCH-067). ADM-033 and ADM-048 move to T7 (Ken).
 - **A revision statement is the author's word**: one that does not move with the data hides a change until a person refreshes.
 - **An S3 ETag is not a digest** (multipart, KMS): it still moves when an object is rewritten, which is all the check asks.
 - **DAT-073's tests** show no run reaching the connector on an unchanged revision for each of HTTP, S3 and PostgreSQL, the last against the suite's own PostgreSQL.
+
+## Built
+
+FR in two PRs: FRa #753 and the close #754. Departures: a PostgreSQL revision is the SHA-256 of
+its statement's value, the statement read as `select * from (...) limit 2`; a revision statement
+counts as SQL wherever SQL's rules apply, so a builder definition with one is held to them; a run
+asserting a person's role takes none. The final review found no leak and no false "unchanged"; it
+fixed a lag recorded against an entry's version rather than the latest, a budget test titled for a
+latency an instant embedder cannot show, the guards against a false "unchanged" without tests, and
+the PostgreSQL revision path skipping the run's role re-check. Left, named: a source whose token
+moves while its rows do not reruns at each check until its binding is next resolved, which fails
+towards running; the 60-second budget is the pipeline's with the stand-in embedder, measured and
+shown in the product, not a provider's; the PostgreSQL check is shown against the suite's own
+PostgreSQL at the connector, and through the service against its fake.

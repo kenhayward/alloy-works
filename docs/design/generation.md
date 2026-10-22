@@ -325,7 +325,7 @@ run of theirs, to learn its dimensions (`embedding_dimensions_unsupported` past 
 every artifact; the serving model answers searches meanwhile, and the worker switches the moment the
 new one holds every latest text, deleting the old model's passages and never its vectors (VER-040).
 Routed to the model that serves, it goes on serving through the new endpoint; routed to none, nothing
-serves. SCH-067's interval is not yet measured, so not claimed.
+serves. SCH-067's interval is measured and claimed in [search.md](search.md) (the FR plan, FR-E).
 
 ## MCP
 

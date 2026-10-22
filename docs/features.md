@@ -219,6 +219,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   where embedding is routed to another, what embedding every part would cost; nothing is embedded
   until an administrator confirms it, and the old model goes on serving until the new one has every
   part (`/v1/embedding`).
+- **Meaning's freshness.** Models also shows how long new versions took to become findable by
+  meaning over the last 7 days, at p95 and at most (`/v1/search/meaning/freshness`).
 - **Generated content waits for a person.** A document is not published, nor pinned as a baseline,
   while a suggestion the assistant made waits to be accepted or rejected in Review; a preview still
   shows it, and a baseline made before is published as it was pinned. A workflow step can require that

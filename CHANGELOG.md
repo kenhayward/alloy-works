@@ -3,6 +3,15 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.205.0 - 2026-10-22 (PR #754)
+
+Freshness (the FR plan).
+
+### Added
+
+- **Checks ask the source first.** Checking a document asks an HTTP API, an S3 bucket or a PostgreSQL query's revision statement whether its data changed, and runs nothing where it has not.
+- **Meaning's freshness.** Administration's Models shows how long new versions took to become findable by meaning over the last 7 days, at p95 and at most.
+
 ## 0.204.0 - 2026-10-21 (PR #752)
 
 Generation finished (the GC plan).

@@ -211,6 +211,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0141_extensions',
       '0142_webhook_delivery_ids',
       '0143_publication_generated',
+      '0144_embedding_lag',
     ]);
     expect(applied[own.id]).toEqual([
       '0058_query_roles',
@@ -299,6 +300,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0141_extensions',
       '0142_webhook_delivery_ids',
       '0143_publication_generated',
+      '0144_embedding_lag',
     ]);
 
     expect(await queryRoles(development)).toEqual([

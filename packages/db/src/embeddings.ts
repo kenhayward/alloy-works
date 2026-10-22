@@ -178,6 +178,98 @@ export async function copyPassages(
   }
 }
 
+/** Whether a block of these entries lacks a passage for each of these models. */
+async function lacksPassages(
+  trx: TenantTransaction,
+  entries: readonly string[],
+  models: readonly string[],
+): Promise<boolean> {
+  const { rows } = await sql<{ found: boolean }>`
+    select exists (
+      select 1 from search_text st
+       where st.entry_id = any(${[...entries]}::uuid[])
+         and st.place like 'block:%'
+         and not exists (select 1 from search_passage p
+           where p.entry_id = st.entry_id and p.block_id = substr(st.place, 7)
+             and p.model = any(${[...models]}::text[]))) as found`.execute(trx);
+  return rows[0]?.found === true;
+}
+
+/**
+ * Meaning's lag (SCH-067; the FR plan, FR-E): an artifact's latest version, once no block of it lacks
+ * a passage for the serving model, recorded once beside its cut. Nothing while a model is pending or
+ * none serves, or for a version with no block, or on a schema before 0144.
+ */
+export async function recordEmbeddingLag(
+  trx: TenantTransaction,
+  artifactId: string,
+): Promise<void> {
+  const { rows: present } = await sql<{ present: boolean }>`
+    select to_regclass('embedding_lag') is not null as present`.execute(trx);
+  if (present[0]?.present !== true) return;
+  const serving = await servingEmbedding(trx);
+  if (!serving) return;
+  const { rows: state } = await sql<{ pending_model: string | null }>`
+    select pending_model from embedding_state`.execute(trx);
+  if (state[0]?.pending_model) return;
+  // The latest version, once every entry names it: an entry still indexed from an older version, or a
+  // publication's, naming the document version it printed, records nothing.
+  const { rows: latest } = await sql<{ id: string }>`
+    select id from artifact_version where artifact_id = ${artifactId}
+     order by revision_no desc, version_no desc limit 1`.execute(trx);
+  const version = latest[0]?.id;
+  if (version === undefined) return;
+  const { rows: entries } = await sql<{ id: string; version_id: string }>`
+    select id, version_id from search_entry where artifact_id = ${artifactId}`.execute(trx);
+  if (entries.length === 0 || entries.some((each) => each.version_id !== version)) return;
+  const ids = entries.map((each) => each.id);
+  const { rows: blocks } = await sql<{ found: boolean }>`
+    select exists (select 1 from search_text where entry_id = any(${ids}::uuid[])
+      and place like 'block:%') as found`.execute(trx);
+  if (blocks[0]?.found !== true || (await lacksPassages(trx, ids, [serving.model]))) return;
+  await sql`insert into embedding_lag (version_id, cut_at, findable_at)
+    select id, created_at, greatest(created_at, clock_timestamp()) from artifact_version
+     where id = ${version}
+    on conflict do nothing`.execute(trx);
+}
+
+/** The last seven days' lag, nearest-rank, in seconds: none measured, none answered (SCH-067). */
+export interface EmbeddingFreshness {
+  readonly versions: number;
+  readonly p95Seconds: number | null;
+  readonly maxSeconds: number | null;
+}
+
+export async function embeddingFreshness(trx: TenantTransaction): Promise<EmbeddingFreshness> {
+  const { rows: present } = await sql<{ present: boolean }>`
+    select to_regclass('embedding_lag') is not null as present`.execute(trx);
+  if (present[0]?.present !== true) return { versions: 0, p95Seconds: null, maxSeconds: null };
+  const { rows } = await sql<{ n: string; p95: number | null; most: number | null }>`
+    with lag as (
+      select extract(epoch from findable_at - cut_at)::float8 as s from embedding_lag
+       where findable_at > now() - interval '7 days')
+    select count(*) as n, percentile_disc(0.95) within group (order by s) as p95, max(s) as most
+      from lag`.execute(trx);
+  const row = rows[0];
+  return {
+    versions: Number(row?.n ?? 0),
+    p95Seconds: row?.p95 ?? null,
+    maxSeconds: row?.most ?? null,
+  };
+}
+
+/** Lag measured 30 days ago and more goes (SCH-067). */
+export async function sweepEmbeddingLag(trx: TenantTransaction): Promise<number> {
+  const { rows: present } = await sql<{ present: boolean }>`
+    select to_regclass('embedding_lag') is not null as present`.execute(trx);
+  if (present[0]?.present !== true) return 0;
+  const { rows } = await sql<{ n: string }>`
+    with gone as (delete from embedding_lag where findable_at <= now() - interval '30 days'
+      returning 1)
+    select count(*) as n from gone`.execute(trx);
+  return Number(rows[0]?.n ?? 0);
+}
+
 /**
  * After an artifact's latest version is indexed (G7-C, G7-F): its blocks' passages copied where their
  * vectors exist, and the artifact queued for the rest, once however often it is saved meanwhile.
@@ -198,17 +290,17 @@ export async function embedIndexed(
     models,
   );
   if (!options.queue) return;
-  const { rows: missing } = await sql<{ found: boolean }>`
-    select exists (
-      select 1 from search_text st
-       where st.entry_id = any(${entries.map((each) => each.id)}::uuid[])
-         and st.place like 'block:%'
-         and not exists (select 1 from search_passage p
-           where p.entry_id = st.entry_id and p.block_id = substr(st.place, 7)
-             and p.model = any(${models.map((each) => each.model)}::text[]))) as found`.execute(
-    trx,
-  );
-  if (missing[0]?.found !== true) return;
+  if (
+    !(await lacksPassages(
+      trx,
+      entries.map((each) => each.id),
+      models.map((each) => each.model),
+    ))
+  ) {
+    // Wholly reused: findable by meaning as it is indexed (the FR plan, FR-E).
+    await recordEmbeddingLag(trx, artifactId);
+    return;
+  }
   const { rows: queued } = await sql<{ artifact_id: string }>`
     insert into embedding_queued (artifact_id) values (${artifactId})
     on conflict do nothing returning artifact_id`.execute(trx);

@@ -1178,6 +1178,7 @@ describe('routes that check a permission', () => {
     getModelBudget: () => ({ url: '/v1/model-budget', status: 403 }),
     getModelUsage: () => ({ url: '/v1/model-usage', status: 403 }),
     getEmbedding: () => ({ url: '/v1/embedding', status: 403 }),
+    getMeaningFreshness: () => ({ url: '/v1/search/meaning/freshness', status: 403 }),
     confirmEmbedding: () => ({
       url: '/v1/embedding/confirmation',
       status: 403,

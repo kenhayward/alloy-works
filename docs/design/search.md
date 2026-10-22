@@ -56,6 +56,12 @@ are never in it.
 | **SCH-053** | A section result carries its document, by id and title, and each component placed beneath it that the reader may read, once in outline order, read from the document version it matched in and titled from the entries now; the page links each and offers **Place in a document**, REU-054's act with the destination chosen (the R14 plan, R14-C)                                                                                                                    |
 | **SCH-061** | An entry's `field_values` hold every `axis:value` its content is conditioned on under `~conditions` - a component's blocks' and marks', a document's every node's, a section's own and those beneath it - read with `conditionsIn`, nothing resolved under a profile; `condition=<axis>:<value>` filters, several of one axis either and several axes all, served by 0110's index, and each axis facets, its own filter left out (the R14 plan, R14-D)                 |
 | **SCH-063** | A component's or a document's entry holds, under `~relations`, each field value of every relationship its artifact is an end of, with the type and the other end; `related=<type>:<field>:<value>` filters and each type's field facets as a field's values do, a value said only of a relationship whose type, field and other end the reader may read. Making, changing or removing a relationship writes both ends' entries again, and an end it moved from (R14-E) |
+| **SCH-067** | A latest version is recorded in `embedding_lag` once no block of it lacks a passage for the serving model, at indexing where every block is reused, else after its embedding job, from its cut; nothing while none serves or one is pending. `GET /v1/search/meaning/freshness` answers, and Models shows, the last seven days' p95 and most, nearest-rank; a worker test measures 20 versions against 60 s and 300 s (the FR plan, FR-E)                              |
+
+**SCH-067's claim is the pipeline's latency with the stand-in embedder, not a provider's,** measured
+and shown in the product: the route and the Models panel. The worker test shows the bookkeeping (the
+queue, the job and the passages written) with an embedder that answers at once; a provider's own
+latency adds to it, and only the recorded lag in Models shows that.
 
 **IAM-075 is not claimed here.** It asks that search indexes, caches, secrets and publications each be
 tenant-scoped. The search half is answered - the projection lives in the tenant's schema and the
