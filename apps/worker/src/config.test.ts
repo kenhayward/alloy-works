@@ -82,6 +82,17 @@ describe("the worker's configuration", () => {
     expect(described).not.toContain(embedKey);
   });
 
+  it('holds the reference key, which opens re-checks alone, never in its description', () => {
+    const referenceKey = randomBytes(32).toString('base64');
+    const config = loadWorkerConfig({
+      ...env,
+      CONNECTOR_URL: 'http://connector:8090',
+      SECRET_CONNECTOR_REFERENCE_KEY: referenceKey,
+    });
+    expect(config.connector).toEqual({ url: 'http://connector:8090', referenceKey });
+    expect(JSON.stringify(describeWorkerConfig(config))).not.toContain(referenceKey);
+  });
+
   it('describes itself for a log without its secrets', () => {
     const described = JSON.stringify(describeWorkerConfig(loadWorkerConfig(env)));
     expect(described).not.toContain('secret-pw');

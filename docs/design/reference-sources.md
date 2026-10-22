@@ -72,7 +72,7 @@ version moving cite, read by the system so every actor gets one answer; a correc
 - **The connector** answers `/v1/reference` with CSL already mapped, or `reference_unavailable` and a
   reason (`refused`, `timeout`, `too_large`, `status`, `unreadable`, `connector`); a `fetch` or `check`
   the source does not hold answers no result. JSON past 32 deep, or a list past 10,000, is
-  `unreadable`. `check` answers as `fetch` until XRb reads notices. `CONNECTOR_REFERENCE_CONTACT`
+  `unreadable`. `CONNECTOR_REFERENCE_CONTACT`
   is the contact address. Its suite reaches fake sources by `referenceOrigins`, a supervisor
   parameter production's server never passes.
 - **The switch** is `reference_source_policy` (0149), a row only for a source switched; it is set by
@@ -80,3 +80,26 @@ version moving cite, read by the system so every actor gets one answer; a correc
   `referenceSources.<id>`.
 - **A search** names its space in the body (`space:<id>`), read there; each result carries its
   matches, and the answer whether the caller may make an entry.
+
+## Built in XRb
+
+- **The citation index** is the reference index (0102): CIa already writes a row per citation of an
+  entry, `to_kind` `bibliographyEntry`, with each component's latest version, so 0150 adds none.
+- **Notices.** A Crossref `check` asks the work and `works?filter=updates:{doi}`: each notice whose
+  `update-to` names the work, and the work's own `updated-by` and `relation` (`is-retracted-by`,
+  `is-corrected-by`); `retraction`, `withdrawal` and `removal` retract, `correction`, `corrigendum`,
+  `erratum`, `addendum` and `clarification` correct. PubMed's esummary `references` (`Retraction in`,
+  `Erratum in`, `Corrected and republished in`) and `pubtype` `Retracted Publication`. `entryCheck`
+  in domain decides the outcome; `changed` compares title, issued, author family names,
+  container-title and DOI where the source holds them.
+- **The status** is `bibliography_entry_status` (0150); `notified` holds who was told of the outcome
+  and is emptied when it changes, so current then retracted again tells again. The notification kind
+  is `reference`, on the document, its counts the entry and outcome.
+- **Check now** is `POST /v1/bibliography-entries/{id}/check`, a read of the entry; the entry page
+  shows the status. **The sweep** is the worker's `recheckEntries`, once a UTC night from 02:00, with
+  `CONNECTOR_REFERENCE_KEY`, which opens `/v1/reference`'s `check` alone. Each source's lane takes one
+  entry from each tenant in turn at its rate; the budget is held per worker process, so two workers
+  would each spend it.
+- **Flags** ride the citation preview (`flags`), the entry listing and matches (`flag`), and
+  `GET /v1/documents/{id}/flagged-sources`, Review's **Sources** panel. A publish request answers
+  `warnings`, counts alone. The gate reads each placed component at its pin, else its latest.

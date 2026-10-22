@@ -600,6 +600,8 @@ describe('the listings through the service', () => {
       'listCitationStyles',
       // And the reference sources: the declared list, two built in (the XR plan, XR-A).
       'listReferenceSources',
+      // And a document's flagged sources: those what it places cites, flagged alone (XRb).
+      'getDocumentFlaggedSources',
       // And a person's conversations, at most 200, the newest first (the G5 plan).
       'listConversations',
       // And the endpoints a turn may run on: the tenant's handful in use, as the endpoints are.

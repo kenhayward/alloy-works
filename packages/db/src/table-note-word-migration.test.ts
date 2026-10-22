@@ -185,6 +185,7 @@ describe("migration 0056, which gives the default layout the word a table's note
       '0147_publication_citations',
       '0148_default_layout_bibliography',
       '0149_reference_sources',
+      '0150_entry_status',
     ]);
     expect((await layoutChain(tenant)).at(-2)).toMatchObject({
       version_no: 9,

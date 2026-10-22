@@ -81,6 +81,8 @@ export const TRANSITION_CONDITIONS = [
   'generated',
   // A finished trial run of the version taken through (GEN-045, GN-F; the G4 plan, G4-E): a prompt's.
   'trial',
+  // No retracted source cited by what the document places (LIB-036; the XR plan, XR-H).
+  'noRetracted',
 ] as const;
 export type TransitionCondition = (typeof TRANSITION_CONDITIONS)[number];
 
@@ -99,6 +101,7 @@ export const CONDITIONS_BY_KIND: Readonly<Record<WorkflowKind, readonly Transiti
     'components',
     'profile',
     'generated',
+    'noRetracted',
   ],
   queryDefinition: [],
   prompt: ['trial'],

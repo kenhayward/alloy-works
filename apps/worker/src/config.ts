@@ -33,6 +33,8 @@ export interface WorkerConfig {
     readonly url: string;
     readonly embedKey?: string;
     readonly deliverKey?: string;
+    /** The key that opens its re-checks alone (the XR plan, XR-E). */
+    readonly referenceKey?: string;
   };
   /** How often the webhook delivery loop runs, apart from the sweeps (WB-I). */
   readonly deliverIntervalMs: number;
@@ -69,6 +71,7 @@ const Environment = z.object({
   CONNECTOR_URL: z.url({ error: 'must be a URL' }).optional(),
   SECRET_CONNECTOR_EMBED_KEY: z.string().min(1).optional(),
   SECRET_CONNECTOR_DELIVER_KEY: z.string().min(1).optional(),
+  SECRET_CONNECTOR_REFERENCE_KEY: z.string().min(1).optional(),
   DELIVER_INTERVAL_MS: z.coerce.number().int().min(500).default(5000),
 });
 
@@ -82,10 +85,11 @@ export function loadWorkerConfig(env: Readonly<Record<string, string | undefined
   const data = result.data;
   const keyed =
     data.SECRET_CONNECTOR_EMBED_KEY !== undefined ||
-    data.SECRET_CONNECTOR_DELIVER_KEY !== undefined;
+    data.SECRET_CONNECTOR_DELIVER_KEY !== undefined ||
+    data.SECRET_CONNECTOR_REFERENCE_KEY !== undefined;
   if ((data.CONNECTOR_URL === undefined) === keyed) {
     throw new WorkerConfigError(
-      'The worker cannot start:\n  CONNECTOR_URL is given with SECRET_CONNECTOR_EMBED_KEY or SECRET_CONNECTOR_DELIVER_KEY, or none of them',
+      'The worker cannot start:\n  CONNECTOR_URL is given with SECRET_CONNECTOR_EMBED_KEY, SECRET_CONNECTOR_DELIVER_KEY or SECRET_CONNECTOR_REFERENCE_KEY, or none of them',
     );
   }
   return {
@@ -116,6 +120,9 @@ export function loadWorkerConfig(env: Readonly<Record<string, string | undefined
             ...(data.SECRET_CONNECTOR_DELIVER_KEY === undefined
               ? {}
               : { deliverKey: data.SECRET_CONNECTOR_DELIVER_KEY }),
+            ...(data.SECRET_CONNECTOR_REFERENCE_KEY === undefined
+              ? {}
+              : { referenceKey: data.SECRET_CONNECTOR_REFERENCE_KEY }),
           },
         }),
   };

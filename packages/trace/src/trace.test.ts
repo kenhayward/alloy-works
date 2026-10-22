@@ -959,7 +959,8 @@ describe('the citations in the committed model', () => {
     // 1859 (2026-10-22): CIc's citations published, in assemble, the PDF, Word and at a baseline.
     // 1865 (2026-10-22): CId's citing: STR-069 in four files, CNT-051's save check, LIB-009's export.
     // 1872 (2026-10-22): XRa's reference sources: LIB-031 in five files, LIB-032 in three.
-    expect(model.citations).toHaveLength(1872);
+    // 1887 (2026-10-22): XRb's re-checks: LIB-036's notices, status, flags, owner told and gate.
+    expect(model.citations).toHaveLength(1887);
   });
 
   it('cites no identifier the corpus does not hold', () => {
@@ -1081,6 +1082,7 @@ describe('scanning the repository for test files', () => {
     // editor/CitationDialog.test.tsx, citing nothing.
     // 126, from 124 (2026-10-22): admin/ReferenceSources.test.tsx, citing LIB-032, and
     // editor/CitationDialog.search.test.tsx, citing LIB-031.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(126);
+    // 127, from 126 (2026-10-22): review/SourcesPanel.test.tsx, citing LIB-036.
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(127);
   });
 });

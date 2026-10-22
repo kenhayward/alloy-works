@@ -3,7 +3,9 @@ import {
   citationFormsOf,
   citationKey,
   citationsIn,
+  setCitationFlags,
   setCitationForms,
+  type CitationFlags,
   type CitationForms,
   type EditorView,
 } from '@alloy-works/editor';
@@ -58,12 +60,22 @@ export function useCitationForms(
               ...(document === undefined ? {} : { document }),
             },
           })
-          .then(({ data }) => data?.forms ?? batch.map(() => null))
-          .catch(() => batch.map(() => null)),
+          .then(({ data }) => ({
+            forms: data?.forms ?? batch.map(() => null),
+            flags: data?.flags ?? batch.map(() => null),
+          }))
+          .catch(() => ({ forms: batch.map(() => null), flags: batch.map(() => null) })),
       ),
     ).then((answered) => {
       if (!live || surface.isDestroyed) return;
-      const formed = answered.flat();
+      const formed = answered.flatMap((each) => each.forms);
+      // Each entry its source says is retracted or corrected, flagged on every citation (XR-G).
+      const flagged = answered.flatMap((each) => each.flags);
+      const flags = new Map<string, 'retracted' | 'corrected'>();
+      askable.forEach(({ entry }, at) => {
+        const flag = flagged[at];
+        if (flag) flags.set(entry, flag);
+      });
       const next = new Map<string, string | null>();
       askable.forEach(({ entry, locator }, at) => {
         const key = citationKey(entry, locator);
@@ -73,6 +85,7 @@ export function useCitationForms(
         const key = citationKey(entry, locator);
         if (!next.has(key)) next.set(key, null);
       }
+      setCitationFlags(surface, flags as CitationFlags);
       if (citationFormsOf(surface.state) !== next) setCitationForms(surface, next);
       setForms(next);
     });

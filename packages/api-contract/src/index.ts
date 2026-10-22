@@ -193,8 +193,10 @@ export {
   CreateEntryBody,
   EntryList,
   EntryListQuery,
+  EntryFlagView,
   EntryParams,
   EntryRefusal,
+  EntryStatusView,
   EntrySummary,
   EntryUsesView,
   EntryVersionBody,
@@ -231,6 +233,7 @@ export {
   promptLibraryRoutes,
 } from './prompt-libraries.js';
 export {
+  FlaggedSourcesView,
   FromSourceAnswer,
   FromSourceBody,
   ReferenceResultView,

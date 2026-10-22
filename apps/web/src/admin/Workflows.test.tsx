@@ -261,6 +261,29 @@ describe("Administration's Workflows", () => {
     expect(saved.transitions.find((each) => each.key === 'submit')).not.toHaveProperty('requires');
   });
 
+  it("LIB-036 offers a document's transitions no retracted sources cited, and a component's none", async () => {
+    const { client, sent } = service();
+    render(<Workflows client={client} />);
+    const documents = await screen.findByRole('region', { name: 'Documents' });
+    await within(documents).findByRole('table', { name: 'Document transitions' });
+    expect(
+      within(components()).queryByRole('checkbox', {
+        name: 'Approve requires no retracted sources cited',
+      }),
+    ).not.toBeInTheDocument();
+    await userEvent.click(
+      within(documents).getByRole('checkbox', {
+        name: 'Approve requires no retracted sources cited',
+      }),
+    );
+    await userEvent.click(within(documents).getByRole('button', { name: 'Save as version 3' }));
+    expect(await within(documents).findByText('Saved as version 3.')).toBeInTheDocument();
+    const saved = sent[0] as { transitions: { key: string; requires?: string[] }[] };
+    expect(saved.transitions.find((each) => each.key === 'approve')?.requires).toEqual([
+      'noRetracted',
+    ]);
+  });
+
   it('LIF-059 LIF-017 declares how long before a review its owner is prompted, and what a lapsed review does', async () => {
     const { client, sent } = service();
     render(<Workflows client={client} />);

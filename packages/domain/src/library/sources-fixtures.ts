@@ -157,3 +157,75 @@ export const pubmedSummary = (records: readonly { readonly uid: string }[]) => (
     ...Object.fromEntries(records.map((each) => [each.uid, each])),
   },
 });
+
+/**
+ * A retraction notice as Crossref answers `GET /works?filter=updates:{doi}` (XRb): the notice is its
+ * own work, its `update-to` naming the work it retracts, once by the publisher and once by Retraction
+ * Watch.
+ */
+export const crossrefMarshRetraction = {
+  DOI: '10.5555/marsh.2021.017.retraction',
+  type: 'journal-article',
+  title: ['Retraction: Salt Marsh Accretion Under Rising Tides'],
+  'update-to': [
+    {
+      updated: { 'date-parts': [[2026, 4, 22]], 'date-time': '2026-04-22T00:00:00Z', timestamp: 0 },
+      DOI: '10.5555/marsh.2021.017',
+      type: 'retraction',
+      source: 'publisher',
+      label: 'Retraction',
+    },
+    {
+      updated: { 'date-parts': [[2026, 4, 22]], 'date-time': '2026-04-22T00:00:00Z', timestamp: 0 },
+      DOI: '10.5555/MARSH.2021.017',
+      type: 'retraction',
+      source: 'retraction-watch',
+      label: 'Retraction',
+      'record-id': 90001,
+    },
+  ],
+};
+
+/** A correction notice of the chapter, its update typed `correction`. */
+export const crossrefChapterCorrection = {
+  DOI: '10.5555/quolls.ch4.correction',
+  type: 'book-chapter',
+  title: ['Correction to: Quolls of the Northern Ranges'],
+  'update-to': [
+    {
+      updated: { 'date-parts': [[2025, 2, 3]] },
+      DOI: '10.5555/quolls.ch4',
+      type: 'correction',
+      source: 'publisher',
+      label: 'Correction',
+    },
+  ],
+};
+
+/** Crossref's answer to `GET /works?filter=updates:{doi}`: the notices updating that work. */
+export const crossrefUpdates = (notices: readonly object[] = []) => ({
+  status: 'ok',
+  'message-type': 'work-list',
+  'message-version': '1.0.0',
+  message: { facets: {}, 'total-results': notices.length, items: notices, 'items-per-page': 20 },
+});
+
+/** PubMed's retracted record as it also links its notice: `references`, `Retraction in`. */
+export const pubmedRetractedLinked = {
+  ...pubmedRetracted,
+  references: [
+    { refsource: 'Invent Ecol. 2026;9:1.', reftype: 'Retraction in', pmid: '99000003', note: '' },
+  ],
+};
+
+/** An article with a published erratum, which PubMed links as `Erratum in`. */
+export const pubmedCorrected = {
+  ...pubmedDunnart,
+  uid: '99000004',
+  title: 'Quoll tracks in snow.',
+  articleids: [{ idtype: 'pubmed', idtypen: 1, value: '99000004' }],
+  references: [
+    { refsource: 'J Invent Zool. 2021;13:5.', reftype: 'Erratum in', pmid: '99000005', note: '' },
+    { refsource: 'J Invent Zool. 2021;13:9.', reftype: 'Comment in', pmid: '99000006', note: '' },
+  ],
+};

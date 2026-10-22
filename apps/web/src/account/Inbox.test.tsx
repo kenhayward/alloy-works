@@ -170,6 +170,33 @@ describe('the inbox, from the account chip', () => {
     );
   });
 
+  it('LIB-036 tells the owner a source cited in their document was retracted, and opens the document', async () => {
+    const document = 'dddddddd-0000-4000-8000-000000000009';
+    const { client } = service([
+      {
+        id: id(5),
+        kind: 'reference',
+        actor: null,
+        thread: null,
+        on: { id: document, kind: 'document', title: 'Marsh report', state: null },
+        counts: null,
+        reference: { entry: 'eeeeeeee-0000-4000-8000-000000000001', outcome: 'retracted' },
+        at: '2026-10-12T11:00:00.000Z',
+        read: false,
+      },
+    ]);
+    render(<Inbox client={client} onClose={() => undefined} />);
+    const list = await screen.findByRole('list', { name: 'Notifications' });
+    const item = within(list).getByRole('listitem');
+    expect(item.firstChild?.textContent).toBe(
+      'A source cited in Marsh report was retracted by its source.',
+    );
+    expect(within(item).getByRole('link', { name: 'Open the document' })).toHaveAttribute(
+      'href',
+      `#/documents/${document}`,
+    );
+  });
+
   it('COL-062 deletes one of your own notifications', async () => {
     const { client, asked } = service();
     render(<Inbox client={client} onClose={() => undefined} />);

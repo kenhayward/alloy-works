@@ -1223,6 +1223,14 @@ describe('routes that check a permission', () => {
       status: 404,
       payload: { source: 'crossref', identifier: '10.5555/probe' },
     }),
+    checkBibliographyEntry: () => ({
+      url: `/v1/bibliography-entries/${MISSING}/check`,
+      status: 404,
+    }),
+    getDocumentFlaggedSources: () => ({
+      url: `/v1/documents/${MISSING}/flagged-sources`,
+      status: 404,
+    }),
     listCitationStyles: () => ({ url: '/v1/citation-styles', status: 403 }),
     createCitationStyle: () => ({
       url: '/v1/citation-styles',

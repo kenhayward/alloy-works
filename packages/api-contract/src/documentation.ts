@@ -471,6 +471,8 @@ const operationTags = {
     'setReferenceSource',
     'searchReferenceSource',
     'createBibliographyEntryFromSource',
+    'checkBibliographyEntry',
+    'getDocumentFlaggedSources',
   ],
   Prompts: [
     'listPrompts',
@@ -997,6 +999,10 @@ const descriptions: Readonly<Record<string, string>> = {
     "Searches a reference source for the terms given, which are sent to the source, and answers at most 20 results as CSL-JSON, each matched against the space's entries by DOI, PubMed identifier, ISBN or ISSN, else by title, year and first author. It says whether the caller may make an entry in the space. It needs read in the space. A source that cannot be reached, or answers out of shape, is `reference_unavailable`.",
   createBibliographyEntryFromSource:
     'Fetches a record from a reference source by its DOI or PubMed identifier and makes it an entry of the space, recording where and when it was obtained. It is first matched against the entries already there, as making an entry by hand is: a match is offered and nothing made, unless the request says to make it despite the match. It needs edit in the space.',
+  checkBibliographyEntry:
+    "Checks an entry against the reference source its latest version was obtained from, sending the source its DOI or PubMed identifier alone, and records the entry's status beside it, never as a version: `current`, `changed` (naming the CSL variables the source now holds otherwise), `gone`, `retracted` or `corrected`, with the notice where the source names one. A retraction or correction tells the owner of each document citing it, once. It needs read on the entry; an entry made by hand is `entry_not_obtained`.",
+  getDocumentFlaggedSources:
+    "Lists the sources cited by the components a document's latest version places, at the version each is placed, that their source last said are retracted or corrected. Each names the entry to a reader of it, and only its flag to anybody else, with the components citing it the caller may read. It needs read on the document.",
   unarchiveBibliographyEntry:
     "Unarchives an entry, returning it to the space's listing. It needs retire on the entry.",
   recordPromptVersion:

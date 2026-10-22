@@ -237,6 +237,7 @@ describe('the preview contract (W10.2)', () => {
     document: 'd',
     state: 'done',
     failures: [],
+    warnings: [],
     publication: null,
   };
   const links = {
@@ -280,6 +281,20 @@ describe('the preview contract (W10.2)', () => {
         kind: 'preview',
         preview: { view: links.view, expiresAt: links.expiresAt },
       }).success,
+    ).toBe(false);
+  });
+
+  it('LIB-036 warns of retracted and corrected sources by count, never stopping the request', () => {
+    const warned = { ...request, kind: 'publish', preview: null };
+    expect(
+      PublicationRequestView.parse({
+        ...warned,
+        warnings: [{ code: 'source_retracted', count: 2 }],
+      }).warnings,
+    ).toEqual([{ code: 'source_retracted', count: 2 }]);
+    expect(
+      PublicationRequestView.safeParse({ ...warned, warnings: [{ code: 'source_gone', count: 1 }] })
+        .success,
     ).toBe(false);
   });
 });

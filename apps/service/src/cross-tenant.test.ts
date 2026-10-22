@@ -492,6 +492,8 @@ const OTHER_TENANT_IDS: Readonly<
   // A source is the product's, the same in every environment; what is asked of it is the tenant's.
   searchReferenceSource: () => Promise.resolve({ source: 'crossref' }),
   createBibliographyEntryFromSource: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
+  checkBibliographyEntry: async (tenant, db) => ({ id: await entryIdIn(tenant, db) }),
+  getDocumentFlaggedSources: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   getQueryDefinition: async (tenant, db) => ({ id: await queryDefinitionIdIn(tenant, db) }),
   transitionQueryDefinition: async (tenant, db) => ({ id: await queryDefinitionIdIn(tenant, db) }),
   decideQueryDefinitionGate: async (tenant, db) => ({ id: await queryDefinitionIdIn(tenant, db) }),

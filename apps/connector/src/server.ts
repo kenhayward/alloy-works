@@ -169,7 +169,10 @@ export function createConnectorServer(options: {
         authenticated(request, config.embedKeyDigest)) ||
       (path === '/v1/deliver' &&
         config.deliverKeyDigest !== undefined &&
-        authenticated(request, config.deliverKeyDigest));
+        authenticated(request, config.deliverKeyDigest)) ||
+      (path === '/v1/reference' &&
+        config.referenceKeyDigest !== undefined &&
+        authenticated(request, config.referenceKeyDigest));
     if (!opened) {
       // Drain and drop the body unread, so the answer is not written under an unread upload.
       request.resume();
@@ -246,6 +249,10 @@ export function createConnectorServer(options: {
     if (path === '/v1/reference') {
       const parsed = referenceRequestSchema.safeParse(body);
       if (!parsed.success) return send(400, { code: 'request_invalid' });
+      // The worker's reference key checks, sending an identifier alone; it never searches (XR-E).
+      if (parsed.data.op !== 'check' && !authenticated(request, config.keyDigest)) {
+        return send(403, { code: 'scope_refused' });
+      }
       const call = supervisor.reference(parsed.data, gone.signal);
       if (call === 'busy') return send(503, { code: 'connector_busy' });
       send(200, await call);

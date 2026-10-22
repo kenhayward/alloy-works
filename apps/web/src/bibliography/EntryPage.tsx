@@ -1,4 +1,5 @@
 import type { createApiClient } from '@alloy-works/api-client';
+import { obtainedFrom, referenceSource } from '@alloy-works/domain';
 import { useEffect, useState, type FormEvent } from 'react';
 
 import { isRecord } from '../data/shapes.js';
@@ -21,6 +22,98 @@ interface Shown {
   readonly archived: boolean;
   readonly mayEdit: boolean;
   readonly mayRetire: boolean;
+  /** Its status from its last check against its source (XRb); null where never checked. */
+  readonly status?: Status | null;
+}
+
+interface Status {
+  readonly checkedAt: string;
+  readonly outcome: 'current' | 'changed' | 'gone' | 'retracted' | 'corrected';
+  readonly differs: readonly string[];
+  readonly notice: {
+    readonly kind: 'retraction' | 'correction';
+    readonly identifier?: string;
+    readonly date?: string;
+  } | null;
+}
+
+/** What each outcome says (the XR plan, XR-F). */
+const OUTCOMES: Readonly<Record<Status['outcome'], string>> = {
+  current: 'Current: the source holds it as this entry does.',
+  changed: 'Changed at the source.',
+  gone: 'The source no longer holds it.',
+  retracted: 'Retracted by its source',
+  corrected: 'Corrected by its source',
+};
+
+/** The status of an entry obtained from a source, and Check now (the XR plan, XR-E, XR-F). */
+function EntrySource({
+  client,
+  id,
+  source,
+  status,
+  onChecked,
+}: {
+  readonly client: Client;
+  readonly id: string;
+  readonly source: string;
+  readonly status: Status | null;
+  readonly onChecked: (status: Status) => void;
+}) {
+  const [checking, setChecking] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+  const check = async () => {
+    setChecking(true);
+    setProblem(null);
+    const { data, error } = await client.POST('/v1/bibliography-entries/{id}/check', {
+      params: { path: { id } },
+    });
+    setChecking(false);
+    if (data) onChecked(data as Status);
+    else {
+      setProblem(
+        (error as { message?: string } | undefined)?.message ?? 'The entry could not be checked.',
+      );
+    }
+  };
+  const flagged = status?.outcome === 'retracted' || status?.outcome === 'corrected';
+  const notice = status?.notice;
+  return (
+    <section aria-label="Its source">
+      <h2>Its source</h2>
+      {status === null ? (
+        <p>{`Not yet checked against ${source}.`}</p>
+      ) : (
+        <>
+          <p role={flagged ? 'alert' : undefined}>
+            {flagged
+              ? `${OUTCOMES[status.outcome]}${
+                  notice?.identifier === undefined && notice?.date === undefined
+                    ? '.'
+                    : `: ${[notice?.identifier, notice?.date].filter(Boolean).join(', ')}.`
+                }`
+              : OUTCOMES[status.outcome]}
+          </p>
+          {status.differs.length > 0 && (
+            <p>{`The source now holds otherwise: ${status.differs.join(', ')}.`}</p>
+          )}
+          <p>
+            Checked <time dateTime={status.checkedAt}>{status.checkedAt.slice(0, 10)}</time>.
+          </p>
+        </>
+      )}
+      <p>
+        <button type="button" disabled={checking} onClick={() => void check()}>
+          Check now
+        </button>
+      </p>
+      {problem !== null && (
+        <Notice tone="failed">
+          <p>{problem}</p>
+        </Notice>
+      )}
+    </section>
+  );
 }
 
 const FORMATS = [
@@ -100,6 +193,8 @@ export function EntryPage({ client, id }: { readonly client: Client; readonly id
   }
   if (shown === null) return null;
   const { csl } = shown.entry;
+  // An entry obtained from a reference source can be checked against it (XR-E).
+  const from = shown.entry.obtained && obtainedFrom(shown.entry.obtained.from);
   const cited =
     uses !== null &&
     (uses.components.named.length > 0 ||
@@ -212,6 +307,15 @@ export function EntryPage({ client, id }: { readonly client: Client; readonly id
             setEditing(false);
           }}
           onCancel={() => setEditing(false)}
+        />
+      )}
+      {from !== undefined && (
+        <EntrySource
+          client={client}
+          id={id}
+          source={referenceSource(from.source)?.name ?? from.source}
+          status={shown.status ?? null}
+          onChecked={(status) => setShown({ ...shown, status })}
         />
       )}
       {uses !== null && (

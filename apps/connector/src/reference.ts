@@ -115,8 +115,8 @@ export async function answerReference(
     return parsed;
   };
 
-  const found = (answer: unknown): ReferenceAnswer => {
-    const results = readReferenceAnswer(request.source, request.op, answer);
+  const found = (answer: unknown, updates?: unknown): ReferenceAnswer => {
+    const results = readReferenceAnswer(request.source, request.op, answer, updates);
     if (results === undefined) throw new Failed('unreadable');
     return { type: 'found', results };
   };
@@ -129,8 +129,14 @@ export async function answerReference(
       if (ids.length === 0) return { type: 'found', results: [] };
       return found(await get({ step: 'summary', ids }));
     }
-    const answer = await get({ step: 'work', identifier: request.identifier! });
-    return answer === undefined ? { type: 'found', results: [] } : found(answer);
+    const identifier = request.identifier!;
+    const answer = await get({ step: 'work', identifier });
+    if (answer === undefined) return { type: 'found', results: [] };
+    // A Crossref check also asks for the notices updating the work (XRb): `filter=updates:{doi}`.
+    if (request.op === 'check' && request.source === 'crossref') {
+      return found(answer, await get({ step: 'updates', identifier }));
+    }
+    return found(answer);
   } catch (error) {
     return {
       type: 'failed',

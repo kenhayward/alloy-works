@@ -1,7 +1,14 @@
 import { REFERENCE_SOURCE_IDS, cslItemSchema } from '@alloy-works/domain';
 import { z } from 'zod';
-import { CreateEntryAnswer, EntryMatch } from './bibliography.js';
+import {
+  CreateEntryAnswer,
+  EntryFlagView,
+  EntryMatch,
+  EntryParams,
+  EntryStatusView,
+} from './bibliography.js';
 import { SpaceParams } from './components.js';
+import { DocumentParams } from './documents.js';
 import type { RouteContract } from './contract.js';
 import { ErrorBody, SPACE_ARCHIVED } from './schemas.js';
 
@@ -64,6 +71,24 @@ export const FromSourceAnswer = CreateEntryAnswer.extend({
 });
 export type FromSourceAnswer = z.infer<typeof FromSourceAnswer>;
 
+/** A document's flagged sources (XR-G): each entry retracted or corrected that what it places cites. */
+export const FlaggedSourcesView = z.object({
+  items: z.array(
+    z.object({
+      flag: EntryFlagView,
+      entry: z
+        .object({ id: z.string(), key: z.string(), title: z.string().nullable() })
+        .nullable()
+        .describe('The entry, to a reader of it; null to anybody else, who sees the flag alone'),
+      components: z
+        .array(z.object({ id: z.string(), title: z.string() }))
+        .describe('The components citing it the caller may read'),
+      unreadable: z.boolean().describe('Whether components citing it the caller may not read do'),
+    }),
+  ),
+});
+export type FlaggedSourcesView = z.infer<typeof FlaggedSourcesView>;
+
 const unauthenticated = {
   description: 'No session, or not one this environment issued',
   schema: ErrorBody,
@@ -80,6 +105,10 @@ const connectorDown = {
 } as const;
 const sourceOff = {
   description: '`reference_source_off`: this environment has switched the source off',
+  schema: ErrorBody,
+} as const;
+const entryNotFound = {
+  description: 'No such entry in this environment, or none the caller may read',
   schema: ErrorBody,
 } as const;
 
@@ -170,6 +199,60 @@ export const referenceSourceRoutes = {
       },
       502: sourceFailed,
       503: connectorDown,
+    },
+  },
+  checkBibliographyEntry: {
+    operationId: 'checkBibliographyEntry',
+    method: 'POST',
+    path: '/v1/bibliography-entries/{id}/check',
+    summary: 'Check an entry against the source it was obtained from, and record its status',
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
+    params: EntryParams,
+    responses: {
+      200: {
+        description:
+          'Its status, recorded beside it and never as a version: the source is sent its identifier alone',
+        schema: EntryStatusView,
+      },
+      401: unauthenticated,
+      403: {
+        description: 'Never answered: an entry the caller may not read is not found',
+        schema: ErrorBody,
+      },
+      404: entryNotFound,
+      409: sourceOff,
+      422: {
+        description: '`entry_not_obtained`: its latest version was not obtained from a source',
+        schema: ErrorBody,
+      },
+      502: sourceFailed,
+      503: connectorDown,
+    },
+  },
+  getDocumentFlaggedSources: {
+    operationId: 'getDocumentFlaggedSources',
+    method: 'GET',
+    path: '/v1/documents/{id}/flagged-sources',
+    summary: 'The retracted and corrected sources cited by what a document places',
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
+    params: DocumentParams,
+    responses: {
+      200: {
+        description:
+          'Each flagged entry cited by a component the latest version places, at the version it places',
+        schema: FlaggedSourcesView,
+      },
+      401: unauthenticated,
+      403: {
+        description: 'Never answered: a document the caller may not read is not found',
+        schema: ErrorBody,
+      },
+      404: {
+        description: 'No such document in this environment, or none the caller may read',
+        schema: ErrorBody,
+      },
     },
   },
 } as const satisfies Record<string, RouteContract>;

@@ -26,7 +26,16 @@ const Place = z.object({
 /** One notification (COL-063): what happened, by whom, where - never the text (COL-036). */
 export const NotificationView = z.object({
   id: LowercaseUuid,
-  kind: z.enum(['mention', 'reply', 'resolution', 'round', 'digest', 'budget', 'webhook']),
+  kind: z.enum([
+    'mention',
+    'reply',
+    'resolution',
+    'round',
+    'digest',
+    'budget',
+    'webhook',
+    'reference',
+  ]),
   actor: z
     .object({
       id: LowercaseUuid,
@@ -72,6 +81,15 @@ export const NotificationView = z.object({
     .object({ id: LowercaseUuid.describe('The subscription') })
     .nullable()
     .describe('A webhook disabled after three days of failures (API-028); null otherwise'),
+  reference: z
+    .object({
+      entry: LowercaseUuid.describe('The bibliography entry'),
+      outcome: z.enum(['retracted', 'corrected']),
+    })
+    .nullable()
+    .describe(
+      'A source cited in the document `on` names, retracted or corrected (LIB-036); null otherwise',
+    ),
   at: z.iso.datetime(),
   read: z.boolean(),
 });

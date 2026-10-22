@@ -13,6 +13,8 @@ import { impactReportJob } from './jobs/impact-report.js';
 import { cohortJob } from './jobs/cohort.js';
 import { embedJob } from './jobs/embed.js';
 import { connectorDeliverer } from './deliverer.js';
+import { nightDue, recheckEntries } from './rechecks.js';
+import { connectorReferencer } from './referencer.js';
 import { connectorEmbedder } from './embedder.js';
 import { deliverWebhooks } from './webhooks.js';
 import { checkJob } from './jobs/check.js';
@@ -77,6 +79,11 @@ const deliverer =
   config.connector?.deliverKey === undefined
     ? undefined
     : connectorDeliverer({ url: config.connector.url, key: config.connector.deliverKey });
+// Re-checks through the connector's reference route alone (the XR plan, XR-E).
+const referencer =
+  config.connector?.referenceKey === undefined
+    ? undefined
+    : connectorReferencer({ url: config.connector.url, key: config.connector.referenceKey });
 const handlers: Record<string, JobHandler> = {
   sample_pdf: sampleJob({ db, stores, typst }),
   publish,
@@ -167,6 +174,22 @@ const sweep = setInterval(() => {
     .catch((error: unknown) => log.error({ err: error }, 'webhook delivery sweep failed'));
 }, config.sweepIntervalMs);
 
+// The nightly re-check of cited entries against their sources, never overlapping itself (XR-E).
+let checking = false;
+let checkedNight: Date | undefined;
+const rechecks = setInterval(() => {
+  const now = new Date();
+  if (referencer === undefined || checking || !nightDue(checkedNight, now)) return;
+  checking = true;
+  checkedNight = now;
+  void recheckEntries(db, referencer, log)
+    .then((recorded) => recorded > 0 && log.info({ recorded }, 're-checked cited entries'))
+    .catch((error: unknown) => log.error({ err: error }, 'the re-check failed'))
+    .finally(() => {
+      checking = false;
+    });
+}, config.sweepIntervalMs);
+
 // The webhook delivery loop, on its own interval and never overlapping itself (the WB plan, WB-I).
 let delivering = false;
 const deliveries = setInterval(() => {
@@ -184,6 +207,7 @@ const stop = async (signal: string) => {
   wake();
   clearInterval(sweep);
   clearInterval(deliveries);
+  clearInterval(rechecks);
   log.info({ signal }, 'stopping');
   await listener.end();
   await checker.close();

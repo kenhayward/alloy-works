@@ -146,6 +146,8 @@ export function inboxHandlers(
                     month: each.budget.month,
                   },
             webhook: each.webhook,
+            // A source cited in the document, retracted or corrected (XR-G): its id and outcome alone.
+            reference: each.reference,
             at: each.at.toISOString(),
             read: each.readAt !== null,
           })),

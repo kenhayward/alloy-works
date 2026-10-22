@@ -1,6 +1,10 @@
 import { randomUUID } from 'node:crypto';
 
 import type {
+  DocumentParams,
+  EntryParams,
+  EntryStatusView,
+  FlaggedSourcesView,
   FromSourceAnswer,
   FromSourceBody,
   ReferenceSearchAnswer,
@@ -12,7 +16,15 @@ import type {
 } from '@alloy-works/api-contract';
 import {
   createEntry,
+  entryCheckable,
   findEntryMatches,
+  flaggedCited,
+  latestVersion,
+  placedBy,
+  readableOf,
+  readEntry,
+  recordEntryCheck,
+  titlesFor,
   referenceSourcesOn,
   setReferenceSource,
   type Tenant,
@@ -22,6 +34,7 @@ import {
 import {
   REFERENCE_SOURCES,
   decide,
+  entryCheck,
   referenceRequestSchema,
   referenceSource,
   type ReferenceRequest,
@@ -34,7 +47,7 @@ import { createConnectorClient } from '../data/connector.js';
 import type { ConnectorOptions } from '../data/connections.js';
 import { AppError } from '../errors.js';
 import { recordSettingsChanged } from '../settings.js';
-import { entryView, matchView, refusedEntry } from './routes.js';
+import { entryView, matchFlags, matchView, refusedEntry, statusView } from './routes.js';
 
 const viewOf = (id: ReferenceSourceId, enabled: boolean) => {
   const { name, host, identifier } = referenceSource(id)!;
@@ -130,7 +143,9 @@ export function referenceSourceHandlers(
       const matched = [];
       for (const each of results) {
         const matches = await findEntryMatches(trx, principalId, spaceId, each.csl);
-        matched.push({ ...each, matches: matches.map(matchView) });
+        // A match its source says is retracted or corrected is flagged (XR-G).
+        const flags = await matchFlags(trx, matches);
+        matched.push({ ...each, matches: matches.map((match) => matchView(match, flags)) });
       }
       // Decided at the space, which the search's own read was decided on.
       return { results: matched, mayCreate: decide('edit', facts).allowed };
@@ -170,12 +185,12 @@ export function referenceSourceHandlers(
       });
       const dropped = [...record.dropped];
       if (answer.answer === 'matched') {
-        return { entry: null, matches: answer.matches.map(matchView), dropped };
+        return { entry: null, matches: answer.matches.map((each) => matchView(each)), dropped };
       }
       if (answer.answer === 'created') {
         return {
           entry: entryView(answer.entry, facts),
-          matches: answer.matches.map(matchView),
+          matches: answer.matches.map((each) => matchView(each)),
           dropped,
         };
       }
@@ -184,6 +199,81 @@ export function referenceSourceHandlers(
         throw new Error(`Making an entry was answered ${answer.answer}`);
       }
       return refusedEntry(answer as Parameters<typeof refusedEntry>[0], facts);
+    },
+
+    /**
+     * Check now (the XR plan, XR-E): the entry's latest version checked against the source it was
+     * obtained from, its identifier alone sent, and its status recorded beside it by the system,
+     * telling each document's owner of a retraction or correction once (XR-F, XR-G).
+     */
+    checkBibliographyEntry: async (
+      request: FastifyRequest,
+      { trx }: Authorised,
+    ): Promise<EntryStatusView> => {
+      const { id } = request.params as EntryParams;
+      if (!(await readEntry(trx, id))) throw notFound();
+      const target = await entryCheckable(trx, id);
+      if (!target) {
+        throw new AppError(
+          422,
+          'entry_not_obtained',
+          'This entry was not obtained from a reference source, so there is nothing to check it against.',
+        );
+      }
+      await switchedOn(trx, target.source);
+      const results = await asked(request, {
+        source: target.source,
+        op: 'check',
+        identifier: target.identifier,
+      });
+      const { status } = await recordEntryCheck(trx, {
+        entryId: id,
+        source: target.source,
+        check: entryCheck(target.csl, results),
+      });
+      return statusView(status);
+    },
+
+    /**
+     * A document's flagged sources (XR-G): each retracted or corrected entry what it places cites, the
+     * entry named to a reader of it and its flag alone to anybody else, and the citing components the
+     * caller may read.
+     */
+    getDocumentFlaggedSources: async (
+      request: FastifyRequest,
+      { trx, principalId }: Authorised,
+    ): Promise<FlaggedSourcesView> => {
+      const { id } = request.params as DocumentParams;
+      if ((await latestVersion(trx, id))?.kind !== 'document') throw notFound();
+      const flagged = await flaggedCited(trx, await placedBy(trx, id));
+      const entries = await readableOf(
+        trx,
+        principalId,
+        flagged.map((each) => each.entry),
+      );
+      const components = await titlesFor(
+        trx,
+        principalId,
+        flagged.flatMap((each) => each.components),
+      );
+      const items = [];
+      for (const each of flagged) {
+        const read = entries.has(each.entry) ? await readEntry(trx, each.entry) : undefined;
+        const shown = each.components.filter((component) => components.has(component));
+        items.push({
+          flag: each.outcome,
+          entry:
+            read === undefined
+              ? null
+              : { id: read.id, key: read.entry.key, title: read.entry.csl.title ?? null },
+          components: shown.map((component) => ({
+            id: component,
+            title: components.get(component)!,
+          })),
+          unreadable: shown.length < each.components.length,
+        });
+      }
+      return { items };
     },
   };
 }

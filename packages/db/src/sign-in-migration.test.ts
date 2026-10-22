@@ -159,6 +159,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0147_publication_citations',
       '0148_default_layout_bibliography',
       '0149_reference_sources',
+      '0150_entry_status',
     ]);
 
     const read = async () =>

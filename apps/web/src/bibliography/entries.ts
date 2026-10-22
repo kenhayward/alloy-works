@@ -11,7 +11,18 @@ export interface EntryOffered {
   readonly id: string;
   readonly key: string;
   readonly csl: Csl;
+  /** Retracted or corrected, as its source last said (the XR plan, XR-G). */
+  readonly flag?: EntryFlag | undefined;
 }
+
+export type EntryFlag = 'retracted' | 'corrected';
+
+/** A flag as a dialog says it beside an entry, at the start of a phrase or within one. */
+export const flagSaid = (flag: EntryFlag, start = false): string =>
+  `${start ? flag[0]!.toUpperCase() + flag.slice(1) : flag} by its source`;
+
+const flagOf = (value: unknown): EntryFlag | undefined =>
+  value === 'retracted' || value === 'corrected' ? value : undefined;
 
 /** Every entry of a space the reader may read, from every page of the listing; null if unread. */
 export async function spaceEntries(
@@ -29,7 +40,7 @@ export async function spaceEntries(
     typeof each.id === 'string' &&
     typeof each.key === 'string' &&
     isRecord(each.csl)
-      ? [{ id: each.id, key: each.key, csl: each.csl as Csl }]
+      ? [{ id: each.id, key: each.key, csl: each.csl as Csl, flag: flagOf(each.flag) }]
       : [],
   );
 }

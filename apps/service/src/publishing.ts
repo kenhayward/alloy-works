@@ -23,6 +23,8 @@ import {
   publicationBindings,
   readDocument,
   readPublication,
+  flaggedCited,
+  placedBy,
   readPublicationRequest,
   requestPublication,
   type PublicationRequestAnswer,
@@ -58,6 +60,7 @@ export const DOWNLOAD_SECONDS = 300;
 async function requestView(
   request: StoredPublicationRequest,
   store: () => Promise<TenantStore>,
+  warnings: PublicationRequestView['warnings'] = [],
 ): Promise<PublicationRequestView> {
   const lasting =
     request.preview && request.preview.expiresAt.getTime() > Date.now() ? request.preview : null;
@@ -78,9 +81,25 @@ async function requestView(
     kind: request.kind === 'range' ? 'preview' : request.kind,
     state: request.state,
     failures: request.failures.map((each) => ({ ...each })),
+    warnings,
     publication: request.publication,
     preview,
   };
+}
+
+/**
+ * What does not stop a publish (XR-G): the retracted and corrected sources cited by what the document
+ * places, counted, whoever may read them.
+ */
+async function sourceWarnings(
+  trx: TenantTransaction,
+  documentId: string,
+): Promise<PublicationRequestView['warnings']> {
+  const flagged = await flaggedCited(trx, await placedBy(trx, documentId));
+  return (['retracted', 'corrected'] as const).flatMap((flag) => {
+    const count = flagged.filter((each) => each.outcome === flag).length;
+    return count === 0 ? [] : [{ code: `source_${flag}` as const, count }];
+  });
 }
 
 /** No store is needed for a request just made: it is queued, so it has no PDF to link to. */
@@ -145,7 +164,7 @@ async function answered(
   if (answer.answer !== 'requested') return refusePublish(trx, id, answer);
   const made = await readPublicationRequest(trx, answer.request.id);
   if (!made) throw new Error(`The request ${answer.request.id} was not recorded`);
-  return requestView(made, noStore);
+  return requestView(made, noStore, await sourceWarnings(trx, made.documentId));
 }
 
 /** A request just recorded, as its view: what a publish, a preview or a baseline's publish answers. */
@@ -155,7 +174,7 @@ export async function requestedView(
 ): Promise<PublicationRequestView> {
   const made = await readPublicationRequest(trx, requestId);
   if (!made) throw new Error(`The request ${requestId} was not recorded`);
-  return requestView(made, noStore);
+  return requestView(made, noStore, await sourceWarnings(trx, made.documentId));
 }
 
 /**
@@ -357,10 +376,14 @@ export function publishingHandlers(
         }
         // Asked for only where a preview lasts, after the requester is known: anybody else is
         // answered as if there were no request, store or none.
-        return requestView(found, async () => {
-          if (!objects) throw storageUnavailable();
-          return objects.forTenant(trx, tenant);
-        });
+        return requestView(
+          found,
+          async () => {
+            if (!objects) throw storageUnavailable();
+            return objects.forTenant(trx, tenant);
+          },
+          await sourceWarnings(trx, found.documentId),
+        );
       });
     },
 

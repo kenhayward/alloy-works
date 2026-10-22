@@ -33,6 +33,7 @@ import type { BindingContext } from './bindings.js';
 import { bindingContextOf, bindingDecorations, bindingsPlugin } from './bindingView.js';
 import {
   citationDecorations,
+  citationFlagsOf,
   citationFormsOf,
   citationsPlugin,
   type CitationForms,
@@ -610,7 +611,11 @@ export function createEditorState(options: EditorStateOptions): EditorState {
               ...unresolvedOf(state).find(),
               ...referenceDecorations(state.doc, referenceContextOf(state)).find(),
               ...bindingDecorations(state.doc, bindingContextOf(state)).find(),
-              ...citationDecorations(state.doc, citationFormsOf(state)).find(),
+              ...citationDecorations(
+                state.doc,
+                citationFormsOf(state),
+                citationFlagsOf(state),
+              ).find(),
               // The bound table the cursor stands in, outlined, and its focused column (ADR-0051).
               ...boundTableFocusDecorations(state).find(),
               // Each table's columns as wide as what they hold, where its style says so (TG3).

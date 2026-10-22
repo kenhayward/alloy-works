@@ -5,6 +5,7 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import {
   entryMatches,
   entryName,
+  flagSaid,
   spaceEntries,
   type EntryOffered,
 } from '../bibliography/entries.js';
@@ -227,6 +228,7 @@ export function CitationDialog({ client, space, current, onDone, onCancel }: Cit
                               onChange={() => setChosen(each.id)}
                             />
                             {entryName(each)}
+                            {each.flag && ` (${flagSaid(each.flag, true)})`}
                           </label>
                         ))}
                       </div>

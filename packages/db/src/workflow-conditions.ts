@@ -9,6 +9,7 @@ import {
   type TransitionCondition,
   type WorkflowKind,
 } from '@alloy-works/domain';
+import { flaggedCited } from './entry-status.js';
 import { waivedKeys } from './waivers.js';
 import { documentBindings, readResolved, resolveOccurrences } from './publishing.js';
 import { pendingCounts } from './suggestions.js';
@@ -120,11 +121,12 @@ export async function unmetConditions(
     if (!latest) return [];
     const read = readOutline(latest.content, { artifact: input.artifactId, version: latest.id });
     if (!read.ok) throw new Error(`The document ${input.artifactId} at ${latest.id} does not read`);
-    const references = new Map<string, { component: string }>();
+    const references = new Map<string, { component: string; version?: string }>();
     walkOutline(read.outline.nodes, (node) => {
       if (node.type === 'reference') {
         references.set(node.id, {
           component: node.component,
+          ...(node.mode.kind === 'pinned' ? { version: node.mode.version } : {}),
         });
       }
     });
@@ -141,6 +143,15 @@ export async function unmetConditions(
     }
     if (requires.includes('generated')) {
       found.set('generated', { ...none, count: await openGenerated(trx, components) });
+    }
+    // Retracted sources cited at the version each component is placed, read by the system (XR-H).
+    if (requires.includes('noRetracted')) {
+      found.set('noRetracted', {
+        ...none,
+        count: (await flaggedCited(trx, [...references.values()])).filter(
+          (each) => each.outcome === 'retracted',
+        ).length,
+      });
     }
     if (requires.includes('sections')) {
       const rules = await documentRules(trx, input.artifactId);

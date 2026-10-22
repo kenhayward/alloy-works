@@ -7,8 +7,11 @@ import { fileURLToPath } from 'node:url';
 import {
   crossrefChapter,
   crossrefMarsh,
+  crossrefMarshRetraction,
   crossrefSearch,
+  crossrefUpdates,
   crossrefWork,
+  pubmedCorrected,
   pubmedDunnart,
   pubmedRetracted,
   pubmedSearch,
@@ -35,7 +38,11 @@ const WORKS: Readonly<Record<string, object>> = {
   '10.5555/marsh.2021.017': crossrefMarsh,
   '10.5555/quolls.ch4': crossrefChapter,
 };
-const RECORDS = [pubmedDunnart, pubmedRetracted];
+const RECORDS = [pubmedDunnart, pubmedRetracted, pubmedCorrected];
+/** The notices updating each work, by its DOI (XRb): the marsh retracted. */
+const UPDATES: Readonly<Record<string, readonly object[]>> = {
+  '10.5555/marsh.2021.017': [crossrefMarshRetraction],
+};
 
 /** A body no source answers whole: past the search's 512 KiB. */
 const OVERSIZED = JSON.stringify({ message: { items: [], padding: 'x'.repeat(600 * 1024) } });
@@ -63,6 +70,10 @@ export async function startFakeReferences(): Promise<FakeReferences> {
       if (terms === 'redirect') return send(302, '{}', { location: '/works' });
       if (terms === 'oversized') return send(200, OVERSIZED);
       if (terms === 'deep') return send(200, DEEP);
+      const updates = /^updates:(.+)$/.exec(url.searchParams.get('filter') ?? '');
+      if (url.pathname === '/works' && updates) {
+        return send(200, JSON.stringify(crossrefUpdates(UPDATES[updates[1]!] ?? [])));
+      }
       if (url.pathname === '/works') return send(200, JSON.stringify(crossrefSearch));
       const work = /^\/works\/(.+)$/.exec(url.pathname);
       if (work) {

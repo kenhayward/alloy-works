@@ -161,6 +161,16 @@ export const PublicationRequestView = z.object({
     .describe('A publish, which makes a publication, or a preview, which makes a PDF for an hour'),
   state: z.enum(['queued', 'done', 'failed']),
   failures: z.array(PublishFailureView),
+  warnings: z
+    .array(
+      z.object({
+        code: z.enum(['source_retracted', 'source_corrected']),
+        count: z.int().positive(),
+      }),
+    )
+    .describe(
+      'What does not stop it (LIB-036): the sources cited by what the document places that their source says are retracted or corrected, counted, whoever may read them',
+    ),
   publication: z.string().nullable().describe('The publication it made, once done'),
   preview: PreviewView.nullable().describe(
     "A done preview's links and expiry, until it expires; none for a publish, or a preview not done or expired",

@@ -977,6 +977,7 @@ describe('publishing a document through the service', () => {
       kind: 'preview',
       state: 'queued',
       failures: [],
+      warnings: [],
       publication: null,
       preview: null,
     });

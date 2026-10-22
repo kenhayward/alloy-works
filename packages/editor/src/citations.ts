@@ -43,6 +43,15 @@ export interface CitationAt extends CitationChoice {
  */
 export type CitationForms = ReadonlyMap<string, string | null>;
 
+/**
+ * Each entry its source says is retracted or corrected (the XR plan, XR-G), by its id: a flag shown
+ * on every citation of it, whether or not the reader may read the entry.
+ */
+export type CitationFlags = ReadonlyMap<string, 'retracted' | 'corrected'>;
+
+/** The class a flagged citation carries. */
+export const FLAGGED_CLASS = 'aw-citation-flagged';
+
 /** A citation's key among the forms. */
 export const citationKey = (entry: string, locator: string | null): string =>
   `${entry}\u{0}${locator ?? ''}`;
@@ -73,18 +82,29 @@ export function citationsIn(doc: Node): readonly CitationChoice[] {
   return found;
 }
 
-/** Where a surface's state keeps the forms its host last rendered. */
-export const citationsKey = new PluginKey<CitationForms | null>('citations');
+interface CitationsState {
+  readonly forms: CitationForms | null;
+  readonly flags: CitationFlags | null;
+}
 
-/** Holds the host's forms, set by a transaction of its own that the history never holds. */
+/** Where a surface's state keeps the forms its host last rendered, and the flags. */
+export const citationsKey = new PluginKey<CitationsState>('citations');
+const flagsKey = new PluginKey<CitationFlags | null>('citationFlags');
+
+/** Holds the host's forms and flags, each set by a transaction of its own the history never holds. */
 export function citationsPlugin(initial: CitationForms | null = null): Plugin {
-  return new Plugin<CitationForms | null>({
+  return new Plugin<CitationsState>({
     key: citationsKey,
     state: {
-      init: () => initial,
+      init: () => ({ forms: initial, flags: null }),
       apply: (tr, value) => {
-        const next = tr.getMeta(citationsKey) as CitationForms | null | undefined;
-        return next === undefined ? value : next;
+        const forms = tr.getMeta(citationsKey) as CitationForms | null | undefined;
+        const flags = tr.getMeta(flagsKey) as CitationFlags | null | undefined;
+        if (forms === undefined && flags === undefined) return value;
+        return {
+          forms: forms === undefined ? value.forms : forms,
+          flags: flags === undefined ? value.flags : flags,
+        };
       },
     },
   });
@@ -92,7 +112,20 @@ export function citationsPlugin(initial: CitationForms | null = null): Plugin {
 
 /** The forms a surface's state holds, or null where none have been rendered. */
 export function citationFormsOf(state: EditorState): CitationForms | null {
-  return citationsKey.getState(state) ?? null;
+  return citationsKey.getState(state)?.forms ?? null;
+}
+
+/** The flags a surface's state holds, or null where none have been heard. */
+export function citationFlagsOf(state: EditorState): CitationFlags | null {
+  return citationsKey.getState(state)?.flags ?? null;
+}
+
+/** Tells a surface which entries are flagged: a change of no document, never undone. */
+export function setCitationFlags(
+  view: { readonly state: EditorState; dispatch: (tr: Transaction) => void },
+  flags: CitationFlags | null,
+): void {
+  view.dispatch(view.state.tr.setMeta(flagsKey, flags).setMeta('addToHistory', false));
 }
 
 /** Tells a surface the forms its citations render as: a change of no document, never undone. */
@@ -109,7 +142,11 @@ export function setCitationForms(
  * `citationText`; a cross-reference to an entry `referenceText`, which `referenceView` draws. One
  * with no form yet shows what `toDOM` would.
  */
-export function citationDecorations(doc: Node, forms: CitationForms | null): DecorationSet {
+export function citationDecorations(
+  doc: Node,
+  forms: CitationForms | null,
+  flags: CitationFlags | null = null,
+): DecorationSet {
   if (forms === null) return DecorationSet.empty;
   const decorations: Decoration[] = [];
   doc.descendants((node, pos) => {
@@ -117,8 +154,17 @@ export function citationDecorations(doc: Node, forms: CitationForms | null): Dec
     if (cited === null) return true;
     const form = forms.get(citationKey(cited.entry, cited.locator));
     if (form === undefined) return false;
-    const text = form ?? CITATION_UNAVAILABLE;
-    const attrs = form === null ? { class: UNAVAILABLE_CLASS } : {};
+    // A flag is said in the text, so a screen reader hears it, as well as in the class (XR-G).
+    const flag = flags?.get(cited.entry);
+    const text = `${form ?? CITATION_UNAVAILABLE}${flag ? ` (${flag})` : ''}`;
+    const classes = [
+      ...(form === null ? [UNAVAILABLE_CLASS] : []),
+      ...(flag ? [FLAGGED_CLASS] : []),
+    ];
+    const attrs = {
+      ...(classes.length > 0 ? { class: classes.join(' ') } : {}),
+      ...(flag ? { 'data-flag': flag, title: `Its source says it is ${flag}` } : {}),
+    };
     const spec = node.type === citationNode ? { citationText: text } : { referenceText: text };
     decorations.push(Decoration.node(pos, pos + 1, attrs, spec));
     return false;

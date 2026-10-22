@@ -60,9 +60,10 @@ const TransitionCondition = z
     'profile',
     'generated',
     'trial',
+    'noRetracted',
   ])
   .describe(
-    'suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires',
+    'suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires; noRetracted: no source cited by what a document places at the version moving retracted, as its source last said',
   );
 
 const WorkflowTransitionBody = z.strictObject({

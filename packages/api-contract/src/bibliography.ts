@@ -1,4 +1,10 @@
-import { cslItemSchema, entrySchema } from '@alloy-works/domain';
+import {
+  cslItemSchema,
+  ENTRY_CHECK_OUTCOMES,
+  entrySchema,
+  REFERENCE_SOURCE_IDS,
+  referenceNoticeSchema,
+} from '@alloy-works/domain';
 import { z } from 'zod';
 import { ComponentParams, SpaceParams, VersionSummary } from './components.js';
 import type { RouteContract } from './contract.js';
@@ -30,6 +36,27 @@ export const EntryVersionBody = z.strictObject({
 });
 export type EntryVersionBody = z.infer<typeof EntryVersionBody>;
 
+/** An entry's status from its last check against its source (the XR plan, XR-F). */
+export const EntryStatusView = z.object({
+  source: z.enum(REFERENCE_SOURCE_IDS),
+  checkedAt: z.string().describe('When it was last checked'),
+  outcome: z
+    .enum(ENTRY_CHECK_OUTCOMES)
+    .describe(
+      '`current`: as held; `changed`: the source now holds `differs` otherwise; `gone`: the source holds no such record; `retracted` or `corrected`: the source reports so',
+    ),
+  differs: z.array(z.string()).describe('The CSL variables the source now holds otherwise'),
+  notice: referenceNoticeSchema
+    .nullable()
+    .describe(
+      "The retraction or correction: its kind, and the notice's identifier and date where given",
+    ),
+});
+export type EntryStatusView = z.infer<typeof EntryStatusView>;
+
+/** A citation's flag (XR-G): its entry retracted or corrected, shown to anybody who sees the citation. */
+export const EntryFlagView = z.enum(['retracted', 'corrected']);
+
 export const EntryView = z.object({
   id: z.string(),
   space: z.object({ id: z.string(), name: z.string() }),
@@ -38,6 +65,9 @@ export const EntryView = z.object({
   archived: z.boolean().describe('Whether it is archived: left out of the listing, still citable'),
   mayEdit: z.boolean().describe('Whether the caller may cut its next version: edit on it'),
   mayRetire: z.boolean().describe('Whether the caller may archive it: retire on it'),
+  status: EntryStatusView.nullable()
+    .optional()
+    .describe('Its status from its last check, on a read of it; null where never checked'),
 });
 export type EntryView = z.infer<typeof EntryView>;
 
@@ -47,6 +77,9 @@ export const EntrySummary = z.object({
   csl: cslItemSchema,
   version: z.object({ id: z.string(), number: z.string() }),
   changedAt: z.string().describe('When its latest version was made'),
+  flag: EntryFlagView.nullable()
+    .optional()
+    .describe('Retracted or corrected, as its source last said (XR-G); null otherwise'),
 });
 
 const MATCH_BY = ['doi', 'pmid', 'isbn', 'issn', 'work'] as const;
@@ -148,6 +181,11 @@ export const CitationPreview = z.object({
     .array(z.string().nullable())
     .describe(
       "Each citation's in-text form, in order; null where it names no entry of the component's space the caller may read, or the theme names no style",
+    ),
+  flags: z
+    .array(EntryFlagView.nullable())
+    .describe(
+      "Each citation's flag, in order: its entry retracted or corrected, shown whether or not the caller may read the entry; null otherwise",
     ),
 });
 export type CitationPreview = z.infer<typeof CitationPreview>;

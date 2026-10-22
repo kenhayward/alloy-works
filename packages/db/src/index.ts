@@ -1181,3 +1181,16 @@ export {
   type InstalledExtension,
 } from './extensions.js';
 export { referenceSourcesOn, setReferenceSource } from './reference-sources.js';
+export {
+  citedFlags,
+  entriesDue,
+  entryCheckable,
+  readEntryStatus,
+  recordEntryCheck,
+  flaggedCited,
+  placedBy,
+  type CheckableEntry,
+  type EntryFlag,
+  type FlaggedCitation,
+  type EntryStatus,
+} from './entry-status.js';

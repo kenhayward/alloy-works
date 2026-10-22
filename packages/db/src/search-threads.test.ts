@@ -677,6 +677,7 @@ describe('migration 0089, which makes threads searchable', () => {
         '0147_publication_citations',
         '0148_default_layout_bibliography',
         '0149_reference_sources',
+        '0150_entry_status',
       ]);
       const answer = await service.withTenant(tenant, (trx) =>
         searchWords(trx, ada, 'tapir hotter'),

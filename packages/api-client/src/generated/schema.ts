@@ -599,6 +599,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/bibliography-entries/{id}/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check an entry against the source it was obtained from, and record its status
+         * @description Checks an entry against the reference source its latest version was obtained from, sending the source its DOI or PubMed identifier alone, and records the entry's status beside it, never as a version: `current`, `changed` (naming the CSL variables the source now holds otherwise), `gone`, `retracted` or `corrected`, with the notice where the source names one. A retraction or correction tells the owner of each document citing it, once. It needs read on the entry; an entry made by hand is `entry_not_obtained`.
+         */
+        post: operations["checkBibliographyEntry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/bibliography-entries/{id}/unarchive": {
         parameters: {
             query?: never;
@@ -2379,6 +2399,26 @@ export interface paths {
          * @description Says which one revision of a document was effective in a scope, a condition axis value, at an instant, now where none is asked: the newest effective for that scope then, else the newest effective everywhere, as it stood then, and which of the two it is. Needs read on the document.
          */
         get: operations["readDocumentEffective"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{id}/flagged-sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The retracted and corrected sources cited by what a document places
+         * @description Lists the sources cited by the components a document's latest version places, at the version each is placed, that their source last said are retracted or corrected. Each names the entry to a reader of it, and only its flag to anybody else, with the components citing it the caller may read. It needs read on the document.
+         */
+        get: operations["getDocumentFlaggedSources"];
         put?: never;
         post?: never;
         delete?: never;
@@ -12457,6 +12497,7 @@ export interface operations {
                      *       "kind": "publish",
                      *       "state": "queued",
                      *       "failures": [],
+                     *       "warnings": [],
                      *       "publication": "example",
                      *       "preview": {
                      *         "view": "example",
@@ -12486,6 +12527,12 @@ export interface operations {
                             block: string | null;
                             /** @description The kind of block or mark, the style, the language tag, or the character as U+XXXX; null where the place is one the publisher may not read */
                             detail: string | null;
+                        }[];
+                        /** @description What does not stop it (LIB-036): the sources cited by what the document places that their source says are retracted or corrected, counted, whoever may read them */
+                        warnings: {
+                            /** @enum {string} */
+                            code: "source_retracted" | "source_corrected";
+                            count: number;
                         }[];
                         /** @description The publication it made, once done */
                         publication: string | null;
@@ -14344,6 +14391,27 @@ export interface operations {
                         mayEdit: boolean;
                         /** @description Whether the caller may archive it: retire on it */
                         mayRetire: boolean;
+                        /** @description Its status from its last check, on a read of it; null where never checked */
+                        status?: {
+                            /** @enum {string} */
+                            source: "crossref" | "pubmed";
+                            /** @description When it was last checked */
+                            checkedAt: string;
+                            /**
+                             * @description `current`: as held; `changed`: the source now holds `differs` otherwise; `gone`: the source holds no such record; `retracted` or `corrected`: the source reports so
+                             * @enum {string}
+                             */
+                            outcome: "current" | "changed" | "gone" | "retracted" | "corrected";
+                            /** @description The CSL variables the source now holds otherwise */
+                            differs: string[];
+                            /** @description The retraction or correction: its kind, and the notice's identifier and date where given */
+                            notice: {
+                                /** @enum {string} */
+                                kind: "retraction" | "correction";
+                                identifier?: string;
+                                date?: string;
+                            } | null;
+                        } | null;
                     };
                 };
             };
@@ -14528,6 +14596,227 @@ export interface operations {
             };
             /** @description `entry_cited`: a component's latest version, or a baseline's, cites it */
             409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    checkBibliographyEntry: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Its status, recorded beside it and never as a version: the source is sent its identifier alone */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "source": "crossref",
+                     *       "checkedAt": "example",
+                     *       "outcome": "current",
+                     *       "differs": [],
+                     *       "notice": {
+                     *         "kind": "retraction"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        /** @enum {string} */
+                        source: "crossref" | "pubmed";
+                        /** @description When it was last checked */
+                        checkedAt: string;
+                        /**
+                         * @description `current`: as held; `changed`: the source now holds `differs` otherwise; `gone`: the source holds no such record; `retracted` or `corrected`: the source reports so
+                         * @enum {string}
+                         */
+                        outcome: "current" | "changed" | "gone" | "retracted" | "corrected";
+                        /** @description The CSL variables the source now holds otherwise */
+                        differs: string[];
+                        /** @description The retraction or correction: its kind, and the notice's identifier and date where given */
+                        notice: {
+                            /** @enum {string} */
+                            kind: "retraction" | "correction";
+                            identifier?: string;
+                            date?: string;
+                        } | null;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: an entry the caller may not read is not found */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such entry in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `reference_source_off`: this environment has switched the source off */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `entry_not_obtained`: its latest version was not obtained from a source */
+            422: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `reference_unavailable`: the source could not be reached or answered out of shape, which is the source's */
+            502: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `connector_unavailable` or `connector_busy`: the connector cannot ask the source now */
+            503: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;
@@ -15758,6 +16047,27 @@ export interface operations {
                         mayEdit: boolean;
                         /** @description Whether the caller may archive it: retire on it */
                         mayRetire: boolean;
+                        /** @description Its status from its last check, on a read of it; null where never checked */
+                        status?: {
+                            /** @enum {string} */
+                            source: "crossref" | "pubmed";
+                            /** @description When it was last checked */
+                            checkedAt: string;
+                            /**
+                             * @description `current`: as held; `changed`: the source now holds `differs` otherwise; `gone`: the source holds no such record; `retracted` or `corrected`: the source reports so
+                             * @enum {string}
+                             */
+                            outcome: "current" | "changed" | "gone" | "retracted" | "corrected";
+                            /** @description The CSL variables the source now holds otherwise */
+                            differs: string[];
+                            /** @description The retraction or correction: its kind, and the notice's identifier and date where given */
+                            notice: {
+                                /** @enum {string} */
+                                kind: "retraction" | "correction";
+                                identifier?: string;
+                                date?: string;
+                            } | null;
+                        } | null;
                     };
                 };
             };
@@ -16229,6 +16539,27 @@ export interface operations {
                             mayEdit: boolean;
                             /** @description Whether the caller may archive it: retire on it */
                             mayRetire: boolean;
+                            /** @description Its status from its last check, on a read of it; null where never checked */
+                            status?: {
+                                /** @enum {string} */
+                                source: "crossref" | "pubmed";
+                                /** @description When it was last checked */
+                                checkedAt: string;
+                                /**
+                                 * @description `current`: as held; `changed`: the source now holds `differs` otherwise; `gone`: the source holds no such record; `retracted` or `corrected`: the source reports so
+                                 * @enum {string}
+                                 */
+                                outcome: "current" | "changed" | "gone" | "retracted" | "corrected";
+                                /** @description The CSL variables the source now holds otherwise */
+                                differs: string[];
+                                /** @description The retraction or correction: its kind, and the notice's identifier and date where given */
+                                notice: {
+                                    /** @enum {string} */
+                                    kind: "retraction" | "correction";
+                                    identifier?: string;
+                                    date?: string;
+                                } | null;
+                            } | null;
                         };
                     };
                 };
@@ -16761,6 +17092,27 @@ export interface operations {
                             mayEdit: boolean;
                             /** @description Whether the caller may archive it: retire on it */
                             mayRetire: boolean;
+                            /** @description Its status from its last check, on a read of it; null where never checked */
+                            status?: {
+                                /** @enum {string} */
+                                source: "crossref" | "pubmed";
+                                /** @description When it was last checked */
+                                checkedAt: string;
+                                /**
+                                 * @description `current`: as held; `changed`: the source now holds `differs` otherwise; `gone`: the source holds no such record; `retracted` or `corrected`: the source reports so
+                                 * @enum {string}
+                                 */
+                                outcome: "current" | "changed" | "gone" | "retracted" | "corrected";
+                                /** @description The CSL variables the source now holds otherwise */
+                                differs: string[];
+                                /** @description The retraction or correction: its kind, and the notice's identifier and date where given */
+                                notice: {
+                                    /** @enum {string} */
+                                    kind: "retraction" | "correction";
+                                    identifier?: string;
+                                    date?: string;
+                                } | null;
+                            } | null;
                         };
                     };
                 };
@@ -19547,10 +19899,10 @@ export interface operations {
                         /** @description conditions_unmet: each condition not met, in the order the transition names them */
                         unmet?: {
                             /**
-                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires
+                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires; noRetracted: no source cited by what a document places at the version moving retracted, as its source last said
                              * @enum {string}
                              */
-                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial";
+                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial" | "noRetracted";
                             /** @description How many stand in its way */
                             count: number;
                             /** @description The sections missing, or the components not approved, by title */
@@ -19873,12 +20225,15 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "forms": []
+                     *       "forms": [],
+                     *       "flags": []
                      *     }
                      */
                     "application/json": {
                         /** @description Each citation's in-text form, in order; null where it names no entry of the component's space the caller may read, or the theme names no style */
                         forms: (string | null)[];
+                        /** @description Each citation's flag, in order: its entry retracted or corrected, shown whether or not the caller may read the entry; null otherwise */
+                        flags: (("retracted" | "corrected") | null)[];
                     };
                 };
             };
@@ -24220,10 +24575,10 @@ export interface operations {
                         /** @description conditions_unmet: each condition not met, in the order the transition names them */
                         unmet?: {
                             /**
-                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires
+                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires; noRetracted: no source cited by what a document places at the version moving retracted, as its source last said
                              * @enum {string}
                              */
-                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial";
+                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial" | "noRetracted";
                             /** @description How many stand in its way */
                             count: number;
                             /** @description The sections missing, or the components not approved, by title */
@@ -33870,10 +34225,10 @@ export interface operations {
                         /** @description conditions_unmet: each condition not met, in the order the transition names them */
                         unmet?: {
                             /**
-                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires
+                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires; noRetracted: no source cited by what a document places at the version moving retracted, as its source last said
                              * @enum {string}
                              */
-                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial";
+                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial" | "noRetracted";
                             /** @description How many stand in its way */
                             count: number;
                             /** @description The sections missing, or the components not approved, by title */
@@ -49325,6 +49680,136 @@ export interface operations {
             };
         };
     };
+    getDocumentFlaggedSources: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Each flagged entry cited by a component the latest version places, at the version it places */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": []
+                     *     }
+                     */
+                    "application/json": {
+                        items: {
+                            /** @enum {string} */
+                            flag: "retracted" | "corrected";
+                            /** @description The entry, to a reader of it; null to anybody else, who sees the flag alone */
+                            entry: {
+                                id: string;
+                                key: string;
+                                title: string | null;
+                            } | null;
+                            /** @description The components citing it the caller may read */
+                            components: {
+                                id: string;
+                                title: string;
+                            }[];
+                            /** @description Whether components citing it the caller may not read do */
+                            unreadable: boolean;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a document the caller may not read is not found */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     getDocumentGenerated: {
         parameters: {
             query?: never;
@@ -54225,6 +54710,7 @@ export interface operations {
                      *       "kind": "publish",
                      *       "state": "queued",
                      *       "failures": [],
+                     *       "warnings": [],
                      *       "publication": "example",
                      *       "preview": {
                      *         "view": "example",
@@ -54254,6 +54740,12 @@ export interface operations {
                             block: string | null;
                             /** @description The kind of block or mark, the style, the language tag, or the character as U+XXXX; null where the place is one the publisher may not read */
                             detail: string | null;
+                        }[];
+                        /** @description What does not stop it (LIB-036): the sources cited by what the document places that their source says are retracted or corrected, counted, whoever may read them */
+                        warnings: {
+                            /** @enum {string} */
+                            code: "source_retracted" | "source_corrected";
+                            count: number;
                         }[];
                         /** @description The publication it made, once done */
                         publication: string | null;
@@ -56227,6 +56719,7 @@ export interface operations {
                      *       "kind": "publish",
                      *       "state": "queued",
                      *       "failures": [],
+                     *       "warnings": [],
                      *       "publication": "example",
                      *       "preview": {
                      *         "view": "example",
@@ -56256,6 +56749,12 @@ export interface operations {
                             block: string | null;
                             /** @description The kind of block or mark, the style, the language tag, or the character as U+XXXX; null where the place is one the publisher may not read */
                             detail: string | null;
+                        }[];
+                        /** @description What does not stop it (LIB-036): the sources cited by what the document places that their source says are retracted or corrected, counted, whoever may read them */
+                        warnings: {
+                            /** @enum {string} */
+                            code: "source_retracted" | "source_corrected";
+                            count: number;
                         }[];
                         /** @description The publication it made, once done */
                         publication: string | null;
@@ -59365,10 +59864,10 @@ export interface operations {
                         /** @description conditions_unmet: each condition not met, in the order the transition names them */
                         unmet?: {
                             /**
-                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires
+                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires; noRetracted: no source cited by what a document places at the version moving retracted, as its source last said
                              * @enum {string}
                              */
-                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial";
+                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial" | "noRetracted";
                             /** @description How many stand in its way */
                             count: number;
                             /** @description The sections missing, or the components not approved, by title */
@@ -66284,7 +66783,7 @@ export interface operations {
                         notifications: {
                             id: string & (unknown & unknown);
                             /** @enum {string} */
-                            kind: "mention" | "reply" | "resolution" | "round" | "digest" | "budget" | "webhook";
+                            kind: "mention" | "reply" | "resolution" | "round" | "digest" | "budget" | "webhook" | "reference";
                             /** @description Who did it; null on a digest, or where the caller may no longer read what it is on */
                             actor: {
                                 id: string & (unknown & unknown);
@@ -66346,6 +66845,13 @@ export interface operations {
                             webhook: {
                                 /** @description The subscription */
                                 id: string & (unknown & unknown);
+                            } | null;
+                            /** @description A source cited in the document `on` names, retracted or corrected (LIB-036); null otherwise */
+                            reference: {
+                                /** @description The bibliography entry */
+                                entry: string & (unknown & unknown);
+                                /** @enum {string} */
+                                outcome: "retracted" | "corrected";
                             } | null;
                             /** Format: date-time */
                             at: string;
@@ -74771,10 +75277,10 @@ export interface operations {
                         /** @description conditions_unmet: each condition not met, in the order the transition names them */
                         unmet?: {
                             /**
-                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires
+                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires; noRetracted: no source cited by what a document places at the version moving retracted, as its source last said
                              * @enum {string}
                              */
-                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial";
+                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial" | "noRetracted";
                             /** @description How many stand in its way */
                             count: number;
                             /** @description The sections missing, or the components not approved, by title */
@@ -75040,10 +75546,10 @@ export interface operations {
                         /** @description conditions_unmet: each condition not met, in the order the transition names them */
                         unmet?: {
                             /**
-                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires
+                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires; noRetracted: no source cited by what a document places at the version moving retracted, as its source last said
                              * @enum {string}
                              */
-                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial";
+                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial" | "noRetracted";
                             /** @description How many stand in its way */
                             count: number;
                             /** @description The sections missing, or the components not approved, by title */
@@ -75942,6 +76448,7 @@ export interface operations {
                      *       "kind": "publish",
                      *       "state": "queued",
                      *       "failures": [],
+                     *       "warnings": [],
                      *       "publication": "example",
                      *       "preview": {
                      *         "view": "example",
@@ -75971,6 +76478,12 @@ export interface operations {
                             block: string | null;
                             /** @description The kind of block or mark, the style, the language tag, or the character as U+XXXX; null where the place is one the publisher may not read */
                             detail: string | null;
+                        }[];
+                        /** @description What does not stop it (LIB-036): the sources cited by what the document places that their source says are retracted or corrected, counted, whoever may read them */
+                        warnings: {
+                            /** @enum {string} */
+                            code: "source_retracted" | "source_corrected";
+                            count: number;
                         }[];
                         /** @description The publication it made, once done */
                         publication: string | null;
@@ -78584,10 +79097,10 @@ export interface operations {
                         /** @description conditions_unmet: each condition not met, in the order the transition names them */
                         unmet?: {
                             /**
-                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires
+                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires; noRetracted: no source cited by what a document places at the version moving retracted, as its source last said
                              * @enum {string}
                              */
-                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial";
+                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial" | "noRetracted";
                             /** @description How many stand in its way */
                             count: number;
                             /** @description The sections missing, or the components not approved, by title */
@@ -78853,10 +79366,10 @@ export interface operations {
                         /** @description conditions_unmet: each condition not met, in the order the transition names them */
                         unmet?: {
                             /**
-                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires
+                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires; noRetracted: no source cited by what a document places at the version moving retracted, as its source last said
                              * @enum {string}
                              */
-                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial";
+                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial" | "noRetracted";
                             /** @description How many stand in its way */
                             count: number;
                             /** @description The sections missing, or the components not approved, by title */
@@ -81671,6 +82184,8 @@ export interface operations {
                                     };
                                     /** @description When its latest version was made */
                                     changedAt: string;
+                                    /** @description Retracted or corrected, as its source last said (XR-G); null otherwise */
+                                    flag?: ("retracted" | "corrected") | null;
                                 };
                             }[];
                         }[];
@@ -87977,6 +88492,8 @@ export interface operations {
                             };
                             /** @description When its latest version was made */
                             changedAt: string;
+                            /** @description Retracted or corrected, as its source last said (XR-G); null otherwise */
+                            flag?: ("retracted" | "corrected") | null;
                         }[];
                         /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
                         next: string | null;
@@ -89026,6 +89543,27 @@ export interface operations {
                             mayEdit: boolean;
                             /** @description Whether the caller may archive it: retire on it */
                             mayRetire: boolean;
+                            /** @description Its status from its last check, on a read of it; null where never checked */
+                            status?: {
+                                /** @enum {string} */
+                                source: "crossref" | "pubmed";
+                                /** @description When it was last checked */
+                                checkedAt: string;
+                                /**
+                                 * @description `current`: as held; `changed`: the source now holds `differs` otherwise; `gone`: the source holds no such record; `retracted` or `corrected`: the source reports so
+                                 * @enum {string}
+                                 */
+                                outcome: "current" | "changed" | "gone" | "retracted" | "corrected";
+                                /** @description The CSL variables the source now holds otherwise */
+                                differs: string[];
+                                /** @description The retraction or correction: its kind, and the notice's identifier and date where given */
+                                notice: {
+                                    /** @enum {string} */
+                                    kind: "retraction" | "correction";
+                                    identifier?: string;
+                                    date?: string;
+                                } | null;
+                            } | null;
                         } | null;
                         /** @description The entries in the space found to be the same source */
                         matches: {
@@ -89456,6 +89994,8 @@ export interface operations {
                                 };
                                 /** @description When its latest version was made */
                                 changedAt: string;
+                                /** @description Retracted or corrected, as its source last said (XR-G); null otherwise */
+                                flag?: ("retracted" | "corrected") | null;
                             };
                         }[];
                     };
@@ -89929,6 +90469,27 @@ export interface operations {
                             mayEdit: boolean;
                             /** @description Whether the caller may archive it: retire on it */
                             mayRetire: boolean;
+                            /** @description Its status from its last check, on a read of it; null where never checked */
+                            status?: {
+                                /** @enum {string} */
+                                source: "crossref" | "pubmed";
+                                /** @description When it was last checked */
+                                checkedAt: string;
+                                /**
+                                 * @description `current`: as held; `changed`: the source now holds `differs` otherwise; `gone`: the source holds no such record; `retracted` or `corrected`: the source reports so
+                                 * @enum {string}
+                                 */
+                                outcome: "current" | "changed" | "gone" | "retracted" | "corrected";
+                                /** @description The CSL variables the source now holds otherwise */
+                                differs: string[];
+                                /** @description The retraction or correction: its kind, and the notice's identifier and date where given */
+                                notice: {
+                                    /** @enum {string} */
+                                    kind: "retraction" | "correction";
+                                    identifier?: string;
+                                    date?: string;
+                                } | null;
+                            } | null;
                         };
                     };
                 };
@@ -90676,6 +91237,27 @@ export interface operations {
                             mayEdit: boolean;
                             /** @description Whether the caller may archive it: retire on it */
                             mayRetire: boolean;
+                            /** @description Its status from its last check, on a read of it; null where never checked */
+                            status?: {
+                                /** @enum {string} */
+                                source: "crossref" | "pubmed";
+                                /** @description When it was last checked */
+                                checkedAt: string;
+                                /**
+                                 * @description `current`: as held; `changed`: the source now holds `differs` otherwise; `gone`: the source holds no such record; `retracted` or `corrected`: the source reports so
+                                 * @enum {string}
+                                 */
+                                outcome: "current" | "changed" | "gone" | "retracted" | "corrected";
+                                /** @description The CSL variables the source now holds otherwise */
+                                differs: string[];
+                                /** @description The retraction or correction: its kind, and the notice's identifier and date where given */
+                                notice: {
+                                    /** @enum {string} */
+                                    kind: "retraction" | "correction";
+                                    identifier?: string;
+                                    date?: string;
+                                } | null;
+                            } | null;
                         } | null;
                         /** @description The entries in the space found to be the same source */
                         matches: {
@@ -91106,6 +91688,8 @@ export interface operations {
                                 };
                                 /** @description When its latest version was made */
                                 changedAt: string;
+                                /** @description Retracted or corrected, as its source last said (XR-G); null otherwise */
+                                flag?: ("retracted" | "corrected") | null;
                             };
                         }[];
                         /** @description The fields the source gave that an entry cannot hold */
@@ -91766,6 +92350,8 @@ export interface operations {
                                 };
                                 /** @description When its latest version was made */
                                 changedAt: string;
+                                /** @description Retracted or corrected, as its source last said (XR-G); null otherwise */
+                                flag?: ("retracted" | "corrected") | null;
                             } | null;
                             /** @description What matched it, where it was merged */
                             by: ("doi" | "pmid" | "isbn" | "issn" | "work") | null;
@@ -101633,7 +102219,7 @@ export interface operations {
                                             /** @enum {string} */
                                             publication: "none" | "permitted" | "required";
                                         };
-                                        requires?: ("suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial")[];
+                                        requires?: ("suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial" | "noRetracted")[];
                                     }[];
                                     /** @description Absent: 30 days, and shown alone */
                                     review?: {
@@ -101834,7 +102420,7 @@ export interface operations {
                             publication?: "none" | "permitted" | "required";
                         };
                         /** @description What must be met to take it, or for each approval at a gate (LIF-004): a component's may require suggestions and threads, a document's any; each at most once */
-                        requires?: ("suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial")[];
+                        requires?: ("suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial" | "noRetracted")[];
                     }[];
                     /** @description Absent: 30 days, and shown alone */
                     review?: {
@@ -101927,7 +102513,7 @@ export interface operations {
                                     /** @enum {string} */
                                     publication: "none" | "permitted" | "required";
                                 };
-                                requires?: ("suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial")[];
+                                requires?: ("suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial" | "noRetracted")[];
                             }[];
                             /** @description Absent: 30 days, and shown alone */
                             review?: {
@@ -102142,7 +102728,7 @@ export interface operations {
                                     /** @enum {string} */
                                     publication: "none" | "permitted" | "required";
                                 };
-                                requires?: ("suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial")[];
+                                requires?: ("suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial" | "noRetracted")[];
                             }[];
                             /** @description Absent: 30 days, and shown alone */
                             review?: {

@@ -96,6 +96,7 @@ import { GeneratedLists, type Known } from './GeneratedLists.js';
 import { baselineLink, documentAccessLink, nodeLink } from './links.js';
 import { BaselinesTab } from './BaselinesTab.js';
 import { anchorFromSelection, type Placed } from '../review/anchoring.js';
+import { SourcesPanel } from '../review/SourcesPanel.js';
 import { RoundsPanel } from '../review/RoundsPanel.js';
 import { SuggestionsPanel } from '../review/SuggestionsPanel.js';
 import {
@@ -621,6 +622,8 @@ const DOCK_PANELS = [
   { key: 'suggestions', label: 'Suggestions' },
   // In Review (the RR plan, Task 4).
   { key: 'rounds', label: 'Rounds' },
+  // In Review: cited sources retracted or corrected (the XR plan, XR-G).
+  { key: 'sources', label: 'Sources' },
 ] as const;
 
 type DockPanel = (typeof DOCK_PANELS)[number]['key'];
@@ -2143,8 +2146,7 @@ export function DocumentPage({
     (each) =>
       (each.key !== 'document' || holdsOwn) &&
       (each.key !== 'table' || heldTable.holds) &&
-      ((each.key !== 'threads' && each.key !== 'suggestions' && each.key !== 'rounds') ||
-        reviewing) &&
+      (!['threads', 'suggestions', 'rounds', 'sources'].includes(each.key) || reviewing) &&
       (each.key !== 'assistant' || authoring),
   );
   // A remembered Document panel on a document that has none shows the part instead.
@@ -2646,6 +2648,20 @@ export function DocumentPage({
                           return node === undefined ? 'a component' : place(node);
                         }}
                         onChanged={() => setTextsAttempt((count) => count + 1)}
+                      />
+                    </div>
+                  )}
+                  {reviewing && (
+                    <div
+                      id={dockIds('sources').panel}
+                      role="tabpanel"
+                      aria-labelledby={dockIds('sources').tab}
+                      hidden={shownDock !== 'sources'}
+                    >
+                      <SourcesPanel
+                        client={client}
+                        document={document.id}
+                        active={shownDock === 'sources'}
                       />
                     </div>
                   )}

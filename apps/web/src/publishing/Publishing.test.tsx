@@ -151,6 +151,33 @@ describe('publishing from the document page', () => {
     });
   });
 
+  it('LIB-036 publishes despite a retracted source cited, warning of it', async () => {
+    const fake = service({
+      [`GET /v1/documents/${DOCUMENT}/publications`]: [listed([])],
+      [`POST /v1/documents/${DOCUMENT}/publications`]: [
+        {
+          ...queued(),
+          warnings: [
+            { code: 'source_retracted', count: 2 },
+            { code: 'source_corrected', count: 1 },
+          ],
+        },
+      ],
+      [`GET /v1/publication-requests/${REQUEST}`]: [
+        { ...queued(), state: 'done', publication: PUBLICATION },
+      ],
+    });
+    open(fake.fetch);
+    await screen.findByText('Nothing has been published from this document.');
+    await userEvent.click(screen.getByRole('button', { name: 'Publish as PDF' }));
+    expect(await screen.findByRole('link', { name: 'Open the publication' })).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Cited sources flagged by their source: 2 retracted, 1 corrected. Review lists them.',
+      ),
+    ).toBeInTheDocument();
+  });
+
   it('REU-027 publishes under a profile given in place of the document own, saying so, and under the document own once put back', async () => {
     const fake = service({
       [`GET /v1/documents/${DOCUMENT}/publications`]: [listed([])],

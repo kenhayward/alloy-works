@@ -22,4 +22,10 @@ describe('what a transition requires, said (the WF3 plan, WF3-B)', () => {
       ]),
     ).toBe('Not yet: 2 condition axes not set in the profile: audience, market.');
   });
+
+  it('LIB-036 says how many retracted sources a document cites', () => {
+    expect(unmetMessage([{ condition: 'noRetracted', count: 2, names: [], unreadable: 0 }])).toBe(
+      'Not yet: 2 retracted sources cited.',
+    );
+  });
 });
