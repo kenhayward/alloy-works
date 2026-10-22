@@ -747,6 +747,18 @@ export const auditKindSpecs = {
     'packages/db/src/extensions.ts',
   ),
   'organisation.changed': kind(['IAM-068'], empty, LATER),
+  // An import accepted into a document, its subject, or abandoned by its importer or by the sweep (the
+  // IM plan, IM-F): the import and how many components it made, never the file's name.
+  'import.accepted': kind(
+    ['LIF-067'],
+    z.strictObject({ import: Id, components: z.number().int().nonnegative() }),
+    'packages/db/src/imports.ts',
+  ),
+  'import.abandoned': kind(
+    ['LIF-067'],
+    z.strictObject({ swept: z.boolean() }),
+    'packages/db/src/imports.ts',
+  ),
   'import.restored': kind(['IMP-048'], empty, LATER),
   'library.changed': kind(['LIB-056'], empty, LATER),
   'line.merged': kind(['LIF-045'], empty, LATER),

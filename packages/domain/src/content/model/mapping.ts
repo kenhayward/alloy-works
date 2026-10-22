@@ -6,7 +6,7 @@
  * the condition that lets them drift apart while each looks correct.
  *
  * **Where each column was checked.** The OOXML column is grounded in what this repository already
- * emits and has tests over - `packages/domain/src/content/ooxml/export.ts` and
+ * emits and has tests over - `packages/domain/src/word/write.ts` and
  * `packages/domain/src/theme/ooxml.ts` - and, for the constructs no writer emits yet, in
  * `docs/design/word-output.md`, whose claims were checked by opening the writer's output in Word
  * (PUB-029). The tagged-PDF column is the standard structure types of ISO 32000-1, which is the

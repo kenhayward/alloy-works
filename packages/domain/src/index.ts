@@ -83,6 +83,8 @@ export * from './workflow/index.js';
 export * from './generation/index.js';
 // Citations: a bibliography entry, its key and its identities (docs/design/citations.md).
 export * from './library/index.js';
+// Import (the IM plan): a file read into a proposal of sections and components (docs/design/import.md).
+export * from './import/index.js';
 // Relationships (the R8 plan): declared types, and the ends a type permits.
 export {
   endsRefused,

@@ -11,7 +11,8 @@ import type { PlatformTables, TenantTransaction } from './tables.js';
  * An `impact_report` walks what a change reaches, uncapped, its subject the job (the R3 plan, R3-F).
  * A `cohort` makes a cohort's pending rows into documents, its subject the job (the R7 plan, R7-E).
  * An `embed` embeds an artifact's blocks its latest version lacks vectors for, its subject the artifact
- * (the G7 plan, G7-F).
+ * (the G7 plan, G7-F). An `import` reads an import's file into its proposal, its subject the import (the
+ * IM plan, IM-C).
  */
 export type JobKind =
   | 'sample_pdf'
@@ -24,7 +25,8 @@ export type JobKind =
   | 'cohort'
   | 'tenant_export'
   | 'range'
-  | 'embed';
+  | 'embed'
+  | 'import';
 
 /** What a worker is told: whose work, of what kind, about which id. Never any content. */
 export interface Job {

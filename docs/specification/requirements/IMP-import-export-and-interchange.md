@@ -115,7 +115,7 @@ to what gets kept.
 | **IMP-013** | Markdown and HTML must be importable with the same reporting requirements as Word                                                                                                                                                                                                  | T6         | Specified |
 | **IMP-014** | Bibliography entries must be importable in standard interchange formats (**LIB-009**)                                                                                                                                                                                              | T6         | Specified |
 | **IMP-015** | Terms and vocabularies must be importable (**LIB-028**)                                                                                                                                                                                                                            | T6         | Specified |
-| **IMP-016** | Structured content in a standard XML vocabulary should be importable, with a mapping the importer states rather than assumes                                                                                                                                                       | T6         | Specified |
+| **IMP-016** | Structured content in a standard XML vocabulary should be importable, with a mapping the importer states rather than assumes                                                                                                                                                       | T7         | Specified |
 | **IMP-017** | An import must never be able to create content that fails validation (**CNT-013**)                                                                                                                                                                                                 | Constraint | Specified |
 | **IMP-039** | The product's own export format must be importable, so that an export can be restored into a tenant. IMP-003's attended rule exists for the split judgement a legacy document needs; content that is already components needs no such judgement and must not be forced through one | T7         | Specified |
 
@@ -294,6 +294,21 @@ identifier, and only its tranche changes.
 | What was found                                                                                                                                                                                                                  | Change                                                         |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
 | Export and import - the product's own format restored, read back by a test, requested by an administrator, partial, following references or not - carry every kind of artifact, and are no more the data's than anything else's | **IMP-021, IMP-022, IMP-024, IMP-039 and IMP-040 moved to T7** |
+
+| Counts       | Before | After |
+| ------------ | ------ | ----- |
+| Requirements | 48     | 48    |
+
+### Import's design (ADR-0069), 2026-10-22
+
+Not a review. Designing import, Ken moved structured XML to the tranche that brings the library and
+the product's own format, recorded by [ADR-0069](../../decisions/0069-an-import-is-a-proposal-read-in-the-worker.md)
+and [the IM plan](../../plans/2026-10-22-im-import.md). A row moving tranche whole keeps its
+identifier, and only its tranche changes.
+
+| What was found                                                                          | Change                  |
+| --------------------------------------------------------------------------------------- | ----------------------- |
+| A standard XML vocabulary needs a stated mapping, nearer the product's own format in T7 | **IMP-016 moved to T7** |
 
 | Counts       | Before | After |
 | ------------ | ------ | ----- |

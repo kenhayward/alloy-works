@@ -1213,6 +1213,12 @@ describe('routes that check a permission', () => {
       status: 404,
     }),
     listTerms: () => ({ url: `/v1/spaces/${clinical}/terms`, status: 404 }),
+    listImports: () => ({ url: `/v1/spaces/${clinical}/imports`, status: 404 }),
+    createImport: () => ({
+      url: `/v1/spaces/${clinical}/imports`,
+      status: 404,
+      payload: { fileName: 'Probe.docx', fileType: 'docx' },
+    }),
     createTerm: () => ({
       url: `/v1/spaces/${clinical}/terms`,
       status: 404,

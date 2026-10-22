@@ -6412,7 +6412,7 @@
       "id": "IMP-016",
       "area": "IMP",
       "statement": "Structured content in a standard XML vocabulary should be importable, with a mapping the importer states rather than assumes",
-      "tranche": "T6",
+      "tranche": "T7",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
       "line": 118
@@ -9022,7 +9022,7 @@
       "id": "PUB-028",
       "area": "PUB",
       "statement": "Suggestions should be exportable as Word tracked changes, and Word tracked changes should be importable as suggestions (**COL**, **IMP**)",
-      "tranche": "T6",
+      "tranche": "T8",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
       "line": 132
@@ -17979,6 +17979,115 @@
       ]
     },
     {
+      "document": "import.md",
+      "owns": [
+        {
+          "id": "IMP-004",
+          "howItIsMet": "Splits from heading structure, each with its reason"
+        },
+        {
+          "id": "IMP-005",
+          "howItIsMet": "Tracked changes as suggestions attributed to their Word author, comments as threads"
+        },
+        {
+          "id": "IMP-006",
+          "howItIsMet": "Numbering, cross-references, footnotes and captions read as structure"
+        },
+        {
+          "id": "IMP-008",
+          "howItIsMet": "Abandoned at any point before acceptance, nothing left"
+        },
+        {
+          "id": "IMP-009",
+          "howItIsMet": "The identities the file carries listed before acceptance"
+        },
+        {
+          "id": "IMP-010",
+          "howItIsMet": "The tenant's policy: map, keep as text, or discard"
+        },
+        {
+          "id": "IMP-011",
+          "howItIsMet": "Which policy was applied recorded on what was imported"
+        },
+        {
+          "id": "IMP-028",
+          "howItIsMet": "Each part reviewed alone, beside its source and reason"
+        },
+        {
+          "id": "IMP-033",
+          "howItIsMet": "A reference whose target is outside the import listed before acceptance, with its source text"
+        },
+        {
+          "id": "IMP-034",
+          "howItIsMet": "Each such reference retargeted, converted to plain text and reported, or the import refused"
+        },
+        {
+          "id": "IMP-037",
+          "howItIsMet": "A re-import reviewed as a first is, its changes suggestions that become versions"
+        },
+        {
+          "id": "IMP-041",
+          "howItIsMet": "A person's moves, merges and renames validated as made"
+        },
+        {
+          "id": "IMP-042",
+          "howItIsMet": "A failed import leaves nothing and says what happened"
+        },
+        {
+          "id": "IMP-013",
+          "howItIsMet": "Markdown and HTML through the same proposal and report"
+        },
+        {
+          "id": "IMP-026",
+          "howItIsMet": "What a round trip keeps and loses stated in the product, on the import and in Help"
+        },
+        {
+          "id": "IMP-029",
+          "howItIsMet": "A proposal searched, filtered and returned to across sessions"
+        },
+        {
+          "id": "IMP-031",
+          "howItIsMet": "How much of a proposal was accepted unchanged recorded"
+        },
+        {
+          "id": "IMP-035",
+          "howItIsMet": "Source name, content hash, when and by whom recorded against everything made"
+        },
+        {
+          "id": "IMP-036",
+          "howItIsMet": "A source imported before said first, its changes shown, and an update offered"
+        },
+        {
+          "id": "CNT-168",
+          "howItIsMet": "Paste from Word keeps a heading a heading, and a pasted outline is offered as sections and components"
+        },
+        {
+          "id": "IMP-001",
+          "howItIsMet": "An outline of sections and components, never one blob"
+        },
+        {
+          "id": "IMP-003",
+          "howItIsMet": "Nothing made until a person accepts what they started"
+        },
+        {
+          "id": "IMP-007",
+          "howItIsMet": "What is left out or not read yet reported by kind, and tested"
+        },
+        {
+          "id": "IMP-017",
+          "howItIsMet": "Each component admitted as a paste is, so none fails validation"
+        },
+        {
+          "id": "IMP-030",
+          "howItIsMet": "Each split with its reason; no model makes a proposal (IMP-Q02)"
+        },
+        {
+          "id": "IMP-047",
+          "howItIsMet": "Macros, embedded objects, outside files and unallowed links never stored, and reported"
+        }
+      ]
+    },
+    {
       "document": "lifecycle.md",
       "owns": [
         {
@@ -21063,13 +21172,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 627,
+      "line": 641,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 640,
+      "line": 654,
       "kind": "title"
     },
     {
@@ -21543,7 +21652,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 2042,
+      "line": 2081,
       "kind": "title"
     },
     {
@@ -22009,6 +22118,18 @@
       "kind": "title"
     },
     {
+      "id": "IMP-004",
+      "file": "apps/service/src/import-routes.test.ts",
+      "line": 171,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-008",
+      "file": "apps/service/src/import-routes.test.ts",
+      "line": 171,
+      "kind": "title"
+    },
+    {
       "id": "COL-015",
       "file": "apps/service/src/inbox-routes.test.ts",
       "line": 169,
@@ -22083,7 +22204,7 @@
     {
       "id": "API-007",
       "file": "apps/service/src/listing-routes.test.ts",
-      "line": 370,
+      "line": 371,
       "kind": "title"
     },
     {
@@ -24547,6 +24668,24 @@
       "kind": "title"
     },
     {
+      "id": "IMP-004",
+      "file": "apps/web/src/imports/imports.test.tsx",
+      "line": 185,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-007",
+      "file": "apps/web/src/imports/imports.test.tsx",
+      "line": 185,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-008",
+      "file": "apps/web/src/imports/imports.test.tsx",
+      "line": 225,
+      "kind": "title"
+    },
+    {
       "id": "LIF-008",
       "file": "apps/web/src/lifecycle/Approvals.test.tsx",
       "line": 21,
@@ -26143,6 +26282,42 @@
       "kind": "title"
     },
     {
+      "id": "IMP-001",
+      "file": "apps/worker/src/import.test.ts",
+      "line": 148,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-003",
+      "file": "apps/worker/src/import.test.ts",
+      "line": 148,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-004",
+      "file": "apps/worker/src/import.test.ts",
+      "line": 148,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-007",
+      "file": "apps/worker/src/import.test.ts",
+      "line": 148,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-017",
+      "file": "apps/worker/src/import.test.ts",
+      "line": 148,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-042",
+      "file": "apps/worker/src/import.test.ts",
+      "line": 209,
+      "kind": "title"
+    },
+    {
       "id": "COL-035",
       "file": "apps/worker/src/inbox-sweep.test.ts",
       "line": 111,
@@ -27544,6 +27719,36 @@
       "id": "SCH-024",
       "file": "packages/db/src/impact.test.ts",
       "line": 249,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-001",
+      "file": "packages/db/src/imports.test.ts",
+      "line": 133,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-004",
+      "file": "packages/db/src/imports.test.ts",
+      "line": 133,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-008",
+      "file": "packages/db/src/imports.test.ts",
+      "line": 248,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-035",
+      "file": "packages/db/src/imports.test.ts",
+      "line": 163,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-042",
+      "file": "packages/db/src/imports.test.ts",
+      "line": 224,
       "kind": "title"
     },
     {
@@ -29007,13 +29212,13 @@
     {
       "id": "LIF-030",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 246,
+      "line": 251,
       "kind": "title"
     },
     {
       "id": "LIF-070",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 227,
+      "line": 232,
       "kind": "title"
     },
     {
@@ -29845,9 +30050,33 @@
       "kind": "title"
     },
     {
+      "id": "IMP-001",
+      "file": "packages/domain/src/import/proposal.test.ts",
+      "line": 38,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-004",
+      "file": "packages/domain/src/import/proposal.test.ts",
+      "line": 38,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-017",
+      "file": "packages/domain/src/import/proposal.test.ts",
+      "line": 88,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-030",
+      "file": "packages/domain/src/import/proposal.test.ts",
+      "line": 38,
+      "kind": "title"
+    },
+    {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 986,
+      "line": 992,
       "kind": "title"
     },
     {
@@ -31936,6 +32165,30 @@
       "id": "IAM-075",
       "file": "packages/objects/src/store.test.ts",
       "line": 72,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-001",
+      "file": "packages/readers/src/docx/docx.test.ts",
+      "line": 297,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-004",
+      "file": "packages/readers/src/docx/docx.test.ts",
+      "line": 93,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-007",
+      "file": "packages/readers/src/docx/docx.test.ts",
+      "line": 218,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-047",
+      "file": "packages/readers/src/docx/docx.test.ts",
+      "line": 246,
       "kind": "title"
     },
     {

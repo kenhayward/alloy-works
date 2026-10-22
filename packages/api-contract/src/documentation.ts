@@ -35,6 +35,11 @@ export const documentationGroups = [
       },
       { name: 'Assets', description: 'Upload and retrieve image assets.' },
       {
+        name: 'Imports',
+        description:
+          'Import a Word, Markdown or HTML file into a space as a proposed outline of sections and components, and accept or abandon it.',
+      },
+      {
         name: 'Threads',
         description:
           'Discuss a span, a cell, a component or a section beside the content, and resolve it.',
@@ -625,6 +630,15 @@ const operationTags = {
     'compareComponentLine',
     'bringComponentLineBack',
   ],
+  Imports: [
+    'createImport',
+    'putImportFile',
+    'listImports',
+    'getImport',
+    'setImportLevels',
+    'acceptImport',
+    'abandonImport',
+  ],
   'Audit log': ['listAuditEvents', 'requestAuditExport', 'getAuditExport', 'downloadAuditExport'],
 } as const;
 
@@ -1116,6 +1130,20 @@ const descriptions: Readonly<Record<string, string>> = {
     'Lists each purpose - drafting, chat, summarising and embedding - and the endpoint it goes to, or none, which turns that capability off. Needs administer at the environment.',
   setModelRoute:
     'Sends a purpose to an endpoint in use with a key set for where it points, or to none. Recorded as a route set. Needs administer at the environment.',
+  createImport:
+    'Makes an import in a space, awaiting its file: its name and whether it is a Word document, Markdown or HTML. Send the bytes next. An import is seen only by whoever made it and the space’s administrators. Needs create in the space.',
+  putImportFile:
+    'Fills an import with its file, up to 25 MB, checked from its bytes: a Word document must be a zip holding word/document.xml. The worker then reads it into a proposal; nothing is made in the space until the import is accepted. Only its importer may send it.',
+  listImports:
+    'Lists the caller’s imports in a space, the newest first, or every import there for the space’s administrator: each with its state, and when a proposal left alone is abandoned. Needs read in the space.',
+  getImport:
+    'Returns an import: its state, the outline it proposes, each part with the reason it starts where it does and its text as the file had it, and the report of what was left out, kept differently or not read yet. Only its importer and the space’s administrators may read it.',
+  setImportLevels:
+    'Changes the heading levels a proposal breaks out at: which level starts a section and which a component. The file is read again. Only its importer may change them.',
+  acceptImport:
+    'Accepts a proposal: its document, sections and components are made in one act, by the person accepting, each at 0.1 and each recording the file it came from. Blank, or from the template named. Only its importer may accept it, and they need create in the space.',
+  abandonImport:
+    'Abandons an import before it is accepted: its proposal and its file are removed and nothing of it is left in the space. Recorded as an import abandoned. Only its importer and the space’s administrators may abandon it.',
   requestTenantExport:
     'Asks for an export of the whole environment as it stands now, written by a job into one ZIP archive: a JSON Lines file each for its artifacts, versions, relationships, baselines and publications, the bytes its assets and publications hold under objects/ by their SHA-256, and manifest.json saying what it holds and what it leaves out. Recorded as an export produced. Needs administer at the environment.',
   listTenantExports:

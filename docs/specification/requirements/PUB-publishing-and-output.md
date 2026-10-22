@@ -129,7 +129,7 @@ measurement with the rest of Word's fidelity to the PDF
 | **PUB-025** | Footnotes must be real Word footnotes, numbered by Word                                                                                                                                                                                                                                                                                                                                 | T1         | Specified |
 | **PUB-026** | Cross-references must be fields Word can update, not the numbers they resolved to                                                                                                                                                                                                                                                                                                       | T1         | Specified |
 | **PUB-027** | Styles must map to Word styles, so that a recipient can restyle the document rather than receiving direct formatting                                                                                                                                                                                                                                                                    | T1         | Specified |
-| **PUB-028** | Suggestions should be exportable as Word tracked changes, and Word tracked changes should be importable as suggestions (**COL**, **IMP**)                                                                                                                                                                                                                                               | T6         | Specified |
+| **PUB-028** | Suggestions should be exportable as Word tracked changes, and Word tracked changes should be importable as suggestions (**COL**, **IMP**)                                                                                                                                                                                                                                               | T8         | Specified |
 | **PUB-029** | Word output must be verified by opening it in Word, as a standing practice rather than a one-off, and every material change to the emitter must be re-verified                                                                                                                                                                                                                          | T1         | Specified |
 | **PUB-065** | Word output must carry the resolved document's content, numbering and cross-references and leave pagination to Word; the PDF is the output a page number cites, and the publication record must say so                                                                                                                                                                                  | Constraint | Specified |
 | **PUB-066** | Contents, lists of figures and tables, and page references in Word output must be fields that Word refreshes when the document opens, never page numbers copied from the PDF                                                                                                                                                                                                            | Constraint | Specified |
@@ -642,6 +642,21 @@ keeps its identifier, and only its tranche changes.
 | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | An approval page shows approvals, which arrive with workflow           | **PUB-089 moved to T9**. PUB-075 stays, early in T3                                                                                                                                                      |
 | A publication's record names generated content, which arrives with GEN | **PUB-082 moved to T5** (Ken, 2026-10-11): its first half holds in T3, where a baseline's publication reads only its pins (the BL plan), and the whole needs accepted generated content, which T5 brings |
+
+| Counts       | Before                      | After                       |
+| ------------ | --------------------------- | --------------------------- |
+| Requirements | 111, of which 16 superseded | 111, of which 16 superseded |
+
+### Import's design (ADR-0069), 2026-10-22
+
+Not a review. Designing import, Ken moved review in Word to T8, beside Word's fidelity, recorded by
+[ADR-0069](../../decisions/0069-an-import-is-a-proposal-read-in-the-worker.md) and
+[the IM plan](../../plans/2026-10-22-im-import.md). A row moving tranche whole keeps its identifier,
+and only its tranche changes.
+
+| What was found                                                                                                    | Change                  |
+| ----------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| Tracked changes read as suggestions are IMP-005's, in T6; writing suggestions as tracked changes is Word fidelity | **PUB-028 moved to T8** |
 
 | Counts       | Before                      | After                       |
 | ------------ | --------------------------- | --------------------------- |

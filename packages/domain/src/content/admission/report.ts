@@ -52,6 +52,13 @@ export const reportMessages = {
     footnote:
       'A footnote was left out, because its note could not be found or it stood inside another note.',
     control: 'Invisible control characters were removed.',
+    // An import's (the IM plan, IM-C): what a file holds that never enters the model, and what the
+    // reader does not read yet, named in `detail`.
+    macro: 'Macros were removed. Macros are never stored or run.',
+    externalRelationship:
+      'A link to a file outside the document was removed. Nothing outside the file is fetched.',
+    notYetRead: 'Something the import does not read yet was left out.',
+    pageSetup: 'The page size, margins and columns were left out. The layout decides them.',
   },
   rewritten: {
     hyperlink: 'A link target was rewritten in the form every browser reads the same way.',

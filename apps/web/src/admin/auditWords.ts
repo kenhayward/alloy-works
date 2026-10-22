@@ -52,6 +52,8 @@ export const KIND_WORDS: Readonly<Record<AuditKind, string>> = {
   'group.member_removed': 'Removed from a group',
   'hold.applied': 'Hold placed',
   'hold.removed': 'Hold released',
+  'import.accepted': 'Import accepted',
+  'import.abandoned': 'Import abandoned',
   'import.restored': 'Import restored',
   'invitation.accepted': 'Invitation accepted',
   'invitation.sent': 'Invited',

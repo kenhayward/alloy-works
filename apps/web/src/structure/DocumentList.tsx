@@ -23,6 +23,7 @@ import { Notice } from '../states/Notice.js';
 import styles from './DocumentList.module.css';
 import { documentLink } from './links.js';
 import { NewDocument } from './NewDocument.js';
+import { ImportFile } from '../imports/ImportFile.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -161,6 +162,7 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
   // The deleted alone, listed by their own route (the DL plan, DL-H).
   const [deleted, setDeleted] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [importing, setImporting] = useState(false);
   const creatable = useCreatableSpaces(client);
   const fetchPage = useCallback(
     async (cursor: string | null) => {
@@ -297,14 +299,24 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
         <div className={styles['titleRow']}>
           <h1 id="documents-heading">Documents</h1>
           {mayCreate && (
-            <button type="button" className="primary" onClick={() => setCreating(true)}>
-              New document
-            </button>
+            <span>
+              <button type="button" onClick={() => setImporting(true)}>
+                Import
+              </button>{' '}
+              <button type="button" className="primary" onClick={() => setCreating(true)}>
+                New document
+              </button>
+            </span>
           )}
         </div>
         {creating && (
           <Modal labelledBy="new-document-heading" onClose={() => setCreating(false)}>
             <NewDocument client={client} onCreated={onOpen} />
+          </Modal>
+        )}
+        {importing && (
+          <Modal labelledBy="import-heading" onClose={() => setImporting(false)}>
+            <ImportFile client={client} />
           </Modal>
         )}
         <SortChooser options={SORTS} chosen={sort} onChoose={setSort} />

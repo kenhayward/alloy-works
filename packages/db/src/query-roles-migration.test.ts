@@ -222,6 +222,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0152_reference_extensions',
       '0153_terms',
       '0154_publication_terms',
+      '0155_imports',
     ]);
     expect(applied[own.id]).toEqual([
       '0058_query_roles',
@@ -321,6 +322,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0152_reference_extensions',
       '0153_terms',
       '0154_publication_terms',
+      '0155_imports',
     ]);
 
     expect(await queryRoles(development)).toEqual([

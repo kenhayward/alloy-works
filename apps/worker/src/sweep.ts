@@ -18,6 +18,7 @@ import {
   sweepQueryEmbeddings,
   sweepEmbeddingLag,
   sweepWebhookDeliveries,
+  sweepImports,
   expireTenantExport,
   tenantExportsDue,
   type JobQueue,
@@ -428,4 +429,34 @@ export async function sweepWebhookDeliveriesEverywhere(
     }
   }
   return removed;
+}
+
+/**
+ * Proposals left alone, in every tenant (the IM plan, IM-F): each importer told seven days before, and
+ * each abandoned at 30 days as the system, its file removed from the store in the same transaction.
+ */
+export async function sweepImportsEverywhere(
+  db: TenantDatabase,
+  stores: ObjectStores,
+  log: WorkerLog,
+): Promise<{ readonly warned: number; readonly swept: number }> {
+  let warned = 0;
+  let swept = 0;
+  for (const tenant of await db.tenants()) {
+    try {
+      const done = await db.withTenant(
+        tenant,
+        async (trx) => {
+          const store = await stores.forTenant(trx, tenant);
+          return sweepImports(trx, (key) => store.remove(key));
+        },
+        { actorKind: 'system' },
+      );
+      warned += done.warned;
+      swept += done.swept;
+    } catch (error) {
+      log.error({ tenant: tenant.id, err: error }, 'the import sweep failed in a tenant');
+    }
+  }
+  return { warned, swept };
 }

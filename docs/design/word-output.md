@@ -1352,7 +1352,7 @@ waits for Word's style properties to agree with the PDF's where W15.2 measures t
 W14.3 the regression corpus shows each keep rule reaching Word as its own property, and themes.md
 names the gap that is left: Word's own page breaks; since ADR-0032 PUB-092 is superseded by PUB-106,
 the PDF's half, cited on the corpus, and PUB-107, Word's own pages, in T8), PUB-073
-for T3's baselines, and PUB-028, review in Word, is T6.
+for T3's baselines, and PUB-028, review in Word, is T8.
 
 **Left, for anyone after T1.** Nothing of WO-M is left. Open: the two questions under
 [Open questions](#open-questions) - whether recipients accept Word's prompt to update fields, and
@@ -1528,4 +1528,4 @@ per property.
 | ID  | Question                                                                                                                                                                             |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | New | Whether recipients accept Word's field-update prompt. The prompt works; whether a client's reader trusts it is a question for real recipients. If not, ADR-0015 names the fallback   |
-| New | Whether the output includes review - suggestions and comments - by default, or only when the publisher asks. PUB-028 is T6, and a client copy with internal comments in it is a leak |
+| New | Whether the output includes review - suggestions and comments - by default, or only when the publisher asks. PUB-028 is T8, and a client copy with internal comments in it is a leak |

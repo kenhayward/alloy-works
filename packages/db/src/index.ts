@@ -236,6 +236,34 @@ export {
   type TenantExport,
 } from './tenant-export.js';
 export {
+  IMPORT_KEPT_DAYS,
+  IMPORT_WARNED_DAYS,
+  abandonImport,
+  acceptImport,
+  changeImportLevels,
+  createDocumentWithComponents,
+  createImport,
+  failImport,
+  importParts,
+  listImports,
+  provenanceOf,
+  readImport,
+  receiveImportFile,
+  recordProposal,
+  sweepImports,
+} from './imports.js';
+export type {
+  AcceptImportAnswer,
+  ImportFailure,
+  ImportFileType,
+  ImportReportEntry,
+  ImportState,
+  NewOutlinePart,
+  RemoveObject,
+  StoredImport,
+  StoredImportPart,
+} from './imports.js';
+export {
   failRangePreview,
   latestIteration,
   rangePreviewOf,

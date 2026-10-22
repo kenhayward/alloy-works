@@ -166,6 +166,9 @@ importers:
       '@types/node':
         specifier: ^24.5.2
         version: 24.13.4
+      fflate:
+        specifier: ^0.8.3
+        version: 0.8.3
       tsx:
         specifier: ^4.23.13
         version: 4.23.13
@@ -248,6 +251,9 @@ importers:
       '@alloy-works/objects':
         specifier: workspace:^
         version: link:../../packages/objects
+      '@alloy-works/readers':
+        specifier: workspace:^
+        version: link:../../packages/readers
       fflate:
         specifier: ^0.8.3
         version: 0.8.3
@@ -505,12 +511,18 @@ importers:
       '@alloy-works/domain':
         specifier: workspace:^
         version: link:../domain
+      fflate:
+        specifier: ^0.8.3
+        version: 0.8.3
       markdown-it:
         specifier: 14.1.0
         version: 14.1.0
       parse5:
         specifier: 8.0.1
         version: 8.0.1
+      saxes:
+        specifier: 6.0.0
+        version: 6.0.0
     devDependencies:
       '@types/markdown-it':
         specifier: 14.1.2

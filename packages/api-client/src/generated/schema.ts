@@ -3519,6 +3519,106 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/imports/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * An import: its state, its proposed outline and what its report says
+         * @description Returns an import: its state, the outline it proposes, each part with the reason it starts where it does and its text as the file had it, and the report of what was left out, kept differently or not read yet. Only its importer and the space’s administrators may read it.
+         */
+        get: operations["getImport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/imports/{id}/abandon": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Abandon an import before it is accepted, leaving nothing of it
+         * @description Abandons an import before it is accepted: its proposal and its file are removed and nothing of it is left in the space. Recorded as an import abandoned. Only its importer and the space’s administrators may abandon it.
+         */
+        post: operations["abandonImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/imports/{id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept a proposal, making its document, sections and components in one act
+         * @description Accepts a proposal: its document, sections and components are made in one act, by the person accepting, each at 0.1 and each recording the file it came from. Blank, or from the template named. Only its importer may accept it, and they need create in the space.
+         */
+        post: operations["acceptImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/imports/{id}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Fill an import with its file, which the worker then reads into a proposal
+         * @description Fills an import with its file, up to 25 MB, checked from its bytes: a Word document must be a zip holding word/document.xml. The worker then reads it into a proposal; nothing is made in the space until the import is accepted. Only its importer may send it.
+         */
+        put: operations["putImportFile"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/imports/{id}/levels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Change the heading levels a proposal breaks out at, reading it again
+         * @description Changes the heading levels a proposal breaks out at: which level starts a section and which a component. The file is read again. Only its importer may change them.
+         */
+        put: operations["setImportLevels"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/inbox": {
         parameters: {
             query?: never;
@@ -5617,6 +5717,30 @@ export interface paths {
          * @description Creates a document at version 0.1 in the named space, either empty or from a template’s starting outline.
          */
         post: operations["createDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/spaces/{space}/imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The caller’s imports in this space, or every one for its administrator
+         * @description Lists the caller’s imports in a space, the newest first, or every import there for the space’s administrator: each with its state, and when a proposal left alone is abandoned. Needs read in the space.
+         */
+        get: operations["listImports"];
+        put?: never;
+        /**
+         * Make an import in this space, awaiting its file
+         * @description Makes an import in a space, awaiting its file: its name and whether it is a Word document, Markdown or HTML. Send the bytes next. An import is seen only by whoever made it and the space’s administrators. Needs create in the space.
+         */
+        post: operations["createImport"];
         delete?: never;
         options?: never;
         head?: never;
@@ -67706,6 +67830,1104 @@ export interface operations {
             };
         };
     };
+    getImport: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The import */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": "example",
+                     *       "importer": "example",
+                     *       "fileName": "example",
+                     *       "fileType": "docx",
+                     *       "state": "awaiting",
+                     *       "failure": "file_unreadable",
+                     *       "document": "example",
+                     *       "createdAt": "example",
+                     *       "sweepsAt": "example",
+                     *       "levels": {
+                     *         "section": 1,
+                     *         "component": 2
+                     *       },
+                     *       "title": "example",
+                     *       "parts": [],
+                     *       "report": []
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        space: string;
+                        importer: string;
+                        fileName: string;
+                        /** @enum {string} */
+                        fileType: "docx" | "markdown" | "html";
+                        /**
+                         * @description `awaiting` its file; `reading` it; `proposed`, its outline to review; `accepted` into a document; `abandoned`, or `failed` with why, leaving nothing
+                         * @enum {string}
+                         */
+                        state: "awaiting" | "reading" | "proposed" | "accepted" | "abandoned" | "failed";
+                        /** @description Why it failed, once failed */
+                        failure: ("file_unreadable" | "file_unsafe" | "file_too_large" | "file_missing" | "reading_failed") | null;
+                        /** @description The document it made, once accepted */
+                        document: string | null;
+                        createdAt: string;
+                        /** @description When a proposal left alone is abandoned: 30 days after it last changed */
+                        sweepsAt: string | null;
+                        levels: {
+                            /** @description The heading level that starts a section */
+                            section: number;
+                            /** @description The heading level that starts a component, below the section’s */
+                            component: number;
+                        };
+                        /** @description The title the file names, where it names one */
+                        title: string | null;
+                        /** @description The proposed outline, in order */
+                        parts: {
+                            id: string;
+                            /** @enum {string} */
+                            kind: "section" | "component";
+                            title: string;
+                            /** @description The section it stands under; null at the top */
+                            parent: string | null;
+                            /** @description Why the part starts where it does: the heading, by its style and text; or what came before the first heading under it */
+                            reason: {
+                                /** @enum {string} */
+                                rule: "heading" | "beforeFirstComponent" | "beforeFirstHeading";
+                                style?: string;
+                                text?: string;
+                                level?: number;
+                            };
+                            /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted */
+                            flags: ("empty" | "refused")[];
+                            /** @description How many blocks it holds */
+                            blocks: number;
+                            /** @description Its text as the file had it, its heading first */
+                            source: string;
+                        }[];
+                        /** @description What was left out, kept differently, or not read yet (IMP-007) */
+                        report: {
+                            stage: string;
+                            /** @enum {string} */
+                            action: "discarded" | "rewritten" | "kept" | "refused";
+                            subject: string;
+                            /** @description A fixed sentence saying what happened, never quoting the file */
+                            message: string;
+                            /** @description What it was about, as data: shown as text */
+                            detail?: string;
+                            count?: number;
+                            /** @description The part it was about, by its place; null for the file */
+                            part: number | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such import, or one the caller neither made nor administers the space of */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    abandonImport: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The import, abandoned */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": "example",
+                     *       "importer": "example",
+                     *       "fileName": "example",
+                     *       "fileType": "docx",
+                     *       "state": "awaiting",
+                     *       "failure": "file_unreadable",
+                     *       "document": "example",
+                     *       "createdAt": "example",
+                     *       "sweepsAt": "example",
+                     *       "levels": {
+                     *         "section": 1,
+                     *         "component": 2
+                     *       },
+                     *       "title": "example",
+                     *       "parts": [],
+                     *       "report": []
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        space: string;
+                        importer: string;
+                        fileName: string;
+                        /** @enum {string} */
+                        fileType: "docx" | "markdown" | "html";
+                        /**
+                         * @description `awaiting` its file; `reading` it; `proposed`, its outline to review; `accepted` into a document; `abandoned`, or `failed` with why, leaving nothing
+                         * @enum {string}
+                         */
+                        state: "awaiting" | "reading" | "proposed" | "accepted" | "abandoned" | "failed";
+                        /** @description Why it failed, once failed */
+                        failure: ("file_unreadable" | "file_unsafe" | "file_too_large" | "file_missing" | "reading_failed") | null;
+                        /** @description The document it made, once accepted */
+                        document: string | null;
+                        createdAt: string;
+                        /** @description When a proposal left alone is abandoned: 30 days after it last changed */
+                        sweepsAt: string | null;
+                        levels: {
+                            /** @description The heading level that starts a section */
+                            section: number;
+                            /** @description The heading level that starts a component, below the section’s */
+                            component: number;
+                        };
+                        /** @description The title the file names, where it names one */
+                        title: string | null;
+                        /** @description The proposed outline, in order */
+                        parts: {
+                            id: string;
+                            /** @enum {string} */
+                            kind: "section" | "component";
+                            title: string;
+                            /** @description The section it stands under; null at the top */
+                            parent: string | null;
+                            /** @description Why the part starts where it does: the heading, by its style and text; or what came before the first heading under it */
+                            reason: {
+                                /** @enum {string} */
+                                rule: "heading" | "beforeFirstComponent" | "beforeFirstHeading";
+                                style?: string;
+                                text?: string;
+                                level?: number;
+                            };
+                            /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted */
+                            flags: ("empty" | "refused")[];
+                            /** @description How many blocks it holds */
+                            blocks: number;
+                            /** @description Its text as the file had it, its heading first */
+                            source: string;
+                        }[];
+                        /** @description What was left out, kept differently, or not read yet (IMP-007) */
+                        report: {
+                            stage: string;
+                            /** @enum {string} */
+                            action: "discarded" | "rewritten" | "kept" | "refused";
+                            subject: string;
+                            /** @description A fixed sentence saying what happened, never quoting the file */
+                            message: string;
+                            /** @description What it was about, as data: shown as text */
+                            detail?: string;
+                            count?: number;
+                            /** @description The part it was about, by its place; null for the file */
+                            part: number | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such import, or one the caller neither made nor administers the space of */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `import_not_open`: it is already accepted, abandoned or failed */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    acceptImport: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /** @example {} */
+                "application/json": {
+                    /** @description The document’s title; the one the file names, or its name, where absent */
+                    title?: string;
+                    /** @description The template to make the document from; a blank document where absent */
+                    template?: string & (unknown & unknown);
+                    /** @description The language of the document and its components; the file’s, or en, where absent */
+                    language?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The import, accepted, and the document it made */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "import": {
+                     *         "id": "example",
+                     *         "space": "example",
+                     *         "importer": "example",
+                     *         "fileName": "example",
+                     *         "fileType": "docx",
+                     *         "state": "awaiting",
+                     *         "failure": "file_unreadable",
+                     *         "document": "example",
+                     *         "createdAt": "example",
+                     *         "sweepsAt": "example",
+                     *         "levels": {
+                     *           "section": 1,
+                     *           "component": 2
+                     *         },
+                     *         "title": "example",
+                     *         "parts": [],
+                     *         "report": []
+                     *       },
+                     *       "document": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        import: {
+                            id: string;
+                            space: string;
+                            importer: string;
+                            fileName: string;
+                            /** @enum {string} */
+                            fileType: "docx" | "markdown" | "html";
+                            /**
+                             * @description `awaiting` its file; `reading` it; `proposed`, its outline to review; `accepted` into a document; `abandoned`, or `failed` with why, leaving nothing
+                             * @enum {string}
+                             */
+                            state: "awaiting" | "reading" | "proposed" | "accepted" | "abandoned" | "failed";
+                            /** @description Why it failed, once failed */
+                            failure: ("file_unreadable" | "file_unsafe" | "file_too_large" | "file_missing" | "reading_failed") | null;
+                            /** @description The document it made, once accepted */
+                            document: string | null;
+                            createdAt: string;
+                            /** @description When a proposal left alone is abandoned: 30 days after it last changed */
+                            sweepsAt: string | null;
+                            levels: {
+                                /** @description The heading level that starts a section */
+                                section: number;
+                                /** @description The heading level that starts a component, below the section’s */
+                                component: number;
+                            };
+                            /** @description The title the file names, where it names one */
+                            title: string | null;
+                            /** @description The proposed outline, in order */
+                            parts: {
+                                id: string;
+                                /** @enum {string} */
+                                kind: "section" | "component";
+                                title: string;
+                                /** @description The section it stands under; null at the top */
+                                parent: string | null;
+                                /** @description Why the part starts where it does: the heading, by its style and text; or what came before the first heading under it */
+                                reason: {
+                                    /** @enum {string} */
+                                    rule: "heading" | "beforeFirstComponent" | "beforeFirstHeading";
+                                    style?: string;
+                                    text?: string;
+                                    level?: number;
+                                };
+                                /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted */
+                                flags: ("empty" | "refused")[];
+                                /** @description How many blocks it holds */
+                                blocks: number;
+                                /** @description Its text as the file had it, its heading first */
+                                source: string;
+                            }[];
+                            /** @description What was left out, kept differently, or not read yet (IMP-007) */
+                            report: {
+                                stage: string;
+                                /** @enum {string} */
+                                action: "discarded" | "rewritten" | "kept" | "refused";
+                                subject: string;
+                                /** @description A fixed sentence saying what happened, never quoting the file */
+                                message: string;
+                                /** @description What it was about, as data: shown as text */
+                                detail?: string;
+                                count?: number;
+                                /** @description The part it was about, by its place; null for the file */
+                                part: number | null;
+                            }[];
+                        };
+                        /** @description The document it made */
+                        document: string;
+                    };
+                };
+            };
+            /** @description `content_invalid`: the title or language is not one a document takes; `template_unresolved`: the template does not resolve */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may no longer create in the space */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such import, or one the caller neither made nor administers the space of */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `import_not_proposed`: it is not proposed */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    putImportFile: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/octet-stream": string;
+            };
+        };
+        responses: {
+            /** @description The import, reading */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": "example",
+                     *       "importer": "example",
+                     *       "fileName": "example",
+                     *       "fileType": "docx",
+                     *       "state": "awaiting",
+                     *       "failure": "file_unreadable",
+                     *       "document": "example",
+                     *       "createdAt": "example",
+                     *       "sweepsAt": "example",
+                     *       "levels": {
+                     *         "section": 1,
+                     *         "component": 2
+                     *       },
+                     *       "title": "example",
+                     *       "parts": [],
+                     *       "report": []
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        space: string;
+                        importer: string;
+                        fileName: string;
+                        /** @enum {string} */
+                        fileType: "docx" | "markdown" | "html";
+                        /**
+                         * @description `awaiting` its file; `reading` it; `proposed`, its outline to review; `accepted` into a document; `abandoned`, or `failed` with why, leaving nothing
+                         * @enum {string}
+                         */
+                        state: "awaiting" | "reading" | "proposed" | "accepted" | "abandoned" | "failed";
+                        /** @description Why it failed, once failed */
+                        failure: ("file_unreadable" | "file_unsafe" | "file_too_large" | "file_missing" | "reading_failed") | null;
+                        /** @description The document it made, once accepted */
+                        document: string | null;
+                        createdAt: string;
+                        /** @description When a proposal left alone is abandoned: 30 days after it last changed */
+                        sweepsAt: string | null;
+                        levels: {
+                            /** @description The heading level that starts a section */
+                            section: number;
+                            /** @description The heading level that starts a component, below the section’s */
+                            component: number;
+                        };
+                        /** @description The title the file names, where it names one */
+                        title: string | null;
+                        /** @description The proposed outline, in order */
+                        parts: {
+                            id: string;
+                            /** @enum {string} */
+                            kind: "section" | "component";
+                            title: string;
+                            /** @description The section it stands under; null at the top */
+                            parent: string | null;
+                            /** @description Why the part starts where it does: the heading, by its style and text; or what came before the first heading under it */
+                            reason: {
+                                /** @enum {string} */
+                                rule: "heading" | "beforeFirstComponent" | "beforeFirstHeading";
+                                style?: string;
+                                text?: string;
+                                level?: number;
+                            };
+                            /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted */
+                            flags: ("empty" | "refused")[];
+                            /** @description How many blocks it holds */
+                            blocks: number;
+                            /** @description Its text as the file had it, its heading first */
+                            source: string;
+                        }[];
+                        /** @description What was left out, kept differently, or not read yet (IMP-007) */
+                        report: {
+                            stage: string;
+                            /** @enum {string} */
+                            action: "discarded" | "rewritten" | "kept" | "refused";
+                            subject: string;
+                            /** @description A fixed sentence saying what happened, never quoting the file */
+                            message: string;
+                            /** @description What it was about, as data: shown as text */
+                            detail?: string;
+                            count?: number;
+                            /** @description The part it was about, by its place; null for the file */
+                            part: number | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description `import_file_not_permitted`: the bytes are not what the import says, read from them: a Word document is a zip holding word/document.xml, Markdown and HTML are UTF-8 text */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such import, or one the caller neither made nor administers the space of */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `import_filled`: the import already has its file */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `import_too_large`: more than 25 MB */
+            413: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `import_bytes_expected`: the body is not application/octet-stream */
+            415: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    setImportLevels: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "section": 1,
+                 *       "component": 2
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The heading level that starts a section */
+                    section: number;
+                    /** @description The heading level that starts a component, below the section’s */
+                    component: number;
+                };
+            };
+        };
+        responses: {
+            /** @description The import, reading again */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": "example",
+                     *       "importer": "example",
+                     *       "fileName": "example",
+                     *       "fileType": "docx",
+                     *       "state": "awaiting",
+                     *       "failure": "file_unreadable",
+                     *       "document": "example",
+                     *       "createdAt": "example",
+                     *       "sweepsAt": "example",
+                     *       "levels": {
+                     *         "section": 1,
+                     *         "component": 2
+                     *       },
+                     *       "title": "example",
+                     *       "parts": [],
+                     *       "report": []
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        space: string;
+                        importer: string;
+                        fileName: string;
+                        /** @enum {string} */
+                        fileType: "docx" | "markdown" | "html";
+                        /**
+                         * @description `awaiting` its file; `reading` it; `proposed`, its outline to review; `accepted` into a document; `abandoned`, or `failed` with why, leaving nothing
+                         * @enum {string}
+                         */
+                        state: "awaiting" | "reading" | "proposed" | "accepted" | "abandoned" | "failed";
+                        /** @description Why it failed, once failed */
+                        failure: ("file_unreadable" | "file_unsafe" | "file_too_large" | "file_missing" | "reading_failed") | null;
+                        /** @description The document it made, once accepted */
+                        document: string | null;
+                        createdAt: string;
+                        /** @description When a proposal left alone is abandoned: 30 days after it last changed */
+                        sweepsAt: string | null;
+                        levels: {
+                            /** @description The heading level that starts a section */
+                            section: number;
+                            /** @description The heading level that starts a component, below the section’s */
+                            component: number;
+                        };
+                        /** @description The title the file names, where it names one */
+                        title: string | null;
+                        /** @description The proposed outline, in order */
+                        parts: {
+                            id: string;
+                            /** @enum {string} */
+                            kind: "section" | "component";
+                            title: string;
+                            /** @description The section it stands under; null at the top */
+                            parent: string | null;
+                            /** @description Why the part starts where it does: the heading, by its style and text; or what came before the first heading under it */
+                            reason: {
+                                /** @enum {string} */
+                                rule: "heading" | "beforeFirstComponent" | "beforeFirstHeading";
+                                style?: string;
+                                text?: string;
+                                level?: number;
+                            };
+                            /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted */
+                            flags: ("empty" | "refused")[];
+                            /** @description How many blocks it holds */
+                            blocks: number;
+                            /** @description Its text as the file had it, its heading first */
+                            source: string;
+                        }[];
+                        /** @description What was left out, kept differently, or not read yet (IMP-007) */
+                        report: {
+                            stage: string;
+                            /** @enum {string} */
+                            action: "discarded" | "rewritten" | "kept" | "refused";
+                            subject: string;
+                            /** @description A fixed sentence saying what happened, never quoting the file */
+                            message: string;
+                            /** @description What it was about, as data: shown as text */
+                            detail?: string;
+                            count?: number;
+                            /** @description The part it was about, by its place; null for the file */
+                            part: number | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description `import_levels_invalid`: a component’s level is not below a section’s */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such import, or one the caller neither made nor administers the space of */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `import_not_proposed`: it is not proposed */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     listInbox: {
         parameters: {
             query?: {
@@ -67741,7 +68963,7 @@ export interface operations {
                         notifications: {
                             id: string & (unknown & unknown);
                             /** @enum {string} */
-                            kind: "mention" | "reply" | "resolution" | "round" | "digest" | "budget" | "webhook" | "reference";
+                            kind: "mention" | "reply" | "resolution" | "round" | "digest" | "budget" | "webhook" | "reference" | "import";
                             /** @description Who did it; null on a digest, or where the caller may no longer read what it is on */
                             actor: {
                                 id: string & (unknown & unknown);
@@ -67810,6 +69032,16 @@ export interface operations {
                                 entry: string & (unknown & unknown);
                                 /** @enum {string} */
                                 outcome: "retracted" | "corrected";
+                            } | null;
+                            /** @description A proposal left alone, abandoned in seven days; null otherwise */
+                            import: {
+                                /** @description The import */
+                                id: string & (unknown & unknown);
+                                /**
+                                 * Format: date-time
+                                 * @description When it is abandoned unless it is acted on
+                                 */
+                                sweepsAt: string;
                             } | null;
                             /** Format: date-time */
                             at: string;
@@ -95847,6 +97079,379 @@ export interface operations {
             };
             /** @description `connector_unavailable`: the template's required components run queries and no connector is reachable */
             503: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listImports: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: string;
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                space: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The imports, the newest first, a page at a time */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "next": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        items: {
+                            id: string;
+                            space: string;
+                            importer: string;
+                            fileName: string;
+                            /** @enum {string} */
+                            fileType: "docx" | "markdown" | "html";
+                            /**
+                             * @description `awaiting` its file; `reading` it; `proposed`, its outline to review; `accepted` into a document; `abandoned`, or `failed` with why, leaving nothing
+                             * @enum {string}
+                             */
+                            state: "awaiting" | "reading" | "proposed" | "accepted" | "abandoned" | "failed";
+                            /** @description Why it failed, once failed */
+                            failure: ("file_unreadable" | "file_unsafe" | "file_too_large" | "file_missing" | "reading_failed") | null;
+                            /** @description The document it made, once accepted */
+                            document: string | null;
+                            createdAt: string;
+                            /** @description When a proposal left alone is abandoned: 30 days after it last changed */
+                            sweepsAt: string | null;
+                        }[];
+                        /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
+                        next: string | null;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a space the caller may read is listed */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such space, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    createImport: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                space: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "fileName": "example",
+                 *       "fileType": "docx"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The file’s name as its importer chose it, ending .docx, .md or .html */
+                    fileName: string;
+                    /**
+                     * @description What the file says it is: a Word document, Markdown or HTML
+                     * @enum {string}
+                     */
+                    fileType: "docx" | "markdown" | "html";
+                };
+            };
+        };
+        responses: {
+            /** @description The import, awaiting its file */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": "example",
+                     *       "importer": "example",
+                     *       "fileName": "example",
+                     *       "fileType": "docx",
+                     *       "state": "awaiting",
+                     *       "failure": "file_unreadable",
+                     *       "document": "example",
+                     *       "createdAt": "example",
+                     *       "sweepsAt": "example",
+                     *       "levels": {
+                     *         "section": 1,
+                     *         "component": 2
+                     *       },
+                     *       "title": "example",
+                     *       "parts": [],
+                     *       "report": []
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        space: string;
+                        importer: string;
+                        fileName: string;
+                        /** @enum {string} */
+                        fileType: "docx" | "markdown" | "html";
+                        /**
+                         * @description `awaiting` its file; `reading` it; `proposed`, its outline to review; `accepted` into a document; `abandoned`, or `failed` with why, leaving nothing
+                         * @enum {string}
+                         */
+                        state: "awaiting" | "reading" | "proposed" | "accepted" | "abandoned" | "failed";
+                        /** @description Why it failed, once failed */
+                        failure: ("file_unreadable" | "file_unsafe" | "file_too_large" | "file_missing" | "reading_failed") | null;
+                        /** @description The document it made, once accepted */
+                        document: string | null;
+                        createdAt: string;
+                        /** @description When a proposal left alone is abandoned: 30 days after it last changed */
+                        sweepsAt: string | null;
+                        levels: {
+                            /** @description The heading level that starts a section */
+                            section: number;
+                            /** @description The heading level that starts a component, below the section’s */
+                            component: number;
+                        };
+                        /** @description The title the file names, where it names one */
+                        title: string | null;
+                        /** @description The proposed outline, in order */
+                        parts: {
+                            id: string;
+                            /** @enum {string} */
+                            kind: "section" | "component";
+                            title: string;
+                            /** @description The section it stands under; null at the top */
+                            parent: string | null;
+                            /** @description Why the part starts where it does: the heading, by its style and text; or what came before the first heading under it */
+                            reason: {
+                                /** @enum {string} */
+                                rule: "heading" | "beforeFirstComponent" | "beforeFirstHeading";
+                                style?: string;
+                                text?: string;
+                                level?: number;
+                            };
+                            /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted */
+                            flags: ("empty" | "refused")[];
+                            /** @description How many blocks it holds */
+                            blocks: number;
+                            /** @description Its text as the file had it, its heading first */
+                            source: string;
+                        }[];
+                        /** @description What was left out, kept differently, or not read yet (IMP-007) */
+                        report: {
+                            stage: string;
+                            /** @enum {string} */
+                            action: "discarded" | "rewritten" | "kept" | "refused";
+                            subject: string;
+                            /** @description A fixed sentence saying what happened, never quoting the file */
+                            message: string;
+                            /** @description What it was about, as data: shown as text */
+                            detail?: string;
+                            count?: number;
+                            /** @description The part it was about, by its place; null for the file */
+                            part: number | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description `import_file_not_permitted`: the name does not end as its kind does (.docx, .md, .markdown, .html or .htm) */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the space but not create in it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such space, or none the caller may read */
+            404: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;
