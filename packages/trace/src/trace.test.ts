@@ -963,7 +963,8 @@ describe('the citations in the committed model', () => {
     // 1891 (2026-10-22): XRc's assistant tools: LIB-040 in four files.
     // 1903 (2026-10-22): XRd's reference extensions: LIB-032 across the stack.
     // 1930 (2026-10-22): TMa's terms: the term's shape, workflow, search, SKOS, routes and pages.
-    expect(model.citations).toHaveLength(1930);
+    // 1948 (2026-10-22): TMb's terms published: assemble, the theme, the layout, the PDF, Word, pins.
+    expect(model.citations).toHaveLength(1948);
   });
 
   it('cites no identifier the corpus does not hold', () => {

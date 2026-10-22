@@ -456,12 +456,12 @@ describe("the theme's store", () => {
       expect(version).toMatchObject({
         kind: 'theme',
         revision: 0,
-        version: 10,
+        version: 11,
         author,
         content: next,
       });
       const now = await defaultTheme(trx);
-      expect(now).toMatchObject({ versionId: version.id, number: '0.10', content: next });
+      expect(now).toMatchObject({ versionId: version.id, number: '0.11', content: next });
       expect(now.theme.name).toBe('Italic captions');
       expect(now.theme.catalogues.paragraph).toBe(captions.id);
       expect(now.theme.paragraphStyles.get('caption')!.properties.italic).toBe(true);
@@ -518,7 +518,7 @@ describe("the theme's store", () => {
       });
 
       // Neither was saved: the environment is set from the theme it was.
-      expect(await versionsOf(trx, DEFAULT_THEME_ID)).toBe(9);
+      expect(await versionsOf(trx, DEFAULT_THEME_ID)).toBe(10);
       expect((await latestVersion(trx, DEFAULT_THEME_ID))!.id).toBe(declared.versionId);
     });
   });
@@ -547,7 +547,7 @@ describe("the theme's store", () => {
           },
         ],
       });
-      expect(await versionsOf(trx, DEFAULT_THEME_ID)).toBe(9);
+      expect(await versionsOf(trx, DEFAULT_THEME_ID)).toBe(10);
     });
   });
 });

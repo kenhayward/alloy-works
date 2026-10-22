@@ -11,6 +11,8 @@ import {
   ROLES,
   SCRIPT_SCALE,
   STYLED_MARKS,
+  TERM_CATALOGUE_KIND,
+  TERM_CATALOGUE_SCHEMA_VERSION,
   THEME_SCHEMA_VERSION,
   VALUE_CATALOGUE_KIND,
   catalogueSchema,
@@ -34,6 +36,7 @@ import {
   type StyleTarget,
   type StyledMark,
   type TableStyle,
+  type TermExpansion,
   type Typeface,
   type ValueCatalogue,
 } from './schema.js';
@@ -176,6 +179,11 @@ export interface ResolvedTheme {
    * (`formatsFor`).
    */
   readonly valueCatalogue: ValueCatalogue | null;
+  /**
+   * How a term prints (TM-D; LIB-017): its term catalogue's `expand`, or `firstUse` where the theme
+   * names none, as every theme before the default's 0.10.
+   */
+  readonly termExpansion: TermExpansion;
 }
 
 export type CatalogueReadOutcome =
@@ -386,7 +394,7 @@ export function readTheme(
 
   // Each catalogue at the version the theme names, of the kind it is named for.
   const examineNamed = (
-    kind: CatalogueKind | typeof VALUE_CATALOGUE_KIND,
+    kind: CatalogueKind | typeof VALUE_CATALOGUE_KIND | typeof TERM_CATALOGUE_KIND,
     version: string,
   ): Examined | undefined => {
     if (!catalogues.has(version)) {
@@ -421,6 +429,10 @@ export function readTheme(
   const valueVersion = stated.catalogues[VALUE_CATALOGUE_KIND];
   const value =
     valueVersion === undefined ? undefined : examineNamed(VALUE_CATALOGUE_KIND, valueVersion);
+  // And the term catalogue (TM-D), likewise.
+  const termVersion = stated.catalogues[TERM_CATALOGUE_KIND];
+  const term =
+    termVersion === undefined ? undefined : examineNamed(TERM_CATALOGUE_KIND, termVersion);
 
   // Every paragraph style's typeface found. The base's and each style's own are checked where they are
   // stated, so a face missing from the base is refused once rather than once for every style.
@@ -569,6 +581,7 @@ export function readTheme(
       >,
       citationStyle: (examined.citation?.kind === 'citation' && examined.citation.style) || null,
       valueCatalogue: value?.kind === VALUE_CATALOGUE_KIND ? value.catalogue : null,
+      termExpansion: term?.kind === TERM_CATALOGUE_KIND ? term.expand : 'firstUse',
     },
   };
 }
@@ -594,7 +607,8 @@ type Examined =
   | { kind: 'image'; refusals: ThemeRefusal[]; styles: Map<string, ImageStyle> }
   | { kind: 'admonition'; refusals: ThemeRefusal[] }
   | { kind: 'citation'; refusals: ThemeRefusal[]; style?: { id: string; version: string } }
-  | { kind: 'value'; refusals: ThemeRefusal[]; catalogue: ValueCatalogue };
+  | { kind: 'value'; refusals: ThemeRefusal[]; catalogue: ValueCatalogue }
+  | { kind: 'term'; refusals: ThemeRefusal[]; expand: TermExpansion };
 
 function examine(catalogue: Catalogue): Examined {
   const refusals: ThemeRefusal[] = [];
@@ -666,6 +680,8 @@ function examine(catalogue: Catalogue): Examined {
     // Its shape is all there is to it: no style, so nothing to be unique or to chain.
     case 'value':
       return { kind: 'value', refusals, catalogue };
+    case 'term':
+      return { kind: 'term', refusals, expand: catalogue.expand };
   }
 }
 
@@ -1011,6 +1027,18 @@ function parseCatalogue(
       ? { ok: true, value: { schemaVersion: CITATION_CATALOGUE_SCHEMA_VERSION, kind: 'citation' } }
       : before;
   }
+  // A term catalogue exists at its own version, 5, alone (TM-D).
+  if (typeof stored === 'object' && stored !== null && Reflect.get(stored, 'kind') === 'term') {
+    if (at(TERM_CATALOGUE_SCHEMA_VERSION)) {
+      return issues(catalogueSchema.safeParse(stored), subject, 'catalogue_malformed');
+    }
+    return {
+      ok: false,
+      refusals: [
+        { code: 'catalogue_malformed', message: `${subject} is a term catalogue not at 5` },
+      ],
+    };
+  }
   if (at(1)) {
     const first = issues(catalogueSchema1.safeParse(stored), subject, 'catalogue_malformed');
     if (!first.ok) return first;
@@ -1061,7 +1089,9 @@ function issues<T>(
   };
 }
 
-function article(kind: CatalogueKind | typeof VALUE_CATALOGUE_KIND): string {
+function article(
+  kind: CatalogueKind | typeof VALUE_CATALOGUE_KIND | typeof TERM_CATALOGUE_KIND,
+): string {
   return kind === 'admonition' || kind === 'image' ? 'an' : 'a';
 }
 

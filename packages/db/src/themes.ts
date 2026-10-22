@@ -134,13 +134,15 @@ async function readStoredTheme(
  * style, so STY-005's rule has nothing to hold it to.
  */
 function stylesOf(catalogue: Catalogue): readonly { readonly id: string }[] {
-  return catalogue.kind === VALUE_CATALOGUE_KIND || catalogue.kind === 'citation'
+  return catalogue.kind === VALUE_CATALOGUE_KIND ||
+    catalogue.kind === 'citation' ||
+    catalogue.kind === 'term'
     ? []
     : catalogue.styles;
 }
 
 /** `an` before the two kinds that begin with a vowel, as the reader's own messages say it. */
-function article(kind: CatalogueKind | typeof VALUE_CATALOGUE_KIND): string {
+function article(kind: Catalogue['kind']): string {
   return kind === 'admonition' || kind === 'image' ? 'an' : 'a';
 }
 
@@ -253,7 +255,7 @@ export async function addCatalogueVersion(
   // Every identifier some version held and a later one did not: each one dropped, never to return.
   const seen = new Set<string>();
   const dropped = new Set<string>();
-  let kind: CatalogueKind | typeof VALUE_CATALOGUE_KIND | undefined;
+  let kind: Catalogue['kind'] | undefined;
   let latest: { readonly versionId: string; readonly catalogue: Catalogue } | undefined;
   for (const version of history) {
     const earlier = readCatalogue(version.content);

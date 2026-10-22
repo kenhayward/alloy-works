@@ -5,8 +5,13 @@ import {
   DEFAULT_CATALOGUES_BY_VERSION,
   DEFAULT_CATALOGUE_VERSIONS,
   DEFAULT_THEME,
+  DEFAULT_TERM_CATALOGUE_ID,
   DEFAULT_THEME_VERSION,
   DEFAULT_VALUE_FORMATS,
+  NINTH_DEFAULT_CATALOGUES,
+  NINTH_DEFAULT_CATALOGUE_VERSIONS,
+  NINTH_DEFAULT_THEME,
+  NINTH_DEFAULT_THEME_VERSION,
   EIGHTH_DEFAULT_CATALOGUES,
   EIGHTH_DEFAULT_CATALOGUE_VERSIONS,
   EIGHTH_DEFAULT_THEME,
@@ -68,12 +73,12 @@ const face = (id: string) => {
 };
 
 describe('the default theme', () => {
-  it('names each of its six catalogues, and its value catalogue, by the version the store seeds', () => {
-    for (const kind of [...CATALOGUE_KINDS, 'value'] as const) {
+  it('names each of its six catalogues, and its value and term catalogues, by the version the store seeds', () => {
+    for (const kind of [...CATALOGUE_KINDS, 'value', 'term'] as const) {
       expect(DEFAULT_THEME.catalogues[kind], kind).toBe(DEFAULT_CATALOGUE_VERSIONS[kind]);
       expect(DEFAULT_CATALOGUES[kind].kind).toBe(kind);
     }
-    expect(new Set(Object.values(DEFAULT_CATALOGUE_VERSIONS)).size).toBe(7);
+    expect(new Set(Object.values(DEFAULT_CATALOGUE_VERSIONS)).size).toBe(8);
   });
 
   it("sets its text at template 11's sizes", () => {
@@ -282,28 +287,58 @@ describe('the default theme', () => {
   });
 });
 
-describe("the default theme's version 0.9 (the CI plan, CI-E)", () => {
-  it("binds its citation catalogue's second version by a fixed identifier, and the rest as 0.8 did", () => {
+describe("the default theme's version 0.10 (the TM plan, TM-D)", () => {
+  it('LIB-017 binds a term catalogue expanding a term on its first use, and the rest as 0.9 did', () => {
     expect(DEFAULT_CATALOGUE_VERSIONS).toEqual({
+      ...NINTH_DEFAULT_CATALOGUE_VERSIONS,
+      term: '7e3d71ca-e3a7-4f5e-87e1-01eb74e31826',
+    });
+    expect(catalogueSchema.parse(DEFAULT_CATALOGUES.term)).toEqual({
+      schemaVersion: 5,
+      kind: 'term',
+      expand: 'firstUse',
+    });
+    for (const kind of [...CATALOGUE_KINDS, 'value'] as const) {
+      expect(DEFAULT_CATALOGUES[kind], kind).toBe(NINTH_DEFAULT_CATALOGUES[kind]);
+    }
+  });
+
+  it('is its 0.9 naming that catalogue version, under a fixed identifier of its own', () => {
+    expect(DEFAULT_THEME).toEqual({
+      ...NINTH_DEFAULT_THEME,
+      catalogues: DEFAULT_CATALOGUE_VERSIONS,
+    });
+    expect(DEFAULT_THEME_VERSION).toBe('7d8fe493-5bf4-453b-82b0-fa854fb34604');
+    expect([
+      NINTH_DEFAULT_THEME_VERSION,
+      DEFAULT_TERM_CATALOGUE_ID,
+      ...Object.values(DEFAULT_CATALOGUE_VERSIONS),
+    ]).not.toContain(DEFAULT_THEME_VERSION);
+  });
+});
+
+describe("the default theme's version 0.9, as migration 0146 stored it (the CI plan, CI-E)", () => {
+  it("binds its citation catalogue's second version by a fixed identifier, and the rest as 0.8 did", () => {
+    expect(NINTH_DEFAULT_CATALOGUE_VERSIONS).toEqual({
       ...EIGHTH_DEFAULT_CATALOGUE_VERSIONS,
       citation: '5c7e9a1b-2d4f-4a6c-8e0b-3d5f7a9c1e2b',
     });
     for (const kind of [...CATALOGUE_KINDS, 'value'] as const) {
       if (kind !== 'citation')
-        expect(DEFAULT_CATALOGUES[kind], kind).toBe(EIGHTH_DEFAULT_CATALOGUES[kind]);
+        expect(NINTH_DEFAULT_CATALOGUES[kind], kind).toBe(EIGHTH_DEFAULT_CATALOGUES[kind]);
     }
   });
 
   it('is its 0.8 naming that catalogue version, under a fixed identifier of its own', () => {
-    expect(DEFAULT_THEME).toEqual({
+    expect(NINTH_DEFAULT_THEME).toEqual({
       ...EIGHTH_DEFAULT_THEME,
-      catalogues: DEFAULT_CATALOGUE_VERSIONS,
+      catalogues: NINTH_DEFAULT_CATALOGUE_VERSIONS,
     });
-    expect(DEFAULT_THEME_VERSION).toBe('6d8f0b2c-3e5a-4b7d-9f1c-4e6a8b0d2f3c');
+    expect(NINTH_DEFAULT_THEME_VERSION).toBe('6d8f0b2c-3e5a-4b7d-9f1c-4e6a8b0d2f3c');
     expect([
       EIGHTH_DEFAULT_THEME_VERSION,
-      ...Object.values(DEFAULT_CATALOGUE_VERSIONS),
-    ]).not.toContain(DEFAULT_THEME_VERSION);
+      ...Object.values(NINTH_DEFAULT_CATALOGUE_VERSIONS),
+    ]).not.toContain(NINTH_DEFAULT_THEME_VERSION);
   });
 
   it('names Harvard, at the version every tenant is seeded with, as its citation style', () => {

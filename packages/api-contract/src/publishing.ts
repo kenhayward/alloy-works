@@ -163,13 +163,32 @@ export const PublicationRequestView = z.object({
   failures: z.array(PublishFailureView),
   warnings: z
     .array(
-      z.object({
-        code: z.enum(['source_retracted', 'source_corrected']),
-        count: z.int().positive(),
-      }),
+      z.union([
+        z.object({
+          code: z.enum(['source_retracted', 'source_corrected']),
+          count: z.int().positive(),
+        }),
+        z.object({
+          code: z
+            .enum(['term_unresolved', 'term_deprecated', 'term_fallback'])
+            .describe(
+              "`term_unresolved`: a term printed as the words it covers, being draft, missing or one the requester may not read; `term_deprecated`: a deprecated term printed; `term_fallback`: a term printed in its base language, having no label in the document's",
+            ),
+          term: z.string().describe('The term, by its identity'),
+          count: z.int().positive().describe('How many uses'),
+          language: z
+            .string()
+            .optional()
+            .describe("For a fallback, the document's language the term has no label in"),
+          replacedBy: z
+            .string()
+            .optional()
+            .describe('For a deprecated term, the term it names as its replacement'),
+        }),
+      ]),
     )
     .describe(
-      'What does not stop it (LIB-036): the sources cited by what the document places that their source says are retracted or corrected, counted, whoever may read them',
+      'What does not stop it: the sources cited by what the document places that their source says are retracted or corrected, counted, whoever may read them (LIB-036); and what its terms reported as it was asked for, each term once (LIB-018, LIB-050)',
     ),
   publication: z.string().nullable().describe('The publication it made, once done'),
   preview: PreviewView.nullable().describe(

@@ -63,6 +63,7 @@ export {
   SEVENTH_DEFAULT_LAYOUT,
   EIGHTH_DEFAULT_LAYOUT,
   NINTH_DEFAULT_LAYOUT,
+  TENTH_DEFAULT_LAYOUT,
   LAYOUT_SCHEMA_VERSION,
   LISTED_SEQUENCES,
   layoutMigrationChain,
@@ -158,12 +159,17 @@ export {
   PUBLISHING_SCHEMA_21,
   // Frozen by CIc, which made `publishing/23`: the schema template 22 reads.
   PUBLISHING_SCHEMA_22,
+  // Frozen by TMb, which made `publishing/24`: the schema template 23 reads.
+  PUBLISHING_SCHEMA_23,
 } from './published.js';
 export type {
   PublishedApproval,
   PublishedApprovals,
   PublishedBibliography,
   PublishedBibliographyEntry,
+  PublishedAbbreviations,
+  PublishedGlossary,
+  PublishedTermRun,
   PublishedCitationRun,
   PublishedBlock,
   PublishedBlock1,
@@ -199,3 +205,6 @@ export type {
 // TG3: a table's columns measured by what they hold, shared by `assemble` and the editor.
 export { columnExtents, columnWidths } from './widths.js';
 export type { ColumnExtent, MeasuredCell, MeasuredParagraph, MeasuredRun } from './widths.js';
+// TMb: what a use of a term prints, and what a publish reports of its terms, which the store asks too.
+export { termLabelIn, termPlaces, termSpans, termWarnings } from './terms.js';
+export type { PublishingTerm, TermWarning } from './terms.js';

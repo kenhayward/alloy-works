@@ -19,6 +19,8 @@ export interface BaselinePins {
    * a baseline made before them hashes as it did.
    */
   readonly entries?: readonly PinnedVersion[];
+  /** The term versions its uses read (TMb; TM-G); absent where it uses none, for the same reason. */
+  readonly terms?: readonly PinnedVersion[];
   readonly bindings: readonly {
     readonly node: string;
     readonly binding: string;
@@ -54,6 +56,9 @@ export function baselineDigestInput(pins: BaselinePins): string {
     ...(pins.entries === undefined
       ? {}
       : { entries: [...pins.entries].sort(byKey((each) => each.version)) }),
+    ...(pins.terms === undefined
+      ? {}
+      : { terms: [...pins.terms].sort(byKey((each) => each.version)) }),
   });
 }
 

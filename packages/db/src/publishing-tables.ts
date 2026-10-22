@@ -51,6 +51,8 @@ export interface PublicationRequestTable {
   expires_at: ColumnType<Date | null, never, Date>;
   /** The profile it is made under (0106; the R6 plan, R6-F), or none: the empty profile. */
   profile: ColumnType<StoredProfile | null, string | undefined, never>;
+  /** What its terms report, written as it is made (0154; TMb): JSONB in as text, never changed. */
+  warnings: ColumnType<unknown[], string | undefined, never>;
 }
 
 /** Insert and read, nothing else (0017). */
@@ -67,10 +69,13 @@ export interface PublicationRequestAssetTable {
   request_id: ColumnType<string, string, never>;
   version_id: ColumnType<string, string, never>;
   asset_id: ColumnType<string, string, never>;
-  /** An image's version, or since 0147 a bibliography entry's a citation read (CIc). */
+  /**
+   * An image's version, or since 0147 a bibliography entry's a citation read (CIc), or since 0154 a
+   * term's a use read (TMb).
+   */
   asset_kind: ColumnType<
-    'asset' | 'bibliographyEntry',
-    'asset' | 'bibliographyEntry' | undefined,
+    'asset' | 'bibliographyEntry' | 'term',
+    'asset' | 'bibliographyEntry' | 'term' | undefined,
     never
   >;
 }
@@ -107,10 +112,13 @@ export interface PublicationAssetTable {
   publication_id: ColumnType<string, string, never>;
   version_id: ColumnType<string, string, never>;
   asset_id: ColumnType<string, string, never>;
-  /** An image's version, or since 0147 a bibliography entry's a citation read (CIc). */
+  /**
+   * An image's version, or since 0147 a bibliography entry's a citation read (CIc), or since 0154 a
+   * term's a use read (TMb).
+   */
   asset_kind: ColumnType<
-    'asset' | 'bibliographyEntry',
-    'asset' | 'bibliographyEntry' | undefined,
+    'asset' | 'bibliographyEntry' | 'term',
+    'asset' | 'bibliographyEntry' | 'term' | undefined,
     never
   >;
 }

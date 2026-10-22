@@ -453,6 +453,22 @@ export const citationCatalogueSchema = z.strictObject({
 });
 
 /**
+ * **`catalogue/5`, the term catalogue's alone** (the TM plan, TM-D; LIB-017): how a document prints a
+ * term, expanded on its first use, always or never. A catalogue beside the six, as the value one is;
+ * it never existed before 5, and a theme naming none expands on first use.
+ */
+export const TERM_CATALOGUE_SCHEMA_VERSION = 5;
+export const TERM_CATALOGUE_KIND = 'term' as const;
+export const TERM_EXPANSIONS = ['firstUse', 'always', 'never'] as const;
+export type TermExpansion = (typeof TERM_EXPANSIONS)[number];
+
+export const termCatalogueSchema = z.strictObject({
+  schemaVersion: z.literal(TERM_CATALOGUE_SCHEMA_VERSION),
+  kind: z.literal(TERM_CATALOGUE_KIND),
+  expand: z.enum(TERM_EXPANSIONS),
+});
+
+/**
  * **The value catalogue's kind** (bindings.md, "Formatting"; the B1 plan, B1-F): a catalogue the
  * theme binds **beside the six kinds, not as a seventh**, so STY-003's six, every map over the kinds
  * and every loop over them stay as they are. A theme names one optionally (`catalogues.value`), and
@@ -577,6 +593,7 @@ export const catalogueSchema = z
     z.strictObject({ schemaVersion: version, kind: z.literal('admonition'), styles: z.tuple([]) }),
     citationCatalogueSchema,
     valueCatalogueSchema,
+    termCatalogueSchema,
   ])
   .refine(storableEverywhere, 'holds a character that cannot be stored');
 
@@ -737,6 +754,9 @@ export const themeSchema = z
       // The value catalogue, beside the six (B1-F): optional, so every theme before the default's
       // 0.6 reads as it did, its values in the product's default formats.
       [VALUE_CATALOGUE_KIND]: artifactIdentifierSchema.optional(),
+      // The term catalogue, beside them (TM-D): optional, so every theme before the default's 0.10
+      // reads as it did, expanding a term on first use.
+      [TERM_CATALOGUE_KIND]: artifactIdentifierSchema.optional(),
     }),
     places: z.strictObject(
       Object.fromEntries(PLACES.map((place) => [place, styleIdSchema])) as Record<
@@ -761,6 +781,7 @@ export type ImageCatalogue = Extract<Catalogue, { kind: 'image' }>;
 export type AdmonitionCatalogue = Extract<Catalogue, { kind: 'admonition' }>;
 export type CitationCatalogue = Extract<Catalogue, { kind: 'citation' }>;
 export type ValueCatalogue = Extract<Catalogue, { kind: 'value' }>;
+export type TermCatalogue = Extract<Catalogue, { kind: 'term' }>;
 export type ValueFormats = z.infer<typeof valueFormatsSchema>;
 export type Theme = z.infer<typeof themeSchema>;
 export type Typeface = z.infer<typeof typefaceSchema>;

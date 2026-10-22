@@ -11,6 +11,7 @@ import {
   type CitationCatalogue1,
   type ImageCatalogue,
   type TableCatalogue,
+  type TermCatalogue,
   type Theme,
   type ValueCatalogue,
 } from './schema.js';
@@ -32,8 +33,9 @@ export function defaultInputs(): ThemeInputs {
  */
 export type ThemeInputs = {
   theme: Theme;
-  catalogues: Omit<typeof DEFAULT_CATALOGUES, 'value' | 'citation'> & {
+  catalogues: Omit<typeof DEFAULT_CATALOGUES, 'value' | 'citation' | 'term'> & {
     value?: ValueCatalogue;
+    term?: TermCatalogue;
     citation: CitationCatalogue | CitationCatalogue1;
   };
 };
@@ -65,6 +67,8 @@ export function read(inputs: ThemeInputs): ThemeReadOutcome {
   );
   const value = inputs.theme.catalogues.value;
   if (value !== undefined) byVersion.set(value, inputs.catalogues.value);
+  const term = inputs.theme.catalogues.term;
+  if (term !== undefined) byVersion.set(term, inputs.catalogues.term);
   return readTheme(inputs.theme, byVersion);
 }
 

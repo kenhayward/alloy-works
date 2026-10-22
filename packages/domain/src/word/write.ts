@@ -21,8 +21,10 @@ import {
   type OutputReportEntry,
 } from '../publishing/outputs.js';
 import type {
+  PublishedAbbreviations,
   PublishedBibliography,
   PublishedBlock,
+  PublishedGlossary,
   PublishedCell,
   PublishedDocument,
   PublishedEquation,
@@ -580,6 +582,8 @@ function bookmarksOf(
   document.nodes.forEach(node);
   // Each bibliography entry after them, where its paragraph begins (CIc): its citations link there.
   for (const entry of document.back.bibliography?.entries ?? []) add(entry.anchor, 'block');
+  // And each glossary entry (TMb): its terms link there.
+  for (const entry of document.back.glossary?.entries ?? []) add(entry.anchor, 'block');
   return named;
 }
 
@@ -765,6 +769,14 @@ export function writeDocx(input: WordWriting): WrittenDocx {
       .filter((section) => section.footnotes !== null)
       .at(-1)
       ?.body.push(...writer.bibliography(bibliography));
+  }
+  // The glossary and the abbreviations after it (TMb).
+  const { glossary, abbreviations } = document.back;
+  if (glossary !== null || abbreviations !== null) {
+    sections
+      .filter((section) => section.footnotes !== null)
+      .at(-1)
+      ?.body.push(...writer.terms(glossary, abbreviations));
   }
   if (front !== null) {
     front.push(...writer.listsAfterContents(generated, front.length > 0, textBlockWidth(format)));
@@ -1055,6 +1067,7 @@ export function writeDocx(input: WordWriting): WrittenDocx {
           ...(contents === null ? [] : contentsStyles(theme, contents.depth)),
           ...(generated.length === 0 ? [] : [listEntryStyle(theme)]),
           ...(notes.length === 0 ? [] : [FOOTNOTE_REFERENCE_STYLE]),
+          ...(writer.termed ? [TERM_STYLE] : []),
         ],
       },
     ),
@@ -1186,6 +1199,8 @@ class Writer {
   private readonly said = new Set<string>();
   /** Whether the text sets an equation anywhere: the report then says the maths once (W14.6). */
   setsMaths = false;
+  /** Whether a term run was written, so the term style is declared (TMb). */
+  termed = false;
   /** Each face file's advances, read once, by its hash. */
   private readonly advances = new Map<string, FaceAdvances>();
   /** The node whose blocks are being written: a caption's number and a report's place are by it. */
@@ -1276,6 +1291,49 @@ class Writer {
           { bidi: this.document.rtl },
         ),
       ),
+    ];
+  }
+
+  /**
+   * **The glossary and the abbreviations** (TMb; PUB-039), each as the bibliography is: its title in
+   * the first heading's style, outside Word's headings, then each entry a paragraph of running text -
+   * a glossary entry bookmarked where it begins, its terms linking there - its label or abbreviation
+   * strong before its words.
+   */
+  terms(
+    glossary: PublishedGlossary | null,
+    abbreviations: PublishedAbbreviations | null,
+  ): Paragraph[] {
+    this.at = '';
+    const place = this.theme.places.text;
+    const entry = (anchor: string | null, lead: string, words: string) =>
+      this.paragraph(
+        place,
+        bookmarked(anchor === null ? null : this.bookmarkOf(anchor, 'block'), '') +
+          this.inlineRuns(
+            [{ text: lead, marks: [{ kind: 'strong' }] }],
+            place,
+            this.document,
+            null,
+          ) +
+          this.inlineRuns([{ text: ` ${words}`, marks: [] }], place, this.document, null),
+        { bidi: this.document.rtl },
+      );
+    const heading = (title: string) =>
+      this.paragraph(this.theme.roles.heading1, this.runs(title, this.words));
+    return [
+      ...(glossary === null
+        ? []
+        : [
+            heading(glossary.title),
+            ...glossary.entries.map((each) => entry(each.anchor, each.label, each.definition)),
+          ]),
+      ...(abbreviations === null
+        ? []
+        : [
+            heading(abbreviations.title),
+            ...abbreviations.entries.map((each) => entry(null, each.abbreviation, each.label)),
+          ]),
     ];
   }
 
@@ -2319,6 +2377,8 @@ class Writer {
         words += run.reference.text ?? '';
       } else if ('citation' in run) {
         words += run.citation.runs.map((each) => each.text).join('');
+      } else if ('term' in run) {
+        words += run.term.text;
       }
     }
     return xml + this.runs(words, passage);
@@ -2872,6 +2932,34 @@ class Writer {
         xml += to === null ? words : `<w:hyperlink w:anchor="${to.name}">${words}</w:hyperlink>`;
         continue;
       }
+      if ('term' in run) {
+        // Its forms (TMb), in the term style where no mark names a style, as mapping.ts's intent for
+        // the mark has it, and a link to the bookmark on its glossary entry where the PDF's is one.
+        if (linking !== null) xml += '</w:hyperlink>';
+        linking = null;
+        let language: PublishedLanguage | null = null;
+        const kinds: StyledMark[] = [];
+        for (const mark of run.term.marks) {
+          if (mark.kind === 'language') language = mark.language;
+          else if (mark.kind !== 'hyperlink') kinds.push(mark.kind);
+        }
+        this.termed = true;
+        const words = this.textRun(
+          run.term.text,
+          kinds,
+          styleId,
+          passage,
+          language,
+          strong,
+        ).replace(/^<w:r>(<w:rPr>(?!<w:rStyle))?/, (_, open?: string) =>
+          open === undefined
+            ? `<w:r><w:rPr><w:rStyle w:val="${TERM}"/></w:rPr>`
+            : `<w:r><w:rPr><w:rStyle w:val="${TERM}"/>`,
+        );
+        const to = this.bookmarkOf(run.term.link, 'block');
+        xml += to === null ? words : `<w:hyperlink w:anchor="${to.name}">${words}</w:hyperlink>`;
+        continue;
+      }
       if ('reference' in run) {
         // A field of its own, no part of a link before it: where it links, it links to its target.
         if (linking !== null) xml += '</w:hyperlink>';
@@ -3366,7 +3454,9 @@ function captionText(captioned: Captioned): string {
             ? run.equation.alternative.text
             : 'citation' in run
               ? run.citation.runs.map((each) => each.text).join('')
-              : '',
+              : 'term' in run
+                ? run.term.text
+                : '',
     )
     .join('');
   return captioned.label === null ? own : `${captioned.label} ${own}`;
@@ -3836,6 +3926,12 @@ function listEntryStyle(theme: ResolvedTheme): string {
  * Word's mark is 6.96pt raised 4.56 where the engine's is 7.15 raised 4.98, and in a 9.35pt note its
  * number 6.00 raised 3.48 against 6.08 and 4.24, each standing where the engine's does to 0.03pt.
  */
+/** The term style (TMb), named and stating nothing, where a term's run is no mark's. */
+const TERM = 'Term';
+const TERM_STYLE =
+  `<w:style w:type="character" w:styleId="${TERM}">` +
+  '<w:name w:val="Term"/><w:uiPriority w:val="99"/><w:unhideWhenUsed/><w:rPr/></w:style>';
+
 const FOOTNOTE_REFERENCE_STYLE =
   `<w:style w:type="character" w:styleId="${FOOTNOTE_REFERENCE}">` +
   '<w:name w:val="footnote reference"/><w:uiPriority w:val="99"/><w:unhideWhenUsed/>' +

@@ -157,6 +157,13 @@ export interface Layout {
      * its citations print their in-text forms unlinked.
      */
     bibliography?: { title: string } | undefined;
+    /**
+     * A glossary and a list of abbreviations (PUB-039; the TM plan, TMb), each under its title in the
+     * layout's language, after the bibliography. Added at 7 in place, as `bibliography` was: a layout
+     * without one places none.
+     */
+    glossary?: { title: string } | undefined;
+    abbreviations?: { title: string } | undefined;
   };
   /**
    * One member per format it makes, each declared on its own (PUB-012, PUB-014): always the PDF, and
@@ -321,6 +328,8 @@ const upgradedLayoutSchema: z.ZodType<Layout> = z
         ),
       approvals: z.strictObject({ title: words }).optional(),
       bibliography: z.strictObject({ title: words }).optional(),
+      glossary: z.strictObject({ title: words }).optional(),
+      abbreviations: z.strictObject({ title: words }).optional(),
     }),
     formats: z.strictObject({
       pdf: pageFormatSchema(pageSide),
@@ -689,13 +698,26 @@ export const NINTH_DEFAULT_LAYOUT: Layout = parseLayout({
 });
 
 /**
- * The default layout as it stands, **version 0.10**: 0.9 placing a bibliography titled _References_
- * (the CI plan, CId), at schema version 7, where the member was added in place, seeded by migration
- * 0148. A document citing nothing prints none.
+ * **The default layout's version 0.10, as migration 0148 stored it**: 0.9 placing a bibliography
+ * titled _References_ (the CI plan, CId). Frozen for 0.2's reason.
  */
-export const defaultLayout: Layout = parseLayout({
+export const TENTH_DEFAULT_LAYOUT: Layout = parseLayout({
   ...NINTH_DEFAULT_LAYOUT,
   matter: { ...NINTH_DEFAULT_LAYOUT.matter, bibliography: { title: 'References' } },
+});
+
+/**
+ * The default layout as it stands, **version 0.11**: 0.10 placing a glossary and a list of
+ * abbreviations (the TM plan, TM-H), at schema version 7, where the members were added in place,
+ * seeded by migration 0154. A document using no term prints neither.
+ */
+export const defaultLayout: Layout = parseLayout({
+  ...TENTH_DEFAULT_LAYOUT,
+  matter: {
+    ...TENTH_DEFAULT_LAYOUT.matter,
+    glossary: { title: 'Glossary' },
+    abbreviations: { title: 'Abbreviations' },
+  },
 });
 
 /**

@@ -46,20 +46,41 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 /**
- * What a publish is warned of, which never stops it (the XR plan, XR-G): the cited sources their
- * source says are retracted or corrected, counted. Null where there are none.
+ * What a publish is warned of, which never stops it: the cited sources their source says are
+ * retracted or corrected, counted (the XR plan, XR-G); and its terms printed as written, deprecated,
+ * or in their base language, counted by uses (TMb). Null where there are none.
  */
 function warnedWords(warnings: unknown): string | null {
   if (!Array.isArray(warnings)) return null;
-  const counted = warnings.flatMap((each) =>
-    isRecord(each) && typeof each.count === 'number' && typeof each.code === 'string'
-      ? [`${each.count} ${each.code.replace('source_', '')}`]
-      : [],
-  );
-  return counted.length === 0
-    ? null
-    : `Cited sources flagged by their source: ${counted.join(', ')}. Review lists them.`;
+  const counted = (prefix: string) => {
+    const counts = new Map<string, number>();
+    for (const each of warnings) {
+      if (!isRecord(each) || typeof each.count !== 'number' || typeof each.code !== 'string') {
+        continue;
+      }
+      if (!each.code.startsWith(prefix)) continue;
+      const kind = each.code.slice(prefix.length);
+      counts.set(kind, (counts.get(kind) ?? 0) + each.count);
+    }
+    return counts;
+  };
+  const sources = [...counted('source_')].map(([kind, n]) => `${n} ${kind}`);
+  const terms = [...counted('term_')].map(([kind, n]) => `${n} ${TERM_WORDS[kind] ?? kind}`);
+  const said = [
+    ...(sources.length === 0
+      ? []
+      : [`Cited sources flagged by their source: ${sources.join(', ')}. Review lists them.`]),
+    ...(terms.length === 0 ? [] : [`Terms used: ${terms.join(', ')}.`]),
+  ];
+  return said.length === 0 ? null : said.join(' ');
 }
+
+/** What each kind of term warning says of its uses. */
+const TERM_WORDS: Readonly<Record<string, string>> = {
+  unresolved: 'printed as written',
+  deprecated: 'deprecated',
+  fallback: 'in their base language',
+};
 
 function listedIn(value: unknown): Listed[] | undefined {
   if (!isRecord(value) || !Array.isArray(value.items)) return undefined;
@@ -169,7 +190,7 @@ export function Publishing({
   const [listed, setListed] = useState<Listed[] | 'failed' | null>(null);
   const [listAttempt, setListAttempt] = useState(0);
   const [publish, setPublish] = useState<Publish>({ state: 'idle' });
-  // A publish's warnings: flagged sources it cites, which never stop it (XR-G).
+  // A publish's warnings: flagged sources it cites and its terms' reports, which never stop it.
   const [warned, setWarned] = useState<string | null>(null);
   const { follow, mounted } = useFollowing(client);
 

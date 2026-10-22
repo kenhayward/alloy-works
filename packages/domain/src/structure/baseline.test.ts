@@ -42,6 +42,21 @@ describe('a baseline’s digest input and its name', () => {
     expect(baselineDigestInput(rebound)).not.toBe(baselineDigestInput(pins));
   });
 
+  it('digests the term versions it pins in one order, and a baseline pinning none as it did (TMb)', () => {
+    const termed: BaselinePins = {
+      ...pins,
+      terms: [
+        { version: v(11), digest: d('4') },
+        { version: v(10), digest: d('3') },
+      ],
+    };
+    expect(baselineDigestInput({ ...termed, terms: [...termed.terms!].reverse() })).toBe(
+      baselineDigestInput(termed),
+    );
+    expect(baselineDigestInput(termed)).toContain(`"terms":[{"digest":"${d('3')}"`);
+    expect(baselineDigestInput(pins)).not.toContain('terms');
+  });
+
   it('VER-046 holds a name to 1 to 120 characters, its own trim and no control character', () => {
     expect(baselineNameProblem('As approved')).toBeNull();
     expect(baselineNameProblem('a'.repeat(120))).toBeNull();

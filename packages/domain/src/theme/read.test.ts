@@ -36,6 +36,9 @@ import {
 /** The value catalogue the inputs' theme names, under the version it names it by (B1-F). */
 const valueOf = (inputs: ThemeInputs) =>
   [inputs.theme.catalogues.value!, inputs.catalogues.value] as const;
+/** And its term catalogue (TM-D). */
+const termOf = (inputs: ThemeInputs) =>
+  [inputs.theme.catalogues.term!, inputs.catalogues.term] as const;
 
 describe('readTheme', () => {
   it('STY-001 resolves every style as a named definition in the catalogue of its kind, and refuses one without a name', () => {
@@ -60,6 +63,7 @@ describe('readTheme', () => {
         ),
         [inputs.theme.catalogues.paragraph, { ...inputs.catalogues.paragraph, styles: [nameless] }],
         valueOf(inputs),
+        termOf(inputs),
       ]),
     );
     expect(codes(refused)).toEqual(['catalogue_malformed']);
@@ -87,6 +91,7 @@ describe('readTheme', () => {
             ] as const,
         ),
         valueOf(swapped),
+        termOf(swapped),
       ]),
     );
     expect(outcome.ok ? [] : outcome.refusals).toEqual([
@@ -113,6 +118,7 @@ describe('readTheme', () => {
         (kind) => [inputs.theme.catalogues[kind], inputs.catalogues[kind]] as const,
       ),
       valueOf(inputs),
+      termOf(inputs),
     ]);
     byVersion.set('00000000-0000-4000-8000-000000000000', { kind: 'paragraph', styles: 'none' });
     expect(readTheme(inputs.theme, byVersion).ok).toBe(true);
@@ -383,6 +389,7 @@ describe('readTheme', () => {
             ] as const,
         ),
         valueOf(inputs),
+        termOf(inputs),
       ]),
     );
     expect(codes(outcome)).toEqual([
@@ -1274,5 +1281,38 @@ describe('the citation catalogue at catalogue/4 (the CI plan, CI-E)', () => {
     expect(theme.citationStyle).toEqual(DEFAULT_CATALOGUES.citation.style);
     const first = readTheme(FIRST_DEFAULT_THEME, FIRST_DEFAULT_CATALOGUES_BY_VERSION);
     expect(first.ok && first.theme.citationStyle).toBeNull();
+  });
+});
+
+describe('the term catalogue at catalogue/5 (the TM plan, TM-D)', () => {
+  it('states how a term is expanded, one of three, and nothing else', () => {
+    for (const expand of ['firstUse', 'always', 'never'] as const) {
+      const catalogue = { schemaVersion: 5, kind: 'term', expand };
+      expect(readCatalogue(catalogue)).toEqual({ ok: true, catalogue });
+    }
+    for (const wrong of [
+      { schemaVersion: 5, kind: 'term' },
+      { schemaVersion: 5, kind: 'term', expand: 'sometimes' },
+      { schemaVersion: 5, kind: 'term', expand: 'never', styles: [] },
+      { schemaVersion: 3, kind: 'term', expand: 'never' },
+    ]) {
+      expect(readCatalogue(wrong).ok, JSON.stringify(wrong)).toBe(false);
+    }
+    expect(readCatalogue({ ...FIRST_DEFAULT_CATALOGUES.admonition, schemaVersion: 5 }).ok).toBe(
+      false,
+    );
+  });
+
+  it("LIB-017 gives the theme read its term catalogue's expansion, and first use where it names none", () => {
+    expect(resolved().termExpansion).toBe('firstUse');
+    const first = readTheme(FIRST_DEFAULT_THEME, FIRST_DEFAULT_CATALOGUES_BY_VERSION);
+    expect(first.ok && first.theme.termExpansion).toBe('firstUse');
+    const inputs = defaultInputs();
+    inputs.catalogues.term = { schemaVersion: 5, kind: 'term', expand: 'never' };
+    expect(resolved(inputs).termExpansion).toBe('never');
+    // A value catalogue named as the term catalogue is the wrong kind.
+    const wrong = defaultInputs();
+    wrong.theme.catalogues.term = wrong.theme.catalogues.value!;
+    expect(codes(read(wrong))).toEqual(['catalogue_wrong_kind']);
   });
 });

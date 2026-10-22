@@ -99,3 +99,32 @@ publish reads are pinned as its inputs and a baseline's.
 A query's words that are a term's label or abbreviation reach, through the reference index, the
 content using that term and its narrower terms, three levels at most. Nothing is copied into index
 text, so a renamed or related term is found at once.
+
+## Built in TMb
+
+- **The theme's rule** is a term catalogue beside the others, as the value one is: `catalogue/5`,
+  `{ kind: 'term', expand }`, the default theme's 0.10 naming one at `firstUse` (0154). A theme naming
+  none expands on first use.
+- **Assemble** walks uses in reading order where it finds citations, after conditions and bindings,
+  a footnote at its mark; a use is the text one mark covers side by side, so a span split into two
+  marks is two uses. `publishing/24` carries each as a `term` run, `{ text, marks, link }`, its marks
+  the first character's, linked to `g-<term>` in running text where the glossary holds it, and
+  `back.glossary` and `back.abbreviations`, sorted by `Intl.Collator` in the document's language. A
+  heading prints the preferred label, so its contents, bookmarks and running heads do. Template 24
+  draws them, each list an `L` of `LI`.
+- **Word** sets a term run in a `Term` character style where no mark names a style, hyperlinked to its
+  glossary entry's bookmark (as a citation is, not a `REF`); the glossary and abbreviations follow the
+  bibliography, outside Word's headings.
+- **Labels** are the document language's, else one whose language serves it (`en` for `en-GB`), else
+  the base language's.
+- **Resolved as the publisher** at the request: each use's term at its latest designated revision, in
+  the space of the component (a heading's, the document's). The versions read are rows of kind `term`
+  beside a request's and a publication's images and entries, and a baseline's pins (`terms` in its
+  digest, absent where none), decided as its maker. A pin the requester may not read is recorded and
+  never read.
+- **Reported, not failed**: `term_unresolved` (draft, unreadable, missing or of another space, one code
+  so nothing is said of a term the publisher may not read), `term_deprecated` naming `replacedBy`, and
+  `term_fallback` naming the document's language, each once a term with its count of uses. Recorded on
+  the request as it is made (`publication_request.warnings`, 0154) and returned with its sources'
+  warnings. They are counted over the placed content before conditions, so a use a condition removes
+  is still reported.

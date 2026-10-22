@@ -81,7 +81,8 @@ async function requestView(
     kind: request.kind === 'range' ? 'preview' : request.kind,
     state: request.state,
     failures: request.failures.map((each) => ({ ...each })),
-    warnings,
+    // Its sources' flags now, then what its terms reported as it was asked for (TMb).
+    warnings: [...warnings, ...request.warnings.map((each) => ({ ...each }))],
     publication: request.publication,
     preview,
   };
