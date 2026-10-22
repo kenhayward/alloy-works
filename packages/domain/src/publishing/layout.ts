@@ -151,6 +151,12 @@ export interface Layout {
      * `words.note` was: optional, and a layout without one sets none.
      */
     approvals?: { title: string } | undefined;
+    /**
+     * The bibliography (PUB-040; the CI plan, CIc), under this title in the layout's language, after
+     * the last node. Added at 7 in place, as `approvals` was: a layout without one places none, and
+     * its citations print their in-text forms unlinked.
+     */
+    bibliography?: { title: string } | undefined;
   };
   /**
    * One member per format it makes, each declared on its own (PUB-012, PUB-014): always the PDF, and
@@ -314,6 +320,7 @@ const upgradedLayoutSchema: z.ZodType<Layout> = z
           'A layout lists each sequence once',
         ),
       approvals: z.strictObject({ title: words }).optional(),
+      bibliography: z.strictObject({ title: words }).optional(),
     }),
     formats: z.strictObject({
       pdf: pageFormatSchema(pageSide),

@@ -8,6 +8,9 @@ import type { MathsTree } from './maths.js';
 /**
  * The published document (docs/design/publishing.md, "The published document"): the one intermediate
  * every writer reads, holding everything a writer needs and nothing it must decide. Version
+ * `publishing/23` is the document whose **runs may be citations** (the CI plan, CIc): each in-text
+ * form as citeproc rendered it, a link to its entry in `back.bibliography` where the layout places one.
+ * Otherwise it is `publishing/22`, the document that may be approved (WF2b). Before that, version
  * `publishing/21` is the document whose **tables may say how wide each column is** (the TG plan,
  * TG3): `widths`, fractions of the measure, where a table style widths columns by what they hold.
  * Otherwise it is `publishing/20`, the document whose **bound tables may be transposed** (the TG plan, TG2): a
@@ -43,7 +46,13 @@ import type { MathsTree } from './maths.js';
  * stored - only its digest is, on the publication - so a later shape is a new schema string and a new
  * template version, not a migration.
  */
-export const PUBLISHING_SCHEMA = 'publishing/22';
+export const PUBLISHING_SCHEMA = 'publishing/23';
+
+/**
+ * The document as it stood before a run could be a citation, frozen by CIc for the reason
+ * `publishing/16` is: `apps/worker/templates/publication/22/` asserts it.
+ */
+export const PUBLISHING_SCHEMA_22 = 'publishing/22';
 
 /**
  * The document as it stood before an approved publication printed no notice and an approval page,
@@ -362,8 +371,17 @@ export interface PublishedTableMarkRun {
 }
 
 /**
+ * **A citation** (CIc; CNT-053): its in-text form as the theme's style rendered it, and `link`, the
+ * anchor of its entry in the bibliography (PUB-097) - null where none is placed, or where a reference
+ * there would be text (a caption, a term, an attribution, a table's note or header rows).
+ */
+export interface PublishedCitationRun {
+  readonly citation: { readonly runs: readonly PublishedRun[]; readonly link: string | null };
+}
+
+/**
  * One piece of a published run sequence: text with its marks, an image, a footnote, a reference, an
- * equation or a table's note's mark.
+ * equation, a table's note's mark or a citation.
  */
 export type PublishedInline =
   | PublishedRun
@@ -371,7 +389,8 @@ export type PublishedInline =
   | PublishedFootnoteRun
   | PublishedReferenceRun
   | PublishedEquationRun
-  | PublishedTableMarkRun;
+  | PublishedTableMarkRun
+  | PublishedCitationRun;
 
 /**
  * **A table's lettered note** (TB3-E), set beneath it after the whole table's note and before a bound
@@ -791,6 +810,22 @@ export interface PublishedApprovals {
   readonly entries: readonly PublishedApproval[];
 }
 
+/**
+ * One entry of the bibliography (PUB-040): its anchor, `e-<entry>`, which its citations link to; its
+ * number or label where the style sets one apart; and its text.
+ */
+export interface PublishedBibliographyEntry {
+  readonly anchor: string;
+  readonly label: readonly PublishedRun[] | null;
+  readonly runs: readonly PublishedRun[];
+}
+
+/** The bibliography the layout places (CIc): its title, in the layout's words, and its entries. */
+export interface PublishedBibliography {
+  readonly title: string;
+  readonly entries: readonly PublishedBibliographyEntry[];
+}
+
 export interface PublishedDocument {
   readonly schema: typeof PUBLISHING_SCHEMA;
   readonly title: string;
@@ -823,4 +858,6 @@ export interface PublishedDocument {
   };
   readonly appendices: { readonly newPage: boolean };
   readonly nodes: readonly PublishedNode[];
+  /** After the last node: the bibliography, where the layout declares one and a citation stands. */
+  readonly back: { readonly bibliography: PublishedBibliography | null };
 }

@@ -31,7 +31,12 @@ export interface BaselinePinTable {
   node: ColumnType<string | null, string | null, never>;
   version_id: ColumnType<string, string, never>;
   artifact_id: ColumnType<string, string, never>;
-  kind: ColumnType<'component' | 'asset', 'component' | 'asset', never>;
+  /** A bibliography entry's since 0147 (CIc), with no node, as an image's. */
+  kind: ColumnType<
+    'component' | 'asset' | 'bibliographyEntry',
+    'component' | 'asset' | 'bibliographyEntry',
+    never
+  >;
 }
 
 /** A binding's dataset version and the dataset's name when the baseline was made (0072; DAT-038). */

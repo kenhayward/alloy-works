@@ -255,14 +255,20 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   title, year and first author, and offers it; **Import** reads pasted CSL-JSON, BibTeX or RIS,
   merges each match, saying what it gave it and what it could not keep. An entry's page lists where
   it is cited, and it is archived only when nothing cites it
-  (`/v1/spaces/{space}/bibliography-entries`). Citing an entry from the editor, and printing
-  citations, are not built yet.
+  (`/v1/spaces/{space}/bibliography-entries`). Citing an entry from the editor is not built yet.
 - **Citation styles.** Administration's **Citation styles** lists the CSL styles a theme may name:
   CSE (name-year), Vancouver (NLM) and Harvard (Cite Them Right) are given, and **CSL file** uploads
   any other, refused unless it is a CSL 1.0.2 style with both forms that renders. Each upload is
   previewed with invented sources and proposes what an entry of each type must hold (`requires`);
-  every change is a version (`/v1/citation-styles`). The default theme names Harvard at its version;
-  publishing in a style is not built yet. About names citeproc-js and its licence.
+  every change is a version (`/v1/citation-styles`). The default theme names Harvard at its version.
+  About names citeproc-js and its licence.
+- **Citations published.** A publish sets each citation in its theme's style, numbered and told apart
+  across the whole document, and where the layout declares a bibliography (`matter.bibliography`)
+  prints it after the last section, each citation linking to its entry in the PDF and in Word; the
+  default layout declares none yet. The entry versions read are recorded, and a baseline keeps its
+  own. A citation whose entry the publisher may not read, an entry missing a field its style needs,
+  or a style that no longer renders fails the publish by name. A component holding a citation is
+  still read-only in the editor.
 - **Groups, and your organisation's directory.** An administrator of the whole environment makes groups
   in Administration's **Groups** and grants a role to one as to a person, from any access page: everybody
   in it holds that role there. Groups lists each group in a table you can search, with where its members come from and who

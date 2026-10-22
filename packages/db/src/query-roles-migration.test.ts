@@ -214,6 +214,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0144_embedding_lag',
       '0145_bibliography_entries',
       '0146_citation_styles',
+      '0147_publication_citations',
     ]);
     expect(applied[own.id]).toEqual([
       '0058_query_roles',
@@ -305,6 +306,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0144_embedding_lag',
       '0145_bibliography_entries',
       '0146_citation_styles',
+      '0147_publication_citations',
     ]);
 
     expect(await queryRoles(development)).toEqual([

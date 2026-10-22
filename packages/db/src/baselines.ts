@@ -1,4 +1,5 @@
 import {
+  citationPlaces,
   baselineDigestInput,
   baselineNameProblem,
   labelFor,
@@ -105,6 +106,7 @@ export async function makeBaseline(
     ...(template ? [template.template_version_id] : []),
     ...found.resolved.map((each) => each.version),
     ...found.assets.map((each) => each.version),
+    ...found.entries.map((each) => each.version),
     ...found.bindings.map((each) => each.datasetVersion),
   ];
   const digests = new Map(
@@ -128,6 +130,9 @@ export async function makeBaseline(
     template: template ? pinned(template.template_version_id) : null,
     occurrences: found.resolved.map((each) => ({ node: each.node, ...pinned(each.version) })),
     assets: found.assets.map((each) => pinned(each.version)),
+    ...(found.entries.length === 0
+      ? {}
+      : { entries: found.entries.map((each) => pinned(each.version)) }),
     bindings: found.bindings.map((each) => ({
       node: each.node,
       binding: each.binding,
@@ -174,6 +179,14 @@ export async function makeBaseline(
       version_id: each.version,
       artifact_id: each.asset,
       kind: 'asset' as const,
+    })),
+    // Each entry version its citations read, so its publish never reads a later one (LIB-047).
+    ...found.entries.map((each) => ({
+      baseline_id: made.id,
+      node: null,
+      version_id: each.version,
+      artifact_id: each.entry,
+      kind: 'bibliographyEntry' as const,
     })),
   ];
   if (parts.length > 0) await trx.insertInto('baseline_pin').values(parts).execute();
@@ -232,6 +245,8 @@ async function readableAssets(
   trx: TenantTransaction,
   principal: string,
   assets: readonly string[],
+  /** An entry's too (CIc), read by the same predicate. */
+  kind: 'asset' | 'bibliographyEntry' = 'asset',
 ): Promise<ReadonlySet<string>> {
   if (assets.length === 0) return new Set();
   const readable = await loadReadableSet(trx, principal);
@@ -240,7 +255,7 @@ async function readableAssets(
     .selectFrom('artifact as a')
     .select('a.id')
     .where('a.id', 'in', [...new Set(assets)])
-    .where('a.kind', '=', 'asset')
+    .where('a.kind', '=', kind)
     .where((eb) => readableArtifacts(eb, readable))
     .execute();
   return new Set(rows.map((row) => row.id));
@@ -408,6 +423,13 @@ export async function readBaseline(
     occurrences.filter((each) => readable.has(each.artifact_id)).map((each) => each.node!),
   );
   const assets = pins.filter((each) => each.kind === 'asset');
+  const entries = pins.filter((each) => each.kind === 'bibliographyEntry');
+  const readableEntries = await readableAssets(
+    trx,
+    reader,
+    entries.map((each) => each.artifact_id),
+    'bibliographyEntry',
+  );
   return {
     ...summaryOf(row),
     pins: {
@@ -428,6 +450,13 @@ export async function readBaseline(
       assets: assets
         .filter((each) => readableImages.has(each.artifact_id))
         .map((each) => ({ version: each.version_id, digest: each.version_digest })),
+      ...(entries.length === 0
+        ? {}
+        : {
+            entries: entries
+              .filter((each) => readableEntries.has(each.artifact_id))
+              .map((each) => ({ version: each.version_id, digest: each.version_digest })),
+          }),
       bindings: bindings
         .filter((each) => shown.has(each.node))
         .map((each) => ({
@@ -597,6 +626,7 @@ export async function requestBaselinePublication(
     .execute();
   const occurrences = pins.filter((each) => each.kind === 'component');
   const assets = pins.filter((each) => each.kind === 'asset');
+  const entries = pins.filter((each) => each.kind === 'bibliographyEntry');
   const readable = await readableComponents(
     trx,
     input.requester,
@@ -614,6 +644,38 @@ export async function requestBaselinePublication(
   if (nodes.length > 0 || images > 0) {
     return { answer: 'baseline.unreadable', nodes, assets: images };
   }
+  // An entry it pinned the requester may not read fails each citation of it by name (CNT-054), as a
+  // publish of the latest does: the pin is recorded, as 0073 holds it to be, and never read.
+  const readableEntries = await readableAssets(
+    trx,
+    input.requester,
+    entries.map((each) => each.artifact_id),
+    'bibliographyEntry',
+  );
+  const hidden = new Set(
+    entries
+      .filter((each) => !readableEntries.has(each.artifact_id))
+      .map((each) => each.artifact_id),
+  );
+  const unresolved: PublishFailure[] =
+    hidden.size === 0
+      ? []
+      : occurrences.flatMap((each) => {
+          const read = readContent(each.content, {
+            artifact: each.artifact_id,
+            version: each.version_id,
+          });
+          if (!read.ok) throw new Error(`The component ${each.artifact_id} does not read`);
+          return citationPlaces(read.document)
+            .filter((place) => hidden.has(place.entry))
+            .map((place) => ({
+              stage: 'resolve' as const,
+              code: 'citation_unresolved' as const,
+              node: each.node!,
+              block: place.block,
+              detail: `${place.n}: ${place.entry}`,
+            }));
+        });
 
   if (!input.formats.includes('pdf')) {
     const outline = readOutline(baseline.outline, {
@@ -647,7 +709,7 @@ export async function requestBaselinePublication(
       document_version_id: baseline.document_version_id,
       formats,
       requested_by: input.requester,
-      failures: '[]',
+      failures: JSON.stringify(unresolved),
       layout_id: baseline.layout_id,
       layout_version_id: baseline.layout_version_id,
       theme_id: baseline.theme_id,
@@ -670,16 +732,23 @@ export async function requestBaselinePublication(
       )
       .execute();
   }
-  if (assets.length > 0) {
+  if (assets.length > 0 || entries.length > 0) {
     await trx
       .insertInto('publication_request_asset')
-      .values(
-        assets.map((each) => ({
+      .values([
+        ...assets.map((each) => ({
           request_id: request.id,
           version_id: each.version_id,
           asset_id: each.artifact_id,
         })),
-      )
+        // The entry versions it pinned, never their latest (LIB-047).
+        ...entries.map((each) => ({
+          request_id: request.id,
+          version_id: each.version_id,
+          asset_id: each.artifact_id,
+          asset_kind: 'bibliographyEntry' as const,
+        })),
+      ])
       .execute();
   }
   const bindings = await trx

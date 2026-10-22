@@ -124,13 +124,15 @@ export function baselineHandlers(
       const { id } = request.params as BaselineParams;
       const read = await readBaseline(trx, id, principalId);
       if (!read) throw notFound();
-      const { pins, withheld } = read;
+      const { pins: given, withheld } = read;
+      const { entries, ...pins } = given;
       return {
         ...summaryView(read),
         pins: {
           ...pins,
           occurrences: [...pins.occurrences],
           assets: [...pins.assets],
+          ...(entries === undefined ? {} : { entries: [...entries] }),
           bindings: pins.bindings.map(({ revisions, ...each }) => ({
             ...each,
             ...(revisions === undefined ? {} : { revisions: [...revisions] }),

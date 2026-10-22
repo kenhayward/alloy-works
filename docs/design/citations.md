@@ -39,7 +39,7 @@ fails the publish, naming both.
 | **LIB-045** | Canonical identifiers first, then title, year and first author, normalised                                                     |
 | **LIB-046** | The key is made from the fields at creation, unique in the space (so in any document), and never changes                       |
 | **PUB-040** | The bibliography is generated from the citations present, in the style's form                                                  |
-| **PUB-097** | Each citation links to its entry in the bibliography: PDF a link, Word a REF field to the entry's bookmark                     |
+| **PUB-097** | Each citation links to its entry in the bibliography: PDF a link, Word a hyperlink to the entry's bookmark                     |
 | **STR-069** | A cross-reference's target gains an `entry` arm, by identity                                                                   |
 | **IMP-014** | As LIB-009                                                                                                                     |
 
@@ -101,3 +101,25 @@ the publisher's, as with every other record.
 | `citation_unresolved` | A citation's entry does not exist, or the publisher may not read it                         |
 | `entry_incomplete`    | An entry lacks a variable its style requires for its type: the entry and the variable named |
 | `style_invalid`       | The theme's style no longer renders (never at upload, where it is refused)                  |
+
+## Built in CIc, and where it departs
+
+- **Assemble** renders every citation once, in reading order (footnotes and table cells included),
+  through `renderCitations` handed in by the worker, so citeproc stays out of the renderer;
+  `publishing/23` carries each as a `citation` run and the bibliography as `back.bibliography`, its
+  entries anchored `e-<entry>`. Template 23 draws them.
+- **The layout places it**: `matter.bibliography { title }`, added at schema 7 in place as
+  `approvals` was. A layout without one places none and its citations print unlinked; the default
+  layout declares none yet. A citation in a section's title is still refused.
+- **Word** links a citation to the entry's bookmark with a hyperlink, not a `REF`: a `REF` would print
+  the entry's words. The bibliography is outside Word's headings and contents, as the PDF keeps it out
+  of its own.
+- **Tagged PDF**: the pinned Typst writes no `Reference` or `BibEntry`, so a citation is a `Link` and
+  the bibliography an `L` of `LI`.
+- **Failures** name a citation by its place among its block's citations, `detail` `<n>: <entry>`;
+  `entry_incomplete` `<entry>: <variable>`; `style_invalid` `none` or `render`.
+- **Recorded and pinned** as images are: the entry versions read are rows of their own kind beside a
+  request's and a publication's images, and a baseline pins them (`entries` in its digest, absent where
+  none), so 0022's and 0073's checks hold them. A publication records its theme's style version. A
+  baseline's publish by someone who may not read a pinned entry fails each citation of it by name;
+  the pin is recorded and never read.
