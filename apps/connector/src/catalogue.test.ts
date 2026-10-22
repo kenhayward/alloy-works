@@ -234,7 +234,9 @@ function unqualified(sql: string): string[] {
   }
   // An operator named as pg_catalog's may take a negative number: `OPERATOR(pg_catalog.=) -1`. A
   // minus before anything else is unary minus, which the search path resolves.
+  // A select list's star names no operator (2026-10-22, the FR plan's revision read).
   const operators = text
+    .replace(/\bselect\s+\*/gi, 'select ')
     .replace(/OPERATOR\(pg_catalog\.[^)\s]+\)(?:\s*-\d+\b)?/g, ' ')
     .replace(/::|\$\d+/g, ' ');
   for (const [operator] of operators.matchAll(/[-+*/<>=~!@#%^&|`?]+/g)) found.push(operator);
@@ -316,6 +318,8 @@ describe("the connector's catalogue queries, read", () => {
     // minus, an operator the search path resolves.
     expect(unqualified('select 1 where a OPERATOR(pg_catalog.=) -1')).toEqual([]);
     expect(unqualified('select 1 where a OPERATOR(pg_catalog.=) -u.typmod')).toEqual(['-']);
+    expect(unqualified('select * from (x) as r')).toEqual([]);
+    expect(unqualified('select a * b')).toEqual(['*']);
   });
 
   it('holds every query the connector writes itself', () => {

@@ -73,7 +73,7 @@ Owning the log is not the same as granting a tenant administrator sight of their
 | **ADM-043** | Backup frequency, recovery point and recovery time must be declared per artifact class and tested: restoring must be exercised on a stated schedule rather than assumed, and a restore that is never rehearsed must not be presented as a capability (ADM-020)                                                                                                                                                                                         | T7      | Specified |
 | **ADM-044** | Stored artifacts must have declared integrity re-verification schedules - assets against their hashes (**AST-042**), version digests (**VER-042**), audit exports (**LIF-055**) - and a verification failure must be surfaced in diagnostics and audited rather than logged                                                                                                                                                                            | T7      | Specified |
 | **ADM-046** | Every performance budget in the specification must be registered with its owner, its reference configuration, whether it is provisional, the tranche by which it is confirmed, and how it is measured in production. ADM-016's reporting must say, budget by budget, whether it is being met                                                                                                                                                           | T7      | Specified |
-| **ADM-048** | Cost and usage attribution (ADM-010, ADM-011) must extend to every chargeable external operation: external reference searches, translation jobs, malware scanning, notification and email delivery, webhook delivery, indexing and embedding, and bulk generation                                                                                                                                                                                      | T5      | Specified |
+| **ADM-048** | Cost and usage attribution (ADM-010, ADM-011) must extend to every chargeable external operation: external reference searches, translation jobs, malware scanning, notification and email delivery, webhook delivery, indexing and embedding, and bulk generation                                                                                                                                                                                      | T7      | Specified |
 
 ### The life of a tenant
 
@@ -121,7 +121,7 @@ capability and not a tool.
 | **ADM-012** | A tenant administrator must be able to see cost trends, not only a current total                                                                                                                                                            | T5      | Superseded by ADM-033 |
 | **ADM-013** | Budgets and alerts must be settable, and an alert must arrive before a limit rather than after                                                                                                                                              | T5      | Specified             |
 | **ADM-014** | Where a budget is exhausted, what stops must be declared in advance: which capabilities degrade and which continue                                                                                                                          | T5      | Specified             |
-| **ADM-033** | Cost and usage must be presented as a trend over time, broken down per capability (ADM-010, ADM-011) and per period, with at least twelve months of history kept where the tenant has been running that long                                | T5      | Specified             |
+| **ADM-033** | Cost and usage must be presented as a trend over time, broken down per capability (ADM-010, ADM-011) and per period, with at least twelve months of history kept where the tenant has been running that long                                | T7      | Specified             |
 | **ADM-034** | A budget alert (ADM-013) must be delivered to named recipients through the notification channels **COL** owns (**COL-033**), and who receives it must be configurable by a tenant administrator                                             | T5      | Specified             |
 | **ADM-035** | The precision at which usage is recorded, and how long usage records are kept, must be declared before measurement begins rather than inferred from the data afterwards (**LIF** owns retention policy; **ADM-Q02** can only raise the bar) | T7      | Specified             |
 
@@ -328,3 +328,18 @@ later tranche ([ADR-0048](../../decisions/0048-plain-http-sources-until-t7.md), 
 | Counts       | Before                    | After                     |
 | ------------ | ------------------------- | ------------------------- |
 | Requirements | 49, of which 4 superseded | 50, of which 4 superseded |
+
+### Cost moved to T7, 2026-10-22
+
+Not a review. Ken moved the cost trend and the cost of every chargeable operation to T7, where
+ADM-011's measures and the operations they price are built
+([FR plan](../../plans/2026-10-22-fr-freshness.md), FR-A). A row moving tranche whole keeps its
+identifier, and only its tranche changes.
+
+| What was found                                                                                                                                                           | Change                              |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------- |
+| The trend needs ADM-011's storage, publication and asset measures, which are T7; translation, scanning, email and webhooks, whose cost ADM-048 attributes, are not built | **ADM-033 and ADM-048 moved to T7** |
+
+| Counts       | Before                    | After                     |
+| ------------ | ------------------------- | ------------------------- |
+| Requirements | 50, of which 4 superseded | 50, of which 4 superseded |

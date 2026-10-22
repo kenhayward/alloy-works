@@ -169,6 +169,25 @@ export function createFakeApi(options = {}) {
             'content-digest': digest(bytes),
           });
         }
+        case '/v1/versioned':
+        case '/v1/modified': {
+          // The readings with a revision (the FR plan, FR-C): an ETag, or a Last-Modified alone, and
+          // 304 to a conditional request it matches. `?v=` names the ETag's version.
+          const bytes = json({ data: { items: READINGS }, count: READINGS.length });
+          const tagged = pathname === '/v1/versioned';
+          const etag = `"readings-${url.searchParams.get('v') ?? '1'}"`;
+          const modified = 'Wed, 21 Oct 2026 07:28:00 GMT';
+          const unchanged = tagged
+            ? request.headers['if-none-match'] === etag
+            : request.headers['if-modified-since'] !== undefined &&
+              Date.parse(request.headers['if-modified-since']) >= Date.parse(modified);
+          const revision = tagged ? { etag } : { 'last-modified': modified };
+          if (unchanged) {
+            response.writeHead(304, revision);
+            return response.end();
+          }
+          return send(200, bytes, { 'content-type': 'application/json', ...revision });
+        }
         case '/v1/readings.jsonl':
           return send(
             200,

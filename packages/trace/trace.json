@@ -139,7 +139,7 @@
       "id": "ADM-048",
       "area": "ADM",
       "statement": "Cost and usage attribution (ADM-010, ADM-011) must extend to every chargeable external operation: external reference searches, translation jobs, malware scanning, notification and email delivery, webhook delivery, indexing and embedding, and bulk generation",
-      "tranche": "T5",
+      "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
       "line": 76
@@ -301,7 +301,7 @@
       "id": "ADM-033",
       "area": "ADM",
       "statement": "Cost and usage must be presented as a trend over time, broken down per capability (ADM-010, ADM-011) and per period, with at least twelve months of history kept where the tenant has been running that long",
-      "tranche": "T5",
+      "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
       "line": 124
@@ -17407,6 +17407,10 @@
           "howItIsMet": "A check compares a fresh result with the one held only where the opener's identity key is the dataset's; a different checksum is recorded as a dataset version and answered as a waiting revision"
         },
         {
+          "id": "DAT-073",
+          "howItIsMet": "HTTP, S3 and PostgreSQL declare a `revision` capability; a run captures the source's revision (an ETag or Last-Modified, a version id or ETag, a revision statement's value) and a check asks it first, running nothing where it is unchanged ([Check](#check))"
+        },
+        {
           "id": "DAT-037",
           "howItIsMet": "Accepting is its own route, and its resolution row names the version the binding held, the version it holds after, who and when"
         },
@@ -20472,6 +20476,12 @@
       "kind": "title"
     },
     {
+      "id": "DAT-073",
+      "file": "apps/connector/src/revision.test.ts",
+      "line": 85,
+      "kind": "title"
+    },
+    {
       "id": "DAT-068",
       "file": "apps/connector/src/run.test.ts",
       "line": 281,
@@ -22554,6 +22564,12 @@
       "kind": "title"
     },
     {
+      "id": "DAT-073",
+      "file": "apps/service/src/source-revision-routes.test.ts",
+      "line": 154,
+      "kind": "title"
+    },
+    {
       "id": "ADM-049",
       "file": "apps/service/src/space-routes.test.ts",
       "line": 224,
@@ -23406,6 +23422,12 @@
       "kind": "title"
     },
     {
+      "id": "DAT-073",
+      "file": "apps/web/src/data/definitionDraft.test.ts",
+      "line": 51,
+      "kind": "title"
+    },
+    {
       "id": "DAT-119",
       "file": "apps/web/src/data/fileDraft.test.ts",
       "line": 14,
@@ -23420,25 +23442,31 @@
     {
       "id": "DAT-016",
       "file": "apps/web/src/data/query-definitions.test.tsx",
-      "line": 1181,
+      "line": 1198,
       "kind": "title"
     },
     {
       "id": "DAT-054",
       "file": "apps/web/src/data/query-definitions.test.tsx",
-      "line": 2467,
+      "line": 2484,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-073",
+      "file": "apps/web/src/data/query-definitions.test.tsx",
+      "line": 740,
       "kind": "title"
     },
     {
       "id": "DAT-079",
       "file": "apps/web/src/data/query-definitions.test.tsx",
-      "line": 2519,
+      "line": 2536,
       "kind": "title"
     },
     {
       "id": "DAT-094",
       "file": "apps/web/src/data/query-definitions.test.tsx",
-      "line": 1989,
+      "line": 2006,
       "kind": "title"
     },
     {
@@ -23450,13 +23478,13 @@
     {
       "id": "DAT-119",
       "file": "apps/web/src/data/query-definitions.test.tsx",
-      "line": 1905,
+      "line": 1922,
       "kind": "title"
     },
     {
       "id": "DAT-121",
       "file": "apps/web/src/data/query-definitions.test.tsx",
-      "line": 781,
+      "line": 798,
       "kind": "title"
     },
     {
@@ -26378,13 +26406,13 @@
     {
       "id": "DAT-058",
       "file": "packages/db/src/datasets.test.ts",
-      "line": 1289,
+      "line": 1302,
       "kind": "title"
     },
     {
       "id": "DAT-070",
       "file": "packages/db/src/datasets.test.ts",
-      "line": 734,
+      "line": 747,
       "kind": "title"
     },
     {
@@ -28806,6 +28834,18 @@
       "kind": "title"
     },
     {
+      "id": "DAT-073",
+      "file": "packages/domain/src/data/source-revision.test.ts",
+      "line": 74,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-113",
+      "file": "packages/domain/src/data/source-revision.test.ts",
+      "line": 175,
+      "kind": "title"
+    },
+    {
       "id": "DAT-019",
       "file": "packages/domain/src/data/sql.test.ts",
       "line": 289,
@@ -28982,7 +29022,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 874,
+      "line": 878,
       "kind": "title"
     },
     {

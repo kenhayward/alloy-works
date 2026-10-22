@@ -906,7 +906,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   document alone. **Checking** a document runs its checked bindings again, each distinct question
   once, and keeps a different result waiting beside what the document holds; **accepting** it moves
   that document alone, records what it held and holds after, who and when, and asks the database
-  nothing. Anybody who may read the document may read the results it holds; fetching one, and
+  nothing. A check first asks the source whether it changed, where it can say cheaply - an HTTP
+  API's ETag or Last-Modified, an S3 object's version, or the **Revision statement** a PostgreSQL
+  query's author may write on its Query tab - and runs nothing where it has not. Anybody who may read the document may read the results it holds; fetching one, and
   accepting one, need what running the query would - read on the query definition and use of the
   connection it ran on - and accepting needs edit on the document too. The SQL that ran, the
   connection it ran on and the database's own column names are shown only to somebody who may also

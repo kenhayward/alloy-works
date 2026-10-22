@@ -15,6 +15,8 @@ import {
   type DescribeSqlRequest,
   type FileFetch,
   type ParameterValues,
+  type RevisionAnswer,
+  type RevisionRequest,
   type RunAnswer,
   type RunRequest,
   type S3KeyPair,
@@ -27,6 +29,7 @@ import { bodyLimit, proposeColumns, readRows } from './formats/rows.js';
 import type { HttpPolicy } from './http-source.js';
 import { exchange, type Exchanged } from './https.js';
 import { finishResult } from './result.js';
+import { revisionOf } from './revision.js';
 
 /**
  * The S3 source (data.md; the D6 plan, D6-C, D6-K and D6-L): a `GET` or `HEAD` signed by SigV4 from
@@ -316,6 +319,38 @@ export async function testS3(
   }
 }
 
+/** An object's version id, where its bucket keeps versions, as a store names it. */
+function versionIdOf(headers: IncomingHttpHeaders): string | undefined {
+  const version = headers['x-amz-version-id'];
+  return typeof version === 'string' && version !== 'null' && /^[\x21-\x7e]{1,1024}$/.test(version)
+    ? version
+    : undefined;
+}
+
+/**
+ * An object's revision (FR-C): its version id, else its ETag - no digest under SSE-KMS or multipart,
+ * but moving whenever the object is written, which is all a check asks.
+ */
+function s3Revision(headers: IncomingHttpHeaders): string | undefined {
+  const versionId = versionIdOf(headers);
+  const etag = headers.etag;
+  return (
+    (versionId === undefined ? undefined : revisionOf('version', versionId)) ??
+    (typeof etag === 'string' ? revisionOf('etag', etag) : undefined)
+  );
+}
+
+/** A key bound by its values, or the caller's failure where a value cannot be placed in it. */
+function boundKey(key: FileFetch['key'], values: ParameterValues) {
+  try {
+    return bindObjectKey(key, values);
+  } catch (error) {
+    // A value a key's segment cannot carry is the caller's, and nothing is sent.
+    if (error instanceof ObjectKeyRefused) throw new Refused(dataFailure('parameter_invalid'));
+    throw error;
+  }
+}
+
 /** An object read whole under the limits and checked against what its store states of it. */
 async function readObject(
   settings: S3Settings,
@@ -325,15 +360,13 @@ async function readObject(
   policy: HttpPolicy,
   deadline: number,
   maxBytes: number,
-): Promise<{ readonly body: Buffer; readonly key: string; readonly versionId?: string }> {
-  let bound;
-  try {
-    bound = bindObjectKey(key, values);
-  } catch (error) {
-    // A value a key's segment cannot carry is the caller's, and nothing is sent.
-    if (error instanceof ObjectKeyRefused) throw new Refused(dataFailure('parameter_invalid'));
-    throw error;
-  }
+): Promise<{
+  readonly body: Buffer;
+  readonly key: string;
+  readonly versionId?: string;
+  readonly revision?: string;
+}> {
+  const bound = boundKey(key, values);
   const check = new ChecksumCheck();
   const exchanged = await signedExchange(
     settings,
@@ -347,15 +380,13 @@ async function readObject(
   );
   if (!exchanged.ok) throw new Refused(exchanged.failure);
   if (!check.holds(exchanged.headers)) throw new Refused(dataFailure('result_incomplete'));
-  const version = exchanged.headers['x-amz-version-id'];
-  const versionId =
-    typeof version === 'string' && version !== 'null' && /^[\x21-\x7e]{1,1024}$/.test(version)
-      ? version
-      : undefined;
+  const versionId = versionIdOf(exchanged.headers);
+  const revision = s3Revision(exchanged.headers);
   return {
     body: exchanged.body,
     key: bound.key,
     ...(versionId === undefined ? {} : { versionId }),
+    ...(revision === undefined ? {} : { revision }),
   };
 }
 
@@ -416,7 +447,40 @@ export async function runS3(
       images: Object.fromEntries(
         [...read.images].map(([hash, bytes]) => [hash, bytes.toString('base64')]),
       ),
+      ...(object.revision === undefined ? {} : { revision: object.revision }),
     };
+  } catch (error) {
+    if (error instanceof Refused) return { outcome: 'failed', failure: error.failure };
+    throw error;
+  }
+}
+
+/**
+ * Whether an object moved since a revision (DAT-073; FR-D): a signed `HEAD` of its bound key, its
+ * revision compared, nothing of it read.
+ */
+export async function revisionS3(
+  request: RevisionRequest,
+  secret: string,
+  policy: HttpPolicy,
+  deadline: number,
+): Promise<RevisionAnswer> {
+  const fetch = request.definition.fetch as FileFetch;
+  try {
+    const bound = boundKey(fetch.key, request.values as ParameterValues);
+    const exchanged = await signedExchange(
+      request.settings as S3Settings,
+      keyPair(secret),
+      'HEAD',
+      bound.path,
+      policy,
+      deadline,
+      0,
+    );
+    if (!exchanged.ok) return { outcome: 'failed', failure: exchanged.failure };
+    return s3Revision(exchanged.headers) === request.revision
+      ? { outcome: 'unchanged' }
+      : { outcome: 'changed' };
   } catch (error) {
     if (error instanceof Refused) return { outcome: 'failed', failure: error.failure };
     throw error;

@@ -36,6 +36,8 @@ const MESSAGES: Partial<Record<DataFailureCode, string>> = {
     'A value cannot be held by its declared type: not a number, an infinity, or a date or time out of range.',
   definition_unbindable:
     'The SQL cannot be bound: a fragment runs into the SQL around it where it is placed. Change the fragment.',
+  definition_invalid:
+    'The revision statement must answer exactly one row of one column. Change the statement.',
   empty_result:
     'The query returned no rows, and this definition says no rows is not a valid answer.',
   source_refused: 'The source refused the statement.',

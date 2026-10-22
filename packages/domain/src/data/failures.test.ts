@@ -57,6 +57,8 @@ describe('a data failure', () => {
       extension_refused: 'connector',
       extension_failed: 'connector',
       extension_invalid: 'connector',
+      // The FR plan's FR-C: a revision statement that answered other than one row of one column.
+      definition_invalid: 'query',
     });
     expect(new Set(dataFailureCodes).size).toBe(dataFailureCodes.length);
     for (const code of dataFailureCodes) {

@@ -59,6 +59,8 @@ export const dataFailures = Object.freeze({
   extension_refused: 'connector',
   extension_failed: 'connector',
   extension_invalid: 'connector',
+  // A revision statement that answered other than one row of one column (the FR plan, FR-C).
+  definition_invalid: 'query',
 } as const satisfies Record<string, Attribution>);
 
 export type DataFailureCode = keyof typeof dataFailures;

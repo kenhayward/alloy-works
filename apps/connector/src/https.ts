@@ -19,7 +19,8 @@ import { guardedAddress, normaliseHost, type Lookup } from './guard.js';
  * at it (DAT-109); the body counted as it arrives and again after decoding - gzip, deflate or brotli,
  * one at a time - either past the limit `byte_limit` (DAT-110); and what the response states of
  * itself apart from its framing checked: its `Content-Length` and RFC 9530's `Content-Digest`
- * (DAT-108). Never an ETag. No error, URL or header is ever answered: only a failure's code.
+ * (DAT-108). Never an ETag, which only says whether a source moved (FR-C). No error, URL or header is
+ * ever answered: only a failure's code.
  */
 
 export interface Exchange {
@@ -47,6 +48,11 @@ export interface ExchangePolicy {
   readonly maxBytes: number;
   /** Shown each chunk of the body as it arrived, before decoding: what S3's checksums are over. */
   readonly observe?: (chunk: Buffer) => void;
+  /**
+   * A conditional request asking only whether a source moved (the FR plan, FR-D): a 304 is an answer,
+   * and a 2xx's headers are, its body destroyed unread once they arrive. Both answer no body.
+   */
+  readonly conditional?: boolean;
 }
 
 export type Exchanged =
@@ -152,6 +158,11 @@ export async function exchange(asked: Exchange, policy: ExchangePolicy): Promise
     });
     request.on('response', (response) => {
       const status = response.statusCode ?? 0;
+      if (policy.conditional && (status === 304 || (status >= 200 && status < 300))) {
+        finish({ ok: true, status, headers: response.headers, body: Buffer.alloc(0) });
+        request.destroy();
+        return;
+      }
       if ((status >= 300 && status < 400) || UNREACHED.has(status)) {
         finish(failed(dataFailure('connection_failed')));
         return;

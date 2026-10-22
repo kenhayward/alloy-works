@@ -106,6 +106,8 @@ const Binding = z.strictObject({
   version: Id.optional(),
   /** A check's finding for the binding: its result unchanged, or a revision waiting. */
   outcome: z.enum(['unchanged', 'revision']).optional(),
+  /** A check's finding by the source's revision alone, nothing run (the FR plan, FR-D). */
+  by: z.literal('revision').optional(),
 });
 
 /** Which version a reference takes: a pinned one's version, or `latest` or `approved` (CNT-182). */

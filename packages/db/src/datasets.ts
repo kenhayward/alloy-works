@@ -93,9 +93,10 @@ export interface RecordedDatasetVersion {
  * Records a run's result as a version of the dataset its provenance identifies - the definition it
  * names, its parameters and its identity - making the dataset, with this as its first version, in its
  * definition's space where nothing has asked the question before. **The latest version is reused only
- * where the checksum, the definition version and the SQL that ran all equal this run's** (D3-F): a
- * version's content is its provenance (DAT-085), and a reused one naming a definition version or SQL
- * that did not run would be untrue of the run. Otherwise a new version is recorded, whatever its
+ * where the checksum, the definition version, the SQL that ran and the source's revision all equal
+ * this run's** (D3-F; the FR plan, FR-C): a version's content is its provenance (DAT-085), and a
+ * reused one naming a definition version or SQL that did not run would be untrue of the run, and one
+ * naming an older revision would have a check ask about it. Otherwise a new version is recorded, whatever its
  * checksum: a check compares it with what each document holds (D3-J).
  *
  * Two acts asking one question take turns on a lock on the question, held to the end of the caller's
@@ -175,7 +176,8 @@ export async function recordDatasetVersion(
   if (
     held.checksum === provenance.checksum &&
     held.queryDefinition.version === provenance.queryDefinition.version &&
-    isDeepStrictEqual(held.ran, provenance.ran)
+    isDeepStrictEqual(held.ran, provenance.ran) &&
+    held.revision === provenance.revision
   ) {
     return { dataset: found, version: latest, reused: true };
   }

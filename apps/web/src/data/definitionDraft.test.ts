@@ -37,3 +37,24 @@ describe("an extension's definition as its page holds it (the EX plan, EX-G)", (
     );
   });
 });
+
+const revised = {
+  ...onExtension,
+  title: 'Sites',
+  parameters: [],
+  fetch: { kind: 'sql', text: 'select id from sample.site' },
+  columns: [{ name: 'id', from: { column: 'id' }, type: { base: 'integer' } }],
+  revision: { text: 'select max(changed) from sample.site' },
+} as unknown as QueryDefinition;
+
+describe("a PostgreSQL definition's revision statement as its page holds it (the FR plan, FR-B)", () => {
+  it('DAT-073 opens and saves a revision statement as it was, and saves none where it is left blank', () => {
+    const draft = draftOf(revised);
+    expect(draft.revision).toBe('select max(changed) from sample.site');
+    expect(definitionOf(draft)).toEqual(revised);
+    const plain = { ...revised } as Partial<QueryDefinition>;
+    delete plain.revision;
+    expect(definitionOf({ ...draft, revision: '  ' })).toEqual(plain);
+    expect(draftOf(plain as QueryDefinition).revision).toBe('');
+  });
+});

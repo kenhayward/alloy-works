@@ -385,7 +385,12 @@ export async function startHarness(options: HarnessOptions = {}): Promise<Harnes
       const test = connector.test;
       connector.mode = 'answer';
       connector.test = { outcome: 'ok', findings: [] };
-      const set = await call('ada', 'PUT', `/v1/connections/${id}/credential`, { secret: SECRET });
+      // An S3 connection's credential is a key pair (D6-C); every other's, one secret.
+      const credential =
+        (over as { type?: string }).type === 's3'
+          ? { accessKeyId: 'AKIAINVENTED', secretAccessKey: SECRET }
+          : { secret: SECRET };
+      const set = await call('ada', 'PUT', `/v1/connections/${id}/credential`, credential);
       connector.mode = mode;
       connector.test = test;
       if (set.statusCode !== 200) throw new Error(`${set.statusCode} ${set.body}`);

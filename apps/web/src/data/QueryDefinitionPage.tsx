@@ -1845,6 +1845,29 @@ export function QueryDefinitionPage({
           >
             {parameterLines}
           </Section>
+          {/* SQL the author writes, so offered where SQL is (DAT-073; the FR plan, FR-B). */}
+          {(sqlOffered || draft.revision !== '') && (
+            <Section
+              heading="Revision statement"
+              region={false}
+              hint={
+                <>
+                  Optional. SQL answering one value that changes whenever the data does, such as the
+                  latest time a row was changed. A check asks it first, and runs the query only when
+                  the value has moved.
+                </>
+              }
+            >
+              <textarea
+                aria-label="Revision statement"
+                className={`${styles['code']} ${styles['sqlText']}`}
+                rows={3}
+                spellCheck={false}
+                value={draft.revision}
+                onChange={(event) => change({ revision: event.target.value })}
+              />
+            </Section>
+          )}
           {draft.mode === 'builder' && (
             <details className={styles['runs']}>
               <summary>The SQL it runs</summary>

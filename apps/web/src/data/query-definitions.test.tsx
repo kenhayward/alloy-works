@@ -737,6 +737,23 @@ describe('the query definition page', () => {
     expect(await within(sample).findByText('site: x is not of its type.')).toBeInTheDocument();
   });
 
+  it('DAT-073 lets the author of a PostgreSQL query write the revision statement a check asks first, saved with the version', async () => {
+    const user = userEvent.setup();
+    const { client, asked } = service();
+    render(<QueryDefinitionPage client={client} id={DEFINITION} />);
+    const panel = await tab(user, 'Query');
+    const statement = within(panel).getByLabelText('Revision statement');
+    expect(statement).toHaveValue('');
+    await user.type(statement, 'select max(changed) from sample.site');
+    // A revision statement changes nothing the query returns: its columns stay confirmed.
+    expectSavable();
+    await user.click(saveVersion());
+    expect(await screen.findByText(/^Saved as version/)).toBeInTheDocument();
+    expect(asked.filter((each) => each.path.endsWith('/versions'))[0]?.body).toMatchObject({
+      definition: { revision: { text: 'select max(changed) from sample.site' } },
+    });
+  });
+
   it('saves a version from the one shown, from any tab, and says so when somebody else saved one first', async () => {
     const user = userEvent.setup();
     let stale = true;

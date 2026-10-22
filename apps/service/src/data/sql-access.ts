@@ -26,6 +26,17 @@ export function maySqlWith(facts: AccessFacts): boolean {
 type FetchOf = Pick<QueryDefinition['fetch'], 'kind'>;
 
 /**
+ * A definition's fetch as SQL's rules see it (the FR plan, FR-B): SQL wherever its author wrote any,
+ * its revision statement among it, so a built query with one needs what SQL needs.
+ */
+export function asWritten(definition: {
+  readonly fetch: FetchOf;
+  readonly revision?: unknown;
+}): FetchOf {
+  return definition.revision === undefined ? definition.fetch : { kind: 'sql' };
+}
+
+/**
  * Whether facts at a connection let their principal run a fetch there (the D4 plan, D4-J), the one
  * place a fetch's needs are decided: a built query needs `use_connection` alone, since it writes only
  * a `SELECT` the product generates, and so does an HTTP request, whose every value its builder places

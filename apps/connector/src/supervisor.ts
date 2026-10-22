@@ -29,6 +29,7 @@ import {
   dataFailure,
   describeAnswerSchema,
   describeSqlAnswerSchema,
+  revisionAnswerSchema,
   runAnswerSchema,
   testAnswerSchema,
   type ChildRequest,
@@ -37,6 +38,8 @@ import {
   type DescribeSqlAnswer,
   type DescribeRequest,
   type DescribeSqlRequest,
+  type RevisionAnswer,
+  type RevisionRequest,
   type RunAnswer,
   type RunRequest,
   type TestAnswer,
@@ -277,7 +280,7 @@ export const streamChild: StreamChild = (spec, input, deadlineMs, onLine, stderr
     child.stdin.end(`${input}\n`);
   });
 
-export type RequestKind = 'test' | 'describe' | 'run' | 'describeSql';
+export type RequestKind = 'test' | 'describe' | 'run' | 'describeSql' | 'revision';
 
 interface Kinds {
   readonly test: { readonly request: TestRequest; readonly answer: TestAnswer };
@@ -287,6 +290,7 @@ interface Kinds {
     readonly request: DescribeSqlRequest;
     readonly answer: DescribeSqlAnswer;
   };
+  readonly revision: { readonly request: RevisionRequest; readonly answer: RevisionAnswer };
 }
 
 export type RequestOf<K extends RequestKind> = Kinds[K]['request'];
@@ -298,6 +302,7 @@ const answerSchemas = {
   describe: describeAnswerSchema,
   run: runAnswerSchema,
   describeSql: describeSqlAnswerSchema,
+  revision: revisionAnswerSchema,
 } as const satisfies Record<RequestKind, unknown>;
 
 /**
@@ -358,7 +363,9 @@ export interface Supervisor {
 function failed<K extends RequestKind>(kind: K, code: DataFailureCode): AnswerOf<K> {
   const failure = dataFailure(code);
   return (
-    kind === 'test' || kind === 'run' ? { outcome: 'failed', failure } : { failure }
+    kind === 'test' || kind === 'run' || kind === 'revision'
+      ? { outcome: 'failed', failure }
+      : { failure }
   ) as AnswerOf<K>;
 }
 

@@ -384,9 +384,13 @@ export const connectorIdentities: Readonly<
   extension: Object.freeze([] as const),
 });
 
-/** What a source type can do beyond reading (DAT-079): whether it binds a definition's parameters. */
+/**
+ * What a source type can do beyond reading (DAT-079): whether it binds a definition's parameters, and
+ * whether it reports a revision cheaply, so a check asks before it runs (DAT-073; the FR plan, FR-B).
+ */
 export interface SourceCapabilities {
   readonly parameters: boolean;
+  readonly revision: boolean;
 }
 
 /**
@@ -398,9 +402,13 @@ export function capabilitiesOf(
   settings: Pick<ConnectionSettings, 'type' | 'source'>,
 ): SourceCapabilities {
   if (settings.type === 'extension') {
-    return { parameters: (settings.source as ExtensionSettings['source']).capabilities.parameters };
+    return {
+      parameters: (settings.source as ExtensionSettings['source']).capabilities.parameters,
+      revision: false,
+    };
   }
-  return { parameters: true };
+  // HTTP's ETag or Last-Modified, S3's version id or ETag, and PostgreSQL's revision statement.
+  return { parameters: true, revision: true };
 }
 
 export type ConnectionProblem =

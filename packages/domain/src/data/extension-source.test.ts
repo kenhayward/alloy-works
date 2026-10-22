@@ -54,7 +54,7 @@ describe('a connection to an extension (the EX plan, EX-D and EX-F)', () => {
 
   it('DAT-079 refuses parameters on a source that declares none, and binds them on one that does', () => {
     const parameter = { name: 'site', type: 'text', required: true } as never;
-    expect(capabilitiesOf(settings())).toEqual({ parameters: false });
+    expect(capabilitiesOf(settings())).toEqual({ parameters: false, revision: false });
     expect(capabilityProblems({ parameters: [parameter] }, settings())).toEqual([
       expect.objectContaining({ path: 'parameters' }),
     ]);

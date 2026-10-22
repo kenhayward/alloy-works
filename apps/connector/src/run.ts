@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import type { Socket } from 'node:net';
 
 import {
@@ -17,7 +18,7 @@ import pg from 'pg';
 import { describeStatement, QUERY_CANCELED, sourceRefused, withRefusedColumn } from './describe.js';
 import { admits, fromPostgresText } from './from-text.js';
 import { readImage } from './image.js';
-import { assertRole, heldAs, SERVER_TEXT, sourceTypes } from './postgres.js';
+import { assertRole, heldAs, revisionRead, SERVER_TEXT, sourceTypes } from './postgres.js';
 import { finishResult } from './result.js';
 
 /**
@@ -49,6 +50,36 @@ function sourceFailure(error: unknown, deadline: number): DataFailure {
     return dataFailure('timeout');
   }
   return refused ?? dataFailure('connector_error');
+}
+
+/**
+ * A definition's revision statement read (DAT-073; the FR plan, FR-C): under what time is left, as a
+ * statement of its own with no values, at most two rows asked for; exactly one row of one column, its
+ * value's text digested so any value fits a revision, else `definition_invalid`. Undefined where the
+ * definition has none. Throws what the source refused, as a run's statement does.
+ */
+export async function readRevision(
+  client: pg.Client,
+  definition: DraftDefinition,
+  deadline: number,
+): Promise<{ readonly revision?: string } | { readonly failure: DataFailure }> {
+  if (definition.revision === undefined) return {};
+  const remaining = Math.max(1, Math.floor(deadline - Date.now()));
+  await client.query(`set local statement_timeout = ${remaining}`);
+  const read = await client.query({
+    text: revisionRead(definition.revision.text),
+    values: [],
+    rowMode: 'array',
+    types: SERVER_TEXT,
+    queryMode: 'extended',
+  } as pg.QueryConfig);
+  if (read.fields.length !== 1 || read.rows.length !== 1) {
+    return { failure: dataFailure('definition_invalid') };
+  }
+  const value = (read.rows[0] as (string | null)[])[0] ?? null;
+  return {
+    revision: `sha256:${createHash('sha256').update(JSON.stringify(value), 'utf8').digest('hex')}`,
+  };
 }
 
 /**
@@ -90,6 +121,9 @@ export async function runStatement(
       if ('refused' in asserted) return failed(dataFailure(asserted.refused));
       asSeen = asserted.asSeen;
     }
+    // Before the data, so data moving between the two leaves the revision stale, which fails safe.
+    const revised = await readRevision(client, definition, deadline);
+    if ('failure' in revised) return failed(revised.failure);
     if (shape !== undefined) {
       sending = shape.text;
       const admitted = await admittedColumns(client, shape.text, definition);
@@ -128,6 +162,7 @@ export async function runStatement(
         [...images].map(([hash, bytes]) => [hash, bytes.toString('base64')]),
       ),
       ...(asSeen === undefined ? {} : { asSeen }),
+      ...(revised.revision === undefined ? {} : { revision: revised.revision }),
     };
   } catch (error) {
     if (error instanceof Stopped) return failed(error.failure);
