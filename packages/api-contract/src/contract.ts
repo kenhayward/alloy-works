@@ -101,6 +101,8 @@ export interface RouteContract {
     readonly contentType: 'application/octet-stream';
     readonly maxBytes: number;
   };
+  /** The most bytes a JSON `body` may be, where not the service's default of 1 MiB: `413` past it. */
+  readonly bodyMaxBytes?: number;
   readonly responses: Readonly<Record<number, RouteResponse>>;
   /**
    * `false` where a mutating route takes no idempotency key: a key sent is ignored, and nothing of the

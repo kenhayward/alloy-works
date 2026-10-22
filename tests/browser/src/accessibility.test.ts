@@ -7,6 +7,7 @@ import { checkAxe, type Arrival, type Sign } from './testing/axe.js';
 import { generalSpace, makeComponent, uploadImage } from './testing/component.js';
 import { everyBlock } from './testing/every-block.js';
 import { allowPageNoise, withPage } from './testing/page.js';
+import { approvedTerm } from './testing/fixtures.js';
 
 /**
  * axe-core over every state of the editor and the document view a person reaches, and the screens
@@ -628,13 +629,51 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
     });
   });
 
+  it("passes axe on the terms, a term's page and its edit form (the TM plan, TMa)", async ({
+    task,
+  }) => {
+    const term = await approvedTerm(api());
+    await withPage(async (page) => {
+      const check = async (state: string, arrival: Arrival) => {
+        await arrive(arrival);
+        await checkAxe(page, state, task.meta, arrival);
+      };
+      await page.goto(`${SERVICE}/#/terms`);
+      const space = page.getByRole('combobox', { name: 'Space' });
+      if ((await space.count()) > 0) await space.selectOption({ label: 'General' });
+      await check('the terms', {
+        shows: [
+          page.getByRole('heading', { name: 'Terms', level: 1 }),
+          page.getByRole('button', { name: 'New term' }),
+        ],
+      });
+      await page.getByRole('button', { name: 'New term' }).click();
+      await check('a new term', { shows: page.getByRole('form', { name: 'New term' }) });
+      await page.getByRole('button', { name: 'Import' }).click();
+      await check('importing terms', {
+        shows: page.getByRole('form', { name: 'Import' }),
+        hides: [page.getByRole('form', { name: 'New term' })],
+      });
+      await page.goto(`${SERVICE}/#/terms/${term.id}`);
+      await check("a term's page", {
+        shows: [
+          page.getByRole('heading', { name: term.label, level: 1 }),
+          page.getByRole('table', { name: 'Labels' }),
+        ],
+      });
+      await page.getByRole('button', { name: 'Edit', exact: true }).click();
+      await check('a term being edited', { shows: page.getByRole('form', { name: 'Edit term' }) });
+    });
+  });
+
   it('CNT-176 the component editor passes axe with every block and mark, each dialog and each panel', async ({
     task,
   }) => {
     const client = api();
     const made = await everyBlockComponent(client, 'Every block', { withFields: true });
-    // An entry for the Cite dialog to offer (CId).
+    // An entry for the Cite dialog to offer (CId), and a term for the Term dialog (TMc).
     await bibliographyEntry(client);
+    await approvedTerm(client);
     const meta: TaskMeta = task.meta;
 
     await withPage(async (page) => {
@@ -783,6 +822,18 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       const cite = page.getByRole('dialog', { name: 'Cite' });
       await check('the Cite dialog', {
         shows: [cite.getByRole('searchbox'), cite.getByRole('radio').first()],
+      });
+      await closeDialog(page);
+
+      // The Term dialog over the word at the caret, its terms found (the TM plan, TMc): the caret
+      // before the full stop, at the end of a word, as a click past the text leaves it after one.
+      await last.click();
+      await page.keyboard.press('End');
+      await page.keyboard.press('ArrowLeft');
+      await page.keyboard.press('ControlOrMeta+Alt+g');
+      const term = page.getByRole('dialog', { name: 'Term' });
+      await check('the Term dialog', {
+        shows: [term.getByRole('searchbox'), term.getByRole('radio').first()],
       });
       await closeDialog(page);
 

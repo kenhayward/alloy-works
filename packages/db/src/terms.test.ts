@@ -1,7 +1,9 @@
 import { SEED_TERM_WORKFLOW, type ContentDocument } from '@alloy-works/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
+import { archiveArtifact } from './archival.js';
 import { createComponent } from './creation.js';
+import { deleteArtifact } from './deletion.js';
 import { grant } from './grants.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
@@ -28,7 +30,7 @@ import {
   type TestDatabase,
   testTenantDatabase,
 } from './testing/database.js';
-import { recordVersion, substanceOf, type StoredVersion } from './versions.js';
+import { lockArtifact, recordVersion, substanceOf, type StoredVersion } from './versions.js';
 import { decideGate } from './workflow-gates.js';
 import { moveArtifact } from './workflow.js';
 
@@ -252,6 +254,98 @@ describe('a term', () => {
     });
   });
 
+  it('measures a replacement chain through the term, those replaced by it counted too', async () => {
+    // Four, Three and Two replaced in turn by One: three replacements into One.
+    const into: StoredTerm[] = [await made(english('Inbound one'))];
+    for (const name of ['Inbound two', 'Inbound three', 'Inbound four']) {
+      into.push(await made(english(name, { replacedBy: into.at(-1)!.id })));
+    }
+    const out: StoredTerm[] = [await made(english('Outbound one'))];
+    for (const name of ['Outbound two', 'Outbound three']) {
+      out.push(await made(english(name, { replacedBy: out.at(-1)!.id })));
+    }
+    // One replaced by Outbound three makes a chain of six from Inbound four.
+    expect(
+      await revised(into[0]!, english('Inbound one', { replacedBy: out[2]!.id })),
+    ).toMatchObject({ answer: 'term.refused', problems: [{ path: 'replacedBy' }] });
+    // By Outbound two, five.
+    expect(
+      await revised(into[0]!, english('Inbound one', { replacedBy: out[1]!.id })),
+    ).toMatchObject({ answer: 'recorded' });
+  });
+
+  it('a version and an archive of one term at once finish without a deadlock', async () => {
+    const term = await made(english('Raced numbat'));
+    // A holder keeps the term's lock while the version and then the archive queue behind it.
+    let release!: () => void;
+    const released = new Promise<void>((resolve) => (release = resolve));
+    let held!: () => void;
+    const holding = new Promise<void>((resolve) => (held = resolve));
+    const holder = tenant(async (trx) => {
+      await lockArtifact(trx, term.id);
+      held();
+      await released;
+    });
+    await holding;
+    const pause = () => new Promise((resolve) => setTimeout(resolve, 200));
+    const version = revised(
+      term,
+      english('Raced numbat', { definition: [{ language: 'en', text: 'Raced.' }] }),
+    );
+    await pause();
+    const archiving = tenant((trx) => archiveTerm(trx, term.id, ada, 'archived'));
+    await pause();
+    release();
+    await holder;
+    const [recorded, archived] = await Promise.allSettled([version, archiving]);
+    expect(recorded).toMatchObject({ status: 'fulfilled', value: { answer: 'recorded' } });
+    expect(archived).toEqual({ status: 'fulfilled', value: 'changed' });
+  });
+
+  it('keeps a replacement an import finds held, naming one only where none is', async () => {
+    const bilby = await made(english('Bilby'));
+    const held = await made(english('Bandicoot', { replacedBy: bilby.id }));
+    const unreplaced = await made(english('Potoroo'));
+    const answer = await tenant((trx) =>
+      importTerms(trx, {
+        author: ada,
+        spaceId: general,
+        concepts: [
+          {
+            key: 'urn:x:b',
+            term: english('Bandicoot'),
+            broader: [],
+            narrower: [],
+            related: [],
+            replacedBy: 'urn:x:r',
+          },
+          {
+            key: 'urn:x:p',
+            term: english('Potoroo'),
+            broader: [],
+            narrower: [],
+            related: [],
+            replacedBy: 'urn:x:r',
+          },
+          {
+            key: 'urn:x:q',
+            term: english('Quokka'),
+            broader: [],
+            narrower: [],
+            related: [],
+            replacedBy: 'urn:x:none',
+          },
+          { key: 'urn:x:r', term: english('Rat-kangaroo'), broader: [], narrower: [], related: [] },
+        ],
+      }),
+    );
+    const rat = answer?.[3]?.term?.id;
+    expect(rat).toBeDefined();
+    expect((await tenant((trx) => readTerm(trx, held.id)))?.term.replacedBy).toBe(bilby.id);
+    expect((await tenant((trx) => readTerm(trx, unreplaced.id)))?.term.replacedBy).toBe(rat);
+    expect(answer?.[2]?.term?.term.replacedBy).toBeUndefined();
+  });
+
   it('LIB-049 takes its standing from its workflow: approved at a gate, then deprecated', async () => {
     // 0153 seeds the domain's declaration.
     const seeded = await tenant((trx) =>
@@ -317,6 +411,20 @@ describe('a term', () => {
     expect(labels).not.toContain('Mulgara');
   });
 
+  it('counts no archived or deleted component as a use, for archiving or listing', async () => {
+    const term = await made(english('Kultarr'));
+    const shelved = await using(term.id, 'A shelved note', 'kultarr');
+    const removed = await using(term.id, 'A removed note', 'kultarr');
+    await tenant((trx) => archiveArtifact(trx, shelved.artifactId, ada));
+    const deleted = await tenant((trx) => deleteArtifact(trx, removed.artifactId, ada));
+    expect(deleted).toMatchObject({ answer: 'deleted' });
+    expect(await tenant((trx) => termUses(trx, ada, term.id))).toEqual({
+      named: [],
+      unreadable: false,
+    });
+    expect(await tenant((trx) => archiveTerm(trx, term.id, ada, 'archived'))).toBe('changed');
+  });
+
   it('SCH-056 SCH-015 LIB-026 finds a term by its labels, and content by a term or a narrower one', async () => {
     const definition = [{ language: 'en', text: 'Carnivorous marsupial family' }];
     const carnivore = await made(english('Dasyurid', { definition }));
@@ -342,6 +450,29 @@ describe('a term', () => {
     expect(await found('Wongai')).toContain(user.artifactId);
     expect(await found('NGU')).toContain(user.artifactId);
     expect(await found('Dasyurid')).toContain(user.artifactId);
+  });
+
+  it('reaches no content through a narrower term its reader may not read', async () => {
+    const broad = await made(english('Pseudantechinus'));
+    const hidden = await made(english('Sandstone dibbler', { broader: [broad.id] }));
+    await revised(broad, english('Pseudantechinus', { narrower: [hidden.id] }));
+    const user = await using(hidden.id, 'Sandstone notes', 'the dibbler');
+    await tenant(async (trx) => {
+      const reader = await findRole(trx, 'Reader');
+      await grant(trx, {
+        roleId: reader!.id,
+        subject: { principal: grace },
+        level: { kind: 'artifact', id: hidden.id },
+        effect: 'deny',
+        grantedBy: ada,
+      });
+    });
+    const found = (by: string) =>
+      tenant((trx) => searchWords(trx, by, 'Pseudantechinus')).then((answer) =>
+        answer?.outcome === 'results' ? answer.items.map((each) => each.artifactId) : [],
+      );
+    expect(await found(ada)).toContain(user.artifactId);
+    expect(await found(grace)).not.toContain(user.artifactId);
   });
 
   it('never matches, merges into or relates to a term its author may not read or edit', async () => {

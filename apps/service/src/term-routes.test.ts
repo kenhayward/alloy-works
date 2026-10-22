@@ -154,6 +154,22 @@ describe('the term routes (the TM plan, TM-A, TM-J)', () => {
       ],
       unrepresentedTotal: 2,
     });
+    // A body up to 5 MiB is read, one larger refused before it is.
+    const concept = {
+      '@id': 'urn:x:mulgara',
+      '@type': 'skos:Concept',
+      prefLabel: { en: 'Mulgara' },
+    };
+    const padded = await h.call('grace', 'POST', `/v1/spaces/${h.general}/terms/import`, {
+      format: 'json-ld',
+      text: JSON.stringify({ '@graph': [concept] }) + ' '.repeat(2_000_000),
+    });
+    expect(padded.statusCode, padded.body).toBe(200);
+    const large = await h.call('grace', 'POST', `/v1/spaces/${h.general}/terms/import`, {
+      format: 'json-ld',
+      text: JSON.stringify({ '@graph': [{ ...concept, '@id': `urn:x:${'é'.repeat(3_000_000)}` }] }),
+    });
+    expect(large.statusCode).toBe(413);
     const unreadable = await h.call('grace', 'POST', `/v1/spaces/${h.general}/terms/import`, {
       format: 'turtle',
       text: 'not <turtle',

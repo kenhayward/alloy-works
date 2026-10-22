@@ -3,6 +3,16 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.208.0 - 2026-10-22 (PR #769)
+
+Terms (the TM plan).
+
+### Added
+
+- **Terms.** A space keeps governed terms: labels and abbreviations per language, a definition, broader, narrower and related terms, and a workflow of draft, approved and deprecated. Search finds content through a term's labels and narrower terms. Terms import from SKOS JSON-LD or Turtle, reporting what they cannot hold, and export as JSON-LD.
+- **Terms published.** A defined term prints its approved forms by the theme's rule: expanded on its first use, always or never. Labels follow the document's language, else the term's own. A glossary and a list of abbreviations follow the document where its layout places them, as the default layout now does. A draft, deprecated or untranslated term is reported without stopping a publish, and a baseline pins the terms it read.
+- **Terms in the editor.** Term on the Formatting toolbar, or Ctrl or Cmd, Alt and G, applies a term of the space over the selection or the word at the caret, and takes it off again. Typing a term's abbreviation or a label offers it at the caret: Tab applies it, the arrow keys and Enter choose among several, Escape dismisses it. A deprecated term is flagged as it is chosen, its replacement offered, and wherever it is used. A save, suggestion or restore naming a term you may not read in the component's space is refused.
+
 ## 0.207.0 - 2026-10-22 (PR #766)
 
 Reference sources (the XR plan).

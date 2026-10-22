@@ -17,7 +17,7 @@ import styles from './EditorToolbar.module.css';
 import { pressCommand, type AskForValue, type MarkCommand, type OpenDialog } from './press.js';
 
 /** The commands a divider follows: the last mark, and the last list action. */
-const GROUP_ENDS = new Set(['Language', 'Definition list']);
+const GROUP_ENDS = new Set(['Term', 'Definition list']);
 
 /** A list's own, set on the toolbar's second line with its options (ADR-0053), not on this one. */
 export const SECOND_LINE: ReadonlySet<string> = new Set(['Nest item', 'Lift item']);

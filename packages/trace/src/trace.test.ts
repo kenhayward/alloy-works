@@ -964,7 +964,9 @@ describe('the citations in the committed model', () => {
     // 1903 (2026-10-22): XRd's reference extensions: LIB-032 across the stack.
     // 1930 (2026-10-22): TMa's terms: the term's shape, workflow, search, SKOS, routes and pages.
     // 1948 (2026-10-22): TMb's terms published: assemble, the theme, the layout, the PDF, Word, pins.
-    expect(model.citations).toHaveLength(1948);
+    // 1957 (2026-10-22): TMc's editor: CNT-165, LIB-019, LIB-018 and LIB-057 in five files.
+    // 1958 (2026-10-22): CNT-077's shortcut over the caret the author sees, in the terms tests.
+    expect(model.citations).toHaveLength(1958);
   });
 
   it('cites no identifier the corpus does not hold', () => {
@@ -1088,6 +1090,9 @@ describe('scanning the repository for test files', () => {
     // editor/CitationDialog.search.test.tsx, citing LIB-031.
     // 127, from 126 (2026-10-22): review/SourcesPanel.test.tsx, citing LIB-036.
     // 128, from 127 (2026-10-22): terms/terms.test.tsx, citing LIB-014, LIB-025, LIB-029 and LIB-049.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(128);
+    // 131, from 128 (2026-10-22): editor/TermDialog.test.tsx, citing CNT-165 and LIB-057,
+    // editor/termSuggestions.test.tsx, citing LIB-019, and editor/ComponentEditor.terms.test.tsx,
+    // citing CNT-165 and LIB-018.
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(131);
   });
 });

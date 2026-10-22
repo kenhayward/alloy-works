@@ -76,7 +76,10 @@ describe('the component editor', () => {
     expect(done).toBeEnabled();
     await userEvent.click(done);
     expect(onDone).toHaveBeenCalledTimes(1);
-    expect(asked.map((each) => each.route)).toEqual(['GET /v1/components/{id}']);
+    // The space's terms are read once a session, for the suggestions (TMc).
+    expect(asked.map((each) => each.route).filter((route) => !route.endsWith('/terms'))).toEqual([
+      'GET /v1/components/{id}',
+    ]);
   });
 
   it('keeps its fields beside the surface, and saves what is typed into them with the content', async () => {
@@ -342,7 +345,8 @@ describe('the component editor', () => {
     };
     expect(saved.openedFrom).toBe('v1');
     expect(saved.content).toEqual(content('Unbox the printer. Keep the box.'));
-    expect(asked[1]).toEqual({
+    // After the component and the space's terms, read once a session (TMc).
+    expect(asked.filter((each) => !each.route.endsWith('/terms'))[1]).toEqual({
       route: 'POST /v1/components/{id}/lock',
       body: { session: SESSION },
     });
@@ -728,7 +732,10 @@ describe('the component editor', () => {
       ),
     ).toBeInTheDocument();
     expect(view.state.doc.textContent).toBe('Unbox the printer.');
-    expect(asked.map((each) => each.route)).toEqual(['GET /v1/components/{id}']);
+    // The space's terms are read once a session, for the suggestions (TMc).
+    expect(asked.map((each) => each.route).filter((route) => !route.endsWith('/terms'))).toEqual([
+      'GET /v1/components/{id}',
+    ]);
   });
 
   it('refuses a paste nothing can be read from, changing nothing and saying why', async () => {
@@ -739,7 +746,10 @@ describe('the component editor', () => {
       await screen.findByText('Nothing was added, because the content could not be read.'),
     ).toBeInTheDocument();
     expect(view.state.doc.textContent).toBe('Unbox the printer.');
-    expect(asked.map((each) => each.route)).toEqual(['GET /v1/components/{id}']);
+    // The space's terms are read once a session, for the suggestions (TMc).
+    expect(asked.map((each) => each.route).filter((route) => !route.endsWith('/terms'))).toEqual([
+      'GET /v1/components/{id}',
+    ]);
   });
 
   it("copies in the product's own format, beside HTML and plain text, and changes nothing", async () => {
@@ -767,7 +777,10 @@ describe('the component editor', () => {
       content: [{ type: 'paragraph', content: [{ value: 'Unbox' }] }],
     });
     expect(view.state.doc.textContent).toBe('Unbox the printer.');
-    expect(asked.map((each) => each.route)).toEqual(['GET /v1/components/{id}']);
+    // The space's terms are read once a session, for the suggestions (TMc).
+    expect(asked.map((each) => each.route).filter((route) => !route.endsWith('/terms'))).toEqual([
+      'GET /v1/components/{id}',
+    ]);
   });
 
   it('says which mark the selection already carries', async () => {

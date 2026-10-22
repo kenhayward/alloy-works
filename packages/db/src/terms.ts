@@ -24,6 +24,7 @@ import {
   type ListingRequest,
   type SortOf,
 } from './listing.js';
+import { readableTerms } from './publication-terms.js';
 import { readableArtifacts } from './readable-artifacts.js';
 import type { TenantTransaction } from './tables.js';
 import { lockTerms } from './term-lock.js';
@@ -271,15 +272,52 @@ export async function listTerms(
   };
 }
 
+/** A term of a space as an editor shows it: its latest version and its standing. */
+export interface TermInSpace {
+  readonly term: Term;
+  readonly standing: TermStanding | null;
+}
+
+/**
+ * Those of these terms that are the space's and that a principal may read, not deleted, each at its
+ * latest version with its standing (the TM plan, TMc, TM-K): what a save may use, and what its editor
+ * flags.
+ */
+export async function termsInSpace(
+  trx: TenantTransaction,
+  principal: string,
+  spaceId: string,
+  ids: readonly string[],
+): Promise<ReadonlyMap<string, TermInSpace>> {
+  const ours = [...(await readableTerms(trx, principal, ids))]
+    .filter(([, space]) => space === spaceId)
+    .map(([id]) => id);
+  if (ours.length === 0) return new Map();
+  const { rows } = await sql<{ artifact_id: string; content: unknown }>`
+    select distinct on (artifact_id) artifact_id, content from artifact_version
+     where artifact_id = any(${ours}::uuid[])
+     order by artifact_id, revision_no desc, version_no desc`.execute(trx);
+  const states = await workflowStates(trx, ours);
+  return new Map(
+    rows.map((row) => [
+      row.artifact_id,
+      { term: parseTerm(row.content), standing: states.get(row.artifact_id) ?? null },
+    ]),
+  );
+}
+
 /** The components whose latest version uses a term, named where the reader may read them. */
 export interface TermUses {
   readonly named: readonly { readonly id: string; readonly title: string }[];
   readonly unreadable: boolean;
 }
 
+/** A use counts while its user is neither deleted nor archived: for the uses list and the guard. */
+const inService = (alias: string) => sql`${notDeletedAs(alias)} and ${notArchivedAs(alias)}`;
+
 /**
- * Where a term is used: the components whose latest version marks words as it, from the reference
- * index. What `by` may not read is never named, and only whether there is any is said.
+ * Where a term is used: the components, neither deleted nor archived, whose latest version marks
+ * words as it, from the reference index. What `by` may not read is never named, and only whether there is any is said.
  */
 export async function termUses(
   trx: TenantTransaction,
@@ -292,7 +330,7 @@ export async function termUses(
       from reference r
       join artifact a on a.id = r.from_id and a.kind = 'component'
       join artifact_version v on v.id = r.from_version
-     where r.to_id = ${termId} and r.to_kind = 'term'
+     where r.to_id = ${termId} and r.to_kind = 'term' and ${inService('a')}
      order by title, a.id`.execute(trx);
   const shown = await readableAmong(trx, readable, rows);
   return {
@@ -302,8 +340,8 @@ export async function termUses(
 }
 
 /**
- * Archives a term, refused while a component's latest version uses it, whoever may read that
- * component (LIB-006), or unarchives one. Undefined for anything but a term. The caller has decided
+ * Archives a term, refused while the latest version of a component neither deleted nor archived uses
+ * it, whoever may read that component (LIB-006), or unarchives one. Undefined for anything but a term. The caller has decided
  * `retire`.
  */
 export async function archiveTerm(
@@ -318,8 +356,11 @@ export async function archiveTerm(
     // After any version using it that commits first (`indexReferences`).
     await lockTerms(trx, term.space.id);
     const { rows } = await sql<{ used: boolean }>`
-      select exists (select from reference r where r.to_id = ${termId} and r.to_kind = 'term')
-        as used`.execute(trx);
+      select exists (
+        select from reference r join artifact a on a.id = r.from_id
+         where r.to_id = ${termId} and r.to_kind = 'term' and ${inService('a')}) as used`.execute(
+      trx,
+    );
     if (rows[0]?.used === true) return 'used';
   }
   return actOn(trx, termId, by, act, ['term']);
@@ -468,6 +509,8 @@ export async function importTerms(
     .where('id', '=', input.spaceId)
     .executeTakeFirst();
   if (!space) return undefined;
+  // Before any term's own lock (`lockTerms`).
+  await lockTerms(trx, input.spaceId);
   if (input.concepts.length > IMPORT_CONCEPTS_MOST) {
     throw new Error(`An import holds at most ${IMPORT_CONCEPTS_MOST} concepts`);
   }
@@ -550,8 +593,10 @@ export async function importTerms(
     const union = (list: 'broader' | 'narrower' | 'related') => [
       ...new Set([...held[list], ...ids(concept[list])]),
     ];
+    // A held replacement is kept; one is named only where none is held and it resolved.
     const replacedBy =
-      concept.replacedBy === undefined ? held.replacedBy : idOf.get(concept.replacedBy);
+      held.replacedBy ??
+      (concept.replacedBy === undefined ? undefined : idOf.get(concept.replacedBy));
     const term: TermInput = {
       ...held,
       broader: union('broader'),

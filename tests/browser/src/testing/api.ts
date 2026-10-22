@@ -1,6 +1,7 @@
 import { createApiClient, type paths } from '@alloy-works/api-client';
 import { inject } from 'vitest';
 import { API } from './addresses.js';
+import { signInFromNode } from './setup.js';
 
 export type Client = ReturnType<typeof createApiClient>;
 export type DocumentView =
@@ -16,6 +17,17 @@ export function api(): Client {
   const session = inject('session');
   // The client hands fetch a whole Request, whose headers a JSON body's content type is among: the
   // cookie is added to it, never swapped in for them.
+  const signedIn = ((input: Parameters<typeof fetch>[0], init?: RequestInit) => {
+    const request = new Request(input, init);
+    request.headers.set('cookie', session);
+    return fetch(request);
+  }) as typeof fetch;
+  return createApiClient({ baseUrl: API, fetch: signedIn });
+}
+
+/** The same client, signed in as another of the stand-in's people: Grace, who authors. */
+export async function apiAs(subject: string): Promise<Client> {
+  const session = await signInFromNode(subject);
   const signedIn = ((input: Parameters<typeof fetch>[0], init?: RequestInit) => {
     const request = new Request(input, init);
     request.headers.set('cookie', session);

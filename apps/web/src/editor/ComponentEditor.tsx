@@ -162,6 +162,8 @@ import { SymbolPalette } from './SymbolPalette.js';
 import { VariableDialog } from './VariableDialog.js';
 import { CitationDialog } from './CitationDialog.js';
 import { entryOptions, useCitationForms } from './citing.js';
+import { TermDialog } from './TermDialog.js';
+import { useTermIndex, useTermStandings, type TermIndexes } from './terming.js';
 import { spaceEntries, type EntryOffered } from '../bibliography/entries.js';
 import { ConditionDialog, declaredAxisKeys } from './ConditionDialog.js';
 import { SaveIndicator } from './SaveIndicator.js';
@@ -286,6 +288,8 @@ export interface ComponentEditorProps {
    * expects, so the warning before one (REU-008) names only the others.
    */
   readonly hostDocument?: string;
+  /** The term indexes every editor of that document shares, each space's read once (TM-L). */
+  readonly termIndexes?: TermIndexes;
   /** Where the text was clicked to open it, in characters: the focus and the caret go there. */
   readonly openAt?: number;
   /**
@@ -531,6 +535,7 @@ export function ComponentEditor({
   number,
   onDone,
   hostDocument,
+  termIndexes,
   openAt,
   linked = null,
   referenceContext = null,
@@ -947,6 +952,26 @@ export function ComponentEditor({
       onRefused: (refused) => askAgain(view, refused, whyRefused(view, refused)),
     });
   }
+
+  /** Remove in a mark's dialog: Link's, Language's and Term's alike. */
+  const removeAsked = (command: MarkCommand) => {
+    // Taking a mark off needs no value, so it never goes back to the press waiting on this dialog:
+    // `removeMarkCommand` is reached from here and nowhere else. Its answer is read rather than
+    // dropped - the mark it was offered over can have gone while the dialog stood open, and closing
+    // on that would be a press that did nothing silently.
+    const removed =
+      surface !== null &&
+      !surface.isDestroyed &&
+      removeMarkCommand(command.mark)(surface.state, surface.dispatch.bind(surface));
+    // Answered either way, so the press waiting on this dialog is never left pending.
+    closeAsking(null);
+    // Asked, never asserted. A removal answers no when there is no mark of that type in the range,
+    // which is not the same as the text having gone - and telling the author the text has gone while
+    // it is on the screen in front of them is worse than saying nothing at all.
+    if (!removed && surface !== null) {
+      askAgain(surface, command, whyRefused(surface, command) === 'gone' ? 'gone' : 'noMark');
+    }
+  };
 
   /** Closes the dialog and answers the press. The focus goes back once the page behind is live. */
   const closeAsking = (answer: Record<string, unknown> | null) => {
@@ -1826,6 +1851,19 @@ export function ComponentEditor({
   const surfaceForms = useRef(citationForms);
   surfaceForms.current =
     surface !== null && !surface.isDestroyed ? citationFormsOf(surface.state) : citationForms;
+
+  // The space's terms, read once a session for the suggestions and again as the Term dialog opens
+  // (the TM plan, TMc), and each used term's standing, which flags a deprecated one (LIB-018).
+  const {
+    terms,
+    truncated: termsTruncated,
+    refresh: refreshTerms,
+  } = useTermIndex(client, spaceId, surface, termIndexes);
+  useTermStandings(client, componentId, surface);
+  const askingTerm = asking?.command.mark === 'definedTerm';
+  useEffect(() => {
+    if (askingTerm) refreshTerms();
+  }, [askingTerm, refreshTerms]);
 
   // The space's entries, read once the Reference dialog opens, which it offers too (STR-069).
   useEffect(() => {
@@ -3370,40 +3408,31 @@ export function ComponentEditor({
         // this is, so a dialog that comes back carrying a complaint is a fresh set of boxes rather
         // than the same ones updated in place, and the focus starts in the first of them again.
         createPortal(
-          <MarkPrompt
-            key={asking.opened}
-            command={asking.command}
-            values={asking.values}
-            refused={asking.refused}
-            removable={asking.removable}
-            selected={asking.selected}
-            onApply={(values) => closeAsking(values)}
-            onRemove={() => {
-              const { command } = asking;
-              // Taking a mark off needs no value, so it never goes back to the press waiting on
-              // this dialog: `removeMarkCommand` is reached from here and nowhere else. Its answer
-              // is read rather than dropped - the mark it was offered over can have gone while the
-              // dialog stood open, and closing on that would be a press that did nothing silently.
-              const removed =
-                surface !== null &&
-                !surface.isDestroyed &&
-                removeMarkCommand(command.mark)(surface.state, surface.dispatch.bind(surface));
-              // Answered either way, so the press waiting on this dialog is never left pending.
-              closeAsking(null);
-              // Asked, never asserted. A removal answers no when there is no mark of that type in
-              // the range, which is not the same as the text having gone - and telling the author
-              // the text has gone while it is on the screen in front of them is worse than saying
-              // nothing at all.
-              if (!removed && surface !== null) {
-                askAgain(
-                  surface,
-                  command,
-                  whyRefused(surface, command) === 'gone' ? 'gone' : 'noMark',
-                );
-              }
-            }}
-            onCancel={() => closeAsking(null)}
-          />,
+          asking.command.mark === 'definedTerm' ? (
+            <TermDialog
+              key={asking.opened}
+              terms={terms}
+              truncated={termsTruncated}
+              current={typeof asking.values?.term === 'string' ? asking.values.term : null}
+              removable={asking.removable}
+              selected={asking.selected}
+              onApply={(values) => closeAsking(values)}
+              onRemove={() => removeAsked(asking.command)}
+              onCancel={() => closeAsking(null)}
+            />
+          ) : (
+            <MarkPrompt
+              key={asking.opened}
+              command={asking.command}
+              values={asking.values}
+              refused={asking.refused}
+              removable={asking.removable}
+              selected={asking.selected}
+              onApply={(values) => closeAsking(values)}
+              onRemove={() => removeAsked(asking.command)}
+              onCancel={() => closeAsking(null)}
+            />
+          ),
           document.body,
         )}
     </>

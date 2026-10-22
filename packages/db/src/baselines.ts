@@ -1,4 +1,4 @@
-import { recordedTerms, usesIn } from './publication-terms.js';
+import { recordedTerms, useKey, usesIn } from './publication-terms.js';
 import {
   citationPlaces,
   termWarnings,
@@ -740,9 +740,7 @@ export async function requestBaselinePublication(
       trx,
       uses,
       terms.map((each) => ({ term: each.artifact_id, version: each.version_id })),
-      new Set(
-        terms.filter((each) => !readablePins.has(each.artifact_id)).map((each) => each.artifact_id),
-      ),
+      new Set(uses.filter((use) => !readablePins.has(use.term)).map(useKey)),
     ),
     outline.outline.language,
   );

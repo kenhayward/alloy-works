@@ -4,7 +4,7 @@ import { crc32, deflateSync } from 'node:zlib';
 import { DEFAULT_LAYOUT_ID } from '@alloy-works/db';
 import { vi } from 'vitest';
 import { API, STORE_AT } from './addresses.js';
-import { edit, nodesOf, words, type Client, type DocumentView } from './api.js';
+import { apiAs, edit, nodesOf, words, type Client, type DocumentView } from './api.js';
 
 /**
  * Fixtures made through the API for the measured style (the W13 plan's W13.4): an image, a component
@@ -236,4 +236,39 @@ export async function publishPdf(client: Client, document: DocumentView): Promis
   const pdf = kept?.outputs.find((each) => each.format === 'pdf');
   if (!pdf) throw new Error('The publication holds no PDF');
   return followSignedLink(new URL(pdf.download));
+}
+
+/**
+ * An approved term in General (the TM plan, TMc): made by Grace and approved by Ada, since a term's
+ * gate wants an approver who is not its author. Its abbreviation is the run's own, so an offer or a
+ * search finds this run's term alone.
+ */
+export async function approvedTerm(
+  ada: Client,
+): Promise<{ id: string; label: string; abbreviation: string }> {
+  const space = await general(ada);
+  const grace = await apiAs('grace');
+  const abbreviation = `WHO${Date.now().toString(36).toUpperCase()}`;
+  const label = `World Health Organization ${abbreviation.slice(3)}`;
+  const made = await grace.POST('/v1/spaces/{space}/terms', {
+    params: { path: { space } },
+    body: {
+      term: {
+        schemaVersion: 1,
+        base: 'en',
+        labels: [{ language: 'en', preferred: label, alternatives: [], abbreviation }],
+        definition: [{ language: 'en', text: 'A body of the United Nations.' }],
+        broader: [],
+        narrower: [],
+        related: [],
+      },
+    } as never,
+  });
+  if (!made.data) throw new Error(`a term answered ${made.response.status}`);
+  const approved = await ada.POST('/v1/terms/{id}/approvals', {
+    params: { path: { id: made.data.id } },
+    body: { transition: 'approve', version: made.data.version.id, decision: 'approved' } as never,
+  });
+  if (!approved.data) throw new Error(`approving a term answered ${approved.response.status}`);
+  return { id: made.data.id, label, abbreviation };
 }

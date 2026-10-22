@@ -52,7 +52,13 @@ import {
   type TermWarning,
 } from '@alloy-works/domain';
 import { waivedKeys } from './waivers.js';
-import { recordedTerms, resolveTerms, usesIn, type NodeTerms } from './publication-terms.js';
+import {
+  hiddenUses,
+  recordedTerms,
+  resolveTerms,
+  usesIn,
+  type NodeTerms,
+} from './publication-terms.js';
 import { latestRevisionsOf } from './workflow.js';
 import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
@@ -1743,6 +1749,15 @@ async function inputsOf(
     }
   }
   const approved = await gateApprovals(trx, request.baseline_id);
+  const termUses = usesIn(
+    rows.map((row) => ({
+      node: row.node,
+      component: row.component_id,
+      content: occurrences.get(row.node)!.content,
+    })),
+    read.outline,
+    request.document_id,
+  );
   const cites = rows.some((row) => citedIn(row.content).length > 0);
   return {
     request: {
@@ -1809,15 +1824,7 @@ async function inputsOf(
       : { style: null, entries: new Map() },
     terms: await recordedTerms(
       trx,
-      usesIn(
-        rows.map((row) => ({
-          node: row.node,
-          component: row.component_id,
-          content: occurrences.get(row.node)!.content,
-        })),
-        read.outline,
-        request.document_id,
-      ),
+      termUses,
       (
         await trx
           .selectFrom('publication_request_asset')
@@ -1826,11 +1833,7 @@ async function inputsOf(
           .where('asset_kind', '=', 'term')
           .execute()
       ).map((row) => ({ term: row.term, version: row.version })),
-      new Set(
-        ((request.warnings ?? []) as TermWarning[]).flatMap((each) =>
-          each.code === 'term_unresolved' ? [each.term] : [],
-        ),
-      ),
+      await hiddenUses(trx, termUses, (request.warnings ?? []) as TermWarning[]),
     ),
   };
 }

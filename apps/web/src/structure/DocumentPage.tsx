@@ -73,6 +73,7 @@ import { RelationshipsButton } from '../reuse/Relationships.js';
 import { UsedInButton } from '../reuse/UsedIn.js';
 import styles from './DocumentPage.module.css';
 import { ComponentEditor } from '../editor/ComponentEditor.js';
+import { TermIndexes } from '../editor/terming.js';
 import { ConditionDialog, declaredAxes, type OfferedAxis } from '../editor/ConditionDialog.js';
 import { ProvenancePanel } from '../data/ProvenancePanel.js';
 import { bindingStatesIn, holdsBinding, tableKey, type BindingState } from './bindingContexts.js';
@@ -787,6 +788,10 @@ export function DocumentPage({
   >(new Map());
   // The band a component open in place keeps its toolbar in (ADR-0056).
   const [band, setBand] = useState<HTMLElement | null>(null);
+  // Each space's term index, read once for every editor opened in this document (TM-L): a fresh
+  // one for each document, though nothing in it reads `id`.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const termIndexes = useMemo(() => new TermIndexes(), [id]);
   const shownVersion = loaded.state === 'open' ? loaded.document.version.id : null;
   // Each occurrence's component, by node, for what the stream says of components (the PL plan, PL2).
   const componentOfNode = useMemo(() => {
@@ -2941,6 +2946,7 @@ export function DocumentPage({
                           key={`draft:${component}`}
                           componentId={component}
                           hostDocument={id}
+                          termIndexes={termIndexes}
                           client={client}
                           principalId={principalId}
                           {...(place.number === undefined ? {} : { number: place.number })}
@@ -3016,6 +3022,7 @@ export function DocumentPage({
                           key={component}
                           componentId={component}
                           hostDocument={id}
+                          termIndexes={termIndexes}
                           client={client}
                           principalId={principalId}
                           {...place}

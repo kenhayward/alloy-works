@@ -5521,4 +5521,37 @@ describe('writeDocx: terms, the glossary and the abbreviations (the TM plan, TMb
       ),
     ).toBe(true);
   });
+
+  it('keeps a term over a character style to one run property set, in that style', () => {
+    const emphasised = component('Pump', [
+      paragraph('c1', text('At '), {
+        type: 'text',
+        value: 'speed',
+        marks: [
+          { type: 'emphasis', id: 'k1' },
+          { type: 'definedTerm', id: 'm1', term: RPM },
+        ],
+      }),
+    ]);
+    const { docx } = written({
+      outline,
+      occurrences: new Map([[id('pump'), emphasised]]),
+      layout: defaultLayout,
+      terms: { entries: new Map([[id('pump'), terms]]) },
+    });
+    const runs = all(paragraphSaying(docx, 'At revolutions per minute (RPM)'), 'w:r');
+    expect(runs.length).toBeGreaterThan(1);
+    for (const run of runs) {
+      // One w:rPr a run, its w:rStyle first and alone, as the schema's sequence has it.
+      const properties = kids(run, 'w:rPr');
+      expect(properties.length).toBeLessThanOrEqual(1);
+      const styles = kids(properties[0] ?? { name: '', attrs: {}, children: [] }, 'w:rStyle');
+      expect(styles.length).toBeLessThanOrEqual(1);
+      if (styles.length === 1) expect(kids(properties[0]!)[0]).toBe(styles[0]);
+    }
+    const styled = all(paragraphSaying(docx, 'At revolutions per minute (RPM)'), 'w:rStyle').map(
+      (each) => each.attrs['w:val'],
+    );
+    expect(styled).toEqual(['mark-emphasis']);
+  });
 });

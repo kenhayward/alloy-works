@@ -57,6 +57,7 @@ import {
 import { checkProvenanceNames } from './dataset-references.js';
 import { checkNamedSource, checkNotInUse } from './definition-references.js';
 import { isDeleted } from './deletion.js';
+import { lockTerms } from './term-lock.js';
 import { checkTermRelations } from './term-relations.js';
 import { checkedLimit } from './listing.js';
 import { indexVersion } from './search.js';
@@ -915,6 +916,15 @@ async function record(
     throw new Error(
       `A version cannot be opened from ${input.openedFrom}, which is not a lower-case hyphenated UUID`,
     );
+  }
+  // A term's space's terms lock before its own (`lockTerms`).
+  if (input.substance.kind === 'term') {
+    const space = await trx
+      .selectFrom('artifact')
+      .select('space_id')
+      .where('id', '=', input.artifactId)
+      .executeTakeFirst();
+    if (space?.space_id) await lockTerms(trx, space.space_id);
   }
   await lockArtifact(trx, input.artifactId);
   // A line's head is its newest version, or the revision it diverged from (R16-B).

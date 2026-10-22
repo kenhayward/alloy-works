@@ -90,6 +90,7 @@ import { registerMcp } from './mcp/route.js';
 import { promptHandlers, promptLibraryHandlers } from './generation/prompts.js';
 import { bibliographyHandlers } from './bibliography/routes.js';
 import { termHandlers } from './terms/routes.js';
+import { termEditingHandlers } from './terms/editing.js';
 import { referenceSourceHandlers } from './bibliography/sources.js';
 import { citationStyleHandlers } from './bibliography/styles.js';
 import { citingHandlers } from './bibliography/citing.js';
@@ -600,6 +601,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...promptLibraryHandlers(),
     ...bibliographyHandlers(),
     ...termHandlers(),
+    ...termEditingHandlers(),
     ...referenceSourceHandlers(db, tenantOf, options.connector),
     ...citationStyleHandlers(),
     ...citingHandlers(),
@@ -1213,6 +1215,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
         ...(route.body ? { body: route.body } : {}),
       },
       ...(onRequest.length > 0 ? { onRequest } : {}),
+      ...(route.bodyMaxBytes === undefined ? {} : { bodyLimit: route.bodyMaxBytes }),
       ...(route.rawBody
         ? {
             bodyLimit: route.rawBody.maxBytes,

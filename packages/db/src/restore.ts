@@ -62,7 +62,8 @@ export interface Restoration {
 export type ContentRefusal =
   | { readonly answer: 'content.invalid' }
   | { readonly answer: 'definition.unreadable' }
-  | { readonly answer: 'citation.unreadable' };
+  | { readonly answer: 'citation.unreadable' }
+  | { readonly answer: 'term.unreadable' };
 
 /** A value a restore changes, by field: absent on a side that holds none. */
 export interface RestoredValue {

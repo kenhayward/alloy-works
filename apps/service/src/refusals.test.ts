@@ -158,6 +158,8 @@ describe('the rule behind a refusal', () => {
       'definition.unreadable',
       // A citation of no entry its author may read in the space (CI-H): citations.md's guard.
       'citation.unreadable',
+      // And a term the author may not read in the component's space (the TM plan, TM-K).
+      'term.unreadable',
       // A space's own guards (the SP1 plan, SP-B to SP-D): a name past its shape or taken, the last
       // live space, and a creation in an archived one. ADM-049 asks that a space can be archived;
       // what archiving refuses is the design's.

@@ -1,4 +1,5 @@
 import { isLanguageTag, type Term, type TermLabel } from '@alloy-works/domain';
+import { TERM_IMPORT_CONCEPTS_MOST, UNREPRESENTED_LISTED_MOST } from '@alloy-works/api-contract';
 import type { ImportConcept } from '@alloy-works/db';
 import { Parser } from 'n3';
 
@@ -12,6 +13,9 @@ const SKOS = 'http://www.w3.org/2004/02/skos/core#';
 const DCT = 'http://purl.org/dc/terms/';
 const RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
 const CONCEPT = `${SKOS}Concept`;
+
+/** The most statements an import reads: past it, as past 2,000 concepts, it reads no further. */
+export const SKOS_QUADS_MOST = 200_000;
 
 /** The compact form's context: every name it writes, and all it reads. */
 export const SKOS_CONTEXT = {
@@ -113,8 +117,15 @@ export interface Unrepresented {
 
 export interface ReadSkos {
   readonly concepts: ImportConcept[];
+  /** The first 1,000 things no term could hold; `unrepresentedTotal` counts them all. */
   readonly unrepresented: Unrepresented[];
+  readonly unrepresentedTotal: number;
+  /** Whether the text held more concepts or statements than are read, so none was. */
+  readonly tooMany: boolean;
 }
+
+/** What a read stopped at: more concepts or statements than are read. */
+const TOO_MANY = 'too many';
 
 export type SkosFormat = 'json-ld' | 'turtle';
 
@@ -134,40 +145,62 @@ function canonicalTag(tag: string): string {
     .join('-');
 }
 
-function subjectsOfTurtle(text: string): Subject[] | undefined {
-  let quads;
-  try {
-    quads = new Parser({ format: 'text/turtle' }).parse(text);
-  } catch {
-    return undefined;
-  }
+/** Whether a statement makes its subject a concept. */
+const typesConcept = (predicate: string, value: Value) =>
+  predicate === RDF_TYPE && value.value === CONCEPT;
+
+/**
+ * Turtle's statements as subjects, a statement at a time, none held once past 2,000 concepts or
+ * `SKOS_QUADS_MOST` statements.
+ */
+function subjectsOfTurtle(text: string): Promise<Subject[] | typeof TOO_MANY | undefined> {
   const subjects = new Map<string, Subject>();
-  for (const quad of quads) {
-    const key =
-      quad.subject.termType === 'BlankNode' ? `_:${quad.subject.value}` : quad.subject.value;
-    const subject = subjects.get(key) ?? { key, statements: [] };
-    subjects.set(key, subject);
-    const object = quad.object;
-    subject.statements.push({
-      predicate: quad.predicate.value,
-      value:
+  const concepts = new Set<string>();
+  let quads = 0;
+  let stopped = false;
+  return new Promise((resolve) => {
+    new Parser({ format: 'text/turtle' }).parse(text, (error, quad) => {
+      if (stopped) return;
+      if (error || !quad) {
+        stopped = true;
+        resolve(error ? undefined : [...subjects.values()]);
+        return;
+      }
+      const key =
+        quad.subject.termType === 'BlankNode' ? `_:${quad.subject.value}` : quad.subject.value;
+      const object = quad.object;
+      const value: Value =
         object.termType === 'Literal'
           ? { kind: 'literal', value: object.value, language: object.language || null }
           : {
               kind: 'identity',
               value: object.termType === 'BlankNode' ? `_:${object.value}` : object.value,
-            },
+            };
+      if (typesConcept(quad.predicate.value, value)) concepts.add(key);
+      quads += 1;
+      if (quads > SKOS_QUADS_MOST || concepts.size > TERM_IMPORT_CONCEPTS_MOST) {
+        // Whatever the parser reads after this is dropped unheld.
+        stopped = true;
+        subjects.clear();
+        resolve(TOO_MANY);
+        return;
+      }
+      const subject = subjects.get(key) ?? { key, statements: [] };
+      subjects.set(key, subject);
+      subject.statements.push({ predicate: quad.predicate.value, value });
     });
-  }
-  return [...subjects.values()];
+  });
 }
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 const listOf = (value: unknown): unknown[] => (Array.isArray(value) ? value : [value]);
 
-/** The compact form's nodes as subjects; a name it does not hold is a predicate of that name. */
-function subjectsOfJsonLd(text: string): Subject[] | undefined {
+/**
+ * The compact form's nodes as subjects; a name it does not hold is a predicate of that name. None
+ * past 2,000 concepts or `SKOS_QUADS_MOST` statements.
+ */
+function subjectsOfJsonLd(text: string): Subject[] | typeof TOO_MANY | undefined {
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
@@ -176,10 +209,20 @@ function subjectsOfJsonLd(text: string): Subject[] | undefined {
   }
   const graph = isObject(parsed) ? parsed['@graph'] : undefined;
   if (!Array.isArray(graph) || !graph.every(isObject)) return undefined;
-  return graph.map((node, at) => {
+  const concepts = graph.filter((node) =>
+    listOf(node['@type']).some((type) => type === 'skos:Concept' || type === CONCEPT),
+  );
+  if (concepts.length > TERM_IMPORT_CONCEPTS_MOST) return TOO_MANY;
+  let quads = 0;
+  const subjects: Subject[] = [];
+  for (const [at, node] of graph.entries()) {
     const key = typeof node['@id'] === 'string' ? node['@id'] : `_:node${at}`;
     const statements: Subject['statements'] = [];
-    const push = (predicate: string, value: Value) => statements.push({ predicate, value });
+    subjects.push({ key, statements });
+    const push = (predicate: string, value: Value) => {
+      quads += 1;
+      statements.push({ predicate, value });
+    };
     for (const [name, held] of Object.entries(node)) {
       if (name === '@id' || name === '@context') continue;
       if (name === '@type') {
@@ -221,9 +264,10 @@ function subjectsOfJsonLd(text: string): Subject[] | undefined {
           }
         }
       }
+      if (quads > SKOS_QUADS_MOST) return TOO_MANY;
     }
-    return { key, statements };
-  });
+  }
+  return subjects;
 }
 
 /**
@@ -231,23 +275,34 @@ function subjectsOfJsonLd(text: string): Subject[] | undefined {
  * file's identities, and what no term could hold; undefined where the text is not the format. A
  * concept's base language is `base` where it has a preferred label in it, else its first one's.
  */
-export function readSkos(format: SkosFormat, text: string, base = 'en'): ReadSkos | undefined {
-  const subjects = format === 'turtle' ? subjectsOfTurtle(text) : subjectsOfJsonLd(text);
+export async function readSkos(
+  format: SkosFormat,
+  text: string,
+  base = 'en',
+): Promise<ReadSkos | undefined> {
+  const subjects = format === 'turtle' ? await subjectsOfTurtle(text) : subjectsOfJsonLd(text);
   if (subjects === undefined) return undefined;
+  if (subjects === TOO_MANY) {
+    return { concepts: [], unrepresented: [], unrepresentedTotal: 0, tooMany: true };
+  }
+  // The first so many held, the rest counted.
   const unrepresented: Unrepresented[] = [];
+  let unrepresentedTotal = 0;
+  const unheld = (each: Unrepresented) => {
+    unrepresentedTotal += 1;
+    if (unrepresented.length < UNREPRESENTED_LISTED_MOST) unrepresented.push(each);
+  };
   const isConcept = (subject: Subject) =>
-    subject.statements.some((each) => each.predicate === RDF_TYPE && each.value.value === CONCEPT);
+    subject.statements.some((each) => typesConcept(each.predicate, each.value));
   for (const subject of subjects) {
-    if (!isConcept(subject)) {
-      unrepresented.push({ concept: null, what: 'subject', detail: subject.key });
-    }
+    if (!isConcept(subject)) unheld({ concept: null, what: 'subject', detail: subject.key });
   }
   const held = subjects.filter(isConcept);
   const keys = new Set(held.map((each) => each.key));
   const concepts: ImportConcept[] = [];
   for (const subject of held) {
     const report = (what: Unrepresented['what'], detail: string) =>
-      unrepresented.push({ concept: subject.key, what, detail });
+      unheld({ concept: subject.key, what, detail });
     const tagOf = (value: Value) => {
       if (value.kind !== 'literal' || value.language === null) return null;
       const tag = canonicalTag(value.language);
@@ -356,5 +411,5 @@ export function readSkos(format: SkosFormat, text: string, base = 'en'): ReadSko
       ...(replacedBy === undefined ? {} : { replacedBy }),
     });
   }
-  return { concepts, unrepresented };
+  return { concepts, unrepresented, unrepresentedTotal, tooMany: false };
 }

@@ -121,7 +121,18 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     shortcutSaid: 'Ctrl or Cmd, Shift and L',
     prompts: true,
   },
-  // The block actions, after the nine marks. None of them prompts but Reference and Equation, at the
+  // The TM plan, TMc (CNT-165): prompting as Link does, for the term only the author can choose, over
+  // the selection or the word at the caret. On Footnote's chord with G, for glossary: Ctrl-Alt-T
+  // opens a terminal on common Linux desktops, and Shift-E is Equation's.
+  {
+    kind: 'mark',
+    mark: 'definedTerm',
+    label: 'Term',
+    shortcut: 'Mod-Alt-g',
+    shortcutSaid: 'Ctrl or Cmd, Alt and G',
+    prompts: true,
+  },
+  // The block actions, after the ten marks. None of them prompts but Reference and Equation, at the
   // end: nothing about making a list is a value only the author can give, and a list's start and
   // numbering are set over a list that already exists, in the renderer's own list panel, rather than
   // asked for before one is made.
@@ -508,8 +519,37 @@ function rangeToMark(state: EditorState, type: MarkType): { from: number; to: nu
     return null;
   }
   const { from, to, empty } = state.selection;
-  const range = empty ? annotationAt(state, type) : { from, to };
+  // A term goes over the word at a caret outside one (CNT-165).
+  const range = empty
+    ? (annotationAt(state, type) ?? (type.name === 'definedTerm' ? wordAt(state) : null))
+    : { from, to };
   return range === null || range.from === range.to ? null : range;
+}
+
+/**
+ * A textblock's text, one character a position: anything not text - a citation, a footnote and its
+ * paragraphs - stands as U+FFFC for each position it takes, so an offset into it is one into the block.
+ */
+export function positionedText(block: Node): string {
+  let text = '';
+  block.forEach((child) => {
+    text += child.isText ? child.text! : '\u{fffc}'.repeat(child.nodeSize);
+  });
+  return text;
+}
+
+/** The word a caret stands in or at either end of, in text that may carry the mark; else null. */
+function wordAt(state: EditorState): { from: number; to: number } | null {
+  const { $from } = state.selection;
+  if (!$from.parent.inlineContent) return null;
+  if (!$from.parent.type.allowsMarkType(editorSchema.marks.definedTerm!)) return null;
+  const text = positionedText($from.parent);
+  const word = /[\p{L}\p{N}]/u;
+  let start = $from.parentOffset;
+  let end = start;
+  while (start > 0 && word.test(text[start - 1]!)) start -= 1;
+  while (end < text.length && word.test(text[end]!)) end += 1;
+  return start === end ? null : { from: $from.start() + start, to: $from.start() + end };
 }
 
 /**

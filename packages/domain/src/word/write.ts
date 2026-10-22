@@ -2951,10 +2951,13 @@ class Writer {
           passage,
           language,
           strong,
-        ).replace(/^<w:r>(<w:rPr>(?!<w:rStyle))?/, (_, open?: string) =>
-          open === undefined
-            ? `<w:r><w:rPr><w:rStyle w:val="${TERM}"/></w:rPr>`
-            : `<w:r><w:rPr><w:rStyle w:val="${TERM}"/>`,
+        ).replace(/^<w:r>(<w:rPr>)?(<w:rStyle)?/, (whole, open?: string, style?: string) =>
+          // A run names one character style, first in its one w:rPr: a mark's, where one names it.
+          style !== undefined
+            ? whole
+            : open === undefined
+              ? `<w:r><w:rPr><w:rStyle w:val="${TERM}"/></w:rPr>`
+              : `<w:r><w:rPr><w:rStyle w:val="${TERM}"/>`,
         );
         const to = this.bookmarkOf(run.term.link, 'block');
         xml += to === null ? words : `<w:hyperlink w:anchor="${to.name}">${words}</w:hyperlink>`;

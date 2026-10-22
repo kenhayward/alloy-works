@@ -137,6 +137,22 @@ export {
   type BoundImage,
 } from './bindings.js';
 export { bindingContextOf, setBindingContext } from './bindingView.js';
+// Terms: offered as typed, and flagged where deprecated (the TM plan, TMc).
+export {
+  applySuggestedTerm,
+  dismissTermSuggestion,
+  OFFERED_MOST,
+  setTermIndex,
+  setTermStandings,
+  termIndexOf,
+  termsIn,
+  termStandingsOf,
+  termSuggestionOf,
+  type TermOffered,
+  type TermStanding,
+  type TermStandings,
+  type TermSuggestion,
+} from './terms.js';
 // A citation, placed from the space's entries and drawn as the service renders it (CId).
 export {
   CITATION_UNAVAILABLE,

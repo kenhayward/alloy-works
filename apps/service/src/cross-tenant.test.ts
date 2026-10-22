@@ -387,6 +387,7 @@ const OTHER_TENANT_IDS: Readonly<
   listDocumentApprovals: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   readComponentEffective: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   previewComponentCitations: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
+  previewComponentTerms: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   divergeComponent: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   listComponentLines: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   compareComponentLine: async (tenant, db) => ({
@@ -654,6 +655,7 @@ const VALID_INPUT: Readonly<
   createCitationStyle: { payload: { style: aStyle } },
   previewCitationStyle: { payload: { csl: aStyle.csl } },
   previewComponentCitations: { payload: { citations: [] } },
+  previewComponentTerms: { payload: { terms: [] } },
   recordCitationStyleVersion: { payload: { openedFrom: SESSION, style: aStyle } },
   setReferenceSource: { payload: { source: 'crossref', enabled: false } },
   searchReferenceSource: { payload: { space: `space:${SESSION}`, terms: 'Probe' } },

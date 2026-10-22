@@ -28,6 +28,7 @@ import { decide, readOutline, type ContentDocument } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
 import { mayCite } from './bibliography/citing.js';
+import { mayUseTerms } from './terms/editing.js';
 import { mayNameColumns, storableContent } from './editing.js';
 import { AppError } from './errors.js';
 import { keysetAfter, keysetCursor } from './keyset.js';
@@ -214,6 +215,7 @@ export function suggestionHandlers() {
       }
       await mayNameColumns(trx, request, proposed, body.version);
       await mayCite(trx, request, proposed, body.version);
+      await mayUseTerms(trx, request, proposed, body.version);
       const answer = await makeSuggestion(trx, {
         component: id,
         version: body.version,
@@ -267,6 +269,7 @@ export function suggestionHandlers() {
           storableContent(content);
           await mayNameColumns(trx, request, content, current.id);
           await mayCite(trx, request, content, current.id);
+          await mayUseTerms(trx, request, content, current.id);
         },
       });
       if (answer.answer !== 'accepted') throw refuse(answer as never);
@@ -358,6 +361,7 @@ export function suggestionHandlers() {
                     storableContent(content);
                     await mayNameColumns(trx, request, content, current.id);
                     await mayCite(trx, request, content, current.id);
+                    await mayUseTerms(trx, request, content, current.id);
                   },
                 })
               : await rejectSuggestion(trx, { suggestion: suggestion.id, by: principalId });
