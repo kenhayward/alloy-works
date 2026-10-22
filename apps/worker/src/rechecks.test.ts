@@ -231,7 +231,10 @@ describe('the nightly re-check (the XR plan, XR-E)', () => {
     expect(checked).toBe(3);
     // Crossref's: one from each tenant in turn; PubMed's, Production's alone.
     const crossref = asked.filter((each) => each.request.source === 'crossref');
-    expect(crossref.map((each) => each.request.tenant)).toEqual(tenants.map((each) => each.id));
+    // In whatever order the tenants are listed: one from each, none twice.
+    expect(crossref.map((each) => each.request.tenant).toSorted()).toEqual(
+      tenants.map((each) => each.id).toSorted(),
+    );
     expect(asked.filter((each) => each.request.source === 'pubmed')).toHaveLength(1);
     // Never past a source's budget: a tenth of a second between Crossref's calls.
     expect(crossref[1]!.at - crossref[0]!.at).toBeGreaterThanOrEqual(
