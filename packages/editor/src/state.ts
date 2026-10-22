@@ -38,6 +38,7 @@ import {
   citationsPlugin,
   type CitationForms,
 } from './citations.js';
+import { termDecorations, termsPlugin, termStandingsOf } from './terms.js';
 import { conditionAxesPlugin, conditionedBlocksPlugin } from './conditions.js';
 import { boundTableFocusDecorations, boundTableFocusPlugin } from './boundTableFocus.js';
 import type { ReferenceContext } from './referenceText.js';
@@ -455,6 +456,9 @@ export function createEditorState(options: EditorStateOptions): EditorState {
       // component is closed (CNT-169), and undo must reach back to where it opened (CNT-069). Its
       // steps are text-sized, so an unbounded one costs what the session typed.
       history({ depth: Infinity }),
+      // A term offered as it is typed, ahead of every keymap so its Tab, Enter and Escape answer
+      // first while an offer stands (the TM plan, TM-L); and each used term's standing (LIB-018).
+      termsPlugin(options.newIdentifier),
       keymap({
         'Mod-z': undo,
         'Mod-y': redo,
@@ -616,6 +620,8 @@ export function createEditorState(options: EditorStateOptions): EditorState {
                 citationFormsOf(state),
                 citationFlagsOf(state),
               ).find(),
+              // A deprecated or unreadable term, flagged where it is used (LIB-018).
+              ...termDecorations(state.doc, termStandingsOf(state)).find(),
               // The bound table the cursor stands in, outlined, and its focused column (ADR-0051).
               ...boundTableFocusDecorations(state).find(),
               // Each table's columns as wide as what they hold, where its style says so (TG3).

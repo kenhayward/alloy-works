@@ -121,6 +121,11 @@ const actOn = (operationId: string, path: string, summary: string, needs: string
     idempotencyKey: false,
     responses: {
       200: { description: 'Acted on, once', schema: ProposalActed },
+      400: {
+        description:
+          'A save’s checks: `term_unreadable` or `citation_unreadable`, its content naming a term or an entry of the component’s space the caller may not read',
+        schema: ErrorBody,
+      },
       401: unauthenticated,
       403: {
         description: `The caller may not ${needs} the component; or \`entry_not_writable\`: a citation of a source accepted, no entry of the component’s space holds it, and the caller may not make one there`,

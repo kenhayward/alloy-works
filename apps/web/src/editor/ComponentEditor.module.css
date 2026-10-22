@@ -36,10 +36,15 @@
   border: 0;
 }
 
-/* The header gives the band its language and direction alone, after the toolbar. */
+/*
+ * The header gives the band its language and direction alone, after the toolbar, on one line: wrapped,
+ * they grew the band the page reserves and moved the sheet down as a component opened (the Term
+ * button left them 92px of the 96 they need at 1280).
+ */
 .band .header {
   grid-row: 1;
   grid-column: 3;
+  flex-wrap: nowrap;
   justify-self: start;
   min-height: var(--inplace-toolbar);
 }

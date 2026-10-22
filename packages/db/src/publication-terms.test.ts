@@ -90,10 +90,13 @@ describe('the term versions a publish reads (TMb)', () => {
     });
 
   /** A component in General using each term in one paragraph, a mark each. */
-  const using = (...terms: string[]) =>
+  const using = (...terms: string[]) => usingIn(general, ...terms);
+
+  /** A component in this space using each term in one paragraph, a mark each. */
+  const usingIn = (spaceId: string, ...terms: string[]) =>
     tenant(async (trx) => {
       const first = await createComponent(trx, {
-        spaceId: general,
+        spaceId,
         title: 'Pump',
         language: 'en-GB',
         direction: 'ltr',
@@ -132,6 +135,10 @@ describe('the term versions a publish reads (TMb)', () => {
 
   /** A document in General placing the component, and the node it stands at. */
   const placing = (component: StoredVersion) =>
+    placingAll(component).then(({ document, nodes }) => ({ document, node: nodes[0]! }));
+
+  /** A document in General placing each component, and the nodes they stand at. */
+  const placingAll = (...components: StoredVersion[]) =>
     tenant(async (trx) => {
       const created = await createDocument(trx, {
         spaceId: general,
@@ -141,22 +148,20 @@ describe('the term versions a publish reads (TMb)', () => {
         author: ada,
       });
       if (created.answer !== 'created') throw new Error(created.answer);
-      const node = blockIdentifierFrom(randomBytes(16));
+      const nodes = components.map(() => blockIdentifierFrom(randomBytes(16)));
       const outline: OutlineDocument = {
         ...(created.version.content as OutlineDocument),
-        nodes: [
-          {
-            type: 'reference',
-            id: node,
-            component: component.artifactId,
-            mode: { kind: 'latest' },
-            numbered: true,
-            matter: 'body',
-            pageBreak: 'none',
-            values: {},
-            children: [],
-          },
-        ],
+        nodes: components.map((component, n) => ({
+          type: 'reference' as const,
+          id: nodes[n]!,
+          component: component.artifactId,
+          mode: { kind: 'latest' as const },
+          numbered: true,
+          matter: 'body' as const,
+          pageBreak: 'none' as const,
+          values: {},
+          children: [],
+        })),
       };
       const recorded = await recordVersion(trx, {
         artifactId: created.version.artifactId,
@@ -165,7 +170,7 @@ describe('the term versions a publish reads (TMb)', () => {
         substance: { kind: 'document', content: outline },
       });
       if (recorded.answer !== 'recorded') throw new Error(recorded.answer);
-      return { document: recorded.version, node };
+      return { document: recorded.version, nodes };
     });
 
   /** What a publish of the document's version reads, as the worker reads it, and what it reported. */
@@ -386,6 +391,22 @@ describe('the term versions a publish reads (TMb)', () => {
     const { inputs, warnings } = await published(document);
     expect(inputs.terms.get(node)?.has(elsewhere.id) ?? false).toBe(false);
     expect(warnings).toEqual([{ code: 'term_unresolved', term: elsewhere.id, count: 1 }]);
+  });
+
+  it('prints a term where it resolves though another node of another space does not', async () => {
+    const torque = await approved(await made(term('Torque')));
+    const { document, nodes } = await placingAll(
+      await using(torque.id),
+      await usingIn(quality, torque.id),
+    );
+    const unresolved = [{ code: 'term_unresolved', term: torque.id, count: 1 }];
+    const latest = await published(document);
+    expect(latest.warnings).toEqual(unresolved);
+    expect(labelRead(latest.inputs, nodes[0]!, torque.id)).toBe('Torque');
+    expect(latest.inputs.terms.get(nodes[1]!)?.has(torque.id) ?? false).toBe(false);
+    const pinned = await baselinePublished(await baselineOf(document, 'Torque issue'));
+    expect(pinned.warnings).toEqual(unresolved);
+    expect(labelRead(pinned.inputs, nodes[0]!, torque.id)).toBe('Torque');
   });
 
   it('reads a term as the publisher, of the latest and of a baseline, and pins only what the maker may read', async () => {

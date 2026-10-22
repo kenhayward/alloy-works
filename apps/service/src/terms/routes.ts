@@ -9,7 +9,7 @@ import type {
   TermVersionBody,
   TermView,
 } from '@alloy-works/api-contract';
-import { TERM_IMPORT_CONCEPTS_MOST, UNREPRESENTED_LISTED_MOST } from '@alloy-works/api-contract';
+import { TERM_IMPORT_CONCEPTS_MOST } from '@alloy-works/api-contract';
 import {
   archiveTerm,
   createTerm,
@@ -31,7 +31,7 @@ import { versionView } from '../components.js';
 import { cursorFor, pageAsked } from '../listing.js';
 import { refused } from '../wire-codes.js';
 import { workflowView } from '../workflows.js';
-import { exportSkos, readSkos } from './skos.js';
+import { exportSkos, readSkos, SKOS_QUADS_MOST } from './skos.js';
 
 /** The term routes (terms.md; the TM plan, TM-A, TM-J). Moves are the workflow routes'. */
 
@@ -126,15 +126,15 @@ export function termHandlers() {
     ): Promise<TermImportAnswer> => {
       const { space } = request.params as SpaceParams;
       const body = request.body as ImportTermsBody;
-      const read = readSkos(body.format, body.text, body.base);
+      const read = await readSkos(body.format, body.text, body.base);
       if (read === undefined) {
         throw refused(400, 'import.unreadable', 'The text does not read as that format.');
       }
-      if (read.concepts.length > TERM_IMPORT_CONCEPTS_MOST) {
+      if (read.tooMany) {
         throw refused(
           400,
           'import.too_many',
-          `The text holds ${read.concepts.length} concepts; import at most ${TERM_IMPORT_CONCEPTS_MOST} at a time.`,
+          `The text holds more than ${TERM_IMPORT_CONCEPTS_MOST} concepts or ${SKOS_QUADS_MOST} statements; import fewer at a time.`,
         );
       }
       const done = await importTerms(trx, {
@@ -159,8 +159,8 @@ export function termHandlers() {
           merged: each.outcome === 'merged' ? [...each.merged] : [],
           message: each.outcome === 'refused' ? each.message : null,
         })),
-        unrepresented: read.unrepresented.slice(0, UNREPRESENTED_LISTED_MOST),
-        unrepresentedTotal: read.unrepresented.length,
+        unrepresented: read.unrepresented,
+        unrepresentedTotal: read.unrepresentedTotal,
       };
     },
 

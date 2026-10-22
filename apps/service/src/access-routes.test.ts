@@ -794,6 +794,11 @@ describe('routes that check a permission', () => {
       status: 404,
       payload: { citations: [] },
     }),
+    previewComponentTerms: () => ({
+      url: `/v1/components/${dosing}/terms/preview`,
+      status: 404,
+      payload: { terms: [] },
+    }),
     listComponentLines: () => ({ url: `/v1/components/${dosing}/lines`, status: 404 }),
     compareComponentLine: () => ({
       url: `/v1/components/${dosing}/lines/${MISSING}/comparison`,

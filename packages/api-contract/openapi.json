@@ -19277,6 +19277,47 @@
               }
             }
           },
+          "400": {
+            "description": "A save’s checks: `term_unreadable` or `citation_unreadable`, its content naming a term or an entry of the component’s space the caller may not read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
           "401": {
             "description": "No session, or not one this environment issued",
             "content": {
@@ -19590,6 +19631,47 @@
               }
             }
           },
+          "400": {
+            "description": "A save’s checks: `term_unreadable` or `citation_unreadable`, its content naming a term or an entry of the component’s space the caller may not read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
           "401": {
             "description": "No session, or not one this environment issued",
             "content": {
@@ -19891,6 +19973,47 @@
                     "state": "accepted",
                     "suggestion": "example"
                   }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A save’s checks: `term_unreadable` or `citation_unreadable`, its content naming a term or an entry of the component’s space the caller may not read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
                 }
               }
             },
@@ -54084,7 +54207,7 @@
             }
           },
           "400": {
-            "description": "`content_invalid`: the content is not a document the model accepts; `values_invalid`: a fixed value changed, a value of the wrong type, or a user this environment does not hold; `citation_unreadable`: a citation its version did not hold names no entry of the component's space the caller may read",
+            "description": "`content_invalid`: the content is not a document the model accepts; `values_invalid`: a fixed value changed, a value of the wrong type, or a user this environment does not hold; `citation_unreadable`: a citation its version did not hold names no entry of the component's space the caller may read; `term_unreadable`: a term its version did not use is no term of the component's space the caller may read",
             "content": {
               "application/json": {
                 "schema": {
@@ -59542,6 +59665,344 @@
         }
       }
     },
+    "/v1/components/{id}/terms/preview": {
+      "post": {
+        "operationId": "previewComponentTerms",
+        "summary": "The standing of each term a component uses, as its editor flags them",
+        "description": "Answers the standing and preferred label of each term a component's editor uses, in order, so it can flag a deprecated one with its replacement. A term that is not one of the component's space the caller may read is answered unavailable, and nothing more is said of it. Nothing is kept.",
+        "tags": [
+          "Terms"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "read",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "terms": {
+                    "maxItems": 500,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "description": "Each term the component uses"
+                  }
+                },
+                "required": [
+                  "terms"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "terms": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Each term's standing, in order",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "terms": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "standing": {
+                            "type": "string",
+                            "enum": [
+                              "approved",
+                              "draft",
+                              "deprecated",
+                              "unavailable"
+                            ],
+                            "description": "unavailable where it is no term of the component's space the caller may read"
+                          },
+                          "label": {
+                            "description": "Its preferred label in its base language",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "replacedBy": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "label": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "label"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "A deprecated term's replacement, its label null where the caller may not read it"
+                          }
+                        },
+                        "required": [
+                          "standing",
+                          "label",
+                          "replacedBy"
+                        ]
+                      },
+                      "description": "Each term asked, in order (LIB-018)"
+                    }
+                  },
+                  "required": [
+                    "terms"
+                  ]
+                },
+                "example": {
+                  "terms": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Never answered: a component the caller may not read is not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such component in this environment, or none the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/components/{id}/threads": {
       "get": {
         "operationId": "listComponentThreads",
@@ -64333,9 +64794,10 @@
                               "restore_unchanged",
                               "content_invalid",
                               "definition_unreadable",
-                              "citation_unreadable"
+                              "citation_unreadable",
+                              "term_unreadable"
                             ],
-                            "description": "restore_unreadable: the version no longer reads. restore_locked: somebody is editing it, the caller included. values_invalid: a value its field now fixes at another. restore_unchanged: it would make what the latest already is. content_invalid, definition_unreadable and citation_unreadable: a save's checks on its content refuse it, the second where a bound table names a column of a query definition the caller may not read that the latest does not name, the third where a citation the latest does not hold names no entry of the component's space the caller may read"
+                            "description": "restore_unreadable: the version no longer reads. restore_locked: somebody is editing it, the caller included. values_invalid: a value its field now fixes at another. restore_unchanged: it would make what the latest already is. content_invalid, definition_unreadable, citation_unreadable and term_unreadable: a save's checks on its content refuse it, the second where a bound table names a column of a query definition the caller may not read that the latest does not name, the third where a citation the latest does not hold names no entry of the component's space the caller may read, the fourth where a term the latest does not use is no term of the component's space the caller may read"
                           },
                           "holder": {
                             "description": "restore_locked: who holds the lock",
@@ -64781,7 +65243,7 @@
             }
           },
           "400": {
-            "description": "values_invalid: a value its field now fixes at another. content_invalid: a save's checks on its content refuse it. citation_unreadable: a citation the latest does not hold names no entry of the component's space the caller may read",
+            "description": "values_invalid: a value its field now fixes at another. content_invalid: a save's checks on its content refuse it. citation_unreadable: a citation the latest does not hold names no entry of the component's space the caller may read. term_unreadable: a term the latest does not use is no term of the component's space the caller may read",
             "content": {
               "application/json": {
                 "schema": {
@@ -294780,7 +295242,7 @@
       "post": {
         "operationId": "importTerms",
         "summary": "Import SKOS, as JSON-LD or Turtle, as terms of this space",
-        "description": "Imports SKOS concepts as terms of the space, from JSON-LD in the compact form `exportTerms` writes or from Turtle. A concept whose preferred label in its base language is a term's of the space, case aside, is merged into it: the answer names the labels, definitions and relations it was given. Each other concept is made, in draft. What no term can hold is reported rather than dropped: another predicate, a subject that is not a concept, a language tag the product does not read, an alternative label in a language with no preferred one, and a relation to a concept outside the file. Nothing a file names is fetched. At most 2,000 concepts are taken at a time. It needs edit in the space.",
+        "description": "Imports SKOS concepts as terms of the space, from JSON-LD in the compact form `exportTerms` writes or from Turtle. A concept whose preferred label in its base language is a term's of the space, case aside, is merged into it: the answer names the labels, definitions and relations it was given. Each other concept is made, in draft. What no term can hold is reported rather than dropped: another predicate, a subject that is not a concept, a language tag the product does not read, an alternative label in a language with no preferred one, and a relation to a concept outside the file. Nothing a file names is fetched. At most 2,000 concepts and 200,000 statements are taken at a time, in a body of at most 5 MiB. It needs edit in the space.",
         "tags": [
           "Terms"
         ],
@@ -295016,7 +295478,7 @@
             }
           },
           "400": {
-            "description": "`import_unreadable`: the text does not read as the format. `import_too_many`: it holds more than 2,000 concepts",
+            "description": "`import_unreadable`: the text does not read as the format. `import_too_many`: it holds more than 2,000 concepts or 200,000 statements",
             "content": {
               "application/json": {
                 "schema": {
@@ -295181,6 +295643,47 @@
           },
           "409": {
             "description": "`space_archived`: the space is archived, and nothing new is made in it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is larger than 5 MiB",
             "content": {
               "application/json": {
                 "schema": {

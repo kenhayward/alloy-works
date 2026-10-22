@@ -1,6 +1,6 @@
 import { tableView } from './tableWidths.js';
 import type { ReportEntry } from '@alloy-works/domain';
-import type { EditorState, Transaction } from 'prosemirror-state';
+import { TextSelection, type EditorState, type Transaction } from 'prosemirror-state';
 import { EditorView } from 'prosemirror-view';
 
 import {
@@ -94,6 +94,14 @@ export function mountEditor(place: HTMLElement, options: MountOptions): EditorVi
       ...(options.editable() ? {} : { tabindex: '-1' }),
     }),
     dispatchTransaction: (transaction) => options.dispatch(transaction, view),
+    // **A key acts on the caret the author sees.** The browser tells ProseMirror where an arrow or a
+    // click left the caret only by a `selectionchange` that arrives later, so a shortcut pressed
+    // before it ran over the caret before: Ctrl Alt G found no word past the full stop just left,
+    // and Ctrl K nothing of what was just selected. Read first, ahead of every keymap.
+    handleKeyDown: (target) => {
+      caretFromPage(target);
+      return false;
+    },
     // A figure marks an image that does not load in its place (figures 2, ruling R6).
     nodeViews: {
       // And a bound figure's image, drawn with what its decoration carries (B6.2).
@@ -165,6 +173,34 @@ export function mountEditor(place: HTMLElement, options: MountOptions): EditorVi
   });
   mounted = view;
   return view;
+}
+
+/**
+ * Brings the state's text selection to where the page's is, when the two differ: the page's moved
+ * and ProseMirror has not yet been told. Nothing while an input method composes, or where the page's
+ * selection is outside this surface or the state's is not text (a node, cells or a gap cursor),
+ * which the page draws differently from how the state holds it.
+ */
+function caretFromPage(view: EditorView): void {
+  const { selection } = view.state;
+  if (view.composing || !view.hasFocus() || !(selection instanceof TextSelection)) return;
+  const page = view.dom.ownerDocument.getSelection();
+  const { anchorNode, focusNode } = page ?? {};
+  if (!page || !anchorNode || !focusNode) return;
+  if (!view.dom.contains(anchorNode) || !view.dom.contains(focusNode)) return;
+  let anchor: number;
+  let head: number;
+  try {
+    anchor = view.posAtDOM(anchorNode, page.anchorOffset);
+    head = view.posAtDOM(focusNode, page.focusOffset);
+  } catch {
+    return;
+  }
+  if (anchor === selection.anchor && head === selection.head) return;
+  const { doc } = view.state;
+  view.dispatch(
+    view.state.tr.setSelection(TextSelection.between(doc.resolve(anchor), doc.resolve(head))),
+  );
 }
 
 /**

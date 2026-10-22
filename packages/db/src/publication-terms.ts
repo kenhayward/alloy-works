@@ -188,9 +188,42 @@ export async function resolveTerms(
   };
 }
 
+/** A use's key in a hidden set: by node and term, as a term may resolve at one node and not another. */
+export const useKey = (use: { readonly node: string; readonly term: string }): string =>
+  `${use.node} ${use.term}`;
+
+/**
+ * The uses a request's `term_unresolved` warnings hid, by `useKey`: a term's uses in its own space
+ * where it was unresolved at more uses than stand in other spaces, which are never offered it. A term
+ * resolved at one node is not hidden there for another's being of another space.
+ */
+export async function hiddenUses(
+  trx: TenantTransaction,
+  uses: readonly Use[],
+  warnings: readonly TermWarning[],
+): Promise<ReadonlySet<string>> {
+  const unresolved = new Map(
+    warnings.flatMap((each) =>
+      each.code === 'term_unresolved' ? [[each.term, each.count] as const] : [],
+    ),
+  );
+  if (unresolved.size === 0) return new Set();
+  const spaces = await spacesOf(trx, [...unresolved.keys(), ...uses.map((use) => use.owner)]);
+  const hidden = new Set<string>();
+  for (const [term, count] of unresolved) {
+    const own = uses.filter(
+      (use) => use.term === term && spaces.get(use.owner) === spaces.get(term),
+    );
+    const elsewhere = uses.filter((use) => use.term === term).length - own.length;
+    if (count > elsewhere) for (const use of own) hidden.add(useKey(use));
+  }
+  return hidden;
+}
+
 /**
  * The terms recorded on a request or pinned by a baseline, by node: each version offered to the uses
- * in its space, but for `hidden`, which the reader may not read and is never read.
+ * in its space, but for the uses `hidden` keys (`useKey`), whose term the reader may not read; a term
+ * hidden at every use is never read.
  */
 export async function recordedTerms(
   trx: TenantTransaction,
@@ -198,7 +231,8 @@ export async function recordedTerms(
   recorded: readonly { readonly term: string; readonly version: string }[],
   hidden: ReadonlySet<string> = new Set(),
 ): Promise<NodeTerms> {
-  const shown = recorded.filter((each) => !hidden.has(each.term));
+  const offeredUses = uses.filter((use) => !hidden.has(useKey(use)));
+  const shown = recorded.filter((each) => offeredUses.some((use) => use.term === each.term));
   const spaces = await spacesOf(
     trx,
     shown.map((each) => each.term),
@@ -213,5 +247,5 @@ export async function recordedTerms(
       { space: spaces.get(each.term) ?? '', content: read.get(each.version) },
     ]),
   );
-  return (await offered(trx, uses, versions)).byNode;
+  return (await offered(trx, offeredUses, versions)).byNode;
 }

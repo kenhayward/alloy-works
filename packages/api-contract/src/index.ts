@@ -228,6 +228,8 @@ export {
   TermSummary,
   TermUsesView,
   TermVersionBody,
+  TermStandingPreview,
+  TermStandingPreviewBody,
   TermView,
   UNREPRESENTED_LISTED_MOST,
   termRoutes,

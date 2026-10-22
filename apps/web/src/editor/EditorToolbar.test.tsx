@@ -77,6 +77,7 @@ const LABELS = [
   'Quoted phrase',
   'Link',
   'Language',
+  'Term',
   'Bulleted list',
   'Numbered list',
   'Definition list',
@@ -268,7 +269,7 @@ describe('the formatting toolbar', () => {
       expect(button).toHaveAttribute('aria-pressed', 'false');
       expect(button).not.toHaveAttribute('aria-haspopup');
     }
-    for (const label of ['Link', 'Language']) {
+    for (const label of ['Link', 'Language', 'Term']) {
       const button = screen.getByRole('button', { name: label });
       expect(button).toHaveAttribute('aria-haspopup', 'dialog');
       expect(button).not.toHaveAttribute('aria-pressed');
@@ -286,6 +287,7 @@ describe('the formatting toolbar', () => {
     // does nothing at all. `aria-disabled` is read from the same predicate the press is gated on.
     const { prompt } = renderToolbar({ caret: 3 });
 
+    // Term is not among them: a caret in a word is the word to put a term on (CNT-165).
     for (const label of ['Link', 'Language']) {
       expect(screen.getByRole('button', { name: label })).toHaveAttribute('aria-disabled', 'true');
     }
@@ -622,7 +624,7 @@ describe('the formatting toolbar', () => {
     }
     // There is no state to ask where a mark could go, so the two dialogs are unavailable rather than
     // available-and-inert: a press before the surface exists opens nothing either.
-    for (const label of ['Link', 'Language']) {
+    for (const label of ['Link', 'Language', 'Term']) {
       expect(screen.getByRole('button', { name: label })).toHaveAttribute('aria-disabled', 'true');
     }
     for (const label of TOGGLES) {

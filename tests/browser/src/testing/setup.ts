@@ -29,8 +29,11 @@ async function untilReady(within = 120_000): Promise<void> {
   }
 }
 
-/** Signs in as the stand-in's Ada from Node, as the end-to-end suite does, returning the session cookie. */
-async function signInFromNode(): Promise<string> {
+/**
+ * Signs in as one of the stand-in's people, Ada unless named, from Node, as the end-to-end suite does,
+ * returning the session cookie.
+ */
+export async function signInFromNode(subject = 'ada'): Promise<string> {
   const started = await fetch(`${API}/v1/sign-in/organisation`, { redirect: 'manual' });
   const attempt = started.headers
     .getSetCookie()
@@ -38,7 +41,7 @@ async function signInFromNode(): Promise<string> {
     .find((pair) => pair.startsWith('__Host-aw_signin='));
   const sentTo = started.headers.get('location');
   if (!attempt || !sentTo) throw new Error(`signing in did not start: ${started.status}`);
-  const back = await completeAtStandIn(sentTo, 'ada', IDP, idpFromNode());
+  const back = await completeAtStandIn(sentTo, subject, IDP, idpFromNode());
   const finished = await fetch(`${API}${back.pathname}${back.search}`, {
     headers: { cookie: attempt },
     redirect: 'manual',

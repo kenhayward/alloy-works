@@ -1,6 +1,6 @@
 import { termSchema } from '@alloy-works/domain';
 import { z } from 'zod';
-import { SpaceParams, VersionSummary } from './components.js';
+import { ComponentParams, SpaceParams, VersionSummary } from './components.js';
 import type { RouteContract } from './contract.js';
 import { listingQuery, listingTotal, nextCursor } from './listing.js';
 import { ErrorBody, LowercaseUuid, SPACE_ARCHIVED } from './schemas.js';
@@ -77,6 +77,8 @@ export const SKOS_FORMATS = ['json-ld', 'turtle'] as const;
 
 /** The most an import's text may be, in characters. */
 export const TERM_IMPORT_MOST = 5_000_000;
+/** The most an import's body may be as sent, in bytes: 5 MiB, refused `413` past it. */
+export const TERM_IMPORT_BODY_MOST = 5 * 1024 * 1024;
 /** The most concepts one import takes (the TM plan, TM-J). */
 export const TERM_IMPORT_CONCEPTS_MOST = 2000;
 /** The most things not represented an import answers, each named; the rest are counted. */
@@ -136,6 +138,32 @@ export const TermRefusal = ErrorBody.extend({
     .optional(),
   current: TermView.optional(),
 });
+
+/** The terms a component's editor uses, once each (the TM plan, TMc). */
+export const TermStandingPreviewBody = z.strictObject({
+  terms: z.array(z.string().min(1).max(200)).max(500).describe('Each term the component uses'),
+});
+export type TermStandingPreviewBody = z.infer<typeof TermStandingPreviewBody>;
+
+export const TermStandingPreview = z.object({
+  terms: z
+    .array(
+      z.object({
+        standing: z
+          .enum(['approved', 'draft', 'deprecated', 'unavailable'])
+          .describe("unavailable where it is no term of the component's space the caller may read"),
+        label: z.string().nullable().describe('Its preferred label in its base language'),
+        replacedBy: z
+          .object({ id: z.string(), label: z.string().nullable() })
+          .nullable()
+          .describe(
+            "A deprecated term's replacement, its label null where the caller may not read it",
+          ),
+      }),
+    )
+    .describe('Each term asked, in order (LIB-018)'),
+});
+export type TermStandingPreview = z.infer<typeof TermStandingPreview>;
 
 const unauthenticated = {
   description: 'No session, or not one this environment issued',
@@ -215,6 +243,7 @@ export const termRoutes = {
     access: editSpace,
     params: SpaceParams,
     body: ImportTermsBody,
+    bodyMaxBytes: TERM_IMPORT_BODY_MOST,
     responses: {
       200: {
         description: 'What became of each concept, and what no term could hold',
@@ -222,13 +251,14 @@ export const termRoutes = {
       },
       400: {
         description:
-          '`import_unreadable`: the text does not read as the format. `import_too_many`: it holds more than 2,000 concepts',
+          '`import_unreadable`: the text does not read as the format. `import_too_many`: it holds more than 2,000 concepts or 200,000 statements',
         schema: ErrorBody,
       },
       401: unauthenticated,
       403: { description: 'The caller may not edit in the space', schema: ErrorBody },
       404: spaceNotFound,
       409: { description: SPACE_ARCHIVED, schema: ErrorBody },
+      413: { description: 'The body is larger than 5 MiB', schema: ErrorBody },
     },
   },
   exportTerms: {
@@ -353,6 +383,28 @@ export const termRoutes = {
       401: unauthenticated,
       403: { description: 'The caller may read the term but may not retire it', schema: ErrorBody },
       404: notFound,
+    },
+  },
+  previewComponentTerms: {
+    operationId: 'previewComponentTerms',
+    method: 'POST',
+    path: '/v1/components/{id}/terms/preview',
+    summary: 'The standing of each term a component uses, as its editor flags them',
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
+    params: ComponentParams,
+    body: TermStandingPreviewBody,
+    responses: {
+      200: { description: "Each term's standing, in order", schema: TermStandingPreview },
+      401: unauthenticated,
+      403: {
+        description: 'Never answered: a component the caller may not read is not found',
+        schema: ErrorBody,
+      },
+      404: {
+        description: 'No such component in this environment, or none the caller may read',
+        schema: ErrorBody,
+      },
     },
   },
 } as const satisfies Record<string, RouteContract>;

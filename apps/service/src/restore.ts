@@ -31,6 +31,7 @@ import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
 import { afterVersion, versionsPage, versionView } from './components.js';
 import { citesUnreadable } from './bibliography/citing.js';
+import { usesUnreadableTerm } from './terms/editing.js';
 import { namesUnreadableColumn, storable } from './editing.js';
 import type { AppError } from './errors.js';
 import { refused } from './wire-codes.js';
@@ -58,6 +59,8 @@ function refusalView(refusal: RestoreRefusal): RestorationView['refusals'][numbe
       return { code: 'definition_unreadable' };
     case 'citation.unreadable':
       return { code: 'citation_unreadable' };
+    case 'term.unreadable':
+      return { code: 'term_unreadable' };
     // A document's: never previewed for a component, whose resolver refuses none of them.
     case 'outline.invalid':
     case 'template.unresolved':
@@ -89,6 +92,7 @@ function documentRefusalView(refusal: RestoreRefusal): DocumentRestorationView['
     case 'content.invalid':
     case 'definition.unreadable':
     case 'citation.unreadable':
+    case 'term.unreadable':
       throw new Error(`A document's restore is not refused ${refusal.answer}`);
   }
 }
@@ -127,6 +131,12 @@ function refuse(refusal: RestoreRefusal): AppError {
         400,
         'citation.unreadable',
         "A citation names no bibliography entry of this component's space that you may read.",
+      );
+    case 'term.unreadable':
+      return refused(
+        400,
+        'term.unreadable',
+        "A term names no term of this component's space that you may read.",
       );
     // A document's, in the words its outline acts are refused in (documents.ts).
     case 'outline.invalid':
@@ -167,6 +177,9 @@ const savedChecks =
     }
     if (await citesUnreadable(trx, request, content, latest.id)) {
       return { answer: 'citation.unreadable' };
+    }
+    if (await usesUnreadableTerm(trx, request, content, latest.id)) {
+      return { answer: 'term.unreadable' };
     }
     return undefined;
   };

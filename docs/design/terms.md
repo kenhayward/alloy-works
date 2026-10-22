@@ -59,7 +59,10 @@ workflow check refuses a term workflow without that state, or with it initial or
 tenant may rename it but not lose it. A relation or replacement names a term of the same space its
 author may read; a replacement chain never returns to the term and is at most five long. A term is
 archived only while no component's latest version uses it, by the reference index, under the
-space's terms lock that a save using a term also takes.
+space's terms lock that a save using a term also takes; an archived or deleted component's use does
+not count, as the uses list leaves it out. **Gap:** the index holds no document's section titles, for
+any kind, so a term marked in a section title neither stops its archive nor is listed as a use. A
+term's writer takes the terms lock before the term's own; a component's save, after the component's.
 
 ## Interchange
 
@@ -128,3 +131,30 @@ text, so a renamed or related term is found at once.
   the request as it is made (`publication_request.warnings`, 0154) and returned with its sources'
   warnings. They are counted over the placed content before conditions, so a use a condition removes
   is still reported.
+
+## Built in TMc
+
+- **The Term action** (CNT-165) is a prompting mark in the registry, `Mod-Alt-g` (Ctrl-Alt-T opens a
+  terminal on common Linux desktops; Shift-E is Equation's). It applies over the selection or the word
+  at a caret outside a term, and opens on and removes the one a caret is in. `definedTerm` is no longer
+  inclusive, as a link is not. The **Term dialog** offers the space's approved and deprecated terms,
+  found by any label or abbreviation; a deprecated one chosen is flagged with its replacement offered
+  (LIB-057).
+- **Suggestions** (TM-L, LIB-019): a plugin ahead of every keymap, acting only on the author's own text
+  input (`handleTextInput`, never while composing), matches the words before the caret, or before one
+  space or mark after them, case aside, against every form of the space's approved terms, at most five
+  offered. Tab adds the mark as its own undo step (`closeHistory`), and Enter does once an arrow has
+  moved the choice; otherwise Enter does its own job and the offer closes, and with no offer Tab is
+  the surface's own. Escape dismisses it for those words. The offer is a `listbox` below the caret that the surface (still a `textbox`) names by
+  `aria-controls`, `aria-activedescendant` and `aria-autocomplete="list"`, said in a polite live
+  region. The index is the space's listing up to 5,000 terms, read once a space for a document's
+  editing session and shared by its editors, and again as the dialog opens, which says when the space
+  held more. A footnote's own editor has the action but no suggestions.
+- **Flags in use** (LIB-018): `POST /v1/components/{id}/terms/preview` answers each used term's
+  standing, its preferred label and a deprecated one's replacement, or `unavailable` where it is no term
+  of the component's space the caller may read; a deprecated term's words are underlined and its flag
+  said after them, as a flagged citation's is. The Review panel does not list them yet.
+- **The save check** (TM-K): a save, a suggestion made or accepted, an assistant's proposal and a
+  restore are refused `term_unreadable` where a term mark names a term the version opened did not use
+  and that is no term of the component's space its author may read, as `mayCite` refuses a citation.
+  The space's terms lock is already taken as the version's references are indexed.

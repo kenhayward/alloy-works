@@ -77,7 +77,8 @@ import { contextOf } from '../audit.js';
 import { createConnectorClient } from '../data/connector.js';
 import type { ConnectorOptions } from '../data/connections.js';
 import { liveBindingStates } from '../data/bindings.js';
-import { mayCite } from '../bibliography/citing.js';
+import { mayCite, mayCiteIn } from '../bibliography/citing.js';
+import { mayUseTerms, mayUseTermsIn } from '../terms/editing.js';
 import { askSource, sourceSwitchedOn } from '../bibliography/sources.js';
 import { mayNameColumns, storableContent } from '../editing.js';
 import { markdownReader } from '../markdown.js';
@@ -1257,6 +1258,9 @@ export function assistantHandlers(
     }
     await authoriseAt(trx, callerOf(request), 'create', { kind: 'space', id: creates.space });
     const proposed = storableContent(proposal.proposed);
+    // A save's checks, measured against nothing before it.
+    await mayCiteIn(trx, request, proposed, creates.space);
+    await mayUseTermsIn(trx, request, proposed, creates.space);
     const made = await createComponent(trx, {
       spaceId: creates.space,
       ...(creates.componentType === undefined ? {} : { componentTypeId: creates.componentType }),
@@ -1402,6 +1406,7 @@ export function assistantHandlers(
     );
     await mayNameColumns(trx, request, proposed, proposal.madeAgainst!);
     await mayCite(trx, request, proposed, proposal.madeAgainst!);
+    await mayUseTerms(trx, request, proposed, proposal.madeAgainst!);
     const made = await makeSuggestion(trx, {
       component: proposal.componentId!,
       version: proposal.madeAgainst!,
@@ -1418,6 +1423,7 @@ export function assistantHandlers(
           storableContent(content);
           await mayNameColumns(trx, request, content, current.id);
           await mayCite(trx, request, content, current.id);
+          await mayUseTerms(trx, request, content, current.id);
         },
       });
       if (accepted.answer !== 'accepted') throw suggestionRefused(accepted.answer);

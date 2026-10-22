@@ -75,17 +75,44 @@ export async function citesUnreadable(
   } catch {
     // A version that no longer parses cites nothing a save could be measured against.
   }
-  const added = [...cited].filter((entry) => !before.has(entry));
-  if (added.length === 0) return false;
   const space = await trx
     .selectFrom('artifact')
     .select('space_id')
     .where('id', '=', opened.artifactId)
     .executeTakeFirst();
+  return unreadableAmong(trx, request, cited, before, space?.space_id ?? null);
+}
+
+/** `mayCite` for a component yet to be made in a space: every entry it cites is new. */
+export async function mayCiteIn(
+  trx: TenantTransaction,
+  request: FastifyRequest,
+  content: ContentDocument,
+  space: string,
+): Promise<void> {
+  if (await unreadableAmong(trx, request, citedIn(content), new Set(), space)) {
+    throw refused(
+      400,
+      'citation.unreadable',
+      "A citation names no bibliography entry of this component's space that you may read.",
+    );
+  }
+}
+
+/** Whether an entry cited and not cited `before` is no entry of the space its caller may read. */
+async function unreadableAmong(
+  trx: TenantTransaction,
+  request: FastifyRequest,
+  cited: ReadonlySet<string>,
+  before: ReadonlySet<string>,
+  space: string | null,
+): Promise<boolean> {
+  const added = [...cited].filter((entry) => !before.has(entry));
+  if (added.length === 0) return false;
   const readable =
-    space?.space_id == null
+    space === null
       ? new Map()
-      : await readableEntries(trx, callerOf(request).principalId, space.space_id, added);
+      : await readableEntries(trx, callerOf(request).principalId, space, added);
   return added.some((entry) => !readable.has(entry));
 }
 

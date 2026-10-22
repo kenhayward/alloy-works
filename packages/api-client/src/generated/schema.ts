@@ -1299,6 +1299,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/components/{id}/terms/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * The standing of each term a component uses, as its editor flags them
+         * @description Answers the standing and preferred label of each term a component's editor uses, in order, so it can flag a deprecated one with its replacement. A term that is not one of the component's space the caller may read is answered unavailable, and nothing more is said of it. Nothing is kept.
+         */
+        post: operations["previewComponentTerms"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/components/{id}/threads": {
         parameters: {
             query?: never;
@@ -5718,7 +5738,7 @@ export interface paths {
         put?: never;
         /**
          * Import SKOS, as JSON-LD or Turtle, as terms of this space
-         * @description Imports SKOS concepts as terms of the space, from JSON-LD in the compact form `exportTerms` writes or from Turtle. A concept whose preferred label in its base language is a term's of the space, case aside, is merged into it: the answer names the labels, definitions and relations it was given. Each other concept is made, in draft. What no term can hold is reported rather than dropped: another predicate, a subject that is not a concept, a language tag the product does not read, an alternative label in a language with no preferred one, and a relation to a concept outside the file. Nothing a file names is fetched. At most 2,000 concepts are taken at a time. It needs edit in the space.
+         * @description Imports SKOS concepts as terms of the space, from JSON-LD in the compact form `exportTerms` writes or from Turtle. A concept whose preferred label in its base language is a term's of the space, case aside, is merged into it: the answer names the labels, definitions and relations it was given. Each other concept is made, in draft. What no term can hold is reported rather than dropped: another predicate, a subject that is not a concept, a language tag the product does not read, an alternative label in a language with no preferred one, and a relation to a concept outside the file. Nothing a file names is fetched. At most 2,000 concepts and 200,000 statements are taken at a time, in a body of at most 5 MiB. It needs edit in the space.
          */
         post: operations["importTerms"];
         delete?: never;
@@ -10844,6 +10864,26 @@ export interface operations {
                     };
                 };
             };
+            /** @description A save’s checks: `term_unreadable` or `citation_unreadable`, its content naming a term or an entry of the component’s space the caller may not read */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
@@ -10990,6 +11030,26 @@ export interface operations {
                     };
                 };
             };
+            /** @description A save’s checks: `term_unreadable` or `citation_unreadable`, its content naming a term or an entry of the component’s space the caller may not read */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
@@ -11133,6 +11193,26 @@ export interface operations {
                             /** @description A proposal to make a component, accepted: the component made, at 0.1 */
                             component?: string;
                         };
+                    };
+                };
+            };
+            /** @description A save’s checks: `term_unreadable` or `citation_unreadable`, its content naming a term or an entry of the component’s space the caller may not read */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
                     };
                 };
             };
@@ -21988,7 +22068,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `content_invalid`: the content is not a document the model accepts; `values_invalid`: a fixed value changed, a value of the wrong type, or a user this environment does not hold; `citation_unreadable`: a citation its version did not hold names no entry of the component's space the caller may read */
+            /** @description `content_invalid`: the content is not a document the model accepts; `values_invalid`: a fixed value changed, a value of the wrong type, or a user this environment does not hold; `citation_unreadable`: a citation its version did not hold names no entry of the component's space the caller may read; `term_unreadable`: a term its version did not use is no term of the component's space the caller may read */
             400: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -24182,6 +24262,150 @@ export interface operations {
             };
         };
     };
+    previewComponentTerms: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "terms": []
+                 *     }
+                 */
+                "application/json": {
+                    /** @description Each term the component uses */
+                    terms: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Each term's standing, in order */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "terms": []
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Each term asked, in order (LIB-018) */
+                        terms: {
+                            /**
+                             * @description unavailable where it is no term of the component's space the caller may read
+                             * @enum {string}
+                             */
+                            standing: "approved" | "draft" | "deprecated" | "unavailable";
+                            /** @description Its preferred label in its base language */
+                            label: string | null;
+                            /** @description A deprecated term's replacement, its label null where the caller may not read it */
+                            replacedBy: {
+                                id: string;
+                                label: string | null;
+                            } | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a component the caller may not read is not found */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such component in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     listComponentThreads: {
         parameters: {
             query?: {
@@ -26123,10 +26347,10 @@ export interface operations {
                         /** @description Empty where it may be restored */
                         refusals: {
                             /**
-                             * @description restore_unreadable: the version no longer reads. restore_locked: somebody is editing it, the caller included. values_invalid: a value its field now fixes at another. restore_unchanged: it would make what the latest already is. content_invalid, definition_unreadable and citation_unreadable: a save's checks on its content refuse it, the second where a bound table names a column of a query definition the caller may not read that the latest does not name, the third where a citation the latest does not hold names no entry of the component's space the caller may read
+                             * @description restore_unreadable: the version no longer reads. restore_locked: somebody is editing it, the caller included. values_invalid: a value its field now fixes at another. restore_unchanged: it would make what the latest already is. content_invalid, definition_unreadable, citation_unreadable and term_unreadable: a save's checks on its content refuse it, the second where a bound table names a column of a query definition the caller may not read that the latest does not name, the third where a citation the latest does not hold names no entry of the component's space the caller may read, the fourth where a term the latest does not use is no term of the component's space the caller may read
                              * @enum {string}
                              */
-                            code: "restore_unreadable" | "restore_locked" | "values_invalid" | "restore_unchanged" | "content_invalid" | "definition_unreadable" | "citation_unreadable";
+                            code: "restore_unreadable" | "restore_locked" | "values_invalid" | "restore_unchanged" | "content_invalid" | "definition_unreadable" | "citation_unreadable" | "term_unreadable";
                             /** @description restore_locked: who holds the lock */
                             holder?: {
                                 id: string;
@@ -26290,7 +26514,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description values_invalid: a value its field now fixes at another. content_invalid: a save's checks on its content refuse it. citation_unreadable: a citation the latest does not hold names no entry of the component's space the caller may read */
+            /** @description values_invalid: a value its field now fixes at another. content_invalid: a save's checks on its content refuse it. citation_unreadable: a citation the latest does not hold names no entry of the component's space the caller may read. term_unreadable: a term the latest does not use is no term of the component's space the caller may read */
             400: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -98873,7 +99097,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `import_unreadable`: the text does not read as the format. `import_too_many`: it holds more than 2,000 concepts */
+            /** @description `import_unreadable`: the text does not read as the format. `import_too_many`: it holds more than 2,000 concepts or 200,000 statements */
             400: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -98955,6 +99179,26 @@ export interface operations {
             };
             /** @description `space_archived`: the space is archived, and nothing new is made in it */
             409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The body is larger than 5 MiB */
+            413: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;

@@ -1,6 +1,6 @@
 import type { Term } from '@alloy-works/domain';
 import { describe, expect, it } from 'vitest';
-import { exportSkos, readSkos, SKOS_CONTEXT } from './skos.js';
+import { exportSkos, readSkos, SKOS_CONTEXT, SKOS_QUADS_MOST } from './skos.js';
 
 const MARSUPIAL = '0b1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f';
 const DUNNART = '1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f';
@@ -75,14 +75,14 @@ describe('SKOS interchange (the TM plan, TM-J)', () => {
     });
   });
 
-  it('LIB-028 IMP-015 imports its own export, each concept as it was exported', () => {
+  it('LIB-028 IMP-015 imports its own export, each concept as it was exported', async () => {
     const text = JSON.stringify(
       exportSkos([
         { id: DUNNART, term: dunnart },
         { id: MARSUPIAL, term: marsupial },
       ]),
     );
-    const read = readSkos('json-ld', text);
+    const read = await readSkos('json-ld', text);
     expect(read?.unrepresented).toEqual([]);
     expect(read?.concepts).toEqual([
       {
@@ -103,8 +103,8 @@ describe('SKOS interchange (the TM plan, TM-J)', () => {
     ]);
   });
 
-  it('IMP-015 LIB-029 imports Turtle, reporting what a term cannot hold rather than dropping it', () => {
-    const read = readSkos('turtle', TURTLE);
+  it('IMP-015 LIB-029 imports Turtle, reporting what a term cannot hold rather than dropping it', async () => {
+    const read = await readSkos('turtle', TURTLE);
     expect(read?.concepts.map((each) => each.key)).toEqual([
       'https://example.org/terms/quoll',
       'https://example.org/terms/dasyurid',
@@ -164,12 +164,12 @@ describe('SKOS interchange (the TM plan, TM-J)', () => {
     ]);
   });
 
-  it('reads nothing from text that is not the format, and never follows an identity', () => {
-    expect(readSkos('turtle', 'this is not turtle <<<')).toBeUndefined();
-    expect(readSkos('json-ld', '{"@graph": 3}')).toBeUndefined();
-    expect(readSkos('json-ld', 'not json')).toBeUndefined();
+  it('reads nothing from text that is not the format, and never follows an identity', async () => {
+    expect(await readSkos('turtle', 'this is not turtle <<<')).toBeUndefined();
+    expect(await readSkos('json-ld', '{"@graph": 3}')).toBeUndefined();
+    expect(await readSkos('json-ld', 'not json')).toBeUndefined();
     // A JSON-LD document of another context is read only by the compact form's names.
-    const other = readSkos(
+    const other = await readSkos(
       'json-ld',
       JSON.stringify({
         '@graph': [
@@ -190,6 +190,66 @@ describe('SKOS interchange (the TM plan, TM-J)', () => {
         detail: 'https://example.org/weight',
       },
     ]);
+  });
+
+  it('stops reading once the text holds more than 2,000 concepts or too many statements', async () => {
+    const concepts = (n: number) =>
+      [
+        '@prefix skos: <http://www.w3.org/2004/02/skos/core#> .',
+        ...Array.from(
+          { length: n },
+          (_, at) => `<urn:x:${at}> a skos:Concept ; skos:prefLabel "Term ${at}"@en .`,
+        ),
+      ].join('\n');
+    expect(await readSkos('turtle', concepts(2000))).toMatchObject({ tooMany: false });
+    expect(await readSkos('turtle', concepts(2001))).toEqual({
+      concepts: [],
+      unrepresented: [],
+      unrepresentedTotal: 0,
+      tooMany: true,
+    });
+    const graph = (n: number) =>
+      JSON.stringify({
+        '@graph': Array.from({ length: n }, (_, at) => ({
+          '@id': `urn:x:${at}`,
+          '@type': 'skos:Concept',
+          prefLabel: { en: `Term ${at}` },
+        })),
+      });
+    expect(await readSkos('json-ld', graph(2001))).toMatchObject({ concepts: [], tooMany: true });
+    // A statement past the bound in one concept stops the read too.
+    const alternatives = Array.from(
+      { length: SKOS_QUADS_MOST },
+      (_, at) => `skos:altLabel "Other ${at}"@en`,
+    );
+    const crowded = [
+      '@prefix skos: <http://www.w3.org/2004/02/skos/core#> .',
+      `<urn:x:one> a skos:Concept ; ${alternatives.join(' ; ')} .`,
+    ].join('\n');
+    expect(await readSkos('turtle', crowded)).toMatchObject({ tooMany: true });
+    expect(
+      await readSkos(
+        'json-ld',
+        JSON.stringify({
+          '@graph': [
+            {
+              '@id': 'urn:x:one',
+              '@type': 'skos:Concept',
+              altLabel: { en: alternatives.map((_, at) => `Other ${at}`) },
+            },
+          ],
+        }),
+      ),
+    ).toMatchObject({ tooMany: true });
+  });
+
+  it('keeps at most 1,000 things it could not hold, and counts the rest', async () => {
+    const read = await readSkos(
+      'turtle',
+      Array.from({ length: 1500 }, (_, at) => `<urn:x:${at}> <urn:x:p> "v" .`).join('\n'),
+    );
+    expect(read?.unrepresented).toHaveLength(1000);
+    expect(read?.unrepresentedTotal).toBe(1500);
   });
 });
 

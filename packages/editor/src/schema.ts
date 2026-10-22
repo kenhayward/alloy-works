@@ -873,7 +873,9 @@ export const editorSchema = new Schema({
     subscript: markSpec('sub'),
     superscript: markSpec('sup'),
     inlineCode: markSpec('code'),
+    // Not inclusive, as a link is not: typing past a term is writing on (the TM plan, TMc).
     definedTerm: markSpec('dfn', {
+      inclusive: false,
       attrs: { term: {} },
       toAttributes: (attrs) => ({ 'data-term': attrs.term as string }),
       fromElement: (node) => {

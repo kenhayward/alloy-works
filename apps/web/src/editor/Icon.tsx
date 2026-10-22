@@ -23,6 +23,8 @@ const PATHS: Record<string, readonly string[]> = {
     'M8 2.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11z',
     'M2.7 8h10.6M8 2.6c1.7 1.9 1.7 9 0 10.8M8 2.6c-1.7 1.9-1.7 9 0 10.8',
   ],
+  // A tag tied to words: a governed term (the TM plan, TMc).
+  Term: ['M2.5 4.5h7l4 3.5-4 3.5h-7z', 'M5.2 8h.01'],
   'Bulleted list': ['M6 4.5h7.5M6 8h7.5M6 11.5h7.5', 'M3 4.5h.01M3 8h.01M3 11.5h.01'],
   'Numbered list': [
     'M6.5 4.5h7M6.5 8h7M6.5 11.5h7',

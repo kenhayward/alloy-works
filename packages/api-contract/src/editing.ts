@@ -297,6 +297,7 @@ export const editingRoutes = {
           '`content_invalid`: the content is not a document the model accepts; `values_invalid`: a ' +
           'fixed value changed, a value of the wrong type, or a user this environment does not hold; ' +
           "`citation_unreadable`: a citation its version did not hold names no entry of the component's " +
+          "space the caller may read; `term_unreadable`: a term its version did not use is no term of the component's " +
           'space the caller may read',
         schema: EditingRefusal,
       },

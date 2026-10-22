@@ -259,7 +259,10 @@ describe('Recovery in the component editor', () => {
     expect(box()).toHaveTextContent('Unbox the printer.');
     expect(code()).toHaveValue('A1');
     // Nothing of the saved text has left the service: only its time, until the lock is held.
-    expect(asked.map((each) => each.route)).toEqual(['GET /v1/components/{id}']);
+    // The space's terms are read once a session, for the suggestions (TMc).
+    expect(asked.map((each) => each.route).filter((route) => !route.endsWith('/terms'))).toEqual([
+      'GET /v1/components/{id}',
+    ]);
 
     await userEvent.click(within(offer.parentElement!).getByRole('button', { name: 'Recover' }));
     await panel();

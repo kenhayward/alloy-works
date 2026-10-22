@@ -335,3 +335,41 @@ button.danger {
   border-color: var(--danger);
   color: var(--danger);
 }
+
+/* Read to a screen reader and never seen, nor taking room: the term offer's announcement (TM-L). */
+.aw-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* The terms offered as one types, under the word they would mark (the TM plan, TM-L). */
+.aw-term-suggestions {
+  position: fixed;
+  z-index: var(--z-suggest);
+  margin: 0;
+  padding: var(--space-4) 0;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-menu);
+  font-size: var(--size-13);
+}
+
+.aw-term-suggestions[hidden] {
+  display: none;
+}
+
+.aw-term-suggestions [role='option'] {
+  padding: var(--space-4) var(--space-12);
+}
+
+.aw-term-suggestions [role='option'][aria-selected='true'] {
+  background: var(--accent-weak);
+  color: var(--accent-text);
+}

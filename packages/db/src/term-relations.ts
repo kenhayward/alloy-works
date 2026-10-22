@@ -67,15 +67,19 @@ export async function checkTermRelations(
         : [{ rule: 'term_invalid', path, message: 'This names no term of the space' }],
   );
   if (problems.length === 0 && term.replacedBy !== undefined) {
-    const problem = await replacementProblem(trx, self, term.replacedBy);
+    const problem = await replacementProblem(trx, space, self, term.replacedBy);
     if (problem) problems.push({ rule: 'term_invalid', path: 'replacedBy', message: problem });
   }
   if (problems.length > 0) throw new TermRefused(problems);
 }
 
-/** Why a replacement's chain is refused, or nothing: it returns to the term, or runs past five. */
+/**
+ * Why a replacement's chain is refused, or nothing: it returns to the term, or the longest chain
+ * through it, those replaced by it counted, runs past five.
+ */
 async function replacementProblem(
   trx: TenantTransaction,
+  space: string,
   self: string | undefined,
   first: string,
 ): Promise<string | undefined> {
@@ -96,8 +100,31 @@ async function replacementProblem(
   if (self !== undefined && rows.some((row) => row.id === self)) {
     return 'The replacement is replaced, in turn, by this term';
   }
-  if (rows.length > MOST_REPLACEMENTS) {
+  if (
+    rows.length + (self === undefined ? 0 : await inbound(trx, space, self)) >
+    MOST_REPLACEMENTS
+  ) {
     return `A chain of replacements is at most ${MOST_REPLACEMENTS} long`;
   }
   return undefined;
+}
+
+/** The longest chain of the space's terms replaced, in turn, by this one: its replacements in. */
+async function inbound(trx: TenantTransaction, space: string, self: string): Promise<number> {
+  const { rows } = await sql<{ depth: number }>`
+    with recursive latest as (
+      select a.id, (select (v.content ->> 'replacedBy')::uuid from artifact_version v
+                     where v.artifact_id = a.id
+                     order by v.revision_no desc, v.version_no desc limit 1) as replaced_by
+        from artifact a where a.kind = 'term' and a.space_id = ${space}
+    ),
+    chain (id, depth, path) as (
+      select ${self}::uuid, 0, array[${self}::uuid]
+      union all
+      select l.id, chain.depth + 1, chain.path || l.id
+        from chain join latest l on l.replaced_by = chain.id
+       where not l.id = any(chain.path) and chain.depth <= ${MOST_REPLACEMENTS}
+    )
+    select max(depth)::int as depth from chain`.execute(trx);
+  return rows[0]?.depth ?? 0;
 }

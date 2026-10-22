@@ -489,6 +489,7 @@ const operationTags = {
     'getTermUses',
     'archiveTerm',
     'unarchiveTerm',
+    'previewComponentTerms',
   ],
   Prompts: [
     'listPrompts',
@@ -1028,7 +1029,7 @@ const descriptions: Readonly<Record<string, string>> = {
   createTerm:
     'Makes a term in the space, in draft: its base language, a preferred label, alternative labels and an abbreviation per language, the base language among them, a definition per language, and the broader, narrower and related terms it states, each a term of the same space, with a replacement where it has one. Nothing is inferred: a broader term says nothing of its narrower ones unless it states them. A replacement never closes a cycle, and a chain of them is at most five long. It needs edit in the space.',
   importTerms:
-    "Imports SKOS concepts as terms of the space, from JSON-LD in the compact form `exportTerms` writes or from Turtle. A concept whose preferred label in its base language is a term's of the space, case aside, is merged into it: the answer names the labels, definitions and relations it was given. Each other concept is made, in draft. What no term can hold is reported rather than dropped: another predicate, a subject that is not a concept, a language tag the product does not read, an alternative label in a language with no preferred one, and a relation to a concept outside the file. Nothing a file names is fetched. At most 2,000 concepts are taken at a time. It needs edit in the space.",
+    "Imports SKOS concepts as terms of the space, from JSON-LD in the compact form `exportTerms` writes or from Turtle. A concept whose preferred label in its base language is a term's of the space, case aside, is merged into it: the answer names the labels, definitions and relations it was given. Each other concept is made, in draft. What no term can hold is reported rather than dropped: another predicate, a subject that is not a concept, a language tag the product does not read, an alternative label in a language with no preferred one, and a relation to a concept outside the file. Nothing a file names is fetched. At most 2,000 concepts and 200,000 statements are taken at a time, in a body of at most 5 MiB. It needs edit in the space.",
   exportTerms:
     "Exports the space's terms the caller may read, archived or not, as SKOS in JSON-LD: each a `skos:Concept` identified `urn:uuid:` and its id, with `prefLabel`, `altLabel` and `definition` by language, an abbreviation as a `notation` in its label's language, `broader`, `narrower` and `related`, and a replacement as `dct:isReplacedBy`.",
   getTerm:
@@ -1041,6 +1042,8 @@ const descriptions: Readonly<Record<string, string>> = {
     "Archives a term, leaving it out of the space's listing. Refused while a component's latest version uses it. It needs retire on the term.",
   unarchiveTerm:
     "Unarchives a term, returning it to the space's listing. It needs retire on the term.",
+  previewComponentTerms:
+    "Answers the standing and preferred label of each term a component's editor uses, in order, so it can flag a deprecated one with its replacement. A term that is not one of the component's space the caller may read is answered unavailable, and nothing more is said of it. Nothing is kept.",
   unarchiveBibliographyEntry:
     "Unarchives an entry, returning it to the space's listing. It needs retire on the entry.",
   recordPromptVersion:

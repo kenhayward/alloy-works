@@ -35,7 +35,9 @@ describe('a suggestion’s draft, in the component editor', () => {
     );
     // Nothing asked of the service but the component itself: no lock, no session, no save.
     expect(
-      asked.map((each) => each.route).filter((route) => route !== 'GET /v1/presentation'),
+      asked
+        .map((each) => each.route)
+        .filter((route) => route !== 'GET /v1/presentation' && !route.endsWith('/terms')),
     ).toEqual(['GET /v1/components/{id}']);
     expect(screen.queryByRole('button', { name: 'Done editing' })).toBeNull();
     // An image is the reviewer's to add only where they may add one to the space.

@@ -21063,13 +21063,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 626,
+      "line": 627,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 639,
+      "line": 640,
       "kind": "title"
     },
     {
@@ -21543,7 +21543,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 2040,
+      "line": 2042,
       "kind": "title"
     },
     {
@@ -23119,6 +23119,12 @@
       "kind": "title"
     },
     {
+      "id": "LIB-018",
+      "file": "apps/service/src/term-editing-routes.test.ts",
+      "line": 191,
+      "kind": "title"
+    },
+    {
       "id": "IMP-015",
       "file": "apps/service/src/term-routes.test.ts",
       "line": 128,
@@ -24099,85 +24105,85 @@
     {
       "id": "CNT-063",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 593,
+      "line": 597,
       "kind": "title"
     },
     {
       "id": "CNT-082",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2167,
+      "line": 2180,
       "kind": "title"
     },
     {
       "id": "CNT-094",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2638,
+      "line": 2651,
       "kind": "title"
     },
     {
       "id": "CNT-097",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2156,
+      "line": 2169,
       "kind": "title"
     },
     {
       "id": "CNT-115",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2184,
+      "line": 2197,
       "kind": "title"
     },
     {
       "id": "CNT-122",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2222,
+      "line": 2235,
       "kind": "title"
     },
     {
       "id": "CNT-169",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 1457,
+      "line": 1470,
       "kind": "title"
     },
     {
       "id": "CNT-173",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 288,
+      "line": 291,
       "kind": "title"
     },
     {
       "id": "COL-044",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 1046,
+      "line": 1059,
       "kind": "title"
     },
     {
       "id": "DAT-098",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 3067,
+      "line": 3080,
       "kind": "title"
     },
     {
       "id": "REU-008",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 359,
+      "line": 363,
       "kind": "title"
     },
     {
       "id": "SCH-057",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2044,
+      "line": 2057,
       "kind": "title"
     },
     {
       "id": "STY-070",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2432,
+      "line": 2445,
       "kind": "title"
     },
     {
       "id": "STY-079",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2322,
+      "line": 2335,
       "kind": "title"
     },
     {
@@ -24247,6 +24253,24 @@
       "kind": "title"
     },
     {
+      "id": "CNT-077",
+      "file": "apps/web/src/editor/ComponentEditor.terms.test.tsx",
+      "line": 141,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-165",
+      "file": "apps/web/src/editor/ComponentEditor.terms.test.tsx",
+      "line": 81,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-018",
+      "file": "apps/web/src/editor/ComponentEditor.terms.test.tsx",
+      "line": 150,
+      "kind": "title"
+    },
+    {
       "id": "LIF-018",
       "file": "apps/web/src/editor/ComponentList.test.tsx",
       "line": 341,
@@ -24279,13 +24303,13 @@
     {
       "id": "CNT-077",
       "file": "apps/web/src/editor/EditorToolbar.test.tsx",
-      "line": 219,
+      "line": 220,
       "kind": "title"
     },
     {
       "id": "CNT-164",
       "file": "apps/web/src/editor/EditorToolbar.test.tsx",
-      "line": 664,
+      "line": 666,
       "kind": "title"
     },
     {
@@ -24303,7 +24327,7 @@
     {
       "id": "CNT-090",
       "file": "apps/web/src/editor/Recovery.test.tsx",
-      "line": 288,
+      "line": 291,
       "kind": "title"
     },
     {
@@ -24358,6 +24382,18 @@
       "id": "COL-047",
       "file": "apps/web/src/editor/TakeOver.test.tsx",
       "line": 36,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-165",
+      "file": "apps/web/src/editor/TermDialog.test.tsx",
+      "line": 68,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-057",
+      "file": "apps/web/src/editor/TermDialog.test.tsx",
+      "line": 90,
       "kind": "title"
     },
     {
@@ -24478,6 +24514,12 @@
       "id": "TAB-053",
       "file": "apps/web/src/editor/tableWidths.test.ts",
       "line": 20,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-019",
+      "file": "apps/web/src/editor/termSuggestions.test.tsx",
+      "line": 87,
       "kind": "title"
     },
     {
@@ -27765,19 +27807,19 @@
     {
       "id": "LIB-016",
       "file": "packages/db/src/publication-terms.test.ts",
-      "line": 278,
+      "line": 283,
       "kind": "title"
     },
     {
       "id": "LIB-018",
       "file": "packages/db/src/publication-terms.test.ts",
-      "line": 340,
+      "line": 345,
       "kind": "title"
     },
     {
       "id": "LIB-050",
       "file": "packages/db/src/publication-terms.test.ts",
-      "line": 340,
+      "line": 345,
       "kind": "title"
     },
     {
@@ -28455,55 +28497,55 @@
     {
       "id": "LIB-013",
       "file": "packages/db/src/terms.test.ts",
-      "line": 171,
+      "line": 173,
       "kind": "title"
     },
     {
       "id": "LIB-014",
       "file": "packages/db/src/terms.test.ts",
-      "line": 171,
+      "line": 173,
       "kind": "title"
     },
     {
       "id": "LIB-025",
       "file": "packages/db/src/terms.test.ts",
-      "line": 205,
+      "line": 207,
       "kind": "title"
     },
     {
       "id": "LIB-026",
       "file": "packages/db/src/terms.test.ts",
-      "line": 320,
+      "line": 428,
       "kind": "title"
     },
     {
       "id": "LIB-028",
       "file": "packages/db/src/terms.test.ts",
-      "line": 400,
+      "line": 531,
       "kind": "title"
     },
     {
       "id": "LIB-029",
       "file": "packages/db/src/terms.test.ts",
-      "line": 400,
+      "line": 531,
       "kind": "title"
     },
     {
       "id": "LIB-049",
       "file": "packages/db/src/terms.test.ts",
-      "line": 255,
+      "line": 349,
       "kind": "title"
     },
     {
       "id": "SCH-015",
       "file": "packages/db/src/terms.test.ts",
-      "line": 320,
+      "line": 428,
       "kind": "title"
     },
     {
       "id": "SCH-056",
       "file": "packages/db/src/terms.test.ts",
-      "line": 320,
+      "line": 428,
       "kind": "title"
     },
     {
@@ -31861,6 +31903,24 @@
       "kind": "title"
     },
     {
+      "id": "CNT-165",
+      "file": "packages/editor/src/terms.test.ts",
+      "line": 117,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-018",
+      "file": "packages/editor/src/terms.test.ts",
+      "line": 281,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-019",
+      "file": "packages/editor/src/terms.test.ts",
+      "line": 169,
+      "kind": "title"
+    },
+    {
       "id": "REU-018",
       "file": "packages/editor/src/variables.test.ts",
       "line": 34,
@@ -31911,13 +31971,13 @@
     {
       "id": "CNT-155",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 1010,
+      "line": 1061,
       "kind": "title"
     },
     {
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 631,
+      "line": 669,
       "kind": "title"
     },
     {

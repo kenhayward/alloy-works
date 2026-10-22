@@ -24,6 +24,8 @@ const WIRE_CODES = {
   'content.invalid': 'content_invalid',
   // A save citing no entry of its space its author may read (the CI plan, CI-H).
   'citation.unreadable': 'citation_unreadable',
+  // And a term none of its space it may read (the TM plan, TM-K).
+  'term.unreadable': 'term_unreadable',
   'artifact.missing': 'artifact_missing',
   'component_type.missing': 'component_type_missing',
   'outline.invalid': 'outline_invalid',
