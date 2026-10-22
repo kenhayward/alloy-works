@@ -3,6 +3,20 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.207.0 - 2026-10-22 (PR #766)
+
+Reference sources (the XR plan).
+
+### Added
+
+- **Reference search.** The Cite dialog's Search tab finds a source in Crossref or PubMed and cites it, offering the entry the space already holds or making one from the record.
+- **Reference sources.** Administration's Reference sources switches Crossref and PubMed on or off for the environment. A deployment may name a contact address the sources are sent.
+- **Retractions.** An entry obtained from Crossref or PubMed is checked against its source, by Check now on its page or nightly. A retracted or corrected source is flagged on each citation, in the Cite dialog and in the document's Review, and the document's owner is told.
+- **No retracted sources cited.** A document workflow's transition may require it. A publish citing a flagged source is warned, never stopped.
+- **Assistant citations.** The assistant can search Crossref or PubMed with your terms and propose a citation of a result, shown by the work's title. Accepting it cites the space's entry for the source, or makes one, which needs the space's write.
+- **Reference extensions.** A further reference source someone else hosts is installed from Administration's Extensions, with its key, and is then searched, cited from and checked as Crossref and PubMed are. It is removed only once switched off; the entries obtained from it are kept.
+- **Retractions.** Check now is offered to those who may edit an entry, at most once a minute, and a document's owner is told of a retraction or correction at most once a month, and only while they may read the document.
+
 ## 0.206.0 - 2026-10-22 (PR #761)
 
 Citations (the CI plan).

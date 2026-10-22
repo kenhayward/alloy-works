@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { CONTROL } from '../data/primitives.js';
+import { httpsUrl } from '../extensions/manifest.js';
 import { admitCsl, cslItemSchema, type CslItem } from './entry.js';
 
 /**
@@ -46,6 +47,39 @@ export const REFERENCE_SOURCES: readonly ReferenceSource[] = [
 export const referenceSource = (id: string): ReferenceSource | undefined =>
   REFERENCE_SOURCES.find((each) => each.id === id);
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+/**
+ * A source among a tenant's (the XR plan, XR-J; LIB-032): a declared one by its id, or a reference
+ * extension the tenant installed as `ext:` and the extension's id.
+ */
+export const referenceSourceKeySchema = z.union([
+  z.enum(REFERENCE_SOURCE_IDS),
+  z.templateLiteral(['ext:', z.string().regex(UUID)]),
+]);
+export type ReferenceSourceKey = z.infer<typeof referenceSourceKeySchema>;
+
+/** Whether a key names a reference extension rather than a declared source. */
+export const isExtensionSource = (key: string): key is `ext:${string}` => key.startsWith('ext:');
+
+/** A path under an extension's endpoint, as its manifest declares one. */
+const extensionPath = z
+  .string()
+  .regex(/^(?:\/[A-Za-z0-9._~-]+)+$/)
+  .max(200);
+
+/**
+ * Where a reference extension is reached (XR-J): its installed manifest's endpoint and paths, and its
+ * secret sealed for it where it takes one, which the connector alone opens.
+ */
+export const referenceExtensionTargetSchema = z.strictObject({
+  endpoint: httpsUrl,
+  search: extensionPath,
+  fetch: extensionPath,
+  sealed: z.string().min(1).max(4096).optional(),
+});
+export type ReferenceExtensionTarget = z.infer<typeof referenceExtensionTargetSchema>;
+
 /** The most results a search answers. */
 export const REFERENCE_RESULTS_MOST = 20;
 
@@ -59,9 +93,29 @@ export const REFERENCE_MOST_BYTES: Readonly<Record<ReferenceOperation, number>> 
 const DOI = /^10\.[0-9]{4,9}\/\S{1,280}$/;
 const PMID = /^[1-9][0-9]{0,9}$/;
 
-/** Whether an identifier is one this source fetches by. */
-export const identifierFits = (source: ReferenceSourceId, identifier: string): boolean =>
-  (source === 'crossref' ? DOI : PMID).test(identifier);
+/** What a reference extension's secret is sealed to beside the tenant (XR-J): its key and endpoint. */
+export const referenceCredentialContext = (source: `ext:${string}`, endpoint: string): string =>
+  JSON.stringify([source, endpoint]);
+
+/** The connector asked to seal a reference extension's secret (XR-J), which it alone opens. */
+export const referenceSealRequestSchema = z.strictObject({
+  tenant: z.string().regex(/^[0-9a-z]{1,40}$/),
+  source: z.templateLiteral(['ext:', z.string().regex(UUID)]),
+  endpoint: httpsUrl,
+  secret: z
+    .string()
+    .max(2048)
+    .regex(/^[!-~](?:[ -~]*[!-~])?$/, {
+      message: 'A secret is printable ASCII, with no space before or after it',
+    }),
+});
+export type ReferenceSealRequest = z.infer<typeof referenceSealRequestSchema>;
+
+/** Whether an identifier is one this source fetches by: an extension's, any one line of text. */
+export const identifierFits = (source: ReferenceSourceKey, identifier: string): boolean =>
+  isExtensionSource(source)
+    ? identifier.trim() !== '' && identifier.length <= 300 && !CONTROL.test(identifier)
+    : (source === 'crossref' ? DOI : PMID).test(identifier);
 
 /** A contact address, sent as the sources' polite use asks. */
 export const REFERENCE_CONTACT = /^[^\s@]{1,64}@[^\s@]{1,190}$/;
@@ -122,7 +176,7 @@ export const referenceRequestSchema = z
   .strictObject({
     requestId: z.uuid(),
     tenant,
-    source: z.enum(REFERENCE_SOURCE_IDS),
+    source: referenceSourceKeySchema,
     op: z.enum(REFERENCE_OPERATIONS),
     query: z
       .string()
@@ -131,7 +185,10 @@ export const referenceRequestSchema = z
       .refine((value) => !CONTROL.test(value) && value.trim() !== '')
       .optional(),
     identifier: z.string().min(1).max(300).optional(),
+    /** An extension's target (XR-J), given for an extension and for nothing else. */
+    extension: referenceExtensionTargetSchema.optional(),
   })
+  .refine((request) => isExtensionSource(request.source) === (request.extension !== undefined))
   .refine((request) =>
     request.op === 'search'
       ? request.query !== undefined && request.identifier === undefined
@@ -183,7 +240,7 @@ export const referenceAnswerSchema = z.discriminatedUnion('type', [
   z.strictObject({
     type: z.literal('failed'),
     code: z.literal('reference_unavailable'),
-    source: z.enum(REFERENCE_SOURCE_IDS),
+    source: referenceSourceKeySchema,
     reason: z.enum(REFERENCE_FAILURES),
   }),
 ]);
@@ -201,6 +258,8 @@ export const childReferenceRequestSchema = z.strictObject({
   deny: z.array(z.string()),
   connectTimeoutMs: z.number().int().min(1).max(60_000),
   contact: z.string().regex(REFERENCE_CONTACT).optional(),
+  /** An extension's secret, opened by the supervisor, sent as a bearer (XR-J). */
+  secret: z.string().min(1).max(4096).optional(),
   ca: z
     .string()
     .max(256 * 1024)
@@ -575,11 +634,55 @@ export function entryCheck(held: CslItem, results: readonly ReferenceResult[]): 
 /** Where an entry was obtained, as `source:identifier` (XRa), read back; undefined if not a source's. */
 export function obtainedFrom(
   from: string,
-): { readonly source: ReferenceSourceId; readonly identifier: string } | undefined {
-  const at = from.indexOf(':');
-  const source = REFERENCE_SOURCE_IDS.find((each) => each === from.slice(0, at));
+): { readonly source: ReferenceSourceKey; readonly identifier: string } | undefined {
+  // An extension's key holds a colon of its own: `ext:<id>`.
+  const at = from.indexOf(':', isExtensionSource(from) ? 'ext:'.length : 0);
+  const source = referenceSourceKeySchema.safeParse(from.slice(0, at)).data;
   const identifier = from.slice(at + 1);
   return at > 0 && source !== undefined && identifierFits(source, identifier)
     ? { source, identifier }
     : undefined;
+}
+
+/** An extension's step's path under its endpoint (XR-J): the terms or identifier encoded. */
+export function extensionReferencePath(
+  target: Pick<ReferenceExtensionTarget, 'endpoint' | 'search' | 'fetch'>,
+  step: Extract<ReferenceStep, { step: 'search' | 'work' }>,
+): string {
+  const base = new URL(target.endpoint).pathname.replace(/\/$/, '');
+  const query = new URLSearchParams(
+    step.step === 'search' ? { query: step.terms } : { id: step.identifier },
+  );
+  return `${base}${step.step === 'search' ? target.search : target.fetch}?${query.toString()}`;
+}
+
+/** Where an extension's record says it is retracted or corrected (XR-J). */
+const EXTENSION_NOTICES = 'x-alloy-notices';
+
+/**
+ * A reference extension's answer, as parsed JSON (XR-J): CSL-JSON items, a list, each by its own
+ * `id`, admitted as an import is. A fetch's or a check's, given the identifier `asked`, keep only the
+ * item by it, so another record is never taken for it. A check's carry the notices an item gives at
+ * `x-alloy-notices`, each in a notice's shape or left out. Undefined where the answer is not a list.
+ */
+export function readExtensionAnswer(
+  op: ReferenceOperation,
+  answer: unknown,
+  asked?: string,
+): ReferenceResult[] | undefined {
+  if (!Array.isArray(answer)) return undefined;
+  return answer.slice(0, REFERENCE_RESULTS_MOST).flatMap((item) => {
+    if (!isRecord(item)) return [];
+    const identifier =
+      typeof item.id === 'number' ? String(item.id) : typeof item.id === 'string' ? item.id : '';
+    if (!identifierFits('ext:', identifier)) return [];
+    if (op !== 'search' && asked !== undefined && identifier !== asked) return [];
+    const { [EXTENSION_NOTICES]: given, ...record } = item;
+    const results = admitted(identifier, record);
+    if (op !== 'check') return results;
+    const notices = (Array.isArray(given) ? given : []).flatMap(
+      (each) => referenceNoticeSchema.safeParse(each).data ?? [],
+    );
+    return results.map((each) => ({ ...each, notices: distinct(notices).slice(0, 50) }));
+  });
 }

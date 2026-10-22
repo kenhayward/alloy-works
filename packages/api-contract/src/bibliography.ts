@@ -2,8 +2,8 @@ import {
   cslItemSchema,
   ENTRY_CHECK_OUTCOMES,
   entrySchema,
-  REFERENCE_SOURCE_IDS,
   referenceNoticeSchema,
+  referenceSourceKeySchema,
 } from '@alloy-works/domain';
 import { z } from 'zod';
 import { ComponentParams, SpaceParams, VersionSummary } from './components.js';
@@ -38,7 +38,7 @@ export type EntryVersionBody = z.infer<typeof EntryVersionBody>;
 
 /** An entry's status from its last check against its source (the XR plan, XR-F). */
 export const EntryStatusView = z.object({
-  source: z.enum(REFERENCE_SOURCE_IDS),
+  source: referenceSourceKeySchema,
   checkedAt: z.string().describe('When it was last checked'),
   outcome: z
     .enum(ENTRY_CHECK_OUTCOMES)

@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
-import { loadConnectorConfig, takeConnectorConfig } from './config.js';
+import { loadConnectorConfig, startWarnings, takeConnectorConfig } from './config.js';
 
 const KEY = Buffer.alloc(32, 1).toString('base64');
 const SEALING = Buffer.alloc(32, 2).toString('base64');
@@ -108,6 +108,24 @@ describe("the connector's configuration", () => {
           expect(message, variable).not.toContain(value);
       }
     }
+  });
+
+  it('denies a reference extension a private address unless told allow, warning at start when it is', () => {
+    expect(loadConnectorConfig(base).referencePrivate).toBe(false);
+    expect(startWarnings(loadConnectorConfig(base))).toEqual([]);
+    const allowed = loadConnectorConfig({ ...base, CONNECTOR_REFERENCE_PRIVATE: 'allow' });
+    expect(allowed.referencePrivate).toBe(true);
+    expect(startWarnings(allowed)).toEqual([
+      'CONNECTOR_REFERENCE_PRIVATE is allow: a reference extension may reach a private address. Never in production.',
+    ]);
+    expect(
+      startWarnings(loadConnectorConfig({ ...base, CONNECTOR_WEBHOOK_PRIVATE: 'allow' })),
+    ).toEqual([
+      'CONNECTOR_WEBHOOK_PRIVATE is allow: a webhook may reach a private address. Never in production.',
+    ]);
+    expect(refusal({ ...base, CONNECTOR_REFERENCE_PRIVATE: 'yes' })).toBe(
+      'CONNECTOR_REFERENCE_PRIVATE must be deny or allow',
+    );
   });
 
   it('reads the contact address a reference source is sent, none by default, and refuses one that is not an address', () => {

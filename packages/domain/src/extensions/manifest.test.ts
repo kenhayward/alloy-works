@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { extensionManifestSchema, readManifest } from './manifest.js';
+import { canonicalJson } from '../stored/canonical.js';
+import { extensionManifestSchema, manifestDigestInput, readManifest } from './manifest.js';
 
 /** An invented extension's manifest. */
 const MANIFEST = {
@@ -44,5 +45,42 @@ describe('an extension’s manifest (the EX plan, EX-A)', () => {
         settings: [MANIFEST.settings[0], MANIFEST.settings[0]],
       }).success,
     ).toBe(false);
+  });
+});
+
+/** An invented reference extension's manifest (the XR plan, XR-J). */
+const REFERENCE = {
+  manifest: 1,
+  name: 'Herbarium records',
+  version: '0.3.0',
+  publisher: 'Invented Herbarium',
+  description: 'Specimen papers by catalogue number.',
+  kind: 'reference',
+  endpoint: 'https://herbarium.example.test/alloy',
+  reference: { search: '/search', fetch: '/records' },
+  authentication: 'none',
+  outbound: [{ host: 'herbarium.example.test', purpose: 'The terms searched for' }],
+};
+
+describe('a reference extension’s manifest (the XR plan, XR-J)', () => {
+  it('LIB-032 reads a manifest of kind reference, its search and fetch paths under its endpoint', () => {
+    expect(readManifest(REFERENCE)).toEqual({ ok: true, manifest: REFERENCE });
+    expect(readManifest(MANIFEST)).toEqual({ ok: true, manifest: MANIFEST });
+  });
+
+  it("keeps a source manifest's digest input as it was", () => {
+    const read = readManifest(MANIFEST);
+    expect(read.ok && manifestDigestInput(read.manifest)).toBe(canonicalJson(MANIFEST));
+  });
+
+  it('refuses a path that is not a plain path, and settings or capabilities it does not take', () => {
+    for (const search of ['search', '/../admin', '/search?q=1', '/a#b', '//other.test/x']) {
+      expect(
+        readManifest({ ...REFERENCE, reference: { ...REFERENCE.reference, search } }).ok,
+        search,
+      ).toBe(false);
+    }
+    expect(readManifest({ ...REFERENCE, settings: [] })).toEqual({ ok: false, paths: ['(top)'] });
+    expect(readManifest({ ...REFERENCE, kind: 'output' }).ok).toBe(false);
   });
 });

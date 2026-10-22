@@ -1,5 +1,9 @@
 import { auditEvents, newestEvent } from '@alloy-works/db/testing';
-import { readReferenceAnswer, type ReferenceRequest } from '@alloy-works/domain';
+import {
+  readReferenceAnswer,
+  type ReferenceRequest,
+  type ReferenceSourceId,
+} from '@alloy-works/domain';
 import {
   crossrefSearch,
   crossrefWork,
@@ -24,7 +28,7 @@ function answering(request: ReferenceRequest) {
         ? crossrefSearch
         : crossrefWork()
       : pubmedSummary([pubmedDunnart]);
-  const results = readReferenceAnswer(request.source, request.op, raw) ?? [];
+  const results = readReferenceAnswer(request.source as ReferenceSourceId, request.op, raw) ?? [];
   return {
     type: 'found' as const,
     results:

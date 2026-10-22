@@ -1,5 +1,5 @@
 import type { createApiClient } from '@alloy-works/api-client';
-import type { ExtensionManifest } from '@alloy-works/domain';
+import type { ExtensionManifest, SourceManifest } from '@alloy-works/domain';
 import { useEffect, useState } from 'react';
 
 import { everyPage } from '../paging.js';
@@ -10,13 +10,14 @@ type Client = ReturnType<typeof createApiClient>;
 export interface InstalledExtension {
   readonly id: string;
   readonly digest: string;
-  readonly manifest: ExtensionManifest;
+  readonly manifest: SourceManifest;
   readonly removedAt: string | null;
 }
 
 /**
- * The extensions installed, read for a connection to one: null until read, `refused` where the caller
- * does not administer the environment, which listing them needs, and `failed` otherwise.
+ * The source extensions installed, read for a connection to one: null until read, `refused` where the
+ * caller does not administer the environment, which listing them needs, and `failed` otherwise. A
+ * reference extension is no source of rows (the XR plan, XR-J), so is never among them.
  */
 export type Extensions = readonly InstalledExtension[] | 'refused' | 'failed' | null;
 
@@ -25,13 +26,18 @@ export function useInstalledExtensions(client: Client, wanted: boolean): Extensi
   useEffect(() => {
     if (!wanted) return undefined;
     let current = true;
-    everyPage<InstalledExtension>((cursor) =>
+    everyPage<InstalledExtension | { readonly manifest: ExtensionManifest }>((cursor) =>
       client.GET('/v1/extensions', { params: { query: cursor ? { cursor } : {} } }),
     )
       .then((answer) => {
         if (!current) return;
-        if ('items' in answer) setRead(answer.items);
-        else setRead(answer.status === 403 ? 'refused' : 'failed');
+        if ('items' in answer) {
+          setRead(
+            answer.items.filter(
+              (each): each is InstalledExtension => each.manifest.kind === 'source',
+            ),
+          );
+        } else setRead(answer.status === 403 ? 'refused' : 'failed');
       })
       .catch(() => current && setRead('failed'));
     return () => {

@@ -198,6 +198,13 @@ export const assistantEvents = {
         .nullable()
         .optional()
         .describe('Where, and under what title, a proposed component would be made'),
+      cites: z
+        .object({ source: z.string(), identifier: z.string(), title: z.string().nullable() })
+        .nullable()
+        .optional()
+        .describe(
+          'A citation proposed of a reference source’s work: the source, its identifier and its title. Its entry is matched or made as it is accepted',
+        ),
       proposed: z.record(z.string(), z.unknown()),
     }),
   },

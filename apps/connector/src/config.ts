@@ -41,6 +41,11 @@ export interface ConnectorConfig {
    * suites' receivers are private.
    */
   readonly webhookPrivate: boolean;
+  /**
+   * Whether a reference extension may reach a private address (the XR plan, XR-J): never in
+   * production; the suites' stand-in is on the stack's private network. A built-in source never may.
+   */
+  readonly referencePrivate: boolean;
   /** The key a credential is sealed and opened with, which the service never holds. */
   readonly sealingKey: Buffer;
   /** The deployment's own ranges, beside the built-in ones. */
@@ -146,6 +151,9 @@ export function loadConnectorConfig(
   const webhookPrivate = env.CONNECTOR_WEBHOOK_PRIVATE ?? 'deny';
   if (!['deny', 'allow'].includes(webhookPrivate))
     refuse('CONNECTOR_WEBHOOK_PRIVATE', 'must be deny or allow');
+  const referencePrivate = env.CONNECTOR_REFERENCE_PRIVATE ?? 'deny';
+  if (!['deny', 'allow'].includes(referencePrivate))
+    refuse('CONNECTOR_REFERENCE_PRIVATE', 'must be deny or allow');
 
   const listed = env.CONNECTOR_DENY?.trim();
   if (!listed) {
@@ -190,11 +198,30 @@ export function loadConnectorConfig(
             .digest(),
         }),
     webhookPrivate: webhookPrivate === 'allow',
+    referencePrivate: referencePrivate === 'allow',
     sealingKey: sealing,
     deny,
     maxChildren: integer(env, 'CONNECTOR_MAX_CHILDREN', 8, [1, 64]),
     logLevel: logLevel as LogLevel,
   };
+}
+
+/** What the connector warns of as it starts: each development-only allowance it was given. */
+export function startWarnings(
+  config: Pick<ConnectorConfig, 'webhookPrivate' | 'referencePrivate'>,
+): string[] {
+  return [
+    ...(config.webhookPrivate
+      ? [
+          'CONNECTOR_WEBHOOK_PRIVATE is allow: a webhook may reach a private address. Never in production.',
+        ]
+      : []),
+    ...(config.referencePrivate
+      ? [
+          'CONNECTOR_REFERENCE_PRIVATE is allow: a reference extension may reach a private address. Never in production.',
+        ]
+      : []),
+  ];
 }
 
 /** The PEM a CA file holds, each certificate in it read, or none where no file is named. */

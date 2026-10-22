@@ -9,10 +9,16 @@ export class SealedSecretRefused extends Error {}
  * `source-credential` is a connection's credential, sealed and opened only by the connector, with a
  * key of its own that the service never holds. `model-credential` is a model endpoint's key, sealed and
  * opened by the connector alike (ADR-0064). `webhook-signing` is a webhook subscription's signing secret,
- * sealed by the connector and opened there to sign (the WB plan, WB-G).
+ * sealed by the connector and opened there to sign (the WB plan, WB-G). `reference-credential` is a
+ * reference extension's secret, sealed and opened by the connector alike (the XR plan, XR-J).
  */
 export type SealPurpose =
-  'object-store' | 'sign-in' | 'source-credential' | 'model-credential' | 'webhook-signing';
+  | 'object-store'
+  | 'sign-in'
+  | 'source-credential'
+  | 'model-credential'
+  | 'webhook-signing'
+  | 'reference-credential';
 
 const VERSION = 'v1';
 const IV_BYTES = 12;

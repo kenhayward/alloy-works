@@ -211,13 +211,15 @@ The loop runs in the service: each model turn goes through the connector (GN-A);
 in the service as the requester, through the same functions its route uses (GEN-008). At most twelve
 tool calls a run. The tools (GEN-007):
 
-| Tool              | Does                                                                           |
-| ----------------- | ------------------------------------------------------------------------------ |
-| `read_outline`    | The document's outline, as the requester reads it                              |
-| `read_component`  | One component's latest version, by id                                          |
-| `search_document` | The words search, limited to this document's components                        |
-| `read_values`     | The document's bound values, as the page shows them                            |
-| `propose_edit`    | A whole-component draft against the version it read: a proposal, never a write |
+| Tool                | Does                                                                            |
+| ------------------- | ------------------------------------------------------------------------------- |
+| `read_outline`      | The document's outline, as the requester reads it                               |
+| `read_component`    | One component's latest version, by id                                           |
+| `search_document`   | The words search, limited to this document's components                         |
+| `read_values`       | The document's bound values, as the page shows them                             |
+| `propose_edit`      | A whole-component draft against the version it read: a proposal, never a write  |
+| `search_references` | A reference source searched with the person's terms (reference-sources.md, XRc) |
+| `cite_reference`    | A citation of a source's work proposed; its entry matched or made on acceptance |
 
 **Citations** (GEN-011): the model is asked to cite as `[component#block]`; the service keeps a
 citation only where that block was in what the run read, shows it as a link, and drops any other,
@@ -245,8 +247,8 @@ whether an acceptance is in it from that list, so one accepted afterwards never 
 Content is data by construction, not by a model's restraint: it reaches the model only in tool
 results and context blocks, each wrapped and labelled with its artifact; the instructions are the
 product's alone. What the defence rests on is that obeying injected text achieves nothing: every
-read is the requester's (GEN-014), nothing leaves through a tool (none fetches, sends or writes
-elsewhere), and every change waits on a person (GEN-009).
+read is the requester's (GEN-014), nothing leaves through a tool but `search_references`' terms to a
+source the tenant has left on (XRc), and every change waits on a person (GEN-009).
 
 **The test** (GEN-020) is the stand-in model in **compliant** mode, obeying any instruction it finds,
 fed one through each path: a component, a pasted import, a query result, a comment. Each must fail:

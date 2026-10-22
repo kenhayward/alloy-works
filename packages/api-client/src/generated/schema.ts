@@ -610,7 +610,7 @@ export interface paths {
         put?: never;
         /**
          * Check an entry against the source it was obtained from, and record its status
-         * @description Checks an entry against the reference source its latest version was obtained from, sending the source its DOI or PubMed identifier alone, and records the entry's status beside it, never as a version: `current`, `changed` (naming the CSL variables the source now holds otherwise), `gone`, `retracted` or `corrected`, with the notice where the source names one. A retraction or correction tells the owner of each document citing it, once. It needs read on the entry; an entry made by hand is `entry_not_obtained`.
+         * @description Checks an entry against the reference source its latest version was obtained from, sending the source its DOI or PubMed identifier alone, and records the entry's status beside it, never as a version: `current`, `changed` (naming the CSL variables the source now holds otherwise), `gone`, `retracted` or `corrected`, with the notice where the source names one. A retraction or correction tells the owner of each document citing it who may read it, at most once in thirty days. It needs edit on the entry; an entry made by hand is `entry_not_obtained`, and one checked or tried within the minute `entry_checked_recently`.
          */
         post: operations["checkBibliographyEntry"];
         delete?: never;
@@ -3175,7 +3175,7 @@ export interface paths {
         post?: never;
         /**
          * Remove an extension no connection uses but a retired one
-         * @description Removes an extension once no connection uses it but a retired one; kept, so what used it still names it. Recorded as an extension changed. Needs administer at the environment, with a signed-in session.
+         * @description Removes an extension once no connection uses it but a retired one, and a reference extension once it is switched off as a reference source; kept, so what used it still names it, and the bibliography entries obtained from it untouched, though no longer re-checked. Recorded as an extension changed. Needs administer at the environment, with a signed-in session.
          */
         delete: operations["removeExtension"];
         options?: never;
@@ -3197,6 +3197,26 @@ export interface paths {
          * @description Fetches an extension’s manifest again and says what an update would change: its endpoint, settings, credential, capabilities, outbound hosts or description. Needs administer at the environment, with a signed-in session.
          */
         post: operations["previewExtensionUpdate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/extensions/{id}/secret": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set the secret a reference extension is sent
+         * @description Sets the secret a reference extension is sent as a bearer, where its manifest declares one: sealed by the connector for the extension and its endpoint, so it opens nowhere else, and never answered again; an endpoint changed by an update needs it set again. Recorded as an extension changed. Needs administer at the environment, with a signed-in session.
+         */
+        put: operations["setExtensionSecret"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4732,12 +4752,12 @@ export interface paths {
         };
         /**
          * The reference sources, and whether this environment searches each
-         * @description Lists the reference sources the product declares, Crossref and PubMed, each with the one host it is reached at, what a record is fetched by, and whether this environment searches it. Each is on until an administrator switches it off.
+         * @description Lists the reference sources the product declares, Crossref and PubMed, and the reference extensions installed here, keyed `ext:` and the extension’s id, each with the one host it is reached at, what a record is fetched by, and whether this environment searches it. Each is on until an administrator switches it off.
          */
         get: operations["listReferenceSources"];
         /**
          * Switch a reference source on or off for this environment
-         * @description Switches a reference source on or off for the environment. Off, it is neither searched nor made an entry from. It needs administer on the environment.
+         * @description Switches a reference source, or a reference extension installed here, on or off for the environment. Off, it is neither searched, made an entry from nor re-checked; a reference extension is removed only once off. It needs administer on the environment.
          */
         put: operations["setReferenceSource"];
         post?: never;
@@ -10636,7 +10656,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may not edit the component */
+            /** @description The caller may not edit the component; or `entry_not_writable`: a citation of a source accepted, no entry of the component’s space holds it, and the caller may not make one there */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -10676,7 +10696,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `proposal_resolved`, or the suggestion’s own refusals: `suggestion.empty`, `suggestion.limit`, `suggestion.stale`, `lock.held`, `edits.pending`, `values.invalid` */
+            /** @description `proposal_resolved`; `proposal_cites`: a citation of a source kept, which is accepted or discarded alone; `entry_refused`: its entry could not be made; or the suggestion’s own refusals: `suggestion.empty`, `suggestion.limit`, `suggestion.stale`, `lock.held`, `edits.pending`, `values.invalid` */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -10782,7 +10802,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may not read the component */
+            /** @description The caller may not read the component; or `entry_not_writable`: a citation of a source accepted, no entry of the component’s space holds it, and the caller may not make one there */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -10822,7 +10842,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `proposal_resolved`, or the suggestion’s own refusals: `suggestion.empty`, `suggestion.limit`, `suggestion.stale`, `lock.held`, `edits.pending`, `values.invalid` */
+            /** @description `proposal_resolved`; `proposal_cites`: a citation of a source kept, which is accepted or discarded alone; `entry_refused`: its entry could not be made; or the suggestion’s own refusals: `suggestion.empty`, `suggestion.limit`, `suggestion.stale`, `lock.held`, `edits.pending`, `values.invalid` */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -10928,7 +10948,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may not suggest changes to the component */
+            /** @description The caller may not suggest changes to the component; or `entry_not_writable`: a citation of a source accepted, no entry of the component’s space holds it, and the caller may not make one there */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -10968,7 +10988,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `proposal_resolved`, or the suggestion’s own refusals: `suggestion.empty`, `suggestion.limit`, `suggestion.stale`, `lock.held`, `edits.pending`, `values.invalid` */
+            /** @description `proposal_resolved`; `proposal_cites`: a citation of a source kept, which is accepted or discarded alone; `entry_refused`: its entry could not be made; or the suggestion’s own refusals: `suggestion.empty`, `suggestion.limit`, `suggestion.stale`, `lock.held`, `edits.pending`, `values.invalid` */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -14393,8 +14413,7 @@ export interface operations {
                         mayRetire: boolean;
                         /** @description Its status from its last check, on a read of it; null where never checked */
                         status?: {
-                            /** @enum {string} */
-                            source: "crossref" | "pubmed";
+                            source: ("crossref" | "pubmed") | string;
                             /** @description When it was last checked */
                             checkedAt: string;
                             /**
@@ -14674,8 +14693,7 @@ export interface operations {
                      *     }
                      */
                     "application/json": {
-                        /** @enum {string} */
-                        source: "crossref" | "pubmed";
+                        source: ("crossref" | "pubmed") | string;
                         /** @description When it was last checked */
                         checkedAt: string;
                         /**
@@ -14715,7 +14733,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description Never answered: an entry the caller may not read is not found */
+            /** @description The caller may read the entry but not edit it */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -14777,6 +14795,26 @@ export interface operations {
             };
             /** @description `entry_not_obtained`: its latest version was not obtained from a source */
             422: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `entry_checked_recently`: the entry was checked, or tried, within the minute */
+            429: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;
@@ -16049,8 +16087,7 @@ export interface operations {
                         mayRetire: boolean;
                         /** @description Its status from its last check, on a read of it; null where never checked */
                         status?: {
-                            /** @enum {string} */
-                            source: "crossref" | "pubmed";
+                            source: ("crossref" | "pubmed") | string;
                             /** @description When it was last checked */
                             checkedAt: string;
                             /**
@@ -16541,8 +16578,7 @@ export interface operations {
                             mayRetire: boolean;
                             /** @description Its status from its last check, on a read of it; null where never checked */
                             status?: {
-                                /** @enum {string} */
-                                source: "crossref" | "pubmed";
+                                source: ("crossref" | "pubmed") | string;
                                 /** @description When it was last checked */
                                 checkedAt: string;
                                 /**
@@ -17094,8 +17130,7 @@ export interface operations {
                             mayRetire: boolean;
                             /** @description Its status from its last check, on a read of it; null where never checked */
                             status?: {
-                                /** @enum {string} */
-                                source: "crossref" | "pubmed";
+                                source: ("crossref" | "pubmed") | string;
                                 /** @description When it was last checked */
                                 checkedAt: string;
                                 /**
@@ -63059,12 +63094,39 @@ export interface operations {
                                     host: string;
                                     purpose: string;
                                 }[];
+                            } | {
+                                /** @constant */
+                                manifest: 1;
+                                name: string;
+                                /** @example 1.2.0 */
+                                version: string;
+                                publisher: string;
+                                description: string;
+                                /** @constant */
+                                kind: "reference";
+                                /** @example https://gauges.example.test/alloy */
+                                endpoint: string;
+                                reference: {
+                                    /** @example /search */
+                                    search: string;
+                                    /** @example /search */
+                                    fetch: string;
+                                };
+                                authentication: "none" | {
+                                    label: string;
+                                };
+                                outbound: {
+                                    host: string;
+                                    purpose: string;
+                                }[];
                             };
                             installedBy: string | null;
                             installedAt: string;
                             updatedAt: string;
                             /** @description When it was removed; kept, so what used it names it */
                             removedAt: string | null;
+                            /** @description A reference extension’s: whether its secret is set, never the secret */
+                            secretSet: boolean;
                         }[];
                         /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
                         next: string | null;
@@ -63220,7 +63282,8 @@ export interface operations {
                      *       "installedBy": "example",
                      *       "installedAt": "example",
                      *       "updatedAt": "example",
-                     *       "removedAt": "example"
+                     *       "removedAt": "example",
+                     *       "secretSet": false
                      *     }
                      */
                     "application/json": {
@@ -63260,12 +63323,39 @@ export interface operations {
                                 host: string;
                                 purpose: string;
                             }[];
+                        } | {
+                            /** @constant */
+                            manifest: 1;
+                            name: string;
+                            /** @example 1.2.0 */
+                            version: string;
+                            publisher: string;
+                            description: string;
+                            /** @constant */
+                            kind: "reference";
+                            /** @example https://gauges.example.test/alloy */
+                            endpoint: string;
+                            reference: {
+                                /** @example /search */
+                                search: string;
+                                /** @example /search */
+                                fetch: string;
+                            };
+                            authentication: "none" | {
+                                label: string;
+                            };
+                            outbound: {
+                                host: string;
+                                purpose: string;
+                            }[];
                         };
                         installedBy: string | null;
                         installedAt: string;
                         updatedAt: string;
                         /** @description When it was removed; kept, so what used it names it */
                         removedAt: string | null;
+                        /** @description A reference extension’s: whether its secret is set, never the secret */
+                        secretSet: boolean;
                     };
                 };
             };
@@ -63438,7 +63528,8 @@ export interface operations {
                      *       "installedBy": "example",
                      *       "installedAt": "example",
                      *       "updatedAt": "example",
-                     *       "removedAt": "example"
+                     *       "removedAt": "example",
+                     *       "secretSet": false
                      *     }
                      */
                     "application/json": {
@@ -63478,12 +63569,39 @@ export interface operations {
                                 host: string;
                                 purpose: string;
                             }[];
+                        } | {
+                            /** @constant */
+                            manifest: 1;
+                            name: string;
+                            /** @example 1.2.0 */
+                            version: string;
+                            publisher: string;
+                            description: string;
+                            /** @constant */
+                            kind: "reference";
+                            /** @example https://gauges.example.test/alloy */
+                            endpoint: string;
+                            reference: {
+                                /** @example /search */
+                                search: string;
+                                /** @example /search */
+                                fetch: string;
+                            };
+                            authentication: "none" | {
+                                label: string;
+                            };
+                            outbound: {
+                                host: string;
+                                purpose: string;
+                            }[];
                         };
                         installedBy: string | null;
                         installedAt: string;
                         updatedAt: string;
                         /** @description When it was removed; kept, so what used it names it */
                         removedAt: string | null;
+                        /** @description A reference extension’s: whether its secret is set, never the secret */
+                        secretSet: boolean;
                     };
                 };
             };
@@ -63665,7 +63783,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description extension_in_use: a connection not retired uses it; its uses list them */
+            /** @description extension_in_use: a connection not retired uses it, its uses listing them; or a reference extension is switched on as a reference source */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -63792,9 +63910,34 @@ export interface operations {
                                 host: string;
                                 purpose: string;
                             }[];
+                        } | {
+                            /** @constant */
+                            manifest: 1;
+                            name: string;
+                            /** @example 1.2.0 */
+                            version: string;
+                            publisher: string;
+                            description: string;
+                            /** @constant */
+                            kind: "reference";
+                            /** @example https://gauges.example.test/alloy */
+                            endpoint: string;
+                            reference: {
+                                /** @example /search */
+                                search: string;
+                                /** @example /search */
+                                fetch: string;
+                            };
+                            authentication: "none" | {
+                                label: string;
+                            };
+                            outbound: {
+                                host: string;
+                                purpose: string;
+                            }[];
                         };
                         /** @description Against the manifest it has now, where it is installed: what an update would change */
-                        changes?: ("endpoint" | "settings" | "authentication" | "capabilities" | "outbound" | "about")[];
+                        changes?: ("endpoint" | "settings" | "authentication" | "capabilities" | "reference" | "outbound" | "about")[];
                     };
                 };
             };
@@ -63920,6 +64063,288 @@ export interface operations {
             };
         };
     };
+    setExtensionSecret: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "secret": "example"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The secret it is sent as a bearer: printable ASCII, at most 2,048 characters, never shown again */
+                    secret: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Set; the secret itself is never answered */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "url": "example",
+                     *       "digest": "0000000000000000000000000000000000000000000000000000000000000000",
+                     *       "manifest": {
+                     *         "manifest": 1,
+                     *         "name": "example",
+                     *         "version": "1.2.0",
+                     *         "publisher": "example",
+                     *         "description": "example",
+                     *         "kind": "source",
+                     *         "endpoint": "https://gauges.example.test/alloy",
+                     *         "settings": [],
+                     *         "authentication": "none",
+                     *         "capabilities": {
+                     *           "parameters": false,
+                     *           "keyColumns": false,
+                     *           "rowLimit": false
+                     *         },
+                     *         "outbound": []
+                     *       },
+                     *       "installedBy": "example",
+                     *       "installedAt": "example",
+                     *       "updatedAt": "example",
+                     *       "removedAt": "example",
+                     *       "secretSet": false
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        url: string;
+                        /** @description SHA-256 of the manifest’s canonical JSON, as its preview gave it */
+                        digest: string;
+                        /** @description What the extension says it is, takes and does, and where it sends data: its own words */
+                        manifest: {
+                            /** @constant */
+                            manifest: 1;
+                            name: string;
+                            /** @example 1.2.0 */
+                            version: string;
+                            publisher: string;
+                            description: string;
+                            /** @constant */
+                            kind: "source";
+                            /** @example https://gauges.example.test/alloy */
+                            endpoint: string;
+                            settings: {
+                                key: string;
+                                label: string;
+                                /** @enum {string} */
+                                type: "text" | "number" | "boolean";
+                                required: boolean;
+                            }[];
+                            authentication: "none" | {
+                                label: string;
+                            };
+                            capabilities: {
+                                parameters: boolean;
+                                keyColumns: boolean;
+                                rowLimit: boolean;
+                            };
+                            outbound: {
+                                host: string;
+                                purpose: string;
+                            }[];
+                        } | {
+                            /** @constant */
+                            manifest: 1;
+                            name: string;
+                            /** @example 1.2.0 */
+                            version: string;
+                            publisher: string;
+                            description: string;
+                            /** @constant */
+                            kind: "reference";
+                            /** @example https://gauges.example.test/alloy */
+                            endpoint: string;
+                            reference: {
+                                /** @example /search */
+                                search: string;
+                                /** @example /search */
+                                fetch: string;
+                            };
+                            authentication: "none" | {
+                                label: string;
+                            };
+                            outbound: {
+                                host: string;
+                                purpose: string;
+                            }[];
+                        };
+                        installedBy: string | null;
+                        installedAt: string;
+                        updatedAt: string;
+                        /** @description When it was removed; kept, so what used it names it */
+                        removedAt: string | null;
+                        /** @description A reference extension’s: whether its secret is set, never the secret */
+                        secretSet: boolean;
+                    };
+                };
+            };
+            /** @description invalid_request */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description forbidden: the caller may not administer this environment; or token_not_allowed: extensions are managed with a signed-in session, never a token */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such extension in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description extension_removed; extension_takes_no_secret: it is a source extension, whose connections hold theirs, or declares none */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description connector_unavailable */
+            503: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     updateExtension: {
         parameters: {
             query?: never;
@@ -63983,7 +64408,8 @@ export interface operations {
                      *       "installedBy": "example",
                      *       "installedAt": "example",
                      *       "updatedAt": "example",
-                     *       "removedAt": "example"
+                     *       "removedAt": "example",
+                     *       "secretSet": false
                      *     }
                      */
                     "application/json": {
@@ -64023,12 +64449,39 @@ export interface operations {
                                 host: string;
                                 purpose: string;
                             }[];
+                        } | {
+                            /** @constant */
+                            manifest: 1;
+                            name: string;
+                            /** @example 1.2.0 */
+                            version: string;
+                            publisher: string;
+                            description: string;
+                            /** @constant */
+                            kind: "reference";
+                            /** @example https://gauges.example.test/alloy */
+                            endpoint: string;
+                            reference: {
+                                /** @example /search */
+                                search: string;
+                                /** @example /search */
+                                fetch: string;
+                            };
+                            authentication: "none" | {
+                                label: string;
+                            };
+                            outbound: {
+                                host: string;
+                                purpose: string;
+                            }[];
                         };
                         installedBy: string | null;
                         installedAt: string;
                         updatedAt: string;
                         /** @description When it was removed; kept, so what used it names it */
                         removedAt: string | null;
+                        /** @description A reference extension’s: whether its secret is set, never the secret */
+                        secretSet: boolean;
                     };
                 };
             };
@@ -64392,9 +64845,34 @@ export interface operations {
                                 host: string;
                                 purpose: string;
                             }[];
+                        } | {
+                            /** @constant */
+                            manifest: 1;
+                            name: string;
+                            /** @example 1.2.0 */
+                            version: string;
+                            publisher: string;
+                            description: string;
+                            /** @constant */
+                            kind: "reference";
+                            /** @example https://gauges.example.test/alloy */
+                            endpoint: string;
+                            reference: {
+                                /** @example /search */
+                                search: string;
+                                /** @example /search */
+                                fetch: string;
+                            };
+                            authentication: "none" | {
+                                label: string;
+                            };
+                            outbound: {
+                                host: string;
+                                purpose: string;
+                            }[];
                         };
                         /** @description Against the manifest it has now, where it is installed: what an update would change */
-                        changes?: ("endpoint" | "settings" | "authentication" | "capabilities" | "outbound" | "about")[];
+                        changes?: ("endpoint" | "settings" | "authentication" | "capabilities" | "reference" | "outbound" | "about")[];
                     };
                 };
             };
@@ -81087,16 +81565,16 @@ export interface operations {
                      */
                     "application/json": {
                         items: {
-                            /** @enum {string} */
-                            id: "crossref" | "pubmed";
+                            id: ("crossref" | "pubmed") | string;
+                            /** @description Its name; a reference extension’s, its manifest’s own words */
                             name: string;
                             /** @description The one host it is reached at */
                             host: string;
                             /**
-                             * @description What a record is fetched by
+                             * @description What a record is fetched by: a reference extension’s own identifier
                              * @enum {string}
                              */
-                            identifier: "DOI" | "PMID";
+                            identifier: "DOI" | "PMID" | "Identifier";
                             /** @description Whether this environment searches it */
                             enabled: boolean;
                         }[];
@@ -81166,8 +81644,7 @@ export interface operations {
                  *     }
                  */
                 "application/json": {
-                    /** @enum {string} */
-                    source: "crossref" | "pubmed";
+                    source: ("crossref" | "pubmed") | string;
                     enabled: boolean;
                 };
             };
@@ -81193,16 +81670,16 @@ export interface operations {
                      *     }
                      */
                     "application/json": {
-                        /** @enum {string} */
-                        id: "crossref" | "pubmed";
+                        id: ("crossref" | "pubmed") | string;
+                        /** @description Its name; a reference extension’s, its manifest’s own words */
                         name: string;
                         /** @description The one host it is reached at */
                         host: string;
                         /**
-                         * @description What a record is fetched by
+                         * @description What a record is fetched by: a reference extension’s own identifier
                          * @enum {string}
                          */
-                        identifier: "DOI" | "PMID";
+                        identifier: "DOI" | "PMID" | "Identifier";
                         /** @description Whether this environment searches it */
                         enabled: boolean;
                     };
@@ -81268,6 +81745,26 @@ export interface operations {
                     };
                 };
             };
+            /** @description No such reference extension installed here */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
@@ -81300,7 +81797,7 @@ export interface operations {
                 "Idempotency-Key"?: string;
             };
             path: {
-                source: "crossref" | "pubmed";
+                source: ("crossref" | "pubmed") | string;
             };
             cookie?: never;
         };
@@ -89545,8 +90042,7 @@ export interface operations {
                             mayRetire: boolean;
                             /** @description Its status from its last check, on a read of it; null where never checked */
                             status?: {
-                                /** @enum {string} */
-                                source: "crossref" | "pubmed";
+                                source: ("crossref" | "pubmed") | string;
                                 /** @description When it was last checked */
                                 checkedAt: string;
                                 /**
@@ -90471,8 +90967,7 @@ export interface operations {
                             mayRetire: boolean;
                             /** @description Its status from its last check, on a read of it; null where never checked */
                             status?: {
-                                /** @enum {string} */
-                                source: "crossref" | "pubmed";
+                                source: ("crossref" | "pubmed") | string;
                                 /** @description When it was last checked */
                                 checkedAt: string;
                                 /**
@@ -90740,9 +91235,8 @@ export interface operations {
                  *     }
                  */
                 "application/json": {
-                    /** @enum {string} */
-                    source: "crossref" | "pubmed";
-                    /** @description The record's DOI or PMID */
+                    source: ("crossref" | "pubmed") | string;
+                    /** @description The record's DOI, PMID, or a reference extension's identifier */
                     identifier: string;
                     /** @description Make it though the same source is already in the space (LIB-044) */
                     despiteMatches?: boolean;
@@ -91239,8 +91733,7 @@ export interface operations {
                             mayRetire: boolean;
                             /** @description Its status from its last check, on a read of it; null where never checked */
                             status?: {
-                                /** @enum {string} */
-                                source: "crossref" | "pubmed";
+                                source: ("crossref" | "pubmed") | string;
                                 /** @description When it was last checked */
                                 checkedAt: string;
                                 /**

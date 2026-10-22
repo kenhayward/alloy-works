@@ -33,7 +33,33 @@ const manifest = (over: Record<string, unknown> = {}) => ({
   ...over,
 });
 
-function service(options: { inUse?: boolean } = {}) {
+const HERBARIUM = '3c4d5e6f-7a8b-4c9d-8e0f-2a3b4c5d6e7f';
+
+/** An invented reference extension (the XR plan, XR-J). */
+const herbarium = {
+  id: HERBARIUM,
+  url: 'https://herbarium.example.test/manifest.json',
+  digest: FIRST,
+  manifest: {
+    manifest: 1,
+    name: 'Herbarium records',
+    version: '0.3.0',
+    publisher: 'Invented Herbarium',
+    description: 'Specimen papers by catalogue number.',
+    kind: 'reference',
+    endpoint: 'https://herbarium.example.test/alloy',
+    reference: { search: '/search', fetch: '/records' },
+    authentication: { label: 'Access token' },
+    outbound: [],
+  },
+  installedBy: 'ada',
+  installedAt: '2026-10-21T09:00:00.000Z',
+  updatedAt: '2026-10-21T09:00:00.000Z',
+  removedAt: null,
+  secretSet: false,
+};
+
+function service(options: { inUse?: boolean; reference?: boolean } = {}) {
   const sent: { method: string; path: string; body?: unknown }[] = [];
   let extensions: Record<string, unknown>[] = [
     {
@@ -45,7 +71,9 @@ function service(options: { inUse?: boolean } = {}) {
       installedAt: '2026-10-21T09:00:00.000Z',
       updatedAt: '2026-10-21T09:00:00.000Z',
       removedAt: null,
+      secretSet: false,
     },
+    ...(options.reference ? [herbarium] : []),
   ];
   const fetching = (async (input: string | URL | Request, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
@@ -103,6 +131,9 @@ function service(options: { inUse?: boolean } = {}) {
           { connection: RETIRED, name: 'Old gauges', digest: FIRST, retired: true },
         ],
       });
+    }
+    if (route === `PUT /v1/extensions/${HERBARIUM}/secret`) {
+      return json(200, { ...herbarium, secretSet: true });
     }
     if (route === `DELETE /v1/extensions/${GAUGES}`) {
       if (options.inUse) {
@@ -252,5 +283,44 @@ describe("Administration's Extensions (the EX plan, EXc)", () => {
     expect(
       await screen.findByText('A connection not retired uses this extension: retire it first.'),
     ).toBeInTheDocument();
+  });
+
+  it("LIB-032 shows a reference extension's kind, where it is searched and fetched, and the secret it takes", async () => {
+    const user = userEvent.setup();
+    const { client } = service({ reference: true });
+    render(<Extensions client={client} />);
+    const table = await screen.findByRole('table', { name: 'Extensions' });
+    const row = within(table).getByText('Herbarium records').closest('tr')!;
+    expect(row).toHaveTextContent('Reference source');
+    expect(within(table).getByText('River gauges').closest('tr')).toHaveTextContent('Data source');
+    await user.click(screen.getByRole('button', { name: 'What Herbarium records declares' }));
+    const declared = screen.getByRole('region', { name: 'What Herbarium records declares' });
+    expect(declared).toHaveTextContent('Searched at /search, a record fetched at /records');
+    expect(declared).toHaveTextContent('Takes one secret: Access token');
+    expect(declared).not.toHaveTextContent('Binds parameters');
+  });
+
+  it("sets a reference extension's secret, write-only, saying it is set and never showing it", async () => {
+    const user = userEvent.setup();
+    const { client, sent } = service({ reference: true });
+    render(<Extensions client={client} />);
+    await user.click(
+      await screen.findByRole('button', { name: 'Set the secret of Herbarium records' }),
+    );
+    const form = screen.getByRole('form', { name: 'The secret of Herbarium records' });
+    const field = within(form).getByLabelText('Access token');
+    expect(field).toHaveAttribute('type', 'password');
+    await user.type(field, 'herbarium-token');
+    await user.click(within(form).getByRole('button', { name: 'Set' }));
+    expect(sent.at(-1)).toEqual({
+      method: 'PUT',
+      path: `/v1/extensions/${HERBARIUM}/secret`,
+      body: { secret: 'herbarium-token' },
+    });
+    expect(await screen.findByText('The secret of Herbarium records is set.')).toBeInTheDocument();
+    expect(screen.queryByDisplayValue('herbarium-token')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Set the secret of River gauges' }),
+    ).not.toBeInTheDocument();
   });
 });

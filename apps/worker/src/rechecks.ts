@@ -1,13 +1,14 @@
 import { randomUUID } from 'node:crypto';
 
 import {
+  attemptEntryCheck,
   entriesDue,
   recordEntryCheck,
   type CheckableEntry,
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
-import { entryCheck, REFERENCE_SOURCE_IDS, type ReferenceSourceId } from '@alloy-works/domain';
+import { entryCheck, type ReferenceSourceId, type ReferenceSourceKey } from '@alloy-works/domain';
 
 import type { Referencer } from './referencer.js';
 import type { WorkerLog } from './worker.js';
@@ -18,7 +19,10 @@ export const REFERENCE_RATES: Readonly<Record<ReferenceSourceId, number>> = {
   pubmed: 3,
 };
 
-/** The most entries a tenant has checked a night, oldest check first. */
+/** A reference extension's budget (XR-J): its author's service, asked gently. */
+export const REFERENCE_EXTENSION_RATE = 1;
+
+/** The most entries a tenant has checked a night from each source, longest since attempted first. */
 const PER_TENANT = 2000;
 
 /** Whether tonight's re-check is due: once a UTC day, from 02:00. */
@@ -29,11 +33,12 @@ export function nightDue(last: Date | undefined, now: Date): boolean {
 
 /**
  * The nightly re-check (the XR plan, XR-E): in every tenant, the entries a component's latest version
- * cites, obtained from a source the tenant has on, oldest check first; each source's own lane, taking
- * one entry from each tenant in turn and never past its budget. Each found answer is recorded as the
- * entry's status by the system, telling owners of a retraction or correction (XR-F, XR-G); a failure
- * or a busy connector records nothing, so the entry stays first for the next night. Answers how many
- * were recorded.
+ * cites, obtained from a source the tenant has on, longest since attempted first; each source's own
+ * lane, a reference extension's among them (XR-J), taking one entry from each tenant in turn and never
+ * past its budget. Each found answer is recorded as the entry's status by the system, telling owners of a
+ * retraction or correction (XR-F, XR-G). Each attempt is recorded first, so a failure or a busy
+ * connector records no status but sends the entry behind those not yet tried, and each source's due
+ * are its own, so a failing one crowds out none. Answers how many were recorded.
  */
 export async function recheckEntries(
   db: TenantDatabase,
@@ -54,13 +59,13 @@ export async function recheckEntries(
   }
 
   let recorded = 0;
-  const lane = async (source: ReferenceSourceId) => {
+  const lane = async (source: ReferenceSourceKey) => {
     // One from each tenant in turn, as long as any has one.
     const queues = [...due].map(([tenant, entries]) => ({
       tenant,
       entries: entries.filter((each) => each.source === source),
     }));
-    const gap = 1000 / REFERENCE_RATES[source];
+    const gap = 1000 / (REFERENCE_RATES[source as ReferenceSourceId] ?? REFERENCE_EXTENSION_RATE);
     let next = now();
     for (let round = 0; queues.some((each) => each.entries.length > round); round += 1) {
       for (const { tenant, entries } of queues) {
@@ -69,12 +74,20 @@ export async function recheckEntries(
         const wait = next - now();
         if (wait > 0) await sleep(wait);
         next = now() + gap;
+        try {
+          await db.withTenant(tenant, (trx) => attemptEntryCheck(trx, entry.entryId), {
+            actorKind: 'system',
+          });
+        } catch (error) {
+          log.error({ tenant: tenant.id, err: error }, "an entry's attempt was not recorded");
+        }
         const answer = await referencer({
           requestId: randomUUID(),
           tenant: tenant.id,
           source,
           op: 'check',
           identifier: entry.identifier,
+          ...(entry.extension === undefined ? {} : { extension: entry.extension }),
         });
         if (answer === 'busy' || answer.type === 'failed') {
           log.warn(
@@ -101,6 +114,7 @@ export async function recheckEntries(
       }
     }
   };
-  await Promise.all(REFERENCE_SOURCE_IDS.map(lane));
+  const sources = new Set([...due.values()].flat().map((each) => each.source));
+  await Promise.all([...sources].map(lane));
   return recorded;
 }

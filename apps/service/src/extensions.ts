@@ -5,6 +5,7 @@ import type {
   ExtensionParams,
   ExtensionPreview,
   ExtensionRemoved,
+  ExtensionSecretBody,
   ExtensionUses,
   ExtensionView,
   InstallExtensionBody,
@@ -17,6 +18,7 @@ import {
   installExtension,
   listExtensions,
   removeExtension,
+  setExtensionCredential,
   updateExtension,
   type InstalledExtension,
   type Tenant,
@@ -45,6 +47,7 @@ function view(extension: InstalledExtension): ExtensionView {
     installedAt: extension.installedAt.toISOString(),
     updatedAt: extension.updatedAt.toISOString(),
     removedAt: extension.removedAt && extension.removedAt.toISOString(),
+    secretSet: extension.secretSet,
   };
 }
 
@@ -58,12 +61,19 @@ function changesBetween(
 ): NonNullable<ExtensionPreview['changes']> {
   // Canonically: a manifest kept in jsonb comes back in jsonb's own key order.
   const same = (one: unknown, other: unknown) =>
-    canonicalJsonText(one as JsonValue) === canonicalJsonText(other as JsonValue);
+    canonicalJsonText((one ?? null) as JsonValue) ===
+    canonicalJsonText((other ?? null) as JsonValue);
+  // A member one kind has and the other lacks is read as absent.
+  const part = (manifest: ExtensionManifest, name: 'settings' | 'capabilities' | 'reference') =>
+    (manifest as Partial<Record<typeof name, unknown>>)[name];
   return [
     ...(was.endpoint === now.endpoint ? [] : (['endpoint'] as const)),
-    ...(same(was.settings, now.settings) ? [] : (['settings'] as const)),
+    ...(same(part(was, 'settings'), part(now, 'settings')) ? [] : (['settings'] as const)),
     ...(same(was.authentication, now.authentication) ? [] : (['authentication'] as const)),
-    ...(same(was.capabilities, now.capabilities) ? [] : (['capabilities'] as const)),
+    ...(same(part(was, 'capabilities'), part(now, 'capabilities'))
+      ? []
+      : (['capabilities'] as const)),
+    ...(same(part(was, 'reference'), part(now, 'reference')) ? [] : (['reference'] as const)),
     ...(same(was.outbound, now.outbound) ? [] : (['outbound'] as const)),
     ...(same(
       [was.name, was.version, was.publisher, was.description],
@@ -220,6 +230,46 @@ export function extensionHandlers(
       return { items: [...(await extensionUses(trx, id))] };
     },
 
+    /**
+     * A reference extension's secret (XR-J): sealed by the connector, with a key the service never
+     * holds, for the extension and its endpoint now; only what comes back is kept.
+     */
+    setExtensionSecret: async (
+      request: FastifyRequest,
+      { trx, principalId }: Authorised,
+    ): Promise<ExtensionView> => {
+      const { id } = request.params as ExtensionParams;
+      const { secret } = request.body as ExtensionSecretBody;
+      const extension = await held(trx, id);
+      if (extension.removedAt !== null) {
+        throw new AppError(409, 'extension_removed', 'This extension is removed.');
+      }
+      const { manifest } = extension;
+      if (manifest.kind !== 'reference' || manifest.authentication === 'none') {
+        throw new AppError(
+          409,
+          'extension_takes_no_secret',
+          manifest.kind === 'reference'
+            ? 'This extension declares no secret.'
+            : 'A source extension’s connections hold their own secrets.',
+        );
+      }
+      if (!client) {
+        throw new AppError(503, 'connector_unavailable', 'The connector cannot be reached.');
+      }
+      const sealed = await client.sealReference({
+        tenant: tenantOf(request).id,
+        source: `ext:${id}`,
+        endpoint: manifest.endpoint,
+        secret,
+      });
+      if ('refused' in sealed) {
+        throw new AppError(503, sealed.refused.code, 'The connector cannot seal the secret now.');
+      }
+      await setExtensionCredential(trx, id, sealed.answer.sealed, principalId);
+      return view(await held(trx, id));
+    },
+
     removeExtension: async (
       request: FastifyRequest,
       { trx, principalId }: Authorised,
@@ -227,6 +277,13 @@ export function extensionHandlers(
       const { id } = request.params as ExtensionParams;
       await held(trx, id);
       const answer = await removeExtension(trx, id, principalId);
+      if ('switchedOn' in answer) {
+        throw new AppError(
+          409,
+          'extension_in_use',
+          'It is switched on as a reference source: switch it off first.',
+        );
+      }
       if ('inUse' in answer) {
         throw new AppError(
           409,

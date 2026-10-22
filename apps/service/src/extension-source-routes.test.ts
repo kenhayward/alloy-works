@@ -67,6 +67,25 @@ describe('connections and definitions on an extension (the EX plan, EX-D to EX-F
   const connect = (body: unknown) =>
     h.call('ada', 'POST', `/v1/spaces/${h.general}/connections`, { settings: body });
 
+  it('refuses a connection to a reference extension, which is no source of rows', async () => {
+    served = {
+      ...manifest(),
+      kind: 'reference',
+      reference: { search: '/search', fetch: '/records' },
+      settings: undefined,
+      capabilities: undefined,
+    };
+    const { digest } = (await h.call('ada', 'POST', '/v1/extensions/preview', { url: URL })).json<{
+      digest: string;
+    }>();
+    const reference = (
+      await h.call('ada', 'POST', '/v1/extensions', { url: URL, digest })
+    ).json<Installed>();
+    const refused = await connect(settings(reference));
+    expect(refused.statusCode).toBe(400);
+    expect(refused.body).toContain('source.extension');
+  });
+
   it('DAT-054 makes a connection to a source type an extension answers for, held to its manifest', async () => {
     const extension = await install();
     const made = await connect(settings(extension));

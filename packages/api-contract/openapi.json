@@ -19314,7 +19314,7 @@
             }
           },
           "403": {
-            "description": "The caller may not edit the component",
+            "description": "The caller may not edit the component; or `entry_not_writable`: a citation of a source accepted, no entry of the component’s space holds it, and the caller may not make one there",
             "content": {
               "application/json": {
                 "schema": {
@@ -19396,7 +19396,7 @@
             }
           },
           "409": {
-            "description": "`proposal_resolved`, or the suggestion’s own refusals: `suggestion.empty`, `suggestion.limit`, `suggestion.stale`, `lock.held`, `edits.pending`, `values.invalid`",
+            "description": "`proposal_resolved`; `proposal_cites`: a citation of a source kept, which is accepted or discarded alone; `entry_refused`: its entry could not be made; or the suggestion’s own refusals: `suggestion.empty`, `suggestion.limit`, `suggestion.stale`, `lock.held`, `edits.pending`, `values.invalid`",
             "content": {
               "application/json": {
                 "schema": {
@@ -19627,7 +19627,7 @@
             }
           },
           "403": {
-            "description": "The caller may not read the component",
+            "description": "The caller may not read the component; or `entry_not_writable`: a citation of a source accepted, no entry of the component’s space holds it, and the caller may not make one there",
             "content": {
               "application/json": {
                 "schema": {
@@ -19709,7 +19709,7 @@
             }
           },
           "409": {
-            "description": "`proposal_resolved`, or the suggestion’s own refusals: `suggestion.empty`, `suggestion.limit`, `suggestion.stale`, `lock.held`, `edits.pending`, `values.invalid`",
+            "description": "`proposal_resolved`; `proposal_cites`: a citation of a source kept, which is accepted or discarded alone; `entry_refused`: its entry could not be made; or the suggestion’s own refusals: `suggestion.empty`, `suggestion.limit`, `suggestion.stale`, `lock.held`, `edits.pending`, `values.invalid`",
             "content": {
               "application/json": {
                 "schema": {
@@ -19940,7 +19940,7 @@
             }
           },
           "403": {
-            "description": "The caller may not suggest changes to the component",
+            "description": "The caller may not suggest changes to the component; or `entry_not_writable`: a citation of a source accepted, no entry of the component’s space holds it, and the caller may not make one there",
             "content": {
               "application/json": {
                 "schema": {
@@ -20022,7 +20022,7 @@
             }
           },
           "409": {
-            "description": "`proposal_resolved`, or the suggestion’s own refusals: `suggestion.empty`, `suggestion.limit`, `suggestion.stale`, `lock.held`, `edits.pending`, `values.invalid`",
+            "description": "`proposal_resolved`; `proposal_cites`: a citation of a source kept, which is accepted or discarded alone; `entry_refused`: its entry could not be made; or the suggestion’s own refusals: `suggestion.empty`, `suggestion.limit`, `suggestion.stale`, `lock.held`, `edits.pending`, `values.invalid`",
             "content": {
               "application/json": {
                 "schema": {
@@ -31262,10 +31262,18 @@
                           "type": "object",
                           "properties": {
                             "source": {
-                              "type": "string",
-                              "enum": [
-                                "crossref",
-                                "pubmed"
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "crossref",
+                                    "pubmed"
+                                  ]
+                                },
+                                {
+                                  "type": "string",
+                                  "pattern": "^ext:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                }
                               ]
                             },
                             "checkedAt": {
@@ -31856,12 +31864,12 @@
       "post": {
         "operationId": "checkBibliographyEntry",
         "summary": "Check an entry against the source it was obtained from, and record its status",
-        "description": "Checks an entry against the reference source its latest version was obtained from, sending the source its DOI or PubMed identifier alone, and records the entry's status beside it, never as a version: `current`, `changed` (naming the CSL variables the source now holds otherwise), `gone`, `retracted` or `corrected`, with the notice where the source names one. A retraction or correction tells the owner of each document citing it, once. It needs read on the entry; an entry made by hand is `entry_not_obtained`.",
+        "description": "Checks an entry against the reference source its latest version was obtained from, sending the source its DOI or PubMed identifier alone, and records the entry's status beside it, never as a version: `current`, `changed` (naming the CSL variables the source now holds otherwise), `gone`, `retracted` or `corrected`, with the notice where the source names one. A retraction or correction tells the owner of each document citing it who may read it, at most once in thirty days. It needs edit on the entry; an entry made by hand is `entry_not_obtained`, and one checked or tried within the minute `entry_checked_recently`.",
         "tags": [
           "Bibliography"
         ],
         "x-alloy-token-enabled": true,
-        "x-alloy-permission": "read",
+        "x-alloy-permission": "edit",
         "security": [
           {
             "session": []
@@ -31916,10 +31924,18 @@
                   "type": "object",
                   "properties": {
                     "source": {
-                      "type": "string",
-                      "enum": [
-                        "crossref",
-                        "pubmed"
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "crossref",
+                            "pubmed"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "pattern": "^ext:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                        }
                       ]
                     },
                     "checkedAt": {
@@ -32056,7 +32072,7 @@
             }
           },
           "403": {
-            "description": "Never answered: an entry the caller may not read is not found",
+            "description": "The caller may read the entry but not edit it",
             "content": {
               "application/json": {
                 "schema": {
@@ -32180,6 +32196,47 @@
           },
           "422": {
             "description": "`entry_not_obtained`: its latest version was not obtained from a source",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "`entry_checked_recently`: the entry was checked, or tried, within the minute",
             "content": {
               "application/json": {
                 "schema": {
@@ -37066,10 +37123,18 @@
                           "type": "object",
                           "properties": {
                             "source": {
-                              "type": "string",
-                              "enum": [
-                                "crossref",
-                                "pubmed"
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "crossref",
+                                    "pubmed"
+                                  ]
+                                },
+                                {
+                                  "type": "string",
+                                  "pattern": "^ext:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                }
                               ]
                             },
                             "checkedAt": {
@@ -39290,10 +39355,18 @@
                               "type": "object",
                               "properties": {
                                 "source": {
-                                  "type": "string",
-                                  "enum": [
-                                    "crossref",
-                                    "pubmed"
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "crossref",
+                                        "pubmed"
+                                      ]
+                                    },
+                                    {
+                                      "type": "string",
+                                      "pattern": "^ext:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                    }
                                   ]
                                 },
                                 "checkedAt": {
@@ -41611,10 +41684,18 @@
                               "type": "object",
                               "properties": {
                                 "source": {
-                                  "type": "string",
-                                  "enum": [
-                                    "crossref",
-                                    "pubmed"
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "crossref",
+                                        "pubmed"
+                                      ]
+                                    },
+                                    {
+                                      "type": "string",
+                                      "pattern": "^ext:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                    }
                                   ]
                                 },
                                 "checkedAt": {
@@ -189967,155 +190048,281 @@
                             "description": "SHA-256 of the manifest’s canonical JSON, as its preview gave it"
                           },
                           "manifest": {
-                            "type": "object",
-                            "properties": {
-                              "manifest": {
-                                "type": "number",
-                                "const": 1
-                              },
-                              "name": {
-                                "type": "string",
-                                "minLength": 1,
-                                "maxLength": 80
-                              },
-                              "version": {
-                                "type": "string",
-                                "pattern": "^\\d{1,4}\\.\\d{1,4}\\.\\d{1,6}(?:-[0-9A-Za-z.-]{1,40})?$",
-                                "examples": [
-                                  "1.2.0"
-                                ]
-                              },
-                              "publisher": {
-                                "type": "string",
-                                "minLength": 1,
-                                "maxLength": 80
-                              },
-                              "description": {
-                                "type": "string",
-                                "minLength": 1,
-                                "maxLength": 500
-                              },
-                              "kind": {
-                                "type": "string",
-                                "const": "source"
-                              },
-                              "endpoint": {
-                                "type": "string",
-                                "maxLength": 2000,
-                                "examples": [
-                                  "https://gauges.example.test/alloy"
-                                ]
-                              },
-                              "settings": {
-                                "maxItems": 20,
-                                "type": "array",
-                                "items": {
-                                  "type": "object",
-                                  "properties": {
-                                    "key": {
-                                      "type": "string",
-                                      "pattern": "^[a-z][a-zA-Z0-9_]{0,39}$"
-                                    },
-                                    "label": {
-                                      "type": "string",
-                                      "minLength": 1,
-                                      "maxLength": 80
-                                    },
-                                    "type": {
-                                      "type": "string",
-                                      "enum": [
-                                        "text",
-                                        "number",
-                                        "boolean"
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "manifest": {
+                                    "type": "number",
+                                    "const": 1
+                                  },
+                                  "name": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 80
+                                  },
+                                  "version": {
+                                    "type": "string",
+                                    "pattern": "^\\d{1,4}\\.\\d{1,4}\\.\\d{1,6}(?:-[0-9A-Za-z.-]{1,40})?$",
+                                    "examples": [
+                                      "1.2.0"
+                                    ]
+                                  },
+                                  "publisher": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 80
+                                  },
+                                  "description": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 500
+                                  },
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "source"
+                                  },
+                                  "endpoint": {
+                                    "type": "string",
+                                    "maxLength": 2000,
+                                    "examples": [
+                                      "https://gauges.example.test/alloy"
+                                    ]
+                                  },
+                                  "settings": {
+                                    "maxItems": 20,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "key": {
+                                          "type": "string",
+                                          "pattern": "^[a-z][a-zA-Z0-9_]{0,39}$"
+                                        },
+                                        "label": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 80
+                                        },
+                                        "type": {
+                                          "type": "string",
+                                          "enum": [
+                                            "text",
+                                            "number",
+                                            "boolean"
+                                          ]
+                                        },
+                                        "required": {
+                                          "type": "boolean"
+                                        }
+                                      },
+                                      "required": [
+                                        "key",
+                                        "label",
+                                        "type",
+                                        "required"
                                       ]
-                                    },
-                                    "required": {
-                                      "type": "boolean"
                                     }
                                   },
-                                  "required": [
-                                    "key",
-                                    "label",
-                                    "type",
-                                    "required"
-                                  ]
-                                }
-                              },
-                              "authentication": {
-                                "anyOf": [
-                                  {
-                                    "type": "string",
-                                    "const": "none"
+                                  "authentication": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "const": "none"
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "label": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 80
+                                          }
+                                        },
+                                        "required": [
+                                          "label"
+                                        ]
+                                      }
+                                    ]
                                   },
-                                  {
+                                  "capabilities": {
                                     "type": "object",
                                     "properties": {
-                                      "label": {
-                                        "type": "string",
-                                        "minLength": 1,
-                                        "maxLength": 80
+                                      "parameters": {
+                                        "type": "boolean"
+                                      },
+                                      "keyColumns": {
+                                        "type": "boolean"
+                                      },
+                                      "rowLimit": {
+                                        "type": "boolean"
                                       }
                                     },
                                     "required": [
-                                      "label"
+                                      "parameters",
+                                      "keyColumns",
+                                      "rowLimit"
                                     ]
-                                  }
-                                ]
-                              },
-                              "capabilities": {
-                                "type": "object",
-                                "properties": {
-                                  "parameters": {
-                                    "type": "boolean"
                                   },
-                                  "keyColumns": {
-                                    "type": "boolean"
-                                  },
-                                  "rowLimit": {
-                                    "type": "boolean"
+                                  "outbound": {
+                                    "maxItems": 20,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "host": {
+                                          "type": "string",
+                                          "pattern": "^[a-z0-9.-]{1,253}$"
+                                        },
+                                        "purpose": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 200
+                                        }
+                                      },
+                                      "required": [
+                                        "host",
+                                        "purpose"
+                                      ]
+                                    }
                                   }
                                 },
                                 "required": [
-                                  "parameters",
-                                  "keyColumns",
-                                  "rowLimit"
+                                  "manifest",
+                                  "name",
+                                  "version",
+                                  "publisher",
+                                  "description",
+                                  "kind",
+                                  "endpoint",
+                                  "settings",
+                                  "authentication",
+                                  "capabilities",
+                                  "outbound"
                                 ]
                               },
-                              "outbound": {
-                                "maxItems": 20,
-                                "type": "array",
-                                "items": {
-                                  "type": "object",
-                                  "properties": {
-                                    "host": {
-                                      "type": "string",
-                                      "pattern": "^[a-z0-9.-]{1,253}$"
-                                    },
-                                    "purpose": {
-                                      "type": "string",
-                                      "minLength": 1,
-                                      "maxLength": 200
-                                    }
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "manifest": {
+                                    "type": "number",
+                                    "const": 1
                                   },
-                                  "required": [
-                                    "host",
-                                    "purpose"
-                                  ]
-                                }
+                                  "name": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 80
+                                  },
+                                  "version": {
+                                    "type": "string",
+                                    "pattern": "^\\d{1,4}\\.\\d{1,4}\\.\\d{1,6}(?:-[0-9A-Za-z.-]{1,40})?$",
+                                    "examples": [
+                                      "1.2.0"
+                                    ]
+                                  },
+                                  "publisher": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 80
+                                  },
+                                  "description": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 500
+                                  },
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "reference"
+                                  },
+                                  "endpoint": {
+                                    "type": "string",
+                                    "maxLength": 2000,
+                                    "examples": [
+                                      "https://gauges.example.test/alloy"
+                                    ]
+                                  },
+                                  "reference": {
+                                    "type": "object",
+                                    "properties": {
+                                      "search": {
+                                        "type": "string",
+                                        "maxLength": 200,
+                                        "pattern": "^(?:\\/[A-Za-z0-9._~-]+)+$",
+                                        "examples": [
+                                          "/search"
+                                        ]
+                                      },
+                                      "fetch": {
+                                        "type": "string",
+                                        "maxLength": 200,
+                                        "pattern": "^(?:\\/[A-Za-z0-9._~-]+)+$",
+                                        "examples": [
+                                          "/search"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "search",
+                                      "fetch"
+                                    ]
+                                  },
+                                  "authentication": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "const": "none"
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "label": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 80
+                                          }
+                                        },
+                                        "required": [
+                                          "label"
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  "outbound": {
+                                    "maxItems": 20,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "host": {
+                                          "type": "string",
+                                          "pattern": "^[a-z0-9.-]{1,253}$"
+                                        },
+                                        "purpose": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 200
+                                        }
+                                      },
+                                      "required": [
+                                        "host",
+                                        "purpose"
+                                      ]
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "manifest",
+                                  "name",
+                                  "version",
+                                  "publisher",
+                                  "description",
+                                  "kind",
+                                  "endpoint",
+                                  "reference",
+                                  "authentication",
+                                  "outbound"
+                                ]
                               }
-                            },
-                            "required": [
-                              "manifest",
-                              "name",
-                              "version",
-                              "publisher",
-                              "description",
-                              "kind",
-                              "endpoint",
-                              "settings",
-                              "authentication",
-                              "capabilities",
-                              "outbound"
                             ],
                             "description": "What the extension says it is, takes and does, and where it sends data: its own words"
                           },
@@ -190137,6 +190344,10 @@
                               "string",
                               "null"
                             ]
+                          },
+                          "secretSet": {
+                            "type": "boolean",
+                            "description": "A reference extension’s: whether its secret is set, never the secret"
                           }
                         },
                         "required": [
@@ -190147,7 +190358,8 @@
                           "installedBy",
                           "installedAt",
                           "updatedAt",
-                          "removedAt"
+                          "removedAt",
+                          "secretSet"
                         ]
                       }
                     },
@@ -190434,155 +190646,281 @@
                       "description": "SHA-256 of the manifest’s canonical JSON, as its preview gave it"
                     },
                     "manifest": {
-                      "type": "object",
-                      "properties": {
-                        "manifest": {
-                          "type": "number",
-                          "const": 1
-                        },
-                        "name": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 80
-                        },
-                        "version": {
-                          "type": "string",
-                          "pattern": "^\\d{1,4}\\.\\d{1,4}\\.\\d{1,6}(?:-[0-9A-Za-z.-]{1,40})?$",
-                          "examples": [
-                            "1.2.0"
-                          ]
-                        },
-                        "publisher": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 80
-                        },
-                        "description": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 500
-                        },
-                        "kind": {
-                          "type": "string",
-                          "const": "source"
-                        },
-                        "endpoint": {
-                          "type": "string",
-                          "maxLength": 2000,
-                          "examples": [
-                            "https://gauges.example.test/alloy"
-                          ]
-                        },
-                        "settings": {
-                          "maxItems": 20,
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "key": {
-                                "type": "string",
-                                "pattern": "^[a-z][a-zA-Z0-9_]{0,39}$"
-                              },
-                              "label": {
-                                "type": "string",
-                                "minLength": 1,
-                                "maxLength": 80
-                              },
-                              "type": {
-                                "type": "string",
-                                "enum": [
-                                  "text",
-                                  "number",
-                                  "boolean"
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "manifest": {
+                              "type": "number",
+                              "const": 1
+                            },
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            },
+                            "version": {
+                              "type": "string",
+                              "pattern": "^\\d{1,4}\\.\\d{1,4}\\.\\d{1,6}(?:-[0-9A-Za-z.-]{1,40})?$",
+                              "examples": [
+                                "1.2.0"
+                              ]
+                            },
+                            "publisher": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            },
+                            "description": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 500
+                            },
+                            "kind": {
+                              "type": "string",
+                              "const": "source"
+                            },
+                            "endpoint": {
+                              "type": "string",
+                              "maxLength": 2000,
+                              "examples": [
+                                "https://gauges.example.test/alloy"
+                              ]
+                            },
+                            "settings": {
+                              "maxItems": 20,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "key": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-zA-Z0-9_]{0,39}$"
+                                  },
+                                  "label": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 80
+                                  },
+                                  "type": {
+                                    "type": "string",
+                                    "enum": [
+                                      "text",
+                                      "number",
+                                      "boolean"
+                                    ]
+                                  },
+                                  "required": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "key",
+                                  "label",
+                                  "type",
+                                  "required"
                                 ]
-                              },
-                              "required": {
-                                "type": "boolean"
                               }
                             },
-                            "required": [
-                              "key",
-                              "label",
-                              "type",
-                              "required"
-                            ]
-                          }
-                        },
-                        "authentication": {
-                          "anyOf": [
-                            {
-                              "type": "string",
-                              "const": "none"
+                            "authentication": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "none"
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "label": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 80
+                                    }
+                                  },
+                                  "required": [
+                                    "label"
+                                  ]
+                                }
+                              ]
                             },
-                            {
+                            "capabilities": {
                               "type": "object",
                               "properties": {
-                                "label": {
-                                  "type": "string",
-                                  "minLength": 1,
-                                  "maxLength": 80
+                                "parameters": {
+                                  "type": "boolean"
+                                },
+                                "keyColumns": {
+                                  "type": "boolean"
+                                },
+                                "rowLimit": {
+                                  "type": "boolean"
                                 }
                               },
                               "required": [
-                                "label"
+                                "parameters",
+                                "keyColumns",
+                                "rowLimit"
                               ]
-                            }
-                          ]
-                        },
-                        "capabilities": {
-                          "type": "object",
-                          "properties": {
-                            "parameters": {
-                              "type": "boolean"
                             },
-                            "keyColumns": {
-                              "type": "boolean"
-                            },
-                            "rowLimit": {
-                              "type": "boolean"
+                            "outbound": {
+                              "maxItems": 20,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "host": {
+                                    "type": "string",
+                                    "pattern": "^[a-z0-9.-]{1,253}$"
+                                  },
+                                  "purpose": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  }
+                                },
+                                "required": [
+                                  "host",
+                                  "purpose"
+                                ]
+                              }
                             }
                           },
                           "required": [
-                            "parameters",
-                            "keyColumns",
-                            "rowLimit"
+                            "manifest",
+                            "name",
+                            "version",
+                            "publisher",
+                            "description",
+                            "kind",
+                            "endpoint",
+                            "settings",
+                            "authentication",
+                            "capabilities",
+                            "outbound"
                           ]
                         },
-                        "outbound": {
-                          "maxItems": 20,
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "host": {
-                                "type": "string",
-                                "pattern": "^[a-z0-9.-]{1,253}$"
-                              },
-                              "purpose": {
-                                "type": "string",
-                                "minLength": 1,
-                                "maxLength": 200
-                              }
+                        {
+                          "type": "object",
+                          "properties": {
+                            "manifest": {
+                              "type": "number",
+                              "const": 1
                             },
-                            "required": [
-                              "host",
-                              "purpose"
-                            ]
-                          }
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            },
+                            "version": {
+                              "type": "string",
+                              "pattern": "^\\d{1,4}\\.\\d{1,4}\\.\\d{1,6}(?:-[0-9A-Za-z.-]{1,40})?$",
+                              "examples": [
+                                "1.2.0"
+                              ]
+                            },
+                            "publisher": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            },
+                            "description": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 500
+                            },
+                            "kind": {
+                              "type": "string",
+                              "const": "reference"
+                            },
+                            "endpoint": {
+                              "type": "string",
+                              "maxLength": 2000,
+                              "examples": [
+                                "https://gauges.example.test/alloy"
+                              ]
+                            },
+                            "reference": {
+                              "type": "object",
+                              "properties": {
+                                "search": {
+                                  "type": "string",
+                                  "maxLength": 200,
+                                  "pattern": "^(?:\\/[A-Za-z0-9._~-]+)+$",
+                                  "examples": [
+                                    "/search"
+                                  ]
+                                },
+                                "fetch": {
+                                  "type": "string",
+                                  "maxLength": 200,
+                                  "pattern": "^(?:\\/[A-Za-z0-9._~-]+)+$",
+                                  "examples": [
+                                    "/search"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "search",
+                                "fetch"
+                              ]
+                            },
+                            "authentication": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "none"
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "label": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 80
+                                    }
+                                  },
+                                  "required": [
+                                    "label"
+                                  ]
+                                }
+                              ]
+                            },
+                            "outbound": {
+                              "maxItems": 20,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "host": {
+                                    "type": "string",
+                                    "pattern": "^[a-z0-9.-]{1,253}$"
+                                  },
+                                  "purpose": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  }
+                                },
+                                "required": [
+                                  "host",
+                                  "purpose"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "manifest",
+                            "name",
+                            "version",
+                            "publisher",
+                            "description",
+                            "kind",
+                            "endpoint",
+                            "reference",
+                            "authentication",
+                            "outbound"
+                          ]
                         }
-                      },
-                      "required": [
-                        "manifest",
-                        "name",
-                        "version",
-                        "publisher",
-                        "description",
-                        "kind",
-                        "endpoint",
-                        "settings",
-                        "authentication",
-                        "capabilities",
-                        "outbound"
                       ],
                       "description": "What the extension says it is, takes and does, and where it sends data: its own words"
                     },
@@ -190604,6 +190942,10 @@
                         "string",
                         "null"
                       ]
+                    },
+                    "secretSet": {
+                      "type": "boolean",
+                      "description": "A reference extension’s: whether its secret is set, never the secret"
                     }
                   },
                   "required": [
@@ -190614,7 +190956,8 @@
                     "installedBy",
                     "installedAt",
                     "updatedAt",
-                    "removedAt"
+                    "removedAt",
+                    "secretSet"
                   ]
                 },
                 "example": {
@@ -190641,7 +190984,8 @@
                   "installedBy": "example",
                   "installedAt": "example",
                   "updatedAt": "example",
-                  "removedAt": "example"
+                  "removedAt": "example",
+                  "secretSet": false
                 }
               }
             },
@@ -190916,7 +191260,7 @@
       "delete": {
         "operationId": "removeExtension",
         "summary": "Remove an extension no connection uses but a retired one",
-        "description": "Removes an extension once no connection uses it but a retired one; kept, so what used it still names it. Recorded as an extension changed. Needs administer at the environment, with a signed-in session.",
+        "description": "Removes an extension once no connection uses it but a retired one, and a reference extension once it is switched off as a reference source; kept, so what used it still names it, and the bibliography entries obtained from it untouched, though no longer re-checked. Recorded as an extension changed. Needs administer at the environment, with a signed-in session.",
         "tags": [
           "Extensions"
         ],
@@ -191128,7 +191472,7 @@
             }
           },
           "409": {
-            "description": "extension_in_use: a connection not retired uses it; its uses list them",
+            "description": "extension_in_use: a connection not retired uses it, its uses listing them; or a reference extension is switched on as a reference source",
             "content": {
               "application/json": {
                 "schema": {
@@ -191274,155 +191618,281 @@
                       "description": "SHA-256 of the manifest’s canonical JSON, as its preview gave it"
                     },
                     "manifest": {
-                      "type": "object",
-                      "properties": {
-                        "manifest": {
-                          "type": "number",
-                          "const": 1
-                        },
-                        "name": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 80
-                        },
-                        "version": {
-                          "type": "string",
-                          "pattern": "^\\d{1,4}\\.\\d{1,4}\\.\\d{1,6}(?:-[0-9A-Za-z.-]{1,40})?$",
-                          "examples": [
-                            "1.2.0"
-                          ]
-                        },
-                        "publisher": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 80
-                        },
-                        "description": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 500
-                        },
-                        "kind": {
-                          "type": "string",
-                          "const": "source"
-                        },
-                        "endpoint": {
-                          "type": "string",
-                          "maxLength": 2000,
-                          "examples": [
-                            "https://gauges.example.test/alloy"
-                          ]
-                        },
-                        "settings": {
-                          "maxItems": 20,
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "key": {
-                                "type": "string",
-                                "pattern": "^[a-z][a-zA-Z0-9_]{0,39}$"
-                              },
-                              "label": {
-                                "type": "string",
-                                "minLength": 1,
-                                "maxLength": 80
-                              },
-                              "type": {
-                                "type": "string",
-                                "enum": [
-                                  "text",
-                                  "number",
-                                  "boolean"
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "manifest": {
+                              "type": "number",
+                              "const": 1
+                            },
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            },
+                            "version": {
+                              "type": "string",
+                              "pattern": "^\\d{1,4}\\.\\d{1,4}\\.\\d{1,6}(?:-[0-9A-Za-z.-]{1,40})?$",
+                              "examples": [
+                                "1.2.0"
+                              ]
+                            },
+                            "publisher": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            },
+                            "description": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 500
+                            },
+                            "kind": {
+                              "type": "string",
+                              "const": "source"
+                            },
+                            "endpoint": {
+                              "type": "string",
+                              "maxLength": 2000,
+                              "examples": [
+                                "https://gauges.example.test/alloy"
+                              ]
+                            },
+                            "settings": {
+                              "maxItems": 20,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "key": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-zA-Z0-9_]{0,39}$"
+                                  },
+                                  "label": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 80
+                                  },
+                                  "type": {
+                                    "type": "string",
+                                    "enum": [
+                                      "text",
+                                      "number",
+                                      "boolean"
+                                    ]
+                                  },
+                                  "required": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "key",
+                                  "label",
+                                  "type",
+                                  "required"
                                 ]
-                              },
-                              "required": {
-                                "type": "boolean"
                               }
                             },
-                            "required": [
-                              "key",
-                              "label",
-                              "type",
-                              "required"
-                            ]
-                          }
-                        },
-                        "authentication": {
-                          "anyOf": [
-                            {
-                              "type": "string",
-                              "const": "none"
+                            "authentication": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "none"
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "label": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 80
+                                    }
+                                  },
+                                  "required": [
+                                    "label"
+                                  ]
+                                }
+                              ]
                             },
-                            {
+                            "capabilities": {
                               "type": "object",
                               "properties": {
-                                "label": {
-                                  "type": "string",
-                                  "minLength": 1,
-                                  "maxLength": 80
+                                "parameters": {
+                                  "type": "boolean"
+                                },
+                                "keyColumns": {
+                                  "type": "boolean"
+                                },
+                                "rowLimit": {
+                                  "type": "boolean"
                                 }
                               },
                               "required": [
-                                "label"
+                                "parameters",
+                                "keyColumns",
+                                "rowLimit"
                               ]
-                            }
-                          ]
-                        },
-                        "capabilities": {
-                          "type": "object",
-                          "properties": {
-                            "parameters": {
-                              "type": "boolean"
                             },
-                            "keyColumns": {
-                              "type": "boolean"
-                            },
-                            "rowLimit": {
-                              "type": "boolean"
+                            "outbound": {
+                              "maxItems": 20,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "host": {
+                                    "type": "string",
+                                    "pattern": "^[a-z0-9.-]{1,253}$"
+                                  },
+                                  "purpose": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  }
+                                },
+                                "required": [
+                                  "host",
+                                  "purpose"
+                                ]
+                              }
                             }
                           },
                           "required": [
-                            "parameters",
-                            "keyColumns",
-                            "rowLimit"
+                            "manifest",
+                            "name",
+                            "version",
+                            "publisher",
+                            "description",
+                            "kind",
+                            "endpoint",
+                            "settings",
+                            "authentication",
+                            "capabilities",
+                            "outbound"
                           ]
                         },
-                        "outbound": {
-                          "maxItems": 20,
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "host": {
-                                "type": "string",
-                                "pattern": "^[a-z0-9.-]{1,253}$"
-                              },
-                              "purpose": {
-                                "type": "string",
-                                "minLength": 1,
-                                "maxLength": 200
-                              }
+                        {
+                          "type": "object",
+                          "properties": {
+                            "manifest": {
+                              "type": "number",
+                              "const": 1
                             },
-                            "required": [
-                              "host",
-                              "purpose"
-                            ]
-                          }
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            },
+                            "version": {
+                              "type": "string",
+                              "pattern": "^\\d{1,4}\\.\\d{1,4}\\.\\d{1,6}(?:-[0-9A-Za-z.-]{1,40})?$",
+                              "examples": [
+                                "1.2.0"
+                              ]
+                            },
+                            "publisher": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            },
+                            "description": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 500
+                            },
+                            "kind": {
+                              "type": "string",
+                              "const": "reference"
+                            },
+                            "endpoint": {
+                              "type": "string",
+                              "maxLength": 2000,
+                              "examples": [
+                                "https://gauges.example.test/alloy"
+                              ]
+                            },
+                            "reference": {
+                              "type": "object",
+                              "properties": {
+                                "search": {
+                                  "type": "string",
+                                  "maxLength": 200,
+                                  "pattern": "^(?:\\/[A-Za-z0-9._~-]+)+$",
+                                  "examples": [
+                                    "/search"
+                                  ]
+                                },
+                                "fetch": {
+                                  "type": "string",
+                                  "maxLength": 200,
+                                  "pattern": "^(?:\\/[A-Za-z0-9._~-]+)+$",
+                                  "examples": [
+                                    "/search"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "search",
+                                "fetch"
+                              ]
+                            },
+                            "authentication": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "none"
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "label": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 80
+                                    }
+                                  },
+                                  "required": [
+                                    "label"
+                                  ]
+                                }
+                              ]
+                            },
+                            "outbound": {
+                              "maxItems": 20,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "host": {
+                                    "type": "string",
+                                    "pattern": "^[a-z0-9.-]{1,253}$"
+                                  },
+                                  "purpose": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  }
+                                },
+                                "required": [
+                                  "host",
+                                  "purpose"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "manifest",
+                            "name",
+                            "version",
+                            "publisher",
+                            "description",
+                            "kind",
+                            "endpoint",
+                            "reference",
+                            "authentication",
+                            "outbound"
+                          ]
                         }
-                      },
-                      "required": [
-                        "manifest",
-                        "name",
-                        "version",
-                        "publisher",
-                        "description",
-                        "kind",
-                        "endpoint",
-                        "settings",
-                        "authentication",
-                        "capabilities",
-                        "outbound"
                       ],
                       "description": "What the extension says it is, takes and does, and where it sends data: its own words"
                     },
@@ -191444,6 +191914,10 @@
                         "string",
                         "null"
                       ]
+                    },
+                    "secretSet": {
+                      "type": "boolean",
+                      "description": "A reference extension’s: whether its secret is set, never the secret"
                     }
                   },
                   "required": [
@@ -191454,7 +191928,8 @@
                     "installedBy",
                     "installedAt",
                     "updatedAt",
-                    "removedAt"
+                    "removedAt",
+                    "secretSet"
                   ]
                 },
                 "example": {
@@ -191481,7 +191956,8 @@
                   "installedBy": "example",
                   "installedAt": "example",
                   "updatedAt": "example",
-                  "removedAt": "example"
+                  "removedAt": "example",
+                  "secretSet": false
                 }
               }
             },
@@ -191731,155 +192207,281 @@
                       "description": "SHA-256 of the manifest’s canonical JSON, as its preview gave it"
                     },
                     "manifest": {
-                      "type": "object",
-                      "properties": {
-                        "manifest": {
-                          "type": "number",
-                          "const": 1
-                        },
-                        "name": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 80
-                        },
-                        "version": {
-                          "type": "string",
-                          "pattern": "^\\d{1,4}\\.\\d{1,4}\\.\\d{1,6}(?:-[0-9A-Za-z.-]{1,40})?$",
-                          "examples": [
-                            "1.2.0"
-                          ]
-                        },
-                        "publisher": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 80
-                        },
-                        "description": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 500
-                        },
-                        "kind": {
-                          "type": "string",
-                          "const": "source"
-                        },
-                        "endpoint": {
-                          "type": "string",
-                          "maxLength": 2000,
-                          "examples": [
-                            "https://gauges.example.test/alloy"
-                          ]
-                        },
-                        "settings": {
-                          "maxItems": 20,
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "key": {
-                                "type": "string",
-                                "pattern": "^[a-z][a-zA-Z0-9_]{0,39}$"
-                              },
-                              "label": {
-                                "type": "string",
-                                "minLength": 1,
-                                "maxLength": 80
-                              },
-                              "type": {
-                                "type": "string",
-                                "enum": [
-                                  "text",
-                                  "number",
-                                  "boolean"
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "manifest": {
+                              "type": "number",
+                              "const": 1
+                            },
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            },
+                            "version": {
+                              "type": "string",
+                              "pattern": "^\\d{1,4}\\.\\d{1,4}\\.\\d{1,6}(?:-[0-9A-Za-z.-]{1,40})?$",
+                              "examples": [
+                                "1.2.0"
+                              ]
+                            },
+                            "publisher": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            },
+                            "description": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 500
+                            },
+                            "kind": {
+                              "type": "string",
+                              "const": "source"
+                            },
+                            "endpoint": {
+                              "type": "string",
+                              "maxLength": 2000,
+                              "examples": [
+                                "https://gauges.example.test/alloy"
+                              ]
+                            },
+                            "settings": {
+                              "maxItems": 20,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "key": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-zA-Z0-9_]{0,39}$"
+                                  },
+                                  "label": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 80
+                                  },
+                                  "type": {
+                                    "type": "string",
+                                    "enum": [
+                                      "text",
+                                      "number",
+                                      "boolean"
+                                    ]
+                                  },
+                                  "required": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "key",
+                                  "label",
+                                  "type",
+                                  "required"
                                 ]
-                              },
-                              "required": {
-                                "type": "boolean"
                               }
                             },
-                            "required": [
-                              "key",
-                              "label",
-                              "type",
-                              "required"
-                            ]
-                          }
-                        },
-                        "authentication": {
-                          "anyOf": [
-                            {
-                              "type": "string",
-                              "const": "none"
+                            "authentication": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "none"
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "label": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 80
+                                    }
+                                  },
+                                  "required": [
+                                    "label"
+                                  ]
+                                }
+                              ]
                             },
-                            {
+                            "capabilities": {
                               "type": "object",
                               "properties": {
-                                "label": {
-                                  "type": "string",
-                                  "minLength": 1,
-                                  "maxLength": 80
+                                "parameters": {
+                                  "type": "boolean"
+                                },
+                                "keyColumns": {
+                                  "type": "boolean"
+                                },
+                                "rowLimit": {
+                                  "type": "boolean"
                                 }
                               },
                               "required": [
-                                "label"
+                                "parameters",
+                                "keyColumns",
+                                "rowLimit"
                               ]
-                            }
-                          ]
-                        },
-                        "capabilities": {
-                          "type": "object",
-                          "properties": {
-                            "parameters": {
-                              "type": "boolean"
                             },
-                            "keyColumns": {
-                              "type": "boolean"
-                            },
-                            "rowLimit": {
-                              "type": "boolean"
+                            "outbound": {
+                              "maxItems": 20,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "host": {
+                                    "type": "string",
+                                    "pattern": "^[a-z0-9.-]{1,253}$"
+                                  },
+                                  "purpose": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  }
+                                },
+                                "required": [
+                                  "host",
+                                  "purpose"
+                                ]
+                              }
                             }
                           },
                           "required": [
-                            "parameters",
-                            "keyColumns",
-                            "rowLimit"
+                            "manifest",
+                            "name",
+                            "version",
+                            "publisher",
+                            "description",
+                            "kind",
+                            "endpoint",
+                            "settings",
+                            "authentication",
+                            "capabilities",
+                            "outbound"
                           ]
                         },
-                        "outbound": {
-                          "maxItems": 20,
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "host": {
-                                "type": "string",
-                                "pattern": "^[a-z0-9.-]{1,253}$"
-                              },
-                              "purpose": {
-                                "type": "string",
-                                "minLength": 1,
-                                "maxLength": 200
-                              }
+                        {
+                          "type": "object",
+                          "properties": {
+                            "manifest": {
+                              "type": "number",
+                              "const": 1
                             },
-                            "required": [
-                              "host",
-                              "purpose"
-                            ]
-                          }
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            },
+                            "version": {
+                              "type": "string",
+                              "pattern": "^\\d{1,4}\\.\\d{1,4}\\.\\d{1,6}(?:-[0-9A-Za-z.-]{1,40})?$",
+                              "examples": [
+                                "1.2.0"
+                              ]
+                            },
+                            "publisher": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            },
+                            "description": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 500
+                            },
+                            "kind": {
+                              "type": "string",
+                              "const": "reference"
+                            },
+                            "endpoint": {
+                              "type": "string",
+                              "maxLength": 2000,
+                              "examples": [
+                                "https://gauges.example.test/alloy"
+                              ]
+                            },
+                            "reference": {
+                              "type": "object",
+                              "properties": {
+                                "search": {
+                                  "type": "string",
+                                  "maxLength": 200,
+                                  "pattern": "^(?:\\/[A-Za-z0-9._~-]+)+$",
+                                  "examples": [
+                                    "/search"
+                                  ]
+                                },
+                                "fetch": {
+                                  "type": "string",
+                                  "maxLength": 200,
+                                  "pattern": "^(?:\\/[A-Za-z0-9._~-]+)+$",
+                                  "examples": [
+                                    "/search"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "search",
+                                "fetch"
+                              ]
+                            },
+                            "authentication": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "none"
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "label": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 80
+                                    }
+                                  },
+                                  "required": [
+                                    "label"
+                                  ]
+                                }
+                              ]
+                            },
+                            "outbound": {
+                              "maxItems": 20,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "host": {
+                                    "type": "string",
+                                    "pattern": "^[a-z0-9.-]{1,253}$"
+                                  },
+                                  "purpose": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  }
+                                },
+                                "required": [
+                                  "host",
+                                  "purpose"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "manifest",
+                            "name",
+                            "version",
+                            "publisher",
+                            "description",
+                            "kind",
+                            "endpoint",
+                            "reference",
+                            "authentication",
+                            "outbound"
+                          ]
                         }
-                      },
-                      "required": [
-                        "manifest",
-                        "name",
-                        "version",
-                        "publisher",
-                        "description",
-                        "kind",
-                        "endpoint",
-                        "settings",
-                        "authentication",
-                        "capabilities",
-                        "outbound"
                       ],
                       "description": "What the extension says it is, takes and does, and where it sends data: its own words"
                     },
@@ -191893,6 +192495,7 @@
                           "settings",
                           "authentication",
                           "capabilities",
+                          "reference",
                           "outbound",
                           "about"
                         ]
@@ -192195,6 +192798,755 @@
         }
       }
     },
+    "/v1/extensions/{id}/secret": {
+      "put": {
+        "operationId": "setExtensionSecret",
+        "summary": "Set the secret a reference extension is sent",
+        "description": "Sets the secret a reference extension is sent as a bearer, where its manifest declares one: sealed by the connector for the extension and its endpoint, so it opens nowhere else, and never answered again; an endpoint changed by an update needs it set again. Recorded as an extension changed. Needs administer at the environment, with a signed-in session.",
+        "tags": [
+          "Extensions"
+        ],
+        "x-alloy-token-enabled": false,
+        "x-alloy-permission": "administer",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ],
+              "description": "The extension"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "secret": {
+                    "type": "string",
+                    "maxLength": 2048,
+                    "pattern": "^[!-~](?:[ -~]*[!-~])?$",
+                    "description": "The secret it is sent as a bearer: printable ASCII, at most 2,048 characters, never shown again"
+                  }
+                },
+                "required": [
+                  "secret"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "secret": "example"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Set; the secret itself is never answered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    },
+                    "digest": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$",
+                      "description": "SHA-256 of the manifest’s canonical JSON, as its preview gave it"
+                    },
+                    "manifest": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "manifest": {
+                              "type": "number",
+                              "const": 1
+                            },
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            },
+                            "version": {
+                              "type": "string",
+                              "pattern": "^\\d{1,4}\\.\\d{1,4}\\.\\d{1,6}(?:-[0-9A-Za-z.-]{1,40})?$",
+                              "examples": [
+                                "1.2.0"
+                              ]
+                            },
+                            "publisher": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            },
+                            "description": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 500
+                            },
+                            "kind": {
+                              "type": "string",
+                              "const": "source"
+                            },
+                            "endpoint": {
+                              "type": "string",
+                              "maxLength": 2000,
+                              "examples": [
+                                "https://gauges.example.test/alloy"
+                              ]
+                            },
+                            "settings": {
+                              "maxItems": 20,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "key": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-zA-Z0-9_]{0,39}$"
+                                  },
+                                  "label": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 80
+                                  },
+                                  "type": {
+                                    "type": "string",
+                                    "enum": [
+                                      "text",
+                                      "number",
+                                      "boolean"
+                                    ]
+                                  },
+                                  "required": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "key",
+                                  "label",
+                                  "type",
+                                  "required"
+                                ]
+                              }
+                            },
+                            "authentication": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "none"
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "label": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 80
+                                    }
+                                  },
+                                  "required": [
+                                    "label"
+                                  ]
+                                }
+                              ]
+                            },
+                            "capabilities": {
+                              "type": "object",
+                              "properties": {
+                                "parameters": {
+                                  "type": "boolean"
+                                },
+                                "keyColumns": {
+                                  "type": "boolean"
+                                },
+                                "rowLimit": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": [
+                                "parameters",
+                                "keyColumns",
+                                "rowLimit"
+                              ]
+                            },
+                            "outbound": {
+                              "maxItems": 20,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "host": {
+                                    "type": "string",
+                                    "pattern": "^[a-z0-9.-]{1,253}$"
+                                  },
+                                  "purpose": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  }
+                                },
+                                "required": [
+                                  "host",
+                                  "purpose"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "manifest",
+                            "name",
+                            "version",
+                            "publisher",
+                            "description",
+                            "kind",
+                            "endpoint",
+                            "settings",
+                            "authentication",
+                            "capabilities",
+                            "outbound"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "manifest": {
+                              "type": "number",
+                              "const": 1
+                            },
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            },
+                            "version": {
+                              "type": "string",
+                              "pattern": "^\\d{1,4}\\.\\d{1,4}\\.\\d{1,6}(?:-[0-9A-Za-z.-]{1,40})?$",
+                              "examples": [
+                                "1.2.0"
+                              ]
+                            },
+                            "publisher": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            },
+                            "description": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 500
+                            },
+                            "kind": {
+                              "type": "string",
+                              "const": "reference"
+                            },
+                            "endpoint": {
+                              "type": "string",
+                              "maxLength": 2000,
+                              "examples": [
+                                "https://gauges.example.test/alloy"
+                              ]
+                            },
+                            "reference": {
+                              "type": "object",
+                              "properties": {
+                                "search": {
+                                  "type": "string",
+                                  "maxLength": 200,
+                                  "pattern": "^(?:\\/[A-Za-z0-9._~-]+)+$",
+                                  "examples": [
+                                    "/search"
+                                  ]
+                                },
+                                "fetch": {
+                                  "type": "string",
+                                  "maxLength": 200,
+                                  "pattern": "^(?:\\/[A-Za-z0-9._~-]+)+$",
+                                  "examples": [
+                                    "/search"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "search",
+                                "fetch"
+                              ]
+                            },
+                            "authentication": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "none"
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "label": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 80
+                                    }
+                                  },
+                                  "required": [
+                                    "label"
+                                  ]
+                                }
+                              ]
+                            },
+                            "outbound": {
+                              "maxItems": 20,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "host": {
+                                    "type": "string",
+                                    "pattern": "^[a-z0-9.-]{1,253}$"
+                                  },
+                                  "purpose": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  }
+                                },
+                                "required": [
+                                  "host",
+                                  "purpose"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "manifest",
+                            "name",
+                            "version",
+                            "publisher",
+                            "description",
+                            "kind",
+                            "endpoint",
+                            "reference",
+                            "authentication",
+                            "outbound"
+                          ]
+                        }
+                      ],
+                      "description": "What the extension says it is, takes and does, and where it sends data: its own words"
+                    },
+                    "installedBy": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "installedAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    },
+                    "removedAt": {
+                      "description": "When it was removed; kept, so what used it names it",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "secretSet": {
+                      "type": "boolean",
+                      "description": "A reference extension’s: whether its secret is set, never the secret"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "url",
+                    "digest",
+                    "manifest",
+                    "installedBy",
+                    "installedAt",
+                    "updatedAt",
+                    "removedAt",
+                    "secretSet"
+                  ]
+                },
+                "example": {
+                  "id": "example",
+                  "url": "example",
+                  "digest": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "manifest": {
+                    "manifest": 1,
+                    "name": "example",
+                    "version": "1.2.0",
+                    "publisher": "example",
+                    "description": "example",
+                    "kind": "source",
+                    "endpoint": "https://gauges.example.test/alloy",
+                    "settings": [],
+                    "authentication": "none",
+                    "capabilities": {
+                      "parameters": false,
+                      "keyColumns": false,
+                      "rowLimit": false
+                    },
+                    "outbound": []
+                  },
+                  "installedBy": "example",
+                  "installedAt": "example",
+                  "updatedAt": "example",
+                  "removedAt": "example",
+                  "secretSet": false
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden: the caller may not administer this environment; or token_not_allowed: extensions are managed with a signed-in session, never a token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such extension in this environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "extension_removed; extension_takes_no_secret: it is a source extension, whose connections hold theirs, or declares none",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "connector_unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/extensions/{id}/update": {
       "post": {
         "operationId": "updateExtension",
@@ -192292,155 +193644,281 @@
                       "description": "SHA-256 of the manifest’s canonical JSON, as its preview gave it"
                     },
                     "manifest": {
-                      "type": "object",
-                      "properties": {
-                        "manifest": {
-                          "type": "number",
-                          "const": 1
-                        },
-                        "name": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 80
-                        },
-                        "version": {
-                          "type": "string",
-                          "pattern": "^\\d{1,4}\\.\\d{1,4}\\.\\d{1,6}(?:-[0-9A-Za-z.-]{1,40})?$",
-                          "examples": [
-                            "1.2.0"
-                          ]
-                        },
-                        "publisher": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 80
-                        },
-                        "description": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 500
-                        },
-                        "kind": {
-                          "type": "string",
-                          "const": "source"
-                        },
-                        "endpoint": {
-                          "type": "string",
-                          "maxLength": 2000,
-                          "examples": [
-                            "https://gauges.example.test/alloy"
-                          ]
-                        },
-                        "settings": {
-                          "maxItems": 20,
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "key": {
-                                "type": "string",
-                                "pattern": "^[a-z][a-zA-Z0-9_]{0,39}$"
-                              },
-                              "label": {
-                                "type": "string",
-                                "minLength": 1,
-                                "maxLength": 80
-                              },
-                              "type": {
-                                "type": "string",
-                                "enum": [
-                                  "text",
-                                  "number",
-                                  "boolean"
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "manifest": {
+                              "type": "number",
+                              "const": 1
+                            },
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            },
+                            "version": {
+                              "type": "string",
+                              "pattern": "^\\d{1,4}\\.\\d{1,4}\\.\\d{1,6}(?:-[0-9A-Za-z.-]{1,40})?$",
+                              "examples": [
+                                "1.2.0"
+                              ]
+                            },
+                            "publisher": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            },
+                            "description": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 500
+                            },
+                            "kind": {
+                              "type": "string",
+                              "const": "source"
+                            },
+                            "endpoint": {
+                              "type": "string",
+                              "maxLength": 2000,
+                              "examples": [
+                                "https://gauges.example.test/alloy"
+                              ]
+                            },
+                            "settings": {
+                              "maxItems": 20,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "key": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-zA-Z0-9_]{0,39}$"
+                                  },
+                                  "label": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 80
+                                  },
+                                  "type": {
+                                    "type": "string",
+                                    "enum": [
+                                      "text",
+                                      "number",
+                                      "boolean"
+                                    ]
+                                  },
+                                  "required": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "key",
+                                  "label",
+                                  "type",
+                                  "required"
                                 ]
-                              },
-                              "required": {
-                                "type": "boolean"
                               }
                             },
-                            "required": [
-                              "key",
-                              "label",
-                              "type",
-                              "required"
-                            ]
-                          }
-                        },
-                        "authentication": {
-                          "anyOf": [
-                            {
-                              "type": "string",
-                              "const": "none"
+                            "authentication": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "none"
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "label": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 80
+                                    }
+                                  },
+                                  "required": [
+                                    "label"
+                                  ]
+                                }
+                              ]
                             },
-                            {
+                            "capabilities": {
                               "type": "object",
                               "properties": {
-                                "label": {
-                                  "type": "string",
-                                  "minLength": 1,
-                                  "maxLength": 80
+                                "parameters": {
+                                  "type": "boolean"
+                                },
+                                "keyColumns": {
+                                  "type": "boolean"
+                                },
+                                "rowLimit": {
+                                  "type": "boolean"
                                 }
                               },
                               "required": [
-                                "label"
+                                "parameters",
+                                "keyColumns",
+                                "rowLimit"
                               ]
-                            }
-                          ]
-                        },
-                        "capabilities": {
-                          "type": "object",
-                          "properties": {
-                            "parameters": {
-                              "type": "boolean"
                             },
-                            "keyColumns": {
-                              "type": "boolean"
-                            },
-                            "rowLimit": {
-                              "type": "boolean"
+                            "outbound": {
+                              "maxItems": 20,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "host": {
+                                    "type": "string",
+                                    "pattern": "^[a-z0-9.-]{1,253}$"
+                                  },
+                                  "purpose": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  }
+                                },
+                                "required": [
+                                  "host",
+                                  "purpose"
+                                ]
+                              }
                             }
                           },
                           "required": [
-                            "parameters",
-                            "keyColumns",
-                            "rowLimit"
+                            "manifest",
+                            "name",
+                            "version",
+                            "publisher",
+                            "description",
+                            "kind",
+                            "endpoint",
+                            "settings",
+                            "authentication",
+                            "capabilities",
+                            "outbound"
                           ]
                         },
-                        "outbound": {
-                          "maxItems": 20,
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "host": {
-                                "type": "string",
-                                "pattern": "^[a-z0-9.-]{1,253}$"
-                              },
-                              "purpose": {
-                                "type": "string",
-                                "minLength": 1,
-                                "maxLength": 200
-                              }
+                        {
+                          "type": "object",
+                          "properties": {
+                            "manifest": {
+                              "type": "number",
+                              "const": 1
                             },
-                            "required": [
-                              "host",
-                              "purpose"
-                            ]
-                          }
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            },
+                            "version": {
+                              "type": "string",
+                              "pattern": "^\\d{1,4}\\.\\d{1,4}\\.\\d{1,6}(?:-[0-9A-Za-z.-]{1,40})?$",
+                              "examples": [
+                                "1.2.0"
+                              ]
+                            },
+                            "publisher": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            },
+                            "description": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 500
+                            },
+                            "kind": {
+                              "type": "string",
+                              "const": "reference"
+                            },
+                            "endpoint": {
+                              "type": "string",
+                              "maxLength": 2000,
+                              "examples": [
+                                "https://gauges.example.test/alloy"
+                              ]
+                            },
+                            "reference": {
+                              "type": "object",
+                              "properties": {
+                                "search": {
+                                  "type": "string",
+                                  "maxLength": 200,
+                                  "pattern": "^(?:\\/[A-Za-z0-9._~-]+)+$",
+                                  "examples": [
+                                    "/search"
+                                  ]
+                                },
+                                "fetch": {
+                                  "type": "string",
+                                  "maxLength": 200,
+                                  "pattern": "^(?:\\/[A-Za-z0-9._~-]+)+$",
+                                  "examples": [
+                                    "/search"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "search",
+                                "fetch"
+                              ]
+                            },
+                            "authentication": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "none"
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "label": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 80
+                                    }
+                                  },
+                                  "required": [
+                                    "label"
+                                  ]
+                                }
+                              ]
+                            },
+                            "outbound": {
+                              "maxItems": 20,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "host": {
+                                    "type": "string",
+                                    "pattern": "^[a-z0-9.-]{1,253}$"
+                                  },
+                                  "purpose": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  }
+                                },
+                                "required": [
+                                  "host",
+                                  "purpose"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "manifest",
+                            "name",
+                            "version",
+                            "publisher",
+                            "description",
+                            "kind",
+                            "endpoint",
+                            "reference",
+                            "authentication",
+                            "outbound"
+                          ]
                         }
-                      },
-                      "required": [
-                        "manifest",
-                        "name",
-                        "version",
-                        "publisher",
-                        "description",
-                        "kind",
-                        "endpoint",
-                        "settings",
-                        "authentication",
-                        "capabilities",
-                        "outbound"
                       ],
                       "description": "What the extension says it is, takes and does, and where it sends data: its own words"
                     },
@@ -192462,6 +193940,10 @@
                         "string",
                         "null"
                       ]
+                    },
+                    "secretSet": {
+                      "type": "boolean",
+                      "description": "A reference extension’s: whether its secret is set, never the secret"
                     }
                   },
                   "required": [
@@ -192472,7 +193954,8 @@
                     "installedBy",
                     "installedAt",
                     "updatedAt",
-                    "removedAt"
+                    "removedAt",
+                    "secretSet"
                   ]
                 },
                 "example": {
@@ -192499,7 +193982,8 @@
                   "installedBy": "example",
                   "installedAt": "example",
                   "updatedAt": "example",
-                  "removedAt": "example"
+                  "removedAt": "example",
+                  "secretSet": false
                 }
               }
             },
@@ -193157,155 +194641,281 @@
                       "description": "SHA-256 of the manifest’s canonical JSON, as its preview gave it"
                     },
                     "manifest": {
-                      "type": "object",
-                      "properties": {
-                        "manifest": {
-                          "type": "number",
-                          "const": 1
-                        },
-                        "name": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 80
-                        },
-                        "version": {
-                          "type": "string",
-                          "pattern": "^\\d{1,4}\\.\\d{1,4}\\.\\d{1,6}(?:-[0-9A-Za-z.-]{1,40})?$",
-                          "examples": [
-                            "1.2.0"
-                          ]
-                        },
-                        "publisher": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 80
-                        },
-                        "description": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 500
-                        },
-                        "kind": {
-                          "type": "string",
-                          "const": "source"
-                        },
-                        "endpoint": {
-                          "type": "string",
-                          "maxLength": 2000,
-                          "examples": [
-                            "https://gauges.example.test/alloy"
-                          ]
-                        },
-                        "settings": {
-                          "maxItems": 20,
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "key": {
-                                "type": "string",
-                                "pattern": "^[a-z][a-zA-Z0-9_]{0,39}$"
-                              },
-                              "label": {
-                                "type": "string",
-                                "minLength": 1,
-                                "maxLength": 80
-                              },
-                              "type": {
-                                "type": "string",
-                                "enum": [
-                                  "text",
-                                  "number",
-                                  "boolean"
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "manifest": {
+                              "type": "number",
+                              "const": 1
+                            },
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            },
+                            "version": {
+                              "type": "string",
+                              "pattern": "^\\d{1,4}\\.\\d{1,4}\\.\\d{1,6}(?:-[0-9A-Za-z.-]{1,40})?$",
+                              "examples": [
+                                "1.2.0"
+                              ]
+                            },
+                            "publisher": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            },
+                            "description": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 500
+                            },
+                            "kind": {
+                              "type": "string",
+                              "const": "source"
+                            },
+                            "endpoint": {
+                              "type": "string",
+                              "maxLength": 2000,
+                              "examples": [
+                                "https://gauges.example.test/alloy"
+                              ]
+                            },
+                            "settings": {
+                              "maxItems": 20,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "key": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-zA-Z0-9_]{0,39}$"
+                                  },
+                                  "label": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 80
+                                  },
+                                  "type": {
+                                    "type": "string",
+                                    "enum": [
+                                      "text",
+                                      "number",
+                                      "boolean"
+                                    ]
+                                  },
+                                  "required": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "key",
+                                  "label",
+                                  "type",
+                                  "required"
                                 ]
-                              },
-                              "required": {
-                                "type": "boolean"
                               }
                             },
-                            "required": [
-                              "key",
-                              "label",
-                              "type",
-                              "required"
-                            ]
-                          }
-                        },
-                        "authentication": {
-                          "anyOf": [
-                            {
-                              "type": "string",
-                              "const": "none"
+                            "authentication": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "none"
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "label": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 80
+                                    }
+                                  },
+                                  "required": [
+                                    "label"
+                                  ]
+                                }
+                              ]
                             },
-                            {
+                            "capabilities": {
                               "type": "object",
                               "properties": {
-                                "label": {
-                                  "type": "string",
-                                  "minLength": 1,
-                                  "maxLength": 80
+                                "parameters": {
+                                  "type": "boolean"
+                                },
+                                "keyColumns": {
+                                  "type": "boolean"
+                                },
+                                "rowLimit": {
+                                  "type": "boolean"
                                 }
                               },
                               "required": [
-                                "label"
+                                "parameters",
+                                "keyColumns",
+                                "rowLimit"
                               ]
-                            }
-                          ]
-                        },
-                        "capabilities": {
-                          "type": "object",
-                          "properties": {
-                            "parameters": {
-                              "type": "boolean"
                             },
-                            "keyColumns": {
-                              "type": "boolean"
-                            },
-                            "rowLimit": {
-                              "type": "boolean"
+                            "outbound": {
+                              "maxItems": 20,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "host": {
+                                    "type": "string",
+                                    "pattern": "^[a-z0-9.-]{1,253}$"
+                                  },
+                                  "purpose": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  }
+                                },
+                                "required": [
+                                  "host",
+                                  "purpose"
+                                ]
+                              }
                             }
                           },
                           "required": [
-                            "parameters",
-                            "keyColumns",
-                            "rowLimit"
+                            "manifest",
+                            "name",
+                            "version",
+                            "publisher",
+                            "description",
+                            "kind",
+                            "endpoint",
+                            "settings",
+                            "authentication",
+                            "capabilities",
+                            "outbound"
                           ]
                         },
-                        "outbound": {
-                          "maxItems": 20,
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "host": {
-                                "type": "string",
-                                "pattern": "^[a-z0-9.-]{1,253}$"
-                              },
-                              "purpose": {
-                                "type": "string",
-                                "minLength": 1,
-                                "maxLength": 200
-                              }
+                        {
+                          "type": "object",
+                          "properties": {
+                            "manifest": {
+                              "type": "number",
+                              "const": 1
                             },
-                            "required": [
-                              "host",
-                              "purpose"
-                            ]
-                          }
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            },
+                            "version": {
+                              "type": "string",
+                              "pattern": "^\\d{1,4}\\.\\d{1,4}\\.\\d{1,6}(?:-[0-9A-Za-z.-]{1,40})?$",
+                              "examples": [
+                                "1.2.0"
+                              ]
+                            },
+                            "publisher": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            },
+                            "description": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 500
+                            },
+                            "kind": {
+                              "type": "string",
+                              "const": "reference"
+                            },
+                            "endpoint": {
+                              "type": "string",
+                              "maxLength": 2000,
+                              "examples": [
+                                "https://gauges.example.test/alloy"
+                              ]
+                            },
+                            "reference": {
+                              "type": "object",
+                              "properties": {
+                                "search": {
+                                  "type": "string",
+                                  "maxLength": 200,
+                                  "pattern": "^(?:\\/[A-Za-z0-9._~-]+)+$",
+                                  "examples": [
+                                    "/search"
+                                  ]
+                                },
+                                "fetch": {
+                                  "type": "string",
+                                  "maxLength": 200,
+                                  "pattern": "^(?:\\/[A-Za-z0-9._~-]+)+$",
+                                  "examples": [
+                                    "/search"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "search",
+                                "fetch"
+                              ]
+                            },
+                            "authentication": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "none"
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "label": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 80
+                                    }
+                                  },
+                                  "required": [
+                                    "label"
+                                  ]
+                                }
+                              ]
+                            },
+                            "outbound": {
+                              "maxItems": 20,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "host": {
+                                    "type": "string",
+                                    "pattern": "^[a-z0-9.-]{1,253}$"
+                                  },
+                                  "purpose": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  }
+                                },
+                                "required": [
+                                  "host",
+                                  "purpose"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "manifest",
+                            "name",
+                            "version",
+                            "publisher",
+                            "description",
+                            "kind",
+                            "endpoint",
+                            "reference",
+                            "authentication",
+                            "outbound"
+                          ]
                         }
-                      },
-                      "required": [
-                        "manifest",
-                        "name",
-                        "version",
-                        "publisher",
-                        "description",
-                        "kind",
-                        "endpoint",
-                        "settings",
-                        "authentication",
-                        "capabilities",
-                        "outbound"
                       ],
                       "description": "What the extension says it is, takes and does, and where it sends data: its own words"
                     },
@@ -193319,6 +194929,7 @@
                           "settings",
                           "authentication",
                           "capabilities",
+                          "reference",
                           "outbound",
                           "about"
                         ]
@@ -237925,7 +239536,7 @@
       "get": {
         "operationId": "listReferenceSources",
         "summary": "The reference sources, and whether this environment searches each",
-        "description": "Lists the reference sources the product declares, Crossref and PubMed, each with the one host it is reached at, what a record is fetched by, and whether this environment searches it. Each is on until an administrator switches it off.",
+        "description": "Lists the reference sources the product declares, Crossref and PubMed, and the reference extensions installed here, keyed `ext:` and the extension’s id, each with the one host it is reached at, what a record is fetched by, and whether this environment searches it. Each is on until an administrator switches it off.",
         "tags": [
           "Bibliography"
         ],
@@ -237964,14 +239575,23 @@
                         "type": "object",
                         "properties": {
                           "id": {
-                            "type": "string",
-                            "enum": [
-                              "crossref",
-                              "pubmed"
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "crossref",
+                                  "pubmed"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "pattern": "^ext:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                              }
                             ]
                           },
                           "name": {
-                            "type": "string"
+                            "type": "string",
+                            "description": "Its name; a reference extension’s, its manifest’s own words"
                           },
                           "host": {
                             "type": "string",
@@ -237981,9 +239601,10 @@
                             "type": "string",
                             "enum": [
                               "DOI",
-                              "PMID"
+                              "PMID",
+                              "Identifier"
                             ],
-                            "description": "What a record is fetched by"
+                            "description": "What a record is fetched by: a reference extension’s own identifier"
                           },
                           "enabled": {
                             "type": "boolean",
@@ -238105,7 +239726,7 @@
       "put": {
         "operationId": "setReferenceSource",
         "summary": "Switch a reference source on or off for this environment",
-        "description": "Switches a reference source on or off for the environment. Off, it is neither searched nor made an entry from. It needs administer on the environment.",
+        "description": "Switches a reference source, or a reference extension installed here, on or off for the environment. Off, it is neither searched, made an entry from nor re-checked; a reference extension is removed only once off. It needs administer on the environment.",
         "tags": [
           "Bibliography"
         ],
@@ -238148,10 +239769,18 @@
                 "type": "object",
                 "properties": {
                   "source": {
-                    "type": "string",
-                    "enum": [
-                      "crossref",
-                      "pubmed"
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "crossref",
+                          "pubmed"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^ext:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                      }
                     ]
                   },
                   "enabled": {
@@ -238180,14 +239809,23 @@
                   "type": "object",
                   "properties": {
                     "id": {
-                      "type": "string",
-                      "enum": [
-                        "crossref",
-                        "pubmed"
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "crossref",
+                            "pubmed"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "pattern": "^ext:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                        }
                       ]
                     },
                     "name": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "Its name; a reference extension’s, its manifest’s own words"
                     },
                     "host": {
                       "type": "string",
@@ -238197,9 +239835,10 @@
                       "type": "string",
                       "enum": [
                         "DOI",
-                        "PMID"
+                        "PMID",
+                        "Identifier"
                       ],
-                      "description": "What a record is fetched by"
+                      "description": "What a record is fetched by: a reference extension’s own identifier"
                     },
                     "enabled": {
                       "type": "boolean",
@@ -238364,6 +240003,47 @@
               }
             }
           },
+          "404": {
+            "description": "No such reference extension installed here",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
           "default": {
             "description": "An error, in the one shape every error takes",
             "content": {
@@ -238432,12 +240112,20 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string",
-              "enum": [
-                "crossref",
-                "pubmed"
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "crossref",
+                    "pubmed"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "^ext:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
               ],
-              "description": "The source, by its id in the declared list"
+              "description": "The source, by its id in the declared list, or a reference extension’s, `ext:` and its id"
             }
           },
           {
@@ -263179,10 +264867,18 @@
                                   "type": "object",
                                   "properties": {
                                     "source": {
-                                      "type": "string",
-                                      "enum": [
-                                        "crossref",
-                                        "pubmed"
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "crossref",
+                                            "pubmed"
+                                          ]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "pattern": "^ext:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                        }
                                       ]
                                     },
                                     "checkedAt": {
@@ -267429,10 +269125,18 @@
                               "type": "object",
                               "properties": {
                                 "source": {
-                                  "type": "string",
-                                  "enum": [
-                                    "crossref",
-                                    "pubmed"
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "crossref",
+                                        "pubmed"
+                                      ]
+                                    },
+                                    {
+                                      "type": "string",
+                                      "pattern": "^ext:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                    }
                                   ]
                                 },
                                 "checkedAt": {
@@ -268080,17 +269784,25 @@
                 "type": "object",
                 "properties": {
                   "source": {
-                    "type": "string",
-                    "enum": [
-                      "crossref",
-                      "pubmed"
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "crossref",
+                          "pubmed"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^ext:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                      }
                     ]
                   },
                   "identifier": {
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 300,
-                    "description": "The record's DOI or PMID"
+                    "description": "The record's DOI, PMID, or a reference extension's identifier"
                   },
                   "despiteMatches": {
                     "description": "Make it though the same source is already in the space (LIB-044)",
@@ -270169,10 +271881,18 @@
                                   "type": "object",
                                   "properties": {
                                     "source": {
-                                      "type": "string",
-                                      "enum": [
-                                        "crossref",
-                                        "pubmed"
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "crossref",
+                                            "pubmed"
+                                          ]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "pattern": "^ext:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                        }
                                       ]
                                     },
                                     "checkedAt": {

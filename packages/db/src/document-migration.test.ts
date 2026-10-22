@@ -223,6 +223,8 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0148_default_layout_bibliography',
       '0149_reference_sources',
       '0150_entry_status',
+      '0151_citation_proposals',
+      '0152_reference_extensions',
     ]);
 
     // The component and its version are as they were.
@@ -437,6 +439,8 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0148_default_layout_bibliography',
       '0149_reference_sources',
       '0150_entry_status',
+      '0151_citation_proposals',
+      '0152_reference_extensions',
     ]);
 
     const { rows } = await queryAs(

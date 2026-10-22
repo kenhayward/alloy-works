@@ -1,4 +1,4 @@
-import { REFERENCE_SOURCE_IDS, cslItemSchema } from '@alloy-works/domain';
+import { cslItemSchema, referenceSourceKeySchema } from '@alloy-works/domain';
 import { z } from 'zod';
 import {
   CreateEntryAnswer,
@@ -13,15 +13,19 @@ import type { RouteContract } from './contract.js';
 import { ErrorBody, SPACE_ARCHIVED } from './schemas.js';
 
 export const SourceParams = z.object({
-  source: z.enum(REFERENCE_SOURCE_IDS).describe('The source, by its id in the declared list'),
+  source: referenceSourceKeySchema.describe(
+    'The source, by its id in the declared list, or a reference extension’s, `ext:` and its id',
+  ),
 });
 export type SourceParams = z.infer<typeof SourceParams>;
 
 export const ReferenceSourceView = z.object({
-  id: z.enum(REFERENCE_SOURCE_IDS),
-  name: z.string(),
+  id: referenceSourceKeySchema,
+  name: z.string().describe('Its name; a reference extension’s, its manifest’s own words'),
   host: z.string().describe('The one host it is reached at'),
-  identifier: z.enum(['DOI', 'PMID']).describe('What a record is fetched by'),
+  identifier: z
+    .enum(['DOI', 'PMID', 'Identifier'])
+    .describe('What a record is fetched by: a reference extension’s own identifier'),
   enabled: z.boolean().describe('Whether this environment searches it'),
 });
 
@@ -29,7 +33,7 @@ export const ReferenceSourceList = z.object({ items: z.array(ReferenceSourceView
 export type ReferenceSourceList = z.infer<typeof ReferenceSourceList>;
 
 export const ReferenceSourceBody = z.strictObject({
-  source: z.enum(REFERENCE_SOURCE_IDS),
+  source: referenceSourceKeySchema,
   enabled: z.boolean(),
 });
 export type ReferenceSourceBody = z.infer<typeof ReferenceSourceBody>;
@@ -57,8 +61,12 @@ export const ReferenceSearchAnswer = z.object({
 export type ReferenceSearchAnswer = z.infer<typeof ReferenceSearchAnswer>;
 
 export const FromSourceBody = z.strictObject({
-  source: z.enum(REFERENCE_SOURCE_IDS),
-  identifier: z.string().min(1).max(300).describe("The record's DOI or PMID"),
+  source: referenceSourceKeySchema,
+  identifier: z
+    .string()
+    .min(1)
+    .max(300)
+    .describe("The record's DOI, PMID, or a reference extension's identifier"),
   despiteMatches: z
     .boolean()
     .optional()
@@ -143,6 +151,7 @@ export const referenceSourceRoutes = {
       400: { description: 'No such source', schema: ErrorBody },
       401: unauthenticated,
       403: { description: 'The caller may not administer this environment', schema: ErrorBody },
+      404: { description: 'No such reference extension installed here', schema: ErrorBody },
     },
   },
   searchReferenceSource: {
@@ -207,7 +216,7 @@ export const referenceSourceRoutes = {
     path: '/v1/bibliography-entries/{id}/check',
     summary: 'Check an entry against the source it was obtained from, and record its status',
     tenantScoped: true,
-    access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
+    access: { check: 'permission', permission: 'edit', target: { artifact: 'id' } },
     params: EntryParams,
     responses: {
       200: {
@@ -216,14 +225,15 @@ export const referenceSourceRoutes = {
         schema: EntryStatusView,
       },
       401: unauthenticated,
-      403: {
-        description: 'Never answered: an entry the caller may not read is not found',
-        schema: ErrorBody,
-      },
+      403: { description: 'The caller may read the entry but not edit it', schema: ErrorBody },
       404: entryNotFound,
       409: sourceOff,
       422: {
         description: '`entry_not_obtained`: its latest version was not obtained from a source',
+        schema: ErrorBody,
+      },
+      429: {
+        description: '`entry_checked_recently`: the entry was checked, or tried, within the minute',
         schema: ErrorBody,
       },
       502: sourceFailed,

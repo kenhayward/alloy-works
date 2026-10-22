@@ -2,19 +2,19 @@ import {
   decide,
   obtainedFrom,
   readOutline,
-  REFERENCE_SOURCE_IDS,
   walkOutline,
   type CslItem,
   type EntryCheck,
   type EntryCheckOutcome,
+  type ReferenceExtensionTarget,
   type ReferenceNotice,
-  type ReferenceSourceId,
+  type ReferenceSourceKey,
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { loadFacts } from './access-facts.js';
 import { notDeletedAs } from './deletion.js';
 import { notifyTenant } from './realtime.js';
-import { referenceSourcesOn } from './reference-sources.js';
+import { extensionTarget, tenantReferenceSources } from './reference-sources.js';
 import type { TenantTransaction } from './tables.js';
 import { latestVersion } from './versions.js';
 
@@ -25,7 +25,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
  * it from its last check against its source, beside it and never a version.
  */
 export interface EntryStatus {
-  readonly source: ReferenceSourceId;
+  readonly source: ReferenceSourceKey;
   readonly checkedAt: Date;
   readonly outcome: EntryCheckOutcome;
   readonly differs: readonly string[];
@@ -36,7 +36,7 @@ export interface EntryStatus {
 export type EntryFlag = 'retracted' | 'corrected';
 
 interface StatusRow {
-  source: ReferenceSourceId;
+  source: ReferenceSourceKey;
   checked_at: Date;
   outcome: EntryCheckOutcome;
   differs: string[];
@@ -80,10 +80,23 @@ export async function citedFlags(
 /** What a check asks of an entry's source: where its latest version was obtained, and its CSL. */
 export interface CheckableEntry {
   readonly entryId: string;
-  readonly source: ReferenceSourceId;
+  readonly source: ReferenceSourceKey;
   readonly identifier: string;
   readonly csl: CslItem;
+  /** Where an extension source is reached, while it is installed (XR-J). */
+  readonly extension?: ReferenceExtensionTarget;
 }
+
+/** An entry checkable against its source, an extension's target with it. */
+const checkable = (
+  entryId: string,
+  from: { readonly source: ReferenceSourceKey; readonly identifier: string },
+  csl: CslItem,
+  sources: Awaited<ReturnType<typeof tenantReferenceSources>>,
+): CheckableEntry => {
+  const target = extensionTarget(sources.find((each) => each.id === from.source));
+  return { entryId, ...from, csl, ...(target === undefined ? {} : { extension: target }) };
+};
 
 const LATEST_ENTRY = sql`(select v.content from artifact_version v
     where v.artifact_id = e.id order by v.revision_no desc, v.version_no desc limit 1)`;
@@ -99,35 +112,64 @@ export async function entryCheckable(
      where e.id = ${entryId} and e.kind = 'bibliographyEntry'`.execute(trx);
   const content = rows[0]?.content;
   const from = content?.obtained === undefined ? undefined : obtainedFrom(content.obtained.from);
-  return from && { entryId, ...from, csl: content!.csl };
+  return from && checkable(entryId, from, content!.csl, await tenantReferenceSources(trx));
 }
 
 /**
  * The entries a nightly sweep checks (XR-E): cited by a component's latest version (the reference
- * index), obtained from a source the tenant has on, never checked first and then the longest since.
- * An entry obtained before 0150 has no status, so is among the first.
+ * index), obtained from a source the tenant has on, at most `limit` from each source, never attempted
+ * first and then the longest since, so one that keeps failing goes to the back and a source that keeps
+ * failing crowds out no other; then never checked first. An entry obtained before 0150 has no status,
+ * so is among the first.
  */
 export async function entriesDue(trx: TenantTransaction, limit: number): Promise<CheckableEntry[]> {
-  const on = await referenceSourcesOn(trx);
-  const sources = REFERENCE_SOURCE_IDS.filter((each) => on[each]);
+  const all = await tenantReferenceSources(trx);
+  const sources = all.filter((each) => each.enabled).map((each) => each.id);
   if (sources.length === 0) return [];
   const { rows } = await sql<{
     id: string;
     content: { csl: CslItem; obtained?: { from: string } };
   }>`
-    select e.id, ${LATEST_ENTRY} as content
-      from artifact e
-      left join bibliography_entry_status s on s.entry_id = e.id
-     where e.kind = 'bibliographyEntry'
-       and ${notDeletedAs('e')}
-       and exists (select from reference r where r.to_id = e.id and r.to_kind = 'bibliographyEntry')
-       and split_part(${LATEST_ENTRY} -> 'obtained' ->> 'from', ':', 1) = any(${sources}::text[])
-     order by s.checked_at asc nulls first, e.id
-     limit ${limit}`.execute(trx);
+    select id, content from (
+      select e.id, l.content, a.last_attempt_at, s.checked_at,
+             row_number() over (partition by k.source order by a.last_attempt_at asc nulls first,
+                                s.checked_at asc nulls first, e.id) as n
+        from artifact e
+        cross join lateral (select ${LATEST_ENTRY} as content) l
+        cross join lateral (select case when f like 'ext:%' then left(f, 40)
+                                        else split_part(f, ':', 1) end as source
+                              from (select l.content -> 'obtained' ->> 'from' as f) obtained) k
+        left join bibliography_entry_status s on s.entry_id = e.id
+        left join bibliography_entry_attempt a on a.entry_id = e.id
+       where e.kind = 'bibliographyEntry'
+         and ${notDeletedAs('e')}
+         and exists (select from reference r where r.to_id = e.id and r.to_kind = 'bibliographyEntry')
+         and k.source = any(${sources}::text[])
+    ) due
+     where n <= ${limit}
+     order by last_attempt_at asc nulls first, checked_at asc nulls first, id`.execute(trx);
   return rows.flatMap((row) => {
     const from = row.content.obtained && obtainedFrom(row.content.obtained.from);
-    return from ? [{ entryId: row.id, ...from, csl: row.content.csl }] : [];
+    return from ? [checkable(row.id, from, row.content.csl, all)] : [];
   });
+}
+
+/**
+ * Records an attempt to check an entry (XR-E), answered or not. Refused, recording nothing, where the
+ * last was within `gap` seconds: Check now's once a minute.
+ */
+export async function attemptEntryCheck(
+  trx: TenantTransaction,
+  entryId: string,
+  gap = 0,
+): Promise<boolean> {
+  if (!UUID.test(entryId)) return false;
+  const { rows } = await sql<{ entry_id: string }>`
+    insert into bibliography_entry_attempt (entry_id, last_attempt_at) values (${entryId}, now())
+    on conflict (entry_id) do update set last_attempt_at = excluded.last_attempt_at
+     where bibliography_entry_attempt.last_attempt_at <= now() - make_interval(secs => ${gap})
+    returning entry_id`.execute(trx);
+  return rows.length > 0;
 }
 
 /**
@@ -161,10 +203,21 @@ async function administrators(trx: TenantTransaction, space: string): Promise<st
   return found;
 }
 
+/** Whether somebody may be told of a document: tellable, and may read it. */
+async function tellableOf(
+  trx: TenantTransaction,
+  principal: string | null,
+  document: string,
+): Promise<boolean> {
+  if (!(await tellable(trx, principal))) return false;
+  const facts = await loadFacts(trx, principal!, { kind: 'artifact', id: document });
+  return facts !== undefined && decide('read', facts).allowed;
+}
+
 /**
  * Who is told of an entry retracted or corrected (XR-G), each once with the first document by id:
  * each document placing a component whose latest version cites it, its review owner, else its maker,
- * else its space's administrators; the erased and the disabled skipped.
+ * else its space's administrators; the erased, the disabled and those who may not read it skipped.
  */
 async function whoIsTold(trx: TenantTransaction, entryId: string): Promise<Map<string, string>> {
   const { rows } = await sql<{
@@ -185,46 +238,62 @@ async function whoIsTold(trx: TenantTransaction, entryId: string): Promise<Map<s
      order by d.id`.execute(trx);
   const told = new Map<string, string>();
   for (const row of rows) {
-    const people = (await tellable(trx, row.owner))
+    const people = (await tellableOf(trx, row.owner, row.document))
       ? [row.owner!]
-      : (await tellable(trx, row.maker))
+      : (await tellableOf(trx, row.maker, row.document))
         ? [row.maker!]
         : row.space_id === null
           ? []
           : await administrators(trx, row.space_id);
-    for (const each of people) if (!told.has(each)) told.set(each, row.document);
+    for (const each of people) {
+      if (!told.has(each) && (await tellableOf(trx, each, row.document))) {
+        told.set(each, row.document);
+      }
+    }
   }
   return told;
 }
 
 /**
- * A check recorded as the entry's status (XR-F), by the system: inserted or updated under its row's
- * lock. Retracted or corrected, those not yet told of that outcome are told (XR-G); `notified` holds
- * who was, and is emptied when the outcome changes, so a flip to current and back tells again. Each
- * notice is in a savepoint, so a failure to tell never undoes the status. Answers who was told.
+ * A check recorded as the entry's status (XR-F), by the system: under the entry's advisory lock, so
+ * two checks racing tell nobody twice. Retracted or corrected, those not yet told of that outcome are
+ * told (XR-G), each at most once in thirty days however often it flaps: `bibliography_entry_told`
+ * holds who was told what and when, `notified` who was of this outcome. Each notice is in a
+ * savepoint, so a failure to tell never undoes the status. Answers who was told.
  */
 export async function recordEntryCheck(
   trx: TenantTransaction,
   input: {
     readonly entryId: string;
-    readonly source: ReferenceSourceId;
+    readonly source: ReferenceSourceKey;
     readonly check: EntryCheck;
   },
 ): Promise<{ readonly status: EntryStatus; readonly told: readonly string[] }> {
   const { entryId, source, check } = input;
+  await sql`select pg_advisory_xact_lock(hashtext(${'entry-status:' + entryId}))`.execute(trx);
   const { rows: held } = await sql<StatusRow>`
     select outcome, notified from bibliography_entry_status where entry_id = ${entryId}
        for update`.execute(trx);
   const notified = held[0]?.outcome === check.outcome ? held[0].notified : [];
   const told: string[] = [];
   if (check.outcome === 'retracted' || check.outcome === 'corrected') {
+    const { rows: lately } = await sql<{ recipient: string }>`
+      select recipient from bibliography_entry_told
+       where entry_id = ${entryId} and outcome = ${check.outcome}
+         and told_at > now() - interval '30 days'`.execute(trx);
+    const recent = new Set(lately.map((row) => row.recipient));
     for (const [person, document] of await whoIsTold(trx, entryId)) {
-      if (notified.includes(person)) continue;
+      if (notified.includes(person) || recent.has(person)) continue;
       await sql`savepoint tell_of_entry`.execute(trx);
       try {
         await sql`insert into notification (recipient, kind, artifact_id, counts)
           values (${person}, 'reference', ${document},
                   ${JSON.stringify({ entry: entryId, outcome: check.outcome })}::jsonb)`.execute(
+          trx,
+        );
+        await sql`insert into bibliography_entry_told (entry_id, recipient, outcome, told_at)
+          values (${entryId}, ${person}, ${check.outcome}, now())
+          on conflict (entry_id, recipient, outcome) do update set told_at = excluded.told_at`.execute(
           trx,
         );
         await notifyTenant(trx, { kind: 'inbox', recipient: person });

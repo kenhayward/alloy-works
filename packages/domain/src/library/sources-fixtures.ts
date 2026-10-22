@@ -229,3 +229,26 @@ export const pubmedCorrected = {
     { refsource: 'J Invent Zool. 2021;13:9.', reftype: 'Comment in', pmid: '99000006', note: '' },
   ],
 };
+
+/**
+ * A reference extension's records (the XR plan, XR-J): CSL-JSON, as it answers its search and fetch,
+ * each with its own `id`; one retracted by its `x-alloy-notices`.
+ */
+export const extensionHerbarium = {
+  id: 'HERB-0042',
+  type: 'article-journal',
+  title: 'Saltbush specimens of the eastern plains',
+  author: [{ family: 'Pell', given: 'Ada' }],
+  'container-title': 'Invented Herbarium Notes',
+  issued: { 'date-parts': [[2019, 5]] },
+  volume: '7',
+};
+
+export const extensionHerbariumRetracted = {
+  id: 'HERB-0043',
+  type: 'article-journal',
+  title: 'Bluebush hybrids reconsidered',
+  author: [{ family: 'Marsh', given: 'Grace' }],
+  issued: { 'date-parts': [[2020]] },
+  'x-alloy-notices': [{ kind: 'retraction', identifier: 'HERB-R-0001', date: '2026-03-01' }],
+};

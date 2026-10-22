@@ -1,4 +1,4 @@
-import type { ContentDocument } from '@alloy-works/domain';
+import type { CitedSource, ContentDocument } from '@alloy-works/domain';
 import { sql } from 'kysely';
 
 import { recordEvent } from './audit.js';
@@ -22,6 +22,8 @@ export interface GenerationProposal {
   readonly madeAgainst: string | null;
   /** Where and what a creation would make (G5-E); null for an edit. */
   readonly creates: ProposedComponent | null;
+  /** A citation's source record (XR-I): its entry matched or made only as it is accepted. */
+  readonly cites: CitedSource | null;
   readonly proposed: ContentDocument;
   readonly state: ProposalState;
   readonly suggestionId: string | null;
@@ -42,6 +44,7 @@ interface Row {
   component_id: string | null;
   made_against: string | null;
   creates?: ProposedComponent | null;
+  cites?: CitedSource | null;
   proposed: ContentDocument;
   state: ProposalState;
   suggestion_id: string | null;
@@ -60,6 +63,7 @@ const proposalOf = (row: Row): GenerationProposal => ({
   componentId: row.component_id,
   madeAgainst: row.made_against,
   creates: row.creates ?? null,
+  cites: row.cites ?? null,
   proposed: row.proposed,
   state: row.state,
   suggestionId: row.suggestion_id,
@@ -110,13 +114,16 @@ export async function makeProposal(
     readonly component: string;
     readonly against: string;
     readonly proposed: ContentDocument;
+    /** A citation of a source's work, its entry not yet matched or made (XR-I). */
+    readonly cites?: CitedSource;
   },
 ): Promise<GenerationProposal> {
   const { rows } = await sql<{ id: string }>`insert into generation_proposal
-      (run_id, number, component_id, made_against, proposed)
+      (run_id, number, component_id, made_against, proposed, cites)
     values (${input.run},
       (select coalesce(max(number), 0) + 1 from generation_proposal where run_id = ${input.run}),
-      ${input.component}, ${input.against}, ${JSON.stringify(input.proposed)}::jsonb)
+      ${input.component}, ${input.against}, ${JSON.stringify(input.proposed)}::jsonb,
+      ${input.cites === undefined ? null : JSON.stringify(input.cites)}::jsonb)
     returning id`.execute(trx);
   return (await readProposal(trx, rows[0]!.id))!;
 }

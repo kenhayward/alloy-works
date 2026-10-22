@@ -18,17 +18,21 @@ import {
   type StoredModelEndpoint,
   actOnProposal,
   acceptSuggestion,
+  createEntry,
+  findEntryMatches,
   listModelRoutes,
   makeProposal,
   makeSuggestion,
   proposalsOfRun,
   readDocument,
+  readEntry,
   readModelEndpoint,
   readProposal,
   readRun,
   resolveOccurrences,
   runsThisMonth,
   searchWords,
+  tenantReferenceSources,
   usableModelKey,
   versionContents,
   type Tenant,
@@ -44,11 +48,16 @@ import {
   CONVERSATION_INSTRUCTIONS_VERSION,
   CONVERSATION_TOOLS,
   DOCUMENT_CONVERSATION_TOOLS,
+  withReferenceSources,
   proposeComponentInputSchema,
   conversationToolInputSchemas,
   isConversationTool,
   applyEdits,
   asData,
+  citeIn,
+  citedSourceSchema,
+  pendingResolved,
+  referencesAsText,
   citationsIn,
   componentAsText,
   isAssistantTool,
@@ -57,6 +66,7 @@ import {
   type ContentDocument,
   type ModelMessage,
   type OutlineDocument,
+  type ReferenceSourceKey,
 } from '@alloy-works/domain';
 import type { ObjectStores } from '@alloy-works/objects';
 import type { StartConversationBody, TurnBody } from '@alloy-works/api-contract';
@@ -68,12 +78,17 @@ import { createConnectorClient } from '../data/connector.js';
 import type { ConnectorOptions } from '../data/connections.js';
 import { liveBindingStates } from '../data/bindings.js';
 import { mayCite } from '../bibliography/citing.js';
+import { askSource, sourceSwitchedOn } from '../bibliography/sources.js';
 import { mayNameColumns, storableContent } from '../editing.js';
 import { markdownReader } from '../markdown.js';
 import { AppError } from '../errors.js';
 import type { SessionPrincipal } from '../sessions.js';
 import { failureWords, microsText, streamedRun, type ToolAnswer } from './run-loop.js';
 import { refuseOverLimit } from './limits.js';
+
+/** The keys of the reference sources the tenant has on: the reference tools' choices (XR-J). */
+const sourcesOn = async (trx: TenantTransaction) =>
+  (await tenantReferenceSources(trx)).filter((each) => each.enabled).map((each) => each.id);
 
 /**
  * The drafting assistant (generation.md, "The assistant"; the G2 plan): a run against the open
@@ -93,6 +108,9 @@ export const ASSISTANT_LIMITS = {
 
 /** The most of one tool's answer the model is given, in characters: past it, cut and said so. */
 const TOOL_ANSWER_MAX = 40_000;
+
+/** The most searches of reference sources one run makes (XR-I). */
+export const REFERENCE_SEARCHES_PER_RUN = 5;
 
 const capped = (text: string) =>
   text.length <= TOOL_ANSWER_MAX
@@ -132,8 +150,144 @@ export function assistantHandlers(
     return { outline, readable };
   }
 
+  /** A refusal said to the model as the route would say it: its words, and its code as the summary. */
+  const refusedTool = (error: unknown): ToolAnswer => {
+    if (error instanceof AppError)
+      return { ok: false, content: error.message, summary: error.code };
+    throw error;
+  };
+
+  /**
+   * A run's searches of reference sources (XR-I): at most five, each past them answered the model as a
+   * refusal, asking the source nothing.
+   */
+  const searchesOfRun = () => {
+    let left = REFERENCE_SEARCHES_PER_RUN;
+    return (): ToolAnswer | undefined =>
+      left-- > 0
+        ? undefined
+        : {
+            ok: false,
+            content: `This run has searched reference sources ${REFERENCE_SEARCHES_PER_RUN} times, as many as it may. Cite from what was found.`,
+            summary: 'reference_searches_spent',
+          };
+  };
+
+  /**
+   * `search_references` (the XR plan, XR-I; LIB-040): the source asked as the person asks it from the
+   * Cite dialog, refused while it is switched off, each result a few fields as data.
+   */
+  async function searchReferences(
+    trx: TenantTransaction,
+    request: FastifyRequest,
+    input: { source: ReferenceSourceKey; query: string },
+  ): Promise<ToolAnswer> {
+    try {
+      const source = await sourceSwitchedOn(trx, input.source);
+      const results = await askSource(client, tenantOf(request), source, {
+        op: 'search',
+        query: input.query,
+      });
+      return {
+        ok: true,
+        content: asData(
+          `reference:${input.source}`,
+          null,
+          capped(referencesAsText(input.source, results)),
+        ),
+        summary: `${results.length} found`,
+      };
+    } catch (error) {
+      return refusedTool(error);
+    }
+  }
+
+  /**
+   * `cite_reference` (XR-I; LIB-040): a proposal against the version read, its citation naming no
+   * entry yet and carrying the source's record, fetched now; the entry is matched or made as it is
+   * accepted. The caller has decided the component readable at `version`.
+   */
+  async function citeReference(
+    trx: TenantTransaction,
+    request: FastifyRequest,
+    run: string,
+    version: string,
+    input: {
+      component: string;
+      block: string;
+      after?: string | undefined;
+      source: ReferenceSourceKey;
+      identifier: string;
+      locator?: string | undefined;
+    },
+  ): Promise<ToolAnswer> {
+    try {
+      await authoriseAt(trx, callerOf(request), 'suggest', {
+        kind: 'artifact',
+        id: input.component,
+      });
+    } catch {
+      return {
+        ok: false,
+        content: 'You may not suggest changes to this component.',
+        summary: 'Not yours to change',
+      };
+    }
+    const read = (await versionContents(trx, [version])).get(version);
+    let content: ContentDocument;
+    try {
+      content = parseContentDocument(read?.content);
+    } catch {
+      return { ok: false, content: 'There is no such component.', summary: 'No such component' };
+    }
+    const outcome = citeIn(content, {
+      block: input.block,
+      ...(input.after === undefined ? {} : { after: input.after }),
+      ...(input.locator === undefined ? {} : { locator: input.locator }),
+    });
+    if (!outcome.ok) return { ok: false, content: outcome.problem, summary: 'Citation refused' };
+    let record;
+    try {
+      const source = await sourceSwitchedOn(trx, input.source);
+      record = (
+        await askSource(client, tenantOf(request), source, {
+          op: 'fetch',
+          identifier: input.identifier,
+        })
+      )[0];
+    } catch (error) {
+      return refusedTool(error);
+    }
+    if (record === undefined) {
+      return {
+        ok: false,
+        content: 'The source holds no record by that identifier.',
+        summary: 'reference_missing',
+      };
+    }
+    const proposal = await makeProposal(trx, {
+      run,
+      component: input.component,
+      against: version,
+      proposed: outcome.content,
+      cites: {
+        source: input.source,
+        identifier: record.identifier,
+        csl: record.csl,
+        at: new Date().toISOString(),
+      },
+    });
+    return {
+      ok: true,
+      content: `Proposal ${proposal.number} made. Nothing changes, and no entry is made, until the author accepts it.`,
+      summary: `Proposal ${proposal.number}`,
+      proposal,
+    };
+  }
+
   /** Each tool, as the requester, in a transaction of its own that decides `read` again (G2-C). */
   function tools(request: FastifyRequest, document: string, principal: string, run: string) {
+    const searched = searchesOfRun();
     const tenant = tenantOf(request);
     const caller = callerOf(request);
     const context = contextOf(request);
@@ -166,6 +320,27 @@ export function assistantHandlers(
       }
       try {
         switch (name) {
+          case 'search_references':
+            return (
+              searched() ??
+              (await inDocument((trx) =>
+                searchReferences(
+                  trx,
+                  request,
+                  parsed.data as { source: ReferenceSourceKey; query: string },
+                ),
+              ))
+            );
+          case 'cite_reference': {
+            const input = parsed.data as Parameters<typeof citeReference>[4];
+            return await inDocument(async (trx) => {
+              const version = (await placed(trx, document, principal))?.readable.get(
+                input.component,
+              );
+              if (version === undefined) return missing('component');
+              return citeReference(trx, request, run, version, input);
+            });
+          }
           case 'read_outline':
             return await inDocument(async (trx) => {
               const found = await placed(trx, document, principal);
@@ -474,6 +649,7 @@ export function assistantHandlers(
 
   /** A conversation's tools where it has no document (G5-D), each as its person, deciding again. */
   function looseTools(request: FastifyRequest, principal: string, run: string) {
+    const searched = searchesOfRun();
     const tenant = tenantOf(request);
     const caller = callerOf(request);
     const context = contextOf(request);
@@ -545,6 +721,21 @@ export function assistantHandlers(
                   blocks: content.content.map((block) => block.id),
                 },
               };
+            }
+            case 'search_references':
+              return (
+                searched() ??
+                searchReferences(
+                  trx,
+                  request,
+                  parsed.data as { source: ReferenceSourceKey; query: string },
+                )
+              );
+            case 'cite_reference': {
+              const input = parsed.data as Parameters<typeof citeReference>[4];
+              const latest = await readable(trx, input.component);
+              if (!latest) return missing;
+              return citeReference(trx, request, run, latest.id, input);
             }
             case 'declined':
               // The run's loop answers it, and streams its notice (GC-E): never reached.
@@ -664,7 +855,7 @@ export function assistantHandlers(
         documentId: id,
         ask,
         system: ASSISTANT_INSTRUCTIONS,
-        tools: ASSISTANT_TOOLS,
+        tools: withReferenceSources(ASSISTANT_TOOLS, await sourcesOn(trx)),
         messages: [first],
         limits: ASSISTANT_LIMITS,
         tool: (run) => tools(request, id, principalId, run),
@@ -809,6 +1000,7 @@ export function assistantHandlers(
             endpoint,
             sealed,
             guardrails: await listGuardrails(trx),
+            sources: await sourcesOn(trx),
             tray: await readTray(trx, request, conversation, principalId),
           };
         },
@@ -817,7 +1009,7 @@ export function assistantHandlers(
       if (!client) {
         throw new AppError(503, 'connector_unavailable', failureWords('connector_unavailable'));
       }
-      const { conversation, turns, endpoint, sealed, guardrails, tray } = prepared;
+      const { conversation, turns, endpoint, sealed, guardrails, tray, sources } = prepared;
       const document = conversation.documentId;
       // The earlier finished turns' words, never their tool results (G5-A).
       const earlier: ModelMessage[] = turns.flatMap((each): ModelMessage[] =>
@@ -866,7 +1058,10 @@ export function assistantHandlers(
         ask,
         system: CONVERSATION_INSTRUCTIONS,
         // On a document, the assistant's tools; with none, the person's own search, reads and proposals.
-        tools: document === null ? CONVERSATION_TOOLS : DOCUMENT_CONVERSATION_TOOLS,
+        tools: withReferenceSources(
+          document === null ? CONVERSATION_TOOLS : DOCUMENT_CONVERSATION_TOOLS,
+          sources,
+        ),
         messages: [...earlier, { role: 'user', content: [{ type: 'text', text: words }] }],
         limits: ASSISTANT_LIMITS,
         tool: (run) =>
@@ -1090,6 +1285,60 @@ export function assistantHandlers(
     };
   }
 
+  /**
+   * The entry a citation proposal cites, as it is accepted (XR-I; LIB-040): one of the component's
+   * space the accepter may read obtained from the same source and identifier, else one matching by
+   * DOI or PubMed identifier, never by title, year and author alone; else one made there from the
+   * record the proposal carries, which needs the space's write.
+   */
+  async function citedEntry(
+    request: FastifyRequest,
+    trx: TenantTransaction,
+    principalId: string,
+    proposal: GenerationProposal,
+  ): Promise<string> {
+    const cites = citedSourceSchema.parse(proposal.cites);
+    const space = (
+      await trx
+        .selectFrom('artifact')
+        .select('space_id')
+        .where('id', '=', proposal.componentId!)
+        .executeTakeFirst()
+    )?.space_id;
+    if (space == null) throw notFound();
+    const from = `${cites.source}:${cites.identifier}`;
+    const matches = await findEntryMatches(trx, principalId, space, cites.csl);
+    for (const each of matches) {
+      if ((await readEntry(trx, each.entry.id))?.entry.obtained?.from === from)
+        return each.entry.id;
+    }
+    const matched = matches.find((each) => each.by === 'doi' || each.by === 'pmid');
+    if (matched) return matched.entry.id;
+    try {
+      await authoriseAt(trx, callerOf(request), 'edit', { kind: 'space', id: space });
+    } catch {
+      throw new AppError(
+        403,
+        'entry_not_writable',
+        "No entry in this component's space holds this source, and you may not make one there.",
+      );
+    }
+    const made = await createEntry(trx, {
+      author: principalId,
+      spaceId: space,
+      entry: {
+        csl: cites.csl,
+        obtained: { from, at: cites.at },
+      },
+      // A look-alike by title, year and author alone is another work's.
+      despiteMatches: true,
+    });
+    if (made.answer !== 'created') {
+      throw new AppError(409, 'entry_refused', 'The entry for this source could not be made.');
+    }
+    return made.entry.id;
+  }
+
   /** A session-checked route's work, as the caller, in a transaction of its own. */
   function asCaller<T>(
     request: FastifyRequest,
@@ -1138,8 +1387,19 @@ export function assistantHandlers(
       await actOnProposal(trx, { proposal, act, by: principalId });
       return { proposal: { id, state: 'discarded' as const, suggestion: null } };
     }
+    if (proposal.cites !== null && act === 'kept') {
+      throw new AppError(
+        409,
+        'proposal_cites',
+        'A proposal to cite a source is accepted or discarded: its entry is matched or made as it is accepted.',
+      );
+    }
     // The save's checks, as a person's suggestion meets them (SG-B; the final review).
-    const proposed = storableContent(proposal.proposed);
+    const proposed = storableContent(
+      proposal.cites === null
+        ? proposal.proposed
+        : pendingResolved(proposal.proposed, await citedEntry(request, trx, principalId, proposal)),
+    );
     await mayNameColumns(trx, request, proposed, proposal.madeAgainst!);
     await mayCite(trx, request, proposed, proposal.madeAgainst!);
     const made = await makeSuggestion(trx, {

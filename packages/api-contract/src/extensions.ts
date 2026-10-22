@@ -1,4 +1,4 @@
-import { extensionManifestSchema, httpsUrl } from '@alloy-works/domain';
+import { extensionManifestSchema, httpsUrl, referenceSealRequestSchema } from '@alloy-works/domain';
 import { z } from 'zod';
 import type { RouteContract } from './contract.js';
 import { nextCursor, pageQuery } from './listing.js';
@@ -31,7 +31,17 @@ export const ExtensionPreview = z.object({
   digest: Digest,
   manifest: ExtensionManifestView,
   changes: z
-    .array(z.enum(['endpoint', 'settings', 'authentication', 'capabilities', 'outbound', 'about']))
+    .array(
+      z.enum([
+        'endpoint',
+        'settings',
+        'authentication',
+        'capabilities',
+        'reference',
+        'outbound',
+        'about',
+      ]),
+    )
     .optional()
     .describe(
       'Against the manifest it has now, where it is installed: what an update would change',
@@ -48,6 +58,9 @@ export const ExtensionView = z.object({
   installedAt: z.string(),
   updatedAt: z.string(),
   removedAt: z.string().nullable().describe('When it was removed; kept, so what used it names it'),
+  secretSet: z
+    .boolean()
+    .describe('A reference extension’s: whether its secret is set, never the secret'),
 });
 export type ExtensionView = z.infer<typeof ExtensionView>;
 
@@ -65,6 +78,13 @@ export type InstallExtensionBody = z.infer<typeof InstallExtensionBody>;
 
 export const UpdateExtensionBody = z.strictObject({ digest: Digest });
 export type UpdateExtensionBody = z.infer<typeof UpdateExtensionBody>;
+
+export const ExtensionSecretBody = z.strictObject({
+  secret: referenceSealRequestSchema.shape.secret.describe(
+    'The secret it is sent as a bearer: printable ASCII, at most 2,048 characters, never shown again',
+  ),
+});
+export type ExtensionSecretBody = z.infer<typeof ExtensionSecretBody>;
 
 export const ExtensionUseView = z.object({
   connection: z.string(),
@@ -246,9 +266,33 @@ export const extensionRoutes = {
       403: notAdministering,
       404: missing,
       409: {
-        description: 'extension_in_use: a connection not retired uses it; its uses list them',
+        description:
+          'extension_in_use: a connection not retired uses it, its uses listing them; or a reference extension is switched on as a reference source',
         schema: ErrorBody,
       },
+    },
+  },
+  setExtensionSecret: {
+    operationId: 'setExtensionSecret',
+    method: 'PUT',
+    path: '/v1/extensions/{id}/secret',
+    summary: 'Set the secret a reference extension is sent',
+    tenantScoped: true,
+    access: ADMINISTER,
+    params: ExtensionParams,
+    body: ExtensionSecretBody,
+    responses: {
+      200: { description: 'Set; the secret itself is never answered', schema: ExtensionView },
+      400: { description: 'invalid_request', schema: ErrorBody },
+      401: unauthenticated,
+      403: notAdministering,
+      404: missing,
+      409: {
+        description:
+          'extension_removed; extension_takes_no_secret: it is a source extension, whose connections hold theirs, or declares none',
+        schema: ErrorBody,
+      },
+      503: { description: 'connector_unavailable', schema: ErrorBody },
     },
   },
 } as const satisfies Record<string, RouteContract>;

@@ -46,18 +46,23 @@ const OUTCOMES: Readonly<Record<Status['outcome'], string>> = {
   corrected: 'Corrected by its source',
 };
 
-/** The status of an entry obtained from a source, and Check now (the XR plan, XR-E, XR-F). */
+/**
+ * The status of an entry obtained from a source, and Check now to an editor of it (the XR plan, XR-E,
+ * XR-F).
+ */
 function EntrySource({
   client,
   id,
   source,
   status,
+  mayCheck,
   onChecked,
 }: {
   readonly client: Client;
   readonly id: string;
   readonly source: string;
   readonly status: Status | null;
+  readonly mayCheck: boolean;
   readonly onChecked: (status: Status) => void;
 }) {
   const [checking, setChecking] = useState(false);
@@ -102,11 +107,13 @@ function EntrySource({
           </p>
         </>
       )}
-      <p>
-        <button type="button" disabled={checking} onClick={() => void check()}>
-          Check now
-        </button>
-      </p>
+      {mayCheck && (
+        <p>
+          <button type="button" disabled={checking} onClick={() => void check()}>
+            Check now
+          </button>
+        </p>
+      )}
       {problem !== null && (
         <Notice tone="failed">
           <p>{problem}</p>
@@ -313,8 +320,9 @@ export function EntryPage({ client, id }: { readonly client: Client; readonly id
         <EntrySource
           client={client}
           id={id}
-          source={referenceSource(from.source)?.name ?? from.source}
+          source={referenceSource(from.source)?.name ?? 'its reference extension'}
           status={shown.status ?? null}
+          mayCheck={shown.mayEdit}
           onChecked={(status) => setShown({ ...shown, status })}
         />
       )}

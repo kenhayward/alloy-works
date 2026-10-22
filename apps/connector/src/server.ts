@@ -13,7 +13,9 @@ import {
   webhookSealRequestSchema,
   deliverRequestSchema,
   manifestRequestSchema,
+  referenceCredentialContext,
   referenceRequestSchema,
+  referenceSealRequestSchema,
   DELIVERY_BODY_MOST,
   webhookSecretContext,
   describeRequestSchema,
@@ -57,8 +59,10 @@ const bodyLimits: Readonly<Record<string, number>> = {
   '/v1/deliver': 2 * DELIVERY_BODY_MOST,
   // An extension's manifest, by its URL (the EX plan, EX-B).
   '/v1/manifest': 8 * 1024,
-  // A reference source asked, by its id and an operation (the XR plan, XR-B).
-  '/v1/reference': 8 * 1024,
+  // A reference source asked, by its id and an operation (the XR plan, XR-B); an extension's with its
+  // target and sealed secret (XR-J).
+  '/v1/reference': 16 * 1024,
+  '/v1/reference/seal': MAX_BODY_BYTES,
   '/v1/model': MODEL_REQUEST_MAX_BYTES,
   // An embedding call: up to 96 texts (the G7 plan, G7-E).
   '/v1/embed': EMBED_REQUEST_MAX_BYTES,
@@ -123,6 +127,8 @@ export function createConnectorServer(options: {
       maxChildren: config.maxChildren,
       // A webhook's receiver is public unless this deployment allows a private one (WB-F).
       ...(config.webhookPrivate ? {} : { webhookDeny: PRIVATE_RANGES }),
+      // A reference extension's endpoint is public unless this deployment allows a private one (XR-J).
+      ...(config.referencePrivate ? { referencePrivate: true } : {}),
       ...(config.ca === undefined ? {} : { ca: config.ca }),
       ...(config.referenceContact === undefined
         ? {}
@@ -212,6 +218,20 @@ export function createConnectorServer(options: {
           parsed.data.tenant,
           parsed.data.secret,
           webhookSecretContext(parsed.data.subscription, parsed.data.url),
+        ),
+      };
+      return send(200, answer);
+    }
+    if (path === '/v1/reference/seal') {
+      const parsed = referenceSealRequestSchema.safeParse(body);
+      if (!parsed.success) return send(400, { code: 'request_invalid' });
+      const answer: SealAnswer = {
+        sealed: sealSecret(
+          config.sealingKey,
+          'reference-credential',
+          parsed.data.tenant,
+          parsed.data.secret,
+          referenceCredentialContext(parsed.data.source, parsed.data.endpoint),
         ),
       };
       return send(200, answer);

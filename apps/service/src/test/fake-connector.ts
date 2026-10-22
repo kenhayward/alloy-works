@@ -27,6 +27,7 @@ import {
   type TestAnswer,
   type ManifestAnswer,
   referenceRequestSchema,
+  referenceSealRequestSchema,
   type ReferenceAnswer,
   type ReferenceRequest,
 } from '@alloy-works/domain';
@@ -154,7 +155,9 @@ export function fakeConnector(): FakeConnector {
                         ? webhookSealRequestSchema
                         : path === '/v1/reference'
                           ? referenceRequestSchema
-                          : undefined;
+                          : path === '/v1/reference/seal'
+                            ? referenceSealRequestSchema
+                            : undefined;
       if (door && !door.safeParse(body).success) {
         return Response.json({ code: 'request_invalid' }, { status: 400 });
       }
@@ -196,6 +199,16 @@ export function fakeConnector(): FakeConnector {
             String(body.tenant),
             String(body.secret),
             webhookSecretContext(String(body.subscription), String(body.url)),
+          ),
+        });
+      }
+      if (path === '/v1/reference/seal') {
+        return Response.json({
+          sealed: sealSecret(
+            sealingKey,
+            'reference-credential',
+            String(body.tenant),
+            String(body.secret),
           ),
         });
       }

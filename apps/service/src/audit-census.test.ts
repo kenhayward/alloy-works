@@ -470,6 +470,7 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   updateExtension: writes('extension.changed'),
   listExtensionUses: read,
   removeExtension: writes('extension.changed'),
+  setExtensionSecret: writes('extension.changed'),
   listWebhooks: read,
   createWebhook: writes('webhook.changed'),
   getWebhook: read,

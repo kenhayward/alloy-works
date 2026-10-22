@@ -121,7 +121,7 @@ describe('conversations through the service (the G5 plan, G5-A to G5-C)', () => 
       documentId: document.id,
       ask: 'Summarise it.',
       requestedBy: h.ids.grace,
-      parameters: { instructions: 'conversation-1' },
+      parameters: { instructions: 'conversation-2' },
     });
     expect(framed[0]!.data).toMatchObject({ conversation: id });
     // The assistant's tools, on the document.
@@ -334,6 +334,8 @@ describe('conversations through the service (the G5 plan, G5-A to G5-C)', () => 
         'read_component',
         'propose_edit',
         'propose_component',
+        'search_references',
+        'cite_reference',
         'declined',
       ]);
       const tray = (await h.call('grace', 'GET', `/v1/conversations/${id}/context`)).json<{

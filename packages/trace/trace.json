@@ -20504,6 +20504,12 @@
       "kind": "title"
     },
     {
+      "id": "LIB-032",
+      "file": "apps/connector/src/manifest.test.ts",
+      "line": 42,
+      "kind": "title"
+    },
+    {
       "id": "DAT-089",
       "file": "apps/connector/src/model.test.ts",
       "line": 441,
@@ -20572,13 +20578,19 @@
     {
       "id": "LIB-031",
       "file": "apps/connector/src/reference.test.ts",
-      "line": 45,
+      "line": 51,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-032",
+      "file": "apps/connector/src/reference.test.ts",
+      "line": 234,
       "kind": "title"
     },
     {
       "id": "LIB-036",
       "file": "apps/connector/src/reference.test.ts",
-      "line": 88,
+      "line": 94,
       "kind": "title"
     },
     {
@@ -20810,9 +20822,15 @@
       "kind": "title"
     },
     {
+      "id": "LIB-040",
+      "file": "apps/service/src/assistant-references.test.ts",
+      "line": 129,
+      "kind": "title"
+    },
+    {
       "id": "ADM-010",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 784,
+      "line": 786,
       "kind": "title"
     },
     {
@@ -20830,13 +20848,13 @@
     {
       "id": "GEN-008",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 265,
+      "line": 267,
       "kind": "title"
     },
     {
       "id": "GEN-009",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 325,
+      "line": 327,
       "kind": "title"
     },
     {
@@ -20848,7 +20866,7 @@
     {
       "id": "GEN-011",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 296,
+      "line": 298,
       "kind": "title"
     },
     {
@@ -20860,91 +20878,91 @@
     {
       "id": "GEN-013",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 285,
+      "line": 287,
       "kind": "title"
     },
     {
       "id": "GEN-014",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 265,
+      "line": 267,
       "kind": "title"
     },
     {
       "id": "GEN-016",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 522,
+      "line": 524,
       "kind": "title"
     },
     {
       "id": "GEN-017",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 566,
+      "line": 568,
       "kind": "title"
     },
     {
       "id": "GEN-018",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 566,
+      "line": 568,
       "kind": "title"
     },
     {
       "id": "GEN-019",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 566,
+      "line": 568,
       "kind": "title"
     },
     {
       "id": "GEN-020",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 566,
+      "line": 568,
       "kind": "title"
     },
     {
       "id": "GEN-022",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 400,
+      "line": 402,
       "kind": "title"
     },
     {
       "id": "GEN-024",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 332,
+      "line": 334,
       "kind": "title"
     },
     {
       "id": "GEN-033",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 784,
+      "line": 786,
       "kind": "title"
     },
     {
       "id": "GEN-037",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 784,
+      "line": 786,
       "kind": "title"
     },
     {
       "id": "GEN-039",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 441,
+      "line": 443,
       "kind": "title"
     },
     {
       "id": "GEN-040",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 400,
+      "line": 402,
       "kind": "title"
     },
     {
       "id": "GEN-041",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 418,
+      "line": 420,
       "kind": "title"
     },
     {
       "id": "GEN-060",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 332,
+      "line": 334,
       "kind": "title"
     },
     {
@@ -20968,13 +20986,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 607,
+      "line": 608,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 620,
+      "line": 621,
       "kind": "title"
     },
     {
@@ -21406,7 +21424,7 @@
     {
       "id": "GEN-052",
       "file": "apps/service/src/conversation-routes.test.ts",
-      "line": 348,
+      "line": 350,
       "kind": "title"
     },
     {
@@ -21448,7 +21466,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1979,
+      "line": 1981,
       "kind": "title"
     },
     {
@@ -21688,19 +21706,19 @@
     {
       "id": "API-049",
       "file": "apps/service/src/extension-source-routes.test.ts",
-      "line": 124,
+      "line": 143,
       "kind": "title"
     },
     {
       "id": "DAT-054",
       "file": "apps/service/src/extension-source-routes.test.ts",
-      "line": 70,
+      "line": 89,
       "kind": "title"
     },
     {
       "id": "DAT-079",
       "file": "apps/service/src/extension-source-routes.test.ts",
-      "line": 94,
+      "line": 113,
       "kind": "title"
     },
     {
@@ -22454,15 +22472,21 @@
       "kind": "title"
     },
     {
+      "id": "LIB-032",
+      "file": "apps/service/src/reference-extension-routes.test.ts",
+      "line": 70,
+      "kind": "title"
+    },
+    {
       "id": "LIB-031",
       "file": "apps/service/src/reference-source-routes.test.ts",
-      "line": 107,
+      "line": 111,
       "kind": "title"
     },
     {
       "id": "LIB-032",
       "file": "apps/service/src/reference-source-routes.test.ts",
-      "line": 55,
+      "line": 59,
       "kind": "title"
     },
     {
@@ -23416,13 +23440,19 @@
     {
       "id": "API-030",
       "file": "apps/web/src/admin/Extensions.test.tsx",
-      "line": 133,
+      "line": 164,
       "kind": "title"
     },
     {
       "id": "API-048",
       "file": "apps/web/src/admin/Extensions.test.tsx",
-      "line": 182,
+      "line": 213,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-032",
+      "file": "apps/web/src/admin/Extensions.test.tsx",
+      "line": 288,
       "kind": "title"
     },
     {
@@ -23614,25 +23644,31 @@
     {
       "id": "LIB-009",
       "file": "apps/web/src/bibliography/bibliography.test.tsx",
-      "line": 280,
+      "line": 326,
       "kind": "title"
     },
     {
       "id": "LIB-010",
       "file": "apps/web/src/bibliography/bibliography.test.tsx",
-      "line": 193,
+      "line": 222,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-032",
+      "file": "apps/web/src/bibliography/bibliography.test.tsx",
+      "line": 277,
       "kind": "title"
     },
     {
       "id": "LIB-036",
       "file": "apps/web/src/bibliography/bibliography.test.tsx",
-      "line": 230,
+      "line": 259,
       "kind": "title"
     },
     {
       "id": "LIB-044",
       "file": "apps/web/src/bibliography/bibliography.test.tsx",
-      "line": 159,
+      "line": 188,
       "kind": "title"
     },
     {
@@ -23680,7 +23716,7 @@
     {
       "id": "DAT-054",
       "file": "apps/web/src/data/connections.test.tsx",
-      "line": 1306,
+      "line": 1324,
       "kind": "title"
     },
     {
@@ -23764,13 +23800,19 @@
     {
       "id": "LIB-031",
       "file": "apps/web/src/editor/CitationDialog.search.test.tsx",
-      "line": 137,
+      "line": 164,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-032",
+      "file": "apps/web/src/editor/CitationDialog.search.test.tsx",
+      "line": 206,
       "kind": "title"
     },
     {
       "id": "LIB-036",
       "file": "apps/web/src/editor/CitationDialog.search.test.tsx",
-      "line": 168,
+      "line": 195,
       "kind": "title"
     },
     {
@@ -24784,7 +24826,7 @@
     {
       "id": "GEN-004",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 487,
+      "line": 540,
       "kind": "title"
     },
     {
@@ -24814,7 +24856,7 @@
     {
       "id": "GEN-036",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 433,
+      "line": 486,
       "kind": "title"
     },
     {
@@ -24826,19 +24868,25 @@
     {
       "id": "GEN-047",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 545,
+      "line": 598,
       "kind": "title"
     },
     {
       "id": "GEN-051",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 545,
+      "line": 598,
       "kind": "title"
     },
     {
       "id": "GEN-053",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 581,
+      "line": 634,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-040",
+      "file": "apps/web/src/structure/AssistantPanel.test.tsx",
+      "line": 356,
       "kind": "title"
     },
     {
@@ -26078,9 +26126,15 @@
       "kind": "title"
     },
     {
+      "id": "LIB-032",
+      "file": "apps/worker/src/rechecks.test.ts",
+      "line": 302,
+      "kind": "title"
+    },
+    {
       "id": "LIB-036",
       "file": "apps/worker/src/rechecks.test.ts",
-      "line": 216,
+      "line": 224,
       "kind": "title"
     },
     {
@@ -27128,9 +27182,15 @@
       "kind": "title"
     },
     {
+      "id": "LIB-032",
+      "file": "packages/db/src/entry-status.test.ts",
+      "line": 426,
+      "kind": "title"
+    },
+    {
       "id": "LIB-036",
       "file": "packages/db/src/entry-status.test.ts",
-      "line": 224,
+      "line": 230,
       "kind": "title"
     },
     {
@@ -27161,6 +27221,12 @@
       "id": "GEN-041",
       "file": "packages/db/src/generation-proposals.test.ts",
       "line": 135,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-040",
+      "file": "packages/db/src/generation-proposals.test.ts",
+      "line": 166,
       "kind": "title"
     },
     {
@@ -27623,6 +27689,12 @@
       "id": "CNT-174",
       "file": "packages/db/src/recovery.test.ts",
       "line": 183,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-032",
+      "file": "packages/db/src/reference-sources.test.ts",
+      "line": 81,
       "kind": "title"
     },
     {
@@ -29432,15 +29504,33 @@
       "kind": "title"
     },
     {
+      "id": "LIB-032",
+      "file": "packages/domain/src/extensions/manifest.test.ts",
+      "line": 66,
+      "kind": "title"
+    },
+    {
       "id": "GEN-007",
       "file": "packages/domain/src/generation/assistant.test.ts",
-      "line": 42,
+      "line": 49,
       "kind": "title"
     },
     {
       "id": "GEN-017",
       "file": "packages/domain/src/generation/assistant.test.ts",
-      "line": 68,
+      "line": 119,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-032",
+      "file": "packages/domain/src/generation/assistant.test.ts",
+      "line": 87,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-040",
+      "file": "packages/domain/src/generation/assistant.test.ts",
+      "line": 61,
       "kind": "title"
     },
     {
@@ -29464,7 +29554,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 940,
+      "line": 961,
       "kind": "title"
     },
     {
@@ -29530,19 +29620,19 @@
     {
       "id": "LIB-031",
       "file": "packages/domain/src/library/sources.test.ts",
-      "line": 88,
+      "line": 96,
       "kind": "title"
     },
     {
       "id": "LIB-032",
       "file": "packages/domain/src/library/sources.test.ts",
-      "line": 34,
+      "line": 42,
       "kind": "title"
     },
     {
       "id": "LIB-036",
       "file": "packages/domain/src/library/sources.test.ts",
-      "line": 287,
+      "line": 295,
       "kind": "title"
     },
     {
@@ -31619,6 +31709,12 @@
       "id": "DAT-103",
       "file": "tests/e2e/src/query-definitions.test.ts",
       "line": 186,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-032",
+      "file": "tests/e2e/src/reference-extensions.test.ts",
+      "line": 43,
       "kind": "title"
     },
     {

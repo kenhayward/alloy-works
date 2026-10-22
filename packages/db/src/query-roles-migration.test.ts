@@ -218,6 +218,8 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0148_default_layout_bibliography',
       '0149_reference_sources',
       '0150_entry_status',
+      '0151_citation_proposals',
+      '0152_reference_extensions',
     ]);
     expect(applied[own.id]).toEqual([
       '0058_query_roles',
@@ -313,6 +315,8 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0148_default_layout_bibliography',
       '0149_reference_sources',
       '0150_entry_status',
+      '0151_citation_proposals',
+      '0152_reference_extensions',
     ]);
 
     expect(await queryRoles(development)).toEqual([

@@ -13,7 +13,9 @@ import { bootstrapCluster } from './bootstrap.js';
 import { createComponent } from './creation.js';
 import { setDates } from './dates.js';
 import { createDocument } from './documents.js';
+import { installExtension } from './extensions.js';
 import {
+  attemptEntryCheck,
   citedFlags,
   entriesDue,
   entryCheckable,
@@ -31,6 +33,7 @@ import type { TenantTransaction } from './tables.js';
 import type { TenantDatabase } from './tenant-database.js';
 import {
   freshDatabase,
+  queryAs,
   TEST_PASSWORDS,
   type TestDatabase,
   testTenantDatabase,
@@ -62,6 +65,7 @@ describe("an entry's status from its source (the XR plan, XR-E to XR-H)", () => 
   let ada: string;
   let grace: string;
   let ivy: string;
+  let hedy: string;
   let general: string;
 
   const tenant = <T>(work: (trx: TenantTransaction) => Promise<T>) =>
@@ -190,6 +194,8 @@ describe("an entry's status from its source (the XR plan, XR-E to XR-H)", () => 
       ada = await person(trx, 'ada', 'Ada');
       grace = await person(trx, 'grace', 'Grace');
       ivy = await person(trx, 'ivy', 'Ivy');
+      // Hedy holds no grant: an owner since moved on, who may no longer read.
+      hedy = await person(trx, 'hedy', 'Hedy');
       general = (
         await trx
           .selectFrom('space')
@@ -252,7 +258,7 @@ describe("an entry's status from its source (the XR plan, XR-E to XR-H)", () => 
     expect(await tenant((trx) => entryCheckable(trx, byHand))).toBeUndefined();
   });
 
-  it("LIB-036 tells the document's review owner once per entry, outcome and person, and again after it turned current", async () => {
+  it("LIB-036 tells the document's review owner of an entry's outcome once in thirty days, however often it flaps", async () => {
     const entry = await made({ ...marsh, title: 'Owner told' }, 'crossref:10.5555/owner.1');
     const component = await citing([entry], 'Owned section');
     const document = await placing([component], 'Owned report');
@@ -273,11 +279,72 @@ describe("an entry's status from its source (the XR plan, XR-E to XR-H)", () => 
     ]);
     // The same outcome again tells nobody.
     expect((await record(entry, checked('retracted'))).told).toEqual([]);
-    // Corrected is another outcome; current tells nobody and forgets who was told.
+    // Corrected is another outcome; current tells nobody, and a flap back within thirty days nobody.
     expect((await record(entry, checked('corrected'))).told).toEqual([grace]);
     expect((await record(entry, checked('current'))).told).toEqual([]);
+    expect((await record(entry, checked('retracted'))).told).toEqual([]);
+    expect((await told()).length - before).toBe(2);
+    // Thirty days on, told again.
+    await tenant((trx) =>
+      sql`update bibliography_entry_told set told_at = now() - interval '31 days'
+           where entry_id = ${entry} and outcome = 'retracted'`.execute(trx),
+    );
+    expect((await record(entry, checked('current'))).told).toEqual([]);
     expect((await record(entry, checked('retracted'))).told).toEqual([grace]);
-    expect((await told()).length - before).toBe(3);
+  });
+
+  it('LIB-036 never tells a former owner who may no longer read the document, but its maker', async () => {
+    const entry = await made({ ...marsh, title: 'Former owner' }, 'crossref:10.5555/former.1');
+    const component = await citing([entry], 'Former section');
+    const document = await placing([component], 'Former report', grace);
+    await tenant((trx) =>
+      setDates(trx, {
+        artifactId: document,
+        kind: 'document',
+        effective: null,
+        reviewBy: null,
+        owner: hedy,
+        by: ada,
+      }),
+    );
+    expect((await record(entry, checked('retracted'))).told).toEqual([grace]);
+  });
+
+  it('tells nobody twice when two checks of an entry race', async () => {
+    const entry = await made({ ...marsh, title: 'Raced' }, 'crossref:10.5555/raced.1');
+    const component = await citing([entry], 'Raced section');
+    await placing([component], 'Raced report', grace);
+    // The first check tells Grace and holds its transaction open; the second must wait for it.
+    let release!: () => void;
+    let held!: (told: readonly string[]) => void;
+    const first = new Promise<readonly string[]>((done) => (held = done));
+    const finished = tenant(async (trx) => {
+      held(
+        (
+          await recordEntryCheck(trx, {
+            entryId: entry,
+            source: 'crossref',
+            check: checked('retracted'),
+          })
+        ).told,
+      );
+      await new Promise<void>((done) => (release = done));
+    });
+    expect(await first).toEqual([grace]);
+    const second = record(entry, checked('retracted'));
+    for (let tries = 0; ; tries += 1) {
+      const { rows } = await queryAs(
+        db.adminUrl,
+        `select count(*)::int as waiting from pg_locks where not granted
+            and pid in (select pid from pg_stat_activity where datname = current_database())`,
+      );
+      if ((rows[0] as { waiting: number }).waiting > 0) break;
+      if (tries > 200) throw new Error('The second check never waited');
+      await new Promise((settle) => setTimeout(settle, 10));
+    }
+    release();
+    await finished;
+    expect((await second).told).toEqual([]);
   });
 
   it("LIB-036 tells the document's maker where it has no owner, else the space's administrators, skipping the erased", async () => {
@@ -320,6 +387,84 @@ describe("an entry's status from its source (the XR plan, XR-E to XR-H)", () => 
     const on = await tenant((trx) => entriesDue(trx, 100));
     await tenant((trx) => setReferenceSource(trx, 'pubmed', true));
     expect(on.map((each) => each.entryId)).not.toContain(fresh);
+  });
+
+  it('takes the entries due per source, each by its last attempt, so a source that keeps failing crowds out none', async () => {
+    const first = await made({ ...marsh, title: 'Attempted first' }, 'crossref:10.5555/att.1');
+    const second = await made({ ...marsh, title: 'Attempted second' }, 'crossref:10.5555/att.2');
+    const dunnart = await made({ ...marsh, title: 'Dunnart' }, 'pubmed:99000077');
+    await citing([first, second, dunnart], 'Attempted section');
+    // Every entry attempted, these last: an attempt with no answer still goes to the back.
+    await tenant(async (trx) => {
+      const { rows } = await sql<{ id: string }>`
+        select id from artifact where kind = 'bibliographyEntry'`.execute(trx);
+      for (const { id } of rows) await attemptEntryCheck(trx, id);
+    });
+    await tenant((trx) =>
+      sql`update bibliography_entry_attempt set last_attempt_at = now() + interval '1 hour'
+           where entry_id = ${first}`.execute(trx),
+    );
+    const ids = (await tenant((trx) => entriesDue(trx, 100))).map((each) => each.entryId);
+    expect(ids.indexOf(second)).toBeLessThan(ids.indexOf(first));
+    // One each from Crossref and PubMed, however many Crossref has waiting.
+    const one = await tenant((trx) => entriesDue(trx, 1));
+    expect(one.map((each) => each.source).sort()).toEqual(['crossref', 'pubmed']);
+  });
+
+  it('records an attempt at most once a minute where asked to, and always for the sweep', async () => {
+    const entry = await made({ ...marsh, title: 'Once a minute' }, 'crossref:10.5555/minute.1');
+    expect(await tenant((trx) => attemptEntryCheck(trx, entry, 60))).toBe(true);
+    expect(await tenant((trx) => attemptEntryCheck(trx, entry, 60))).toBe(false);
+    expect(await tenant((trx) => attemptEntryCheck(trx, entry))).toBe(true);
+    await tenant((trx) =>
+      sql`update bibliography_entry_attempt set last_attempt_at = now() - interval '61 seconds'
+           where entry_id = ${entry}`.execute(trx),
+    );
+    expect(await tenant((trx) => attemptEntryCheck(trx, entry, 60))).toBe(true);
+  });
+
+  it('LIB-032 finds an entry a reference extension obtained, with where it is reached, and records its check by its key', async () => {
+    const herbarium = await tenant((trx) =>
+      installExtension(trx, {
+        url: 'https://herbarium.example.test/manifest.json',
+        digest: 'c'.repeat(64),
+        manifest: {
+          manifest: 1,
+          name: 'Herbarium records',
+          version: '0.3.0',
+          publisher: 'Invented Herbarium',
+          description: 'Specimen papers by catalogue number.',
+          kind: 'reference',
+          endpoint: 'https://herbarium.example.test/alloy',
+          reference: { search: '/search', fetch: '/records' },
+          authentication: 'none',
+          outbound: [],
+        },
+        by: ada,
+      }),
+    );
+    const key = `ext:${herbarium.id}` as const;
+    const saltbush = await made({ ...marsh, title: 'Saltbush' }, `${key}:HERB-0042`);
+    await citing([saltbush], 'Herbarium section');
+    const due = await tenant((trx) => entriesDue(trx, 100));
+    expect(due.find((each) => each.entryId === saltbush)).toMatchObject({
+      source: key,
+      identifier: 'HERB-0042',
+      extension: {
+        endpoint: 'https://herbarium.example.test/alloy',
+        search: '/search',
+        fetch: '/records',
+      },
+    });
+    expect(await tenant((trx) => entryCheckable(trx, saltbush))).toMatchObject({ source: key });
+    const { status } = await tenant((trx) =>
+      recordEntryCheck(trx, { entryId: saltbush, source: key, check: checked('current') }),
+    );
+    expect(status.source).toBe(key);
+    await tenant((trx) => setReferenceSource(trx, key, false));
+    expect((await tenant((trx) => entriesDue(trx, 100))).map((each) => each.entryId)).not.toContain(
+      saltbush,
+    );
   });
 
   it('LIB-036 flags each cited entry retracted or corrected, and counts the retracted the document places for its gate', async () => {

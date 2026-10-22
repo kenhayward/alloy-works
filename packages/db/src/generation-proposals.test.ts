@@ -163,6 +163,37 @@ describe("an assistant run's proposals and steps", () => {
     }
   });
 
+  it("LIB-040 keeps a citation proposal's source record beside it, an object, never on a creation", async () => {
+    const cites = {
+      source: 'crossref' as const,
+      identifier: '10.5555/weir.1',
+      csl: { type: 'article-journal' as const, title: 'Spring floods' },
+      at: '2026-10-22T09:00:00.000Z',
+    };
+    const id = await service.withTenant(tenant, async (trx) => {
+      const proposal = await makeProposal(trx, {
+        run: await run(trx),
+        component: randomUUID(),
+        against: randomUUID(),
+        proposed,
+        cites,
+      });
+      expect((await readProposal(trx, proposal.id))?.cites).toEqual(cites);
+      return proposal.id;
+    });
+    for (const attempt of [
+      sql`insert into generation_proposal (run_id, number, creates, proposed, cites)
+        select run_id, 2, '{}'::jsonb, proposed, cites from generation_proposal where id = ${id}`,
+      sql`insert into generation_proposal (run_id, number, component_id, made_against, proposed, cites)
+        select run_id, 3, component_id, made_against, proposed, '[]'::jsonb
+        from generation_proposal where id = ${id}`,
+    ]) {
+      await expect(service.withTenant(tenant, (trx) => attempt.execute(trx))).rejects.toThrow(
+        /generation_proposal/,
+      );
+    }
+  });
+
   it('ends a run left running an hour as abandoned, its steps kept', async () => {
     const stale = await service.withTenant(tenant, async (trx) => {
       const id = await run(trx);

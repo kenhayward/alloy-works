@@ -1282,6 +1282,24 @@ const installed = (over: { digest?: string; manifest?: Record<string, unknown> }
         updatedAt: '2026-10-21T09:00:00.000Z',
         removedAt: null,
       },
+      // A reference extension, a source of citations and never of rows (XR-J): not offered.
+      {
+        id: '3c4d5e6f-7a8b-4c9d-8e0f-2a3b4c5d6e7f',
+        url: 'https://herbarium.example.test/manifest.json',
+        digest: NEWER,
+        manifest: {
+          ...gaugeManifest({ name: 'Herbarium records' }),
+          kind: 'reference',
+          reference: { search: '/search', fetch: '/records' },
+          settings: undefined,
+          capabilities: undefined,
+        },
+        installedBy: 'ada',
+        installedAt: '2026-10-21T09:00:00.000Z',
+        updatedAt: '2026-10-21T09:00:00.000Z',
+        removedAt: null,
+        secretSet: true,
+      },
     ],
     next: null,
   });
@@ -1311,7 +1329,7 @@ describe('a connection to an extension (the EX plan, EXc)', () => {
     const dialog = screen.getByRole('dialog', { name: 'New connection' });
     await user.selectOptions(within(dialog).getByLabelText('Type'), 'extension');
     const chosen = await within(dialog).findByLabelText('Extension');
-    // An extension taking no secret is not offered.
+    // An extension taking no secret is not offered, nor a reference extension.
     expect(
       within(chosen)
         .getAllByRole('option')

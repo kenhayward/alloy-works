@@ -50,7 +50,7 @@ export const extensionCapabilitiesSchema = z.strictObject({
 });
 export type ExtensionCapabilities = z.infer<typeof extensionCapabilitiesSchema>;
 
-export const extensionManifestSchema = z.strictObject({
+const about = {
   manifest: z.literal(1),
   name: text(80),
   version: z
@@ -59,6 +59,14 @@ export const extensionManifestSchema = z.strictObject({
     .meta({ examples: ['1.2.0'] }),
   publisher: text(80),
   description: text(500),
+};
+const authentication = z.union([z.literal('none'), z.strictObject({ label: text(80) })]);
+const outbound = z
+  .array(z.strictObject({ host: z.string().regex(/^[a-z0-9.-]{1,253}$/), purpose: text(200) }))
+  .max(20);
+
+export const sourceManifestSchema = z.strictObject({
+  ...about,
   kind: z.literal('source'),
   endpoint: httpsUrl,
   settings: z
@@ -67,12 +75,39 @@ export const extensionManifestSchema = z.strictObject({
     .refine((fields) => new Set(fields.map((each) => each.key)).size === fields.length, {
       message: 'Each setting once',
     }),
-  authentication: z.union([z.literal('none'), z.strictObject({ label: text(80) })]),
+  authentication,
   capabilities: extensionCapabilitiesSchema,
-  outbound: z
-    .array(z.strictObject({ host: z.string().regex(/^[a-z0-9.-]{1,253}$/), purpose: text(200) }))
-    .max(20),
+  outbound,
 });
+export type SourceManifest = z.infer<typeof sourceManifestSchema>;
+
+/** A path under an endpoint: from its root, plain characters, no `..`, query or fragment. */
+const endpointPath = z
+  .string()
+  .regex(/^(?:\/[A-Za-z0-9._~-]+)+$/)
+  .max(200)
+  .refine((path) => !path.split('/').some((part) => part === '.' || part === '..'))
+  .meta({ examples: ['/search'] });
+
+/**
+ * A reference extension's manifest (reference-sources.md; the XR plan, XR-J; LIB-032): a source of
+ * citable records, searched and fetched at its paths under its endpoint, each answering CSL-JSON. No
+ * settings or capabilities: the terms or an identifier are all it is sent.
+ */
+export const referenceManifestSchema = z.strictObject({
+  ...about,
+  kind: z.literal('reference'),
+  endpoint: httpsUrl,
+  reference: z.strictObject({ search: endpointPath, fetch: endpointPath }),
+  authentication,
+  outbound,
+});
+export type ReferenceManifest = z.infer<typeof referenceManifestSchema>;
+
+export const extensionManifestSchema = z.discriminatedUnion('kind', [
+  sourceManifestSchema,
+  referenceManifestSchema,
+]);
 export type ExtensionManifest = z.infer<typeof extensionManifestSchema>;
 
 /**

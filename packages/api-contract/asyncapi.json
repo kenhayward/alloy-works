@@ -801,6 +801,37 @@
                 }
               ]
             },
+            "cites": {
+              "description": "A citation proposed of a reference source’s work: the source, its identifier and its title. Its entry is matched or made as it is accepted",
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "source": {
+                      "type": "string"
+                    },
+                    "identifier": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "source",
+                    "identifier",
+                    "title"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
             "proposed": {
               "type": "object",
               "propertyNames": {

@@ -1714,6 +1714,11 @@ describe('routes that check a permission', () => {
     }),
     listExtensionUses: () => ({ url: `/v1/extensions/${MISSING}/uses`, status: 403 }),
     removeExtension: () => ({ url: `/v1/extensions/${MISSING}`, status: 403 }),
+    setExtensionSecret: () => ({
+      url: `/v1/extensions/${MISSING}/secret`,
+      status: 403,
+      payload: { secret: 'herbarium-token' },
+    }),
     // Webhooks are an administrator's of the whole environment (WB-H).
     listWebhooks: () => ({ url: '/v1/webhooks', status: 403 }),
     createWebhook: () => ({

@@ -1,4 +1,5 @@
 import { streamPost, type createApiClient, type StreamPostOptions } from '@alloy-works/api-client';
+import { PENDING_ENTRY } from '@alloy-works/domain';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 
 import styles from './AssistantPanel.module.css';
@@ -23,9 +24,17 @@ interface Proposal {
   readonly component: string | null;
   /** Where and under what title a proposed part would be made. */
   readonly creates: { readonly title: string } | null;
+  /** A citation of a source's work (XR-I): its entry found or made only as it is accepted. */
+  readonly cites: Cites | null;
   readonly proposed: { readonly content?: readonly unknown[] };
   readonly state: 'open' | 'accepted' | 'kept' | 'discarded';
   readonly said?: string;
+}
+
+interface Cites {
+  readonly source: string;
+  readonly identifier: string;
+  readonly title: string | null;
 }
 
 interface Citation {
@@ -50,19 +59,28 @@ const TOOL_WORDS: Readonly<Record<string, string>> = {
   search_document: 'Searched the document',
   read_values: 'Read the bound values',
   propose_edit: 'Proposed an edit',
+  search_references: 'Searched a reference source',
+  cite_reference: 'Proposed a citation',
   declined: 'Declined an instruction',
 };
 
-/** A proposal's text, a block a line, as it would read: paragraphs and list items. */
-function proposedText(proposed: Proposal['proposed']): string {
+/**
+ * A proposal's text, a block a line, as it would read: paragraphs and list items, a proposed
+ * citation by its source's title.
+ */
+function proposedText(proposed: Proposal['proposed'], cites: Cites | null): string {
   const inline = (content: unknown): string =>
     Array.isArray(content)
       ? content
-          .map((node) =>
-            typeof node === 'object' && node !== null && 'value' in node
-              ? String((node as { value: unknown }).value)
-              : '',
-          )
+          .map((node) => {
+            if (typeof node !== 'object' || node === null) return '';
+            if ('value' in node) return String((node as { value: unknown }).value);
+            const { type, entry } = node as { type?: unknown; entry?: unknown };
+            if (type !== 'citation') return '';
+            return entry === PENDING_ENTRY && cites !== null
+              ? `[${cites.title ?? cites.identifier}]`
+              : '[citation]';
+          })
           .join('')
       : '';
   return (proposed.content ?? [])
@@ -375,6 +393,10 @@ export function AssistantPanel({
                 creates:
                   typeof frame.creates === 'object' && frame.creates !== null
                     ? (frame.creates as { title: string })
+                    : null,
+                cites:
+                  typeof frame.cites === 'object' && frame.cites !== null
+                    ? (frame.cites as Cites)
                     : null,
                 proposed: frame.proposed as Proposal['proposed'],
                 state: 'open',
@@ -718,7 +740,16 @@ export function AssistantPanel({
               : ((proposal.component === null ? undefined : nameOf(proposal.component)) ??
                 'a part')}
           </h3>
-          <pre className={styles['proposed']}>{proposedText(proposal.proposed)}</pre>
+          <pre className={styles['proposed']}>
+            {proposedText(proposal.proposed, proposal.cites)}
+          </pre>
+          {proposal.cites !== null && (
+            <p className={styles['muted']}>
+              Cites {proposal.cites.title ?? 'a work'},{' '}
+              {proposal.cites.source === 'pubmed' ? 'PMID' : 'DOI'} {proposal.cites.identifier} from{' '}
+              {proposal.cites.source}. Its entry is found or made in the space as you accept.
+            </p>
+          )}
           {proposal.state === 'open' && running ? (
             <p className={styles['muted']}>It can be acted on once the answer has ended.</p>
           ) : proposal.state === 'open' ? (
@@ -730,7 +761,7 @@ export function AssistantPanel({
               >
                 Accept
               </button>
-              {proposal.creates === null && (
+              {proposal.creates === null && proposal.cites === null && (
                 <button type="button" onClick={() => void act(proposal, 'keeping')}>
                   Keep as suggestion
                 </button>

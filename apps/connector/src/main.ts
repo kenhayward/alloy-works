@@ -1,4 +1,4 @@
-import { ConfigurationRefused, takeConnectorConfig } from './config.js';
+import { ConfigurationRefused, startWarnings, takeConnectorConfig } from './config.js';
 import { verifyIpcClosed } from './ipc.js';
 import { createConnectorServer } from './server.js';
 import { IsolationRefused, verifyChildIsolation } from './supervisor.js';
@@ -21,6 +21,10 @@ try {
   const known = error instanceof ConfigurationRefused || error instanceof IsolationRefused;
   process.stderr.write(`${known ? error.message : 'The configuration could not be read'}\n`);
   process.exit(1);
+}
+
+for (const warning of startWarnings(config)) {
+  process.stderr.write(`${JSON.stringify({ at: new Date().toISOString(), warning })}\n`);
 }
 
 const server = createConnectorServer({ config });

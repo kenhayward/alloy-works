@@ -7,7 +7,8 @@ import styles from './MarkPrompt.module.css';
 import own from './ReferenceDialog.module.css';
 
 type Client = ReturnType<typeof createApiClient>;
-type SourceId = 'crossref' | 'pubmed';
+/** A declared source's id, or a reference extension's `ext:` key (the XR plan, XR-J). */
+type SourceId = string;
 
 /** Why a result is shown but cannot be chosen. */
 export const MAY_NOT_MAKE = "You may not add entries to this space's bibliography.";
