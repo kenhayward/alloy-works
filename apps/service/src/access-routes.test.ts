@@ -1203,6 +1203,26 @@ describe('routes that check a permission', () => {
       status: 404,
     }),
     listPromptLibraries: () => ({ url: '/v1/prompt-libraries', status: 403 }),
+    listCitationStyles: () => ({ url: '/v1/citation-styles', status: 403 }),
+    createCitationStyle: () => ({
+      url: '/v1/citation-styles',
+      status: 403,
+      payload: { style: { schemaVersion: 1, name: 'Probe', csl: '<style/>', requires: {} } },
+    }),
+    previewCitationStyle: () => ({
+      url: '/v1/citation-styles/preview',
+      status: 403,
+      payload: { csl: '<style/>' },
+    }),
+    getCitationStyle: () => ({ url: `/v1/citation-styles/${MISSING}`, status: 403 }),
+    recordCitationStyleVersion: () => ({
+      url: `/v1/citation-styles/${MISSING}/versions`,
+      status: 403,
+      payload: {
+        openedFrom: MISSING,
+        style: { schemaVersion: 1, name: 'Probe', csl: '<style/>', requires: {} },
+      },
+    }),
     listGuardrails: () => ({ url: '/v1/guardrails', status: 403 }),
     setGuardrail: () => ({
       url: '/v1/guardrails',

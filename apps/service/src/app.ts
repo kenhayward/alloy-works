@@ -89,6 +89,7 @@ import { extensionHandlers } from './extensions.js';
 import { registerMcp } from './mcp/route.js';
 import { promptHandlers, promptLibraryHandlers } from './generation/prompts.js';
 import { bibliographyHandlers } from './bibliography/routes.js';
+import { citationStyleHandlers } from './bibliography/styles.js';
 import { promptRunHandlers } from './generation/prompt-runs.js';
 import { guardrailHandlers } from './generation/guardrails.js';
 import { modelLimitHandlers } from './generation/limits.js';
@@ -595,6 +596,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...promptHandlers(db, tenantOf, principalOf),
     ...promptLibraryHandlers(),
     ...bibliographyHandlers(),
+    ...citationStyleHandlers(),
     ...guardrailHandlers(),
     ...modelLimitHandlers(),
     ...modelBudgetHandlers(),

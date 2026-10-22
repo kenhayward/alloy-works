@@ -20935,13 +20935,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 592,
+      "line": 598,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 605,
+      "line": 611,
       "kind": "title"
     },
     {
@@ -21191,6 +21191,30 @@
       "kind": "title"
     },
     {
+      "id": "API-032",
+      "file": "apps/service/src/citation-style-routes.test.ts",
+      "line": 61,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-102",
+      "file": "apps/service/src/citation-style-routes.test.ts",
+      "line": 43,
+      "kind": "title"
+    },
+    {
+      "id": "STY-020",
+      "file": "apps/service/src/citation-style-routes.test.ts",
+      "line": 90,
+      "kind": "title"
+    },
+    {
+      "id": "STY-023",
+      "file": "apps/service/src/citation-style-routes.test.ts",
+      "line": 61,
+      "kind": "title"
+    },
+    {
       "id": "REU-032",
       "file": "apps/service/src/cohort-routes.test.ts",
       "line": 148,
@@ -21385,7 +21409,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1934,
+      "line": 1967,
       "kind": "title"
     },
     {
@@ -23263,13 +23287,13 @@
     {
       "id": "ADM-049",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1503,
+      "line": 1513,
       "kind": "title"
     },
     {
       "id": "LIF-022",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1645,
+      "line": 1655,
       "kind": "title"
     },
     {
@@ -23288,6 +23312,12 @@
       "id": "ADM-039",
       "file": "apps/web/src/admin/AuditLog.test.tsx",
       "line": 148,
+      "kind": "title"
+    },
+    {
+      "id": "STY-023",
+      "file": "apps/web/src/admin/CitationStyles.test.tsx",
+      "line": 91,
       "kind": "title"
     },
     {
@@ -26507,6 +26537,30 @@
       "kind": "title"
     },
     {
+      "id": "CNT-102",
+      "file": "packages/db/src/citation-styles.test.ts",
+      "line": 77,
+      "kind": "title"
+    },
+    {
+      "id": "STY-020",
+      "file": "packages/db/src/citation-styles.test.ts",
+      "line": 144,
+      "kind": "title"
+    },
+    {
+      "id": "STY-021",
+      "file": "packages/db/src/citation-styles.test.ts",
+      "line": 77,
+      "kind": "title"
+    },
+    {
+      "id": "STY-023",
+      "file": "packages/db/src/citation-styles.test.ts",
+      "line": 115,
+      "kind": "title"
+    },
+    {
       "id": "REU-031",
       "file": "packages/db/src/cohorts.test.ts",
       "line": 195,
@@ -26665,7 +26719,7 @@
     {
       "id": "STY-024",
       "file": "packages/db/src/default-theme.test.ts",
-      "line": 120,
+      "line": 122,
       "kind": "title"
     },
     {
@@ -27289,7 +27343,7 @@
     {
       "id": "IAM-075",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 2630,
+      "line": 2631,
       "kind": "title"
     },
     {
@@ -27313,7 +27367,7 @@
     {
       "id": "PUB-050",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 1067,
+      "line": 1068,
       "kind": "title"
     },
     {
@@ -29227,7 +29281,31 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 893,
+      "line": 911,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-102",
+      "file": "packages/domain/src/library/citations.test.ts",
+      "line": 48,
+      "kind": "title"
+    },
+    {
+      "id": "STY-020",
+      "file": "packages/domain/src/library/citations.test.ts",
+      "line": 37,
+      "kind": "title"
+    },
+    {
+      "id": "STY-021",
+      "file": "packages/domain/src/library/citations.test.ts",
+      "line": 48,
+      "kind": "title"
+    },
+    {
+      "id": "STY-022",
+      "file": "packages/domain/src/library/citations.test.ts",
+      "line": 136,
       "kind": "title"
     },
     {
@@ -30553,7 +30631,7 @@
     {
       "id": "TAB-053",
       "file": "packages/domain/src/theme/default.test.ts",
-      "line": 303,
+      "line": 346,
       "kind": "title"
     },
     {
@@ -30601,31 +30679,31 @@
     {
       "id": "STY-006",
       "file": "packages/domain/src/theme/read.test.ts",
-      "line": 208,
+      "line": 209,
       "kind": "title"
     },
     {
       "id": "STY-027",
       "file": "packages/domain/src/theme/read.test.ts",
-      "line": 189,
+      "line": 190,
       "kind": "title"
     },
     {
       "id": "STY-038",
       "file": "packages/domain/src/theme/read.test.ts",
-      "line": 422,
+      "line": 423,
       "kind": "title"
     },
     {
       "id": "STY-041",
       "file": "packages/domain/src/theme/read.test.ts",
-      "line": 129,
+      "line": 130,
       "kind": "title"
     },
     {
       "id": "STY-079",
       "file": "packages/domain/src/theme/schema.test.ts",
-      "line": 461,
+      "line": 463,
       "kind": "title"
     },
     {

@@ -7,6 +7,10 @@ import {
   DEFAULT_THEME,
   DEFAULT_THEME_VERSION,
   DEFAULT_VALUE_FORMATS,
+  EIGHTH_DEFAULT_CATALOGUES,
+  EIGHTH_DEFAULT_CATALOGUE_VERSIONS,
+  EIGHTH_DEFAULT_THEME,
+  EIGHTH_DEFAULT_THEME_VERSION,
   FIFTH_DEFAULT_CATALOGUES,
   FIFTH_DEFAULT_CATALOGUES_BY_VERSION,
   FIFTH_DEFAULT_CATALOGUE_VERSIONS,
@@ -44,6 +48,7 @@ import { readTheme, type ResolvedTheme } from './read.js';
 import { CATALOGUE_KINDS, catalogueSchema } from './schema.js';
 import { DEFAULT_TABLE_ALIGN, DEFAULT_TABLE_FIELDS } from '../data/field-format.js';
 import { layoutTable } from '../data/table.js';
+import { DEFAULT_CITATION_STYLE } from '../library/style.js';
 
 /**
  * The product's default theme as data (themes 1, ruling R3). Its numbers are template 11's wherever
@@ -214,9 +219,10 @@ describe('the default theme', () => {
     ]);
   });
 
-  it('keeps its admonition and citation catalogues empty', () => {
+  it('keeps its admonition catalogue empty, and its citation catalogue names a style', () => {
     expect(DEFAULT_CATALOGUES.admonition.styles).toEqual([]);
-    expect(DEFAULT_CATALOGUES.citation.styles).toEqual([]);
+    expect(FIRST_DEFAULT_CATALOGUES.citation.styles).toEqual([]);
+    expect(DEFAULT_CATALOGUES.citation.style).toBeDefined();
   });
 
   it("changes only the quotation's and its attribution's spacing at 0.2, and states contextual spacing, off, in the base", () => {
@@ -276,28 +282,65 @@ describe('the default theme', () => {
   });
 });
 
-describe("the default theme's version 0.8 (the TG plan, TG3)", () => {
-  it("binds its table catalogue's sixth version by a fixed identifier, and the rest as 0.7 did", () => {
+describe("the default theme's version 0.9 (the CI plan, CI-E)", () => {
+  it("binds its citation catalogue's second version by a fixed identifier, and the rest as 0.8 did", () => {
     expect(DEFAULT_CATALOGUE_VERSIONS).toEqual({
+      ...EIGHTH_DEFAULT_CATALOGUE_VERSIONS,
+      citation: '5c7e9a1b-2d4f-4a6c-8e0b-3d5f7a9c1e2b',
+    });
+    for (const kind of [...CATALOGUE_KINDS, 'value'] as const) {
+      if (kind !== 'citation')
+        expect(DEFAULT_CATALOGUES[kind], kind).toBe(EIGHTH_DEFAULT_CATALOGUES[kind]);
+    }
+  });
+
+  it('is its 0.8 naming that catalogue version, under a fixed identifier of its own', () => {
+    expect(DEFAULT_THEME).toEqual({
+      ...EIGHTH_DEFAULT_THEME,
+      catalogues: DEFAULT_CATALOGUE_VERSIONS,
+    });
+    expect(DEFAULT_THEME_VERSION).toBe('6d8f0b2c-3e5a-4b7d-9f1c-4e6a8b0d2f3c');
+    expect([
+      EIGHTH_DEFAULT_THEME_VERSION,
+      ...Object.values(DEFAULT_CATALOGUE_VERSIONS),
+    ]).not.toContain(DEFAULT_THEME_VERSION);
+  });
+
+  it('names Harvard, at the version every tenant is seeded with, as its citation style', () => {
+    expect(catalogueSchema.parse(DEFAULT_CATALOGUES.citation)).toEqual({
+      schemaVersion: 4,
+      kind: 'citation',
+      style: {
+        id: 'a6c1e2f4-3b5d-4e7a-8c9b-1d2e3f4a5b6c',
+        version: 'd1f4a7c2-6e8b-4b1d-9f3e-5a7c9e1b3d5f',
+      },
+    });
+    expect(DEFAULT_CITATION_STYLE.name).toBe('Harvard');
+  });
+});
+
+describe("the default theme's version 0.8, as migration 0064 stored it (the TG plan, TG3)", () => {
+  it("binds its table catalogue's sixth version by a fixed identifier, and the rest as 0.7 did", () => {
+    expect(EIGHTH_DEFAULT_CATALOGUE_VERSIONS).toEqual({
       ...SEVENTH_DEFAULT_CATALOGUE_VERSIONS,
       table: '90004ad2-e4bc-49d4-b0bd-95375853953d',
     });
     for (const kind of [...CATALOGUE_KINDS, 'value'] as const) {
       if (kind !== 'table')
-        expect(DEFAULT_CATALOGUES[kind], kind).toBe(SEVENTH_DEFAULT_CATALOGUES[kind]);
+        expect(EIGHTH_DEFAULT_CATALOGUES[kind], kind).toBe(SEVENTH_DEFAULT_CATALOGUES[kind]);
     }
   });
 
   it('is its 0.7 naming that catalogue version, under a fixed identifier of its own', () => {
-    expect(DEFAULT_THEME).toEqual({
+    expect(EIGHTH_DEFAULT_THEME).toEqual({
       ...SEVENTH_DEFAULT_THEME,
-      catalogues: DEFAULT_CATALOGUE_VERSIONS,
+      catalogues: EIGHTH_DEFAULT_CATALOGUE_VERSIONS,
     });
-    expect(DEFAULT_THEME_VERSION).toBe('f8a6e5fc-4241-4c7c-a2b6-7709edbaacc4');
+    expect(EIGHTH_DEFAULT_THEME_VERSION).toBe('f8a6e5fc-4241-4c7c-a2b6-7709edbaacc4');
     expect([
       SEVENTH_DEFAULT_THEME_VERSION,
-      ...Object.values(DEFAULT_CATALOGUE_VERSIONS),
-    ]).not.toContain(DEFAULT_THEME_VERSION);
+      ...Object.values(EIGHTH_DEFAULT_CATALOGUE_VERSIONS),
+    ]).not.toContain(EIGHTH_DEFAULT_THEME_VERSION);
   });
 
   it("TAB-053 widths every table style's columns by what they hold, and changes nothing else", () => {

@@ -21,6 +21,7 @@ import type { Provenance } from '../data/provenance.js';
 import type { PromptLibrary } from '../generation/library.js';
 import type { Prompt } from '../generation/prompt.js';
 import type { Entry } from '../library/entry.js';
+import type { CitationStyle } from '../library/style.js';
 
 /**
  * What a component version says (ADR-0024): its content, its metadata values, the values it did not
@@ -139,6 +140,12 @@ export type BibliographyEntrySubstance = {
   readonly content: Entry;
 };
 
+/** A citation style version says its CSL, its name and what it requires (citations.md; CI-D). */
+export type CitationStyleSubstance = {
+  readonly kind: 'citationStyle';
+  readonly content: CitationStyle;
+};
+
 export type VersionSubstance =
   | ComponentSubstance
   | DatasetSubstance
@@ -147,6 +154,7 @@ export type VersionSubstance =
   | PromptSubstance
   | PromptLibrarySubstance
   | BibliographyEntrySubstance
+  | CitationStyleSubstance
   | TemplateSubstance
   | DefinitionSubstance
   | DocumentSubstance

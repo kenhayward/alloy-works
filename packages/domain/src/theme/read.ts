@@ -6,6 +6,7 @@ import { contrastRatio, requiredContrast } from './contrast.js';
 import {
   CATALOGUE_KINDS,
   CATALOGUE_SCHEMA_VERSION,
+  CITATION_CATALOGUE_SCHEMA_VERSION,
   PLACES,
   ROLES,
   SCRIPT_SCALE,
@@ -15,6 +16,7 @@ import {
   catalogueSchema,
   catalogueSchema1,
   catalogueSchema2,
+  citationCatalogueSchemaBefore4,
   themeSchema,
   type Catalogue,
   type Catalogue1,
@@ -164,6 +166,11 @@ export interface ResolvedTheme {
   /** The paragraph style's identifier each role is set in (TH-E). */
   readonly roles: Readonly<Record<Role, string>>;
   /**
+   * The citation style the citation catalogue names, at a version (CI-E), or null where it names none,
+   * as every theme before the default's 0.9.
+   */
+  readonly citationStyle: { readonly id: string; readonly version: string } | null;
+  /**
    * The value catalogue the theme names, beside the six kinds (B1-F), or null where it names none, as
    * every theme before the default's 0.6: a value is then formatted by the product's default
    * (`formatsFor`).
@@ -298,8 +305,9 @@ export function upgradeCatalogue2(catalogue: Catalogue2): Catalogue {
       return { ...catalogue, schemaVersion: 3 };
     case 'admonition':
       return { ...catalogue, schemaVersion: 3 };
+    // Read at catalogue/4, naming no style: the citation catalogue's own version (CI-E).
     case 'citation':
-      return { ...catalogue, schemaVersion: 3 };
+      return { schemaVersion: 4, kind: 'citation' };
   }
 }
 
@@ -559,6 +567,7 @@ export function readTheme(
         Role,
         string
       >,
+      citationStyle: (examined.citation?.kind === 'citation' && examined.citation.style) || null,
       valueCatalogue: value?.kind === VALUE_CATALOGUE_KIND ? value.catalogue : null,
     },
   };
@@ -583,7 +592,8 @@ type Examined =
     }
   | { kind: 'table'; refusals: ThemeRefusal[]; styles: Map<string, TableStyle> }
   | { kind: 'image'; refusals: ThemeRefusal[]; styles: Map<string, ImageStyle> }
-  | { kind: 'admonition' | 'citation'; refusals: ThemeRefusal[] }
+  | { kind: 'admonition'; refusals: ThemeRefusal[] }
+  | { kind: 'citation'; refusals: ThemeRefusal[]; style?: { id: string; version: string } }
   | { kind: 'value'; refusals: ThemeRefusal[]; catalogue: ValueCatalogue };
 
 function examine(catalogue: Catalogue): Examined {
@@ -648,8 +658,11 @@ function examine(catalogue: Catalogue): Examined {
       return { kind: 'image', refusals, styles };
     }
     case 'admonition':
-    case 'citation':
       return { kind: catalogue.kind, refusals };
+    case 'citation':
+      return catalogue.style
+        ? { kind: 'citation', refusals, style: catalogue.style }
+        : { kind: 'citation', refusals };
     // Its shape is all there is to it: no style, so nothing to be unique or to chain.
     case 'value':
       return { kind: 'value', refusals, catalogue };
@@ -983,6 +996,21 @@ function parseCatalogue(
     typeof stored === 'object' &&
     stored !== null &&
     Reflect.get(stored, 'schemaVersion') === version;
+  // A citation catalogue has a version of its own, 4 (CI-E): one stored empty before it is held to that
+  // frozen shape and read as naming no style; the other kinds' chain never reaches it.
+  if (typeof stored === 'object' && stored !== null && Reflect.get(stored, 'kind') === 'citation') {
+    if (at(CITATION_CATALOGUE_SCHEMA_VERSION)) {
+      return issues(catalogueSchema.safeParse(stored), subject, 'catalogue_malformed');
+    }
+    const before = issues(
+      citationCatalogueSchemaBefore4.safeParse(stored),
+      subject,
+      'catalogue_malformed',
+    );
+    return before.ok
+      ? { ok: true, value: { schemaVersion: CITATION_CATALOGUE_SCHEMA_VERSION, kind: 'citation' } }
+      : before;
+  }
   if (at(1)) {
     const first = issues(catalogueSchema1.safeParse(stored), subject, 'catalogue_malformed');
     if (!first.ok) return first;

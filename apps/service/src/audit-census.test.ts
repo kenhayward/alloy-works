@@ -399,6 +399,12 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   getBibliographyEntryUses: read,
   archiveBibliographyEntry: writes('artifact.archived'),
   unarchiveBibliographyEntry: writes('artifact.unarchived'),
+  listCitationStyles: read,
+  createCitationStyle: writes('content.version_cut'),
+  // Renders the sample entries, keeping nothing.
+  previewCitationStyle: read,
+  getCitationStyle: read,
+  recordCitationStyleVersion: writes('content.version_cut'),
   listPromptLibraries: read,
   createPromptLibrary: writes('content.version_cut'),
   getPromptLibrary: read,

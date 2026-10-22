@@ -555,13 +555,13 @@ describe('requesting and recording a publication', () => {
           theme: { ...declared.content, paper: '#fafafa' },
         });
         if (next.answer !== 'recorded') throw new Error(next.answer);
-        // The default is at 0.8 since 0064, so the version recorded after it is 0.9.
-        expect((await defaultTheme(trx)).number).toBe('0.9');
+        // The default is at 0.9 since 0146, so the version recorded after it is 0.10.
+        expect((await defaultTheme(trx)).number).toBe('0.10');
 
         const inputs = await publicationInputs(trx, id);
         expect(inputs!.theme).toEqual({ versionId: declared.versionId, theme: declared.theme });
         expect(inputs!.theme!.theme.paper).toBe('#ffffff');
-        // Thrown to roll the theme's 0.9 back: the rest of the suite publishes under the default.
+        // Thrown to roll the theme's 0.10 back: the rest of the suite publishes under the default.
         throw rolledBack;
       }),
     ).rejects.toBe(rolledBack);
@@ -948,6 +948,7 @@ describe('requesting and recording a publication', () => {
           expect(each!.theme!.theme.catalogues).toEqual({
             ...FIFTH_DEFAULT_CATALOGUE_VERSIONS,
             table: DEFAULT_CATALOGUE_VERSIONS.table,
+            citation: DEFAULT_CATALOGUE_VERSIONS.citation,
           });
         }
         const publications = [];

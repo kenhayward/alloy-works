@@ -73,10 +73,11 @@ export interface StoredTheme {
 
 /**
  * What the store refuses beyond what the reader does: a catalogue version bringing back a style
- * identifier an earlier version of the same catalogue dropped (STY-005). A version of a catalogue of one
+ * identifier an earlier version of the same catalogue dropped (STY-005), and a citation catalogue
+ * naming what is no version of that citation style (CI-E). A version of a catalogue of one
  * kind that is a catalogue of another is the reader's own `catalogue_wrong_kind`.
  */
-export type ThemeStoreRefusalCode = ThemeRefusalCode | 'style_reused';
+export type ThemeStoreRefusalCode = ThemeRefusalCode | 'style_reused' | 'citation_style_missing';
 
 export interface ThemeStoreRefusal {
   readonly code: ThemeStoreRefusalCode;
@@ -133,7 +134,9 @@ async function readStoredTheme(
  * style, so STY-005's rule has nothing to hold it to.
  */
 function stylesOf(catalogue: Catalogue): readonly { readonly id: string }[] {
-  return catalogue.kind === VALUE_CATALOGUE_KIND ? [] : catalogue.styles;
+  return catalogue.kind === VALUE_CATALOGUE_KIND || catalogue.kind === 'citation'
+    ? []
+    : catalogue.styles;
 }
 
 /** `an` before the two kinds that begin with a vowel, as the reader's own messages say it. */
@@ -271,6 +274,23 @@ export async function addCatalogueVersion(
     refusals.push({
       code: 'catalogue_wrong_kind',
       message: `The catalogue ${input.artifactId} is ${article(kind!)} ${kind} catalogue, and a version of it cannot be ${article(read.catalogue.kind)} ${read.catalogue.kind} catalogue`,
+    });
+  }
+  // A citation catalogue names a style at one of that style's versions (CI-E).
+  const cited = read.catalogue.kind === 'citation' ? read.catalogue.style : undefined;
+  if (
+    cited &&
+    !(await trx
+      .selectFrom('artifact_version')
+      .select('id')
+      .where('id', '=', cited.version)
+      .where('artifact_id', '=', cited.id)
+      .where('kind', '=', 'citationStyle')
+      .executeTakeFirst())
+  ) {
+    refusals.push({
+      code: 'citation_style_missing',
+      message: `The citation catalogue names version ${cited.version} of the style ${cited.id}, which is no version of a citation style here`,
     });
   }
   for (const style of stylesOf(read.catalogue)) {

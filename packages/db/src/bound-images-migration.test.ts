@@ -256,6 +256,7 @@ describe('migration 0052, which widens dataset_take to an image', () => {
       '0143_publication_generated',
       '0144_embedding_lag',
       '0145_bibliography_entries',
+      '0146_citation_styles',
     ]);
     const kept = await queryAs(
       db.adminUrl,

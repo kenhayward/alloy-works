@@ -434,9 +434,11 @@ describe('catalogue/3', () => {
       expect(DEFAULT_CATALOGUES[kind].schemaVersion, kind).toBe(3);
       expect(() => catalogueSchema.parse(DEFAULT_CATALOGUES[kind]), kind).not.toThrow();
     }
-    // The paragraph catalogue is 0.4's row, at version 2, and the other three 0.1's, at version 1.
+    // The paragraph catalogue is 0.4's row, at version 2, and the character and admonition ones
+    // 0.1's, at version 1; the citation catalogue is at its own version, 4 (CI-E).
     expect(DEFAULT_CATALOGUES.paragraph).toBe(FOURTH_DEFAULT_CATALOGUES.paragraph);
-    for (const kind of ['character', 'admonition', 'citation'] as const) {
+    expect(DEFAULT_CATALOGUES.citation.schemaVersion).toBe(4);
+    for (const kind of ['character', 'admonition'] as const) {
       expect(DEFAULT_CATALOGUES[kind], kind).toBe(FIRST_DEFAULT_CATALOGUES[kind]);
     }
   });
