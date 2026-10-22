@@ -61,7 +61,10 @@ export async function actOn(
   artifactId: string,
   by: string,
   act: 'archived' | 'unarchived',
-  kinds: readonly ('component' | 'document' | 'bibliographyEntry')[] = ['component', 'document'],
+  kinds: readonly ('component' | 'document' | 'bibliographyEntry' | 'term')[] = [
+    'component',
+    'document',
+  ],
 ): Promise<ArchivalAnswer | undefined> {
   if (!UUID.test(artifactId)) return undefined;
   const artifact = await trx

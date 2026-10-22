@@ -556,7 +556,7 @@ async function setSearchState(
     .updateTable('search_entry')
     .set({ workflow_state: state })
     .where('artifact_id', '=', artifactId)
-    .where('kind', 'in', ['component', 'document', 'section'])
+    .where('kind', 'in', ['component', 'document', 'section', 'term'])
     .execute();
   if (await historyStored(trx)) {
     await trx

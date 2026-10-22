@@ -8,7 +8,7 @@ import styles from './Hold.module.css';
 
 type Client = ReturnType<typeof createApiClient>;
 
-export type Movable = 'component' | 'document' | 'queryDefinition' | 'prompt';
+export type Movable = 'component' | 'document' | 'queryDefinition' | 'prompt' | 'term';
 
 /** A transition the reader may take, as a view offers it. */
 export interface Offered {
@@ -134,7 +134,9 @@ export async function readStanding(
           ? await client.GET('/v1/documents/{id}', params)
           : kind === 'prompt'
             ? await client.GET('/v1/prompts/{id}', params)
-            : await client.GET('/v1/query-definitions/{id}', params);
+            : kind === 'term'
+              ? await client.GET('/v1/terms/{id}', params)
+              : await client.GET('/v1/query-definitions/{id}', params);
     return standingIn(data);
   } catch {
     return undefined;
@@ -158,7 +160,9 @@ async function move(
           ? await client.POST('/v1/documents/{id}/transitions', options)
           : kind === 'prompt'
             ? await client.POST('/v1/prompts/{id}/transitions', options)
-            : await client.POST('/v1/query-definitions/{id}/transitions', options);
+            : kind === 'term'
+              ? await client.POST('/v1/terms/{id}/transitions', options)
+              : await client.POST('/v1/query-definitions/{id}/transitions', options);
     const moved = standingIn(data);
     if (moved) return { moved };
     const code = (error as { code?: unknown } | undefined)?.code;
@@ -198,7 +202,9 @@ async function decideGate(
           ? await client.POST('/v1/documents/{id}/approvals', options)
           : kind === 'prompt'
             ? await client.POST('/v1/prompts/{id}/approvals', options)
-            : await client.POST('/v1/query-definitions/{id}/approvals', options);
+            : kind === 'term'
+              ? await client.POST('/v1/terms/{id}/approvals', options)
+              : await client.POST('/v1/query-definitions/{id}/approvals', options);
     const moved = standingIn(data);
     if (moved) return { moved };
     const code = (error as { code?: unknown } | undefined)?.code;

@@ -295,7 +295,7 @@ export async function decideGate(
       .execute();
     // The scope set now is the revision's, fixed (LIF-042; the R15 plan, R15-B).
     const scope =
-      standing.kind === 'queryDefinition' || standing.kind === 'prompt'
+      standing.kind === 'queryDefinition' || standing.kind === 'prompt' || standing.kind === 'term'
         ? []
         : await fixScope(trx, {
             artifactId: input.artifactId,
@@ -320,7 +320,11 @@ export async function decideGate(
       place.labels,
     );
     // An effective date still to come is the revision's, fixed (WF5-B; LIF-060).
-    if (standing.kind !== 'queryDefinition' && standing.kind !== 'prompt') {
+    if (
+      standing.kind !== 'queryDefinition' &&
+      standing.kind !== 'prompt' &&
+      standing.kind !== 'term'
+    ) {
       await fixEffective(trx, { artifactId: input.artifactId, version });
     }
     revision = await latestRevision(trx, input.artifactId);

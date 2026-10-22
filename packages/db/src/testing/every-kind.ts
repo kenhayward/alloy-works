@@ -73,7 +73,7 @@ export async function publish(
  * kind's artifact, and the section's node; a thread on the component, by its id. `before0046` leaves the
  * query definition and its connection out, for a tenant migrated only as far as a test of an earlier
  * migration needs, and `before0047` the dataset, which records one result of the query definition as a
- * service account's run; either leaves the thread out.
+ * service account's run; either leaves the thread and the term out.
  */
 export async function everyKind(
   trx: TenantTransaction,
@@ -87,9 +87,10 @@ export async function everyKind(
     readonly before0047?: boolean;
   },
 ): Promise<
-  Readonly<Record<Exclude<SearchKind, 'queryDefinition' | 'thread'>, string>> & {
+  Readonly<Record<Exclude<SearchKind, 'queryDefinition' | 'thread' | 'term'>, string>> & {
     readonly queryDefinition?: string;
     readonly thread?: string;
+    readonly term?: string;
     readonly dataset?: string;
     readonly node: string;
   }
@@ -198,6 +199,7 @@ export async function everyKind(
   let queryDefinition: string | undefined;
   let dataset: string | undefined;
   let thread: string | undefined;
+  let term: string | undefined;
   if (!input.before0046) {
     // A query definition names a connection, which is in no search of its own.
     const connection = await createArtifact(trx, {
@@ -275,11 +277,30 @@ export async function everyKind(
       });
       if (started.answer !== 'done') throw new Error(started.answer);
       thread = started.thread;
+      term = (
+        await createArtifact(trx, {
+          author,
+          spaceId,
+          substance: {
+            kind: 'term',
+            content: {
+              schemaVersion: 1,
+              base: 'en',
+              labels: [{ language: 'en', preferred: `${word} term`, alternatives: [] }],
+              definition: [],
+              broader: [],
+              narrower: [],
+              related: [],
+            },
+          },
+        })
+      ).artifactId;
     }
   }
   return {
     ...(queryDefinition === undefined ? {} : { queryDefinition }),
     ...(thread === undefined ? {} : { thread }),
+    ...(term === undefined ? {} : { term }),
     ...(dataset === undefined ? {} : { dataset }),
     component: component.version.artifactId,
     document: document.artifactId,

@@ -23,6 +23,7 @@ import {
   parseProvenanceForWrite,
   parsePrompt,
   parseEntry,
+  parseTerm,
   parseCitationStyle,
   parsePromptForWrite,
   parsePromptLibrary,
@@ -56,6 +57,7 @@ import {
 import { checkProvenanceNames } from './dataset-references.js';
 import { checkNamedSource, checkNotInUse } from './definition-references.js';
 import { isDeleted } from './deletion.js';
+import { checkTermRelations } from './term-relations.js';
 import { checkedLimit } from './listing.js';
 import { indexVersion } from './search.js';
 import { indexReferences } from './reference-index.js';
@@ -143,7 +145,8 @@ type SpacedSubstanceKind =
   | 'queryDefinition'
   | 'dataset'
   | 'prompt'
-  | 'bibliographyEntry';
+  | 'bibliographyEntry'
+  | 'term';
 
 const spacedSubstanceKinds: readonly string[] = [
   'component',
@@ -155,6 +158,7 @@ const spacedSubstanceKinds: readonly string[] = [
   'dataset',
   'prompt',
   'bibliographyEntry',
+  'term',
 ] satisfies readonly SpacedSubstanceKind[];
 
 /**
@@ -169,6 +173,7 @@ const archiveCheckedKinds: readonly string[] = [
   'queryDefinition',
   'prompt',
   'bibliographyEntry',
+  'term',
 ] satisfies readonly SpacedSubstanceKind[];
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -267,6 +272,11 @@ function prepare(substance: VersionSubstance): VersionSubstance {
   if (substance.kind === 'bibliographyEntry') {
     // Nor does an entry: it is in a space. Its shape, CSL's types and variables, on every write (CI-B).
     return { kind: 'bibliographyEntry', content: parseEntry(substance.content) };
+  }
+  if (substance.kind === 'term') {
+    // Nor does a term: it is in a space. Its shape on every write (TM-A); the terms it names are the
+    // writer's to check, with a transaction in hand.
+    return { kind: 'term', content: parseTerm(substance.content) };
   }
   if (substance.kind === 'promptLibrary') {
     // Nor does a library: it is the tenant's, identified by its artifact row (G4-F).
@@ -473,6 +483,10 @@ export async function createArtifact(
   // A prompt names definitions of the tenant's, on every path that makes one (G4-A).
   if (substance.kind === 'prompt') await checkPromptNames(trx, substance.content);
   if (substance.kind === 'promptLibrary') await checkLibraryNames(trx, substance.content);
+  // A term's relations are terms of its space, on every path that makes one (TM-A).
+  if (substance.kind === 'term' && 'spaceId' in input) {
+    await checkTermRelations(trx, input.spaceId, undefined, substance.content, input.author);
+  }
   // A dataset version names a version of its definition and of its connection, on every path.
   if (substance.kind === 'dataset') await checkProvenanceNames(trx, substance.content);
   // Nothing new is made in an archived space (the SP1 plan, SP-C), checked here, where every artifact
@@ -787,6 +801,9 @@ export function substanceOf(stored: StoredVersion): VersionSubstance {
   if (stored.kind === 'bibliographyEntry') {
     return { kind: 'bibliographyEntry', content: parseEntry(stored.content) };
   }
+  if (stored.kind === 'term') {
+    return { kind: 'term', content: parseTerm(stored.content) };
+  }
   if (stored.kind === 'promptLibrary') {
     return { kind: 'promptLibrary', content: parsePromptLibrary(stored.content) };
   }
@@ -933,6 +950,9 @@ async function record(
   if (substance.kind === 'dataset') await checkProvenanceNames(trx, substance.content);
   if (substance.kind === 'prompt') await checkPromptNames(trx, substance.content);
   if (substance.kind === 'promptLibrary') await checkLibraryNames(trx, substance.content);
+  if (substance.kind === 'term') {
+    await checkTermRelations(trx, undefined, input.artifactId, substance.content, input.author);
+  }
   if (
     substance.kind === 'connection' &&
     substance.content.retired &&
@@ -981,7 +1001,8 @@ async function record(
     substance.kind === 'component' ||
     substance.kind === 'document' ||
     substance.kind === 'queryDefinition' ||
-    substance.kind === 'prompt'
+    substance.kind === 'prompt' ||
+    substance.kind === 'term'
   ) {
     await draftOnSave(trx, version, current.id);
   }

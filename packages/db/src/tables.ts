@@ -660,7 +660,7 @@ export interface SearchHistoryTable {
 /** A kind's workflow definition, a version per save, inserted and never changed (0095; WF-B). */
 export interface WorkflowDefinitionTable {
   id: Generated<string>;
-  kind: 'component' | 'document' | 'queryDefinition' | 'prompt';
+  kind: 'component' | 'document' | 'queryDefinition' | 'prompt' | 'term';
   version_no: number;
   body: ColumnType<unknown, string, never>;
   /** Null for the seed. */
@@ -673,7 +673,7 @@ export interface WorkflowDefinitionTable {
 export interface WorkflowTransitionTable {
   id: ColumnType<string, never, never>;
   artifact_id: string;
-  kind: 'component' | 'document' | 'queryDefinition' | 'prompt';
+  kind: 'component' | 'document' | 'queryDefinition' | 'prompt' | 'term';
   /** The version current at the move; null for a creation's, made before its first version. */
   version_id: string | null;
   /** Null for a creation's and a save's of an approved artifact. */
@@ -694,7 +694,7 @@ export interface WorkflowTransitionTable {
 export interface WorkflowApprovalTable {
   id: ColumnType<string, never, never>;
   artifact_id: string;
-  kind: 'component' | 'document' | 'queryDefinition' | 'prompt';
+  kind: 'component' | 'document' | 'queryDefinition' | 'prompt' | 'term';
   /** The move into the gate's from-state that began the round it counts in. */
   round: string;
   version_id: string;
@@ -712,7 +712,7 @@ export interface WorkflowApprovalTable {
 export interface RevisionDesignationTable {
   id: ColumnType<string, never, never>;
   artifact_id: string;
-  kind: 'component' | 'document' | 'queryDefinition' | 'prompt';
+  kind: 'component' | 'document' | 'queryDefinition' | 'prompt' | 'term';
   version_id: string;
   revision_no: number;
   definition_id: string;
@@ -893,7 +893,7 @@ export interface SectionWaiverTable {
 export interface ArtifactArchivalTable {
   id: ColumnType<string, never, never>;
   artifact_id: string;
-  kind: 'component' | 'document' | 'bibliographyEntry';
+  kind: 'component' | 'document' | 'bibliographyEntry' | 'term';
   act: 'archived' | 'unarchived';
   by: string;
   at: ColumnType<Date, never, never>;

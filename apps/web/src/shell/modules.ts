@@ -44,6 +44,12 @@ export const MODULE_GROUPS: readonly ModuleGroup[] = [
         about: 'The sources a space cites, kept once, imported and exported.',
       },
       {
+        name: 'Terms',
+        href: '#/terms',
+        about:
+          'Governed terms: labels per language, definitions and relations, approved or deprecated.',
+      },
+      {
         name: 'Conversations',
         href: '#/conversations',
         about: 'Talk with a model in your own words, about what you may read.',

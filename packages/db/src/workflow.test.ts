@@ -3,6 +3,7 @@ import {
   blockIdentifierFrom,
   SEED_DOCUMENT_WORKFLOW,
   SEED_PROMPT_WORKFLOW,
+  SEED_TERM_WORKFLOW,
   SEED_WORKFLOW,
   SEED_WORKFLOW_1,
   type BlockNode,
@@ -211,6 +212,7 @@ describe('workflow states and transitions (workflow.md; the WF1 plan, Task 1)', 
       ['document', 3],
       ['queryDefinition', 1],
       ['prompt', 2],
+      ['term', 1],
     ]);
     for (const summary of definitions) {
       expect(summary.definition.body).toEqual(
@@ -218,12 +220,18 @@ describe('workflow states and transitions (workflow.md; the WF1 plan, Task 1)', 
           ? SEED_DOCUMENT_WORKFLOW
           : summary.definition.kind === 'prompt'
             ? SEED_PROMPT_WORKFLOW
-            : SEED_WORKFLOW,
+            : summary.definition.kind === 'term'
+              ? SEED_TERM_WORKFLOW
+              : SEED_WORKFLOW,
       );
       expect(summary.definition.by).toBeNull();
-      // A query definition's and a prompt's workflows began at the gated seed (0098, 0123); the
-      // others at WF1's.
-      if (summary.definition.kind === 'queryDefinition' || summary.definition.kind === 'prompt') {
+      // A query definition's, a prompt's and a term's workflows began at their own seeds (0098, 0123,
+      // 0153); the others at WF1's.
+      if (
+        summary.definition.kind === 'queryDefinition' ||
+        summary.definition.kind === 'prompt' ||
+        summary.definition.kind === 'term'
+      ) {
         continue;
       }
       const first = await service.withTenant(other, (trx) =>

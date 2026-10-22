@@ -23,6 +23,9 @@ import { PromptPage } from '../prompts/PromptPage.js';
 import { Bibliography } from '../bibliography/Bibliography.js';
 import { EntryPage } from '../bibliography/EntryPage.js';
 import { BIBLIOGRAPHY, entryAddress } from '../bibliography/links.js';
+import { TermPage } from '../terms/TermPage.js';
+import { Terms } from '../terms/Terms.js';
+import { termAddress, TERMS } from '../terms/links.js';
 import { Prompts } from '../prompts/Prompts.js';
 import { Home } from '../home/Home.js';
 import { PublicationList } from '../publishing/PublicationList.js';
@@ -80,6 +83,7 @@ const LISTS = new Set([
   '#/prompts',
   '#/prompts/libraries',
   '#/bibliography',
+  '#/terms',
 ]);
 const isWork = (hash: string) => !LISTS.has(hash) && !hash.startsWith('#/admin');
 
@@ -451,6 +455,9 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
     const entry = entryAddress(hash);
     if (entry !== null) return <EntryPage key={entry} client={client} id={entry} />;
     if (hash === BIBLIOGRAPHY) return <Bibliography client={client} />;
+    const term = termAddress(hash);
+    if (term !== null) return <TermPage key={term} client={client} id={term} />;
+    if (hash === TERMS) return <Terms client={client} />;
     if (hash === '#/query-definitions') {
       return (
         <>

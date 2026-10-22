@@ -13,6 +13,7 @@ import {
   createStyle,
   createPrompt,
   createEntry,
+  createTerm,
   startConversation,
   setGuardrail,
   savePersonalPrompt,
@@ -91,6 +92,16 @@ const SESSION = '11111111-1111-4111-8111-111111111111';
 const IN_A_MONTH = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
 /** A query definition's shape, naming a connection by id: what a route's shape needs. */
+const aTerm = {
+  schemaVersion: 1,
+  base: 'en',
+  labels: [{ language: 'en', preferred: 'Probe', alternatives: [] }],
+  definition: [],
+  broader: [],
+  narrower: [],
+  related: [],
+};
+
 const aPrompt = {
   schemaVersion: 1,
   title: 'Probe',
@@ -483,6 +494,18 @@ const OTHER_TENANT_IDS: Readonly<
   getBibliographyEntryUses: async (tenant, db) => ({ id: await entryIdIn(tenant, db) }),
   archiveBibliographyEntry: async (tenant, db) => ({ id: await entryIdIn(tenant, db) }),
   unarchiveBibliographyEntry: async (tenant, db) => ({ id: await entryIdIn(tenant, db) }),
+  listTerms: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
+  createTerm: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
+  importTerms: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
+  exportTerms: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
+  getTerm: async (tenant, db) => ({ id: await termIdIn(tenant, db) }),
+  recordTermVersion: async (tenant, db) => ({ id: await termIdIn(tenant, db) }),
+  getTermUses: async (tenant, db) => ({ id: await termIdIn(tenant, db) }),
+  archiveTerm: async (tenant, db) => ({ id: await termIdIn(tenant, db) }),
+  unarchiveTerm: async (tenant, db) => ({ id: await termIdIn(tenant, db) }),
+  transitionTerm: async (tenant, db) => ({ id: await termIdIn(tenant, db) }),
+  decideTermGate: async (tenant, db) => ({ id: await termIdIn(tenant, db) }),
+  listTermApprovals: async (tenant, db) => ({ id: await termIdIn(tenant, db) }),
   getPrompt: async (tenant, db) => ({ id: await promptIdIn(tenant, db) }),
   recordPromptVersion: async (tenant, db) => ({ id: await promptIdIn(tenant, db) }),
   getPromptLibrary: async (tenant, db) => ({ id: await libraryIdIn(tenant, db) }),
@@ -616,6 +639,13 @@ const VALID_INPUT: Readonly<
   createBibliographyEntry: { payload: { entry: { csl: { type: 'book', title: 'Probe' } } } },
   importBibliographyEntries: { payload: { format: 'csl-json', text: '[]' } },
   exportBibliographyEntries: { query: 'format=bibtex' },
+  createTerm: { payload: { term: aTerm } },
+  importTerms: { payload: { format: 'json-ld', text: '{"@graph": []}' } },
+  recordTermVersion: { payload: { openedFrom: SESSION, term: aTerm } },
+  transitionTerm: { payload: { transition: 'deprecate', from: 'approved', reason: 'Probe' } },
+  decideTermGate: {
+    payload: { transition: 'approve', version: SESSION, decision: 'approved' },
+  },
   recordBibliographyEntryVersion: {
     payload: { openedFrom: SESSION, entry: { csl: { type: 'book', title: 'Probe' } } },
   },
@@ -1079,6 +1109,35 @@ const queryDefinitionIdIn = async (tenant: Tenant, db: TenantDatabase) => {
 };
 
 /** A bibliography entry in environment B's General. */
+const termIdIn = (tenant: Tenant, db: TenantDatabase) =>
+  db.withTenant(tenant, async (trx) => {
+    const general = await trx
+      .selectFrom('space')
+      .select('id')
+      .where('name', '=', 'General')
+      .executeTakeFirstOrThrow();
+    const author = await trx
+      .insertInto('principal')
+      .values({
+        issuer: 'https://idp.example',
+        subject: `ivy-${randomUUID()}`,
+        email: null,
+        display_name: null,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    const made = await createTerm(trx, {
+      spaceId: general.id,
+      term: {
+        ...aTerm,
+        labels: [{ language: 'en', preferred: `Probe ${randomUUID()}`, alternatives: [] }],
+      },
+      author: author.id,
+    });
+    if (made.answer !== 'created') throw new Error(`refused: ${made.answer}`);
+    return made.term.id;
+  });
+
 const entryIdIn = (tenant: Tenant, db: TenantDatabase) =>
   db.withTenant(tenant, async (trx) => {
     const general = await trx

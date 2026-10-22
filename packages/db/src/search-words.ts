@@ -17,6 +17,7 @@ import { HISTORY_KINDS, historyFielded, historyStored, historyTitled } from './s
 import { linesStored } from './lines.js';
 import { CONDITIONS_KEY, RELATIONS_KEY } from './search-relations.js';
 import { sectionMembers, type SectionMembers } from './search-sections.js';
+import { termReach } from './search-terms.js';
 import { vectorStored } from './search-threads.js';
 import type { TenantTransaction } from './tables.js';
 import { stateNames, workflowStored } from './workflow.js';
@@ -724,7 +725,13 @@ export async function searchWords(
   // never a pattern.
   const like = (term: string) => `%${term.replace(/[\\%_]/gu, (each) => `\\${each}`)}%`;
   const short = (term: string) => [...term].length < 3;
-  /** `alias`'s row matching the words, or holding every term as a part of a word. */
+  // The components the words reach through terms (LIB-026; the TM plan, TM-I), the latest alone.
+  const reached =
+    scope === 'latest' && parsed.words !== '' ? await termReach(trx, readable, parsed.words) : [];
+  /**
+   * `alias`'s row matching the words, or holding every term as a part of a word; the current row of a
+   * component the words reach through a term, too.
+   */
   const wordsOver = (alias: string) => {
     const body = sql.ref(`${alias}.body`);
     const whole = matches(alias, parsed.words);
@@ -742,7 +749,11 @@ export async function searchWords(
             ],
             sql` and `,
           );
-    return contains === null ? whole : sql<SqlBool>`(${whole} or (${contains}))`;
+    const found = contains === null ? whole : sql<SqlBool>`(${whole} or (${contains}))`;
+    return reached.length === 0
+      ? found
+      : sql<SqlBool>`(${found} or (${sql.ref(`${alias}.kind`)} = 'component'
+          and ${sql.ref(`${alias}.artifact_id`)} = any(${reached}::uuid[])))`;
   };
   const words =
     parsed.words === ''
@@ -1528,10 +1539,14 @@ export async function searchWords(
       : await stateNames(trx);
   // A section is its document's; a facet counts both kinds, so it names each name they give a key.
   const stateName = (kind: string, key: string) =>
-    stateNamed.get(kind === 'component' ? 'component' : 'document')?.get(key) ?? key;
+    stateNamed.get(kind === 'component' || kind === 'term' ? kind : 'document')?.get(key) ?? key;
+  // Named by each kind holding the key: a term's workflow holds no review (TM-A).
   const stateLabel = (key: string) =>
-    [...new Set([...stateNamed.values()].map((names) => names.get(key) ?? key))].join(' or ') ||
-    key;
+    [
+      ...new Set(
+        [...stateNamed.values()].flatMap((names) => (names.has(key) ? [names.get(key)!] : [])),
+      ),
+    ].join(' or ') || key;
   const placed =
     baseline !== undefined && row.items.some((item) => item.kind === 'component')
       ? await firstPinnedNodes(trx, baseline)

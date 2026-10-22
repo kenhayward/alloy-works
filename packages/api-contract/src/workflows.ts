@@ -3,7 +3,13 @@ import type { RouteContract } from './contract.js';
 import { ErrorBody } from './schemas.js';
 
 /** A workflow's kind: one for components, one for documents (the WF1 plan, WF-A). */
-export const WorkflowKindParam = z.enum(['component', 'document', 'queryDefinition', 'prompt']);
+export const WorkflowKindParam = z.enum([
+  'component',
+  'document',
+  'queryDefinition',
+  'prompt',
+  'term',
+]);
 
 const Key = z
   .string()
@@ -578,7 +584,9 @@ const forbidden = {
   schema: ErrorBody,
 } as const;
 
-const approvalResponses = (kind: 'component' | 'document' | 'query definition' | 'prompt') =>
+const approvalResponses = (
+  kind: 'component' | 'document' | 'query definition' | 'prompt' | 'term',
+) =>
   ({
     200: { description: 'Decided; where it stands now', schema: TransitionAnswer },
     400: {
@@ -602,7 +610,9 @@ const approvalResponses = (kind: 'component' | 'document' | 'query definition' |
     },
   }) as const;
 
-const transitionResponses = (kind: 'component' | 'document' | 'query definition' | 'prompt') =>
+const transitionResponses = (
+  kind: 'component' | 'document' | 'query definition' | 'prompt' | 'term',
+) =>
   ({
     200: { description: 'Moved; where it stands now', schema: TransitionAnswer },
     400: {
@@ -1052,6 +1062,43 @@ export const workflowRoutes = {
       401: unauthenticated,
       403: { description: 'The caller may not read this prompt', schema: ErrorBody },
       404: { description: 'No such prompt the caller may read', schema: ErrorBody },
+    },
+  },
+  transitionTerm: {
+    operationId: 'transitionTerm',
+    method: 'POST',
+    path: '/v1/terms/{id}/transitions',
+    summary: 'Move a term along a workflow transition: deprecate, reinstate or reopen it as seeded',
+    tenantScoped: true,
+    access: read,
+    params: TransitionParams,
+    body: TransitionBody,
+    responses: transitionResponses('term'),
+  },
+  decideTermGate: {
+    operationId: 'decideTermGate',
+    method: 'POST',
+    path: '/v1/terms/{id}/approvals',
+    summary: 'Approve or reject a term at a gate',
+    tenantScoped: true,
+    access: read,
+    params: TransitionParams,
+    body: ApprovalBody,
+    responses: approvalResponses('term'),
+  },
+  listTermApprovals: {
+    operationId: 'listTermApprovals',
+    method: 'GET',
+    path: '/v1/terms/{id}/approvals',
+    summary: "List a term's approvals and rejections",
+    tenantScoped: true,
+    access: read,
+    params: TransitionParams,
+    responses: {
+      200: { description: 'Every decision at its gates, newest first', schema: ApprovalsView },
+      401: unauthenticated,
+      403: { description: 'The caller may not read this term', schema: ErrorBody },
+      404: { description: 'No such term the caller may read', schema: ErrorBody },
     },
   },
   transitionDocument: {

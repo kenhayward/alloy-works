@@ -18,6 +18,7 @@ import { assistantRoutes } from './assistant.js';
 import { generatedRoutes } from './generated.js';
 import { promptRoutes } from './prompts.js';
 import { bibliographyRoutes } from './bibliography.js';
+import { termRoutes } from './terms.js';
 import { promptLibraryRoutes } from './prompt-libraries.js';
 import { citationStyleRoutes } from './citation-styles.js';
 import { referenceSourceRoutes } from './reference-sources.js';
@@ -402,6 +403,7 @@ type Routes = typeof ownRoutes &
   typeof generatedRoutes &
   typeof promptRoutes &
   typeof bibliographyRoutes &
+  typeof termRoutes &
   typeof promptLibraryRoutes &
   typeof citationStyleRoutes &
   typeof referenceSourceRoutes &
@@ -474,6 +476,7 @@ export const routes: Routes = {
   ...generatedRoutes,
   ...promptRoutes,
   ...bibliographyRoutes,
+  ...termRoutes,
   ...promptLibraryRoutes,
   ...citationStyleRoutes,
   ...referenceSourceRoutes,

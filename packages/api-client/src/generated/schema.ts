@@ -5663,6 +5663,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/spaces/{space}/terms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The space's terms the caller may read, each with its standing
+         * @description Lists a space's terms the caller may read, by their preferred label in their base language or the newest changed, each with its abbreviation and its workflow state. Archived terms are left out, or listed alone when asked.
+         */
+        get: operations["listTerms"];
+        put?: never;
+        /**
+         * Make a term in this space, in draft
+         * @description Makes a term in the space, in draft: its base language, a preferred label, alternative labels and an abbreviation per language, the base language among them, a definition per language, and the broader, narrower and related terms it states, each a term of the same space, with a replacement where it has one. Nothing is inferred: a broader term says nothing of its narrower ones unless it states them. A replacement never closes a cycle, and a chain of them is at most five long. It needs edit in the space.
+         */
+        post: operations["createTerm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/spaces/{space}/terms/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The space's terms the caller may read, as SKOS in JSON-LD
+         * @description Exports the space's terms the caller may read, archived or not, as SKOS in JSON-LD: each a `skos:Concept` identified `urn:uuid:` and its id, with `prefLabel`, `altLabel` and `definition` by language, an abbreviation as a `notation` in its label's language, `broader`, `narrower` and `related`, and a replacement as `dct:isReplacedBy`.
+         */
+        get: operations["exportTerms"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/spaces/{space}/terms/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import SKOS, as JSON-LD or Turtle, as terms of this space
+         * @description Imports SKOS concepts as terms of the space, from JSON-LD in the compact form `exportTerms` writes or from Turtle. A concept whose preferred label in its base language is a term's of the space, case aside, is merged into it: the answer names the labels, definitions and relations it was given. Each other concept is made, in draft. What no term can hold is reported rather than dropped: another predicate, a subject that is not a concept, a language tag the product does not read, an alternative label in a language with no preferred one, and a relation to a concept outside the file. Nothing a file names is fetched. At most 2,000 concepts are taken at a time. It needs edit in the space.
+         */
+        post: operations["importTerms"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/stream": {
         parameters: {
             query?: never;
@@ -5877,6 +5941,150 @@ export interface paths {
         get: operations["getTenant"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/terms/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A term at its latest version, with its standing
+         * @description Returns a term at its latest version, its workflow state and the transitions and gates the caller may take, whether it is deprecated or archived, and whether the caller may change or archive it.
+         */
+        get: operations["getTerm"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/terms/{id}/approvals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a term's approvals and rejections
+         * @description Lists every approval and rejection of a term at its gates, newest first: the gate, the decision, who, when, the version decided and a rejection’s reason. Needs read on the term.
+         */
+        get: operations["listTermApprovals"];
+        put?: never;
+        /**
+         * Approve or reject a term at a gate
+         * @description Approves or rejects a term at a gate from its state, against the version the approver saw, needing approve on the term. The gate passes once enough distinct approvers approve, none of them an author where the gate says so, and designates a revision, the version documents print; a rejection needs a reason. Audited.
+         */
+        post: operations["decideTermGate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/terms/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Archive a term nothing uses
+         * @description Archives a term, leaving it out of the space's listing. Refused while a component's latest version uses it. It needs retire on the term.
+         */
+        post: operations["archiveTerm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/terms/{id}/transitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move a term along a workflow transition: deprecate, reinstate or reopen it as seeded
+         * @description Moves a term along a transition from its state, named as the caller saw it, needing the transition's permission on the term and a reason where the transition asks for one: as seeded, deprecating an approved term, reinstating a deprecated one, or reopening one to draft. Saving an approved term moves it back to draft on its own. Audited.
+         */
+        post: operations["transitionTerm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/terms/{id}/unarchive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unarchive a term
+         * @description Unarchives a term, returning it to the space's listing. It needs retire on the term.
+         */
+        post: operations["unarchiveTerm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/terms/{id}/uses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Where a term is used: the components whose latest version marks words as it
+         * @description Returns where a term is used: the components whose latest version marks words as it. One the caller may not read is said to exist, never named.
+         */
+        get: operations["getTermUses"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/terms/{id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cut a term's next version from the one the caller opened
+         * @description Records the next term version from the version the caller opened, checked as a new term is.
+         */
+        post: operations["recordTermVersion"];
         delete?: never;
         options?: never;
         head?: never;
@@ -85482,7 +85690,7 @@ export interface operations {
                         facetsBounded: boolean;
                         items: {
                             /** @enum {string} */
-                            kind: "component" | "document" | "section" | "publication" | "template" | "asset" | "field" | "metadataSchema" | "componentType" | "queryDefinition" | "thread";
+                            kind: "component" | "document" | "section" | "publication" | "template" | "asset" | "field" | "metadataSchema" | "componentType" | "queryDefinition" | "thread" | "term";
                             artifactId: string;
                             /** @description A section's outline node, or the node a thread on a document is on; else null */
                             node: string | null;
@@ -97771,6 +97979,960 @@ export interface operations {
             };
         };
     };
+    listTerms: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: string;
+                sort?: "label" | "changed";
+                order?: "asc" | "desc";
+                archived?: "true";
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                space: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of terms */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "next": "example",
+                     *       "total": -9007199254740991
+                     *     }
+                     */
+                    "application/json": {
+                        items: {
+                            id: string;
+                            /** @description Its preferred label in its base language */
+                            label: string;
+                            /** @description Its abbreviation in its base language */
+                            abbreviation: string | null;
+                            term: {
+                                /** @constant */
+                                schemaVersion: 1;
+                                base: string;
+                                labels: {
+                                    language: string;
+                                    preferred: string;
+                                    alternatives: string[];
+                                    abbreviation?: string;
+                                }[];
+                                definition: {
+                                    language: string;
+                                    text: string;
+                                }[];
+                                broader: string[];
+                                narrower: string[];
+                                related: string[];
+                                replacedBy?: string;
+                            };
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            /** @description When its latest version was made */
+                            changedAt: string;
+                            /** @description Its workflow state now: draft, approved or deprecated as seeded */
+                            state: {
+                                key: string;
+                                name: string;
+                                approved: boolean;
+                            } | null;
+                        }[];
+                        /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
+                        next: string | null;
+                        /** @description How many there are with the filters in force, as of the walk this page belongs to */
+                        total: number;
+                    };
+                };
+            };
+            /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a space the caller may not read is not found */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such space in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    createTerm: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                space: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "term": {
+                 *         "schemaVersion": 1,
+                 *         "base": "en",
+                 *         "labels": [
+                 *           {
+                 *             "language": "en",
+                 *             "preferred": "example",
+                 *             "alternatives": []
+                 *           }
+                 *         ],
+                 *         "definition": [],
+                 *         "broader": [],
+                 *         "narrower": [],
+                 *         "related": []
+                 *       }
+                 *     }
+                 */
+                "application/json": {
+                    term: {
+                        /** @constant */
+                        schemaVersion: 1;
+                        base: string;
+                        labels: {
+                            language: string;
+                            preferred: string;
+                            alternatives: string[];
+                            abbreviation?: string;
+                        }[];
+                        definition: {
+                            language: string;
+                            text: string;
+                        }[];
+                        broader: string[];
+                        narrower: string[];
+                        related: string[];
+                        replacedBy?: string;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Made at version 0.1 */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "term": {
+                     *         "schemaVersion": 1,
+                     *         "base": "en",
+                     *         "labels": [
+                     *           {
+                     *             "language": "en",
+                     *             "preferred": "example",
+                     *             "alternatives": []
+                     *           }
+                     *         ],
+                     *         "definition": [],
+                     *         "broader": [],
+                     *         "narrower": [],
+                     *         "related": []
+                     *       },
+                     *       "archived": false,
+                     *       "deprecated": false,
+                     *       "mayEdit": false,
+                     *       "mayRetire": false,
+                     *       "state": {
+                     *         "key": "example",
+                     *         "name": "example",
+                     *         "approved": false
+                     *       },
+                     *       "transitions": [],
+                     *       "gates": [],
+                     *       "revision": {
+                     *         "number": 1,
+                     *         "versionId": "00000000-0000-4000-8000-000000000001",
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        space: {
+                            id: string;
+                            name: string;
+                        };
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        term: {
+                            /** @constant */
+                            schemaVersion: 1;
+                            base: string;
+                            labels: {
+                                language: string;
+                                preferred: string;
+                                alternatives: string[];
+                                abbreviation?: string;
+                            }[];
+                            definition: {
+                                language: string;
+                                text: string;
+                            }[];
+                            broader: string[];
+                            narrower: string[];
+                            related: string[];
+                            replacedBy?: string;
+                        };
+                        /** @description Whether it is archived: left out of the listing */
+                        archived: boolean;
+                        /** @description Whether it is deprecated: its workflow's state keyed `deprecated` (LIB-049) */
+                        deprecated: boolean;
+                        /** @description Whether the caller may cut its next version: edit on it */
+                        mayEdit: boolean;
+                        /** @description Whether the caller may archive it: retire on it */
+                        mayRetire: boolean;
+                        /** @description Its workflow state now, named by the definition deciding its next move */
+                        state: {
+                            key: string;
+                            name: string;
+                            /** @description Whether it counts as approved: a save starts a new draft */
+                            approved: boolean;
+                        };
+                        /** @description The workflow transitions the caller may take from its state now, in order */
+                        transitions: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            reasonRequired: boolean;
+                        }[];
+                        /** @description Each gate from its state, decided by its approvers */
+                        gates: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to once passed */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            /** @description What a rejection is called, and the state it returns to */
+                            reject: {
+                                name: string;
+                                /** @description Its workflow state now, named by the definition deciding its next move */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                            };
+                            /**
+                             * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                             * @enum {string}
+                             */
+                            publication: "none" | "permitted" | "required";
+                            /** @description Where it permits one, whether the caller may ask for it as they approve */
+                            mayPublish: boolean;
+                            /** @description Approvals this round on the current version */
+                            count: number;
+                            /** @description Approvals it needs, each by a distinct person */
+                            required: number;
+                            /** @description Whether the caller has approved it this round */
+                            approvedByCaller: boolean;
+                            /** @description Whether the caller may approve or reject it now */
+                            mayDecide: boolean;
+                        }[];
+                        /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                        revision: {
+                            number: number;
+                            /** Format: uuid */
+                            versionId: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                    };
+                };
+            };
+            /** @description `term_invalid`: a shape a term does not hold, a base language with no label, or a relation or replacement naming no term of the space, itself, a cycle or a chain past five, each problem named */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        problems?: {
+                            /** @constant */
+                            rule: "term_invalid";
+                            path: string;
+                            message: string;
+                        }[];
+                        current?: {
+                            id: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            term: {
+                                /** @constant */
+                                schemaVersion: 1;
+                                base: string;
+                                labels: {
+                                    language: string;
+                                    preferred: string;
+                                    alternatives: string[];
+                                    abbreviation?: string;
+                                }[];
+                                definition: {
+                                    language: string;
+                                    text: string;
+                                }[];
+                                broader: string[];
+                                narrower: string[];
+                                related: string[];
+                                replacedBy?: string;
+                            };
+                            /** @description Whether it is archived: left out of the listing */
+                            archived: boolean;
+                            /** @description Whether it is deprecated: its workflow's state keyed `deprecated` (LIB-049) */
+                            deprecated: boolean;
+                            /** @description Whether the caller may cut its next version: edit on it */
+                            mayEdit: boolean;
+                            /** @description Whether the caller may archive it: retire on it */
+                            mayRetire: boolean;
+                            /** @description Its workflow state now, named by the definition deciding its next move */
+                            state: {
+                                key: string;
+                                name: string;
+                                /** @description Whether it counts as approved: a save starts a new draft */
+                                approved: boolean;
+                            };
+                            /** @description The workflow transitions the caller may take from its state now, in order */
+                            transitions: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                reasonRequired: boolean;
+                            }[];
+                            /** @description Each gate from its state, decided by its approvers */
+                            gates: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to once passed */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                /** @description What a rejection is called, and the state it returns to */
+                                reject: {
+                                    name: string;
+                                    /** @description Its workflow state now, named by the definition deciding its next move */
+                                    to: {
+                                        key: string;
+                                        name: string;
+                                    };
+                                };
+                                /**
+                                 * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                                 * @enum {string}
+                                 */
+                                publication: "none" | "permitted" | "required";
+                                /** @description Where it permits one, whether the caller may ask for it as they approve */
+                                mayPublish: boolean;
+                                /** @description Approvals this round on the current version */
+                                count: number;
+                                /** @description Approvals it needs, each by a distinct person */
+                                required: number;
+                                /** @description Whether the caller has approved it this round */
+                                approvedByCaller: boolean;
+                                /** @description Whether the caller may approve or reject it now */
+                                mayDecide: boolean;
+                            }[];
+                            /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                            revision: {
+                                number: number;
+                                /** Format: uuid */
+                                versionId: string;
+                                /** Format: date-time */
+                                at: string;
+                            } | null;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not edit in the space */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such space in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `space_archived`: the space is archived, and nothing new is made in it */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    exportTerms: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                space: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The terms as JSON-LD */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "format": "json-ld",
+                     *       "text": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        /** @constant */
+                        format: "json-ld";
+                        /** @description The terms as SKOS in JSON-LD, in the compact form terms.md documents */
+                        text: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a space the caller may not read is not found */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such space in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    importTerms: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                space: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "format": "json-ld",
+                 *       "text": "example"
+                 *     }
+                 */
+                "application/json": {
+                    /** @enum {string} */
+                    format: "json-ld" | "turtle";
+                    text: string;
+                    /** @description The base language a concept takes where it has a preferred label in it; `en` absent */
+                    base?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description What became of each concept, and what no term could hold */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "concepts": [],
+                     *       "unrepresented": [],
+                     *       "unrepresentedTotal": -9007199254740991
+                     *     }
+                     */
+                    "application/json": {
+                        concepts: {
+                            /** @description The concept's identity in the file */
+                            key: string;
+                            /** @enum {string} */
+                            outcome: "created" | "merged" | "refused";
+                            term: {
+                                id: string;
+                                /** @description Its preferred label in its base language */
+                                label: string;
+                            } | null;
+                            /** @description What the matching term lacked and was given: labels, definitions and relations */
+                            merged: string[];
+                            /** @description Why it was refused */
+                            message: string | null;
+                        }[];
+                        /** @description What no term could hold, in the order the file gives it, at most 1,000 named */
+                        unrepresented: {
+                            /** @description The concept it was stated of; null for a subject */
+                            concept: string | null;
+                            /** @enum {string} */
+                            what: "subject" | "predicate" | "label" | "language" | "relation" | "value";
+                            /** @description What it was, as the file said it */
+                            detail: string;
+                        }[];
+                        /** @description How many things no term could hold, named or not */
+                        unrepresentedTotal: number;
+                    };
+                };
+            };
+            /** @description `import_unreadable`: the text does not read as the format. `import_too_many`: it holds more than 2,000 concepts */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not edit in the space */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such space in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `space_archived`: the space is archived, and nothing new is made in it */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     openStream: {
         parameters: {
             query?: {
@@ -99913,6 +101075,1902 @@ export interface operations {
                         rule?: string;
                         /** @description Quote this when reporting a problem */
                         traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getTerm: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The term */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "term": {
+                     *         "schemaVersion": 1,
+                     *         "base": "en",
+                     *         "labels": [
+                     *           {
+                     *             "language": "en",
+                     *             "preferred": "example",
+                     *             "alternatives": []
+                     *           }
+                     *         ],
+                     *         "definition": [],
+                     *         "broader": [],
+                     *         "narrower": [],
+                     *         "related": []
+                     *       },
+                     *       "archived": false,
+                     *       "deprecated": false,
+                     *       "mayEdit": false,
+                     *       "mayRetire": false,
+                     *       "state": {
+                     *         "key": "example",
+                     *         "name": "example",
+                     *         "approved": false
+                     *       },
+                     *       "transitions": [],
+                     *       "gates": [],
+                     *       "revision": {
+                     *         "number": 1,
+                     *         "versionId": "00000000-0000-4000-8000-000000000001",
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        space: {
+                            id: string;
+                            name: string;
+                        };
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        term: {
+                            /** @constant */
+                            schemaVersion: 1;
+                            base: string;
+                            labels: {
+                                language: string;
+                                preferred: string;
+                                alternatives: string[];
+                                abbreviation?: string;
+                            }[];
+                            definition: {
+                                language: string;
+                                text: string;
+                            }[];
+                            broader: string[];
+                            narrower: string[];
+                            related: string[];
+                            replacedBy?: string;
+                        };
+                        /** @description Whether it is archived: left out of the listing */
+                        archived: boolean;
+                        /** @description Whether it is deprecated: its workflow's state keyed `deprecated` (LIB-049) */
+                        deprecated: boolean;
+                        /** @description Whether the caller may cut its next version: edit on it */
+                        mayEdit: boolean;
+                        /** @description Whether the caller may archive it: retire on it */
+                        mayRetire: boolean;
+                        /** @description Its workflow state now, named by the definition deciding its next move */
+                        state: {
+                            key: string;
+                            name: string;
+                            /** @description Whether it counts as approved: a save starts a new draft */
+                            approved: boolean;
+                        };
+                        /** @description The workflow transitions the caller may take from its state now, in order */
+                        transitions: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            reasonRequired: boolean;
+                        }[];
+                        /** @description Each gate from its state, decided by its approvers */
+                        gates: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to once passed */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            /** @description What a rejection is called, and the state it returns to */
+                            reject: {
+                                name: string;
+                                /** @description Its workflow state now, named by the definition deciding its next move */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                            };
+                            /**
+                             * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                             * @enum {string}
+                             */
+                            publication: "none" | "permitted" | "required";
+                            /** @description Where it permits one, whether the caller may ask for it as they approve */
+                            mayPublish: boolean;
+                            /** @description Approvals this round on the current version */
+                            count: number;
+                            /** @description Approvals it needs, each by a distinct person */
+                            required: number;
+                            /** @description Whether the caller has approved it this round */
+                            approvedByCaller: boolean;
+                            /** @description Whether the caller may approve or reject it now */
+                            mayDecide: boolean;
+                        }[];
+                        /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                        revision: {
+                            number: number;
+                            /** Format: uuid */
+                            versionId: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a term the caller may not read is not found */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such term in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listTermApprovals: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Every decision at its gates, newest first */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "approvals": []
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Every approval and rejection, newest first */
+                        approvals: {
+                            transition: string;
+                            /** @enum {string} */
+                            decision: "approved" | "rejected";
+                            /** @description A rejection's reason; null for an approval */
+                            reason: string | null;
+                            by: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string | null;
+                            };
+                            /** Format: date-time */
+                            at: string;
+                            /**
+                             * Format: uuid
+                             * @description The version decided
+                             */
+                            versionId: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not read this term */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such term the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    decideTermGate: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "transition": "example",
+                 *       "version": "00000000-0000-4000-8000-000000000001",
+                 *       "decision": "approved"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The gate, by its transition key */
+                    transition: string;
+                    /**
+                     * Format: uuid
+                     * @description The version the approver saw: refused, as version_moved, where it has been replaced since
+                     */
+                    version: string;
+                    /** @enum {string} */
+                    decision: "approved" | "rejected";
+                    /** @description Why it is rejected: required for a rejection, kept with it */
+                    reason?: string;
+                    /** @description Where the gate permits a publication and this approval passes it, request one of the gate's baseline; needs publish */
+                    publish?: boolean;
+                    /**
+                     * Format: uuid
+                     * @description A component's divergent line whose gate it is (LIF-044); its main line where absent
+                     */
+                    line?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Decided; where it stands now */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "state": {
+                     *         "key": "example",
+                     *         "name": "example",
+                     *         "approved": false
+                     *       },
+                     *       "transitions": [],
+                     *       "gates": [],
+                     *       "revision": {
+                     *         "number": 1,
+                     *         "versionId": "00000000-0000-4000-8000-000000000001",
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Its workflow state now, named by the definition deciding its next move */
+                        state: {
+                            key: string;
+                            name: string;
+                            /** @description Whether it counts as approved: a save starts a new draft */
+                            approved: boolean;
+                        };
+                        /** @description The transitions the caller may take from it now; a gate is decided, not taken */
+                        transitions: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            reasonRequired: boolean;
+                        }[];
+                        /** @description Each gate from its state, decided by its approvers */
+                        gates: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to once passed */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            /** @description What a rejection is called, and the state it returns to */
+                            reject: {
+                                name: string;
+                                /** @description Its workflow state now, named by the definition deciding its next move */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                            };
+                            /**
+                             * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                             * @enum {string}
+                             */
+                            publication: "none" | "permitted" | "required";
+                            /** @description Where it permits one, whether the caller may ask for it as they approve */
+                            mayPublish: boolean;
+                            /** @description Approvals this round on the current version */
+                            count: number;
+                            /** @description Approvals it needs, each by a distinct person */
+                            required: number;
+                            /** @description Whether the caller has approved it this round */
+                            approvedByCaller: boolean;
+                            /** @description Whether the caller may approve or reject it now */
+                            mayDecide: boolean;
+                        }[];
+                        /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                        revision: {
+                            number: number;
+                            /** Format: uuid */
+                            versionId: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                    };
+                };
+            };
+            /** @description reason_required: a rejection needs a reason; reason_invalid: a reason over 2,000 characters */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the term but may not approve it, or is one of its authors where the gate refuses them (approval_author) */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such term in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; conditions_unmet: what the gate requires is not met, so nothing was recorded */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description state_moved: where it is now */
+                        state?: {
+                            key: string;
+                            name: string;
+                        };
+                        /** @description conditions_unmet: each condition not met, in the order the transition names them */
+                        unmet?: {
+                            /**
+                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires; noRetracted: no source cited by what a document places at the version moving retracted, as its source last said
+                             * @enum {string}
+                             */
+                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial" | "noRetracted";
+                            /** @description How many stand in its way */
+                            count: number;
+                            /** @description The sections missing, or the components not approved, by title */
+                            names: string[];
+                            /** @description Components the caller may not read, which leave it unproven */
+                            unreadable: number;
+                        }[];
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    archiveTerm: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Archived, or already so, which changes nothing */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "archived": false
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Whether it is archived now */
+                        archived: boolean;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the term but may not retire it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such term in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `term_used`: a component's latest version uses it */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    transitionTerm: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "transition": "example",
+                 *       "from": "example"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The transition to take, by key */
+                    transition: string;
+                    /** @description The state the caller saw it in: refused, as state_moved, where it has moved since */
+                    from: string;
+                    /** @description Why, recorded with the move; required where the transition says so */
+                    reason?: string;
+                    /**
+                     * Format: uuid
+                     * @description A component's divergent line to move (LIF-044); its main line where absent
+                     */
+                    line?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Moved; where it stands now */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "state": {
+                     *         "key": "example",
+                     *         "name": "example",
+                     *         "approved": false
+                     *       },
+                     *       "transitions": [],
+                     *       "gates": [],
+                     *       "revision": {
+                     *         "number": 1,
+                     *         "versionId": "00000000-0000-4000-8000-000000000001",
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Its workflow state now, named by the definition deciding its next move */
+                        state: {
+                            key: string;
+                            name: string;
+                            /** @description Whether it counts as approved: a save starts a new draft */
+                            approved: boolean;
+                        };
+                        /** @description The transitions the caller may take from it now; a gate is decided, not taken */
+                        transitions: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            reasonRequired: boolean;
+                        }[];
+                        /** @description Each gate from its state, decided by its approvers */
+                        gates: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to once passed */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            /** @description What a rejection is called, and the state it returns to */
+                            reject: {
+                                name: string;
+                                /** @description Its workflow state now, named by the definition deciding its next move */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                            };
+                            /**
+                             * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                             * @enum {string}
+                             */
+                            publication: "none" | "permitted" | "required";
+                            /** @description Where it permits one, whether the caller may ask for it as they approve */
+                            mayPublish: boolean;
+                            /** @description Approvals this round on the current version */
+                            count: number;
+                            /** @description Approvals it needs, each by a distinct person */
+                            required: number;
+                            /** @description Whether the caller has approved it this round */
+                            approvedByCaller: boolean;
+                            /** @description Whether the caller may approve or reject it now */
+                            mayDecide: boolean;
+                        }[];
+                        /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                        revision: {
+                            number: number;
+                            /** Format: uuid */
+                            versionId: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                    };
+                };
+            };
+            /** @description reason_required: the transition needs a reason, and none was given; reason_invalid: a reason over 2,000 characters */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the term but lacks the permission the transition needs */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such term in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description state_moved: the term is no longer in the state named, which the answer gives; transition_unknown: no such transition from its state; artifact_archived: an archived term does not move until unarchived; conditions_unmet: what the transition requires is not met */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description state_moved: where it is now */
+                        state?: {
+                            key: string;
+                            name: string;
+                        };
+                        /** @description conditions_unmet: each condition not met, in the order the transition names them */
+                        unmet?: {
+                            /**
+                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile; generated: no suggestion a run of the assistant made waiting to be accepted or rejected; trial: a prompt version with a finished trial run, which every prompt workflow’s approval requires; noRetracted: no source cited by what a document places at the version moving retracted, as its source last said
+                             * @enum {string}
+                             */
+                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile" | "generated" | "trial" | "noRetracted";
+                            /** @description How many stand in its way */
+                            count: number;
+                            /** @description The sections missing, or the components not approved, by title */
+                            names: string[];
+                            /** @description Components the caller may not read, which leave it unproven */
+                            unreadable: number;
+                        }[];
+                    };
+                };
+            };
+            /** @description The term has been deleted */
+            410: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    unarchiveTerm: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Unarchived, or already so, which changes nothing */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "archived": false
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Whether it is archived now */
+                        archived: boolean;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the term but may not retire it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such term in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getTermUses: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The components using it the caller may read, and whether there are more */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "named": [],
+                     *       "unreadable": false
+                     *     }
+                     */
+                    "application/json": {
+                        named: {
+                            id: string;
+                            title: string;
+                        }[];
+                        /** @description Whether a component the caller may not read uses it too */
+                        unreadable: boolean;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a term the caller may not read is not found */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such term in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    recordTermVersion: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "openedFrom": "00000000-0000-4000-8000-000000000001",
+                 *       "term": {
+                 *         "schemaVersion": 1,
+                 *         "base": "en",
+                 *         "labels": [
+                 *           {
+                 *             "language": "en",
+                 *             "preferred": "example",
+                 *             "alternatives": []
+                 *           }
+                 *         ],
+                 *         "definition": [],
+                 *         "broader": [],
+                 *         "narrower": [],
+                 *         "related": []
+                 *       }
+                 *     }
+                 */
+                "application/json": {
+                    openedFrom: string & (unknown & unknown);
+                    term: {
+                        /** @constant */
+                        schemaVersion: 1;
+                        base: string;
+                        labels: {
+                            language: string;
+                            preferred: string;
+                            alternatives: string[];
+                            abbreviation?: string;
+                        }[];
+                        definition: {
+                            language: string;
+                            text: string;
+                        }[];
+                        broader: string[];
+                        narrower: string[];
+                        related: string[];
+                        replacedBy?: string;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description The term at its latest version: the one cut, or the one before where nothing changed */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "term": {
+                     *         "schemaVersion": 1,
+                     *         "base": "en",
+                     *         "labels": [
+                     *           {
+                     *             "language": "en",
+                     *             "preferred": "example",
+                     *             "alternatives": []
+                     *           }
+                     *         ],
+                     *         "definition": [],
+                     *         "broader": [],
+                     *         "narrower": [],
+                     *         "related": []
+                     *       },
+                     *       "archived": false,
+                     *       "deprecated": false,
+                     *       "mayEdit": false,
+                     *       "mayRetire": false,
+                     *       "state": {
+                     *         "key": "example",
+                     *         "name": "example",
+                     *         "approved": false
+                     *       },
+                     *       "transitions": [],
+                     *       "gates": [],
+                     *       "revision": {
+                     *         "number": 1,
+                     *         "versionId": "00000000-0000-4000-8000-000000000001",
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        space: {
+                            id: string;
+                            name: string;
+                        };
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        term: {
+                            /** @constant */
+                            schemaVersion: 1;
+                            base: string;
+                            labels: {
+                                language: string;
+                                preferred: string;
+                                alternatives: string[];
+                                abbreviation?: string;
+                            }[];
+                            definition: {
+                                language: string;
+                                text: string;
+                            }[];
+                            broader: string[];
+                            narrower: string[];
+                            related: string[];
+                            replacedBy?: string;
+                        };
+                        /** @description Whether it is archived: left out of the listing */
+                        archived: boolean;
+                        /** @description Whether it is deprecated: its workflow's state keyed `deprecated` (LIB-049) */
+                        deprecated: boolean;
+                        /** @description Whether the caller may cut its next version: edit on it */
+                        mayEdit: boolean;
+                        /** @description Whether the caller may archive it: retire on it */
+                        mayRetire: boolean;
+                        /** @description Its workflow state now, named by the definition deciding its next move */
+                        state: {
+                            key: string;
+                            name: string;
+                            /** @description Whether it counts as approved: a save starts a new draft */
+                            approved: boolean;
+                        };
+                        /** @description The workflow transitions the caller may take from its state now, in order */
+                        transitions: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            reasonRequired: boolean;
+                        }[];
+                        /** @description Each gate from its state, decided by its approvers */
+                        gates: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to once passed */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            /** @description What a rejection is called, and the state it returns to */
+                            reject: {
+                                name: string;
+                                /** @description Its workflow state now, named by the definition deciding its next move */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                            };
+                            /**
+                             * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                             * @enum {string}
+                             */
+                            publication: "none" | "permitted" | "required";
+                            /** @description Where it permits one, whether the caller may ask for it as they approve */
+                            mayPublish: boolean;
+                            /** @description Approvals this round on the current version */
+                            count: number;
+                            /** @description Approvals it needs, each by a distinct person */
+                            required: number;
+                            /** @description Whether the caller has approved it this round */
+                            approvedByCaller: boolean;
+                            /** @description Whether the caller may approve or reject it now */
+                            mayDecide: boolean;
+                        }[];
+                        /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                        revision: {
+                            number: number;
+                            /** Format: uuid */
+                            versionId: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                    };
+                };
+            };
+            /** @description `term_invalid`: a shape a term does not hold, a base language with no label, or a relation or replacement naming no term of the space, itself, a cycle or a chain past five, each problem named */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        problems?: {
+                            /** @constant */
+                            rule: "term_invalid";
+                            path: string;
+                            message: string;
+                        }[];
+                        current?: {
+                            id: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            term: {
+                                /** @constant */
+                                schemaVersion: 1;
+                                base: string;
+                                labels: {
+                                    language: string;
+                                    preferred: string;
+                                    alternatives: string[];
+                                    abbreviation?: string;
+                                }[];
+                                definition: {
+                                    language: string;
+                                    text: string;
+                                }[];
+                                broader: string[];
+                                narrower: string[];
+                                related: string[];
+                                replacedBy?: string;
+                            };
+                            /** @description Whether it is archived: left out of the listing */
+                            archived: boolean;
+                            /** @description Whether it is deprecated: its workflow's state keyed `deprecated` (LIB-049) */
+                            deprecated: boolean;
+                            /** @description Whether the caller may cut its next version: edit on it */
+                            mayEdit: boolean;
+                            /** @description Whether the caller may archive it: retire on it */
+                            mayRetire: boolean;
+                            /** @description Its workflow state now, named by the definition deciding its next move */
+                            state: {
+                                key: string;
+                                name: string;
+                                /** @description Whether it counts as approved: a save starts a new draft */
+                                approved: boolean;
+                            };
+                            /** @description The workflow transitions the caller may take from its state now, in order */
+                            transitions: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                reasonRequired: boolean;
+                            }[];
+                            /** @description Each gate from its state, decided by its approvers */
+                            gates: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to once passed */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                /** @description What a rejection is called, and the state it returns to */
+                                reject: {
+                                    name: string;
+                                    /** @description Its workflow state now, named by the definition deciding its next move */
+                                    to: {
+                                        key: string;
+                                        name: string;
+                                    };
+                                };
+                                /**
+                                 * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                                 * @enum {string}
+                                 */
+                                publication: "none" | "permitted" | "required";
+                                /** @description Where it permits one, whether the caller may ask for it as they approve */
+                                mayPublish: boolean;
+                                /** @description Approvals this round on the current version */
+                                count: number;
+                                /** @description Approvals it needs, each by a distinct person */
+                                required: number;
+                                /** @description Whether the caller has approved it this round */
+                                approvedByCaller: boolean;
+                                /** @description Whether the caller may approve or reject it now */
+                                mayDecide: boolean;
+                            }[];
+                            /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                            revision: {
+                                number: number;
+                                /** Format: uuid */
+                                versionId: string;
+                                /** Format: date-time */
+                                at: string;
+                            } | null;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the term but may not edit it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such term in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `version_precondition`: the term has a newer version than the one named, answered with it; `space_archived`: the space is archived, and nothing new is made in it */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        problems?: {
+                            /** @constant */
+                            rule: "term_invalid";
+                            path: string;
+                            message: string;
+                        }[];
+                        current?: {
+                            id: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            term: {
+                                /** @constant */
+                                schemaVersion: 1;
+                                base: string;
+                                labels: {
+                                    language: string;
+                                    preferred: string;
+                                    alternatives: string[];
+                                    abbreviation?: string;
+                                }[];
+                                definition: {
+                                    language: string;
+                                    text: string;
+                                }[];
+                                broader: string[];
+                                narrower: string[];
+                                related: string[];
+                                replacedBy?: string;
+                            };
+                            /** @description Whether it is archived: left out of the listing */
+                            archived: boolean;
+                            /** @description Whether it is deprecated: its workflow's state keyed `deprecated` (LIB-049) */
+                            deprecated: boolean;
+                            /** @description Whether the caller may cut its next version: edit on it */
+                            mayEdit: boolean;
+                            /** @description Whether the caller may archive it: retire on it */
+                            mayRetire: boolean;
+                            /** @description Its workflow state now, named by the definition deciding its next move */
+                            state: {
+                                key: string;
+                                name: string;
+                                /** @description Whether it counts as approved: a save starts a new draft */
+                                approved: boolean;
+                            };
+                            /** @description The workflow transitions the caller may take from its state now, in order */
+                            transitions: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                reasonRequired: boolean;
+                            }[];
+                            /** @description Each gate from its state, decided by its approvers */
+                            gates: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to once passed */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                /** @description What a rejection is called, and the state it returns to */
+                                reject: {
+                                    name: string;
+                                    /** @description Its workflow state now, named by the definition deciding its next move */
+                                    to: {
+                                        key: string;
+                                        name: string;
+                                    };
+                                };
+                                /**
+                                 * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                                 * @enum {string}
+                                 */
+                                publication: "none" | "permitted" | "required";
+                                /** @description Where it permits one, whether the caller may ask for it as they approve */
+                                mayPublish: boolean;
+                                /** @description Approvals this round on the current version */
+                                count: number;
+                                /** @description Approvals it needs, each by a distinct person */
+                                required: number;
+                                /** @description Whether the caller has approved it this round */
+                                approvedByCaller: boolean;
+                                /** @description Whether the caller may approve or reject it now */
+                                mayDecide: boolean;
+                            }[];
+                            /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                            revision: {
+                                number: number;
+                                /** Format: uuid */
+                                versionId: string;
+                                /** Format: date-time */
+                                at: string;
+                            } | null;
+                        };
                     };
                 };
             };
@@ -102682,7 +105740,7 @@ export interface operations {
                             /** @description The version in force: the newest */
                             definition: {
                                 /** @enum {string} */
-                                kind: "component" | "document" | "queryDefinition" | "prompt";
+                                kind: "component" | "document" | "queryDefinition" | "prompt" | "term";
                                 /** @description Its version: 1 is the seed, and each save the next */
                                 version: number;
                                 body: {
@@ -102942,7 +106000,7 @@ export interface operations {
                      * @description The kind it is the workflow of
                      * @enum {string}
                      */
-                    kind: "component" | "document" | "queryDefinition" | "prompt";
+                    kind: "component" | "document" | "queryDefinition" | "prompt" | "term";
                     /** @description The version the edit began from; refused if another has been saved since */
                     basedOn?: number;
                 };
@@ -102976,7 +106034,7 @@ export interface operations {
                      */
                     "application/json": {
                         /** @enum {string} */
-                        kind: "component" | "document" | "queryDefinition" | "prompt";
+                        kind: "component" | "document" | "queryDefinition" | "prompt" | "term";
                         /** @description Its version: 1 is the seed, and each save the next */
                         version: number;
                         body: {
@@ -103159,7 +106217,7 @@ export interface operations {
                 "X-Request-Id"?: string;
             };
             path: {
-                kind: "component" | "document" | "queryDefinition" | "prompt";
+                kind: "component" | "document" | "queryDefinition" | "prompt" | "term";
                 version: number;
             };
             cookie?: never;
@@ -103191,7 +106249,7 @@ export interface operations {
                      */
                     "application/json": {
                         /** @enum {string} */
-                        kind: "component" | "document" | "queryDefinition" | "prompt";
+                        kind: "component" | "document" | "queryDefinition" | "prompt" | "term";
                         /** @description Its version: 1 is the seed, and each save the next */
                         version: number;
                         body: {

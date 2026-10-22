@@ -109,7 +109,7 @@ depend on the order a store happened to return them in.
 | **MET-039** | A user field's value must remain readable - shown as no longer active - after that user is de-provisioned (**IAM-008**). A value must never become empty because the user it names has left                                                                                     | T7      | Specified             |
 | **MET-030** | A field holding several values must hold no value twice and must keep its values in the order they were given, and must be able to declare the most values it may hold. For such a field, required must mean at least one value, and a default must be a list of values         | T1      | Specified             |
 | **MET-003** | A field must be able to draw its permitted values from a vocabulary (**LIB**) rather than taking free text, whether the vocabulary is maintained in the tenant or takes its values from an external source (**LIB-058**). _Replaces TPL-008 and LIB-021, which said this twice_ | T7      | Specified             |
-| **MET-032** | A field drawing on a vocabulary whose values come from an external source (**LIB-058**) must be validated against the values held in the tenant and never against the source, so that neither authoring nor publishing depends on reaching it                                   | T6      | Specified             |
+| **MET-032** | A field drawing on a vocabulary whose values come from an external source (**LIB-058**) must be validated against the values held in the tenant and never against the source, so that neither authoring nor publishing depends on reaching it                                   | T7      | Specified             |
 | **MET-004** | Whether a value is valid must depend on its field alone: the same value for the same field must never be valid on one artifact and invalid on another                                                                                                                           | T1      | Specified             |
 
 ## 4. Metadata schemas
@@ -427,3 +427,12 @@ identifier, and only its tranche changes.
 | Counts       | Before                    | After                     |
 | ------------ | ------------------------- | ------------------------- |
 | Requirements | 42, of which 4 superseded | 42, of which 4 superseded |
+
+### Vocabularies to T7, 2026-10-22
+
+Not a review. Designing T6's terms, Ken moved the vocabularies to T7, beside the metadata fields that
+draw on them ([the TM plan](../../plans/2026-10-22-tm-terms.md), TM-B).
+
+| What was found                                                                                      | Change                  |
+| --------------------------------------------------------------------------------------------------- | ----------------------- |
+| A field drawing on an external vocabulary (**LIB-058**) waits on that vocabulary, which moves to T7 | **MET-032 moved to T7** |

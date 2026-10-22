@@ -149,6 +149,7 @@ const KINDS: Record<string, string> = {
   componentType: 'Component type',
   queryDefinition: 'Query definition',
   thread: 'Thread',
+  term: 'Term',
 };
 
 const RANGES: Record<string, string> = {

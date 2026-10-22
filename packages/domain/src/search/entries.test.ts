@@ -375,6 +375,42 @@ describe('what search reads from a version', () => {
     expect(JSON.stringify(entry)).not.toContain(CONNECTION);
   });
 
+  it('SCH-056 finds a term by its labels, abbreviations and definitions, in its base language', () => {
+    const [entry] = entriesOf(
+      {
+        kind: 'term',
+        content: {
+          schemaVersion: 1,
+          base: 'en',
+          labels: [
+            { language: 'fr', preferred: 'Dunnart à queue grasse', alternatives: [] },
+            {
+              language: 'en',
+              preferred: 'Fat-tailed dunnart',
+              alternatives: ['Dunnart'],
+              abbreviation: 'FTD',
+            },
+          ],
+          definition: [{ language: 'en', text: 'A small marsupial.' }],
+          broader: [],
+          narrower: [],
+          related: [],
+        },
+      },
+      context,
+    );
+    expect([entry!.kind, entry!.title, entry!.configuration]).toEqual([
+      'term',
+      'Fat-tailed dunnart',
+      'english',
+    ]);
+    expect(places(entry!)).toEqual({
+      title: 'Fat-tailed dunnart',
+      labels: 'Dunnart à queue grasse Fat-tailed dunnart Dunnart FTD',
+      definition: 'A small marsupial.',
+    });
+  });
+
   it('composes what it reads, so two spellings a reader cannot tell apart are one', () => {
     const decomposed = 'Café';
     const [entry] = entriesOf(

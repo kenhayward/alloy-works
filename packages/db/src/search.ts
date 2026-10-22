@@ -4,6 +4,7 @@ import {
   isUserValue,
   parseAssetVersion,
   parseQueryDefinition,
+  parseTerm,
   readContent,
   readDefinition,
   readOutline,
@@ -49,6 +50,8 @@ const versioned = new Set<string>([
   'metadataSchema',
   'componentType',
   'queryDefinition',
+  // By its labels and definitions (SCH-056; the TM plan, TM-I).
+  'term',
 ]);
 
 /**
@@ -201,6 +204,12 @@ function sourceOf(version: StoredVersion): SearchSource | undefined {
     case 'queryDefinition':
       try {
         return { kind: 'queryDefinition', content: parseQueryDefinition(version.content) };
+      } catch {
+        return undefined;
+      }
+    case 'term':
+      try {
+        return { kind: 'term', content: parseTerm(version.content) };
       } catch {
         return undefined;
       }
@@ -448,7 +457,7 @@ async function artifactFacts(
     ...((await workflowStored(trx))
       ? {
           workflowState:
-            kind === 'component' || kind === 'document'
+            kind === 'component' || kind === 'document' || kind === 'term'
               ? ((await stateKey(trx, artifactId)) ?? null)
               : null,
         }

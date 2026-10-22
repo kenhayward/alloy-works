@@ -167,6 +167,7 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
       ['document', 3],
       ['queryDefinition', 1],
       ['prompt', 2],
+      ['term', 1],
     ]);
     expect(workflows[0]!.definition).toMatchObject({ body: SEED_WORKFLOW, by: null });
     expect(workflows[1]!.definition).toMatchObject({ body: SEED_DOCUMENT_WORKFLOW, by: null });

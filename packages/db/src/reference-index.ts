@@ -1,6 +1,7 @@
 import { referencesIn } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { lockBibliography } from './bibliography-lock.js';
+import { lockTerms } from './term-lock.js';
 import type { TenantTransaction } from './tables.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -79,6 +80,11 @@ export async function indexReferences(
     row.kind === 'bibliographyEntry' && row.space_id !== null ? [row.space_id] : [],
   );
   for (const space of [...new Set(bibliographies)].sort()) await lockBibliography(trx, space);
+  // And one using a term and an archive of it (`archiveTerm`), likewise.
+  const glossaries = targets.flatMap((row) =>
+    row.kind === 'term' && row.space_id !== null ? [row.space_id] : [],
+  );
+  for (const space of [...new Set(glossaries)].sort()) await lockTerms(trx, space);
   const pins = [
     ...new Set(
       found.flatMap((each) => (each.version && UUID.test(each.version) ? [each.version] : [])),
