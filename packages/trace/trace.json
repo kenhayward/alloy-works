@@ -18784,6 +18784,10 @@
         {
           "id": "SCH-063",
           "howItIsMet": "A component's or a document's entry holds, under `~relations`, each field value of every relationship its artifact is an end of, with the type and the other end; `related=<type>:<field>:<value>` filters and each type's field facets as a field's values do, a value said only of a relationship whose type, field and other end the reader may read. Making, changing or removing a relationship writes both ends' entries again, and an end it moved from (R14-E)"
+        },
+        {
+          "id": "SCH-067",
+          "howItIsMet": "A latest version is recorded in `embedding_lag` once no block of it lacks a passage for the serving model, at indexing where every block is reused, else after its embedding job, from its cut; nothing while none serves or one is pending. `GET /v1/search/meaning/freshness` answers, and Models shows, the last seven days' p95 and most, nearest-rank; a worker test measures 20 versions against 60 s and 300 s (the FR plan, FR-E)"
         }
       ]
     },
@@ -20850,13 +20854,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 580,
+      "line": 582,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 593,
+      "line": 595,
       "kind": "title"
     },
     {
@@ -21892,6 +21896,12 @@
       "kind": "title"
     },
     {
+      "id": "SCH-067",
+      "file": "apps/service/src/meaning-freshness-routes.test.ts",
+      "line": 48,
+      "kind": "title"
+    },
+    {
       "id": "ADM-013",
       "file": "apps/service/src/model-budget-routes.test.ts",
       "line": 106,
@@ -22566,8 +22576,14 @@
     {
       "id": "DAT-073",
       "file": "apps/service/src/source-revision-routes.test.ts",
-      "line": 154,
+      "line": 181,
       "kind": "title"
+    },
+    {
+      "id": "DAT-102",
+      "file": "apps/service/src/source-revision-routes.test.ts",
+      "line": 437,
+      "kind": "rule"
     },
     {
       "id": "ADM-049",
@@ -23172,7 +23188,13 @@
     {
       "id": "GEN-044",
       "file": "apps/web/src/admin/EmbeddingPanel.test.tsx",
-      "line": 42,
+      "line": 45,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-067",
+      "file": "apps/web/src/admin/EmbeddingPanel.test.tsx",
+      "line": 63,
       "kind": "title"
     },
     {
@@ -25450,6 +25472,12 @@
       "kind": "title"
     },
     {
+      "id": "SCH-067",
+      "file": "apps/worker/src/embedding-lag-budget.test.ts",
+      "line": 131,
+      "kind": "title"
+    },
+    {
       "id": "CNT-080",
       "file": "apps/worker/src/equations.test.ts",
       "line": 426,
@@ -26695,6 +26723,12 @@
       "id": "VER-001",
       "file": "packages/db/src/editing.test.ts",
       "line": 390,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-067",
+      "file": "packages/db/src/embedding-lag.test.ts",
+      "line": 137,
       "kind": "title"
     },
     {

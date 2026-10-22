@@ -5,6 +5,7 @@ import {
   embeddedHashes,
   endRun,
   readModelEndpoint,
+  recordEmbeddingLag,
   recordGenerationRun,
   startRun,
   storeEmbeddings,
@@ -132,6 +133,8 @@ export function embedJob(deps: {
       }
       await deps.db.withTenant(tenant, async (trx) => {
         await copyPassages(trx, work.entries, done);
+        // Its lag, before a switch: nothing is measured while a model is pending (the FR plan, FR-E).
+        await recordEmbeddingLag(trx, artifact);
         // A confirmed model serves once every latest text has its vector (G7-J).
         await switchEmbeddingWhenDone(trx);
       });

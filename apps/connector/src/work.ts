@@ -318,6 +318,11 @@ async function answerPostgres(
           }
           const read = await readRevision(client, request.request.definition, deadline);
           if ('failure' in read) throw new Failed(read.failure);
+          // Still the person's role once read, as a run checks (D7-E). An asserted connection refuses
+          // a revision statement (DAT-102), so none should reach here.
+          if (role !== undefined && !(await heldAs(client, role))) {
+            throw failedWith('identity_unmatched');
+          }
           return read.revision !== undefined && read.revision === request.request.revision
             ? { outcome: 'unchanged' }
             : { outcome: 'changed' };

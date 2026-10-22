@@ -33,6 +33,18 @@ interface View {
   } | null;
 }
 
+interface Freshness {
+  readonly versions: number;
+  readonly p95Seconds: number | null;
+  readonly maxSeconds: number | null;
+}
+
+/** Meaning's lag over the last seven days, in whole seconds rounded up (the FR plan, FR-E). */
+const lag = ({ versions, p95Seconds, maxSeconds }: Freshness) =>
+  versions === 0 || p95Seconds === null || maxSeconds === null
+    ? 'How long new versions take to be findable by meaning has not been measured in the last 7 days.'
+    : `Findable by meaning within ${Math.ceil(p95Seconds)} s at p95, at most ${Math.ceil(maxSeconds)} s, over ${versions} ${versions === 1 ? 'version' : 'versions'} in the last 7 days.`;
+
 const where = (endpoint: Endpoint | null) =>
   endpoint === null
     ? 'an endpoint no longer there'
@@ -44,10 +56,12 @@ const where = (endpoint: Endpoint | null) =>
  * Models' **Searching by meaning** (generation.md, "Meaning"; the G7 plan, G7-J; GEN-044): the model
  * meaning is searched by, and the one embedding is routed to that waits, with what embedding the
  * corpus would cost; **Confirm** embeds nothing before it is pressed, and the model serving goes on
- * answering until the new one has every text.
+ * answering until the new one has every text. Beside it, how long new versions took to be findable by
+ * meaning (the FR plan, FR-E; SCH-067).
  */
 export function EmbeddingPanel({ client, generation }: { client: Client; generation: number }) {
   const [read, setRead] = useState<View | 'failed' | null>(null);
+  const [freshness, setFreshness] = useState<Freshness | null>(null);
   const [said, setSaid] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -60,6 +74,15 @@ export function EmbeddingPanel({ client, generation }: { client: Client; generat
       })
       .catch(() => {
         if (current) setRead('failed');
+      });
+    // Unread, it is left unsaid.
+    client
+      .GET('/v1/search/meaning/freshness')
+      .then(({ data }) => {
+        if (current) setFreshness(data ?? null);
+      })
+      .catch(() => {
+        if (current) setFreshness(null);
       });
     return () => {
       current = false;
@@ -92,6 +115,7 @@ export function EmbeddingPanel({ client, generation }: { client: Client; generat
           ? `Meaning is searched by ${read.serving.model}, on ${where(read.serving.endpoint)}.`
           : 'Nothing is searched by meaning: search finds by words alone.'}
       </p>
+      {freshness && <p>{lag(freshness)}</p>}
       {pending && !pending.confirmed && (
         <div className={styles['lead']}>
           <p>

@@ -28,6 +28,7 @@ import {
   sweepExpiredRangePreviews,
   sweepAbandonedGenerationRuns,
   sweepQueryEmbeddingsEverywhere,
+  sweepEmbeddingLagEverywhere,
   sweepExpiredSignIns,
   sweepOldNotifications,
   sweepDates,
@@ -114,6 +115,10 @@ const sweep = setInterval(() => {
   void sweepQueryEmbeddingsEverywhere(db, log)
     .then((removed) => removed > 0 && log.info({ removed }, 'swept old query vectors'))
     .catch((error: unknown) => log.error({ err: error }, 'sweep failed'));
+  // Meaning's lag past 30 days (the FR plan, FR-E).
+  void sweepEmbeddingLagEverywhere(db, log)
+    .then((removed) => removed > 0 && log.info({ removed }, "swept meaning's old lag"))
+    .catch((error: unknown) => log.error({ err: error }, "meaning's lag sweep failed"));
   // Model runs left running an hour, ended abandoned (the G2 plan, G2-B).
   void sweepAbandonedGenerationRuns(db, log)
     .then((ended) => ended > 0 && log.info({ ended }, 'ended abandoned runs'))

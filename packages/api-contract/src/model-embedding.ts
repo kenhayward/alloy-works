@@ -47,6 +47,26 @@ export const EmbeddingConfirmationBody = z.object({
 });
 export type EmbeddingConfirmationBody = z.infer<typeof EmbeddingConfirmationBody>;
 
+export const MeaningFreshness = z.object({
+  versions: z
+    .number()
+    .int()
+    .nonnegative()
+    .describe('The versions that became findable by meaning in the last seven days'),
+  p95Seconds: z
+    .number()
+    .nonnegative()
+    .nullable()
+    .describe(
+      'Seconds from a version’s cut to its being findable by meaning, at the 95th percentile, nearest-rank; null where none was measured',
+    ),
+  maxSeconds: z
+    .number()
+    .nonnegative()
+    .nullable()
+    .describe('The most seconds any of them took; null where none was measured'),
+});
+
 const administer = {
   check: 'permission',
   permission: 'administer',
@@ -97,6 +117,19 @@ export const embeddingRoutes = {
         schema: ErrorBody,
       },
       503: { description: '`connector_unavailable`', schema: ErrorBody },
+    },
+  },
+  getMeaningFreshness: {
+    operationId: 'getMeaningFreshness',
+    method: 'GET',
+    path: '/v1/search/meaning/freshness',
+    summary: 'How long new versions took to become findable by meaning, over the last seven days',
+    tenantScoped: true,
+    access: administer,
+    responses: {
+      200: { description: 'The lag', schema: MeaningFreshness },
+      401: unauthenticated,
+      403: forbidden,
     },
   },
 } as const satisfies Record<string, RouteContract>;

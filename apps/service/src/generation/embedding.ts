@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import type { EmbeddingConfirmationBody } from '@alloy-works/api-contract';
 import {
   confirmEmbedding,
+  embeddingFreshness,
   embeddingStatus,
   endRun,
   isDimensions,
@@ -82,6 +83,10 @@ export function embeddingHandlers(
   const client = connector ? createConnectorClient(connector) : undefined;
   return {
     getEmbedding: async (_request: FastifyRequest, { trx }: Authorised) => view(trx),
+
+    // Meaning's lag over the last seven days (the FR plan, FR-E; SCH-067).
+    getMeaningFreshness: async (_request: FastifyRequest, { trx }: Authorised) =>
+      embeddingFreshness(trx),
 
     confirmEmbedding: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
       const { model } = request.body as EmbeddingConfirmationBody;

@@ -6,6 +6,7 @@ import {
   binding,
   definitionBody,
   ranOk,
+  settings,
   sha256,
   startHarness,
   type Harness,
@@ -110,19 +111,26 @@ describe("a check asking a source's revision first", () => {
   } as const;
 
   /** A document holding one checked binding on a source of this type, resolved at a revision. */
-  async function held(type: keyof typeof sources, revision: string | undefined) {
+  async function held(
+    type: keyof typeof sources,
+    revision: string | undefined,
+    over: { definition?: Json; binding?: Json } = {},
+  ) {
     const source = sources[type];
     const connection = await h.connection(
       `${type} ${revision}`,
       h.general,
       source.settings as Json,
     );
-    const definition = await h.definition(connection.id, source.definition);
+    const definition = await h.definition(connection.id, {
+      ...source.definition,
+      ...over.definition,
+    });
     const component = await h.component(h.general, `Sites on ${type}`);
     await h.place(
       component,
       { type: 'text', value: 'The site is ', marks: [] },
-      binding('b1', definition.id, { parameters: {} }),
+      binding('b1', definition.id, { parameters: {}, ...over.binding }),
     );
     const document = await h.documentReferencing([component.id]);
     const node = document.nodes[0]!;
@@ -136,7 +144,15 @@ describe("a check asking a source's revision first", () => {
     const state = await ok(h.call('ada', 'GET', `/v1/documents/${document.id}/bindings`));
     const holding = state.json<{ bindings: { held: { dataset: string; version: string } }[] }>()
       .bindings[0]!.held;
-    return { document: document.id, node, holding, definition, connection: connection.id };
+    return {
+      document: document.id,
+      node,
+      holding,
+      definition,
+      connection: connection.id,
+      connectionVersion: connection.version,
+      component,
+    };
   }
 
   const asked = (path: string) => h.connector.asked.filter((each) => each.path === path).length;
@@ -149,6 +165,17 @@ describe("a check asking a source's revision first", () => {
     ).rows[0] as { n: number };
   const check = (document: string) =>
     ok(h.call('ada', 'POST', `/v1/documents/${document}/bindings/check`, {}));
+  /** A check's first result, and the revisions and runs it asked, the source saying it has not moved. */
+  const checked = async (document: string) => {
+    h.connector.revision = { outcome: 'unchanged' };
+    const before = [asked('/v1/revision'), asked('/v1/run')] as const;
+    const answered = await check(document);
+    return {
+      result: answered.json<{ results: Json[] }>().results[0]!,
+      revisions: asked('/v1/revision') - before[0],
+      runs: asked('/v1/run') - before[1],
+    };
+  };
 
   for (const type of ['postgres', 'http', 's3'] as const) {
     it(`DAT-073 reaches no run at the connector for a check of an unchanged ${type} source`, async () => {
@@ -266,5 +293,147 @@ describe("a check asking a source's revision first", () => {
     const runs = asked('/v1/run');
     await check(document);
     expect([asked('/v1/revision'), asked('/v1/run')]).toEqual([revisions, runs + 1]);
+  });
+
+  it('DAT-073 asks no revision and runs where the connection has a version newer than the held result', async () => {
+    const { document, node, connection, connectionVersion } = await held('http', 'http:20');
+    const moved = await h.call('ada', 'POST', `/v1/connections/${connection}/versions`, {
+      openedFrom: connectionVersion,
+      settings: settings({
+        name: 'http http:20',
+        description: 'Moved to a new path.',
+        ...(sources.http.settings as Json),
+      }),
+    });
+    expect(moved.statusCode, moved.body).toBe(200);
+    h.connector.run = answer('North Quay', sources.http.ran as never, 'http:21');
+    expect(await checked(document)).toEqual({
+      result: expect.objectContaining({ node, outcome: 'revision' }),
+      revisions: 0,
+      runs: 1,
+    });
+  });
+
+  it('DAT-073 asks no revision where the binding asks other values or pins another definition version than its held result', async () => {
+    const parameters = [{ name: 'site', type: { base: 'integer' }, required: true, list: false }];
+    const { document, node, definition, connection, component } = await held(
+      'postgres',
+      'postgres:30',
+      {
+        definition: {
+          parameters,
+          fetch: { kind: 'sql', text: 'select id, name from sample.site where id = {{site}}' },
+        },
+        binding: { parameters: { site: { literal: '1' } } },
+      },
+    );
+    const unresolved = { node, binding: 'b1', outcome: 'unchecked', reason: 'unresolved' };
+    const replace = (over: Json) =>
+      h.place(
+        component,
+        { type: 'text', value: 'The site is ', marks: [] },
+        binding('b1', definition.id, over),
+      );
+    // Other values.
+    await replace({ parameters: { site: { literal: '2' } } });
+    expect(await checked(document)).toEqual({ result: unresolved, revisions: 0, runs: 0 });
+    // The held result's own version pinned once a newer is the latest, and the newer pinned.
+    const newer = await h.nextDefinition(
+      definition.id,
+      definition.version,
+      definitionBody(connection, {
+        ...sources.postgres.definition,
+        parameters,
+        fetch: { kind: 'sql', text: 'select id, name from sample.site where id = {{site}} + 0' },
+      }),
+    );
+    for (const version of [definition.version, newer]) {
+      await replace({ parameters: { site: { literal: '1' } }, version });
+      expect(await checked(document), version).toEqual({
+        result: unresolved,
+        revisions: 0,
+        runs: 0,
+      });
+    }
+  });
+
+  it('DAT-073 asks no revision of a query over a stored result held at one', async () => {
+    const { holding } = await held('http', 'http:40');
+    const made = await h.call('ada', 'POST', `/v1/spaces/${h.general}/query-definitions`, {
+      definition: {
+        schemaVersion: 1,
+        title: 'Sites stored',
+        description: '',
+        retired: false,
+        parameters: [],
+        fetch: {
+          kind: 'dataset',
+          format: 1,
+          dataset: holding.dataset,
+          query: {
+            sources: [{ alias: 'd', table: { schema: 'dataset', name: 'rows' } }],
+            joins: [],
+            select: [
+              { name: 'id', of: { source: 'd', column: 'id' } },
+              { name: 'name', of: { source: 'd', column: 'name' } },
+            ],
+            groupBy: [],
+          },
+        },
+        columns: [
+          { name: 'id', from: { column: 'id' }, type: { base: 'integer' } },
+          { name: 'name', from: { column: 'name' }, type: { base: 'text' } },
+        ],
+        key: ['id'],
+        order: [{ column: 'id', direction: 'ascending' }],
+        empty: 'valid',
+        limits: { rows: 1000, bytes: 1_048_576, seconds: 30 },
+      },
+    });
+    expect(made.statusCode, made.body).toBe(200);
+    const component = await h.component(h.general, 'Sites stored');
+    await h.place(
+      component,
+      binding('r1', made.json<{ id: string }>().id, {
+        parameters: {},
+        take: { key: { id: '1' }, column: 'name' },
+      }),
+    );
+    const document = await h.documentReferencing([component.id]);
+    await ok(
+      h.call('ada', 'POST', `/v1/documents/${document.id}/bindings/resolve`, {
+        bindings: [{ node: document.nodes[0], binding: 'r1' }],
+      }),
+    );
+    const before = await h.tenantDb.withTenant(h.tenant, newestEvent);
+    const { result, revisions, runs } = await checked(document.id);
+    expect([revisions, runs]).toEqual([0, 0]);
+    // Read again from the stored result and compared: never said unchanged by a revision.
+    expect(result).toMatchObject({ outcome: 'unchanged' });
+    const events = await h.tenantDb.withTenant(h.tenant, (trx) => auditEvents(trx, before));
+    expect(events.map((event) => event.detail)).not.toContainEqual(
+      expect.objectContaining({ by: 'revision' }),
+    );
+  });
+
+  it('DAT-073 asks no revision of a result held as the account once its connection runs as each person', async () => {
+    const { document, node, connection, connectionVersion } = await held('postgres', 'postgres:50');
+    const changed = await h.call('ada', 'POST', `/v1/connections/${connection}/versions`, {
+      openedFrom: connectionVersion,
+      settings: {
+        ...settings({ name: 'postgres postgres:50' }),
+        identity: { kind: 'endUser', mechanism: 'asserted', attribute: 'email' },
+      },
+    });
+    expect(changed.statusCode, changed.body).toBe(200);
+    const { result, revisions, runs } = await checked(document);
+    expect([revisions, runs]).toEqual([0, 0]);
+    expect(result).toMatchObject({ node, outcome: 'failed' });
+    // Nor is a person's own view ever held at a revision: a revision statement is SQL, refused there.
+    const own = await h.call('ada', 'POST', `/v1/spaces/${h.general}/query-definitions`, {
+      definition: definitionBody(connection, sources.postgres.definition),
+    });
+    expect(own.statusCode, own.body).toBe(409);
+    expect(own.json()).toMatchObject({ code: 'sql_not_permitted', rule: 'DAT-102' });
   });
 });

@@ -130,11 +130,11 @@ describe('the tenant database', () => {
   const tenantSchemas = () => [production.schema, development.schema].sort();
 
   it("SCH-008 IAM-075 keeps the search projection in each tenant's own schema and in no shared one, and another tenant's runtime role cannot read or write it even by naming it", async () => {
-    for (const table of ['search_entry', 'search_text']) {
+    for (const table of ['search_entry', 'search_text', 'embedding_lag']) {
       // In each tenant's own schema, and in none it shares.
       expect(await schemasHolding(table), table).toEqual(tenantSchemas());
     }
-    for (const table of ['search_entry', 'search_text']) {
+    for (const table of ['search_entry', 'search_text', 'embedding_lag']) {
       // The other tenant's refuses it outright, at its schema.
       await expect(
         service.withTenant(production, (trx) =>

@@ -428,7 +428,7 @@ const operationTags = {
   Guardrails: ['listGuardrails', 'setGuardrail', 'retireGuardrail'],
   'Model limits': ['getModelLimits', 'setModelLimit', 'setPersonLimit'],
   'Model budget': ['getModelBudget', 'setModelBudget', 'setBudgetRecipients', 'getModelUsage'],
-  Embedding: ['getEmbedding', 'confirmEmbedding'],
+  Embedding: ['getEmbedding', 'confirmEmbedding', 'getMeaningFreshness'],
   'Personal prompts': [
     'listPersonalPrompts',
     'savePersonalPrompt',
@@ -916,6 +916,8 @@ const descriptions: Readonly<Record<string, string>> = {
     'Returns the embedding model meaning is searched by, and the one embedding is routed to that does not serve yet: how many of the latest texts it lacks and what embedding them would cost, approximately, at about four characters a token and its endpoint’s input price. Needs administer.',
   confirmEmbedding:
     'Confirms the waiting embedding model, its cost seen: one sample is embedded to learn its dimensions, a run of yours, and every latest text it lacks is queued. The serving model answers searches until the new one has every text, then the new one serves at once. Needs administer, and is audited.',
+  getMeaningFreshness:
+    'Returns how long the versions of the last seven days took to become findable by meaning: from each version’s cut until no block of it lacked a passage for the serving model, at the 95th percentile, nearest-rank, and the most, in seconds, with how many were measured. Nothing is measured while no model serves or one waits to. Needs administer.',
   listConversationEndpoints:
     'Lists the endpoints a conversation may run on, with a signed-in session alone: every one in use with its key set, its model and whether it sits outside the data boundary, the one a turn naming none runs on marked.',
   startConversation:
