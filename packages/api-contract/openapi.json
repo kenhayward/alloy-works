@@ -201373,7 +201373,8 @@
                                 "enum": [
                                   "heading",
                                   "beforeFirstComponent",
-                                  "beforeFirstHeading"
+                                  "beforeFirstHeading",
+                                  "split"
                                 ]
                               },
                               "style": {
@@ -201391,7 +201392,7 @@
                             "required": [
                               "rule"
                             ],
-                            "description": "Why the part starts where it does: the heading, by its style and text; or what came before the first heading under it"
+                            "description": "Why the part starts where it does: the heading, by its style and text; what came before the first heading under it; or that its importer split it there"
                           },
                           "flags": {
                             "type": "array",
@@ -201399,10 +201400,13 @@
                               "type": "string",
                               "enum": [
                                 "empty",
-                                "refused"
+                                "refused",
+                                "notYetRead",
+                                "leftOut",
+                                "keptDifferently"
                               ]
                             },
-                            "description": "`empty`: nothing under its heading; `refused`: what it held could not be admitted"
+                            "description": "`empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from"
                           },
                           "blocks": {
                             "type": "integer",
@@ -201427,6 +201431,65 @@
                         ]
                       },
                       "description": "The proposed outline, in order"
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "How many edits it has had: what the next edit is made against"
+                    },
+                    "place": {
+                      "description": "The part its importer was last at",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "accepted": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "unchanged": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "edited": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "merged": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "split": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "renamed": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "unchanged",
+                            "edited",
+                            "merged",
+                            "split",
+                            "renamed"
+                          ],
+                          "description": "How the parts accepted compare with the proposal as read, each counted once: merged, split, edited, renamed, or unchanged"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Once accepted, how much was accepted unchanged"
                     },
                     "report": {
                       "type": "array",
@@ -201500,6 +201563,9 @@
                     "levels",
                     "title",
                     "parts",
+                    "revision",
+                    "place",
+                    "accepted",
                     "report"
                   ]
                 },
@@ -201520,6 +201586,15 @@
                   },
                   "title": "example",
                   "parts": [],
+                  "revision": -9007199254740991,
+                  "place": "example",
+                  "accepted": {
+                    "unchanged": -9007199254740991,
+                    "edited": -9007199254740991,
+                    "merged": -9007199254740991,
+                    "split": -9007199254740991,
+                    "renamed": -9007199254740991
+                  },
                   "report": []
                 }
               }
@@ -201840,7 +201915,8 @@
                                 "enum": [
                                   "heading",
                                   "beforeFirstComponent",
-                                  "beforeFirstHeading"
+                                  "beforeFirstHeading",
+                                  "split"
                                 ]
                               },
                               "style": {
@@ -201858,7 +201934,7 @@
                             "required": [
                               "rule"
                             ],
-                            "description": "Why the part starts where it does: the heading, by its style and text; or what came before the first heading under it"
+                            "description": "Why the part starts where it does: the heading, by its style and text; what came before the first heading under it; or that its importer split it there"
                           },
                           "flags": {
                             "type": "array",
@@ -201866,10 +201942,13 @@
                               "type": "string",
                               "enum": [
                                 "empty",
-                                "refused"
+                                "refused",
+                                "notYetRead",
+                                "leftOut",
+                                "keptDifferently"
                               ]
                             },
-                            "description": "`empty`: nothing under its heading; `refused`: what it held could not be admitted"
+                            "description": "`empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from"
                           },
                           "blocks": {
                             "type": "integer",
@@ -201894,6 +201973,65 @@
                         ]
                       },
                       "description": "The proposed outline, in order"
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "How many edits it has had: what the next edit is made against"
+                    },
+                    "place": {
+                      "description": "The part its importer was last at",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "accepted": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "unchanged": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "edited": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "merged": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "split": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "renamed": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "unchanged",
+                            "edited",
+                            "merged",
+                            "split",
+                            "renamed"
+                          ],
+                          "description": "How the parts accepted compare with the proposal as read, each counted once: merged, split, edited, renamed, or unchanged"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Once accepted, how much was accepted unchanged"
                     },
                     "report": {
                       "type": "array",
@@ -201967,6 +202105,9 @@
                     "levels",
                     "title",
                     "parts",
+                    "revision",
+                    "place",
+                    "accepted",
                     "report"
                   ]
                 },
@@ -201987,6 +202128,15 @@
                   },
                   "title": "example",
                   "parts": [],
+                  "revision": -9007199254740991,
+                  "place": "example",
+                  "accepted": {
+                    "unchanged": -9007199254740991,
+                    "edited": -9007199254740991,
+                    "merged": -9007199254740991,
+                    "split": -9007199254740991,
+                    "renamed": -9007199254740991
+                  },
                   "report": []
                 }
               }
@@ -202171,7 +202321,7 @@
       "post": {
         "operationId": "acceptImport",
         "summary": "Accept a proposal, making its document, sections and components in one act",
-        "description": "Accepts a proposal: its document, sections and components are made in one act, by the person accepting, each at 0.1 and each recording the file it came from. Blank, or from the template named. Only its importer may accept it, and they need create in the space.",
+        "description": "Accepts a proposal: its document, sections and components are made in one act, by the person accepting, each at 0.1 and each recording the file it came from. Blank, or from the template named. How many parts were accepted unchanged, edited, merged, split or renamed is recorded on the import. Only its importer may accept it, and they need create in the space.",
         "tags": [
           "Imports"
         ],
@@ -202388,7 +202538,8 @@
                                     "enum": [
                                       "heading",
                                       "beforeFirstComponent",
-                                      "beforeFirstHeading"
+                                      "beforeFirstHeading",
+                                      "split"
                                     ]
                                   },
                                   "style": {
@@ -202406,7 +202557,7 @@
                                 "required": [
                                   "rule"
                                 ],
-                                "description": "Why the part starts where it does: the heading, by its style and text; or what came before the first heading under it"
+                                "description": "Why the part starts where it does: the heading, by its style and text; what came before the first heading under it; or that its importer split it there"
                               },
                               "flags": {
                                 "type": "array",
@@ -202414,10 +202565,13 @@
                                   "type": "string",
                                   "enum": [
                                     "empty",
-                                    "refused"
+                                    "refused",
+                                    "notYetRead",
+                                    "leftOut",
+                                    "keptDifferently"
                                   ]
                                 },
-                                "description": "`empty`: nothing under its heading; `refused`: what it held could not be admitted"
+                                "description": "`empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from"
                               },
                               "blocks": {
                                 "type": "integer",
@@ -202442,6 +202596,65 @@
                             ]
                           },
                           "description": "The proposed outline, in order"
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "How many edits it has had: what the next edit is made against"
+                        },
+                        "place": {
+                          "description": "The part its importer was last at",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "accepted": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "unchanged": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "edited": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "merged": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "split": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "renamed": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "unchanged",
+                                "edited",
+                                "merged",
+                                "split",
+                                "renamed"
+                              ],
+                              "description": "How the parts accepted compare with the proposal as read, each counted once: merged, split, edited, renamed, or unchanged"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Once accepted, how much was accepted unchanged"
                         },
                         "report": {
                           "type": "array",
@@ -202515,6 +202728,9 @@
                         "levels",
                         "title",
                         "parts",
+                        "revision",
+                        "place",
+                        "accepted",
                         "report"
                       ]
                     },
@@ -202546,6 +202762,15 @@
                     },
                     "title": "example",
                     "parts": [],
+                    "revision": -9007199254740991,
+                    "place": "example",
+                    "accepted": {
+                      "unchanged": -9007199254740991,
+                      "edited": -9007199254740991,
+                      "merged": -9007199254740991,
+                      "split": -9007199254740991,
+                      "renamed": -9007199254740991
+                    },
                     "report": []
                   },
                   "document": "example"
@@ -202727,6 +202952,840 @@
           },
           "409": {
             "description": "`import_not_proposed`: it is not proposed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/imports/{id}/edits": {
+      "post": {
+        "operationId": "editImport",
+        "summary": "Edit a proposal: move a split, split, merge or rename a part, or change its kind",
+        "description": "Edits a proposal before it is accepted: moves blocks across the split between two components, splits a component at a block, merges a part with the one after it, renames a part, or makes a part a section or a component. Each edit is checked as it is made and refused, saying why, if what it makes could not be accepted. It is made against the revision last read, and refused if the proposal changed since. The proposal as the file was read is kept unchanged beside it. Only its importer may edit it.",
+        "tags": [
+          "Imports"
+        ],
+        "x-alloy-token-enabled": true,
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "The revision the edit was made against"
+                  },
+                  "edit": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "edit": {
+                            "type": "string",
+                            "const": "move"
+                          },
+                          "part": {
+                            "type": "string",
+                            "allOf": [
+                              {
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                              }
+                            ],
+                            "description": "The part it is made to"
+                          },
+                          "to": {
+                            "type": "string",
+                            "enum": [
+                              "previous",
+                              "next"
+                            ],
+                            "description": "Its first blocks to the end of the part before, or its last to the start of the next"
+                          },
+                          "blocks": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 9007199254740991,
+                            "description": "How many blocks move"
+                          }
+                        },
+                        "required": [
+                          "edit",
+                          "part",
+                          "to",
+                          "blocks"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "edit": {
+                            "type": "string",
+                            "const": "split"
+                          },
+                          "part": {
+                            "type": "string",
+                            "allOf": [
+                              {
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                              }
+                            ],
+                            "description": "The part it is made to"
+                          },
+                          "at": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 9007199254740991,
+                            "description": "The block, from 0, the new part starts at"
+                          },
+                          "title": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 500,
+                            "description": "The new part’s title"
+                          }
+                        },
+                        "required": [
+                          "edit",
+                          "part",
+                          "at",
+                          "title"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "edit": {
+                            "type": "string",
+                            "const": "merge"
+                          },
+                          "part": {
+                            "type": "string",
+                            "allOf": [
+                              {
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                              }
+                            ],
+                            "description": "The part merged with the one after it"
+                          }
+                        },
+                        "required": [
+                          "edit",
+                          "part"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "edit": {
+                            "type": "string",
+                            "const": "rename"
+                          },
+                          "part": {
+                            "type": "string",
+                            "allOf": [
+                              {
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                              }
+                            ],
+                            "description": "The part it is made to"
+                          },
+                          "title": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 500
+                          }
+                        },
+                        "required": [
+                          "edit",
+                          "part",
+                          "title"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "edit": {
+                            "type": "string",
+                            "const": "kind"
+                          },
+                          "part": {
+                            "type": "string",
+                            "allOf": [
+                              {
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                              }
+                            ],
+                            "description": "The part it is made to"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "section",
+                              "component"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "edit",
+                          "part",
+                          "kind"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "revision",
+                  "edit"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "revision": 0,
+                "edit": {
+                  "edit": "move",
+                  "part": "00000000-0000-4000-8000-000000000001",
+                  "to": "previous",
+                  "blocks": 1
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The import as edited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "space": {
+                      "type": "string"
+                    },
+                    "importer": {
+                      "type": "string"
+                    },
+                    "fileName": {
+                      "type": "string"
+                    },
+                    "fileType": {
+                      "type": "string",
+                      "enum": [
+                        "docx",
+                        "markdown",
+                        "html"
+                      ]
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "awaiting",
+                        "reading",
+                        "proposed",
+                        "accepted",
+                        "abandoned",
+                        "failed"
+                      ],
+                      "description": "`awaiting` its file; `reading` it; `proposed`, its outline to review; `accepted` into a document; `abandoned`, or `failed` with why, leaving nothing"
+                    },
+                    "failure": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "file_unreadable",
+                            "file_unsafe",
+                            "file_too_large",
+                            "file_missing",
+                            "reading_failed"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Why it failed, once failed"
+                    },
+                    "document": {
+                      "description": "The document it made, once accepted",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "sweepsAt": {
+                      "description": "When a proposal left alone is abandoned: 30 days after it last changed",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "levels": {
+                      "type": "object",
+                      "properties": {
+                        "section": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 8,
+                          "description": "The heading level that starts a section"
+                        },
+                        "component": {
+                          "type": "integer",
+                          "minimum": 2,
+                          "maximum": 9,
+                          "description": "The heading level that starts a component, below the section’s"
+                        }
+                      },
+                      "required": [
+                        "section",
+                        "component"
+                      ]
+                    },
+                    "title": {
+                      "description": "The title the file names, where it names one",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "parts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "section",
+                              "component"
+                            ]
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "parent": {
+                            "description": "The section it stands under; null at the top",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "reason": {
+                            "type": "object",
+                            "properties": {
+                              "rule": {
+                                "type": "string",
+                                "enum": [
+                                  "heading",
+                                  "beforeFirstComponent",
+                                  "beforeFirstHeading",
+                                  "split"
+                                ]
+                              },
+                              "style": {
+                                "type": "string"
+                              },
+                              "text": {
+                                "type": "string"
+                              },
+                              "level": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "rule"
+                            ],
+                            "description": "Why the part starts where it does: the heading, by its style and text; what came before the first heading under it; or that its importer split it there"
+                          },
+                          "flags": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "empty",
+                                "refused",
+                                "notYetRead",
+                                "leftOut",
+                                "keptDifferently"
+                              ]
+                            },
+                            "description": "`empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from"
+                          },
+                          "blocks": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "How many blocks it holds"
+                          },
+                          "source": {
+                            "type": "string",
+                            "description": "Its text as the file had it, its heading first"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "kind",
+                          "title",
+                          "parent",
+                          "reason",
+                          "flags",
+                          "blocks",
+                          "source"
+                        ]
+                      },
+                      "description": "The proposed outline, in order"
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "How many edits it has had: what the next edit is made against"
+                    },
+                    "place": {
+                      "description": "The part its importer was last at",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "accepted": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "unchanged": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "edited": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "merged": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "split": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "renamed": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "unchanged",
+                            "edited",
+                            "merged",
+                            "split",
+                            "renamed"
+                          ],
+                          "description": "How the parts accepted compare with the proposal as read, each counted once: merged, split, edited, renamed, or unchanged"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Once accepted, how much was accepted unchanged"
+                    },
+                    "report": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "stage": {
+                            "type": "string"
+                          },
+                          "action": {
+                            "type": "string",
+                            "enum": [
+                              "discarded",
+                              "rewritten",
+                              "kept",
+                              "refused"
+                            ]
+                          },
+                          "subject": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string",
+                            "description": "A fixed sentence saying what happened, never quoting the file"
+                          },
+                          "detail": {
+                            "description": "What it was about, as data: shown as text",
+                            "type": "string"
+                          },
+                          "count": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "part": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "The part it was about, by its place; null for the file"
+                          }
+                        },
+                        "required": [
+                          "stage",
+                          "action",
+                          "subject",
+                          "message",
+                          "part"
+                        ]
+                      },
+                      "description": "What was left out, kept differently, or not read yet (IMP-007)"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "space",
+                    "importer",
+                    "fileName",
+                    "fileType",
+                    "state",
+                    "failure",
+                    "document",
+                    "createdAt",
+                    "sweepsAt",
+                    "levels",
+                    "title",
+                    "parts",
+                    "revision",
+                    "place",
+                    "accepted",
+                    "report"
+                  ]
+                },
+                "example": {
+                  "id": "example",
+                  "space": "example",
+                  "importer": "example",
+                  "fileName": "example",
+                  "fileType": "docx",
+                  "state": "awaiting",
+                  "failure": "file_unreadable",
+                  "document": "example",
+                  "createdAt": "example",
+                  "sweepsAt": "example",
+                  "levels": {
+                    "section": 1,
+                    "component": 2
+                  },
+                  "title": "example",
+                  "parts": [],
+                  "revision": -9007199254740991,
+                  "place": "example",
+                  "accepted": {
+                    "unchanged": -9007199254740991,
+                    "edited": -9007199254740991,
+                    "merged": -9007199254740991,
+                    "split": -9007199254740991,
+                    "renamed": -9007199254740991
+                  },
+                  "report": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`import_edit_refused`: what the edit would make is not a part an import can accept, the message saying why",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such import, or one the caller neither made nor administers the space of",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`import_not_proposed`: it is not proposed; `import_changed`: it was edited since the revision given",
             "content": {
               "application/json": {
                 "schema": {
@@ -203003,7 +204062,8 @@
                                 "enum": [
                                   "heading",
                                   "beforeFirstComponent",
-                                  "beforeFirstHeading"
+                                  "beforeFirstHeading",
+                                  "split"
                                 ]
                               },
                               "style": {
@@ -203021,7 +204081,7 @@
                             "required": [
                               "rule"
                             ],
-                            "description": "Why the part starts where it does: the heading, by its style and text; or what came before the first heading under it"
+                            "description": "Why the part starts where it does: the heading, by its style and text; what came before the first heading under it; or that its importer split it there"
                           },
                           "flags": {
                             "type": "array",
@@ -203029,10 +204089,13 @@
                               "type": "string",
                               "enum": [
                                 "empty",
-                                "refused"
+                                "refused",
+                                "notYetRead",
+                                "leftOut",
+                                "keptDifferently"
                               ]
                             },
-                            "description": "`empty`: nothing under its heading; `refused`: what it held could not be admitted"
+                            "description": "`empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from"
                           },
                           "blocks": {
                             "type": "integer",
@@ -203057,6 +204120,65 @@
                         ]
                       },
                       "description": "The proposed outline, in order"
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "How many edits it has had: what the next edit is made against"
+                    },
+                    "place": {
+                      "description": "The part its importer was last at",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "accepted": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "unchanged": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "edited": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "merged": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "split": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "renamed": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "unchanged",
+                            "edited",
+                            "merged",
+                            "split",
+                            "renamed"
+                          ],
+                          "description": "How the parts accepted compare with the proposal as read, each counted once: merged, split, edited, renamed, or unchanged"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Once accepted, how much was accepted unchanged"
                     },
                     "report": {
                       "type": "array",
@@ -203130,6 +204252,9 @@
                     "levels",
                     "title",
                     "parts",
+                    "revision",
+                    "place",
+                    "accepted",
                     "report"
                   ]
                 },
@@ -203150,6 +204275,15 @@
                   },
                   "title": "example",
                   "parts": [],
+                  "revision": -9007199254740991,
+                  "place": "example",
+                  "accepted": {
+                    "unchanged": -9007199254740991,
+                    "edited": -9007199254740991,
+                    "merged": -9007199254740991,
+                    "split": -9007199254740991,
+                    "renamed": -9007199254740991
+                  },
                   "report": []
                 }
               }
@@ -203667,7 +204801,8 @@
                                 "enum": [
                                   "heading",
                                   "beforeFirstComponent",
-                                  "beforeFirstHeading"
+                                  "beforeFirstHeading",
+                                  "split"
                                 ]
                               },
                               "style": {
@@ -203685,7 +204820,7 @@
                             "required": [
                               "rule"
                             ],
-                            "description": "Why the part starts where it does: the heading, by its style and text; or what came before the first heading under it"
+                            "description": "Why the part starts where it does: the heading, by its style and text; what came before the first heading under it; or that its importer split it there"
                           },
                           "flags": {
                             "type": "array",
@@ -203693,10 +204828,13 @@
                               "type": "string",
                               "enum": [
                                 "empty",
-                                "refused"
+                                "refused",
+                                "notYetRead",
+                                "leftOut",
+                                "keptDifferently"
                               ]
                             },
-                            "description": "`empty`: nothing under its heading; `refused`: what it held could not be admitted"
+                            "description": "`empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from"
                           },
                           "blocks": {
                             "type": "integer",
@@ -203721,6 +204859,65 @@
                         ]
                       },
                       "description": "The proposed outline, in order"
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "How many edits it has had: what the next edit is made against"
+                    },
+                    "place": {
+                      "description": "The part its importer was last at",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "accepted": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "unchanged": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "edited": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "merged": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "split": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "renamed": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "unchanged",
+                            "edited",
+                            "merged",
+                            "split",
+                            "renamed"
+                          ],
+                          "description": "How the parts accepted compare with the proposal as read, each counted once: merged, split, edited, renamed, or unchanged"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Once accepted, how much was accepted unchanged"
                     },
                     "report": {
                       "type": "array",
@@ -203794,6 +204991,9 @@
                     "levels",
                     "title",
                     "parts",
+                    "revision",
+                    "place",
+                    "accepted",
                     "report"
                   ]
                 },
@@ -203814,6 +205014,15 @@
                   },
                   "title": "example",
                   "parts": [],
+                  "revision": -9007199254740991,
+                  "place": "example",
+                  "accepted": {
+                    "unchanged": -9007199254740991,
+                    "edited": -9007199254740991,
+                    "merged": -9007199254740991,
+                    "split": -9007199254740991,
+                    "renamed": -9007199254740991
+                  },
                   "report": []
                 }
               }
@@ -203911,6 +205120,1203 @@
           },
           "404": {
             "description": "No such import, or one the caller neither made nor administers the space of",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`import_not_proposed`: it is not proposed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/imports/{id}/parts": {
+      "get": {
+        "operationId": "searchImportParts",
+        "summary": "The parts of a proposal whose title or text holds the words asked, or carrying a flag",
+        "description": "Lists the parts of a proposal whose title or text holds the words asked, ignoring case, or that carry a flag: empty, refused, or something the report said was not read yet, left out or kept differently. Only its importer and the space’s administrators may search it.",
+        "tags": [
+          "Imports"
+        ],
+        "x-alloy-token-enabled": true,
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Words its title or text holds, ignoring case",
+              "type": "string",
+              "maxLength": 200
+            }
+          },
+          {
+            "name": "flag",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "A flag it carries",
+              "type": "string",
+              "enum": [
+                "empty",
+                "refused",
+                "notYetRead",
+                "leftOut",
+                "keptDifferently"
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The parts that match, in outline order",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "parts": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "The parts that match, by id, in outline order"
+                    }
+                  },
+                  "required": [
+                    "parts"
+                  ]
+                },
+                "example": {
+                  "parts": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such import, or one the caller neither made nor administers the space of",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/imports/{id}/parts/{part}": {
+      "get": {
+        "operationId": "getImportPart",
+        "summary": "One part of a proposal, beside the text it came from",
+        "description": "Returns one part of a proposal, so it can be reviewed alone: its title, kind, the reason it starts where it does, what it is flagged for, its blocks as text beside the text of the file it came from, and the parts before and after it. Only its importer and the space’s administrators may read it.",
+        "tags": [
+          "Imports"
+        ],
+        "x-alloy-token-enabled": true,
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "part",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The part",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "section",
+                        "component"
+                      ]
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "parent": {
+                      "description": "The section it stands under; null at the top",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "reason": {
+                      "type": "object",
+                      "properties": {
+                        "rule": {
+                          "type": "string",
+                          "enum": [
+                            "heading",
+                            "beforeFirstComponent",
+                            "beforeFirstHeading",
+                            "split"
+                          ]
+                        },
+                        "style": {
+                          "type": "string"
+                        },
+                        "text": {
+                          "type": "string"
+                        },
+                        "level": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "rule"
+                      ],
+                      "description": "Why the part starts where it does: the heading, by its style and text; what came before the first heading under it; or that its importer split it there"
+                    },
+                    "flags": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "empty",
+                          "refused",
+                          "notYetRead",
+                          "leftOut",
+                          "keptDifferently"
+                        ]
+                      },
+                      "description": "`empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from"
+                    },
+                    "source": {
+                      "type": "string",
+                      "description": "Its text as the file had it, its heading first"
+                    },
+                    "place": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "Its place in the outline, from 0"
+                    },
+                    "of": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "How many parts the outline holds"
+                    },
+                    "previous": {
+                      "description": "The part before it; null for the first",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "next": {
+                      "description": "The part after it; null for the last",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "blocks": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "description": "What kind of block it is: paragraph, list, table and so on"
+                          },
+                          "text": {
+                            "type": "string",
+                            "description": "Its text, shown as text"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "text"
+                        ]
+                      },
+                      "description": "What it holds, a block at a time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "kind",
+                    "title",
+                    "parent",
+                    "reason",
+                    "flags",
+                    "source",
+                    "place",
+                    "of",
+                    "previous",
+                    "next",
+                    "blocks"
+                  ]
+                },
+                "example": {
+                  "id": "example",
+                  "kind": "section",
+                  "title": "example",
+                  "parent": "example",
+                  "reason": {
+                    "rule": "heading"
+                  },
+                  "flags": [],
+                  "source": "example",
+                  "place": -9007199254740991,
+                  "of": -9007199254740991,
+                  "previous": "example",
+                  "next": "example",
+                  "blocks": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such part, or no such import the caller may see",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/imports/{id}/place": {
+      "put": {
+        "operationId": "setImportPlace",
+        "summary": "Keep the part its importer is at, to return to",
+        "description": "Keeps the part of a proposal its importer is at, so that returning to the import, from any session, opens that part. Only its importer may set it.",
+        "tags": [
+          "Imports"
+        ],
+        "x-alloy-token-enabled": true,
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "part": {
+                    "type": "string",
+                    "allOf": [
+                      {
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      {
+                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                      }
+                    ],
+                    "description": "The part its importer is at"
+                  }
+                },
+                "required": [
+                  "part"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "part": "00000000-0000-4000-8000-000000000001"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The import",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "space": {
+                      "type": "string"
+                    },
+                    "importer": {
+                      "type": "string"
+                    },
+                    "fileName": {
+                      "type": "string"
+                    },
+                    "fileType": {
+                      "type": "string",
+                      "enum": [
+                        "docx",
+                        "markdown",
+                        "html"
+                      ]
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "awaiting",
+                        "reading",
+                        "proposed",
+                        "accepted",
+                        "abandoned",
+                        "failed"
+                      ],
+                      "description": "`awaiting` its file; `reading` it; `proposed`, its outline to review; `accepted` into a document; `abandoned`, or `failed` with why, leaving nothing"
+                    },
+                    "failure": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "file_unreadable",
+                            "file_unsafe",
+                            "file_too_large",
+                            "file_missing",
+                            "reading_failed"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Why it failed, once failed"
+                    },
+                    "document": {
+                      "description": "The document it made, once accepted",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "sweepsAt": {
+                      "description": "When a proposal left alone is abandoned: 30 days after it last changed",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "levels": {
+                      "type": "object",
+                      "properties": {
+                        "section": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 8,
+                          "description": "The heading level that starts a section"
+                        },
+                        "component": {
+                          "type": "integer",
+                          "minimum": 2,
+                          "maximum": 9,
+                          "description": "The heading level that starts a component, below the section’s"
+                        }
+                      },
+                      "required": [
+                        "section",
+                        "component"
+                      ]
+                    },
+                    "title": {
+                      "description": "The title the file names, where it names one",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "parts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "section",
+                              "component"
+                            ]
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "parent": {
+                            "description": "The section it stands under; null at the top",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "reason": {
+                            "type": "object",
+                            "properties": {
+                              "rule": {
+                                "type": "string",
+                                "enum": [
+                                  "heading",
+                                  "beforeFirstComponent",
+                                  "beforeFirstHeading",
+                                  "split"
+                                ]
+                              },
+                              "style": {
+                                "type": "string"
+                              },
+                              "text": {
+                                "type": "string"
+                              },
+                              "level": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "rule"
+                            ],
+                            "description": "Why the part starts where it does: the heading, by its style and text; what came before the first heading under it; or that its importer split it there"
+                          },
+                          "flags": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "empty",
+                                "refused",
+                                "notYetRead",
+                                "leftOut",
+                                "keptDifferently"
+                              ]
+                            },
+                            "description": "`empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from"
+                          },
+                          "blocks": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "How many blocks it holds"
+                          },
+                          "source": {
+                            "type": "string",
+                            "description": "Its text as the file had it, its heading first"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "kind",
+                          "title",
+                          "parent",
+                          "reason",
+                          "flags",
+                          "blocks",
+                          "source"
+                        ]
+                      },
+                      "description": "The proposed outline, in order"
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "How many edits it has had: what the next edit is made against"
+                    },
+                    "place": {
+                      "description": "The part its importer was last at",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "accepted": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "unchanged": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "edited": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "merged": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "split": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "renamed": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "unchanged",
+                            "edited",
+                            "merged",
+                            "split",
+                            "renamed"
+                          ],
+                          "description": "How the parts accepted compare with the proposal as read, each counted once: merged, split, edited, renamed, or unchanged"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Once accepted, how much was accepted unchanged"
+                    },
+                    "report": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "stage": {
+                            "type": "string"
+                          },
+                          "action": {
+                            "type": "string",
+                            "enum": [
+                              "discarded",
+                              "rewritten",
+                              "kept",
+                              "refused"
+                            ]
+                          },
+                          "subject": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string",
+                            "description": "A fixed sentence saying what happened, never quoting the file"
+                          },
+                          "detail": {
+                            "description": "What it was about, as data: shown as text",
+                            "type": "string"
+                          },
+                          "count": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "part": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "The part it was about, by its place; null for the file"
+                          }
+                        },
+                        "required": [
+                          "stage",
+                          "action",
+                          "subject",
+                          "message",
+                          "part"
+                        ]
+                      },
+                      "description": "What was left out, kept differently, or not read yet (IMP-007)"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "space",
+                    "importer",
+                    "fileName",
+                    "fileType",
+                    "state",
+                    "failure",
+                    "document",
+                    "createdAt",
+                    "sweepsAt",
+                    "levels",
+                    "title",
+                    "parts",
+                    "revision",
+                    "place",
+                    "accepted",
+                    "report"
+                  ]
+                },
+                "example": {
+                  "id": "example",
+                  "space": "example",
+                  "importer": "example",
+                  "fileName": "example",
+                  "fileType": "docx",
+                  "state": "awaiting",
+                  "failure": "file_unreadable",
+                  "document": "example",
+                  "createdAt": "example",
+                  "sweepsAt": "example",
+                  "levels": {
+                    "section": 1,
+                    "component": 2
+                  },
+                  "title": "example",
+                  "parts": [],
+                  "revision": -9007199254740991,
+                  "place": "example",
+                  "accepted": {
+                    "unchanged": -9007199254740991,
+                    "edited": -9007199254740991,
+                    "merged": -9007199254740991,
+                    "split": -9007199254740991,
+                    "renamed": -9007199254740991
+                  },
+                  "report": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such part, or no such import the caller made",
             "content": {
               "application/json": {
                 "schema": {
@@ -288039,7 +290445,8 @@
                                 "enum": [
                                   "heading",
                                   "beforeFirstComponent",
-                                  "beforeFirstHeading"
+                                  "beforeFirstHeading",
+                                  "split"
                                 ]
                               },
                               "style": {
@@ -288057,7 +290464,7 @@
                             "required": [
                               "rule"
                             ],
-                            "description": "Why the part starts where it does: the heading, by its style and text; or what came before the first heading under it"
+                            "description": "Why the part starts where it does: the heading, by its style and text; what came before the first heading under it; or that its importer split it there"
                           },
                           "flags": {
                             "type": "array",
@@ -288065,10 +290472,13 @@
                               "type": "string",
                               "enum": [
                                 "empty",
-                                "refused"
+                                "refused",
+                                "notYetRead",
+                                "leftOut",
+                                "keptDifferently"
                               ]
                             },
-                            "description": "`empty`: nothing under its heading; `refused`: what it held could not be admitted"
+                            "description": "`empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from"
                           },
                           "blocks": {
                             "type": "integer",
@@ -288093,6 +290503,65 @@
                         ]
                       },
                       "description": "The proposed outline, in order"
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "How many edits it has had: what the next edit is made against"
+                    },
+                    "place": {
+                      "description": "The part its importer was last at",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "accepted": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "unchanged": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "edited": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "merged": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "split": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "renamed": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "unchanged",
+                            "edited",
+                            "merged",
+                            "split",
+                            "renamed"
+                          ],
+                          "description": "How the parts accepted compare with the proposal as read, each counted once: merged, split, edited, renamed, or unchanged"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Once accepted, how much was accepted unchanged"
                     },
                     "report": {
                       "type": "array",
@@ -288166,6 +290635,9 @@
                     "levels",
                     "title",
                     "parts",
+                    "revision",
+                    "place",
+                    "accepted",
                     "report"
                   ]
                 },
@@ -288186,6 +290658,15 @@
                   },
                   "title": "example",
                   "parts": [],
+                  "revision": -9007199254740991,
+                  "place": "example",
+                  "accepted": {
+                    "unchanged": -9007199254740991,
+                    "edited": -9007199254740991,
+                    "merged": -9007199254740991,
+                    "split": -9007199254740991,
+                    "renamed": -9007199254740991
+                  },
                   "report": []
                 }
               }

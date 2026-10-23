@@ -419,6 +419,11 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   listImports: read,
   getImport: read,
   setImportLevels: { none: 'importing' },
+  // Review: a part read, the parts searched, an edit or the importer's place (IMb).
+  getImportPart: read,
+  searchImportParts: read,
+  editImport: { none: 'importing' },
+  setImportPlace: { none: 'importing' },
   acceptImport: writes('import.accepted', 'content.version_cut'),
   abandonImport: writes('import.abandoned'),
   // Each concept made or merged is a version, made or cut.

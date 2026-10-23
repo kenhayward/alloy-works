@@ -14,7 +14,7 @@ interface View {
   failure: string | null;
   document: string | null;
   sweepsAt: string | null;
-  parts: { kind: string; title: string; reason: Json; source: string }[];
+  parts: { id: string; kind: string; title: string; reason: Json; source: string }[];
   report: { subject: string; detail?: string }[];
 }
 
@@ -31,6 +31,31 @@ const word = (heading: string, text: string) =>
     ),
     'word/styles.xml': strToU8(
       `<w:styles xmlns:w="${W}"><w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/></w:style></w:styles>`,
+    ),
+  });
+
+/** A Word document of paragraphs, each with its heading level or none. */
+const outline = (paragraphs: readonly (readonly [number | null, string])[]) =>
+  zipSync({
+    'word/document.xml': strToU8(
+      `<w:document xmlns:w="${W}"><w:body>` +
+        paragraphs
+          .map(
+            ([level, text]) =>
+              `<w:p>${level === null ? '' : `<w:pPr><w:pStyle w:val="Heading${level}"/></w:pPr>`}<w:r><w:t>${text}</w:t></w:r></w:p>`,
+          )
+          .join('') +
+        `</w:body></w:document>`,
+    ),
+    'word/styles.xml': strToU8(
+      `<w:styles xmlns:w="${W}">` +
+        [1, 2]
+          .map(
+            (level) =>
+              `<w:style w:type="paragraph" w:styleId="Heading${level}"><w:name w:val="heading ${level}"/></w:style>`,
+          )
+          .join('') +
+        `</w:styles>`,
     ),
   });
 
@@ -166,6 +191,134 @@ describe('the import routes (the IM plan, IM-A, IM-B, IM-F)', () => {
     expect((await h.call('ada', 'POST', `/v1/imports/${created.id}/accept`, {})).statusCode).toBe(
       404,
     );
+  });
+
+  /** Ada's survey, proposed: Methods, holding Sampling and Analysis; then Discussion, empty. */
+  const survey = async () => {
+    const created = await made('grace');
+    await send(
+      'grace',
+      created.id,
+      outline([
+        [1, 'Methods'],
+        [2, 'Sampling'],
+        [null, 'Ada sampled the pond.'],
+        [null, 'Grace counted newts.'],
+        [2, 'Analysis'],
+        [null, 'Ada analysed.'],
+        [2, 'Discussion'],
+      ]),
+    );
+    await readByTheWorker(created.id);
+    const view = (await h.call('grace', 'GET', `/v1/imports/${created.id}`)).json<
+      View & { parts: { id: string }[]; revision: number }
+    >();
+    const [methods, sampling, analysis, discussion] = view.parts.map((part) => part.id);
+    return { id: created.id, methods: methods!, sampling: sampling!, analysis, discussion };
+  };
+
+  it('IMP-028 shows one part at a time, its blocks beside the text it came from, with the parts either side', async () => {
+    const { id, methods, sampling, analysis } = await survey();
+    const part = await h.call('grace', 'GET', `/v1/imports/${id}/parts/${sampling}`);
+    expect(part.statusCode, part.body).toBe(200);
+    expect(part.json()).toMatchObject({
+      title: 'Sampling',
+      kind: 'component',
+      reason: { rule: 'heading', style: 'Heading 2', text: 'Sampling' },
+      source: 'Sampling\nAda sampled the pond.\nGrace counted newts.',
+      blocks: [
+        { type: 'paragraph', text: 'Ada sampled the pond.' },
+        { type: 'paragraph', text: 'Grace counted newts.' },
+      ],
+      place: 1,
+      of: 4,
+      previous: methods,
+      next: analysis,
+    });
+    // The space's administrator reads it too; a reader of the space does not.
+    expect((await h.call('ada', 'GET', `/v1/imports/${id}/parts/${sampling}`)).statusCode).toBe(
+      200,
+    );
+    expect((await h.call('alice', 'GET', `/v1/imports/${id}/parts/${sampling}`)).statusCode).toBe(
+      404,
+    );
+    expect((await h.call('grace', 'GET', `/v1/imports/${id}/parts/${id}`)).statusCode).toBe(404);
+  });
+
+  it('IMP-002 IMP-041 is edited by its importer alone, each edit validated as made and refused naming why, against the revision read', async () => {
+    const { id, methods, sampling } = await survey();
+    const edit = (as: string, revision: number, change: Json) =>
+      h.call(as, 'POST', `/v1/imports/${id}/edits`, { revision, edit: change });
+
+    const moved = await edit('grace', 0, { edit: 'move', part: sampling, to: 'next', blocks: 1 });
+    expect(moved.statusCode, moved.body).toBe(200);
+    expect(moved.json()).toMatchObject({
+      revision: 1,
+      parts: [{}, { blocks: 1 }, { blocks: 2 }, {}],
+    });
+    const stale = await edit('grace', 0, { edit: 'rename', part: sampling, title: 'Late' });
+    expect(stale.statusCode).toBe(409);
+    expect(stale.json()).toMatchObject({ code: 'import_changed' });
+    const refused = await edit('grace', 1, {
+      edit: 'move',
+      part: sampling,
+      to: 'previous',
+      blocks: 1,
+    });
+    expect(refused.statusCode).toBe(400);
+    expect(refused.json()).toMatchObject({
+      code: 'import_edit_refused',
+      message: 'A section holds no blocks, so blocks cannot move into or out of one.',
+    });
+    expect((await edit('grace', 1, { edit: 'merge', part: methods })).json()).toMatchObject({
+      message: 'Only two components, or two sections, can be merged.',
+    });
+    // Its administrator sees it but does not edit it.
+    expect(
+      (await edit('ada', 1, { edit: 'rename', part: sampling, title: 'Ada’s' })).statusCode,
+    ).toBe(404);
+    const renamed = await edit('grace', 1, {
+      edit: 'rename',
+      part: sampling,
+      title: 'How we sampled',
+    });
+    expect(renamed.json()).toMatchObject({
+      revision: 2,
+      parts: [{}, { title: 'How we sampled' }, {}, {}],
+    });
+  });
+
+  it('IMP-029 is searched by title and text, filtered by flag, and returned to where its importer was', async () => {
+    const { id, sampling, analysis, discussion } = await survey();
+    const search = async (query: string) =>
+      (await h.call('grace', 'GET', `/v1/imports/${id}/parts?${query}`)).json<{ parts: string[] }>()
+        .parts;
+    expect(await search('q=NEWTS')).toEqual([sampling]);
+    expect(await search('q=analys')).toEqual([analysis]);
+    expect(await search('flag=empty')).toEqual([discussion]);
+    expect(await search('q=newts&flag=empty')).toEqual([]);
+
+    const placed = await h.call('grace', 'PUT', `/v1/imports/${id}/place`, { part: analysis });
+    expect(placed.statusCode, placed.body).toBe(200);
+    expect((await h.call('grace', 'GET', `/v1/imports/${id}`)).json()).toMatchObject({
+      place: analysis,
+    });
+    expect((await h.call('grace', 'PUT', `/v1/imports/${id}/place`, { part: id })).statusCode).toBe(
+      404,
+    );
+  });
+
+  it('IMP-031 says on the accepted import how many parts were accepted unchanged, edited, merged, split and renamed', async () => {
+    const { id, sampling } = await survey();
+    await h.call('grace', 'POST', `/v1/imports/${id}/edits`, {
+      revision: 0,
+      edit: { edit: 'rename', part: sampling, title: 'How we sampled' },
+    });
+    const accepted = await h.call('grace', 'POST', `/v1/imports/${id}/accept`, {});
+    expect(accepted.statusCode, accepted.body).toBe(200);
+    expect(accepted.json()).toMatchObject({
+      import: { accepted: { unchanged: 3, edited: 0, merged: 0, split: 0, renamed: 1 } },
+    });
   });
 
   it('IMP-004 IMP-008 is proposed again at other levels, and abandoned leaving nothing', async () => {

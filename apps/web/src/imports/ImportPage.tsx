@@ -13,7 +13,10 @@ type Reason =
       readonly style?: string;
       readonly text?: string;
     }
-  | { readonly rule: 'beforeFirstHeading' };
+  | { readonly rule: 'beforeFirstHeading' }
+  | { readonly rule: 'split' };
+
+type Flag = 'empty' | 'refused' | 'notYetRead' | 'leftOut' | 'keptDifferently';
 
 interface Part {
   readonly id: string;
@@ -21,9 +24,18 @@ interface Part {
   readonly title: string;
   readonly parent: string | null;
   readonly reason: Reason;
-  readonly flags: readonly ('empty' | 'refused')[];
+  readonly flags: readonly Flag[];
   readonly blocks: number;
   readonly source: string;
+}
+
+/** One part as its own route answers it (IMP-028). */
+interface Detail extends Omit<Part, 'blocks'> {
+  readonly blocks: readonly { readonly type: string; readonly text: string }[];
+  readonly place: number;
+  readonly of: number;
+  readonly previous: string | null;
+  readonly next: string | null;
 }
 
 interface Entry {
@@ -35,6 +47,8 @@ interface Entry {
   readonly part: number | null;
 }
 
+type Counts = Readonly<Record<'unchanged' | 'edited' | 'merged' | 'split' | 'renamed', number>>;
+
 interface View {
   readonly id: string;
   readonly fileName: string;
@@ -45,8 +59,18 @@ interface View {
   readonly levels: { readonly section: number; readonly component: number };
   readonly title: string | null;
   readonly parts: readonly Part[];
+  readonly revision: number;
+  readonly place: string | null;
+  readonly accepted: Counts | null;
   readonly report: readonly Entry[];
 }
+
+type Edit =
+  | { edit: 'move'; part: string; to: 'previous' | 'next'; blocks: number }
+  | { edit: 'split'; part: string; at: number; title: string }
+  | { edit: 'merge'; part: string }
+  | { edit: 'rename'; part: string; title: string }
+  | { edit: 'kind'; part: string; kind: 'section' | 'component' };
 
 const STATES: Readonly<Record<View['state'], string>> = {
   awaiting: 'Waiting for its file.',
@@ -81,10 +105,32 @@ const KINDS: Readonly<Record<string, string>> = {
   embeddedObject: 'Embedded objects',
 };
 
+/** What a part is flagged for (IMP-029): said of it, and offered as a filter. */
+const FLAGS: Readonly<Record<Flag, { readonly said: string; readonly filter: string }>> = {
+  empty: { said: 'Nothing stands under it.', filter: 'Nothing under it' },
+  refused: { said: 'What it held could not be kept; see the report.', filter: 'Could not be kept' },
+  notYetRead: { said: 'It held something the import does not read yet.', filter: 'Not read yet' },
+  leftOut: { said: 'Something in it was left out; see the report.', filter: 'Something left out' },
+  keptDifferently: {
+    said: 'Something in it was kept differently; see the report.',
+    filter: 'Kept differently',
+  },
+};
+
+/** How the parts accepted compare with the proposal as read (IMP-031). */
+const COUNTED: readonly (readonly [keyof Counts, string])[] = [
+  ['unchanged', 'accepted unchanged'],
+  ['edited', 'edited'],
+  ['merged', 'merged'],
+  ['split', 'split'],
+  ['renamed', 'renamed'],
+];
+
 /** Why a part starts where it does (IMP-004), as its reviewer reads it. */
-function reasonOf(part: Part): string {
+function reasonOf(part: Pick<Part, 'reason' | 'title' | 'kind'>): string {
   const reason = part.reason;
   if (reason.rule === 'beforeFirstHeading') return 'What stands before the first heading.';
+  if (reason.rule === 'split') return 'You split it here.';
   const heading = `${reason.style ?? 'A heading'} “${reason.text ?? part.title}”`;
   return reason.rule === 'heading'
     ? `${heading} starts this ${part.kind}.`
@@ -103,12 +149,17 @@ const entryWords = (entry: Entry) => {
 /** A file's name, its last dot on, left off. */
 const stem = (name: string) => name.replace(/\.[^.]*$/, '').trim() || name;
 
+/** A title for what a split makes: the first line of the block it starts at. */
+const splitTitle = (text: string, fallback: string) =>
+  text.split('\n')[0]!.trim().slice(0, 80) || fallback;
+
 const WAIT_MS = 1000;
 
 /**
- * **An import's page** (the IM plan, IMa): its state while the worker reads it; the outline it proposes,
- * read only, each part with its reason; the report of what was left out or not read yet; its levels;
- * and Accept or Abandon. Editing the proposal is IMb's.
+ * **An import's page** (the IM plan, IMa and IMb): its state while the worker reads it; the outline
+ * it proposes, searched and filtered (IMP-029); one part at a time beside the text it came from, with
+ * next and previous (IMP-028), and its edits (IMP-002, IMP-041); the report; its levels; Accept or
+ * Abandon; and, once accepted, how much was accepted unchanged (IMP-031).
  */
 export function ImportPage({
   client,
@@ -124,6 +175,12 @@ export function ImportPage({
   const [title, setTitle] = useState('');
   const [levels, setLevels] = useState({ section: 1, component: 2 });
   const [busy, setBusy] = useState(false);
+  const [current, setCurrent] = useState<string | null>(null);
+  const [detail, setDetail] = useState<Detail | null>(null);
+  const [rename, setRename] = useState('');
+  const [query, setQuery] = useState('');
+  const [flag, setFlag] = useState<Flag | ''>('');
+  const [matches, setMatches] = useState<ReadonlySet<string> | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -152,6 +209,40 @@ export function ImportPage({
     return () => clearTimeout(timer);
   }, [reading, view, load, wait]);
 
+  // The part shown: the one chosen, else where its importer was, else the first; gone, the first.
+  const proposal = typeof view === 'object' && view?.state === 'proposed' ? view : null;
+  const showing =
+    proposal === null
+      ? null
+      : ([current, proposal.place, proposal.parts[0]?.id].find(
+          (each) => each != null && proposal.parts.some((part) => part.id === each),
+        ) ?? null);
+  const revision = proposal?.revision;
+  useEffect(() => {
+    if (showing === null) return undefined;
+    let live = true;
+    void client
+      .GET('/v1/imports/{id}/parts/{part}', { params: { path: { id, part: showing } } })
+      .then((read) => {
+        if (!live || !read.data) return;
+        const found = read.data as Detail;
+        setDetail(found);
+        setRename(found.title);
+      })
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [client, id, showing, revision]);
+
+  const go = (part: string) => {
+    setCurrent(part);
+    // Kept on the import, so returning from anywhere lands here (IMP-029); losing it loses nothing.
+    void client
+      .PUT('/v1/imports/{id}/place', { params: { path: { id } }, body: { part } })
+      .catch(() => undefined);
+  };
+
   const act = async (
     work: () => Promise<{ data?: unknown; error?: unknown }>,
     done?: (data: unknown) => void,
@@ -164,19 +255,55 @@ export function ImportPage({
         if (done) done(answer.data);
         else setView((answer.data as { import?: View }).import ?? (answer.data as View));
       } else {
-        const code = (answer.error as { code?: string } | undefined)?.code;
+        const error = answer.error as { code?: string; message?: string } | undefined;
+        if (error?.code === 'import_changed') void load();
         setNotice(
-          code === 'not_found'
+          error?.code === 'not_found'
             ? 'Only the person who imported it may do that.'
-            : code === 'import_levels_invalid'
+            : error?.code === 'import_levels_invalid'
               ? 'A component’s heading level must be below a section’s.'
-              : 'That could not be done. Try again.',
+              : (error?.code === 'import_edit_refused' || error?.code === 'import_changed') &&
+                  error.message
+                ? error.message
+                : 'That could not be done. Try again.',
         );
       }
     } catch {
       setNotice('That could not be done. Try again.');
     } finally {
       setBusy(false);
+    }
+  };
+
+  const edit = (change: Edit) => {
+    if (!proposal) return;
+    void act(() =>
+      client.POST('/v1/imports/{id}/edits', {
+        params: { path: { id } },
+        body: { revision: proposal.revision, edit: change },
+      }),
+    );
+  };
+
+  const find = async (event: FormEvent) => {
+    event.preventDefault();
+    if (query.trim() === '' && flag === '') {
+      setMatches(null);
+      return;
+    }
+    try {
+      const found = await client.GET('/v1/imports/{id}/parts', {
+        params: {
+          path: { id },
+          query: {
+            ...(query.trim() === '' ? {} : { q: query.trim() }),
+            ...(flag === '' ? {} : { flag }),
+          },
+        },
+      });
+      if (found.data) setMatches(new Set(found.data.parts));
+    } catch {
+      setNotice('The parts could not be searched. Try again.');
     }
   };
 
@@ -194,29 +321,159 @@ export function ImportPage({
     );
   }
 
+  const listed = (part: Part) => matches === null || matches.has(part.id);
   const top = view.parts.filter((part) => part.parent === null);
   const under = (section: string) => view.parts.filter((part) => part.parent === section);
-  const partItem = (part: Part) => (
-    <li key={part.id} className={styles['part']}>
-      <span className={styles['title']}>
-        {`${part.kind === 'section' ? 'Section' : 'Component'}: ${part.title}`}
-      </span>
-      <span className={styles['muted']}>{reasonOf(part)}</span>
-      {part.flags.includes('empty') && (
-        <span className={styles['muted']}>Nothing stands under it.</span>
-      )}
-      {part.flags.includes('refused') && (
-        <span className={styles['muted']}>What it held could not be kept; see the report.</span>
-      )}
-      {part.kind === 'section' ? (
-        under(part.id).length > 0 && <ol>{under(part.id).map(partItem)}</ol>
-      ) : (
-        <details>
-          <summary>{`Its text (${part.blocks} ${part.blocks === 1 ? 'block' : 'blocks'})`}</summary>
-          <p className={styles['source']}>{part.source}</p>
-        </details>
-      )}
-    </li>
+  const partItem = (part: Part) => {
+    const children = part.kind === 'section' ? under(part.id) : [];
+    if (!listed(part) && !children.some(listed)) return null;
+    return (
+      <li key={part.id} className={styles['part']}>
+        {listed(part) && (
+          <>
+            <button
+              type="button"
+              className={styles['title']}
+              aria-current={part.id === showing ? 'true' : undefined}
+              onClick={() => go(part.id)}
+            >
+              {`${part.kind === 'section' ? 'Section' : 'Component'}: ${part.title}`}
+            </button>
+            {part.flags.map((each) => (
+              <span key={each} className={styles['muted']}>
+                {FLAGS[each].said}
+              </span>
+            ))}
+          </>
+        )}
+        {children.length > 0 && <ol>{children.map(partItem)}</ol>}
+      </li>
+    );
+  };
+
+  const shown = detail !== null && detail.id === showing ? detail : null;
+  const partPanel = shown && (
+    <section
+      aria-label={`Part ${shown.place + 1} of ${shown.of}: ${shown.title}`}
+      className={styles['review']}
+    >
+      <h2>{`${shown.kind === 'section' ? 'Section' : 'Component'}: ${shown.title}`}</h2>
+      <p className={styles['muted']}>{reasonOf(shown)}</p>
+      {shown.flags.map((each) => (
+        <p key={each} className={styles['muted']}>
+          {FLAGS[each].said}
+        </p>
+      ))}
+      <div className={styles['beside']}>
+        <div>
+          <h3>What it holds</h3>
+          {shown.kind === 'section' ? (
+            <p className={styles['muted']}>A section holds components, not blocks.</p>
+          ) : (
+            <ol aria-label="What it holds" className={styles['blocks']}>
+              {shown.blocks.map((block, index) => (
+                <li key={index}>
+                  <p className={styles['source']}>{block.text}</p>
+                  {index > 0 && (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() =>
+                        edit({
+                          edit: 'split',
+                          part: shown.id,
+                          at: index,
+                          title: splitTitle(block.text, shown.title),
+                        })
+                      }
+                    >
+                      {`Split before block ${index + 1}`}
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+        <div>
+          <h3 id="import-part-source">From the file</h3>
+          <p aria-labelledby="import-part-source" role="group" className={styles['source']}>
+            {shown.source}
+          </p>
+        </div>
+      </div>
+      <form
+        className={styles['actions']}
+        onSubmit={(event) => {
+          event.preventDefault();
+          edit({ edit: 'rename', part: shown.id, title: rename });
+        }}
+      >
+        <label>
+          Part title
+          <input value={rename} onChange={(event) => setRename(event.target.value)} />
+        </label>
+        <button type="submit" disabled={busy || rename.trim() === ''}>
+          Rename
+        </button>
+      </form>
+      <div className={styles['actions']}>
+        {shown.kind === 'component' && (
+          <>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => edit({ edit: 'move', part: shown.id, to: 'previous', blocks: 1 })}
+            >
+              Move its first block to the part before
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => edit({ edit: 'move', part: shown.id, to: 'next', blocks: 1 })}
+            >
+              Move its last block to the part after
+            </button>
+          </>
+        )}
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => edit({ edit: 'merge', part: shown.id })}
+        >
+          Merge with the next part
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() =>
+            edit({
+              edit: 'kind',
+              part: shown.id,
+              kind: shown.kind === 'section' ? 'component' : 'section',
+            })
+          }
+        >
+          {shown.kind === 'section' ? 'Make it a component' : 'Make it a section'}
+        </button>
+      </div>
+      <div className={styles['actions']}>
+        <button
+          type="button"
+          disabled={shown.previous === null}
+          onClick={() => shown.previous !== null && go(shown.previous)}
+        >
+          Previous part
+        </button>
+        <button
+          type="button"
+          disabled={shown.next === null}
+          onClick={() => shown.next !== null && go(shown.next)}
+        >
+          Next part
+        </button>
+      </div>
+    </section>
   );
 
   const accept = (event: FormEvent) => {
@@ -247,10 +504,56 @@ export function ImportPage({
       {view.state === 'accepted' && view.document !== null && (
         <a href={`#/documents/${view.document}`}>Open the document</a>
       )}
+      {view.state === 'accepted' && view.accepted !== null && (
+        <ul aria-label="What was accepted">
+          {COUNTED.map(([key, words]) => (
+            <li key={key}>
+              {`${view.accepted![key]} ${view.accepted![key] === 1 ? 'part' : 'parts'} ${words}`}
+            </li>
+          ))}
+        </ul>
+      )}
 
       {view.state === 'proposed' && (
         <>
           <h2>Proposed outline</h2>
+          <form className={styles['actions']} role="search" onSubmit={(event) => void find(event)}>
+            <label>
+              Search parts
+              <input
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+              />
+            </label>
+            <label>
+              Show
+              <select value={flag} onChange={(event) => setFlag(event.target.value as Flag | '')}>
+                <option value="">Every part</option>
+                {(Object.keys(FLAGS) as Flag[]).map((each) => (
+                  <option key={each} value={each}>
+                    {FLAGS[each].filter}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button type="submit">Find</button>
+          </form>
+          {matches !== null && (
+            <p className={styles['muted']}>
+              {`${matches.size} of ${view.parts.length} parts found.`}{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  setMatches(null);
+                  setQuery('');
+                  setFlag('');
+                }}
+              >
+                Show every part
+              </button>
+            </p>
+          )}
           {top.length === 0 ? (
             <p className={styles['muted']}>Nothing was read from the file.</p>
           ) : (
@@ -258,6 +561,7 @@ export function ImportPage({
               {top.map(partItem)}
             </ol>
           )}
+          {partPanel}
           <form
             className={styles['actions']}
             onSubmit={(event) => {

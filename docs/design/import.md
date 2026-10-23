@@ -45,6 +45,7 @@ and loses, is said in the product.
 | **IMP-036** | A source imported before said first, its changes shown, and an update offered                         |
 | **CNT-168** | Paste from Word keeps a heading a heading, and a pasted outline is offered as sections and components |
 | **IMP-001** | An outline of sections and components, never one blob                                                 |
+| **IMP-002** | Adjusted, merged and split by a person before anything is made                                        |
 | **IMP-003** | Nothing made until a person accepts what they started                                                 |
 | **IMP-007** | What is left out or not read yet reported by kind, and tested                                         |
 | **IMP-017** | Each component admitted as a paste is, so none fails validation                                       |
@@ -52,8 +53,7 @@ and loses, is said in the product.
 | **IMP-047** | Macros, embedded objects, outside files and unallowed links never stored, and reported                |
 
 PUB-028's import half is IMP-005's; its export half moves to T8 with Word fidelity. IMP-016 moves to
-T7. The import constraints IMP-002 (adjusting, merging and splitting: IMb), IMP-032 and IMP-048 are
-kept here unclaimed. IMP-012 is left unclaimed: the file's own properties are discarded by
+T7. The import constraints IMP-032 and IMP-048 are kept here unclaimed. IMP-012 is left unclaimed: the file's own properties are discarded by
 default, but an image's metadata is AST-007's, in T7.
 
 ## Identities
@@ -77,3 +77,21 @@ on the import and on each.
   IMe's.
 - **Accepting** makes a blank document unless a template is named: a space has no default template
   yet. An accepted import keeps its parts and its file, for IMP-031 and the re-import (IMd).
+
+## As IMb built it
+
+- **0156**: `import.revision`, which every edit is made against and refused if stale; `import.place`,
+  the part its importer was last at, kept server-side; `import.accepted`, the counts at acceptance;
+  `import_part.origins`, the parts as read each edited part came from; and `import_edit`, each edit as
+  asked, gone with the proposal.
+- **Edits** are one route, `POST /v1/imports/{id}/edits`, its body naming the edit (move, split,
+  merge, rename, kind). Domain's `editProposal` applies it to the edited set and validates each
+  component it changes with `parseContentDocument` (CNT-013); a refusal is named by code and said in
+  words. A component stands under the section before it, so changing a kind re-parents what follows.
+- **One part** is `GET /v1/imports/{id}/parts/{part}`: its blocks as text beside its source, and its
+  neighbours. Search and flag filters are `GET /v1/imports/{id}/parts`; a part's flags add what the
+  report said of its origins (not read yet, left out, kept differently).
+- **IMP-031** counts each accepted part once, in the first that applies: merged (more than one
+  origin), split (an origin shared), edited (kind or blocks changed), renamed, unchanged.
+- A part's source after a move is still the source of what it came from: per-block sources are not
+  kept.

@@ -1,11 +1,17 @@
 import type {
   AcceptImportBody,
   CreateImportBody,
+  EditImportBody,
   ImportAccepted,
   ImportLevelsBody,
   ImportList,
   ImportListQuery,
   ImportParams,
+  ImportPartDetail,
+  ImportPartMatches,
+  ImportPartParams,
+  ImportPartSearchQuery,
+  ImportPlaceBody,
   ImportSummary,
   ImportView,
   SpaceParams,
@@ -18,18 +24,27 @@ import {
   acceptImport,
   changeImportLevels,
   createImport,
+  editImport,
   holdObject,
   importParts,
   listImports,
   loadFacts,
   readImport,
   receiveImportFile,
+  setImportPlace,
   type StoredImport,
+  type StoredImportPart,
   type Tenant,
   type TenantDatabase,
   type TenantTransaction,
 } from '@alloy-works/db';
-import { importLevelsSchema } from '@alloy-works/domain';
+import {
+  blockText,
+  importLevelsSchema,
+  partMatches,
+  reviewFlags,
+  type ImportEditRefusal,
+} from '@alloy-works/domain';
 import { checkImportFile } from '@alloy-works/readers/import';
 import type { ObjectStores } from '@alloy-works/objects';
 import type { FastifyRequest } from 'fastify';
@@ -69,23 +84,46 @@ const summaryOf = (found: StoredImport): ImportSummary => ({
     : null,
 });
 
+/** Why an edit was refused (IMP-041), in words the importer can act on. */
+const REFUSALS: Readonly<Record<ImportEditRefusal, string>> = {
+  part_missing: 'There is no such part in this proposal.',
+  no_neighbour: 'There is no part on that side to move to or merge with.',
+  neighbour_section: 'A section holds no blocks, so blocks cannot move into or out of one.',
+  section_holds_no_blocks:
+    'A section holds no blocks. Move or merge this part’s blocks before making it a section.',
+  blocks_out_of_range:
+    'That is not a block this part can split or move at: each part keeps at least one block.',
+  kinds_differ: 'Only two components, or two sections, can be merged.',
+  title_invalid: 'A part needs a title.',
+  content_invalid: 'What this would make is not content a component can hold, so it was not made.',
+};
+
+const partOf = (found: StoredImport, part: StoredImportPart) => ({
+  id: part.id,
+  kind: part.kind,
+  title: part.title,
+  parent: part.parent,
+  reason: part.reason,
+  flags: reviewFlags(part, found.report),
+  source: part.source,
+});
+
 async function viewOf(trx: TenantTransaction, found: StoredImport): Promise<ImportView> {
   const parts = await importParts(trx, found.id);
+  // A report entry names a part as read: shown against the part now holding what it came from.
+  const holding = (read: number | null) => {
+    const at = read === null ? -1 : parts.findIndex((part) => part.origins.includes(read));
+    return at === -1 ? null : at;
+  };
   return {
     ...summaryOf(found),
     levels: found.levels,
     title: found.title,
-    parts: parts.map((part) => ({
-      id: part.id,
-      kind: part.kind,
-      title: part.title,
-      parent: part.parent,
-      reason: part.reason,
-      flags: [...part.flags],
-      blocks: part.blocks.length,
-      source: part.source,
-    })),
-    report: found.report.map((entry) => ({ ...entry })),
+    parts: parts.map((part) => ({ ...partOf(found, part), blocks: part.blocks.length })),
+    revision: found.revision,
+    place: found.place,
+    accepted: found.acceptedCounts,
+    report: found.report.map((entry) => ({ ...entry, part: holding(entry.part) })),
   };
 }
 
@@ -281,6 +319,87 @@ export function importHandlers(
                 'The document could not be made with this title, language or template.',
               );
           }
+        },
+        contextOf(request),
+      ),
+
+    /** One part beside what it came from (IMP-028): reviewed alone, never the whole proposal. */
+    getImportPart: async (request: FastifyRequest): Promise<ImportPartDetail> =>
+      db.withTenant(tenantOf(request), async (trx) => {
+        const found = await visible(request, trx, 'administrator');
+        const { part: wanted } = request.params as ImportPartParams;
+        const parts = await importParts(trx, found.id);
+        const at = parts.findIndex((part) => part.id === wanted);
+        const part = parts[at];
+        if (!part) throw notFound();
+        return {
+          ...partOf(found, part),
+          blocks: part.blocks.map((block) => ({ type: block.type, text: blockText(block) })),
+          place: at,
+          of: parts.length,
+          previous: parts[at - 1]?.id ?? null,
+          next: parts[at + 1]?.id ?? null,
+        };
+      }),
+
+    /** Searched by title and text, filtered by flag (IMP-029). */
+    searchImportParts: async (request: FastifyRequest): Promise<ImportPartMatches> =>
+      db.withTenant(tenantOf(request), async (trx) => {
+        const found = await visible(request, trx, 'administrator');
+        const { q, flag } = request.query as ImportPartSearchQuery;
+        const parts = await importParts(trx, found.id);
+        return {
+          parts: parts
+            .filter((part) => partMatches(part, q ?? ''))
+            .filter((part) => flag === undefined || reviewFlags(part, found.report).includes(flag))
+            .map((part) => part.id),
+        };
+      }),
+
+    /** An edit by its importer (IMP-002, IMP-041), validated as made, against the revision read. */
+    editImport: async (request: FastifyRequest): Promise<ImportView> =>
+      db.withTenant(
+        tenantOf(request),
+        async (trx) => {
+          const found = await visible(request, trx, 'importer');
+          const body = request.body as EditImportBody;
+          const answer = await editImport(trx, found.id, {
+            revision: body.revision,
+            edit: body.edit,
+            by: callerOf(request).principalId,
+          });
+          switch (answer.answer) {
+            case 'edited':
+              return viewOf(trx, answer.import);
+            case 'import.not_proposed':
+              throw notProposed();
+            case 'import.changed':
+              throw new AppError(
+                409,
+                'import_changed',
+                'This proposal was changed since you opened it. Open it again to see it as it is.',
+              );
+            default:
+              throw new AppError(400, 'import_edit_refused', REFUSALS[answer.refusal]);
+          }
+        },
+        contextOf(request),
+      ),
+
+    /** Where its importer is (IMP-029), to return to from any session. */
+    setImportPlace: async (request: FastifyRequest): Promise<ImportView> =>
+      db.withTenant(
+        tenantOf(request),
+        async (trx) => {
+          const found = await visible(request, trx, 'importer');
+          const placed = await setImportPlace(
+            trx,
+            found.id,
+            (request.body as ImportPlaceBody).part,
+          );
+          if (placed === 'part.missing') throw notFound();
+          if (!placed) throw notProposed();
+          return viewOf(trx, placed);
         },
         contextOf(request),
       ),

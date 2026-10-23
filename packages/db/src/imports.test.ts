@@ -14,12 +14,15 @@ import {
   acceptImport,
   changeImportLevels,
   createImport,
+  editImport,
+  importEdits,
   failImport,
   importParts,
   provenanceOf,
   readImport,
   receiveImportFile,
   recordProposal,
+  setImportPlace,
   sweepImports,
 } from './imports.js';
 import { migrate } from './migrate.js';
@@ -56,6 +59,7 @@ const proposal = () => ({
       heading(1, 'Methods'),
       heading(2, 'Sampling'),
       para('How Ada sampled'),
+      para('Where Ada sampled'),
       heading(2, 'Analysis'),
       para('How Grace analysed'),
     ],
@@ -315,6 +319,107 @@ describe('an import', () => {
     expect(
       await tenant((trx) => changeImportLevels(trx, made.id, { section: 1, component: 2 })),
     ).toBeUndefined();
+  });
+
+  it('IMP-002 IMP-041 is edited in its edited set alone, each edit validated as made, recorded, and refused against a stale revision', async () => {
+    const made = await proposed();
+    const [, methods, sampling, analysis] = await tenant((trx) => importParts(trx, made.id));
+    const edit = (revision: number, change: Parameters<typeof editImport>[2]['edit']) =>
+      tenant((trx) => editImport(trx, made.id, { revision, edit: change, by: ada }));
+
+    const moved = await edit(0, { edit: 'move', part: sampling!.id, to: 'next', blocks: 1 });
+    expect(moved).toMatchObject({ answer: 'edited', import: { revision: 1 } });
+    // Another tab, still at revision 0, is refused rather than overwriting it.
+    expect(await edit(0, { edit: 'rename', part: sampling!.id, title: 'Late' })).toEqual({
+      answer: 'import.changed',
+    });
+    expect(await edit(1, { edit: 'merge', part: methods!.id })).toEqual({
+      answer: 'refused',
+      refusal: 'kinds_differ',
+    });
+    await edit(1, { edit: 'split', part: analysis!.id, at: 1, title: 'Grace analyses' });
+    await edit(2, { edit: 'rename', part: sampling!.id, title: 'How we sampled' });
+    let parts = await tenant((trx) => importParts(trx, made.id));
+    expect(parts.map((part) => [part.ord, part.kind, part.title, part.blocks.length])).toEqual([
+      [0, 'component', 'Introduction', 1],
+      [1, 'section', 'Methods', 0],
+      [2, 'component', 'How we sampled', 1],
+      [3, 'component', 'Analysis', 1],
+      [4, 'component', 'Grace analyses', 1],
+    ]);
+    expect(parts[4]!.parent).toBe(methods!.id);
+    expect(parts[4]!.origins).toEqual([3]);
+
+    // A section made a component: what stood under it stands at the top.
+    await edit(3, { edit: 'kind', part: methods!.id, kind: 'component' });
+    parts = await tenant((trx) => importParts(trx, made.id));
+    expect(parts.map((part) => part.parent)).toEqual([null, null, null, null, null]);
+    expect(parts[1]!.flags).toEqual(['empty']);
+
+    // The proposal as read is as it was.
+    const read = await tenant((trx) => importParts(trx, made.id, 'read'));
+    expect(read.map((part) => part.title)).toEqual([
+      'Introduction',
+      'Methods',
+      'Sampling',
+      'Analysis',
+    ]);
+    const edits = await tenant((trx) => importEdits(trx, made.id));
+    expect(edits.map((each) => [each.revision, each.by, each.edit.edit])).toEqual([
+      [1, ada, 'move'],
+      [2, ada, 'split'],
+      [3, ada, 'rename'],
+      [4, ada, 'kind'],
+    ]);
+    // Abandoned, nothing of its edits is left.
+    await tenant((trx) => abandonImport(trx, made.id, remove));
+    expect(await tenant((trx) => importEdits(trx, made.id))).toEqual([]);
+  });
+
+  it('IMP-029 remembers the part its importer was last at, a part of its own edited set only', async () => {
+    const made = await proposed();
+    const other = await proposed();
+    const [, , sampling] = await tenant((trx) => importParts(trx, made.id));
+    const [elsewhere] = await tenant((trx) => importParts(trx, other.id));
+    const [asRead] = await tenant((trx) => importParts(trx, made.id, 'read'));
+    expect(await tenant((trx) => setImportPlace(trx, made.id, sampling!.id))).toMatchObject({
+      place: sampling!.id,
+    });
+    expect((await tenant((trx) => readImport(trx, made.id)))?.place).toBe(sampling!.id);
+    for (const part of [elsewhere!.id, asRead!.id]) {
+      expect(await tenant((trx) => setImportPlace(trx, made.id, part))).toBe('part.missing');
+    }
+  });
+
+  it('IMP-031 records at acceptance how many parts were accepted unchanged, edited, merged, split and renamed', async () => {
+    const made = await proposed();
+    const [intro, , sampling] = await tenant((trx) => importParts(trx, made.id));
+    await tenant(async (trx) => {
+      await editImport(trx, made.id, {
+        revision: 0,
+        edit: { edit: 'rename', part: intro!.id, title: 'Preface' },
+        by: ada,
+      });
+      await editImport(trx, made.id, {
+        revision: 1,
+        edit: { edit: 'merge', part: sampling!.id },
+        by: ada,
+      });
+    });
+    const answer = await tenant((trx) =>
+      acceptImport(trx, made.id, { by: ada, title: 'A report', language: 'en', direction: 'ltr' }),
+    );
+    if (answer.answer !== 'accepted') throw new Error(answer.answer);
+    expect(answer.import.acceptedCounts).toEqual({
+      unchanged: 1,
+      edited: 0,
+      merged: 1,
+      split: 0,
+      renamed: 1,
+    });
+    expect((await tenant((trx) => readImport(trx, made.id)))?.acceptedCounts).toEqual(
+      answer.import.acceptedCounts,
+    );
   });
 
   it('tells its importer seven days before a proposal left alone is swept, then sweeps it', async () => {

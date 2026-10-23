@@ -10,6 +10,8 @@ const GENERAL = '11111111-1111-4111-8111-111111111111';
 const IMPORT = '22222222-2222-4222-8222-222222222222';
 const DOCUMENT = '33333333-3333-4333-8333-333333333333';
 const SECTION = '44444444-4444-4444-8444-444444444444';
+const INTRODUCTION = '55555555-5555-4555-8555-555555555555';
+const SAMPLING = '66666666-6666-4666-8666-666666666666';
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
@@ -26,6 +28,9 @@ const base = {
   sweepsAt: '2026-11-21T09:00:00.000Z',
   levels: { section: 1, component: 2 },
   title: 'Pond survey by Ada',
+  revision: 0,
+  place: null,
+  accepted: null,
 };
 
 const proposed = {
@@ -33,7 +38,7 @@ const proposed = {
   state: 'proposed',
   parts: [
     {
-      id: '55555555-5555-4555-8555-555555555555',
+      id: INTRODUCTION,
       kind: 'component',
       title: 'Introduction',
       parent: null,
@@ -53,7 +58,7 @@ const proposed = {
       source: 'Methods',
     },
     {
-      id: '66666666-6666-4666-8666-666666666666',
+      id: SAMPLING,
       kind: 'component',
       title: 'Sampling',
       parent: SECTION,
@@ -84,13 +89,41 @@ const proposed = {
   ],
 };
 
+/** Each part as its own route answers it (IMP-028). */
+const details: Record<string, unknown> = {
+  [INTRODUCTION]: {
+    ...proposed.parts[0],
+    blocks: [
+      { type: 'paragraph', text: 'Some opening words.' },
+      { type: 'paragraph', text: 'Ada counted newts.' },
+    ],
+    source: 'Some opening words.\nAda counted newts.',
+    place: 0,
+    of: 3,
+    previous: null,
+    next: SECTION,
+  },
+  [SECTION]: {
+    ...proposed.parts[1],
+    blocks: [],
+    place: 1,
+    of: 3,
+    previous: INTRODUCTION,
+    next: SAMPLING,
+  },
+  [SAMPLING]: { ...proposed.parts[2], blocks: [], place: 2, of: 3, previous: SECTION, next: null },
+};
+
 interface Asked {
   readonly method: string;
   readonly path: string;
   readonly body: unknown;
 }
 
-function service(views: readonly unknown[] = [proposed]) {
+function service(
+  views: readonly unknown[] = [proposed],
+  edited: (body: unknown) => Response = () => json(200, { ...proposed, revision: 1 }),
+) {
   const asked: Asked[] = [];
   let read = 0;
   const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
@@ -123,6 +156,23 @@ function service(views: readonly unknown[] = [proposed]) {
       const view = views[Math.min(read, views.length - 1)];
       read += 1;
       return json(200, view);
+    }
+    const part = /^\/v1\/imports\/[0-9a-f-]+\/parts\/([0-9a-f-]+)$/.exec(path)?.[1];
+    if (request.method === 'GET' && part !== undefined && details[part]) {
+      return json(200, details[part]);
+    }
+    if (request.method === 'GET' && path === `/v1/imports/${IMPORT}/parts`) {
+      const q = url.searchParams.get('q');
+      const flag = url.searchParams.get('flag');
+      return json(200, {
+        parts: flag === 'empty' ? [SAMPLING] : q === 'newts' ? [INTRODUCTION] : [],
+      });
+    }
+    if (request.method === 'PUT' && path === `/v1/imports/${IMPORT}/place`) {
+      return json(200, proposed);
+    }
+    if (request.method === 'POST' && path === `/v1/imports/${IMPORT}/edits`) {
+      return edited(asked.at(-1)?.body);
     }
     if (request.method === 'POST' && path === `/v1/imports/${IMPORT}/accept`) {
       return json(200, {
@@ -186,13 +236,13 @@ describe("an import's page", () => {
     const { client } = service();
     render(<ImportPage client={client} id={IMPORT} />);
     const outline = await screen.findByRole('list', { name: 'Proposed outline' });
-    expect(within(outline).getByText('Section: Methods')).toBeInTheDocument();
+    expect(within(outline).getByRole('button', { name: 'Section: Methods' })).toBeInTheDocument();
     expect(
-      within(outline).getByText('Heading 1 “Methods” starts this section.'),
+      within(outline).getByRole('button', { name: 'Component: Sampling' }),
     ).toBeInTheDocument();
-    expect(within(outline).getByText('Component: Sampling')).toBeInTheDocument();
     expect(within(outline).getByText('Nothing stands under it.')).toBeInTheDocument();
-    expect(within(outline).getByText('What stands before the first heading.')).toBeInTheDocument();
+    const part = await screen.findByRole('region', { name: 'Part 1 of 3: Introduction' });
+    expect(within(part).getByText('What stands before the first heading.')).toBeInTheDocument();
     const report = screen.getByRole('list', { name: 'Report' });
     expect(report).toHaveTextContent(
       'Footnotes: Something the import does not read yet was left out. (2)',
@@ -246,5 +296,107 @@ describe("an import's page", () => {
         component: 3,
       }),
     );
+  });
+
+  it('IMP-028 shows one part at a time beside the text it came from, with next and previous', async () => {
+    const user = userEvent.setup();
+    const { client, asked } = service();
+    render(<ImportPage client={client} id={IMPORT} />);
+    const part = await screen.findByRole('region', { name: 'Part 1 of 3: Introduction' });
+    const holds = within(part).getByRole('list', { name: 'What it holds' });
+    expect(within(holds).getByText('Ada counted newts.')).toBeInTheDocument();
+    expect(within(part).getByLabelText('From the file')).toHaveTextContent(
+      'Some opening words. Ada counted newts.',
+    );
+    expect(within(part).getByRole('button', { name: 'Previous part' })).toBeDisabled();
+    await user.click(within(part).getByRole('button', { name: 'Next part' }));
+    expect(await screen.findByRole('region', { name: 'Part 2 of 3: Methods' })).toBeInTheDocument();
+    await waitFor(() =>
+      expect(asked.find((each) => each.path.endsWith('/place'))?.body).toEqual({ part: SECTION }),
+    );
+  });
+
+  it('IMP-029 returns to the part its importer was last at', async () => {
+    const { client } = service([{ ...proposed, place: SAMPLING }]);
+    render(<ImportPage client={client} id={IMPORT} />);
+    expect(
+      await screen.findByRole('region', { name: 'Part 3 of 3: Sampling' }),
+    ).toBeInTheDocument();
+  });
+
+  it('IMP-029 searches the parts by their text, and filters them by what they are flagged for', async () => {
+    const user = userEvent.setup();
+    const { client, asked } = service();
+    render(<ImportPage client={client} id={IMPORT} />);
+    await user.type(await screen.findByRole('searchbox', { name: 'Search parts' }), 'newts');
+    await user.click(screen.getByRole('button', { name: 'Find' }));
+    const outline = screen.getByRole('list', { name: 'Proposed outline' });
+    await waitFor(() =>
+      expect(within(outline).queryByRole('button', { name: 'Section: Methods' })).toBeNull(),
+    );
+    expect(
+      within(outline).getByRole('button', { name: 'Component: Introduction' }),
+    ).toBeInTheDocument();
+    await user.clear(screen.getByRole('searchbox', { name: 'Search parts' }));
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Show' }), 'empty');
+    await user.click(screen.getByRole('button', { name: 'Find' }));
+    await waitFor(() =>
+      expect(within(outline).queryByRole('button', { name: 'Component: Introduction' })).toBeNull(),
+    );
+    expect(
+      within(outline).getByRole('button', { name: 'Component: Sampling' }),
+    ).toBeInTheDocument();
+    expect(asked.some((each) => each.path === `/v1/imports/${IMPORT}/parts`)).toBe(true);
+  });
+
+  it('IMP-002 IMP-041 renames, splits and merges a part against the revision read, saying why an edit is refused', async () => {
+    const user = userEvent.setup();
+    const { client, asked } = service([proposed], (body) =>
+      (body as { edit: { edit: string } }).edit.edit === 'merge'
+        ? json(400, {
+            code: 'import_edit_refused',
+            message: 'Only two components, or two sections, can be merged.',
+          })
+        : json(200, { ...proposed, revision: 1 }),
+    );
+    render(<ImportPage client={client} id={IMPORT} />);
+    const part = await screen.findByRole('region', { name: 'Part 1 of 3: Introduction' });
+    const title = within(part).getByRole('textbox', { name: 'Part title' });
+    await user.clear(title);
+    await user.type(title, 'Preface');
+    await user.click(within(part).getByRole('button', { name: 'Rename' }));
+    await waitFor(() =>
+      expect(asked.filter((each) => each.path.endsWith('/edits')).map((each) => each.body)).toEqual(
+        [{ revision: 0, edit: { edit: 'rename', part: INTRODUCTION, title: 'Preface' } }],
+      ),
+    );
+    await user.click(within(part).getByRole('button', { name: 'Split before block 2' }));
+    await waitFor(() =>
+      expect(asked.filter((each) => each.path.endsWith('/edits')).at(-1)?.body).toEqual({
+        revision: 1,
+        edit: { edit: 'split', part: INTRODUCTION, at: 1, title: 'Ada counted newts.' },
+      }),
+    );
+    await user.click(within(part).getByRole('button', { name: 'Merge with the next part' }));
+    expect(
+      await screen.findByText('Only two components, or two sections, can be merged.'),
+    ).toBeInTheDocument();
+  });
+
+  it('IMP-031 shows on the accepted import how much was accepted unchanged', async () => {
+    const { client } = service([
+      {
+        ...proposed,
+        state: 'accepted',
+        document: DOCUMENT,
+        sweepsAt: null,
+        accepted: { unchanged: 2, edited: 0, merged: 0, split: 0, renamed: 1 },
+      },
+    ]);
+    render(<ImportPage client={client} id={IMPORT} />);
+    const counts = await screen.findByRole('list', { name: 'What was accepted' });
+    expect(counts).toHaveTextContent('2 parts accepted unchanged');
+    expect(counts).toHaveTextContent('1 part renamed');
+    expect(counts).toHaveTextContent('0 parts merged');
   });
 });
