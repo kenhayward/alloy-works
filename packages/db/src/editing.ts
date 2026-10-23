@@ -6,13 +6,14 @@ import {
   type MetadataFailure,
   type MetadataValues,
 } from '@alloy-works/domain';
-import { sql, type UpdateQueryBuilder, type UpdateResult } from 'kysely';
+import { sql, type SelectQueryBuilder, type UpdateQueryBuilder, type UpdateResult } from 'kysely';
 import { componentFieldsNow, unstorableValues } from './component-values.js';
 import { isDeleted, shareDeletion } from './deletion.js';
 import type { TenantTables, TenantTransaction } from './tables.js';
 import { sha256Hex } from './version-digest.js';
 import { type StoredVersion } from './versions.js';
 import { headVersion, readLine } from './lines.js';
+import { iterationLinesStored } from './retention.js';
 
 /**
  * How long a lock lasts without activity unless an administrator changes it (COL-008): fifteen
@@ -369,6 +370,20 @@ function latestAccepted(trx: TenantTransaction, session: EditingSession) {
 }
 
 /**
+ * A session's iterations on its own line alone, the main line's where `line` is undefined (the TR
+ * final review): one session id serves a tab on every line of a component, its sequence one count
+ * across them, and the words of one line are never cut or read back onto another.
+ */
+export function onIterationLine<Q extends SelectQueryBuilder<TenantTables, 'iteration', object>>(
+  query: Q,
+  line: string | undefined,
+): Q {
+  return (
+    line === undefined ? query.where('line_id', 'is', null) : query.where('line_id', '=', line)
+  ) as Q;
+}
+
+/**
  * The latest sequence the service has accepted from one editing session, or null where it has none
  * (component-editor.md, "Undo across a reload"): read as `saveIteration` reads it, so a reload continues
  * from exactly the number the next save is judged against. The session's own, whatever version each
@@ -401,6 +416,7 @@ export async function sessionContent(
     .where('artifact_id', '=', session.artifactId)
     .where('principal_id', '=', session.principal)
     .where('session_id', '=', session.session)
+    .$if(await iterationLinesStored(trx), (query) => onIterationLine(query, session.line))
     .orderBy('sequence', 'desc')
     .limit(1)
     .executeTakeFirst();

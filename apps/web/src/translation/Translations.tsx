@@ -23,7 +23,7 @@ interface TranslationNow {
 }
 
 interface TranslationsNow {
-  readonly source: { readonly language: string; readonly latest: Shown };
+  readonly source: { readonly language: string; readonly latest: Shown; readonly from?: Shown };
   readonly translations: readonly TranslationNow[];
 }
 
@@ -35,6 +35,13 @@ export function sourceOf(view: unknown): string | undefined {
   return isRecord(view) && isRecord(view.source) && typeof view.source.id === 'string'
     ? view.source.id
     : undefined;
+}
+
+/** A translation as a document's reference row says it (LOC-016; TR-M). */
+export interface TranslationSaid {
+  readonly language: string;
+  readonly status: string;
+  readonly retranslate?: boolean;
 }
 
 /** A status in words (LOC-030, LOC-015). */
@@ -219,7 +226,7 @@ function TranslationsDialog({
                 client={client}
                 componentId={componentId}
                 translation={here}
-                latest={now.source.latest}
+                latest={now.source.from ?? now.source.latest}
                 mayEdit={mayEdit}
                 onMarked={() => void read()}
               />

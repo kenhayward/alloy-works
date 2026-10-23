@@ -32,10 +32,12 @@ component is used and across a space.
 | TR-I | **Publishing in a language** (default; LOC-010): `RequestPublicationBody.language`, default the document's, held on the publication for the worker and preview; each reference resolves on that language's line: latest its newest version, approved its latest approved revision, pinned the newest variant version translating the pinned version or an earlier one. A component whose root language is the one asked for is its own variant. A pin to a language line's version is refused. A baseline publishes in its own language only; another is refused (named). Fallback and staleness are recorded per input at request.                                                                                      |
 | TR-J | **Fallback, marked** (Ken: fall back by default; LOC-037, LOC-017): `translation_policy` (`fallback: source \| refuse`, `outOfDate: publish \| refuse`, defaults `source` and `publish`), a tenant setting beside import's, audited `settings.changed`; the outline's optional `fallback` overrides it per document. Refusal counts only `retranslate` changes. A fallen-back component carries its own language tag (PDF `Lang`, Word `w:lang`) and a visible note before it (publishing/25), its words the policy's for the document's language, else `Untranslated`, with the source's tag; the report lists it. The document's own fallback is set as its profile is, `PUT /v1/documents/{id}/translation-fallback`. |
 | TR-K | **The layout and terms** (review): a publish in a language needs a layout that speaks it (PUB-095), else refused; terms resolve in it (TM-F). A reference's overrides are not applied to a variant and are reported; per-language overrides are named.                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| TR-L | **Titles by language** (Ken; LOC-Q04): optional `titles` on the outline's root (strings) and on a section (`sectionTitleSchema` values), a map from language to title, in the canonical form where present, set by a `retitle` carrying a language; a key equal to the outline's language refused; templates carry them. The contents, bookmarks, running heads and cross-references show the language's title; a missing one prints the source's and is reported. The structure is never translated.                                                                                                                                                                                                                    |
-| TR-M | **Status where used** (default; LOC-016): a document's reference row says each language's status; the component page's **Translations** lists them; `GET /v1/spaces/{space}/translations` reports every readable component by language, filtered before it counts, paged and capped (API-058). Search results and listings are named.                                                                                                                                                                                                                                                                                                                                                                                    |
+| TR-L | **Titles by language** (Ken; LOC-Q04): optional `titles` on the outline's root (strings) and on a section (`sectionTitleSchema` values), a map from language to title, in the canonical form where present, set by a `retitle` carrying a language; a key equal to the outline's language refused; a template's starting sections do not carry them yet (named). The contents, bookmarks, running heads and cross-references show the language's title; a missing one prints the source's and is reported. The structure is never translated.                                                                                                                                                                            |
+| TR-M | **Status where used** (default; LOC-016): a document's reference row says each language's status; the component page's **Translations** lists them; `GET /v1/spaces/{space}/translations` reports every readable component by language, filtered before it counts, capped at 500 and saying so (API-058); not paged. Search results and listings are named, so LOC-016 is not claimed.                                                                                                                                                                                                                                                                                                                                   |
 | TR-N | **Languages** (default): any BCP 47 tag `publishedLanguage` can carry; the declared list is LOC-038's, in UI.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | TR-O | **A layout gives its words per language** (Ken, 2026-10-23; PUB-095): layout schema 8's `translations`, each complete - words, labels, titles, running matter - so one layout serves a document in each; `layoutIn` the one place a layout is read in a language, its own words where they serve it. The default layout's 0.12 (0161) adds French and German. A variant serves the language asked for where either tag is a range of the other, its exact tag first.                                                                                                                                                                                                                                                     |
+| TR-P | **Titles in plain words** (TRc): a translated title is words alone, no marks; the dialog sets each, one `translateTitle` act a title, undone as any outline act. The space report is a capped list, read-filtered first, reached from Components rather than a module of its own.                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| TR-Q | **What a translation translates** (the final review): any version of its source's main line, the approved revision a translator is shown where there is one, so a translation of it stands beside newer drafts and an approved reference reads it; a pin to a translation's version is refused; a session's iterations are read on their own line; the mark's words are recorded with the request.                                                                                                                                                                                                                                                                                                                       |
 
 ## Risks
 
@@ -46,3 +48,37 @@ component is used and across a space.
   before and after. Claimed in XL when every policy it names exists, or the gap named.
 - **Census**: access-routes, audit-census and cross-tenant rows for every new route; 0112's insert-only
   grants for both tables; the audit kind check and `audit/kinds.ts` together.
+
+## Built
+
+TR in three PRs: TRa #779, TRb #780 and the close #781, which holds TRc. Departures:
+
+- A translation begins from the source's approved revision, as a line does, rather than its newest version: a nullable `diverged_from` would have broken every line reader (the pre-flight review).
+- `/v1/components/{id}/translations` routes rather than `language` on the lines route.
+- A layout gives its words per language (layout schema 8, Ken's answer of 2026-10-23), the default layout's 0.12 in French and German. That added `layoutIn`, migrations 0160 to 0162 and publishing/25.
+- A variant serves a language where either tag is a range of the other.
+- Titles in other languages are plain words.
+- The space report is capped, not paged, and reached from Components.
+
+Two automated security reviews and the final review found no cross-tenant read and no injection. They fixed:
+
+- an approved reference reading a translation not yet in effect, scoped elsewhere, or of source words not yet approved;
+- a translation of the approved revision skipped once the source had newer drafts;
+- a pin to a translation's version;
+- one session's words cut onto another line;
+- the mark's words read at the job rather than the request;
+- the numbering and baseline views reading the layout's own words;
+- claims and takes of another component's line;
+- `lock.taken` without its line;
+- an unvalidated publish language and policy note;
+- a title past its cap dropped silently;
+- the space report reading every component's status before its cap.
+
+Left, named:
+
+- LOC-016, until search results and the components listing say a component's translations;
+- a template's starting sections carrying titles in other languages;
+- per-language overrides;
+- closing or deleting a translation;
+- search and where-used for a translation's versions;
+- a document's own fallback standing over the environment's, which an administrator cannot bind.

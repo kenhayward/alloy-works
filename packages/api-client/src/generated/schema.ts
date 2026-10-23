@@ -6123,6 +6123,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/spaces/{space}/translations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Report a space's translations, each with its status
+         * @description Reports the components of a space that have translations, by title, each translation with its status: untranslated, translated, or out of date with its source, saying whether any change since needs retranslating. Only components the caller may read are named or counted. At most 500 are named, and the report says when there are more. It needs read on the space.
+         */
+        get: operations["getSpaceTranslations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/stream": {
         parameters: {
             query?: never;
@@ -13235,6 +13255,14 @@ export interface operations {
                             language?: string;
                         } | {
                             /**
+                             * @description A title given no words in the language published in, printed in the document's own (the TR plan, TR-L)
+                             * @constant
+                             */
+                            code: "title_untranslated";
+                            /** @description The section, by its outline node, or null for the document's own title */
+                            node: string | null;
+                        } | {
+                            /**
                              * @description `term_unresolved`: a term printed as the words it covers, being draft, missing or one the requester may not read; `term_deprecated`: a deprecated term printed; `term_fallback`: a term printed in its base language, having no label in the document's
                              * @enum {string}
                              */
@@ -19942,7 +19970,7 @@ export interface operations {
                             /** @description A language line's BCP 47 tag, a translation (TR-A); null for a divergent line */
                             language: string | null;
                         }[];
-                        /** @description On a language line, the source's latest version: the one a cut on the line says it translates (the TR plan, TR-C) */
+                        /** @description On a language line, the source version a translation is made against: its latest approved revision, else its latest version, which a cut on the line says it translates (the TR plan, TR-C) */
                         source?: {
                             /** Format: uuid */
                             id: string;
@@ -22572,7 +22600,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description lock_held, lock_required, lock_taken (taken from this session, naming who has it), version_precondition, iteration_stale, iteration_conflict, or translation_source_stale (a language line’s source moved on: read it again) */
+            /** @description lock_held, lock_required, lock_taken (taken from this session, naming who has it), version_precondition, iteration_stale, iteration_conflict */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -23466,7 +23494,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description lock_held, lock_required, lock_taken (taken from this session, naming who has it), version_precondition, iteration_stale, iteration_conflict, or translation_source_stale (a language line’s source moved on: read it again) */
+            /** @description lock_held, lock_required, lock_taken (taken from this session, naming who has it), version_precondition, iteration_stale, iteration_conflict */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -23601,7 +23629,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `values_invalid`: a fixed value differs from its default at the cut; `translation_source_required`: a cut on a language line names no source version */
+            /** @description `values_invalid`: a fixed value differs from its default at the cut; `translation_source_required`: a cut on a language line names no source version; `translation_source_invalid`: one that is no version of its source */
             400: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -23711,7 +23739,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description lock_held, lock_required, lock_taken (taken from this session, naming who has it), version_precondition, iteration_stale, iteration_conflict, or translation_source_stale (a language line’s source moved on: read it again) */
+            /** @description lock_held, lock_required, lock_taken (taken from this session, naming who has it), version_precondition, iteration_stale, iteration_conflict */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -25552,6 +25580,10 @@ export interface operations {
                      *         "latest": {
                      *           "id": "00000000-0000-4000-8000-000000000001",
                      *           "number": "example"
+                     *         },
+                     *         "from": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "number": "example"
                      *         }
                      *       },
                      *       "translations": []
@@ -25563,6 +25595,12 @@ export interface operations {
                             language: string;
                             /** @description The source's latest version */
                             latest: {
+                                /** Format: uuid */
+                                id: string;
+                                number: string;
+                            };
+                            /** @description The version a translation is made against: the source's latest approved revision, else its latest version */
+                            from: {
                                 /** Format: uuid */
                                 id: string;
                                 number: string;
@@ -25914,7 +25952,7 @@ export interface operations {
                  *     }
                  */
                 "application/json": {
-                    /** @description The source version the translator was shown, which must be the source's latest */
+                    /** @description The source version it now translates: a version of its source's main line, normally the one `source.from` names */
                     translates: string & (unknown & unknown);
                 };
             };
@@ -25978,6 +26016,26 @@ export interface operations {
                     };
                 };
             };
+            /** @description translation_source_invalid: a version that is no version of its source */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
@@ -26038,7 +26096,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description translation_source_stale: the source moved on since the translator saw it; translation_untranslated: nothing is translated yet to mark */
+            /** @description translation_untranslated: nothing is translated yet to mark */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -27024,7 +27082,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `values_invalid`: a fixed value differs from its default at the cut; `translation_source_required`: a cut on a language line names no source version */
+            /** @description `values_invalid`: a fixed value differs from its default at the cut; `translation_source_required`: a cut on a language line names no source version; `translation_source_invalid`: one that is no version of its source */
             400: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -27134,7 +27192,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description lock_held, lock_required, lock_taken (taken from this session, naming who has it), version_precondition, iteration_stale, iteration_conflict, or translation_source_stale (a language line’s source moved on: read it again) */
+            /** @description lock_held, lock_required, lock_taken (taken from this session, naming who has it), version_precondition, iteration_stale, iteration_conflict */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -52308,6 +52366,12 @@ export interface operations {
                         })[];
                     } | {
                         /** @constant */
+                        operation: "translateTitle";
+                        node: string | null;
+                        language: string;
+                        title: string | null;
+                    } | {
+                        /** @constant */
                         operation: "set";
                         node: string;
                         numbered?: boolean;
@@ -56524,6 +56588,14 @@ export interface operations {
                             language?: string;
                         } | {
                             /**
+                             * @description A title given no words in the language published in, printed in the document's own (the TR plan, TR-L)
+                             * @constant
+                             */
+                            code: "title_untranslated";
+                            /** @description The section, by its outline node, or null for the document's own title */
+                            node: string | null;
+                        } | {
+                            /**
                              * @description `term_unresolved`: a term printed as the words it covers, being draft, missing or one the requester may not read; `term_deprecated`: a deprecated term printed; `term_fallback`: a term printed in its base language, having no label in the document's
                              * @enum {string}
                              */
@@ -58567,6 +58639,14 @@ export interface operations {
                             node: string;
                             /** @description For a component untranslated, the language it was published in: its own */
                             language?: string;
+                        } | {
+                            /**
+                             * @description A title given no words in the language published in, printed in the document's own (the TR plan, TR-L)
+                             * @constant
+                             */
+                            code: "title_untranslated";
+                            /** @description The section, by its outline node, or null for the document's own title */
+                            node: string | null;
                         } | {
                             /**
                              * @description `term_unresolved`: a term printed as the words it covers, being draft, missing or one the requester may not read; `term_deprecated`: a deprecated term printed; `term_fallback`: a term printed in its base language, having no label in the document's
@@ -60934,6 +61014,13 @@ export interface operations {
                                 id: string;
                                 name: string;
                             };
+                            /** @description The component's translations, by language, each with its status (LOC-016; the TR plan, TR-M); absent where it has none, or where the caller may not read it */
+                            translations?: {
+                                language: string;
+                                /** @enum {string} */
+                                status: "untranslated" | "machineDrafted" | "inTranslation" | "translated" | "outOfDate";
+                                retranslate?: boolean;
+                            }[];
                             /** @description The component's latest version, where the reference is pinned to an earlier one and the caller may read the component; absent otherwise */
                             newer?: {
                                 id: string;
@@ -82945,6 +83032,14 @@ export interface operations {
                             language?: string;
                         } | {
                             /**
+                             * @description A title given no words in the language published in, printed in the document's own (the TR plan, TR-L)
+                             * @constant
+                             */
+                            code: "title_untranslated";
+                            /** @description The section, by its outline node, or null for the document's own title */
+                            node: string | null;
+                        } | {
+                            /**
                              * @description `term_unresolved`: a term printed as the words it covers, being draft, missing or one the requester may not read; `term_deprecated`: a deprecated term printed; `term_fallback`: a term printed in its base language, having no label in the document's
                              * @enum {string}
                              */
@@ -100196,7 +100291,7 @@ export interface operations {
                             /** @description A language line's BCP 47 tag, a translation (TR-A); null for a divergent line */
                             language: string | null;
                         }[];
-                        /** @description On a language line, the source's latest version: the one a cut on the line says it translates (the TR plan, TR-C) */
+                        /** @description On a language line, the source version a translation is made against: its latest approved revision, else its latest version, which a cut on the line says it translates (the TR plan, TR-C) */
                         source?: {
                             /** Format: uuid */
                             id: string;
@@ -105673,6 +105768,159 @@ export interface operations {
             };
             /** @description The body is larger than 5 MiB */
             413: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getSpaceTranslations: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                space: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The space's translated components */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "capped": false
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Each component of the space the caller may read that has a translation, by title, with each translation and its status */
+                        items: {
+                            component: {
+                                /** Format: uuid */
+                                id: string;
+                                title: string;
+                            };
+                            translations: {
+                                /**
+                                 * Format: uuid
+                                 * @description Its language line: open it as any line, `?line=`
+                                 */
+                                line: string;
+                                language: string;
+                                /** @description Its newest version recorded against a source, or null while untranslated */
+                                head: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    number: string;
+                                } | null;
+                                /** @description The source version that head translates, or null */
+                                translates: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    number: string;
+                                } | null;
+                                status: {
+                                    /**
+                                     * @description The declared set (LOC-030): untranslated until its first cut; out of date the moment the source changes after what it translates
+                                     * @enum {string}
+                                     */
+                                    status: "untranslated" | "machineDrafted" | "inTranslation" | "translated" | "outOfDate";
+                                    /** @description Out of date: whether any source change since needs retranslating, as its author declared (LOC-015) */
+                                    retranslate?: boolean;
+                                };
+                            }[];
+                        }[];
+                        /** @description Whether more components have translations than the 500 a report names (API-058) */
+                        capped: boolean;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not read this space */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such space the caller may read */
+            404: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;

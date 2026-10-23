@@ -15,6 +15,7 @@ import {
   readLayout,
   readOutline,
   layoutIn,
+  titlesIn,
   untranslatedNote,
   unsupportedFormats,
   valueFailures,
@@ -222,10 +223,14 @@ export async function resolveOccurrences(
     pinned.length === 0
       ? []
       : await trx
-          .selectFrom('artifact_version')
-          .select(['id', 'artifact_id'])
-          .where('id', 'in', pinned)
-          .where('artifact_id', 'in', [...readable])
+          .selectFrom('artifact_version as v')
+          .select(['v.id', 'v.artifact_id'])
+          .where('v.id', 'in', pinned)
+          .where('v.artifact_id', 'in', [...readable])
+          // Never a translation's version, which only its source reads in a language (TR-I).
+          .where(
+            sql<boolean>`not exists (select 1 from artifact_line l where l.id = v.line_id and to_jsonb(l) ->> 'language' is not null)`,
+          )
           .execute();
   const gone = await goneComponents(
     trx,
@@ -871,6 +876,8 @@ export interface Publishable {
   readonly language?: string;
   /** What each occurrence resolved to in that language, by node. */
   readonly translations: ReadonlyMap<string, InLanguage>;
+  /** The words each occurrence fallen back to its source is marked with, by node (TR-J). */
+  readonly untranslatedNotes: ReadonlyMap<string, string>;
   /** What reading it in that language reports, which never stops it by itself (TR-J, TR-K). */
   readonly translationWarnings: readonly TranslationWarning[];
 }
@@ -879,7 +886,9 @@ export interface Publishable {
 export type TranslationWarning =
   | { readonly code: 'component_untranslated'; readonly node: string; readonly language: string }
   | { readonly code: 'translation_out_of_date'; readonly node: string }
-  | { readonly code: 'override_skipped'; readonly node: string };
+  | { readonly code: 'override_skipped'; readonly node: string }
+  /** A section, or the document (`node` null), with no title in the language: its own printed. */
+  | { readonly code: 'title_untranslated'; readonly node: string | null };
 
 /** A refusal a request or a baseline is answered with before anything is recorded. */
 export type PublishRefusal = Exclude<PublicationRequestAnswer, { readonly answer: 'requested' }>;
@@ -967,6 +976,7 @@ export async function resolvePublishable(
   const fallback = read.outline.fallback ?? policy?.fallback ?? 'source';
   const translationFailures: PublishFailure[] = [];
   const translationWarnings: TranslationWarning[] = [];
+  const untranslatedNotes = new Map<string, string>();
   for (const [node, shown] of translations) {
     if (shown.translation === 'untranslated') {
       if (fallback === 'refuse') {
@@ -983,6 +993,12 @@ export async function resolvePublishable(
           node,
           language: shown.sourceLanguage,
         });
+        // Its mark's words as the policy says them now, recorded with the request (the TR final
+        // review): the job prints these whenever it runs.
+        untranslatedNotes.set(
+          node,
+          untranslatedNote(policy?.note ?? {}, input.language!, shown.sourceLanguage),
+        );
       }
     }
     if (shown.translation === 'outOfDate') {
@@ -1037,6 +1053,14 @@ export async function resolvePublishable(
       translationWarnings.push({ code: 'override_skipped', node: node.id });
     }
   });
+  // Each title with no words in the language, its own printed (TR-L): what the profile keeps alone.
+  if (input.language !== undefined) {
+    const titled = titlesIn(read.outline, input.language);
+    if (titled.untitled) translationWarnings.push({ code: 'title_untranslated', node: null });
+    for (const node of titled.missing) {
+      if (!excluded.has(node)) translationWarnings.push({ code: 'title_untranslated', node });
+    }
+  }
   const stale = (
     await applyOutlineOverrides(
       trx,
@@ -1144,6 +1168,7 @@ export async function resolvePublishable(
     ...(input.language === undefined ? {} : { language: input.language }),
     translations,
     translationWarnings,
+    untranslatedNotes,
   };
 }
 
@@ -1279,6 +1304,9 @@ export async function requestPublication(
           // What it resolved to in the language asked for (TR-I), where one was.
           ...(found.translations.get(each.node)?.translation
             ? { translation: found.translations.get(each.node)!.translation! }
+            : {}),
+          ...(found.untranslatedNotes.has(each.node)
+            ? { untranslated: found.untranslatedNotes.get(each.node)! }
             : {}),
         })),
       )
@@ -1830,6 +1858,8 @@ async function inputsOf(
       'v.content',
       // Short of 0160 nothing was resolved in another language.
       sql<string | null>`to_jsonb(o) ->> 'translation'`.as('translation'),
+      // Short of 0162 the mark's words were read at the job.
+      sql<string | null>`to_jsonb(o) ->> 'untranslated'`.as('note'),
     ])
     .where('o.request_id', '=', requestId)
     .execute();
@@ -1872,10 +1902,13 @@ async function inputsOf(
   const untranslated = new Map<string, string>();
   const fellBack = rows.filter((row) => row.translation === 'untranslated');
   if (request.language !== null && fellBack.length > 0) {
-    const { note } = await translationPolicy(trx);
+    // As recorded at request (0162); a request before it reads the policy now.
+    const { note } = fellBack.every((row) => row.note !== null)
+      ? { note: {} }
+      : await translationPolicy(trx);
     for (const row of fellBack) {
       const source = occurrences.get(row.node)?.content.language ?? read.outline.language;
-      untranslated.set(row.node, untranslatedNote(note, request.language, source));
+      untranslated.set(row.node, row.note ?? untranslatedNote(note, request.language, source));
     }
   }
   const images = await trx
@@ -1949,7 +1982,10 @@ async function inputsOf(
       formats: request.formats as [PublishingFormat, ...PublishingFormat[]],
     },
     outline:
-      request.language === null ? read.outline : { ...read.outline, language: request.language },
+      request.language === null
+        ? read.outline
+        : // Its titles in the language where it gives them (TR-L), and the language itself.
+          { ...titlesIn(read.outline, request.language).outline, language: request.language },
     occurrences,
     untranslated,
     // Written only by requestPublication, whose failures are `PublishFailure`s it built itself - each

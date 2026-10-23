@@ -180,7 +180,7 @@ const WIRE_CODES = {
   // A language line (the TR plan): never compared or brought back, and a cut on it names its source.
   'line.is_translation': 'line_is_translation',
   'translation.source_required': 'translation_source_required',
-  'translation.source_stale': 'translation_source_stale',
+  'translation.source_invalid': 'translation_source_invalid',
   'translation.language_invalid': 'translation_language_invalid',
   'translation.same_language': 'translation_same_language',
   'translation.exists': 'translation_exists',

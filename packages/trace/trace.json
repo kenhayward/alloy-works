@@ -21225,13 +21225,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 657,
+      "line": 658,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 670,
+      "line": 671,
       "kind": "title"
     },
     {
@@ -21705,7 +21705,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 2112,
+      "line": 2113,
       "kind": "title"
     },
     {
@@ -23535,13 +23535,13 @@
     {
       "id": "LOC-015",
       "file": "apps/service/src/translation-routes.test.ts",
-      "line": 165,
+      "line": 167,
       "kind": "title"
     },
     {
       "id": "LOC-031",
       "file": "apps/service/src/translation-routes.test.ts",
-      "line": 165,
+      "line": 167,
       "kind": "title"
     },
     {
@@ -23553,7 +23553,7 @@
     {
       "id": "LOC-040",
       "file": "apps/service/src/translation-routes.test.ts",
-      "line": 165,
+      "line": 167,
       "kind": "title"
     },
     {
@@ -25137,7 +25137,7 @@
     {
       "id": "LOC-037",
       "file": "apps/web/src/publishing/Publishing.test.tsx",
-      "line": 1719,
+      "line": 1721,
       "kind": "title"
     },
     {
@@ -28473,7 +28473,7 @@
     {
       "id": "LOC-017",
       "file": "packages/db/src/publish-language.test.ts",
-      "line": 342,
+      "line": 352,
       "kind": "title"
     },
     {
@@ -29269,6 +29269,12 @@
       "kind": "title"
     },
     {
+      "id": "LOC-012",
+      "file": "packages/db/src/translation.test.ts",
+      "line": 379,
+      "kind": "title"
+    },
+    {
       "id": "LOC-013",
       "file": "packages/db/src/translation.test.ts",
       "line": 222,
@@ -29277,19 +29283,19 @@
     {
       "id": "LOC-014",
       "file": "packages/db/src/translation.test.ts",
-      "line": 262,
+      "line": 263,
       "kind": "title"
     },
     {
       "id": "LOC-031",
       "file": "packages/db/src/translation.test.ts",
-      "line": 262,
+      "line": 263,
       "kind": "title"
     },
     {
       "id": "LOC-040",
       "file": "packages/db/src/translation.test.ts",
-      "line": 319,
+      "line": 320,
       "kind": "title"
     },
     {
@@ -30657,7 +30663,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1029,
+      "line": 1031,
       "kind": "title"
     },
     {
@@ -31917,7 +31923,7 @@
     {
       "id": "STR-064",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 747,
+      "line": 748,
       "kind": "title"
     },
     {
@@ -32889,13 +32895,13 @@
     {
       "id": "CNT-155",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 1139,
+      "line": 1176,
       "kind": "title"
     },
     {
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 747,
+      "line": 784,
       "kind": "title"
     },
     {

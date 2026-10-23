@@ -272,3 +272,37 @@ export async function approvedTerm(
   if (!approved.data) throw new Error(`approving a term answered ${approved.response.status}`);
   return { id: made.data.id, label, abbreviation };
 }
+
+/**
+ * A component of Grace's in General, approved by Ada, and begun in French (the TR plan): its id, its
+ * title and its French line.
+ */
+export async function translatedComponent(
+  ada: Client,
+): Promise<{ id: string; title: string; line: string }> {
+  const space = await general(ada);
+  const grace = await apiAs('grace');
+  const title = `Pond sampling ${Date.now().toString(36)}`;
+  const made = await grace.POST('/v1/spaces/{space}/components', {
+    params: { path: { space } },
+    body: { title, language: 'en-GB', direction: 'ltr' } as never,
+  });
+  if (!made.data) throw new Error(`a component answered ${made.response.status}`);
+  const id = made.data.id;
+  const submitted = await grace.POST('/v1/components/{id}/transitions', {
+    params: { path: { id } },
+    body: { transition: 'submit', from: 'draft' } as never,
+  });
+  if (!submitted.data) throw new Error(`submitting answered ${submitted.response.status}`);
+  const approved = await ada.POST('/v1/components/{id}/approvals', {
+    params: { path: { id } },
+    body: { transition: 'approve', version: made.data.version.id, decision: 'approved' } as never,
+  });
+  if (!approved.data) throw new Error(`approving answered ${approved.response.status}`);
+  const begun = await grace.POST('/v1/components/{id}/translations', {
+    params: { path: { id } },
+    body: { language: 'fr-FR' },
+  });
+  if (!begun.data) throw new Error(`a translation answered ${begun.response.status}`);
+  return { id, title, line: begun.data.line };
+}

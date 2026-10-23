@@ -2,6 +2,7 @@ import { TRANSLATION_STATUSES } from '@alloy-works/domain';
 import { z } from 'zod';
 import type { RouteContract } from './contract.js';
 import { ErrorBody, LowercaseUuid } from './schemas.js';
+import { SpaceParams } from './components.js';
 import { LineParams, TransitionParams } from './workflows.js';
 
 /**
@@ -52,6 +53,11 @@ export const TranslationsView = z.object({
   source: z.object({
     language: z.string().describe("The source's language, its main line's"),
     latest: z.object({ id: z.uuid(), number: z.string() }).describe("The source's latest version"),
+    from: z
+      .object({ id: z.uuid(), number: z.string() })
+      .describe(
+        "The version a translation is made against: the source's latest approved revision, else its latest version",
+      ),
   }),
   translations: z
     .array(TranslationView)
@@ -61,7 +67,7 @@ export type TranslationsView = z.infer<typeof TranslationsView>;
 
 export const MarkCurrentBody = z.strictObject({
   translates: LowercaseUuid.describe(
-    "The source version the translator was shown, which must be the source's latest",
+    "The source version it now translates: a version of its source's main line, normally the one `source.from` names",
   ),
 });
 export type MarkCurrentBody = z.infer<typeof MarkCurrentBody>;
@@ -101,6 +107,23 @@ export type SourceChangeBody = z.infer<typeof SourceChangeBody>;
 
 export const SourceChangeView = z.object({ version: z.uuid(), retranslate: z.boolean() });
 
+export const SpaceTranslationsView = z.object({
+  items: z
+    .array(
+      z.object({
+        component: z.object({ id: z.uuid(), title: z.string() }),
+        translations: z.array(TranslationView),
+      }),
+    )
+    .describe(
+      'Each component of the space the caller may read that has a translation, by title, with each translation and its status',
+    ),
+  capped: z
+    .boolean()
+    .describe('Whether more components have translations than the 500 a report names (API-058)'),
+});
+export type SpaceTranslationsView = z.infer<typeof SpaceTranslationsView>;
+
 const unauthenticated = {
   description: 'No session, or not one this environment issued',
   schema: ErrorBody,
@@ -117,6 +140,21 @@ const read = { check: 'permission', permission: 'read', target: { artifact: 'id'
 const edit = { check: 'permission', permission: 'edit', target: { artifact: 'id' } } as const;
 
 export const translationRoutes = {
+  getSpaceTranslations: {
+    operationId: 'getSpaceTranslations',
+    method: 'GET',
+    path: '/v1/spaces/{space}/translations',
+    summary: "Report a space's translations, each with its status",
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'read', target: { space: 'space' } },
+    params: SpaceParams,
+    responses: {
+      200: { description: "The space's translated components", schema: SpaceTranslationsView },
+      401: unauthenticated,
+      403: { description: 'The caller may not read this space', schema: ErrorBody },
+      404: { description: 'No such space the caller may read', schema: ErrorBody },
+    },
+  },
   listComponentTranslations: {
     operationId: 'listComponentTranslations',
     method: 'GET',
@@ -172,9 +210,12 @@ export const translationRoutes = {
       401: unauthenticated,
       403: forbiddenEdit,
       404: notFound,
+      400: {
+        description: 'translation_source_invalid: a version that is no version of its source',
+        schema: ErrorBody,
+      },
       409: {
-        description:
-          'translation_source_stale: the source moved on since the translator saw it; translation_untranslated: nothing is translated yet to mark',
+        description: 'translation_untranslated: nothing is translated yet to mark',
         schema: ErrorBody,
       },
     },

@@ -3,6 +3,22 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.210.0 - 2026-10-23 (PR #781)
+
+Translation (the TR plan).
+
+### Added
+
+- **Translations.** A component can be translated into another language from its new Translations button. Each translation has its own versions and approvals, and says whether it is translated, untranslated or out of date with its source.
+- **Out of date at once.** A translation goes out of date the moment its source changes. The author can say a change needs no retranslation, and a translator sees the source words changed since and can mark a translation current.
+- **Editing side by side.** A translator and the author can edit the same component at once, each in their own language.
+- **Publishing in a language.** A document can be published in another language from Publish in, beside Publish. Each component is published in its translation into that language.
+- **Untranslated components marked.** A component with no translation is published in its own language, with a note before it saying so, or the publish is refused, as the document or the environment says. Administration's new Translation page sets the policy and the note's words.
+- **French and German layout words.** The default layout gives its contents, notices, labels, titles and running heads in French and German as well as English.
+- **Titles in other languages.** A document's title and its section titles can be given in each language it is published in, from Translate titles beside Publish in. A title with none prints in the document's own language, and that is reported.
+- **Translation status where used.** A document's references say each translation of the component they place and whether it is up to date. A new Translations page, linked from Components, lists every translated component of a space.
+- **Preview in a language.** Preview, beside Publish, previews in the language chosen to publish in.
+
 ## 0.209.0 - 2026-10-23 (PR #776)
 
 Import (the IM plan).

@@ -104,8 +104,11 @@ export function followInFrame(url: string): void {
 export interface Previewing {
   readonly asking: Asking;
   readonly pane: Pane | null;
-  /** Asks for a preview, under the document's profile or the one given (REU-025; R6-H). */
-  readonly ask: (profile?: StoredProfile) => Promise<void>;
+  /**
+   * Asks for a preview, under the document's profile or the one given (REU-025; R6-H), in its own
+   * language or the one given (the TR plan, TRc).
+   */
+  readonly ask: (profile?: StoredProfile, language?: string) => Promise<void>;
   readonly close: () => void;
   readonly download: () => Promise<void>;
   /** **Preview**, which the focus goes back to when the pane closes. */
@@ -154,7 +157,7 @@ export function usePreview({
   const shown = useRef<string | null>(null);
   const button = useRef<HTMLButtonElement | null>(null);
 
-  const ask = async (profile?: StoredProfile) => {
+  const ask = async (profile?: StoredProfile, language?: string) => {
     if (version === null) return;
     const asked = { version: version.number, title };
     setAsking({ state: 'working' });
@@ -164,6 +167,7 @@ export function usePreview({
         body: {
           version: version.id,
           ...(profile === undefined ? {} : { profile: profileOnTheWire(profile) }),
+          ...(language === undefined ? {} : { language }),
         },
       });
       if (!mounted.current) return;
@@ -258,13 +262,20 @@ export function usePreview({
 }
 
 /** **Preview**, for anybody who may read the document: waits while one is being made. */
-export function PreviewButton({ preview }: { readonly preview: Previewing }) {
+export function PreviewButton({
+  preview,
+  language,
+}: {
+  readonly preview: Previewing;
+  /** The language a publish beside it is made in, where not the document's own (TRc). */
+  readonly language?: string | undefined;
+}) {
   return (
     <button
       ref={preview.button}
       type="button"
       disabled={preview.asking.state === 'working'}
-      onClick={() => void preview.ask()}
+      onClick={() => void preview.ask(undefined, language)}
     >
       <Icon name="Preview" size={14} />
       Preview

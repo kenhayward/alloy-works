@@ -10,7 +10,7 @@ import {
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import { createComponent } from './creation.js';
-import { createDocument, recordDocumentFallback } from './documents.js';
+import { createDocument, mayReference, recordDocumentFallback } from './documents.js';
 import { claimLock, saveIteration } from './editing.js';
 import { grant } from './grants.js';
 import { migrate } from './migrate.js';
@@ -296,6 +296,8 @@ describe('publishing in a language (the TR plan, TRb)', () => {
     );
     expect(warnings.warnings).toEqual([
       { code: 'component_untranslated', node: left.id, language: 'en-GB' },
+      // Its title given no words in French (TR-L).
+      { code: 'title_untranslated', node: null },
     ]);
 
     // The tenant's words for the mark, by language.
@@ -308,6 +310,14 @@ describe('publishing in a language (the TR plan, TRb)', () => {
     );
     const worded = await publish(version, 'fr-FR');
     if (worded.answer !== 'requested') throw new Error(worded.answer);
+    // Recorded at request: a policy changed before the job runs changes nothing it prints.
+    await as((trx) =>
+      setTranslationPolicy(trx, {
+        fallback: 'source',
+        outOfDate: 'publish',
+        note: { fr: 'Autre' },
+      }),
+    );
     expect(
       (await as((trx) => publicationInputs(trx, worded.request.id)))!.untranslated.get(left.id),
     ).toBe('Non traduit (en-GB)');
@@ -382,6 +392,108 @@ describe('publishing in a language (the TR plan, TRb)', () => {
       (await as((trx) => publicationInputs(trx, after.request.id)))!.occurrences.get(approved.id)
         ?.version,
     ).toBe(methods.variant.id);
+  });
+
+  it('prints the document’s title and each section’s in the language where it gives them, reporting each it does not', async () => {
+    const methods = await translated('Methods', 'Ponds were sampled.', 'Les étangs.');
+    const section = (
+      title: string,
+      titles: Record<string, string> | undefined,
+      children: OutlineNode[],
+    ) => ({
+      type: 'section' as const,
+      id: nodeId(),
+      title: [{ type: 'text' as const, value: title, marks: [] }],
+      numbered: true,
+      matter: 'body' as const,
+      pageBreak: 'none' as const,
+      values: {},
+      ...(titles === undefined ? {} : { titles }),
+      children,
+    });
+    const named = section('Field work', { 'fr-FR': 'Travail de terrain' }, [
+      reference(methods.source.artifactId),
+    ]);
+    const unnamed = section('Discussion', undefined, []);
+    const made = await document([named, unnamed]);
+    const titled = await as(async (trx) => {
+      const recorded = await recordVersion(trx, {
+        artifactId: made.artifactId,
+        openedFrom: made.id,
+        author: ada,
+        substance: {
+          kind: 'document',
+          content: { ...(made.content as OutlineDocument), titles: { fr: 'Étude des étangs' } },
+        },
+      });
+      if (recorded.answer !== 'recorded') throw new Error(recorded.answer);
+      return recorded.version;
+    });
+    const asked = await publish(titled, 'fr-FR');
+    if (asked.answer !== 'requested') throw new Error(asked.answer);
+    const inputs = (await as((trx) => publicationInputs(trx, asked.request.id)))!;
+    expect(inputs.outline.title).toBe('Étude des étangs');
+    expect(
+      inputs.outline.nodes.map((node) => (node.type === 'section' ? node.title : null)),
+    ).toEqual([
+      [{ type: 'text', value: 'Travail de terrain', marks: [] }],
+      [{ type: 'text', value: 'Discussion', marks: [] }],
+    ]);
+    const warnings = await as((trx) =>
+      trx
+        .selectFrom('publication_request')
+        .select('warnings')
+        .where('id', '=', asked.request.id)
+        .executeTakeFirstOrThrow(),
+    );
+    expect(warnings.warnings).toEqual([{ code: 'title_untranslated', node: unnamed.id }]);
+  });
+
+  it('reads an approved reference as a translation of the approved source, though the source has newer drafts since', async () => {
+    const created = await component('Summary');
+    const approvedSource = await cut(created, [para('b1', 'Ponds.')], 'en-GB');
+    await approve(approvedSource);
+    await cut(approvedSource, [para('b1', 'Ponds, a draft.')], 'en-GB');
+    const begun = await as((trx) =>
+      beginTranslation(trx, { artifactId: created.artifactId, language: 'fr-FR', by: ada }),
+    );
+    if (begun.answer !== 'begun') throw new Error(begun.answer);
+    // Translated from the approved source, which a translator is shown: never refused as stale.
+    const french = await cut(approvedSource, [para('b1', 'Étangs.')], 'fr-FR', {
+      line: begun.line.id,
+      translates: approvedSource.id,
+    });
+    await approve(french, begun.line.id);
+    const approved = reference(created.artifactId, { kind: 'approved' });
+    const version = await document([approved]);
+    const asked = await publish(version, 'fr-FR');
+    if (asked.answer !== 'requested') throw new Error(asked.answer);
+    const inputs = (await as((trx) => publicationInputs(trx, asked.request.id)))!;
+    expect(inputs.occurrences.get(approved.id)?.version).toBe(french.id);
+    expect(inputs.untranslated.has(approved.id)).toBe(false);
+  });
+
+  it('refuses a pin to a translation’s version, which only its source reads in a language, at the outline and at a publish', async () => {
+    const methods = await translated('Methods', 'Ponds were sampled.', 'Les étangs.');
+    expect(
+      await as((trx) =>
+        mayReference(trx, ada, {
+          component: methods.source.artifactId,
+          version: methods.variant.id,
+        }),
+      ),
+    ).toBe('refused');
+    // One stored before, or written past the outline's check, resolves to nothing.
+    const pinned = reference(methods.source.artifactId, {
+      kind: 'pinned',
+      version: methods.variant.id,
+    });
+    const version = await document([pinned]);
+    const asked = await publish(version);
+    if (asked.answer !== 'requested') throw new Error(asked.answer);
+    expect(await failuresOf(asked.request.id)).toEqual([
+      expect.objectContaining({ code: 'occurrence_unresolved', node: pinned.id }),
+    ]);
   });
 
   it('never reads an approved reference as a variant translating source words newer than its approved revision', async () => {

@@ -29,6 +29,7 @@ import {
 } from '@alloy-works/db';
 import {
   decide,
+  layoutIn,
   readContent,
   readLayout,
   readOutline,
@@ -245,8 +246,11 @@ export function baselineHandlers(
             id: layoutVersion.id,
             number: `${layoutVersion.revision}.${layoutVersion.version}`,
           },
-          scheme: { ...layout.layout.scheme },
-          words: { ...layout.layout.words },
+          // In the outline's own language: its layout's words for it (TRb).
+          scheme: {
+            ...(layoutIn(layout.layout, outline.outline.language) ?? layout.layout).scheme,
+          },
+          words: { ...(layoutIn(layout.layout, outline.outline.language) ?? layout.layout).words },
         },
         texts: texts.map(({ document: _read, ...each }) => ({
           ...each,

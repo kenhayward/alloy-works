@@ -307,7 +307,7 @@ export const ComponentView = z.object({
     .object({ id: z.uuid(), number: z.string() })
     .optional()
     .describe(
-      "On a language line, the source's latest version: the one a cut on the line says it translates (the TR plan, TR-C)",
+      'On a language line, the source version a translation is made against: its latest approved revision, else its latest version, which a cut on the line says it translates (the TR plan, TR-C)',
     ),
   onHold: z
     .boolean()

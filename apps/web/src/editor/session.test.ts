@@ -685,16 +685,16 @@ describe('the editing session', () => {
     });
   });
 
-  it('keeps editing and says to reload when a translation is cut after its source moved on', async () => {
+  it('keeps editing and says to reload when a translation names no version of its source', async () => {
     const { clock, service, session, type } = harness();
     type('Unbox');
     await clock.advance(0);
-    service.cutAnswer = async () => ({ ok: false, code: 'translation_source_stale' });
+    service.cutAnswer = async () => ({ ok: false, code: 'translation_source_invalid' });
     await session.saveVersion();
     expect(session.view()).toMatchObject({
       phase: 'editing',
       notice:
-        'The source has changed since this translation was opened. Reload to translate against it: what you typed is saved.',
+        'This translation names a version that is not its source. Reload it: what you typed is saved.',
     });
   });
 

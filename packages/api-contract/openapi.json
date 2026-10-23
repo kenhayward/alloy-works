@@ -24511,6 +24511,27 @@
                             "properties": {
                               "code": {
                                 "type": "string",
+                                "const": "title_untranslated",
+                                "description": "A title given no words in the language published in, printed in the document's own (the TR plan, TR-L)"
+                              },
+                              "node": {
+                                "description": "The section, by its outline node, or null for the document's own title",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "code",
+                              "node"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "code": {
+                                "type": "string",
                                 "enum": [
                                   "term_unresolved",
                                   "term_deprecated",
@@ -47967,7 +47988,7 @@
                       "description": "Its divergent lines (LIF-044, LIF-046): none where it has not diverged"
                     },
                     "source": {
-                      "description": "On a language line, the source's latest version: the one a cut on the line says it translates (the TR plan, TR-C)",
+                      "description": "On a language line, the source version a translation is made against: its latest approved revision, else its latest version, which a cut on the line says it translates (the TR plan, TR-C)",
                       "type": "object",
                       "properties": {
                         "id": {
@@ -54553,7 +54574,7 @@
             }
           },
           "409": {
-            "description": "lock_held, lock_required, lock_taken (taken from this session, naming who has it), version_precondition, iteration_stale, iteration_conflict, or translation_source_stale (a language line’s source moved on: read it again)",
+            "description": "lock_held, lock_required, lock_taken (taken from this session, naming who has it), version_precondition, iteration_stale, iteration_conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -56458,7 +56479,7 @@
             }
           },
           "400": {
-            "description": "`values_invalid`: a fixed value differs from its default at the cut; `translation_source_required`: a cut on a language line names no source version",
+            "description": "`values_invalid`: a fixed value differs from its default at the cut; `translation_source_required`: a cut on a language line names no source version; `translation_source_invalid`: one that is no version of its source",
             "content": {
               "application/json": {
                 "schema": {
@@ -56738,7 +56759,7 @@
             }
           },
           "409": {
-            "description": "lock_held, lock_required, lock_taken (taken from this session, naming who has it), version_precondition, iteration_stale, iteration_conflict, or translation_source_stale (a language line’s source moved on: read it again)",
+            "description": "lock_held, lock_required, lock_taken (taken from this session, naming who has it), version_precondition, iteration_stale, iteration_conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -57296,7 +57317,7 @@
             }
           },
           "409": {
-            "description": "lock_held, lock_required, lock_taken (taken from this session, naming who has it), version_precondition, iteration_stale, iteration_conflict, or translation_source_stale (a language line’s source moved on: read it again)",
+            "description": "lock_held, lock_required, lock_taken (taken from this session, naming who has it), version_precondition, iteration_stale, iteration_conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -62049,11 +62070,30 @@
                             "number"
                           ],
                           "description": "The source's latest version"
+                        },
+                        "from": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "number": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number"
+                          ],
+                          "description": "The version a translation is made against: the source's latest approved revision, else its latest version"
                         }
                       },
                       "required": [
                         "language",
-                        "latest"
+                        "latest",
+                        "from"
                       ]
                     },
                     "translations": {
@@ -62164,6 +62204,10 @@
                   "source": {
                     "language": "en",
                     "latest": {
+                      "id": "00000000-0000-4000-8000-000000000001",
+                      "number": "example"
+                    },
+                    "from": {
                       "id": "00000000-0000-4000-8000-000000000001",
                       "number": "example"
                     }
@@ -62879,7 +62923,7 @@
                         "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                       }
                     ],
-                    "description": "The source version the translator was shown, which must be the source's latest"
+                    "description": "The source version it now translates: a version of its source's main line, normally the one `source.from` names"
                   }
                 },
                 "required": [
@@ -63027,6 +63071,47 @@
               }
             }
           },
+          "400": {
+            "description": "translation_source_invalid: a version that is no version of its source",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
           "401": {
             "description": "No session, or not one this environment issued",
             "content": {
@@ -63151,7 +63236,7 @@
             }
           },
           "409": {
-            "description": "translation_source_stale: the source moved on since the translator saw it; translation_untranslated: nothing is translated yet to mark",
+            "description": "translation_untranslated: nothing is translated yet to mark",
             "content": {
               "application/json": {
                 "schema": {
@@ -65462,7 +65547,7 @@
             }
           },
           "400": {
-            "description": "`values_invalid`: a fixed value differs from its default at the cut; `translation_source_required`: a cut on a language line names no source version",
+            "description": "`values_invalid`: a fixed value differs from its default at the cut; `translation_source_required`: a cut on a language line names no source version; `translation_source_invalid`: one that is no version of its source",
             "content": {
               "application/json": {
                 "schema": {
@@ -65742,7 +65827,7 @@
             }
           },
           "409": {
-            "description": "lock_held, lock_required, lock_taken (taken from this session, naming who has it), version_precondition, iteration_stale, iteration_conflict, or translation_source_stale (a language line’s source moved on: read it again)",
+            "description": "lock_held, lock_required, lock_taken (taken from this session, naming who has it), version_precondition, iteration_stale, iteration_conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -156361,6 +156446,48 @@
                         "properties": {
                           "operation": {
                             "type": "string",
+                            "const": "translateTitle"
+                          },
+                          "node": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "pattern": "^[a-z2-7]{26}$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "language": {
+                            "type": "string",
+                            "pattern": "^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|\\d{3}))?(-[a-z0-9]{5,8})*$"
+                          },
+                          "title": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 500
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "operation",
+                          "node",
+                          "language",
+                          "title"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "operation": {
+                            "type": "string",
                             "const": "set"
                           },
                           "node": {
@@ -170042,6 +170169,27 @@
                             "properties": {
                               "code": {
                                 "type": "string",
+                                "const": "title_untranslated",
+                                "description": "A title given no words in the language published in, printed in the document's own (the TR plan, TR-L)"
+                              },
+                              "node": {
+                                "description": "The section, by its outline node, or null for the document's own title",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "code",
+                              "node"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "code": {
+                                "type": "string",
                                 "enum": [
                                   "term_unresolved",
                                   "term_deprecated",
@@ -176146,6 +176294,27 @@
                               "language": {
                                 "description": "For a component untranslated, the language it was published in: its own",
                                 "type": "string"
+                              }
+                            },
+                            "required": [
+                              "code",
+                              "node"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "code": {
+                                "type": "string",
+                                "const": "title_untranslated",
+                                "description": "A title given no words in the language published in, printed in the document's own (the TR plan, TR-L)"
+                              },
+                              "node": {
+                                "description": "The section, by its outline node, or null for the document's own title",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
                               }
                             },
                             "required": [
@@ -182364,6 +182533,35 @@
                               "id",
                               "name"
                             ]
+                          },
+                          "translations": {
+                            "description": "The component's translations, by language, each with its status (LOC-016; the TR plan, TR-M); absent where it has none, or where the caller may not read it",
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "language": {
+                                  "type": "string"
+                                },
+                                "status": {
+                                  "type": "string",
+                                  "enum": [
+                                    "untranslated",
+                                    "machineDrafted",
+                                    "inTranslation",
+                                    "translated",
+                                    "outOfDate"
+                                  ]
+                                },
+                                "retranslate": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": [
+                                "language",
+                                "status"
+                              ]
+                            }
                           },
                           "newer": {
                             "description": "The component's latest version, where the reference is pinned to an earlier one and the caller may read the component; absent otherwise",
@@ -240491,6 +240689,27 @@
                             "properties": {
                               "code": {
                                 "type": "string",
+                                "const": "title_untranslated",
+                                "description": "A title given no words in the language published in, printed in the document's own (the TR plan, TR-L)"
+                              },
+                              "node": {
+                                "description": "The section, by its outline node, or null for the document's own title",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "code",
+                              "node"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "code": {
+                                "type": "string",
                                 "enum": [
                                   "term_unresolved",
                                   "term_deprecated",
@@ -295079,7 +295298,7 @@
                       "description": "Its divergent lines (LIF-044, LIF-046): none where it has not diverged"
                     },
                     "source": {
-                      "description": "On a language line, the source's latest version: the one a cut on the line says it translates (the TR plan, TR-C)",
+                      "description": "On a language line, the source version a translation is made against: its latest approved revision, else its latest version, which a cut on the line says it translates (the TR plan, TR-C)",
                       "type": "object",
                       "properties": {
                         "id": {
@@ -312766,6 +312985,379 @@
           },
           "413": {
             "description": "The body is larger than 5 MiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/spaces/{space}/translations": {
+      "get": {
+        "operationId": "getSpaceTranslations",
+        "summary": "Report a space's translations, each with its status",
+        "description": "Reports the components of a space that have translations, by title, each translation with its status: untranslated, translated, or out of date with its source, saying whether any change since needs retranslating. Only components the caller may read are named or counted. At most 500 are named, and the report says when there are more. It needs read on the space.",
+        "tags": [
+          "Translations"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "read",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "space",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The space's translated components",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "component": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "title": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "title"
+                            ]
+                          },
+                          "translations": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "line": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                  "description": "Its language line: open it as any line, `?line=`"
+                                },
+                                "language": {
+                                  "type": "string"
+                                },
+                                "head": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "id": {
+                                          "type": "string",
+                                          "format": "uuid",
+                                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                        },
+                                        "number": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "number"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "Its newest version recorded against a source, or null while untranslated"
+                                },
+                                "translates": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "id": {
+                                          "type": "string",
+                                          "format": "uuid",
+                                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                        },
+                                        "number": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "number"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "The source version that head translates, or null"
+                                },
+                                "status": {
+                                  "type": "object",
+                                  "properties": {
+                                    "status": {
+                                      "type": "string",
+                                      "enum": [
+                                        "untranslated",
+                                        "machineDrafted",
+                                        "inTranslation",
+                                        "translated",
+                                        "outOfDate"
+                                      ],
+                                      "description": "The declared set (LOC-030): untranslated until its first cut; out of date the moment the source changes after what it translates"
+                                    },
+                                    "retranslate": {
+                                      "description": "Out of date: whether any source change since needs retranslating, as its author declared (LOC-015)",
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "status"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "line",
+                                "language",
+                                "head",
+                                "translates",
+                                "status"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "component",
+                          "translations"
+                        ]
+                      },
+                      "description": "Each component of the space the caller may read that has a translation, by title, with each translation and its status"
+                    },
+                    "capped": {
+                      "type": "boolean",
+                      "description": "Whether more components have translations than the 500 a report names (API-058)"
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "capped"
+                  ]
+                },
+                "example": {
+                  "items": [],
+                  "capped": false
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may not read this space",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such space the caller may read",
             "content": {
               "application/json": {
                 "schema": {

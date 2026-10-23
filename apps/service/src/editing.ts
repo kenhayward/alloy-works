@@ -252,12 +252,11 @@ function refuse(refusal: Refusal): AppError {
         'translation.source_required',
         'A translation names the source version it translates.',
       );
-    case 'translation.source_stale':
+    case 'translation.source_invalid':
       return refused(
-        409,
-        'translation.source_stale',
-        'The source has changed since this translation was opened: read it again.',
-        { current: versionView(refusal.current) },
+        400,
+        'translation.source_invalid',
+        'A translation names a version of its own source as the one it translates.',
       );
   }
 }

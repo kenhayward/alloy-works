@@ -1,4 +1,6 @@
 import type { FieldView } from '@alloy-works/api-client';
+import type { TranslationSaid } from '../translation/Translations.js';
+import { titleIn, type TitleToTranslate } from '../translation/TranslatedTitles.js';
 import { TemplateLine, templateIn, type TemplateInfo } from './TemplateLine.js';
 import { DatesButton, DatesChips, datesIn, type Dates } from '../lifecycle/Dates.js';
 import { NO_SCOPE, ScopeButton, ScopeChips, scopeIn, type ScopeNow } from '../lifecycle/Scope.js';
@@ -524,6 +526,10 @@ function announce(
         ? `Renamed ${nodeName(was, names)} to ${nodeName(now, names)}.`
         : 'Renamed.';
     }
+    case 'translateTitle':
+      return operation.title === null
+        ? `The title in ${operation.language} is cleared.`
+        : `The title in ${operation.language} is ${operation.title}.`;
     case 'set': {
       const node = placeOf(after.nodes, operation.node)?.node;
       if (!node) return 'Changed.';
@@ -756,6 +762,9 @@ export function DocumentPage({
   const [revisionByNode, setRevisionByNode] = useState<ReadonlyMap<string, number>>(new Map());
   // The divergent line each reference's version is on (LIF-046; the R16 plan, R16-E).
   const [lineByNode, setLineByNode] = useState<ReadonlyMap<string, string>>(new Map());
+  const [translatedByNode, setTranslatedByNode] = useState<
+    ReadonlyMap<string, readonly TranslationSaid[]>
+  >(new Map());
   const [divergedByNode, setDivergedByNode] = useState<ReadonlyMap<string, readonly string[]>>(
     new Map(),
   );
@@ -921,6 +930,15 @@ export function DocumentPage({
           new Set(
             data.occurrences.flatMap((occurrence) =>
               occurrence.pastReview === true ? [occurrence.node] : [],
+            ),
+          ),
+        );
+        setTranslatedByNode(
+          new Map(
+            data.occurrences.flatMap((occurrence) =>
+              occurrence.translations === undefined
+                ? []
+                : [[occurrence.node, occurrence.translations] as const],
             ),
           ),
         );
@@ -2841,6 +2859,29 @@ export function DocumentPage({
                       formats={document.formats}
                       language={document.outline.language}
                       languages={document.languages}
+                      titles={{
+                        in: (language) => {
+                          const list: TitleToTranslate[] = [
+                            {
+                              node: null,
+                              own: document.outline.title,
+                              translated: titleIn(document.outline.titles, language),
+                            },
+                          ];
+                          walkOutline(document.outline.nodes, (node) => {
+                            if (node.type === 'section') {
+                              list.push({
+                                node: node.id,
+                                own: nodeName(node, names),
+                                translated: titleIn(node.titles, language),
+                              });
+                            }
+                          });
+                          return list;
+                        },
+                        mayEdit: document.mayEdit === true && !document.archived,
+                        onSave: async (change) => typeof (await apply(change, false)) === 'object',
+                      }}
                       fallback={{
                         own: document.outline.fallback ?? null,
                         mayChange: document.mayEdit === true && !document.archived,
@@ -2981,6 +3022,7 @@ export function DocumentPage({
                 revisions={revisionByNode}
                 lines={lineByNode}
                 diverged={divergedByNode}
+                translated={translatedByNode}
                 pastReview={pastReviewNodes}
                 overridesOf={overridesByNode}
                 {...(document.mayEdit && authoring ? { onOverride: setOverriding } : {})}

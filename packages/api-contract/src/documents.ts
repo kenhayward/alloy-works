@@ -1,4 +1,5 @@
 import {
+  TRANSLATION_STATUSES,
   outlineMatterSchema,
   outlineOperationSchema,
   PLACE_MAX,
@@ -620,6 +621,18 @@ export const DocumentTextsView = z.object({
           .optional()
           .describe(
             "The divergent line the version shown is on (LIF-046), served by the document's scope; absent for the main line",
+          ),
+        translations: z
+          .array(
+            z.object({
+              language: z.string(),
+              status: z.enum(TRANSLATION_STATUSES),
+              retranslate: z.boolean().optional(),
+            }),
+          )
+          .optional()
+          .describe(
+            "The component's translations, by language, each with its status (LOC-016; the TR plan, TR-M); absent where it has none, or where the caller may not read it",
           ),
         newer: z
           .object({ id: z.string(), number: z.string().describe('`revision.version`, as `0.3`') })

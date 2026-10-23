@@ -392,6 +392,7 @@ const OTHER_TENANT_IDS: Readonly<
   previewComponentTerms: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   divergeComponent: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   listComponentTranslations: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
+  getSpaceTranslations: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   beginComponentTranslation: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   markComponentTranslationCurrent: async (tenant, db) => ({
     id: await componentIdIn(tenant, db),

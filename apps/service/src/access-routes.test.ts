@@ -818,6 +818,7 @@ describe('routes that check a permission', () => {
       url: `/v1/components/${dosing}/translations`,
       status: 404,
     }),
+    getSpaceTranslations: () => ({ url: `/v1/spaces/${clinical}/translations`, status: 404 }),
     beginComponentTranslation: () => ({
       url: `/v1/components/${dosing}/translations`,
       status: 404,

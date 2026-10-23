@@ -246,6 +246,8 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
       <section aria-labelledby="components-heading">
         <div className={styles['titleRow']}>
           <h1 id="components-heading">Components</h1>
+          {/* A space's translations, by component (LOC-016; the TR plan, TR-M). */}
+          <a href="#/translations">Translations</a>
           {mayCreate && (
             <button type="button" className="primary" onClick={() => setCreating(true)}>
               New component

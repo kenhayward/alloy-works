@@ -342,6 +342,7 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   readComponentEffective: read,
   divergeComponent: writes('line.diverged'),
   listComponentTranslations: read,
+  getSpaceTranslations: read,
   beginComponentTranslation: writes('line.diverged'),
   markComponentTranslationCurrent: writes('translation.marked_current'),
   getComponentTranslationChanges: read,

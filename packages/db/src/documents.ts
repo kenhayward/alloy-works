@@ -685,7 +685,20 @@ export async function mayReference(
   }
   if (target.version === null) return 'ok';
   const version = await readVersion(trx, target.version);
-  return version?.artifactId === target.component ? 'ok' : 'refused';
+  if (version?.artifactId !== target.component) return 'refused';
+  // A translation is read through its source, in a publish's language, never pinned on its own: a
+  // pin to it would publish its language in any (LOC-N04; the TR final review).
+  if (version.line !== null && (await isTranslationLine(trx, version.line))) return 'refused';
+  return 'ok';
+}
+
+/** Whether a line is a language line (the TR plan, TR-A); none before 0159. */
+async function isTranslationLine(trx: TenantTransaction, line: string): Promise<boolean> {
+  const { rows } = await sql<{ language: string | null }>`
+    select to_jsonb(l) ->> 'language' as language from artifact_line l where l.id = ${line}::uuid`.execute(
+    trx,
+  );
+  return rows[0]?.language != null;
 }
 
 /**
