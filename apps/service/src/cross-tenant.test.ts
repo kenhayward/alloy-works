@@ -406,6 +406,16 @@ const OTHER_TENANT_IDS: Readonly<
     id: await componentIdIn(tenant, db),
     version: '00000000-0000-4000-8000-000000000001',
   }),
+  listDocumentTranslationJobs: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  makeDocumentTranslationJob: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  downloadDocumentTranslationJob: async (tenant, db) => ({
+    id: await documentIdIn(tenant, db),
+    job: '00000000-0000-4000-8000-000000000001',
+  }),
+  closeDocumentTranslationJob: async (tenant, db) => ({
+    id: await documentIdIn(tenant, db),
+    job: '00000000-0000-4000-8000-000000000001',
+  }),
   listComponentLines: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   compareComponentLine: async (tenant, db) => ({
     id: await componentIdIn(tenant, db),
@@ -842,6 +852,7 @@ const VALID_INPUT: Readonly<
     payload: { translates: '00000000-0000-4000-8000-000000000001' },
   },
   declareComponentSourceChange: { payload: { retranslate: false } },
+  makeDocumentTranslationJob: { payload: { language: 'fr-FR' } },
   sharePublication: { payload: { email: 'iris@example.net' } },
   bringComponentLineBack: {
     payload: {

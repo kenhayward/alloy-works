@@ -186,6 +186,9 @@ const WIRE_CODES = {
   'translation.exists': 'translation_exists',
   'translation.needs_revision': 'translation_needs_revision',
   'translation.untranslated': 'translation_untranslated',
+  // A translation job (the XL plan): one with nothing to send, and one closed already.
+  'translation.nothing_to_send': 'translation_nothing_to_send',
+  'translation.job_closed': 'translation_job_closed',
   'carry.invalid': 'carry_invalid',
   'share.member': 'share_member',
   'share.invitation_waiting': 'share_invitation_waiting',

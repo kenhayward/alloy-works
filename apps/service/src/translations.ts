@@ -1,4 +1,5 @@
 import type {
+  DocumentParams,
   LineParams,
   MarkCurrentBody,
   SourceChangeBody,
@@ -7,13 +8,29 @@ import type {
   SpaceParams,
   SpaceTranslationsView,
   TranslationBody,
+  TranslationJobBody,
+  TranslationJobParams,
+  TranslationJobsView,
+  TranslationJobView,
   TranslationsView,
   TranslationView,
   TransitionParams,
 } from '@alloy-works/api-contract';
 import {
+  artifactPlace,
   beginTranslation,
+  closeTranslationJob,
   declareSourceChange,
+  jobFileParts,
+  loadFactsFor,
+  makeTranslationJob,
+  readableComponents,
+  readDocument,
+  readTranslationJob,
+  recordEvent,
+  termsInSpace,
+  translationJobsOf,
+  type TranslationJob,
   latestVersion,
   lineNumbers,
   markCurrent,
@@ -25,7 +42,18 @@ import {
   type TenantTransaction,
   type Translation,
 } from '@alloy-works/db';
-import { parseContentDocument } from '@alloy-works/domain';
+import {
+  decide,
+  parseContentDocument,
+  readOutline,
+  selectOutline,
+  speaksFor,
+  termLabel,
+  walkOutline,
+  writeXliff,
+  xliffUnits,
+  type XliffTerm,
+} from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
 import { shownVersionView, versionView } from './components.js';
@@ -89,6 +117,114 @@ async function translationOn(trx: TenantTransaction, id: string, line: string) {
   const found = (await translationsOf(trx, [id])).get(id)?.find((each) => each.line === line);
   if (!found) throw notFound();
   return translationView(trx, found);
+}
+
+/** The components a document places now, under its own profile, in order (XL-D). */
+async function placed(trx: TenantTransaction, id: string) {
+  const document = await readDocument(trx, id);
+  if (!document) throw notFound();
+  const read = readOutline(document.version.content, {
+    artifact: id,
+    version: document.version.id,
+  });
+  if (!read.ok) throw notFound();
+  const outline = selectOutline(read.outline, read.outline.profile?.values ?? {}).outline;
+  const components: string[] = [];
+  walkOutline(outline.nodes, (node) => {
+    if (node.type === 'reference' && !components.includes(node.component)) {
+      components.push(node.component);
+    }
+  });
+  return { version: document.version.id, components };
+}
+
+/** A job as shown to `principal`: only the components they may read now are named. */
+async function jobView(
+  trx: TenantTransaction,
+  principal: string,
+  job: TranslationJob,
+): Promise<TranslationJobView> {
+  const readable = await readableComponents(
+    trx,
+    principal,
+    job.items.map((item) => item.component),
+  );
+  const items = job.items.filter((item) => readable.has(item.component));
+  const titles = new Map(
+    items.length === 0
+      ? []
+      : (
+          await trx
+            .selectFrom('artifact_version')
+            .distinctOn('artifact_id')
+            .select(['artifact_id', 'content'])
+            .where(
+              'artifact_id',
+              'in',
+              items.map((item) => item.component),
+            )
+            .where('line_id', 'is', null)
+            .orderBy('artifact_id')
+            .orderBy('revision_no', 'desc')
+            .orderBy('version_no', 'desc')
+            .execute()
+        ).map((row) => [row.artifact_id, parseContentDocument(row.content).title]),
+  );
+  const sources = await shownMany(
+    trx,
+    items.map((item) => item.sourceVersion),
+  );
+  return {
+    id: job.id,
+    language: job.language,
+    vendor: job.vendor,
+    by: job.by,
+    at: job.at.toISOString(),
+    closed: job.closed && { by: job.closed.by, at: job.closed.at.toISOString() },
+    items: items.map((item) => ({
+      component: { id: item.component, title: titles.get(item.component) ?? '' },
+      line: item.line,
+      source: item.sourceVersion === null ? null : (sources.get(item.sourceVersion) ?? null),
+      notSent: item.notSent,
+      outcome: item.outcome,
+    })),
+  };
+}
+
+/** The space's terms each file uses, labelled in the source's language and, where given, the job's (XL-B). */
+async function jobTerms(
+  trx: TenantTransaction,
+  principal: string,
+  files: readonly {
+    readonly component: string;
+    readonly content: ReturnType<typeof parseContentDocument>;
+  }[],
+  target: string,
+): Promise<Map<string, XliffTerm>> {
+  const terms = new Map<string, XliffTerm>();
+  if (files.length === 0) return terms;
+  const spaces = await trx
+    .selectFrom('artifact')
+    .select(['id', 'space_id'])
+    .where(
+      'id',
+      'in',
+      files.map((file) => file.component),
+    )
+    .execute();
+  for (const file of files) {
+    const space = spaces.find((row) => row.id === file.component)?.space_id;
+    const used = [...new Set(xliffUnits(file.content).flatMap((unit) => unit.terms))];
+    if (!space || used.length === 0) continue;
+    for (const [id, { term }] of await termsInSpace(trx, principal, space, used)) {
+      const translated = term.labels.find((label) => speaksFor(label.language, target));
+      terms.set(id, {
+        source: termLabel(term, file.content.language).preferred,
+        target: translated?.preferred,
+      });
+    }
+  }
+  return terms;
 }
 
 export function translationHandlers() {
@@ -225,6 +361,112 @@ export function translationHandlers() {
       });
       if (answer.answer !== 'declared') throw notFound();
       return { version, retranslate };
+    },
+    listDocumentTranslationJobs: async (
+      request: FastifyRequest,
+      { trx, principalId }: Authorised,
+    ): Promise<TranslationJobsView> => {
+      const { id } = request.params as DocumentParams;
+      const jobs = await translationJobsOf(trx, id);
+      return { jobs: await Promise.all(jobs.map((job) => jobView(trx, principalId, job))) };
+    },
+
+    makeDocumentTranslationJob: async (
+      request: FastifyRequest,
+      { trx, principalId }: Authorised,
+    ): Promise<TranslationJobView> => {
+      const { id } = request.params as DocumentParams;
+      const { language, vendor } = request.body as TranslationJobBody;
+      const { version, components } = await placed(trx, id);
+      // Of those the maker may read, each saying whether they may edit it (XL-D).
+      const facts = await loadFactsFor(trx, principalId, components);
+      const answer = await makeTranslationJob(trx, {
+        documentId: id,
+        documentVersion: version,
+        language,
+        vendor,
+        by: principalId,
+        components: components.flatMap((component) => {
+          const known = facts.get(component);
+          if (!known || !decide('read', known).allowed) return [];
+          return [{ id: component, editable: decide('edit', known).allowed }];
+        }),
+      });
+      switch (answer.answer) {
+        case 'made':
+          return jobView(trx, principalId, answer.job);
+        case 'translation.language_invalid':
+          throw refused(400, answer.answer, 'That is not a BCP 47 language tag, such as fr-FR.');
+        case 'translation.nothing_to_send':
+          throw refused(
+            409,
+            answer.answer,
+            'No component of this document needs translating into that language that you may send.',
+          );
+      }
+    },
+
+    downloadDocumentTranslationJob: async (
+      request: FastifyRequest,
+      { trx, principalId }: Authorised,
+    ) => {
+      const { id, job: jobId } = request.params as TranslationJobParams;
+      const job = await readTranslationJob(trx, id, jobId);
+      if (!job) throw notFound();
+      // Read-filtered now, not when it was sent (XL-D).
+      const readable = await readableComponents(
+        trx,
+        principalId,
+        job.items.map((item) => item.component),
+      );
+      const files = (await jobFileParts(trx, job, readable)).map((part) => ({
+        component: part.component,
+        title: part.title,
+        type: part.type ?? '',
+        content: parseContentDocument(part.content),
+      }));
+      const source = files[0]?.content.language ?? 'und';
+      const xliff = writeXliff({
+        job: job.id,
+        source,
+        target: job.language,
+        files,
+        terms: await jobTerms(trx, principalId, files, job.language),
+      });
+      const place = await artifactPlace(trx, id);
+      await recordEvent(
+        trx,
+        {
+          kind: 'export.downloaded',
+          subject: { kind: 'document', id, version: place.version },
+          space: place.space,
+          detail: { export: job.id, of: 'translation_job' },
+        },
+        place.labels,
+      );
+      return {
+        contentType: 'application/xliff+xml',
+        bytes: Buffer.from(xliff, 'utf8'),
+        immutable: false,
+        // Named by its job and language, never a title, which would reach logs.
+        attachment: `translation-${job.id}-${job.language}.xlf`,
+      };
+    },
+
+    closeDocumentTranslationJob: async (
+      request: FastifyRequest,
+      { trx, principalId }: Authorised,
+    ): Promise<TranslationJobView> => {
+      const { id, job } = request.params as TranslationJobParams;
+      const answer = await closeTranslationJob(trx, { documentId: id, job, by: principalId });
+      switch (answer.answer) {
+        case 'closed':
+          return jobView(trx, principalId, answer.job);
+        case 'job.missing':
+          throw notFound();
+        case 'translation.job_closed':
+          throw refused(409, answer.answer, 'This job is closed already.');
+      }
     },
   };
 }

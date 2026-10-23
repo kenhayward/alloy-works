@@ -768,6 +768,34 @@ export interface TranslationStateTable {
   written_by: ColumnType<string, never, never>;
 }
 
+/** A translation job (0163; the XL plan, XL-D): a document's components sent to one language. */
+export interface TranslationJobTable {
+  id: ColumnType<string, string | undefined, never>;
+  document_id: ColumnType<string, string, never>;
+  document_version: ColumnType<string, string, never>;
+  language: ColumnType<string, string, never>;
+  vendor: ColumnType<string | null, string | null | undefined, never>;
+  by: ColumnType<string, string, never>;
+  at: ColumnType<Date, never, never>;
+  closed_by: ColumnType<string | null, never, string | null>;
+  closed_at: ColumnType<Date | null, never, Date | null>;
+}
+
+/** One component a job lists (0163; XL-D): what was sent, or why not; from XLb, what came back. */
+export interface TranslationJobItemTable {
+  job_id: ColumnType<string, string, never>;
+  component_id: ColumnType<string, string, never>;
+  position: ColumnType<number, number, never>;
+  line_id: ColumnType<string | null, string | null, never>;
+  source_version: ColumnType<string | null, string | null, never>;
+  line_head: ColumnType<string | null, string | null, never>;
+  not_sent: ColumnType<'needs_revision' | 'not_editable' | null, string | null, never>;
+  outcome: ColumnType<'returned' | 'held' | 'refused' | null, never, string | null>;
+  version_id: ColumnType<string | null, never, string | null>;
+  decided_by: ColumnType<string | null, never, string | null>;
+  decided_at: ColumnType<Date | null, never, Date | null>;
+}
+
 /** Whether a main-line version needs retranslating (0159; TR-D): insert-only, the newest a version's. */
 export interface SourceChangeTable {
   id: ColumnType<string, never, never>;
@@ -1188,6 +1216,8 @@ export interface TenantTables {
   component_lock: ComponentLockTable;
   translation_state: TranslationStateTable;
   source_change: SourceChangeTable;
+  translation_job: TranslationJobTable;
+  translation_job_item: TranslationJobItemTable;
   unsaved_discarded: UnsavedDiscardedTable;
   iteration: IterationTable;
   principal: PrincipalTable;

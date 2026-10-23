@@ -661,6 +661,7 @@ export {
   resolveInLanguage,
   sourceChanges,
   translationsOf,
+  jobsStored,
   type BeginAnswer,
   type DeclareAnswer,
   type MarkCurrentAnswer,
@@ -668,6 +669,20 @@ export {
   type InLanguage,
   type TranslatesRefusal,
 } from './translation.js';
+export {
+  JOBS_LISTED,
+  closeTranslationJob,
+  jobFileParts,
+  translationJobsOf,
+  makeTranslationJob,
+  readTranslationJob,
+  type CloseTranslationJobAnswer,
+  type JobFilePart,
+  type JobItem,
+  type MakeTranslationJobAnswer,
+  type NotSent,
+  type TranslationJob,
+} from './translation-jobs.js';
 export {
   listShares,
   readsOnlyShares,

@@ -313,6 +313,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0160_publish_in_language',
       '0161_default_layout_languages',
       '0162_untranslated_note',
+      '0163_translation_jobs',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,

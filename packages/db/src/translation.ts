@@ -247,6 +247,19 @@ export async function declareSourceChange(
   return { answer: 'declared' };
 }
 
+/** Whether 0163 has run; a tenant before it holds no job. */
+export async function jobsStored(trx: TenantTransaction): Promise<boolean> {
+  const known = jobsKnown.get(trx);
+  if (known !== undefined) return known;
+  const { rows } = await sql<{
+    present: boolean;
+  }>`select to_regclass('translation_job') is not null as present`.execute(trx);
+  const present = rows[0]?.present === true;
+  jobsKnown.set(trx, present);
+  return present;
+}
+const jobsKnown = new WeakMap<TenantTransaction, boolean>();
+
 /** A component's translation into one language, as read (TR-E). */
 export interface Translation {
   readonly line: string;
@@ -261,7 +274,8 @@ export interface Translation {
 /**
  * Each of these components' open translations with its status (TR-E; LOC-013, LOC-014, LOC-015), by
  * language: out of date the moment a main-line version follows what it translates, needing
- * retranslation where any such version is declared so or declares nothing.
+ * retranslation where any such version is declared so or declares nothing; in translation while an
+ * open job's item holds it out (XL-E).
  */
 export async function translationsOf(
   trx: TenantTransaction,
@@ -276,6 +290,7 @@ export async function translationsOf(
     head: string | null;
     translates: string | null;
     later: boolean[];
+    in_translation: boolean;
   }>`
     select l.id as line, l.artifact_id, l.language, s.version_id as head, s.translates,
            coalesce((
@@ -286,7 +301,15 @@ export async function translationsOf(
                join artifact_version t on t.id = s.translates
               where v.artifact_id = l.artifact_id and v.line_id is null
                 and (v.revision_no, v.version_no) > (t.revision_no, t.version_no)
-           ), '{}') as later
+           ), '{}') as later,
+           ${
+             (await jobsStored(trx))
+               ? sql`exists (
+                   select 1 from translation_job_item i
+                     join translation_job j on j.id = i.job_id
+                    where i.line_id = l.id and i.outcome is null and j.closed_at is null)`
+               : sql`false`
+           } as in_translation
       from artifact_line l
       left join lateral (
         select version_id, translates from translation_state
@@ -305,6 +328,7 @@ export async function translationsOf(
       status: translationStatus({
         translates: row.translates,
         laterSource: row.later.map((retranslate) => ({ retranslate })),
+        inTranslation: row.in_translation,
       }),
     };
     found.set(row.artifact_id, [...(found.get(row.artifact_id) ?? []), translation]);

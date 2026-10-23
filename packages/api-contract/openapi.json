@@ -187092,6 +187092,1662 @@
         }
       }
     },
+    "/v1/documents/{id}/translation-jobs": {
+      "get": {
+        "operationId": "listDocumentTranslationJobs",
+        "summary": "List a document's translation jobs",
+        "description": "Lists a document's translation jobs, newest first, at most 50: each its language and vendor, who made it and when, whether it is closed, and each component it lists that the caller may read, with the source version sent, why one was not sent, and what has come back. It needs read on the document.",
+        "tags": [
+          "Translations"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "read",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Its jobs, newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "jobs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "language": {
+                            "type": "string"
+                          },
+                          "vendor": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "by": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          },
+                          "closed": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "by": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "at": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                  }
+                                },
+                                "required": [
+                                  "by",
+                                  "at"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Who closed it and when, ending what was still out; null while open"
+                          },
+                          "items": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "component": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    "title": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "title"
+                                  ]
+                                },
+                                "line": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "Its translation, a line of the component; null where not sent"
+                                },
+                                "source": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "id": {
+                                          "type": "string",
+                                          "format": "uuid",
+                                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                        },
+                                        "number": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "number"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "The source version sent, which what comes back translates"
+                                },
+                                "notSent": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "needs_revision",
+                                        "not_editable"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "Why it was listed and not sent: the source has no designated revision to translate from, or the maker may not edit it"
+                                },
+                                "outcome": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "returned",
+                                        "held",
+                                        "refused"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "What came back of it; null while it is out"
+                                }
+                              },
+                              "required": [
+                                "component",
+                                "line",
+                                "source",
+                                "notSent",
+                                "outcome"
+                              ]
+                            },
+                            "description": "Each component the job lists that the caller may read, in the order the document places them"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "language",
+                          "vendor",
+                          "by",
+                          "at",
+                          "closed",
+                          "items"
+                        ]
+                      },
+                      "description": "The document's jobs, newest first, at most 50"
+                    }
+                  },
+                  "required": [
+                    "jobs"
+                  ]
+                },
+                "example": {
+                  "jobs": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may not read this document",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such document the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "makeDocumentTranslationJob",
+        "summary": "Send a document's components needing a language as a translation job",
+        "description": "Makes a translation job of a document's components into one language: each component it places, in another language, that needs translating into it, having no translation yet, an untranslated one, or one out of date by a change declared to need retranslating, and that no open job holds out. Each is sent from the source version a translator is shown, its latest designated revision, and a translation is begun where none is. One the caller may not edit, or one never designated, is listed and not sent. Refused where nothing would be sent. Nothing is sent to the vendor: download the job's file and send it. It needs edit on the document.",
+        "tags": [
+          "Translations"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "edit",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "language": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 35,
+                    "description": "The BCP 47 tag the components are to be translated into, such as `fr-FR`"
+                  },
+                  "vendor": {
+                    "description": "Who the job goes to, as the maker names them; nothing is sent to them by the product",
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "language"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "language": "en"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The job made, each component it lists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "language": {
+                      "type": "string"
+                    },
+                    "vendor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "by": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    },
+                    "closed": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "by": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "at": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            }
+                          },
+                          "required": [
+                            "by",
+                            "at"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Who closed it and when, ending what was still out; null while open"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "component": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "title": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "title"
+                            ]
+                          },
+                          "line": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Its translation, a line of the component; null where not sent"
+                          },
+                          "source": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "number": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "number"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "The source version sent, which what comes back translates"
+                          },
+                          "notSent": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "needs_revision",
+                                  "not_editable"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Why it was listed and not sent: the source has no designated revision to translate from, or the maker may not edit it"
+                          },
+                          "outcome": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "returned",
+                                  "held",
+                                  "refused"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "What came back of it; null while it is out"
+                          }
+                        },
+                        "required": [
+                          "component",
+                          "line",
+                          "source",
+                          "notSent",
+                          "outcome"
+                        ]
+                      },
+                      "description": "Each component the job lists that the caller may read, in the order the document places them"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "language",
+                    "vendor",
+                    "by",
+                    "at",
+                    "closed",
+                    "items"
+                  ]
+                },
+                "example": {
+                  "id": "00000000-0000-4000-8000-000000000001",
+                  "language": "en",
+                  "vendor": "example",
+                  "by": "00000000-0000-4000-8000-000000000001",
+                  "at": "2026-01-01T00:00:00.000Z",
+                  "closed": {
+                    "by": "00000000-0000-4000-8000-000000000001",
+                    "at": "2026-01-01T00:00:00.000Z"
+                  },
+                  "items": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "translation_language_invalid: not a BCP 47 tag",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may read the document but may not edit it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such document the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "translation_nothing_to_send: no component it places needs translating into the language that the caller may send",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/documents/{id}/translation-jobs/{job}/close": {
+      "post": {
+        "operationId": "closeDocumentTranslationJob",
+        "summary": "Close a translation job, ending what is still out",
+        "description": "Closes a translation job, so nothing of it is held out and its translations show their own status again. It needs edit on the document.",
+        "tags": [
+          "Translations"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "edit",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "job",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The job, closed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "language": {
+                      "type": "string"
+                    },
+                    "vendor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "by": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                    },
+                    "closed": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "by": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "at": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            }
+                          },
+                          "required": [
+                            "by",
+                            "at"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Who closed it and when, ending what was still out; null while open"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "component": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "title": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "title"
+                            ]
+                          },
+                          "line": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Its translation, a line of the component; null where not sent"
+                          },
+                          "source": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "number": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "number"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "The source version sent, which what comes back translates"
+                          },
+                          "notSent": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "needs_revision",
+                                  "not_editable"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Why it was listed and not sent: the source has no designated revision to translate from, or the maker may not edit it"
+                          },
+                          "outcome": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "returned",
+                                  "held",
+                                  "refused"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "What came back of it; null while it is out"
+                          }
+                        },
+                        "required": [
+                          "component",
+                          "line",
+                          "source",
+                          "notSent",
+                          "outcome"
+                        ]
+                      },
+                      "description": "Each component the job lists that the caller may read, in the order the document places them"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "language",
+                    "vendor",
+                    "by",
+                    "at",
+                    "closed",
+                    "items"
+                  ]
+                },
+                "example": {
+                  "id": "00000000-0000-4000-8000-000000000001",
+                  "language": "en",
+                  "vendor": "example",
+                  "by": "00000000-0000-4000-8000-000000000001",
+                  "at": "2026-01-01T00:00:00.000Z",
+                  "closed": {
+                    "by": "00000000-0000-4000-8000-000000000001",
+                    "at": "2026-01-01T00:00:00.000Z"
+                  },
+                  "items": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may read the document but may not edit it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such document, or job of it, the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "translation_job_closed: it is closed already",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/documents/{id}/translation-jobs/{job}/file": {
+      "get": {
+        "operationId": "downloadDocumentTranslationJob",
+        "summary": "Download a translation job's XLIFF 2.1 file",
+        "description": "Downloads a translation job's XLIFF 2.1 file, written from the source versions sent: one file element a component, its title and type as notes, and one unit a translatable text, with the text either side as context and the space's terms it uses in a glossary. References, footnotes, variables, equations, images, code and words in another language are placeholders, and marks are paired codes, none of which a translator may copy or delete. Only components the caller may read now are in it. Each download is audited. It needs edit on the document.",
+        "tags": [
+          "Translations"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "edit",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "job",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The file, one `<file>` a component sent and one `<unit>` a text",
+            "content": {
+              "application/xliff+xml": {
+                "schema": {
+                  "type": "string",
+                  "contentMediaType": "application/xliff+xml"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may read the document but may not edit it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such document, or job of it, the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/documents/{id}/unarchive": {
       "post": {
         "operationId": "unarchiveDocument",

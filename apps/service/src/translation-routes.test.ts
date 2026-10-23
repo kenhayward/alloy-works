@@ -347,6 +347,101 @@ describe('translation (the TR plan, TRa)', () => {
     });
   });
 
+  it("sends a document's components needing a language as a job, tracked item by item, downloaded as XLIFF 2.1, and closed", async () => {
+    const first = await approvedComponent('Ponds');
+    const second = await approvedComponent('Streams');
+    const made = await h.call('grace', 'POST', `/v1/spaces/${h.general}/documents`, {
+      title: 'Water survey',
+      language: 'en-GB',
+      direction: 'ltr',
+    });
+    let doc = made.json<{ id: string; version: { id: string } }>();
+    for (const [position, component] of [first.id, second.id].entries()) {
+      const placed = await h.call('grace', 'POST', `/v1/documents/${doc.id}/outline`, {
+        openedFrom: doc.version.id,
+        operation: {
+          operation: 'insert',
+          parent: null,
+          position,
+          node: { type: 'reference', component, mode: { kind: 'latest' } },
+        },
+      });
+      expect(placed.statusCode, placed.body).toBe(200);
+      doc = placed.json();
+    }
+    const send = (who: string, language = 'de-DE') =>
+      h.call(who, 'POST', `/v1/documents/${doc.id}/translation-jobs`, {
+        language,
+        vendor: 'Babel Ltd',
+      });
+
+    expect((await send('alice')).statusCode).toBe(403);
+    expect((await send('ivy')).statusCode).toBe(404);
+    expect((await send('grace', 'German')).json()).toMatchObject({
+      code: 'translation_language_invalid',
+    });
+    const sent = await send('grace');
+    expect(sent.statusCode, sent.body).toBe(200);
+    const job = sent.json<{ id: string; items: { line: string }[] }>();
+    expect(job).toMatchObject({
+      language: 'de-DE',
+      vendor: 'Babel Ltd',
+      closed: null,
+      items: [
+        {
+          component: { id: first.id, title: 'Sampling' },
+          source: { id: first.version.id, number: first.version.number },
+          notSent: null,
+          outcome: null,
+        },
+        {
+          component: { id: second.id, title: 'Sampling' },
+          source: { id: second.version.id, number: second.version.number },
+          notSent: null,
+          outcome: null,
+        },
+      ],
+    });
+    // Held out, and so sent to no second job.
+    const translations = await h.call('alice', 'GET', `/v1/components/${first.id}/translations`);
+    expect(translations.json()).toMatchObject({
+      translations: [{ language: 'de-DE', status: { status: 'inTranslation' } }],
+    });
+    expect((await send('grace')).json()).toMatchObject({ code: 'translation_nothing_to_send' });
+    const listed = await h.call('alice', 'GET', `/v1/documents/${doc.id}/translation-jobs`);
+    expect(listed.json()).toMatchObject({ jobs: [{ id: job.id }] });
+
+    const file = `/v1/documents/${doc.id}/translation-jobs/${job.id}/file`;
+    expect((await h.call('alice', 'GET', file)).statusCode).toBe(403);
+    const downloaded = await h.call('grace', 'GET', file);
+    expect(downloaded.statusCode, downloaded.body).toBe(200);
+    expect(downloaded.headers['content-type']).toContain('application/xliff+xml');
+    expect(downloaded.headers['content-disposition']).toContain(`translation-${job.id}-de-DE.xlf`);
+    expect(downloaded.body).toContain('version="2.1" srcLang="en-GB" trgLang="de-DE"');
+    expect(downloaded.body).toContain(`<file id="f.${first.id}" original="component:${first.id}">`);
+    expect(downloaded.body).toContain('<unit id="b.b1"><segment><source>Streams</source>');
+    expect(
+      (
+        await h.call(
+          'grace',
+          'GET',
+          `/v1/documents/${doc.id}/translation-jobs/${randomUUID()}/file`,
+        )
+      ).statusCode,
+    ).toBe(404);
+
+    const close = () =>
+      h.call('grace', 'POST', `/v1/documents/${doc.id}/translation-jobs/${job.id}/close`);
+    const closed = await close();
+    expect(closed.statusCode, closed.body).toBe(200);
+    expect(closed.json()).toMatchObject({ closed: { by: h.ids.grace } });
+    expect((await close()).json()).toMatchObject({ code: 'translation_job_closed' });
+    const after = await h.call('alice', 'GET', `/v1/components/${first.id}/translations`);
+    expect(after.json()).toMatchObject({
+      translations: [{ language: 'de-DE', status: { status: 'untranslated' } }],
+    });
+  });
+
   it('keeps a lock per line: the author and a translator hold one each, at once', async () => {
     const component = await approvedComponent('Abstract');
     const begun = await h.call('grace', 'POST', `/v1/components/${component.id}/translations`, {
