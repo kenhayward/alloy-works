@@ -23,8 +23,8 @@ interface Migration {
 const DEFAULT_DIR = new URL('../migrations/', import.meta.url);
 
 /**
- * The tenant migrations after which search's projection is made again from the chain, in the same
- * transaction, and how much of it: 0031, which makes it, the whole; 0088, which keeps earlier versions,
+ * The tenant migrations after which search's projection is made again from the chain, once the run's
+ * migrations commit, and how much of it: 0031, which makes it, the whole; 0088, which keeps earlier versions,
  * those alone; 0089, which makes threads searchable, their rows alone. A later migration that changes what the projection holds, or how a version is read into
  * it, is added here, so every environment's is rebuilt by the run that applies it (search.md, "Written
  * with the version").
@@ -41,9 +41,9 @@ const REINDEXED_BY = new Map<string, ReindexScope | readonly ReindexScope[]>([
 ]);
 
 /**
- * The migration's own connection, as a tenant transaction: the one `applyAll` opened, as the tenant's
- * owner role on its search path, so work a run does in TypeScript after its SQL commits or rolls back
- * with it. Never a pool: every statement goes to this one client, and releasing it releases nothing.
+ * The migration's own connection, as a tenant transaction: the one `inTransaction` opened, as the
+ * tenant's owner role on its search path, so work a run does in TypeScript commits or rolls back with
+ * it. Never a pool: every statement goes to this one client, and releasing it releases nothing.
  */
 function transactionOver(client: pg.Client): TenantTransaction {
   const pool = {
@@ -57,6 +57,9 @@ function transactionOver(client: pg.Client): TenantTransaction {
     dialect: new PostgresDialect({ pool }),
   }) as unknown as TenantTransaction;
 }
+/** Migrations committed together: a fresh tenant's locks stay a few hundred, its commits a handful. */
+const BATCH = 20;
+
 const FILE = /^\d{4}_[a-z0-9_]+\.sql$/;
 
 async function load(dir: URL, kind: 'platform' | 'tenant'): Promise<Migration[]> {
@@ -78,10 +81,9 @@ async function load(dir: URL, kind: 'platform' | 'tenant'): Promise<Migration[]>
 }
 
 /**
- * Applies pending migrations to the platform schema, then to every tenant schema in id order,
- * one schema per transaction. A failure stops the run at that schema: every schema before it is
- * migrated, it and every schema after it are untouched, and running again resumes there. Only one
- * run proceeds at a time; another waits for it.
+ * Applies pending migrations to the platform schema, then to every tenant schema in id order, `BATCH`
+ * to a transaction. A failure stops the run at that batch: every batch before it, in that schema and
+ * those before, is applied; it and everything after are not, and running again resumes there. Only one run proceeds at a time; another waits for it.
  */
 export async function migrate(
   migratorUrl: string,
@@ -134,7 +136,7 @@ interface Target {
   /** For a tenant: the owner role the migrations run as, and the runtime role kept from history. */
   readonly owner?: string;
   readonly runtime?: string;
-  /** Run after this run's migrations and before they commit, given the ones it applied. */
+  /** Run in a transaction of its own after this run's migrations commit, given the ones it applied. */
   readonly after?: (applied: readonly string[]) => Promise<void>;
 }
 
@@ -143,6 +145,56 @@ async function applyAll(
   target: Target,
   migrations: readonly Migration[],
 ): Promise<string[]> {
+  const applied = await inTransaction(
+    client,
+    target,
+    () => 'its history',
+    async () => {
+      const done = await client.query<{ version: string }>('select version from schema_migration');
+      return new Set(done.rows.map((row) => row.version));
+    },
+  );
+  const now: string[] = [];
+  // A fixed number of migrations commit together with their rows, so no transaction holds a lock on
+  // everything a fresh tenant makes (#773), and a fresh tenant commits a few times rather than once a
+  // migration. A failure keeps the batches before it; running again resumes there.
+  const pending = migrations.filter((migration) => !applied.has(migration.version));
+  for (let start = 0; start < pending.length; start += BATCH) {
+    const batch = pending.slice(start, start + BATCH);
+    let current = batch[0]!.version;
+    await inTransaction(
+      client,
+      target,
+      () => current,
+      async () => {
+        for (const migration of batch) {
+          current = migration.version;
+          await client.query(migration.sql);
+          await client.query('insert into schema_migration (version) values ($1)', [
+            migration.version,
+          ]);
+        }
+      },
+    );
+    now.push(...batch.map((migration) => migration.version));
+  }
+  if (target.after)
+    await inTransaction(
+      client,
+      target,
+      () => 'reindexing',
+      () => target.after!(now),
+    );
+  return now;
+}
+
+/** Runs `work` in a transaction as the target's owner on its search path, its history kept. */
+async function inTransaction<T>(
+  client: pg.Client,
+  target: Target,
+  step: () => string,
+  work: () => Promise<T>,
+): Promise<T> {
   await client.query('begin');
   try {
     if (target.owner) await client.query(`set local role ${client.escapeIdentifier(target.owner)}`);
@@ -161,21 +213,12 @@ async function applyAll(
         `revoke insert, update, delete, truncate on schema_migration from ${client.escapeIdentifier(target.runtime)}`,
       );
     }
-    const done = await client.query<{ version: string }>('select version from schema_migration');
-    const applied = new Set(done.rows.map((row) => row.version));
-    const now: string[] = [];
-    for (const migration of migrations) {
-      if (applied.has(migration.version)) continue;
-      await client.query(migration.sql);
-      await client.query('insert into schema_migration (version) values ($1)', [migration.version]);
-      now.push(migration.version);
-    }
-    await target.after?.(now);
+    const result = await work();
     await client.query('commit');
-    return now;
+    return result;
   } catch (error) {
     await client.query('rollback');
-    throw new Error(`Migrating ${target.schema} failed: ${(error as Error).message}`, {
+    throw new Error(`Migrating ${target.schema} failed at ${step()}: ${(error as Error).message}`, {
       cause: error,
     });
   }

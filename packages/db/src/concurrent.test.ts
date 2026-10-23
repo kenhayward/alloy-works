@@ -9,9 +9,8 @@ import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/data
  * the same rows. Running the same preparation several times at once is what a test run does.
  */
 /**
- * Enough at once to collide reliably, on a busy machine as well as a fast one, and few enough that every
- * tenant's whole migration, each holding a lock on everything it makes until it commits, fits the
- * lock table of a server at Postgres's defaults, as CI's service is: twelve stopped fitting at 0111.
+ * Enough at once to collide reliably, on a busy machine as well as a fast one. Migrations commit in
+ * batches, so the tenants' locks fit a server at Postgres's defaults, as CI's is (#773).
  */
 const AT_ONCE = 8;
 
