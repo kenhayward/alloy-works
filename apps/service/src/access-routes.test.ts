@@ -838,6 +838,23 @@ describe('routes that check a permission', () => {
       status: 404,
       payload: { retranslate: false },
     }),
+    listDocumentTranslationJobs: () => ({
+      url: `/v1/documents/${MISSING}/translation-jobs`,
+      status: 404,
+    }),
+    makeDocumentTranslationJob: () => ({
+      url: `/v1/documents/${MISSING}/translation-jobs`,
+      status: 404,
+      payload: { language: 'fr-FR' },
+    }),
+    downloadDocumentTranslationJob: () => ({
+      url: `/v1/documents/${MISSING}/translation-jobs/${MISSING}/file`,
+      status: 404,
+    }),
+    closeDocumentTranslationJob: () => ({
+      url: `/v1/documents/${MISSING}/translation-jobs/${MISSING}/close`,
+      status: 404,
+    }),
     readDocumentEffective: () => ({ url: `/v1/documents/${MISSING}/effective`, status: 404 }),
     createDocument: () => ({
       url: `/v1/spaces/${clinical}/documents`,

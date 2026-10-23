@@ -271,6 +271,20 @@ describe('a variant from a returned file', () => {
 });
 
 describe('a job file', () => {
+  it('holds whatever a block identifier or a text says as data: escaped, and a character XML cannot carry as a code point', () => {
+    const odd = document([paragraph('p"1><x', [text('Bell & <b>')])]);
+    const written = writeXliff({
+      job: 'job-2',
+      source: 'en-GB',
+      target: 'fr',
+      files: [{ component: 'c1', title: 'Odd', type: 'note', content: odd }],
+      terms: new Map(),
+    });
+    expect(written).toContain('<unit id="b.p&quot;1&gt;&lt;x">');
+    expect(written).toContain('<source>Bell<cp hex="0007"/> &amp; &lt;b&gt;</source>');
+    expect(written).toContain('<note category="title">Odd</note>');
+  });
+
   const file = writeXliff({
     job: 'job-1',
     source: 'en-GB',

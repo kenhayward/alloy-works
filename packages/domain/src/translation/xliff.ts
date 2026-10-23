@@ -325,9 +325,26 @@ export interface XliffTerm {
   readonly target?: string | undefined;
 }
 
+/** A character XML 1.0 cannot carry: a unit's text sends it as XLIFF's `<cp>`, anywhere else drops it. */
+const uncarried = (code: number) =>
+  code < 0x20
+    ? code !== 0x09 && code !== 0x0a && code !== 0x0d
+    : code === 0xfffe || code === 0xffff;
+
+const escapeOne = (each: string) =>
+  each === '&' ? '&amp;' : each === '<' ? '&lt;' : each === '>' ? '&gt;' : each;
 const escape = (text: string) =>
-  text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  [...text].map((each) => (uncarried(each.charCodeAt(0)) ? '' : escapeOne(each))).join('');
 const attribute = (text: string) => escape(text).replace(/"/g, '&quot;');
+const withCodePoints = (text: string) =>
+  [...text]
+    .map((each) => {
+      const code = each.charCodeAt(0);
+      return uncarried(code)
+        ? `<cp hex="${code.toString(16).toUpperCase().padStart(4, '0')}"/>`
+        : escapeOne(each);
+    })
+    .join('');
 
 /** A mark's pair, typed as XLIFF's core set reads it. */
 function pairType(mark: Mark): string {
@@ -352,7 +369,7 @@ function partsXml(unit: XliffUnit): string {
     .map((part) => {
       switch (part.kind) {
         case 'text':
-          return escape(part.text);
+          return withCodePoints(part.text);
         case 'ph':
           return `<ph id="${part.id}" canCopy="no" canDelete="no"/>`;
         case 'sc':
@@ -403,7 +420,7 @@ export function writeXliff(input: {
         .filter((each) => each !== '')
         .map((each) => `<note category="context">${escape(each)}</note>`);
       return (
-        `<unit id="${unit.id}">` +
+        `<unit id="${attribute(unit.id)}">` +
         (glossary.length === 0 ? '' : `<gls:glossary>${glossary.join('')}</gls:glossary>`) +
         (context.length === 0 ? '' : `<notes>${context.join('')}</notes>`) +
         `<segment><source>${partsXml(unit)}</source></segment></unit>`

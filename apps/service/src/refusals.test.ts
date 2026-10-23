@@ -257,6 +257,9 @@ describe('the rule behind a refusal', () => {
       'translation.exists',
       'translation.needs_revision',
       'translation.untranslated',
+      // The XL plan's (XL-D): a job with nothing to send, and one closed already.
+      'translation.nothing_to_send',
+      'translation.job_closed',
       // The R17 plan's (R17-A, R17-B, R17-D): a share to one of the organisation's own, to an address
       // an administrator's invitation waits for, twice, to somebody erased, past now or past the cap;
       // the shared reader granted but as a share. Guards of the design's own.
