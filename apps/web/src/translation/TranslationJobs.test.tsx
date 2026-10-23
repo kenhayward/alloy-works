@@ -67,7 +67,7 @@ function service() {
 }
 
 describe('translation jobs on a document (the XL plan, XLa)', () => {
-  it('LOC-033 lists each job with what it sent and why any was not, sends one, and closes it', async () => {
+  it('lists each job with what it sent and why any was not, sends one, and closes it', async () => {
     const { client, asked } = service();
     render(<TranslationJobsButton client={client} documentId={DOCUMENT} mayEdit />);
     await userEvent.click(screen.getByRole('button', { name: 'Translation jobs' }));

@@ -1255,6 +1255,12 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   language, marked by a note before it, or the publish is refused, as the document's own fallback,
   chosen there, or Administration's **Translation** says; **Preview** beside it previews in the same language, and **Translate titles** gives the document's title and each section's in it, a title without one printed in the document's own language and reported; a translation out of date with a change
   that needs retranslating is reported, or refuses the publish where the environment says.
+- **Translation jobs.** The Publishing panel offers **Translation jobs**: to whoever may edit, **Send
+  for translation** sends each of the document's components that needs a language, from its approved
+  revision, as one job, listing any it could not send and why, and its XLIFF 2.1 file downloads for a
+  vendor, carrying each text's neighbours, the component's title and type, and the terms it uses, with
+  references, marks and code held as codes a translator cannot change. A component sent is **In
+  translation** until the job is closed. Reading a returned file back is still to come.
 - **Revisions effective by scope.** A component's or document's header offers **Effective for**: the
   markets or sites, condition axis values, its next revision is effective for, while another revision
   stays effective elsewhere; a document reads, publishes and baselines the revision effective under its

@@ -113,7 +113,7 @@ const allTranslated = (content: ContentDocument) =>
   new Map(xliffUnits(content).map((unit) => [unit.id, translate(unit.parts)]));
 
 describe('a component as XLIFF units', () => {
-  it('LOC-018 gives a unit for each translatable text, wherever it stands, and none for code or preformatted text', () => {
+  it('gives a unit for each translatable text, wherever it stands, and none for code or preformatted text', () => {
     expect(xliffUnits(source).map((unit) => unit.id)).toEqual([
       'b.p1',
       'b.p-note',
@@ -184,7 +184,7 @@ describe('a component as XLIFF units', () => {
 });
 
 describe('a variant from a returned file', () => {
-  it('LOC-018 LOC-020 replaces every text, in the language, and keeps structure, marks and references', () => {
+  it('LOC-020 replaces every text, in the language, and keeps structure, marks and references', () => {
     const result = xliffTarget(source, allTranslated(source), 'fr');
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -256,7 +256,7 @@ describe('a variant from a returned file', () => {
     ]);
   });
 
-  it('LOC-018 refuses a unit missing and a unit not sent', () => {
+  it('refuses a unit missing and a unit not sent', () => {
     const targets = allTranslated(source);
     targets.delete('b.p3');
     targets.set('b.elsewhere', [{ kind: 'text', text: 'x' }]);
@@ -279,7 +279,7 @@ describe('a job file', () => {
     terms: new Map([['term-pond', { source: 'pond', target: 'étang' }]]),
   });
 
-  it('LOC-018 is XLIFF 2.1, one file a component and one unit a text', () => {
+  it('is XLIFF 2.1, one file a component and one unit a text', () => {
     expect(file).toContain(
       '<xliff xmlns="urn:oasis:names:tc:xliff:document:2.0" xmlns:gls="urn:oasis:names:tc:xliff:glossary:2.0" version="2.1" srcLang="en-GB" trgLang="fr">',
     );

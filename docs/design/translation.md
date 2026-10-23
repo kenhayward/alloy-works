@@ -3,8 +3,8 @@
 How a component exists in more than one language, knows which source each translation follows, and
 goes out of date when the source changes; and how a document publishes in a language: T6's fifth
 slice. Ken's answers of 2026-10-22 and 2026-10-23 shaped it, and [the TR plan](../plans/2026-10-23-tr-translation.md)
-builds it. XLIFF, translation jobs and machine translation are XL's; the interface's own localisation
-is UI's.
+builds it; [the XL plan](../plans/2026-10-23-xl-translation-jobs.md) adds XLIFF, translation jobs and
+machine drafts. The interface's own localisation is UI's.
 
 ## The shape in one paragraph
 
@@ -34,6 +34,7 @@ line holds its own editing lock, so translators and the author edit at once.
 | **LOC-010** | A publish names its language; each reference reads its variant, under the layout's words in it                  |
 | **LOC-017** | A translation out of date with a change needing retranslation refuses a publish where the policy says           |
 | **LOC-037** | A missing variant falls back to the source, marked and reported, or refuses, as the document or the tenant says |
+| **LOC-019** | A job's file carries the text either side, the component's title and type, and the terms it uses                |
 
 LOC-016 asks for status wherever a component is used: a document's references say it, and a space
 reports it, but a search result and the components listing do not yet, so it is not claimed.
@@ -104,6 +105,30 @@ A document's reference rows say each translation of the component placed and its
 /v1/spaces/{space}/translations` reports each component of a space the caller may read that has a
 translation, read-filtered before it is capped at 500 and saying so; the **Translations** page,
 linked from Components, shows it.
+
+## Translation jobs
+
+A **job** (0163) is a document's components sent to one language: each component it places, in
+another language, needing it - no translation, an untranslated one, or one out of date by a change
+declared to need retranslating - that no open job holds out. Its `translation_job_item` records the
+source version sent, the translator's (latest designated) one, and the line's head then; a component
+the maker may not edit, or one never designated, is listed and not sent. A translation is begun where
+none is. A line an open job holds out is **in translation**, over untranslated and out of date,
+until something comes back or the job is closed. Audited `translation.job_sent` and
+`translation.job_closed`.
+
+The **file** is XLIFF 2.1, written from the versions sent at each download, read-filtered then and
+audited `export.downloaded`; nothing of it is stored. The mapping is the domain's
+(`translation/xliff.ts`): a `<file>` a component, its title and type as notes; a `<unit>` a translatable
+text, keyed `b.{block}` and a member (`.caption`, `.term.{k}`, `.column.{k}`, `.alternative`...), with
+the text either side as context and the terms it uses in a `gls` glossary. Every inline node that is
+not text, and text in code or another language, is a `<ph>` by its place; a mark is an `<sc>`/`<ec>`
+pair; none may be copied or deleted. A unit's target is read back by the same mapping: every
+placeholder exactly once, nothing invented, structure the source's. Pending insertions and comments are
+not sent. A vendor's file leaves by a person's act, so no policy governs it.
+
+`GET` and `POST /v1/documents/{id}/translation-jobs` list and make; `GET .../{job}/file` downloads;
+`POST .../{job}/close` closes. **Translation jobs** in the Publishing panel does each.
 
 ## The page
 

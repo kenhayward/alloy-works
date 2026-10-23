@@ -2,12 +2,7 @@ import { parseContentDocument, translationLanguageRefusal } from '@alloy-works/d
 import { sql } from 'kysely';
 import { artifactPlace, recordEvent } from './audit.js';
 import type { TenantTransaction } from './tables.js';
-import {
-  beginTranslation,
-  jobsStored,
-  translationSource,
-  translationsOf,
-} from './translation.js';
+import { beginTranslation, jobsStored, translationSource, translationsOf } from './translation.js';
 
 /**
  * **Translation jobs** (docs/design/translation.md, "Translation jobs"; the XL plan, XL-D, XL-E): a
@@ -103,7 +98,8 @@ async function jobsWhere(
 }
 
 /** A document's jobs, newest first, at most `JOBS_LISTED`. */
-export const translationJobsOf = (trx: TenantTransaction, documentId: string) => jobsWhere(trx, documentId);
+export const translationJobsOf = (trx: TenantTransaction, documentId: string) =>
+  jobsWhere(trx, documentId);
 
 /** One of a document's jobs, or undefined where it holds no such job. */
 export async function readTranslationJob(

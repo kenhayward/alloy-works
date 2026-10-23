@@ -62,7 +62,7 @@ describe('a translation status', () => {
     ).toEqual({ status: 'outOfDate', retranslate: true });
   });
 
-  it('LOC-030 is in translation while a job is out, over untranslated and out of date but not translated', () => {
+  it('is in translation while a job is out, over untranslated and out of date but not translated', () => {
     const out = { inTranslation: true };
     expect(translationStatus({ translates: null, laterSource: [], ...out })).toEqual({
       status: 'inTranslation',

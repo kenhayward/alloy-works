@@ -20316,6 +20316,10 @@
         {
           "id": "LOC-037",
           "howItIsMet": "A missing variant falls back to the source, marked and reported, or refuses, as the document or the tenant says"
+        },
+        {
+          "id": "LOC-019",
+          "howItIsMet": "A job's file carries the text either side, the component's title and type, and the terms it uses"
         }
       ]
     },
@@ -29703,13 +29707,13 @@
     {
       "id": "LIF-030",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 256,
+      "line": 259,
       "kind": "title"
     },
     {
       "id": "LIF-070",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 237,
+      "line": 240,
       "kind": "title"
     },
     {
@@ -30663,7 +30667,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1031,
+      "line": 1035,
       "kind": "title"
     },
     {
@@ -32271,7 +32275,19 @@
     {
       "id": "LOC-040",
       "file": "packages/domain/src/translation/status.test.ts",
-      "line": 91,
+      "line": 104,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-019",
+      "file": "packages/domain/src/translation/xliff.test.ts",
+      "line": 181,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-020",
+      "file": "packages/domain/src/translation/xliff.test.ts",
+      "line": 140,
       "kind": "title"
     },
     {

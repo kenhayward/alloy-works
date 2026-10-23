@@ -123,7 +123,10 @@ async function translationOn(trx: TenantTransaction, id: string, line: string) {
 async function placed(trx: TenantTransaction, id: string) {
   const document = await readDocument(trx, id);
   if (!document) throw notFound();
-  const read = readOutline(document.version.content, { artifact: id, version: document.version.id });
+  const read = readOutline(document.version.content, {
+    artifact: id,
+    version: document.version.id,
+  });
   if (!read.ok) throw notFound();
   const outline = selectOutline(read.outline, read.outline.profile?.values ?? {}).outline;
   const components: string[] = [];
@@ -192,7 +195,10 @@ async function jobView(
 async function jobTerms(
   trx: TenantTransaction,
   principal: string,
-  files: readonly { readonly component: string; readonly content: ReturnType<typeof parseContentDocument> }[],
+  files: readonly {
+    readonly component: string;
+    readonly content: ReturnType<typeof parseContentDocument>;
+  }[],
   target: string,
 ): Promise<Map<string, XliffTerm>> {
   const terms = new Map<string, XliffTerm>();

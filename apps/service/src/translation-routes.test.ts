@@ -347,7 +347,7 @@ describe('translation (the TR plan, TRa)', () => {
     });
   });
 
-  it('LOC-033 sends a document\'s components needing a language as a job, tracked item by item, LOC-018 downloaded as XLIFF 2.1, and closed', async () => {
+  it("sends a document's components needing a language as a job, tracked item by item, downloaded as XLIFF 2.1, and closed", async () => {
     const first = await approvedComponent('Ponds');
     const second = await approvedComponent('Streams');
     const made = await h.call('grace', 'POST', `/v1/spaces/${h.general}/documents`, {
@@ -402,7 +402,7 @@ describe('translation (the TR plan, TRa)', () => {
         },
       ],
     });
-    // Held out, and so sent to no second job (LOC-030).
+    // Held out, and so sent to no second job.
     const translations = await h.call('alice', 'GET', `/v1/components/${first.id}/translations`);
     expect(translations.json()).toMatchObject({
       translations: [{ language: 'de-DE', status: { status: 'inTranslation' } }],
@@ -421,8 +421,13 @@ describe('translation (the TR plan, TRa)', () => {
     expect(downloaded.body).toContain(`<file id="f.${first.id}" original="component:${first.id}">`);
     expect(downloaded.body).toContain('<unit id="b.b1"><segment><source>Streams</source>');
     expect(
-      (await h.call('grace', 'GET', `/v1/documents/${doc.id}/translation-jobs/${randomUUID()}/file`))
-        .statusCode,
+      (
+        await h.call(
+          'grace',
+          'GET',
+          `/v1/documents/${doc.id}/translation-jobs/${randomUUID()}/file`,
+        )
+      ).statusCode,
     ).toBe(404);
 
     const close = () =>
