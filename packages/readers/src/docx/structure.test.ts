@@ -113,6 +113,29 @@ describe('readDocx, structure (IMc)', () => {
     expect(parts[0]!.flags).toEqual([]);
   });
 
+  it('IMP-007 reads a footnote once: one that refers to itself, or is referred to again, is reported as not read there', () => {
+    const answer = read(
+      docx(
+        p(
+          `${run('Ponds')}<w:r><w:footnoteReference w:id="2"/></w:r>${run(' and lakes')}<w:r><w:footnoteReference w:id="2"/></w:r>`,
+        ),
+        {
+          'word/footnotes.xml': footnotes(
+            `<w:footnote w:id="2"><w:p><w:r><w:footnoteRef/></w:r>${run(' Counted by Grace.')}<w:r><w:footnoteReference w:id="2"/></w:r></w:p></w:footnote>`,
+          ),
+        },
+      ),
+    );
+    expect(blocks(answer)).toEqual([
+      para(
+        text('Ponds'),
+        { type: 'footnote', anchor: { kind: 'span' }, content: [para(text('Counted by Grace.'))] },
+        text(' and lakes'),
+      ),
+    ]);
+    expect(subjects(answer.report)).toEqual([['notYetRead', 'footnote', 2]]);
+  });
+
   it('IMP-006 reads list numbering that carries on after a paragraph from where it left off, and numbering that restarts from its start', () => {
     const item = (value: string, numId: string) =>
       p(run(value), undefined, `<w:numPr><w:ilvl w:val="0"/><w:numId w:val="${numId}"/></w:numPr>`);

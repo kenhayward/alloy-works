@@ -142,6 +142,8 @@ type Context = {
   readonly references: Recorded[];
   readonly ranges: Map<string, Range>;
   readonly footnotes: ReadonlyMap<string, XmlNode>;
+  /** Each footnote read, or being read: one is read once, so none refers to itself without end. */
+  readonly notesRead: Set<string>;
   readonly media: {
     readonly rels: ReadonlyMap<string, string>;
     readonly parts: ReadonlyMap<string, Uint8Array>;
@@ -630,10 +632,11 @@ function runChild(
 /** A footnote at its reference (IMP-006): its paragraphs, each read as the body's are. */
 function footnote(context: Context, id: string, out: Inline[]) {
   const note = context.footnotes.get(id);
-  if (!note) {
+  if (!note || context.notesRead.has(id)) {
     notYetRead(context, 'footnote');
     return;
   }
+  context.notesRead.add(id);
   const noteId = `wf-${id}`;
   // A bookmark around the mark is the note's, as NOTEREF reads it.
   for (const name of context.open.values()) context.bookmarks.set(name, noteId);
@@ -1392,6 +1395,7 @@ export function readDocx(bytes: Uint8Array): DocxRead {
     references: [],
     ranges: new Map(),
     footnotes,
+    notesRead: new Set(),
     media: { rels: images, parts: zip.parts, placed: new Map(), images: [] },
     authors: new Map(),
     counted: new Map(),

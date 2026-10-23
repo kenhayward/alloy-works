@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   PRODUCT_CLIPBOARD_TYPE,
+  breakoutOf,
   pasteInto,
   productClipboard,
   readClipboard,
@@ -460,6 +461,25 @@ describe('pasting Markdown, when asked', () => {
       schemaVersion: 1,
       content: [{ type: 'preformatted', text: '**not bold**' }],
     });
+  });
+});
+
+describe('a paste holding headings', () => {
+  it('CNT-168 offers an HTML paste holding a heading for breakout, as its HTML, and no other paste', () => {
+    const html = '<h1>Methods</h1><p>Ada measured.</p>';
+    const word = clipboard({ 'text/html': html, 'text/plain': 'Methods Ada measured.' });
+    expect(breakoutOf(word, readClipboard(word, 'blocks'))).toBe(html);
+    const flat = clipboard({ 'text/html': '<p>Ada measured.</p>' });
+    expect(breakoutOf(flat, readClipboard(flat, 'blocks'))).toBeNull();
+    const plain = clipboard({ 'text/plain': '# Methods' });
+    expect(breakoutOf(plain, readClipboard(plain, 'blocks'))).toBeNull();
+    // Kept as one component, it is pasted as before: the heading a paragraph, and said.
+    const kept = pasteInto(
+      stateOf([paragraph('b1', '')]),
+      readClipboard(word, 'blocks'),
+      counter('p'),
+    );
+    expect(kept.ok && kept.report.map((entry) => entry.subject)).toContain('heading');
   });
 });
 

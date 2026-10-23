@@ -1,6 +1,20 @@
-import { randomBytes } from 'node:crypto';
-import { readImport as readStoredImport, recordProposal } from '@alloy-works/db';
-import { DEFAULT_IMPORT_LEVELS, blockIdentifierFrom, proposeImport } from '@alloy-works/domain';
+import { createHash, randomBytes } from 'node:crypto';
+import {
+  createRole,
+  grant,
+  importParts,
+  latestVersion,
+  readImport as readStoredImport,
+  recordProposal,
+  recordVersion,
+} from '@alloy-works/db';
+import {
+  DEFAULT_IMPORT_LEVELS,
+  blockIdentifierFrom,
+  proposeImport,
+  type ContentDocument,
+} from '@alloy-works/domain';
+import { holdingTransaction, untilWaitingOnLocks } from '@alloy-works/db/testing';
 import { readImport as readFile } from '@alloy-works/readers/import';
 import { strToU8, zipSync } from 'fflate';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -14,8 +28,16 @@ interface View {
   failure: string | null;
   document: string | null;
   sweepsAt: string | null;
-  parts: { id: string; kind: string; title: string; reason: Json; source: string }[];
+  parts: {
+    id: string;
+    kind: string;
+    title: string;
+    reason: Json;
+    source: string;
+    again?: Json | null;
+  }[];
   report: { subject: string; detail?: string }[];
+  recognised: Json | null;
 }
 
 const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
@@ -87,6 +109,10 @@ describe('the import routes (the IM plan, IM-A, IM-B, IM-F)', () => {
     return answer.json<View>();
   };
 
+  /** The revision an import is at, as its page reads it. */
+  const revisionOf = async (as: string, id: string) =>
+    (await h.call(as, 'GET', `/v1/imports/${id}`)).json<{ revision: number }>().revision;
+
   /** What the worker does with the file: read it, break it out and write the proposal. */
   const readByTheWorker = (id: string) =>
     h.tenantDb.withTenant(
@@ -109,7 +135,7 @@ describe('the import routes (the IM plan, IM-A, IM-B, IM-F)', () => {
           parts,
           anchors,
           report: read.report,
-          title: null,
+          title: read.title,
           language: null,
           references: read.references,
           identities: read.identities,
@@ -150,6 +176,7 @@ describe('the import routes (the IM plan, IM-A, IM-B, IM-F)', () => {
     );
 
     const accepted = await h.call('grace', 'POST', `/v1/imports/${created.id}/accept`, {
+      revision: await revisionOf('grace', created.id),
       title: 'Pond survey',
     });
     expect(accepted.statusCode, accepted.body).toBe(200);
@@ -157,6 +184,39 @@ describe('the import routes (the IM plan, IM-A, IM-B, IM-F)', () => {
     expect(accepted.json()).toMatchObject({ import: { state: 'accepted', document } });
     const opened = await h.call('grace', 'GET', `/v1/documents/${document}`);
     expect(opened.statusCode, opened.body).toBe(200);
+  });
+
+  it('IMP-008 removes the bytes it stored for a file another request filled the import with meanwhile', async () => {
+    const created = await made('grace');
+    const file = word('Sampling', 'Grace sampled the pond late.');
+    const sha256 = createHash('sha256').update(file).digest('hex');
+    const other = randomBytes(32).toString('hex');
+    // Another request fills the import first, holding it until this one has stored its bytes and
+    // waits on the import's row.
+    const commit = await holdingTransaction(
+      h.db.adminUrl,
+      `update ${h.tenant.schema}.import set state = 'reading', object_key = $2, sha256 = $3,
+              bytes = 9 where id = $1`,
+      [created.id, `t_x/sha256/${other}`, other],
+    );
+    const sent = send('grace', created.id, file);
+    await untilWaitingOnLocks(h.db.adminUrl, 1);
+    await commit();
+    const answer = await sent;
+    expect(answer.json()).toMatchObject({ code: 'import_filled' });
+    const kept = await h.tenantDb.withTenant(
+      h.tenant,
+      async (trx) => {
+        const store = await h.stores.forTenant(trx, h.tenant);
+        const prefix = (await store.put(strToU8('probe'), 'text/plain')).key.split('/')[0];
+        return store.get(`${prefix}/sha256/${sha256}`).then(
+          () => true,
+          () => false,
+        );
+      },
+      { actorKind: 'system' },
+    );
+    expect(kept).toBe(false);
   });
 
   it('refuses a file that is not what it says, by its name and by its bytes', async () => {
@@ -198,9 +258,13 @@ describe('the import routes (the IM plan, IM-A, IM-B, IM-F)', () => {
     expect(await listed('grace')).toContain(created.id);
     expect(await listed('alice')).toEqual([]);
     // Only its importer accepts it or changes its levels.
-    expect((await h.call('ada', 'POST', `/v1/imports/${created.id}/accept`, {})).statusCode).toBe(
-      404,
-    );
+    expect(
+      (
+        await h.call('ada', 'POST', `/v1/imports/${created.id}/accept`, {
+          revision: await revisionOf('ada', created.id),
+        })
+      ).statusCode,
+    ).toBe(404);
   });
 
   /** Ada's survey, proposed: Methods, holding Sampling and Analysis; then Discussion, empty. */
@@ -226,6 +290,32 @@ describe('the import routes (the IM plan, IM-A, IM-B, IM-F)', () => {
     const [methods, sampling, analysis, discussion] = view.parts.map((part) => part.id);
     return { id: created.id, methods: methods!, sampling: sampling!, analysis, discussion };
   };
+
+  it('refuses a change of levels, a change of kind or an acceptance made against a revision since edited', async () => {
+    const { id, sampling } = await survey();
+    const edited = await h.call('grace', 'POST', `/v1/imports/${id}/edits`, {
+      revision: 0,
+      edit: { edit: 'rename', part: sampling, title: 'How we sampled' },
+    });
+    expect(edited.statusCode, edited.body).toBe(200);
+    const stale: ['PUT' | 'POST', string, Json][] = [
+      ['PUT', 'levels', { section: 1, component: 3 }],
+      ['PUT', 'kind', { kind: 'first' }],
+      ['POST', 'accept', {}],
+    ];
+    for (const [method, path, body] of stale) {
+      const answer = await h.call('grace', method, `/v1/imports/${id}/${path}`, {
+        revision: 0,
+        ...body,
+      });
+      expect(answer.statusCode, path).toBe(409);
+      expect(answer.json()).toMatchObject({ code: 'import_changed' });
+    }
+    expect((await h.call('grace', 'GET', `/v1/imports/${id}`)).json()).toMatchObject({
+      state: 'proposed',
+      revision: 1,
+    });
+  });
 
   it('IMP-028 shows one part at a time, its blocks beside the text it came from, with the parts either side', async () => {
     const { id, methods, sampling, analysis } = await survey();
@@ -318,13 +408,74 @@ describe('the import routes (the IM plan, IM-A, IM-B, IM-F)', () => {
     );
   });
 
+  it('names the document it makes as its importer typed, else by the file’s Title paragraph, else by its name without the ending', async () => {
+    const titled = (title: string) =>
+      zipSync({
+        'word/document.xml': strToU8(
+          `<w:document xmlns:w="${W}"><w:body>` +
+            `<w:p><w:pPr><w:pStyle w:val="Title"/></w:pPr><w:r><w:t>${title}</w:t></w:r></w:p>` +
+            `<w:p><w:r><w:t>Grace sampled the pond.</w:t></w:r></w:p></w:body></w:document>`,
+        ),
+        'word/styles.xml': strToU8(
+          `<w:styles xmlns:w="${W}"><w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/></w:style></w:styles>`,
+        ),
+      });
+    const named = async (fileName: string, file: Uint8Array, body: Json) => {
+      const created = await made('grace', fileName);
+      await send('grace', created.id, file);
+      await readByTheWorker(created.id);
+      const accepted = await h.call('grace', 'POST', `/v1/imports/${created.id}/accept`, {
+        revision: await revisionOf('grace', created.id),
+        ...body,
+      });
+      expect(accepted.statusCode, accepted.body).toBe(200);
+      const { document } = accepted.json<{ document: string }>();
+      const opened = await h.call('grace', 'GET', `/v1/documents/${document}`);
+      return opened.json<{ outline: { title: string } }>().outline.title;
+    };
+    expect(await named('Pond.docx', titled('Pond survey 2026'), { title: 'Newts' })).toBe('Newts');
+    expect(await named('Pond.docx', titled('Pond survey 2026'), {})).toBe('Pond survey 2026');
+    expect(await named('Pond notes.v2.docx', word('Sampling', 'Ada'), {})).toBe('Pond notes.v2');
+  });
+
+  it('IMP-036 never says a file was imported before by an import whose document its importer may not read', async () => {
+    const file = word('Sampling', 'Ada sampled the secret pond.');
+    const theirs = await made('ada', 'Secret pond.docx');
+    await send('ada', theirs.id, file);
+    await readByTheWorker(theirs.id);
+    const accepted = await h.call('ada', 'POST', `/v1/imports/${theirs.id}/accept`, {
+      revision: await revisionOf('ada', theirs.id),
+    });
+    expect(accepted.statusCode, accepted.body).toBe(200);
+    const { document } = accepted.json<{ document: string }>();
+    await h.tenantDb.withTenant(
+      h.tenant,
+      async (trx) => {
+        await grant(trx, {
+          roleId: h.roles.Reader!,
+          subject: { principal: h.ids.grace! },
+          level: { kind: 'artifact', id: document },
+          effect: 'deny',
+          grantedBy: h.ids.ada!,
+        });
+      },
+      { actorKind: 'system' },
+    );
+    // Neither by its name nor by its bytes: nothing of Ada's import is said.
+    const mine = await made('grace', 'Secret pond.docx');
+    expect(mine.recognised).toBeNull();
+    expect((await send('grace', mine.id, file)).json()).toMatchObject({ recognised: null });
+  });
+
   it('IMP-031 says on the accepted import how many parts were accepted unchanged, edited, merged, split and renamed', async () => {
     const { id, sampling } = await survey();
     await h.call('grace', 'POST', `/v1/imports/${id}/edits`, {
       revision: 0,
       edit: { edit: 'rename', part: sampling, title: 'How we sampled' },
     });
-    const accepted = await h.call('grace', 'POST', `/v1/imports/${id}/accept`, {});
+    const accepted = await h.call('grace', 'POST', `/v1/imports/${id}/accept`, {
+      revision: await revisionOf('grace', id),
+    });
     expect(accepted.statusCode, accepted.body).toBe(200);
     expect(accepted.json()).toMatchObject({
       import: { accepted: { unchanged: 3, edited: 0, merged: 0, split: 0, renamed: 1 } },
@@ -349,6 +500,42 @@ describe('the import routes (the IM plan, IM-A, IM-B, IM-F)', () => {
         `<w:comments xmlns:w="${W}"><w:comment w:id="0" w:author="Edsger"><w:p><w:r><w:t>Recount them.</w:t></w:r></w:p></w:comment></w:comments>`,
       ),
     });
+
+  it('IMP-009 matches a name the file carries by its email only for an importer who may see members’ emails, by its name alone for anybody else', async () => {
+    const W15 = 'http://schemas.microsoft.com/office/word/2012/wordml';
+    const probing = () =>
+      zipSync({
+        'word/document.xml': strToU8(
+          `<w:document xmlns:w="${W}"><w:body>` +
+            `<w:p><w:pPr><w:pStyle w:val="Heading2"/></w:pPr><w:r><w:t>Counts</w:t></w:r></w:p>` +
+            `<w:p><w:r><w:t xml:space="preserve">We saw </w:t></w:r><w:ins w:id="1" w:author="Pond Surveyor"><w:r><w:t>newts</w:t></w:r></w:ins></w:p>` +
+            `</w:body></w:document>`,
+        ),
+        'word/styles.xml': strToU8(
+          `<w:styles xmlns:w="${W}"><w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/></w:style></w:styles>`,
+        ),
+        'word/people.xml': strToU8(
+          `<w15:people xmlns:w15="${W15}"><w15:person w15:author="Pond Surveyor"><w15:presenceInfo w15:providerId="AD" w15:userId="S::ivy@example.com::0001"/></w15:person></w15:people>`,
+        ),
+      });
+    const identity = async (as: string) => {
+      const created = await made(as, 'Probe.docx');
+      await send(as, created.id, probing());
+      await readByTheWorker(created.id);
+      const view = (await h.call(as, 'GET', `/v1/imports/${created.id}`)).json<{
+        identities: Json[];
+      }>();
+      return view.identities[0];
+    };
+    // Grace authors in the space; the directory shows her names, never emails.
+    expect(await identity('grace')).toMatchObject({
+      match: 'none',
+      member: null,
+      memberName: null,
+    });
+    // Ada administers it, and may list its members with their emails.
+    expect(await identity('ada')).toMatchObject({ match: 'email', member: h.ids.ivy });
+  });
 
   it('IMP-005 IMP-009 IMP-032 IMP-033 IMP-034 shows the names the file carries, the references outside it and what becomes suggestions and threads, and refuses acceptance until each reference is resolved', async () => {
     const created = await made('grace', 'Notes.docx');
@@ -382,7 +569,9 @@ describe('the import routes (the IM plan, IM-A, IM-B, IM-F)', () => {
     ]);
     expect(part.references).toEqual(['wx-1']);
 
-    const refused = await h.call('grace', 'POST', `/v1/imports/${created.id}/accept`, {});
+    const refused = await h.call('grace', 'POST', `/v1/imports/${created.id}/accept`, {
+      revision: await revisionOf('grace', created.id),
+    });
     expect(refused.statusCode).toBe(409);
     expect(refused.json()).toMatchObject({ code: 'import_references_unresolved' });
     const retargeted = await h.call('grace', 'POST', `/v1/imports/${created.id}/edits`, {
@@ -399,7 +588,9 @@ describe('the import routes (the IM plan, IM-A, IM-B, IM-F)', () => {
       edit: { edit: 'identity', identity: 'Edsger', member: h.ids['grace'] },
     });
     expect(unknown.json()).toMatchObject({ code: 'import_edit_refused' });
-    const accepted = await h.call('grace', 'POST', `/v1/imports/${created.id}/accept`, {});
+    const accepted = await h.call('grace', 'POST', `/v1/imports/${created.id}/accept`, {
+      revision: await revisionOf('grace', created.id),
+    });
     expect(accepted.statusCode, accepted.body).toBe(200);
     expect(accepted.json()).toMatchObject({ import: { policy: 'map', policyApplied: true } });
   });
@@ -423,11 +614,13 @@ describe('the import routes (the IM plan, IM-A, IM-B, IM-F)', () => {
     await send('grace', created.id, word('Analysis', 'Ada counted newts.'));
     await readByTheWorker(created.id);
     const refused = await h.call('grace', 'PUT', `/v1/imports/${created.id}/levels`, {
+      revision: await revisionOf('grace', created.id),
       section: 2,
       component: 2,
     });
     expect(refused.json()).toMatchObject({ code: 'import_levels_invalid' });
     const relevelled = await h.call('grace', 'PUT', `/v1/imports/${created.id}/levels`, {
+      revision: await revisionOf('grace', created.id),
       section: 1,
       component: 3,
     });
@@ -445,5 +638,165 @@ describe('the import routes (the IM plan, IM-A, IM-B, IM-F)', () => {
     expect(
       (await h.call('grace', 'POST', `/v1/imports/${created.id}/abandon`)).json(),
     ).toMatchObject({ code: 'import_not_open' });
+  });
+
+  it('IMP-036 IMP-037 says a file was imported before, shows what changed against the space as it is, and updates what it made as suggestions', async () => {
+    const first = outline([
+      [2, 'Sampling'],
+      [null, 'Ada sampled the pond.'],
+      [2, 'Analysis'],
+      [null, 'Ada analysed.'],
+      [2, 'Results'],
+      [null, 'Three newts.'],
+    ]);
+    const earlier = await made('grace', 'Pond again.docx');
+    await send('grace', earlier.id, first);
+    await readByTheWorker(earlier.id);
+    const accepted = await h.call('grace', 'POST', `/v1/imports/${earlier.id}/accept`, {
+      revision: await revisionOf('grace', earlier.id),
+      title: 'Pond again',
+    });
+    expect(accepted.statusCode, accepted.body).toBe(200);
+    const { document } = accepted.json<{ document: string }>();
+    const [sampling, analysis, results] = await h.tenantDb.withTenant(h.tenant, async (trx) =>
+      (await importParts(trx, earlier.id)).map((part) => part.made!),
+    );
+    // Grace edits Analysis in the space after the import.
+    await h.tenantDb.withTenant(
+      h.tenant,
+      async (trx) => {
+        const latest = (await latestVersion(trx, analysis!))!;
+        const content = latest.content as ContentDocument;
+        const recorded = await recordVersion(trx, {
+          artifactId: analysis!,
+          openedFrom: latest.id,
+          author: h.ids.grace!,
+          substance: {
+            kind: 'component',
+            content: {
+              ...content,
+              content: [
+                {
+                  ...content.content[0]!,
+                  content: [{ type: 'text', value: 'Grace analysed again.', marks: [] }],
+                } as ContentDocument['content'][number],
+              ],
+            },
+            values: latest.values,
+            notCarried: [],
+            definitions: latest.definitions,
+          },
+        });
+        expect(recorded.answer).toBe('recorded');
+      },
+      { actorKind: 'system' },
+    );
+
+    // Said first: by its name as it is made, by its bytes as they arrive, before the read.
+    const said = {
+      import: earlier.id,
+      fileName: 'Pond again.docx',
+      importer: h.ids.grace,
+      document,
+      documentTitle: 'Pond again',
+    };
+    const renamed = await made('grace', 'Renamed.docx');
+    expect(renamed.recognised).toBeNull();
+    const sameBytes = await send('grace', renamed.id, first);
+    expect(sameBytes.json()).toMatchObject({
+      state: 'reading',
+      recognised: { ...said, match: 'hash' },
+    });
+    const second = await made('grace', 'Pond again.docx');
+    expect(second.recognised).toMatchObject({ ...said, match: 'name' });
+    await send(
+      'grace',
+      second.id,
+      outline([
+        [2, 'Sampling'],
+        [null, 'Ada sampled the pond twice.'],
+        [2, 'Discussion'],
+        [null, 'Newts like ponds.'],
+        [2, 'Analysis'],
+        [null, 'Ada analysed.'],
+      ]),
+    );
+    const kind = async (body: Json) =>
+      h.call('grace', 'PUT', `/v1/imports/${second.id}/kind`, {
+        revision: await revisionOf('grace', second.id),
+        ...body,
+      });
+    expect((await kind({ kind: 'again', earlier: second.id })).json()).toMatchObject({
+      code: 'import_earlier_invalid',
+    });
+    expect((await kind({ kind: 'again', earlier: earlier.id })).json()).toMatchObject({
+      kind: 'again',
+      earlier: earlier.id,
+    });
+    await readByTheWorker(second.id);
+
+    const view = (await h.call('grace', 'GET', `/v1/imports/${second.id}`)).json<
+      View & { parts: { id: string; again: Json | null }[]; gone: Json[]; revision: number }
+    >();
+    expect(view.parts.map((part) => [part.title, part.again])).toEqual([
+      [
+        'Sampling',
+        { status: 'changed', component: sampling, componentTitle: 'Sampling', by: 'provenance' },
+      ],
+      ['Discussion', { status: 'new', component: null, componentTitle: null, by: null }],
+      [
+        'Analysis',
+        { status: 'changed', component: analysis, componentTitle: 'Analysis', by: 'provenance' },
+      ],
+    ]);
+    expect(view.gone).toEqual([{ component: results, title: 'Results' }]);
+    // The diff is against the component as the space left it, Grace's edit shown.
+    const part = await h.call(
+      'grace',
+      'GET',
+      `/v1/imports/${second.id}/parts/${view.parts[2]!.id}`,
+    );
+    expect(part.json()).toMatchObject({
+      diff: [
+        { change: 'removed', text: 'Grace analysed again.' },
+        { change: 'added', text: 'Ada analysed.' },
+      ],
+    });
+
+    // Grace may not suggest on Sampling: it is skipped and said; the rest are suggested.
+    await h.tenantDb.withTenant(
+      h.tenant,
+      async (trx) => {
+        const role = await createRole(trx, 'Suggests', ['suggest']);
+        if (!('role' in role)) throw new Error(role.refused);
+        await grant(trx, {
+          roleId: role.role.id,
+          subject: { principal: h.ids.grace! },
+          level: { kind: 'artifact', id: sampling! },
+          effect: 'deny',
+          grantedBy: h.ids.ada!,
+        });
+      },
+      { actorKind: 'system' },
+    );
+    const updated = await h.call('grace', 'POST', `/v1/imports/${second.id}/accept`, {
+      revision: await revisionOf('grace', second.id),
+    });
+    expect(updated.statusCode, updated.body).toBe(200);
+    expect(updated.json()).toMatchObject({
+      document,
+      import: {
+        state: 'accepted',
+        document,
+        outcome: {
+          suggested: [{ component: analysis }],
+          made: [{ placed: true }],
+          gone: [{ component: results, flagged: true }],
+          skipped: [{ component: sampling, reason: 'suggest' }],
+        },
+      },
+    });
+    const suggestions = await h.call('grace', 'GET', `/v1/components/${analysis}/suggestions`);
+    expect(suggestions.json<{ suggestions: unknown[] }>().suggestions).toHaveLength(1);
   });
 });

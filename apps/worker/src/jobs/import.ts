@@ -6,6 +6,7 @@ import {
   holdObject,
   readImport,
   recordProposal,
+  releaseObject,
   type ImportFailure,
   type ImportFileType,
   type StoredImport,
@@ -50,13 +51,24 @@ export type ThreadAnswer =
       readonly refusal: 'unreadable' | 'unsafe' | 'tooLarge' | 'timeout' | 'memory';
     };
 
-/** A read's budget (IM-C): past its time the thread is ended, past its memory the thread dies. */
+/**
+ * A read's budget (IM-C): past its time, its images' checks counted in, the thread is ended or the
+ * import failed; past its memory the thread dies; past its images, the rest are left out and said.
+ */
 export interface ImportBudget {
   readonly timeMs: number;
   readonly memoryMb: number;
+  readonly images?: number;
 }
 
-export const IMPORT_BUDGET: ImportBudget = { timeMs: 60_000, memoryMb: 512 };
+/** The most images one import holds. */
+export const IMPORT_MAX_IMAGES = 200;
+
+export const IMPORT_BUDGET: ImportBudget = {
+  timeMs: 60_000,
+  memoryMb: 512,
+  images: IMPORT_MAX_IMAGES,
+};
 
 /** Where the thread's script is: beside this file, as it is run, built or as written. */
 const SCRIPT = new URL(
@@ -124,45 +136,65 @@ export function importJob(deps: {
   readonly decode?: Decode;
 }): JobHandler {
   const read = deps.read ?? readInThread;
+  const budget = deps.budget ?? IMPORT_BUDGET;
 
   /**
    * Each image checked as an upload is (IM-C) and, where it passes, stored by its hash and held for the
    * import: no asset is made until it is accepted, so abandoning leaves nothing (IMP-008). Answers
-   * whether each placeholder was kept.
+   * whether each placeholder was kept, and how many were past the most an import holds; or
+   * `timeout` where the checks ran past the read's time.
    */
   const held = async (
     tenant: Tenant,
     store: TenantStore,
     found: StoredImport,
     images: Extract<ThreadAnswer, { ok: true }>['images'],
-  ): Promise<Map<string, string | null>> => {
+    deadline: number,
+  ): Promise<{ kept: Map<string, string | null>; past: number } | 'timeout'> => {
     const kept = new Map<string, string | null>();
-    for (const image of images) {
+    const most = budget.images ?? IMPORT_MAX_IMAGES;
+    for (const [at, image] of images.entries()) {
+      if (at >= most) {
+        kept.set(image.placeholder, null);
+        continue;
+      }
       const bytes = Buffer.from(image.bytes);
-      const checked = await checkImage(bytes, deps.decode);
+      const left = deadline - Date.now();
+      if (left <= 0) return 'timeout';
+      let timer: NodeJS.Timeout | undefined;
+      const checked = await Promise.race([
+        checkImage(bytes, deps.decode),
+        new Promise<'timeout'>((resolve) => (timer = setTimeout(() => resolve('timeout'), left))),
+      ]).finally(() => clearTimeout(timer));
+      if (checked === 'timeout') return 'timeout';
       if (!checked.ok || checked.header.format !== image.format) {
         kept.set(image.placeholder, null);
         continue;
       }
       const sha256 = createHash('sha256').update(bytes).digest('hex');
-      await deps.db.withTenant(
+      const holding = await deps.db.withTenant(
         tenant,
         async (trx) => {
           await holdObject(trx, sha256);
           const stored = await store.put(bytes, `image/${image.format}`);
-          await holdImportImage(trx, found.id, {
+          const holds = await holdImportImage(trx, found.id, {
             placeholder: image.placeholder,
             key: stored.key,
             sha256,
             bytes: stored.size,
             header: checked.header,
           });
+          // Abandoned meanwhile: the bytes let go, unless something else holds them.
+          if (!holds) {
+            await releaseObject(trx, { key: stored.key, sha256 }, (key) => store.remove(key));
+          }
+          return holds;
         },
         forImporter(found),
       );
-      kept.set(image.placeholder, image.placeholder);
+      kept.set(image.placeholder, holding ? image.placeholder : null);
     }
-    return kept;
+    return { kept, past: Math.max(0, images.length - most) };
   };
 
   const fail = async (
@@ -199,19 +231,24 @@ export function importJob(deps: {
         // The store answered with other bytes than the key names: its fault, tried again.
         throw new Error('The stored bytes do not match their hash');
       }
+      const deadline = Date.now() + budget.timeMs;
       const answer = await read(
         { bytes: new Uint8Array(bytes), type: found.fileType, levels: found.levels },
-        deps.budget,
+        budget,
       );
-      if (!answer.ok) {
-        await fail(tenant, store, found, FAILURES[answer.refusal]);
+      const images = answer.ok
+        ? await held(tenant, store, found, answer.images, deadline)
+        : undefined;
+      if (!answer.ok || images === 'timeout') {
+        await fail(tenant, store, found, FAILURES[answer.ok ? 'timeout' : answer.refusal]);
         // Refused on its merits: the same file fails the same way every time (issue #146).
         throw new JobRefused('import_refused', 'The file could not be read into a proposal');
       }
-      const assets = await held(tenant, store, found, answer.images);
-      const refused = [...assets.values()].filter((each) => each === null).length;
+      const assets = images!.kept;
+      const refused = [...assets.values()].filter((each) => each === null).length - images!.past;
       const report = createReport(answer.report);
       if (refused > 0) report.add('read', 'discarded', 'imageRefused', { count: refused });
+      if (images!.past > 0) report.add('read', 'discarded', 'imageLimit', { count: images!.past });
       await deps.db.withTenant(
         tenant,
         (trx) =>

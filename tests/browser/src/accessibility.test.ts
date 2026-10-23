@@ -8,6 +8,7 @@ import { generalSpace, makeComponent, uploadImage } from './testing/component.js
 import { everyBlock } from './testing/every-block.js';
 import { allowPageNoise, withPage } from './testing/page.js';
 import { approvedTerm } from './testing/fixtures.js';
+import { pondSurvey } from './testing/word.js';
 
 /**
  * axe-core over every state of the editor and the document view a person reaches, and the screens
@@ -663,6 +664,83 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       });
       await page.getByRole('button', { name: 'Edit', exact: true }).click();
       await check('a term being edited', { shows: page.getByRole('form', { name: 'Edit term' }) });
+    });
+  });
+
+  it('passes axe on an import: the dialog, its proposal, a part beside its source, its references and names, Help, and the Imports policy (the IM plan, IMe)', async ({
+    task,
+  }) => {
+    const file = pondSurvey(randomUUID().slice(0, 8));
+    await withPage(async (page) => {
+      const check = async (state: string, arrival: Arrival) => {
+        await arrive(arrival);
+        await checkAxe(page, state, task.meta, arrival);
+      };
+      await page.goto(`${SERVICE}/#/documents`);
+      await page.getByRole('button', { name: 'Import', exact: true }).click();
+      const dialog = page.getByRole('dialog');
+      await check('the import dialog', {
+        shows: [
+          dialog.getByRole('heading', { name: 'Import', level: 2 }),
+          dialog.getByLabel('File'),
+        ],
+      });
+      await dialog.getByLabel('File').setInputFiles({
+        name: file.name,
+        mimeType: 'application/octet-stream',
+        buffer: file.bytes,
+      });
+      await dialog.getByRole('button', { name: 'Import file' }).click();
+
+      // The worker reads it; the page follows until it proposes.
+      const outline = page.getByRole('list', { name: 'Proposed outline' });
+      await check("an import's proposal", {
+        shows: [
+          page.getByRole('heading', { name: `Import of ${file.name}`, level: 1 }),
+          outline.getByRole('button', { name: 'Component: Sampling' }),
+          page.getByRole('region', { name: 'What an import keeps' }),
+        ],
+        hides: [dialog],
+      });
+      await outline.getByRole('button', { name: 'Component: Sampling' }).click();
+      await check('one part of an import, beside its source', {
+        shows: [
+          page.getByRole('region', { name: /^Part \d+ of \d+: Sampling$/ }),
+          page.getByRole('group', { name: 'From the file' }),
+          page.getByRole('list', { name: 'Suggestions it will make' }),
+        ],
+      });
+      await check("an import's references outside it and the names it carries", {
+        shows: [
+          page.getByRole('list', { name: 'References outside the import' }),
+          page.getByRole('list', { name: 'Names the file carries' }).getByText(/Grace/).first(),
+        ],
+      });
+      await page.getByRole('link', { name: 'What arrives and what does not' }).click();
+      await check('Help, what an import keeps', {
+        shows: [
+          page.getByRole('heading', { name: 'What an import keeps', level: 1 }),
+          page.getByRole('list', { name: 'What does not arrive' }),
+        ],
+      });
+      await page.goBack();
+      await page.getByRole('button', { name: 'Abandon' }).click();
+      await page.getByText('Abandoned. Nothing of it was kept.').waitFor();
+
+      await page
+        .getByRole('navigation', { name: 'Modules' })
+        .getByRole('link', { name: 'Admin' })
+        .click();
+      await page
+        .getByRole('navigation', { name: 'Sections of Administration' })
+        .getByRole('link', { name: /^Imports/ })
+        .click();
+      await check('Administration, Imports', {
+        shows: [
+          page.getByRole('heading', { name: 'Imports', level: 1, exact: true }),
+          page.getByText('The names an imported Word file carries'),
+        ],
+      });
     });
   });
 

@@ -250,6 +250,7 @@ export {
   ImportPartSearchQuery,
   ImportPartView,
   ImportPlaceBody,
+  ImportKindBody,
   ImportSummary,
   ImportView,
   importRoutes,

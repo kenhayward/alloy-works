@@ -23,6 +23,11 @@
   letter-spacing: 0.04em;
 }
 
+.held {
+  flex-basis: 100%;
+  margin: 0;
+}
+
 .entries {
   flex: 1;
   margin: 0;

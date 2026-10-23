@@ -638,6 +638,50 @@ describe('the component editor', () => {
     expect(view.hasFocus()).toBe(true);
   });
 
+  it('CNT-168 offers a paste holding headings as one component, its headings made paragraphs, or broken out through an import', async () => {
+    const IMPORT = '0a000000-0000-4000-8000-000000000001';
+    const { asked, surface } = open({
+      'GET /v1/components/{id}': () => json(200, opened()),
+      'POST /v1/components/{id}/lock': () => json(200, { lock }),
+      'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+      'POST /v1/spaces/s1/imports': () => json(201, { id: IMPORT }),
+      [`PUT /v1/imports/${IMPORT}/file`]: () => json(200, { id: IMPORT }),
+    });
+    const view = await surface();
+    selectText(view, 19, 19);
+    const html = '<h1>Tools</h1><p>A screwdriver.</p>';
+    view.dom.dispatchEvent(pasteEvent({ 'text/html': html, 'text/plain': 'Tools A screwdriver.' }));
+
+    // Nothing is placed until the author chooses.
+    const report = await screen.findByRole('region', { name: 'Paste report' });
+    expect(view.state.doc.textContent).toBe('Unbox the printer.');
+    expect(report).toHaveTextContent('This paste holds headings.');
+    await userEvent.click(within(report).getByRole('button', { name: 'Keep as one component' }));
+    expect(view.state.doc.textContent).toBe('Unbox the printer.ToolsA screwdriver.');
+    expect(
+      within(screen.getByRole('region', { name: 'Paste report' })).queryByRole('button', {
+        name: 'Break out into sections and components',
+      }),
+    ).toBeNull();
+
+    // Broken out, it becomes an import of the pasted HTML in the component's space, and opens there.
+    view.dom.dispatchEvent(pasteEvent({ 'text/html': html }));
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Break out into sections and components' }),
+    );
+    await waitFor(() => expect(window.location.hash).toBe(`#/imports/${IMPORT}`));
+    expect(view.state.doc.textContent).toBe('Unbox the printer.ToolsA screwdriver.');
+    const made = asked.find((each) => each.route === 'POST /v1/spaces/s1/imports');
+    expect(made?.body).toMatchObject({
+      fileType: 'html',
+      fileName: expect.stringMatching(/\.html$/),
+    });
+    expect(asked.find((each) => each.route === `PUT /v1/imports/${IMPORT}/file`)?.body).toEqual({
+      bytes: new TextEncoder().encode(html).byteLength,
+    });
+    window.location.hash = '';
+  });
+
   it('says only that it pasted when there is nothing to report, and reaches the report by F6 when there is', async () => {
     const { surface } = open({
       'GET /v1/components/{id}': () => json(200, opened()),
@@ -651,7 +695,7 @@ describe('the component editor', () => {
     await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(/^Pasted.$/));
     expect(screen.queryByRole('region', { name: 'Paste report' })).toBeNull();
 
-    view.dom.dispatchEvent(pasteEvent({ 'text/html': '<h2>Tools</h2>' }));
+    view.dom.dispatchEvent(pasteEvent({ 'text/html': '<p>Tools</p><hr>' }));
     const report = await screen.findByRole('region', { name: 'Paste report' });
     view.focus();
     await userEvent.keyboard('{Shift>}{F6}{/Shift}');

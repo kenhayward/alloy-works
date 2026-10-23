@@ -66,7 +66,9 @@ export type ImportEditRefusal =
   | 'content_invalid'
   | 'reference_missing'
   | 'target_missing'
-  | 'identity_invalid';
+  | 'identity_invalid'
+  /** A part of an import again matched to what the earlier import did not make, or another holds. */
+  | 'match_invalid';
 
 const flagsOf = (
   kind: ReviewPart['kind'],

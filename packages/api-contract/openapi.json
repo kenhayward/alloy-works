@@ -201419,6 +201419,65 @@
                           "source": {
                             "type": "string",
                             "description": "Its text as the file had it, its heading first"
+                          },
+                          "again": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "status": {
+                                    "type": "string",
+                                    "enum": [
+                                      "unchanged",
+                                      "changed",
+                                      "new"
+                                    ],
+                                    "description": "`unchanged`: its text is its component’s now; `changed`: it differs, suggested at acceptance; `new`: it matches no component, made and placed at acceptance"
+                                  },
+                                  "component": {
+                                    "description": "The component the earlier import made it is matched to",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "componentTitle": {
+                                    "description": "That component’s title now, where its importer may read it",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "by": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "provenance",
+                                          "heading",
+                                          "position",
+                                          "importer"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "How it was matched: by the heading the earlier import read it from, by the component’s title now, by its place between two parts matched so, or by its importer"
+                                  }
+                                },
+                                "required": [
+                                  "status",
+                                  "component",
+                                  "componentTitle",
+                                  "by"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "For an import again, what this part is to what the earlier import made; null otherwise"
                           }
                         },
                         "required": [
@@ -201429,7 +201488,8 @@
                           "reason",
                           "flags",
                           "blocks",
-                          "source"
+                          "source",
+                          "again"
                         ]
                       },
                       "description": "The proposed outline, in order"
@@ -201673,6 +201733,234 @@
                     "policyApplied": {
                       "type": "boolean",
                       "description": "Whether `policy` was applied, at acceptance (IMP-011)"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "first",
+                        "again"
+                      ],
+                      "description": "Imported as new, or again as an update of what `earlier` made"
+                    },
+                    "earlier": {
+                      "description": "The accepted import an import again updates",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "recognised": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "import": {
+                              "type": "string",
+                              "description": "The earlier import"
+                            },
+                            "match": {
+                              "type": "string",
+                              "enum": [
+                                "hash",
+                                "name"
+                              ],
+                              "description": "The same bytes, by their hash, or a file of the same name in this space"
+                            },
+                            "fileName": {
+                              "type": "string"
+                            },
+                            "importer": {
+                              "type": "string"
+                            },
+                            "importerName": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "at": {
+                              "type": "string",
+                              "description": "When it was accepted"
+                            },
+                            "document": {
+                              "type": "string",
+                              "description": "The document it made"
+                            },
+                            "documentTitle": {
+                              "description": "That document’s title now, where its importer may read it",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "import",
+                            "match",
+                            "fileName",
+                            "importer",
+                            "importerName",
+                            "at",
+                            "document",
+                            "documentTitle"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "An accepted import in this space that holds the same file (IMP-036), said once the name or the bytes are in, before it is read; null where none does"
+                    },
+                    "earlierMade": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "component": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "component",
+                          "title"
+                        ]
+                      },
+                      "description": "For an import again, what the earlier import made that a part may be matched to"
+                    },
+                    "gone": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "component": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "component",
+                          "title"
+                        ]
+                      },
+                      "description": "For an import again, what the earlier import made that no part matches"
+                    },
+                    "outcome": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "suggested": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "component": {
+                                    "type": "string"
+                                  },
+                                  "suggestion": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "component",
+                                  "suggestion"
+                                ]
+                              }
+                            },
+                            "made": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "component": {
+                                    "type": "string"
+                                  },
+                                  "placed": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "component",
+                                  "placed"
+                                ]
+                              },
+                              "description": "Each new component, and whether it was placed in the document"
+                            },
+                            "gone": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "component": {
+                                    "type": "string"
+                                  },
+                                  "flagged": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "component",
+                                  "flagged"
+                                ]
+                              },
+                              "description": "Each component no part matched: kept, and flagged on the document where it stands"
+                            },
+                            "skipped": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "component": {
+                                    "type": "string"
+                                  },
+                                  "reason": {
+                                    "type": "string",
+                                    "enum": [
+                                      "suggest",
+                                      "limit",
+                                      "empty",
+                                      "resolved",
+                                      "gone"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "component",
+                                  "reason"
+                                ]
+                              },
+                              "description": "Each matched component not suggested on: its importer may not suggest there, or has 20 suggestions pending on it; the suggestion would change nothing, or the same one was resolved before; or the component was deleted or archived since it was matched"
+                            },
+                            "unchanged": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "suggested",
+                            "made",
+                            "gone",
+                            "skipped",
+                            "unchanged"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Once an import again is accepted, what it did (IMP-037)"
                     }
                   },
                   "required": [
@@ -201696,7 +201984,13 @@
                     "references",
                     "identities",
                     "policy",
-                    "policyApplied"
+                    "policyApplied",
+                    "kind",
+                    "earlier",
+                    "recognised",
+                    "earlierMade",
+                    "gone",
+                    "outcome"
                   ]
                 },
                 "example": {
@@ -201729,7 +202023,28 @@
                   "references": [],
                   "identities": [],
                   "policy": "map",
-                  "policyApplied": false
+                  "policyApplied": false,
+                  "kind": "first",
+                  "earlier": "example",
+                  "recognised": {
+                    "import": "example",
+                    "match": "hash",
+                    "fileName": "example",
+                    "importer": "example",
+                    "importerName": "example",
+                    "at": "example",
+                    "document": "example",
+                    "documentTitle": "example"
+                  },
+                  "earlierMade": [],
+                  "gone": [],
+                  "outcome": {
+                    "suggested": [],
+                    "made": [],
+                    "gone": [],
+                    "skipped": [],
+                    "unchanged": -9007199254740991
+                  }
                 }
               }
             },
@@ -202095,6 +202410,65 @@
                           "source": {
                             "type": "string",
                             "description": "Its text as the file had it, its heading first"
+                          },
+                          "again": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "status": {
+                                    "type": "string",
+                                    "enum": [
+                                      "unchanged",
+                                      "changed",
+                                      "new"
+                                    ],
+                                    "description": "`unchanged`: its text is its component’s now; `changed`: it differs, suggested at acceptance; `new`: it matches no component, made and placed at acceptance"
+                                  },
+                                  "component": {
+                                    "description": "The component the earlier import made it is matched to",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "componentTitle": {
+                                    "description": "That component’s title now, where its importer may read it",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "by": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "provenance",
+                                          "heading",
+                                          "position",
+                                          "importer"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "How it was matched: by the heading the earlier import read it from, by the component’s title now, by its place between two parts matched so, or by its importer"
+                                  }
+                                },
+                                "required": [
+                                  "status",
+                                  "component",
+                                  "componentTitle",
+                                  "by"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "For an import again, what this part is to what the earlier import made; null otherwise"
                           }
                         },
                         "required": [
@@ -202105,7 +202479,8 @@
                           "reason",
                           "flags",
                           "blocks",
-                          "source"
+                          "source",
+                          "again"
                         ]
                       },
                       "description": "The proposed outline, in order"
@@ -202349,6 +202724,234 @@
                     "policyApplied": {
                       "type": "boolean",
                       "description": "Whether `policy` was applied, at acceptance (IMP-011)"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "first",
+                        "again"
+                      ],
+                      "description": "Imported as new, or again as an update of what `earlier` made"
+                    },
+                    "earlier": {
+                      "description": "The accepted import an import again updates",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "recognised": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "import": {
+                              "type": "string",
+                              "description": "The earlier import"
+                            },
+                            "match": {
+                              "type": "string",
+                              "enum": [
+                                "hash",
+                                "name"
+                              ],
+                              "description": "The same bytes, by their hash, or a file of the same name in this space"
+                            },
+                            "fileName": {
+                              "type": "string"
+                            },
+                            "importer": {
+                              "type": "string"
+                            },
+                            "importerName": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "at": {
+                              "type": "string",
+                              "description": "When it was accepted"
+                            },
+                            "document": {
+                              "type": "string",
+                              "description": "The document it made"
+                            },
+                            "documentTitle": {
+                              "description": "That document’s title now, where its importer may read it",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "import",
+                            "match",
+                            "fileName",
+                            "importer",
+                            "importerName",
+                            "at",
+                            "document",
+                            "documentTitle"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "An accepted import in this space that holds the same file (IMP-036), said once the name or the bytes are in, before it is read; null where none does"
+                    },
+                    "earlierMade": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "component": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "component",
+                          "title"
+                        ]
+                      },
+                      "description": "For an import again, what the earlier import made that a part may be matched to"
+                    },
+                    "gone": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "component": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "component",
+                          "title"
+                        ]
+                      },
+                      "description": "For an import again, what the earlier import made that no part matches"
+                    },
+                    "outcome": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "suggested": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "component": {
+                                    "type": "string"
+                                  },
+                                  "suggestion": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "component",
+                                  "suggestion"
+                                ]
+                              }
+                            },
+                            "made": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "component": {
+                                    "type": "string"
+                                  },
+                                  "placed": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "component",
+                                  "placed"
+                                ]
+                              },
+                              "description": "Each new component, and whether it was placed in the document"
+                            },
+                            "gone": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "component": {
+                                    "type": "string"
+                                  },
+                                  "flagged": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "component",
+                                  "flagged"
+                                ]
+                              },
+                              "description": "Each component no part matched: kept, and flagged on the document where it stands"
+                            },
+                            "skipped": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "component": {
+                                    "type": "string"
+                                  },
+                                  "reason": {
+                                    "type": "string",
+                                    "enum": [
+                                      "suggest",
+                                      "limit",
+                                      "empty",
+                                      "resolved",
+                                      "gone"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "component",
+                                  "reason"
+                                ]
+                              },
+                              "description": "Each matched component not suggested on: its importer may not suggest there, or has 20 suggestions pending on it; the suggestion would change nothing, or the same one was resolved before; or the component was deleted or archived since it was matched"
+                            },
+                            "unchanged": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "suggested",
+                            "made",
+                            "gone",
+                            "skipped",
+                            "unchanged"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Once an import again is accepted, what it did (IMP-037)"
                     }
                   },
                   "required": [
@@ -202372,7 +202975,13 @@
                     "references",
                     "identities",
                     "policy",
-                    "policyApplied"
+                    "policyApplied",
+                    "kind",
+                    "earlier",
+                    "recognised",
+                    "earlierMade",
+                    "gone",
+                    "outcome"
                   ]
                 },
                 "example": {
@@ -202405,7 +203014,28 @@
                   "references": [],
                   "identities": [],
                   "policy": "map",
-                  "policyApplied": false
+                  "policyApplied": false,
+                  "kind": "first",
+                  "earlier": "example",
+                  "recognised": {
+                    "import": "example",
+                    "match": "hash",
+                    "fileName": "example",
+                    "importer": "example",
+                    "importerName": "example",
+                    "at": "example",
+                    "document": "example",
+                    "documentTitle": "example"
+                  },
+                  "earlierMade": [],
+                  "gone": [],
+                  "outcome": {
+                    "suggested": [],
+                    "made": [],
+                    "gone": [],
+                    "skipped": [],
+                    "unchanged": -9007199254740991
+                  }
                 }
               }
             },
@@ -202589,7 +203219,7 @@
       "post": {
         "operationId": "acceptImport",
         "summary": "Accept a proposal, making its document, sections and components in one act",
-        "description": "Accepts a proposal: its document, sections and components are made in one act, by the person accepting, each at 0.1 and each recording the file it came from. Blank, or from the template named. Each Word author’s tracked changes become one suggestion on each component, and each comment a thread with its replies, all made by the person accepting and attributed to the Word author as the environment’s policy says, with the member it matched; the policy applied is recorded on the import and on each. Refused while a cross-reference outside the file is unresolved. How many parts were accepted unchanged, edited, merged, split or renamed is recorded on the import. Only its importer may accept it, and they need create in the space.",
+        "description": "Accepts a proposal: its document, sections and components are made in one act, by the person accepting, each at 0.1 and each recording the file it came from. Blank, or from the template named. Each Word author’s tracked changes become one suggestion on each component, and each comment a thread with its replies, all made by the person accepting and attributed to the Word author as the environment’s policy says, with the member it matched; the policy applied is recorded on the import and on each. Refused while a cross-reference outside the file is unresolved. How many parts were accepted unchanged, edited, merged, split or renamed is recorded on the import. Imported again, no document is made: each changed part becomes one suggestion against its component as it is now, by the person accepting, so an edit made in the space is never overwritten, its tracked changes and comments on top; each new part a new component placed in the earlier document after the part before it; and each component no part matched is kept and flagged on the document by a thread. A component the person accepting may not suggest on, or one deleted or archived since it was matched, is skipped and said, unless none can be suggested on. Only its importer may accept it, and they need create in the space. It is made against the revision of the import its importer read, and refused as `import_changed` once the import is past it.",
         "tags": [
           "Imports"
         ],
@@ -202637,6 +203267,12 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "The revision of the import read; `import_changed` where it is no longer its revision"
+                  },
                   "title": {
                     "description": "The document’s title; the one the file names, or its name, where absent",
                     "type": "string",
@@ -202661,15 +203297,20 @@
                     "maxLength": 35
                   }
                 },
+                "required": [
+                  "revision"
+                ],
                 "additionalProperties": false
               },
-              "example": {}
+              "example": {
+                "revision": 0
+              }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "The import, accepted, and the document it made",
+            "description": "The import, accepted, and the document it made or, imported again, updated",
             "content": {
               "application/json": {
                 "schema": {
@@ -202852,6 +203493,65 @@
                               "source": {
                                 "type": "string",
                                 "description": "Its text as the file had it, its heading first"
+                              },
+                              "again": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "status": {
+                                        "type": "string",
+                                        "enum": [
+                                          "unchanged",
+                                          "changed",
+                                          "new"
+                                        ],
+                                        "description": "`unchanged`: its text is its component’s now; `changed`: it differs, suggested at acceptance; `new`: it matches no component, made and placed at acceptance"
+                                      },
+                                      "component": {
+                                        "description": "The component the earlier import made it is matched to",
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      },
+                                      "componentTitle": {
+                                        "description": "That component’s title now, where its importer may read it",
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      },
+                                      "by": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "enum": [
+                                              "provenance",
+                                              "heading",
+                                              "position",
+                                              "importer"
+                                            ]
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ],
+                                        "description": "How it was matched: by the heading the earlier import read it from, by the component’s title now, by its place between two parts matched so, or by its importer"
+                                      }
+                                    },
+                                    "required": [
+                                      "status",
+                                      "component",
+                                      "componentTitle",
+                                      "by"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "For an import again, what this part is to what the earlier import made; null otherwise"
                               }
                             },
                             "required": [
@@ -202862,7 +203562,8 @@
                               "reason",
                               "flags",
                               "blocks",
-                              "source"
+                              "source",
+                              "again"
                             ]
                           },
                           "description": "The proposed outline, in order"
@@ -203106,6 +203807,234 @@
                         "policyApplied": {
                           "type": "boolean",
                           "description": "Whether `policy` was applied, at acceptance (IMP-011)"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "first",
+                            "again"
+                          ],
+                          "description": "Imported as new, or again as an update of what `earlier` made"
+                        },
+                        "earlier": {
+                          "description": "The accepted import an import again updates",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "recognised": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "import": {
+                                  "type": "string",
+                                  "description": "The earlier import"
+                                },
+                                "match": {
+                                  "type": "string",
+                                  "enum": [
+                                    "hash",
+                                    "name"
+                                  ],
+                                  "description": "The same bytes, by their hash, or a file of the same name in this space"
+                                },
+                                "fileName": {
+                                  "type": "string"
+                                },
+                                "importer": {
+                                  "type": "string"
+                                },
+                                "importerName": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "at": {
+                                  "type": "string",
+                                  "description": "When it was accepted"
+                                },
+                                "document": {
+                                  "type": "string",
+                                  "description": "The document it made"
+                                },
+                                "documentTitle": {
+                                  "description": "That document’s title now, where its importer may read it",
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "import",
+                                "match",
+                                "fileName",
+                                "importer",
+                                "importerName",
+                                "at",
+                                "document",
+                                "documentTitle"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "An accepted import in this space that holds the same file (IMP-036), said once the name or the bytes are in, before it is read; null where none does"
+                        },
+                        "earlierMade": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "component": {
+                                "type": "string"
+                              },
+                              "title": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "component",
+                              "title"
+                            ]
+                          },
+                          "description": "For an import again, what the earlier import made that a part may be matched to"
+                        },
+                        "gone": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "component": {
+                                "type": "string"
+                              },
+                              "title": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "component",
+                              "title"
+                            ]
+                          },
+                          "description": "For an import again, what the earlier import made that no part matches"
+                        },
+                        "outcome": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "suggested": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "component": {
+                                        "type": "string"
+                                      },
+                                      "suggestion": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "component",
+                                      "suggestion"
+                                    ]
+                                  }
+                                },
+                                "made": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "component": {
+                                        "type": "string"
+                                      },
+                                      "placed": {
+                                        "type": "boolean"
+                                      }
+                                    },
+                                    "required": [
+                                      "component",
+                                      "placed"
+                                    ]
+                                  },
+                                  "description": "Each new component, and whether it was placed in the document"
+                                },
+                                "gone": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "component": {
+                                        "type": "string"
+                                      },
+                                      "flagged": {
+                                        "type": "boolean"
+                                      }
+                                    },
+                                    "required": [
+                                      "component",
+                                      "flagged"
+                                    ]
+                                  },
+                                  "description": "Each component no part matched: kept, and flagged on the document where it stands"
+                                },
+                                "skipped": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "component": {
+                                        "type": "string"
+                                      },
+                                      "reason": {
+                                        "type": "string",
+                                        "enum": [
+                                          "suggest",
+                                          "limit",
+                                          "empty",
+                                          "resolved",
+                                          "gone"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "component",
+                                      "reason"
+                                    ]
+                                  },
+                                  "description": "Each matched component not suggested on: its importer may not suggest there, or has 20 suggestions pending on it; the suggestion would change nothing, or the same one was resolved before; or the component was deleted or archived since it was matched"
+                                },
+                                "unchanged": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "suggested",
+                                "made",
+                                "gone",
+                                "skipped",
+                                "unchanged"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Once an import again is accepted, what it did (IMP-037)"
                         }
                       },
                       "required": [
@@ -203129,7 +204058,13 @@
                         "references",
                         "identities",
                         "policy",
-                        "policyApplied"
+                        "policyApplied",
+                        "kind",
+                        "earlier",
+                        "recognised",
+                        "earlierMade",
+                        "gone",
+                        "outcome"
                       ]
                     },
                     "document": {
@@ -203173,7 +204108,28 @@
                     "references": [],
                     "identities": [],
                     "policy": "map",
-                    "policyApplied": false
+                    "policyApplied": false,
+                    "kind": "first",
+                    "earlier": "example",
+                    "recognised": {
+                      "import": "example",
+                      "match": "hash",
+                      "fileName": "example",
+                      "importer": "example",
+                      "importerName": "example",
+                      "at": "example",
+                      "document": "example",
+                      "documentTitle": "example"
+                    },
+                    "earlierMade": [],
+                    "gone": [],
+                    "outcome": {
+                      "suggested": [],
+                      "made": [],
+                      "gone": [],
+                      "skipped": [],
+                      "unchanged": -9007199254740991
+                    }
                   },
                   "document": "example"
                 }
@@ -203271,7 +204227,7 @@
             }
           },
           "403": {
-            "description": "The caller may no longer create in the space",
+            "description": "The caller may no longer create in the space; `import_not_permitted`: imported again, the caller may suggest on none of the components it changes",
             "content": {
               "application/json": {
                 "schema": {
@@ -203353,7 +204309,7 @@
             }
           },
           "409": {
-            "description": "`import_not_proposed`: it is not proposed; `import_references_unresolved`: a cross-reference outside the file is neither retargeted nor made text",
+            "description": "`import_not_proposed`: it is not proposed; `import_changed`: it was changed since the revision given; `import_references_unresolved`: a cross-reference outside the file is neither retargeted nor made text; `import_earlier_missing`: imported again, the earlier import’s document is gone",
             "content": {
               "application/json": {
                 "schema": {
@@ -203441,7 +204397,7 @@
       "post": {
         "operationId": "editImport",
         "summary": "Edit a proposal: move a split, split, merge or rename a part, or change its kind",
-        "description": "Edits a proposal before it is accepted: moves blocks across the split between two components, splits a component at a block, merges a part with the one after it, renames a part, or makes a part a section or a component. It also points a cross-reference whose target is not in the file at a block of the import or of a component in the space, or makes it the text it showed, said in the report; and confirms the member a name in the file matches by name. Each edit is checked as it is made and refused, saying why, if what it makes could not be accepted. It is made against the revision last read, and refused if the proposal changed since. The proposal as the file was read is kept unchanged beside it. Only its importer may edit it.",
+        "description": "Edits a proposal before it is accepted: moves blocks across the split between two components, splits a component at a block, merges a part with the one after it, renames a part, or makes a part a section or a component. Imported again, it matches a part to another component the earlier import made, or marks it new. It also points a cross-reference whose target is not in the file at a block of the import or of a component in the space, or makes it the text it showed, said in the report; and confirms the member a name in the file matches by name. Each edit is checked as it is made and refused, saying why, if what it makes could not be accepted. It is made against the revision last read, and refused if the proposal changed since. The proposal as the file was read is kept unchanged beside it. Only its importer may edit it.",
         "tags": [
           "Imports"
         ],
@@ -203764,6 +204720,52 @@
                         "properties": {
                           "edit": {
                             "type": "string",
+                            "const": "match"
+                          },
+                          "part": {
+                            "type": "string",
+                            "allOf": [
+                              {
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                              }
+                            ],
+                            "description": "The part it is made to"
+                          },
+                          "component": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "allOf": [
+                                  {
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  {
+                                    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "A component the earlier import made that no other part is matched to; null marks the part new"
+                          }
+                        },
+                        "required": [
+                          "edit",
+                          "part",
+                          "component"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "edit": {
+                            "type": "string",
                             "const": "identity"
                           },
                           "identity": {
@@ -204002,6 +205004,65 @@
                           "source": {
                             "type": "string",
                             "description": "Its text as the file had it, its heading first"
+                          },
+                          "again": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "status": {
+                                    "type": "string",
+                                    "enum": [
+                                      "unchanged",
+                                      "changed",
+                                      "new"
+                                    ],
+                                    "description": "`unchanged`: its text is its component’s now; `changed`: it differs, suggested at acceptance; `new`: it matches no component, made and placed at acceptance"
+                                  },
+                                  "component": {
+                                    "description": "The component the earlier import made it is matched to",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "componentTitle": {
+                                    "description": "That component’s title now, where its importer may read it",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "by": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "provenance",
+                                          "heading",
+                                          "position",
+                                          "importer"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "How it was matched: by the heading the earlier import read it from, by the component’s title now, by its place between two parts matched so, or by its importer"
+                                  }
+                                },
+                                "required": [
+                                  "status",
+                                  "component",
+                                  "componentTitle",
+                                  "by"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "For an import again, what this part is to what the earlier import made; null otherwise"
                           }
                         },
                         "required": [
@@ -204012,7 +205073,8 @@
                           "reason",
                           "flags",
                           "blocks",
-                          "source"
+                          "source",
+                          "again"
                         ]
                       },
                       "description": "The proposed outline, in order"
@@ -204256,6 +205318,234 @@
                     "policyApplied": {
                       "type": "boolean",
                       "description": "Whether `policy` was applied, at acceptance (IMP-011)"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "first",
+                        "again"
+                      ],
+                      "description": "Imported as new, or again as an update of what `earlier` made"
+                    },
+                    "earlier": {
+                      "description": "The accepted import an import again updates",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "recognised": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "import": {
+                              "type": "string",
+                              "description": "The earlier import"
+                            },
+                            "match": {
+                              "type": "string",
+                              "enum": [
+                                "hash",
+                                "name"
+                              ],
+                              "description": "The same bytes, by their hash, or a file of the same name in this space"
+                            },
+                            "fileName": {
+                              "type": "string"
+                            },
+                            "importer": {
+                              "type": "string"
+                            },
+                            "importerName": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "at": {
+                              "type": "string",
+                              "description": "When it was accepted"
+                            },
+                            "document": {
+                              "type": "string",
+                              "description": "The document it made"
+                            },
+                            "documentTitle": {
+                              "description": "That document’s title now, where its importer may read it",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "import",
+                            "match",
+                            "fileName",
+                            "importer",
+                            "importerName",
+                            "at",
+                            "document",
+                            "documentTitle"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "An accepted import in this space that holds the same file (IMP-036), said once the name or the bytes are in, before it is read; null where none does"
+                    },
+                    "earlierMade": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "component": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "component",
+                          "title"
+                        ]
+                      },
+                      "description": "For an import again, what the earlier import made that a part may be matched to"
+                    },
+                    "gone": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "component": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "component",
+                          "title"
+                        ]
+                      },
+                      "description": "For an import again, what the earlier import made that no part matches"
+                    },
+                    "outcome": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "suggested": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "component": {
+                                    "type": "string"
+                                  },
+                                  "suggestion": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "component",
+                                  "suggestion"
+                                ]
+                              }
+                            },
+                            "made": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "component": {
+                                    "type": "string"
+                                  },
+                                  "placed": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "component",
+                                  "placed"
+                                ]
+                              },
+                              "description": "Each new component, and whether it was placed in the document"
+                            },
+                            "gone": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "component": {
+                                    "type": "string"
+                                  },
+                                  "flagged": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "component",
+                                  "flagged"
+                                ]
+                              },
+                              "description": "Each component no part matched: kept, and flagged on the document where it stands"
+                            },
+                            "skipped": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "component": {
+                                    "type": "string"
+                                  },
+                                  "reason": {
+                                    "type": "string",
+                                    "enum": [
+                                      "suggest",
+                                      "limit",
+                                      "empty",
+                                      "resolved",
+                                      "gone"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "component",
+                                  "reason"
+                                ]
+                              },
+                              "description": "Each matched component not suggested on: its importer may not suggest there, or has 20 suggestions pending on it; the suggestion would change nothing, or the same one was resolved before; or the component was deleted or archived since it was matched"
+                            },
+                            "unchanged": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "suggested",
+                            "made",
+                            "gone",
+                            "skipped",
+                            "unchanged"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Once an import again is accepted, what it did (IMP-037)"
                     }
                   },
                   "required": [
@@ -204279,7 +205569,13 @@
                     "references",
                     "identities",
                     "policy",
-                    "policyApplied"
+                    "policyApplied",
+                    "kind",
+                    "earlier",
+                    "recognised",
+                    "earlierMade",
+                    "gone",
+                    "outcome"
                   ]
                 },
                 "example": {
@@ -204312,7 +205608,28 @@
                   "references": [],
                   "identities": [],
                   "policy": "map",
-                  "policyApplied": false
+                  "policyApplied": false,
+                  "kind": "first",
+                  "earlier": "example",
+                  "recognised": {
+                    "import": "example",
+                    "match": "hash",
+                    "fileName": "example",
+                    "importer": "example",
+                    "importerName": "example",
+                    "at": "example",
+                    "document": "example",
+                    "documentTitle": "example"
+                  },
+                  "earlierMade": [],
+                  "gone": [],
+                  "outcome": {
+                    "suggested": [],
+                    "made": [],
+                    "gone": [],
+                    "skipped": [],
+                    "unchanged": -9007199254740991
+                  }
                 }
               }
             },
@@ -204772,6 +206089,65 @@
                           "source": {
                             "type": "string",
                             "description": "Its text as the file had it, its heading first"
+                          },
+                          "again": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "status": {
+                                    "type": "string",
+                                    "enum": [
+                                      "unchanged",
+                                      "changed",
+                                      "new"
+                                    ],
+                                    "description": "`unchanged`: its text is its component’s now; `changed`: it differs, suggested at acceptance; `new`: it matches no component, made and placed at acceptance"
+                                  },
+                                  "component": {
+                                    "description": "The component the earlier import made it is matched to",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "componentTitle": {
+                                    "description": "That component’s title now, where its importer may read it",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "by": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "provenance",
+                                          "heading",
+                                          "position",
+                                          "importer"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "How it was matched: by the heading the earlier import read it from, by the component’s title now, by its place between two parts matched so, or by its importer"
+                                  }
+                                },
+                                "required": [
+                                  "status",
+                                  "component",
+                                  "componentTitle",
+                                  "by"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "For an import again, what this part is to what the earlier import made; null otherwise"
                           }
                         },
                         "required": [
@@ -204782,7 +206158,8 @@
                           "reason",
                           "flags",
                           "blocks",
-                          "source"
+                          "source",
+                          "again"
                         ]
                       },
                       "description": "The proposed outline, in order"
@@ -205026,6 +206403,234 @@
                     "policyApplied": {
                       "type": "boolean",
                       "description": "Whether `policy` was applied, at acceptance (IMP-011)"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "first",
+                        "again"
+                      ],
+                      "description": "Imported as new, or again as an update of what `earlier` made"
+                    },
+                    "earlier": {
+                      "description": "The accepted import an import again updates",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "recognised": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "import": {
+                              "type": "string",
+                              "description": "The earlier import"
+                            },
+                            "match": {
+                              "type": "string",
+                              "enum": [
+                                "hash",
+                                "name"
+                              ],
+                              "description": "The same bytes, by their hash, or a file of the same name in this space"
+                            },
+                            "fileName": {
+                              "type": "string"
+                            },
+                            "importer": {
+                              "type": "string"
+                            },
+                            "importerName": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "at": {
+                              "type": "string",
+                              "description": "When it was accepted"
+                            },
+                            "document": {
+                              "type": "string",
+                              "description": "The document it made"
+                            },
+                            "documentTitle": {
+                              "description": "That document’s title now, where its importer may read it",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "import",
+                            "match",
+                            "fileName",
+                            "importer",
+                            "importerName",
+                            "at",
+                            "document",
+                            "documentTitle"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "An accepted import in this space that holds the same file (IMP-036), said once the name or the bytes are in, before it is read; null where none does"
+                    },
+                    "earlierMade": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "component": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "component",
+                          "title"
+                        ]
+                      },
+                      "description": "For an import again, what the earlier import made that a part may be matched to"
+                    },
+                    "gone": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "component": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "component",
+                          "title"
+                        ]
+                      },
+                      "description": "For an import again, what the earlier import made that no part matches"
+                    },
+                    "outcome": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "suggested": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "component": {
+                                    "type": "string"
+                                  },
+                                  "suggestion": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "component",
+                                  "suggestion"
+                                ]
+                              }
+                            },
+                            "made": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "component": {
+                                    "type": "string"
+                                  },
+                                  "placed": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "component",
+                                  "placed"
+                                ]
+                              },
+                              "description": "Each new component, and whether it was placed in the document"
+                            },
+                            "gone": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "component": {
+                                    "type": "string"
+                                  },
+                                  "flagged": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "component",
+                                  "flagged"
+                                ]
+                              },
+                              "description": "Each component no part matched: kept, and flagged on the document where it stands"
+                            },
+                            "skipped": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "component": {
+                                    "type": "string"
+                                  },
+                                  "reason": {
+                                    "type": "string",
+                                    "enum": [
+                                      "suggest",
+                                      "limit",
+                                      "empty",
+                                      "resolved",
+                                      "gone"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "component",
+                                  "reason"
+                                ]
+                              },
+                              "description": "Each matched component not suggested on: its importer may not suggest there, or has 20 suggestions pending on it; the suggestion would change nothing, or the same one was resolved before; or the component was deleted or archived since it was matched"
+                            },
+                            "unchanged": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "suggested",
+                            "made",
+                            "gone",
+                            "skipped",
+                            "unchanged"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Once an import again is accepted, what it did (IMP-037)"
                     }
                   },
                   "required": [
@@ -205049,7 +206654,13 @@
                     "references",
                     "identities",
                     "policy",
-                    "policyApplied"
+                    "policyApplied",
+                    "kind",
+                    "earlier",
+                    "recognised",
+                    "earlierMade",
+                    "gone",
+                    "outcome"
                   ]
                 },
                 "example": {
@@ -205082,7 +206693,28 @@
                   "references": [],
                   "identities": [],
                   "policy": "map",
-                  "policyApplied": false
+                  "policyApplied": false,
+                  "kind": "first",
+                  "earlier": "example",
+                  "recognised": {
+                    "import": "example",
+                    "match": "hash",
+                    "fileName": "example",
+                    "importer": "example",
+                    "importerName": "example",
+                    "at": "example",
+                    "document": "example",
+                    "documentTitle": "example"
+                  },
+                  "earlierMade": [],
+                  "gone": [],
+                  "outcome": {
+                    "suggested": [],
+                    "made": [],
+                    "gone": [],
+                    "skipped": [],
+                    "unchanged": -9007199254740991
+                  }
                 }
               }
             },
@@ -205385,11 +207017,11 @@
         }
       }
     },
-    "/v1/imports/{id}/levels": {
+    "/v1/imports/{id}/kind": {
       "put": {
-        "operationId": "setImportLevels",
-        "summary": "Change the heading levels a proposal breaks out at, reading it again",
-        "description": "Changes the heading levels a proposal breaks out at: which level starts a section and which a component. The file is read again. Only its importer may change them.",
+        "operationId": "setImportKind",
+        "summary": "Import as new, or as an update of what an earlier import of the same file made",
+        "description": "Chooses whether a file is imported as new or as an update of what an earlier accepted import of the same file made: the import names that earlier one once its name or its bytes are in, before they are read. Imported again, each component part is matched to a component that import made: by the heading it was read from, then by the component’s title now, then by its place between two parts matched so; each is then unchanged, changed against the component as it is now, or new, and what no part matches is gone. Its importer may change a match, or mark a part new, through the edits. Only its importer may choose, and they need read on the earlier document. It is made against the revision of the import its importer read, and refused as `import_changed` once the import is past it.",
         "tags": [
           "Imports"
         ],
@@ -205437,35 +207069,48 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "section": {
+                  "revision": {
                     "type": "integer",
-                    "minimum": 1,
-                    "maximum": 8,
-                    "description": "The heading level that starts a section"
+                    "minimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "The revision of the import read; `import_changed` where it is no longer its revision"
                   },
-                  "component": {
-                    "type": "integer",
-                    "minimum": 2,
-                    "maximum": 9,
-                    "description": "The heading level that starts a component, below the section’s"
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "first",
+                      "again"
+                    ]
+                  },
+                  "earlier": {
+                    "description": "For `again`, the accepted import in this space whose document it updates",
+                    "type": "string",
+                    "allOf": [
+                      {
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      {
+                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                      }
+                    ]
                   }
                 },
                 "required": [
-                  "section",
-                  "component"
+                  "revision",
+                  "kind"
                 ],
                 "additionalProperties": false
               },
               "example": {
-                "section": 1,
-                "component": 2
+                "revision": 0,
+                "kind": "first"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "The import, reading again",
+            "description": "The import, its parts matched where it is an update",
             "content": {
               "application/json": {
                 "schema": {
@@ -205645,6 +207290,65 @@
                           "source": {
                             "type": "string",
                             "description": "Its text as the file had it, its heading first"
+                          },
+                          "again": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "status": {
+                                    "type": "string",
+                                    "enum": [
+                                      "unchanged",
+                                      "changed",
+                                      "new"
+                                    ],
+                                    "description": "`unchanged`: its text is its component’s now; `changed`: it differs, suggested at acceptance; `new`: it matches no component, made and placed at acceptance"
+                                  },
+                                  "component": {
+                                    "description": "The component the earlier import made it is matched to",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "componentTitle": {
+                                    "description": "That component’s title now, where its importer may read it",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "by": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "provenance",
+                                          "heading",
+                                          "position",
+                                          "importer"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "How it was matched: by the heading the earlier import read it from, by the component’s title now, by its place between two parts matched so, or by its importer"
+                                  }
+                                },
+                                "required": [
+                                  "status",
+                                  "component",
+                                  "componentTitle",
+                                  "by"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "For an import again, what this part is to what the earlier import made; null otherwise"
                           }
                         },
                         "required": [
@@ -205655,7 +207359,8 @@
                           "reason",
                           "flags",
                           "blocks",
-                          "source"
+                          "source",
+                          "again"
                         ]
                       },
                       "description": "The proposed outline, in order"
@@ -205899,6 +207604,234 @@
                     "policyApplied": {
                       "type": "boolean",
                       "description": "Whether `policy` was applied, at acceptance (IMP-011)"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "first",
+                        "again"
+                      ],
+                      "description": "Imported as new, or again as an update of what `earlier` made"
+                    },
+                    "earlier": {
+                      "description": "The accepted import an import again updates",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "recognised": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "import": {
+                              "type": "string",
+                              "description": "The earlier import"
+                            },
+                            "match": {
+                              "type": "string",
+                              "enum": [
+                                "hash",
+                                "name"
+                              ],
+                              "description": "The same bytes, by their hash, or a file of the same name in this space"
+                            },
+                            "fileName": {
+                              "type": "string"
+                            },
+                            "importer": {
+                              "type": "string"
+                            },
+                            "importerName": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "at": {
+                              "type": "string",
+                              "description": "When it was accepted"
+                            },
+                            "document": {
+                              "type": "string",
+                              "description": "The document it made"
+                            },
+                            "documentTitle": {
+                              "description": "That document’s title now, where its importer may read it",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "import",
+                            "match",
+                            "fileName",
+                            "importer",
+                            "importerName",
+                            "at",
+                            "document",
+                            "documentTitle"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "An accepted import in this space that holds the same file (IMP-036), said once the name or the bytes are in, before it is read; null where none does"
+                    },
+                    "earlierMade": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "component": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "component",
+                          "title"
+                        ]
+                      },
+                      "description": "For an import again, what the earlier import made that a part may be matched to"
+                    },
+                    "gone": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "component": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "component",
+                          "title"
+                        ]
+                      },
+                      "description": "For an import again, what the earlier import made that no part matches"
+                    },
+                    "outcome": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "suggested": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "component": {
+                                    "type": "string"
+                                  },
+                                  "suggestion": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "component",
+                                  "suggestion"
+                                ]
+                              }
+                            },
+                            "made": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "component": {
+                                    "type": "string"
+                                  },
+                                  "placed": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "component",
+                                  "placed"
+                                ]
+                              },
+                              "description": "Each new component, and whether it was placed in the document"
+                            },
+                            "gone": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "component": {
+                                    "type": "string"
+                                  },
+                                  "flagged": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "component",
+                                  "flagged"
+                                ]
+                              },
+                              "description": "Each component no part matched: kept, and flagged on the document where it stands"
+                            },
+                            "skipped": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "component": {
+                                    "type": "string"
+                                  },
+                                  "reason": {
+                                    "type": "string",
+                                    "enum": [
+                                      "suggest",
+                                      "limit",
+                                      "empty",
+                                      "resolved",
+                                      "gone"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "component",
+                                  "reason"
+                                ]
+                              },
+                              "description": "Each matched component not suggested on: its importer may not suggest there, or has 20 suggestions pending on it; the suggestion would change nothing, or the same one was resolved before; or the component was deleted or archived since it was matched"
+                            },
+                            "unchanged": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "suggested",
+                            "made",
+                            "gone",
+                            "skipped",
+                            "unchanged"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Once an import again is accepted, what it did (IMP-037)"
                     }
                   },
                   "required": [
@@ -205922,7 +207855,13 @@
                     "references",
                     "identities",
                     "policy",
-                    "policyApplied"
+                    "policyApplied",
+                    "kind",
+                    "earlier",
+                    "recognised",
+                    "earlierMade",
+                    "gone",
+                    "outcome"
                   ]
                 },
                 "example": {
@@ -205955,7 +207894,1142 @@
                   "references": [],
                   "identities": [],
                   "policy": "map",
-                  "policyApplied": false
+                  "policyApplied": false,
+                  "kind": "first",
+                  "earlier": "example",
+                  "recognised": {
+                    "import": "example",
+                    "match": "hash",
+                    "fileName": "example",
+                    "importer": "example",
+                    "importerName": "example",
+                    "at": "example",
+                    "document": "example",
+                    "documentTitle": "example"
+                  },
+                  "earlierMade": [],
+                  "gone": [],
+                  "outcome": {
+                    "suggested": [],
+                    "made": [],
+                    "gone": [],
+                    "skipped": [],
+                    "unchanged": -9007199254740991
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`import_earlier_invalid`: the earlier import is not one accepted in this space with its document",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such import the caller made, or an earlier document the caller may not read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`import_not_open`: it is already accepted, abandoned or failed; `import_changed`: it was changed since the revision given",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/imports/{id}/levels": {
+      "put": {
+        "operationId": "setImportLevels",
+        "summary": "Change the heading levels a proposal breaks out at, reading it again",
+        "description": "Changes the heading levels a proposal breaks out at: which level starts a section and which a component. The file is read again. Only its importer may change them. It is made against the revision of the import its importer read, and refused as `import_changed` once the import is past it.",
+        "tags": [
+          "Imports"
+        ],
+        "x-alloy-token-enabled": true,
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "section": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 8,
+                    "description": "The heading level that starts a section"
+                  },
+                  "component": {
+                    "type": "integer",
+                    "minimum": 2,
+                    "maximum": 9,
+                    "description": "The heading level that starts a component, below the section’s"
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "The revision of the import read; `import_changed` where it is no longer its revision"
+                  }
+                },
+                "required": [
+                  "section",
+                  "component",
+                  "revision"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "section": 1,
+                "component": 2,
+                "revision": 0
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The import, reading again",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "space": {
+                      "type": "string"
+                    },
+                    "importer": {
+                      "type": "string"
+                    },
+                    "fileName": {
+                      "type": "string"
+                    },
+                    "fileType": {
+                      "type": "string",
+                      "enum": [
+                        "docx",
+                        "markdown",
+                        "html"
+                      ]
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "awaiting",
+                        "reading",
+                        "proposed",
+                        "accepted",
+                        "abandoned",
+                        "failed"
+                      ],
+                      "description": "`awaiting` its file; `reading` it; `proposed`, its outline to review; `accepted` into a document; `abandoned`, or `failed` with why, leaving nothing"
+                    },
+                    "failure": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "file_unreadable",
+                            "file_unsafe",
+                            "file_too_large",
+                            "file_missing",
+                            "reading_failed"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Why it failed, once failed"
+                    },
+                    "document": {
+                      "description": "The document it made, once accepted",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "sweepsAt": {
+                      "description": "When a proposal left alone is abandoned: 30 days after it last changed",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "levels": {
+                      "type": "object",
+                      "properties": {
+                        "section": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 8,
+                          "description": "The heading level that starts a section"
+                        },
+                        "component": {
+                          "type": "integer",
+                          "minimum": 2,
+                          "maximum": 9,
+                          "description": "The heading level that starts a component, below the section’s"
+                        }
+                      },
+                      "required": [
+                        "section",
+                        "component"
+                      ]
+                    },
+                    "title": {
+                      "description": "The title the file names, where it names one",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "parts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "section",
+                              "component"
+                            ]
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "parent": {
+                            "description": "The section it stands under; null at the top",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "reason": {
+                            "type": "object",
+                            "properties": {
+                              "rule": {
+                                "type": "string",
+                                "enum": [
+                                  "heading",
+                                  "beforeFirstComponent",
+                                  "beforeFirstHeading",
+                                  "split"
+                                ]
+                              },
+                              "style": {
+                                "type": "string"
+                              },
+                              "text": {
+                                "type": "string"
+                              },
+                              "level": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "rule"
+                            ],
+                            "description": "Why the part starts where it does: the heading, by its style and text; what came before the first heading under it; or that its importer split it there"
+                          },
+                          "flags": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "empty",
+                                "refused",
+                                "changeClamped",
+                                "commentClamped",
+                                "notYetRead",
+                                "leftOut",
+                                "keptDifferently"
+                              ]
+                            },
+                            "description": "`empty`: nothing under its heading; `refused`: what it held could not be admitted; `changeClamped`: a tracked change kept here ran on past it; `commentClamped`: a comment anchored here ran past where it starts; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from"
+                          },
+                          "blocks": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "How many blocks it holds"
+                          },
+                          "source": {
+                            "type": "string",
+                            "description": "Its text as the file had it, its heading first"
+                          },
+                          "again": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "status": {
+                                    "type": "string",
+                                    "enum": [
+                                      "unchanged",
+                                      "changed",
+                                      "new"
+                                    ],
+                                    "description": "`unchanged`: its text is its component’s now; `changed`: it differs, suggested at acceptance; `new`: it matches no component, made and placed at acceptance"
+                                  },
+                                  "component": {
+                                    "description": "The component the earlier import made it is matched to",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "componentTitle": {
+                                    "description": "That component’s title now, where its importer may read it",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "by": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "provenance",
+                                          "heading",
+                                          "position",
+                                          "importer"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "How it was matched: by the heading the earlier import read it from, by the component’s title now, by its place between two parts matched so, or by its importer"
+                                  }
+                                },
+                                "required": [
+                                  "status",
+                                  "component",
+                                  "componentTitle",
+                                  "by"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "For an import again, what this part is to what the earlier import made; null otherwise"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "kind",
+                          "title",
+                          "parent",
+                          "reason",
+                          "flags",
+                          "blocks",
+                          "source",
+                          "again"
+                        ]
+                      },
+                      "description": "The proposed outline, in order"
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "How many edits it has had: what the next edit is made against"
+                    },
+                    "place": {
+                      "description": "The part its importer was last at",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "accepted": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "unchanged": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "edited": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "merged": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "split": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "renamed": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "unchanged",
+                            "edited",
+                            "merged",
+                            "split",
+                            "renamed"
+                          ],
+                          "description": "How the parts accepted compare with the proposal as read, each counted once: merged, split, edited, renamed, or unchanged"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Once accepted, how much was accepted unchanged"
+                    },
+                    "report": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "stage": {
+                            "type": "string"
+                          },
+                          "action": {
+                            "type": "string",
+                            "enum": [
+                              "discarded",
+                              "rewritten",
+                              "kept",
+                              "refused"
+                            ]
+                          },
+                          "subject": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string",
+                            "description": "A fixed sentence saying what happened, never quoting the file"
+                          },
+                          "detail": {
+                            "description": "What it was about, as data: shown as text",
+                            "type": "string"
+                          },
+                          "count": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "part": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "The part it was about, by its place; null for the file"
+                          }
+                        },
+                        "required": [
+                          "stage",
+                          "action",
+                          "subject",
+                          "message",
+                          "part"
+                        ]
+                      },
+                      "description": "What was left out, kept differently, or not read yet (IMP-007)"
+                    },
+                    "references": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string",
+                            "enum": [
+                              "REF",
+                              "NOTEREF",
+                              "PAGEREF"
+                            ]
+                          },
+                          "text": {
+                            "type": "string",
+                            "description": "What it showed in the file: shown as text, never content"
+                          },
+                          "resolved": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "retargeted",
+                                  "text"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Pointed at a block, made the text it showed, or null: still outside the import"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "field",
+                          "text",
+                          "resolved"
+                        ]
+                      },
+                      "description": "Each cross-reference whose target is not in the file (IMP-033)"
+                    },
+                    "identities": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "description": "As the file carries it: shown as text"
+                          },
+                          "email": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "carries": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "changes",
+                                "comments",
+                                "creator",
+                                "lastModifiedBy"
+                              ]
+                            },
+                            "description": "What the file names it for"
+                          },
+                          "match": {
+                            "type": "string",
+                            "enum": [
+                              "email",
+                              "name",
+                              "none"
+                            ],
+                            "description": "The member it matches, for attribution only: by an exact email, by name for its importer to confirm, or none"
+                          },
+                          "member": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "memberName": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "confirmed": {
+                            "type": "boolean",
+                            "description": "Whether its importer confirmed a name match"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "email",
+                          "carries",
+                          "match",
+                          "member",
+                          "memberName",
+                          "confirmed"
+                        ]
+                      },
+                      "description": "Every name the file carries (IMP-009), as carried"
+                    },
+                    "policy": {
+                      "type": "string",
+                      "enum": [
+                        "map",
+                        "keep",
+                        "discard"
+                      ],
+                      "description": "The identity policy applied at acceptance, or, until then, the one that will be"
+                    },
+                    "policyApplied": {
+                      "type": "boolean",
+                      "description": "Whether `policy` was applied, at acceptance (IMP-011)"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "first",
+                        "again"
+                      ],
+                      "description": "Imported as new, or again as an update of what `earlier` made"
+                    },
+                    "earlier": {
+                      "description": "The accepted import an import again updates",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "recognised": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "import": {
+                              "type": "string",
+                              "description": "The earlier import"
+                            },
+                            "match": {
+                              "type": "string",
+                              "enum": [
+                                "hash",
+                                "name"
+                              ],
+                              "description": "The same bytes, by their hash, or a file of the same name in this space"
+                            },
+                            "fileName": {
+                              "type": "string"
+                            },
+                            "importer": {
+                              "type": "string"
+                            },
+                            "importerName": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "at": {
+                              "type": "string",
+                              "description": "When it was accepted"
+                            },
+                            "document": {
+                              "type": "string",
+                              "description": "The document it made"
+                            },
+                            "documentTitle": {
+                              "description": "That document’s title now, where its importer may read it",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "import",
+                            "match",
+                            "fileName",
+                            "importer",
+                            "importerName",
+                            "at",
+                            "document",
+                            "documentTitle"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "An accepted import in this space that holds the same file (IMP-036), said once the name or the bytes are in, before it is read; null where none does"
+                    },
+                    "earlierMade": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "component": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "component",
+                          "title"
+                        ]
+                      },
+                      "description": "For an import again, what the earlier import made that a part may be matched to"
+                    },
+                    "gone": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "component": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "component",
+                          "title"
+                        ]
+                      },
+                      "description": "For an import again, what the earlier import made that no part matches"
+                    },
+                    "outcome": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "suggested": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "component": {
+                                    "type": "string"
+                                  },
+                                  "suggestion": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "component",
+                                  "suggestion"
+                                ]
+                              }
+                            },
+                            "made": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "component": {
+                                    "type": "string"
+                                  },
+                                  "placed": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "component",
+                                  "placed"
+                                ]
+                              },
+                              "description": "Each new component, and whether it was placed in the document"
+                            },
+                            "gone": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "component": {
+                                    "type": "string"
+                                  },
+                                  "flagged": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "component",
+                                  "flagged"
+                                ]
+                              },
+                              "description": "Each component no part matched: kept, and flagged on the document where it stands"
+                            },
+                            "skipped": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "component": {
+                                    "type": "string"
+                                  },
+                                  "reason": {
+                                    "type": "string",
+                                    "enum": [
+                                      "suggest",
+                                      "limit",
+                                      "empty",
+                                      "resolved",
+                                      "gone"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "component",
+                                  "reason"
+                                ]
+                              },
+                              "description": "Each matched component not suggested on: its importer may not suggest there, or has 20 suggestions pending on it; the suggestion would change nothing, or the same one was resolved before; or the component was deleted or archived since it was matched"
+                            },
+                            "unchanged": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "suggested",
+                            "made",
+                            "gone",
+                            "skipped",
+                            "unchanged"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Once an import again is accepted, what it did (IMP-037)"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "space",
+                    "importer",
+                    "fileName",
+                    "fileType",
+                    "state",
+                    "failure",
+                    "document",
+                    "createdAt",
+                    "sweepsAt",
+                    "levels",
+                    "title",
+                    "parts",
+                    "revision",
+                    "place",
+                    "accepted",
+                    "report",
+                    "references",
+                    "identities",
+                    "policy",
+                    "policyApplied",
+                    "kind",
+                    "earlier",
+                    "recognised",
+                    "earlierMade",
+                    "gone",
+                    "outcome"
+                  ]
+                },
+                "example": {
+                  "id": "example",
+                  "space": "example",
+                  "importer": "example",
+                  "fileName": "example",
+                  "fileType": "docx",
+                  "state": "awaiting",
+                  "failure": "file_unreadable",
+                  "document": "example",
+                  "createdAt": "example",
+                  "sweepsAt": "example",
+                  "levels": {
+                    "section": 1,
+                    "component": 2
+                  },
+                  "title": "example",
+                  "parts": [],
+                  "revision": -9007199254740991,
+                  "place": "example",
+                  "accepted": {
+                    "unchanged": -9007199254740991,
+                    "edited": -9007199254740991,
+                    "merged": -9007199254740991,
+                    "split": -9007199254740991,
+                    "renamed": -9007199254740991
+                  },
+                  "report": [],
+                  "references": [],
+                  "identities": [],
+                  "policy": "map",
+                  "policyApplied": false,
+                  "kind": "first",
+                  "earlier": "example",
+                  "recognised": {
+                    "import": "example",
+                    "match": "hash",
+                    "fileName": "example",
+                    "importer": "example",
+                    "importerName": "example",
+                    "at": "example",
+                    "document": "example",
+                    "documentTitle": "example"
+                  },
+                  "earlierMade": [],
+                  "gone": [],
+                  "outcome": {
+                    "suggested": [],
+                    "made": [],
+                    "gone": [],
+                    "skipped": [],
+                    "unchanged": -9007199254740991
+                  }
                 }
               }
             },
@@ -206092,7 +209166,7 @@
             }
           },
           "409": {
-            "description": "`import_not_proposed`: it is not proposed",
+            "description": "`import_not_proposed`: it is not proposed; `import_changed`: it was changed since the revision given",
             "content": {
               "application/json": {
                 "schema": {
@@ -206547,6 +209621,65 @@
                       "type": "string",
                       "description": "Its text as the file had it, its heading first"
                     },
+                    "again": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "unchanged",
+                                "changed",
+                                "new"
+                              ],
+                              "description": "`unchanged`: its text is its component’s now; `changed`: it differs, suggested at acceptance; `new`: it matches no component, made and placed at acceptance"
+                            },
+                            "component": {
+                              "description": "The component the earlier import made it is matched to",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "componentTitle": {
+                              "description": "That component’s title now, where its importer may read it",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "by": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "provenance",
+                                    "heading",
+                                    "position",
+                                    "importer"
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "How it was matched: by the heading the earlier import read it from, by the component’s title now, by its place between two parts matched so, or by its importer"
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "component",
+                            "componentTitle",
+                            "by"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "For an import again, what this part is to what the earlier import made; null otherwise"
+                    },
                     "place": {
                       "type": "integer",
                       "minimum": -9007199254740991,
@@ -206686,6 +209819,38 @@
                         "type": "string"
                       },
                       "description": "The cross-references outside the import it holds, by their key"
+                    },
+                    "diff": {
+                      "anyOf": [
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "change": {
+                                "type": "string",
+                                "enum": [
+                                  "same",
+                                  "added",
+                                  "removed"
+                                ]
+                              },
+                              "text": {
+                                "type": "string",
+                                "description": "A block’s text, shown as text"
+                              }
+                            },
+                            "required": [
+                              "change",
+                              "text"
+                            ]
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "For a part matched in an import again, its blocks against its component as it is now, so edits made in the space show; null otherwise"
                     }
                   },
                   "required": [
@@ -206696,6 +209861,7 @@
                     "reason",
                     "flags",
                     "source",
+                    "again",
                     "place",
                     "of",
                     "previous",
@@ -206703,7 +209869,8 @@
                     "blocks",
                     "suggestions",
                     "threads",
-                    "references"
+                    "references",
+                    "diff"
                   ]
                 },
                 "example": {
@@ -206716,6 +209883,12 @@
                   },
                   "flags": [],
                   "source": "example",
+                  "again": {
+                    "status": "unchanged",
+                    "component": "example",
+                    "componentTitle": "example",
+                    "by": "provenance"
+                  },
                   "place": -9007199254740991,
                   "of": -9007199254740991,
                   "previous": "example",
@@ -206723,7 +209896,8 @@
                   "blocks": [],
                   "suggestions": [],
                   "threads": [],
-                  "references": []
+                  "references": [],
+                  "diff": []
                 }
               }
             },
@@ -207120,6 +210294,65 @@
                           "source": {
                             "type": "string",
                             "description": "Its text as the file had it, its heading first"
+                          },
+                          "again": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "status": {
+                                    "type": "string",
+                                    "enum": [
+                                      "unchanged",
+                                      "changed",
+                                      "new"
+                                    ],
+                                    "description": "`unchanged`: its text is its component’s now; `changed`: it differs, suggested at acceptance; `new`: it matches no component, made and placed at acceptance"
+                                  },
+                                  "component": {
+                                    "description": "The component the earlier import made it is matched to",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "componentTitle": {
+                                    "description": "That component’s title now, where its importer may read it",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "by": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "provenance",
+                                          "heading",
+                                          "position",
+                                          "importer"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "How it was matched: by the heading the earlier import read it from, by the component’s title now, by its place between two parts matched so, or by its importer"
+                                  }
+                                },
+                                "required": [
+                                  "status",
+                                  "component",
+                                  "componentTitle",
+                                  "by"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "For an import again, what this part is to what the earlier import made; null otherwise"
                           }
                         },
                         "required": [
@@ -207130,7 +210363,8 @@
                           "reason",
                           "flags",
                           "blocks",
-                          "source"
+                          "source",
+                          "again"
                         ]
                       },
                       "description": "The proposed outline, in order"
@@ -207374,6 +210608,234 @@
                     "policyApplied": {
                       "type": "boolean",
                       "description": "Whether `policy` was applied, at acceptance (IMP-011)"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "first",
+                        "again"
+                      ],
+                      "description": "Imported as new, or again as an update of what `earlier` made"
+                    },
+                    "earlier": {
+                      "description": "The accepted import an import again updates",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "recognised": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "import": {
+                              "type": "string",
+                              "description": "The earlier import"
+                            },
+                            "match": {
+                              "type": "string",
+                              "enum": [
+                                "hash",
+                                "name"
+                              ],
+                              "description": "The same bytes, by their hash, or a file of the same name in this space"
+                            },
+                            "fileName": {
+                              "type": "string"
+                            },
+                            "importer": {
+                              "type": "string"
+                            },
+                            "importerName": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "at": {
+                              "type": "string",
+                              "description": "When it was accepted"
+                            },
+                            "document": {
+                              "type": "string",
+                              "description": "The document it made"
+                            },
+                            "documentTitle": {
+                              "description": "That document’s title now, where its importer may read it",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "import",
+                            "match",
+                            "fileName",
+                            "importer",
+                            "importerName",
+                            "at",
+                            "document",
+                            "documentTitle"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "An accepted import in this space that holds the same file (IMP-036), said once the name or the bytes are in, before it is read; null where none does"
+                    },
+                    "earlierMade": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "component": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "component",
+                          "title"
+                        ]
+                      },
+                      "description": "For an import again, what the earlier import made that a part may be matched to"
+                    },
+                    "gone": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "component": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "component",
+                          "title"
+                        ]
+                      },
+                      "description": "For an import again, what the earlier import made that no part matches"
+                    },
+                    "outcome": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "suggested": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "component": {
+                                    "type": "string"
+                                  },
+                                  "suggestion": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "component",
+                                  "suggestion"
+                                ]
+                              }
+                            },
+                            "made": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "component": {
+                                    "type": "string"
+                                  },
+                                  "placed": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "component",
+                                  "placed"
+                                ]
+                              },
+                              "description": "Each new component, and whether it was placed in the document"
+                            },
+                            "gone": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "component": {
+                                    "type": "string"
+                                  },
+                                  "flagged": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "component",
+                                  "flagged"
+                                ]
+                              },
+                              "description": "Each component no part matched: kept, and flagged on the document where it stands"
+                            },
+                            "skipped": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "component": {
+                                    "type": "string"
+                                  },
+                                  "reason": {
+                                    "type": "string",
+                                    "enum": [
+                                      "suggest",
+                                      "limit",
+                                      "empty",
+                                      "resolved",
+                                      "gone"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "component",
+                                  "reason"
+                                ]
+                              },
+                              "description": "Each matched component not suggested on: its importer may not suggest there, or has 20 suggestions pending on it; the suggestion would change nothing, or the same one was resolved before; or the component was deleted or archived since it was matched"
+                            },
+                            "unchanged": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "suggested",
+                            "made",
+                            "gone",
+                            "skipped",
+                            "unchanged"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Once an import again is accepted, what it did (IMP-037)"
                     }
                   },
                   "required": [
@@ -207397,7 +210859,13 @@
                     "references",
                     "identities",
                     "policy",
-                    "policyApplied"
+                    "policyApplied",
+                    "kind",
+                    "earlier",
+                    "recognised",
+                    "earlierMade",
+                    "gone",
+                    "outcome"
                   ]
                 },
                 "example": {
@@ -207430,7 +210898,28 @@
                   "references": [],
                   "identities": [],
                   "policy": "map",
-                  "policyApplied": false
+                  "policyApplied": false,
+                  "kind": "first",
+                  "earlier": "example",
+                  "recognised": {
+                    "import": "example",
+                    "match": "hash",
+                    "fileName": "example",
+                    "importer": "example",
+                    "importerName": "example",
+                    "at": "example",
+                    "document": "example",
+                    "documentTitle": "example"
+                  },
+                  "earlierMade": [],
+                  "gone": [],
+                  "outcome": {
+                    "suggested": [],
+                    "made": [],
+                    "gone": [],
+                    "skipped": [],
+                    "unchanged": -9007199254740991
+                  }
                 }
               }
             },
@@ -292087,6 +295576,65 @@
                           "source": {
                             "type": "string",
                             "description": "Its text as the file had it, its heading first"
+                          },
+                          "again": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "status": {
+                                    "type": "string",
+                                    "enum": [
+                                      "unchanged",
+                                      "changed",
+                                      "new"
+                                    ],
+                                    "description": "`unchanged`: its text is its component’s now; `changed`: it differs, suggested at acceptance; `new`: it matches no component, made and placed at acceptance"
+                                  },
+                                  "component": {
+                                    "description": "The component the earlier import made it is matched to",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "componentTitle": {
+                                    "description": "That component’s title now, where its importer may read it",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "by": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "provenance",
+                                          "heading",
+                                          "position",
+                                          "importer"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "How it was matched: by the heading the earlier import read it from, by the component’s title now, by its place between two parts matched so, or by its importer"
+                                  }
+                                },
+                                "required": [
+                                  "status",
+                                  "component",
+                                  "componentTitle",
+                                  "by"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "For an import again, what this part is to what the earlier import made; null otherwise"
                           }
                         },
                         "required": [
@@ -292097,7 +295645,8 @@
                           "reason",
                           "flags",
                           "blocks",
-                          "source"
+                          "source",
+                          "again"
                         ]
                       },
                       "description": "The proposed outline, in order"
@@ -292341,6 +295890,234 @@
                     "policyApplied": {
                       "type": "boolean",
                       "description": "Whether `policy` was applied, at acceptance (IMP-011)"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "first",
+                        "again"
+                      ],
+                      "description": "Imported as new, or again as an update of what `earlier` made"
+                    },
+                    "earlier": {
+                      "description": "The accepted import an import again updates",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "recognised": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "import": {
+                              "type": "string",
+                              "description": "The earlier import"
+                            },
+                            "match": {
+                              "type": "string",
+                              "enum": [
+                                "hash",
+                                "name"
+                              ],
+                              "description": "The same bytes, by their hash, or a file of the same name in this space"
+                            },
+                            "fileName": {
+                              "type": "string"
+                            },
+                            "importer": {
+                              "type": "string"
+                            },
+                            "importerName": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "at": {
+                              "type": "string",
+                              "description": "When it was accepted"
+                            },
+                            "document": {
+                              "type": "string",
+                              "description": "The document it made"
+                            },
+                            "documentTitle": {
+                              "description": "That document’s title now, where its importer may read it",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "import",
+                            "match",
+                            "fileName",
+                            "importer",
+                            "importerName",
+                            "at",
+                            "document",
+                            "documentTitle"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "An accepted import in this space that holds the same file (IMP-036), said once the name or the bytes are in, before it is read; null where none does"
+                    },
+                    "earlierMade": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "component": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "component",
+                          "title"
+                        ]
+                      },
+                      "description": "For an import again, what the earlier import made that a part may be matched to"
+                    },
+                    "gone": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "component": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "component",
+                          "title"
+                        ]
+                      },
+                      "description": "For an import again, what the earlier import made that no part matches"
+                    },
+                    "outcome": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "suggested": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "component": {
+                                    "type": "string"
+                                  },
+                                  "suggestion": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "component",
+                                  "suggestion"
+                                ]
+                              }
+                            },
+                            "made": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "component": {
+                                    "type": "string"
+                                  },
+                                  "placed": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "component",
+                                  "placed"
+                                ]
+                              },
+                              "description": "Each new component, and whether it was placed in the document"
+                            },
+                            "gone": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "component": {
+                                    "type": "string"
+                                  },
+                                  "flagged": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "component",
+                                  "flagged"
+                                ]
+                              },
+                              "description": "Each component no part matched: kept, and flagged on the document where it stands"
+                            },
+                            "skipped": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "component": {
+                                    "type": "string"
+                                  },
+                                  "reason": {
+                                    "type": "string",
+                                    "enum": [
+                                      "suggest",
+                                      "limit",
+                                      "empty",
+                                      "resolved",
+                                      "gone"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "component",
+                                  "reason"
+                                ]
+                              },
+                              "description": "Each matched component not suggested on: its importer may not suggest there, or has 20 suggestions pending on it; the suggestion would change nothing, or the same one was resolved before; or the component was deleted or archived since it was matched"
+                            },
+                            "unchanged": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "suggested",
+                            "made",
+                            "gone",
+                            "skipped",
+                            "unchanged"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Once an import again is accepted, what it did (IMP-037)"
                     }
                   },
                   "required": [
@@ -292364,7 +296141,13 @@
                     "references",
                     "identities",
                     "policy",
-                    "policyApplied"
+                    "policyApplied",
+                    "kind",
+                    "earlier",
+                    "recognised",
+                    "earlierMade",
+                    "gone",
+                    "outcome"
                   ]
                 },
                 "example": {
@@ -292397,7 +296180,28 @@
                   "references": [],
                   "identities": [],
                   "policy": "map",
-                  "policyApplied": false
+                  "policyApplied": false,
+                  "kind": "first",
+                  "earlier": "example",
+                  "recognised": {
+                    "import": "example",
+                    "match": "hash",
+                    "fileName": "example",
+                    "importer": "example",
+                    "importerName": "example",
+                    "at": "example",
+                    "document": "example",
+                    "documentTitle": "example"
+                  },
+                  "earlierMade": [],
+                  "gone": [],
+                  "outcome": {
+                    "suggested": [],
+                    "made": [],
+                    "gone": [],
+                    "skipped": [],
+                    "unchanged": -9007199254740991
+                  }
                 }
               }
             },

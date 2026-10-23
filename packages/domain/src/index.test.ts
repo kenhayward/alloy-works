@@ -48,6 +48,7 @@ describe('the domain package', () => {
         // Assets, promoted by figures 1: the formats and limits the service refuses at the door, the
         // header walk the service and the worker both run, and an asset version's stored shape.
         'ADMITTED_FORMATS',
+        'AGAIN_DIFF_MOST',
         'ALTERNATIVE_MAX_LENGTH',
         'ASSET_MAX_BYTES',
         'ASSET_MAX_PIXELS',
@@ -999,6 +1000,11 @@ describe('the domain package', () => {
         'matchIdentity',
         'resolveReferences',
         'suggestedBlocks',
+        // IMd: a re-import's parts matched to what the earlier import made, and what changed.
+        'againDiff',
+        'againIdentifiers',
+        'againStatus',
+        'matchAgain',
       ].sort(),
     );
   });

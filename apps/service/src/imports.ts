@@ -3,6 +3,7 @@ import type {
   CreateImportBody,
   EditImportBody,
   ImportAccepted,
+  ImportKindBody,
   ImportLevelsBody,
   ImportList,
   ImportListQuery,
@@ -22,17 +23,23 @@ import {
   IMPORT_KEPT_DAYS,
   abandonImport,
   acceptImport,
+  againCandidates,
   changeImportLevels,
+  chooseImportKind,
   createImport,
+  earlierImport,
   editImport,
   holdObject,
   importMembers,
   importParts,
   importPolicy,
+  latestVersion,
   listImports,
   loadFacts,
+  readableComponents,
   readImport,
   receiveImportFile,
+  releaseObject,
   setImportPlace,
   type ImportEditInput,
   type StoredImport,
@@ -42,11 +49,15 @@ import {
   type TenantTransaction,
 } from '@alloy-works/db';
 import {
+  againDiff,
+  againStatus,
   blockText,
+  decide,
   importLevelsSchema,
   matchIdentity,
   partMatches,
   reviewFlags,
+  type ContentDocument,
   type ImportEditRefusal,
 } from '@alloy-works/domain';
 import { checkImportFile } from '@alloy-works/readers/import';
@@ -72,6 +83,12 @@ const notPermitted = () =>
   );
 const notProposed = () =>
   new AppError(409, 'import_not_proposed', 'This import has no proposal to act on now.');
+const changedSince = () =>
+  new AppError(
+    409,
+    'import_changed',
+    'This proposal was changed since you opened it. Open it again to see it as it is.',
+  );
 
 const summaryOf = (found: StoredImport): ImportSummary => ({
   id: found.id,
@@ -104,9 +121,13 @@ const REFUSALS: Readonly<Record<ImportEditRefusal, string>> = {
   target_missing: 'There is no such block in this import, or in a component of this space.',
   identity_invalid:
     'That member is not who this name matches, or the file does not carry this name.',
+  match_invalid:
+    'That is not a component the earlier import made, or another part is already matched to it. Mark that part new first.',
 };
 
-const partOf = (found: StoredImport, part: StoredImportPart) => ({
+type AgainView = ImportView['parts'][number]['again'];
+
+const partOf = (found: StoredImport, part: StoredImportPart, again: AgainView = null) => ({
   id: part.id,
   kind: part.kind,
   title: part.title,
@@ -114,22 +135,123 @@ const partOf = (found: StoredImport, part: StoredImportPart) => ({
   reason: part.reason,
   flags: reviewFlags(part, found.report),
   source: part.source,
+  again,
 });
+
+/**
+ * What an import again's parts are to what the earlier import made (IM-K): each component part
+ * unchanged, changed or new against its component as it is now, and what no part matches. A title
+ * and a text are shown only where its importer may read the component.
+ */
+async function againOf(
+  trx: TenantTransaction,
+  found: StoredImport,
+  parts: readonly StoredImportPart[],
+) {
+  const views = new Map<string, AgainView>();
+  const current = new Map<string, ContentDocument>();
+  if (found.kind !== 'again' || found.earlier === null) {
+    return { views, current, made: [], gone: [] };
+  }
+  const candidates = await againCandidates(trx, found.earlier);
+  const ids = [
+    ...new Set([
+      ...candidates.map((each) => each.component),
+      ...parts.flatMap((part) => part.matched ?? []),
+    ]),
+  ];
+  const readable = await readableComponents(trx, found.importer, ids);
+  const latest = new Map<string, ContentDocument>();
+  for (const id of ids) {
+    const version = await latestVersion(trx, id);
+    if (!version) continue;
+    latest.set(id, version.content as ContentDocument);
+    if (readable.has(id)) current.set(id, version.content as ContentDocument);
+  }
+  for (const part of parts) {
+    if (part.kind !== 'component') continue;
+    const matched = part.matched === null ? undefined : latest.get(part.matched);
+    views.set(part.id, {
+      status: againStatus(part.blocks, matched?.content ?? null),
+      component: part.matched,
+      componentTitle: part.matched === null ? null : (current.get(part.matched)?.title ?? null),
+      by: part.matchedBy,
+    });
+  }
+  const made = candidates.map((each) => ({
+    component: each.component,
+    title: readable.has(each.component) ? each.title : null,
+  }));
+  const held = new Set(parts.map((part) => part.matched));
+  return { views, current, made, gone: made.filter((each) => !held.has(each.component)) };
+}
+
+/** An accepted import in the space holding the same file (IMP-036), while this one is open. */
+async function recognisedOf(
+  trx: TenantTransaction,
+  found: StoredImport,
+): Promise<ImportView['recognised']> {
+  if (!['awaiting', 'reading', 'proposed'].includes(found.state)) return null;
+  // Only one whose document its importer may read, or their own: nothing else is said of another's.
+  const readable = async (document: string) => {
+    const facts = await loadFacts(trx, found.importer, { kind: 'artifact', id: document });
+    return facts !== undefined && decide('read', facts).allowed;
+  };
+  const earlier = await earlierImport(
+    trx,
+    found.id,
+    async (each) => each.importer === found.importer || (await readable(each.documentId)),
+  );
+  if (!earlier) return null;
+  const document = (await readable(earlier.documentId))
+    ? await latestVersion(trx, earlier.documentId)
+    : undefined;
+  const title = (document?.content as { readonly title?: unknown } | undefined)?.title;
+  const person = await trx
+    .selectFrom('principal')
+    .select('display_name')
+    .where('id', '=', earlier.importer)
+    .executeTakeFirst();
+  return {
+    import: earlier.id,
+    match: earlier.match,
+    fileName: earlier.fileName,
+    importer: earlier.importer,
+    importerName: person?.display_name ?? null,
+    at: earlier.finishedAt.toISOString(),
+    document: earlier.documentId,
+    documentTitle: typeof title === 'string' ? title : null,
+  };
+}
 
 async function viewOf(trx: TenantTransaction, found: StoredImport): Promise<ImportView> {
   const parts = await importParts(trx, found.id);
+  const again = await againOf(trx, found, parts);
   // A report entry names a part as read: shown against the part now holding what it came from.
   const holding = (read: number | null) => {
     const at = read === null ? -1 : parts.findIndex((part) => part.origins.includes(read));
     return at === -1 ? null : at;
   };
   // Each name the file carries, with the member it matches: attribution alone, never authorship.
-  const members = found.identities.length === 0 ? [] : await importMembers(trx);
+  // By email only for an importer who may list the space's members with their emails; anybody else
+  // sees the directory, names alone, so a file's addresses learn them nothing more (IM-I).
+  const everyone = found.identities.length === 0 ? [] : await importMembers(trx);
+  const facts =
+    everyone.length === 0
+      ? undefined
+      : await loadFacts(trx, found.importer, { kind: 'space', id: found.spaceId });
+  const members =
+    facts && administerOrAbove(facts).allowed
+      ? everyone
+      : everyone.map((member) => ({ ...member, email: null }));
   return {
     ...summaryOf(found),
     levels: found.levels,
     title: found.title,
-    parts: parts.map((part) => ({ ...partOf(found, part), blocks: part.blocks.length })),
+    parts: parts.map((part) => ({
+      ...partOf(found, part, again.views.get(part.id) ?? null),
+      blocks: part.blocks.length,
+    })),
     revision: found.revision,
     place: found.place,
     accepted: found.acceptedCounts,
@@ -153,6 +275,20 @@ async function viewOf(trx: TenantTransaction, found: StoredImport): Promise<Impo
     }),
     policy: found.policy ?? (await importPolicy(trx)),
     policyApplied: found.policy !== null,
+    kind: found.kind,
+    earlier: found.earlier,
+    recognised: await recognisedOf(trx, found),
+    earlierMade: again.made,
+    gone: again.gone,
+    outcome: found.outcome
+      ? {
+          ...found.outcome,
+          suggested: [...found.outcome.suggested],
+          made: [...found.outcome.made],
+          gone: [...found.outcome.gone],
+          skipped: [...found.outcome.skipped],
+        }
+      : null,
   };
 }
 
@@ -264,8 +400,11 @@ export function importHandlers(
             sha256,
             bytes: stored.size,
           });
-          if (!received)
+          if (!received) {
+            // Filled by another request meanwhile: these bytes let go, unless something holds them.
+            await releaseObject(trx, { key: stored.key, sha256 }, (key) => store.remove(key));
             throw new AppError(409, 'import_filled', 'This import already has its file.');
+          }
           return viewOf(trx, received);
         },
         contextOf(request),
@@ -297,7 +436,8 @@ export function importHandlers(
         tenantOf(request),
         async (trx) => {
           const found = await visible(request, trx, 'importer');
-          const levels = importLevelsSchema.safeParse(request.body as ImportLevelsBody);
+          const { revision, ...asked } = request.body as ImportLevelsBody;
+          const levels = importLevelsSchema.safeParse(asked);
           if (!levels.success) {
             throw new AppError(
               400,
@@ -305,9 +445,62 @@ export function importHandlers(
               "A component's heading level must be below a section's.",
             );
           }
-          const changed = await changeImportLevels(trx, found.id, levels.data);
+          const changed = await changeImportLevels(
+            trx,
+            found.id,
+            levels.data,
+            await remover(trx, tenantOf(request)),
+            revision,
+          );
+          if (changed === 'import.changed') throw changedSince();
           if (!changed) throw notProposed();
           return viewOf(trx, changed);
+        },
+        contextOf(request),
+      ),
+
+    /**
+     * Imported as new, or again as an update of what an earlier import of the same file made (IM-K):
+     * its importer needs read on that import's document.
+     */
+    setImportKind: async (request: FastifyRequest): Promise<ImportView> =>
+      db.withTenant(
+        tenantOf(request),
+        async (trx) => {
+          const found = await visible(request, trx, 'importer');
+          const body = request.body as ImportKindBody;
+          const invalid = () =>
+            new AppError(
+              400,
+              'import_earlier_invalid',
+              'That is not an import accepted in this space whose document is still there.',
+            );
+          if (body.kind === 'again') {
+            if (body.earlier === undefined) throw invalid();
+            const earlier = await readImport(trx, body.earlier);
+            if (earlier?.documentId) {
+              await authoriseAt(trx, callerOf(request), 'read', {
+                kind: 'artifact',
+                id: earlier.documentId,
+              });
+            }
+          }
+          const chosen = await chooseImportKind(
+            trx,
+            found.id,
+            body.kind === 'again' ? { kind: 'again', earlier: body.earlier! } : { kind: 'first' },
+            body.revision,
+          );
+          if (chosen === 'import.earlier_invalid') throw invalid();
+          if (chosen === 'import.changed') throw changedSince();
+          if (!chosen) {
+            throw new AppError(
+              409,
+              'import_not_open',
+              'This import is already accepted, abandoned or failed.',
+            );
+          }
+          return viewOf(trx, chosen);
         },
         contextOf(request),
       ),
@@ -323,10 +516,22 @@ export function importHandlers(
           const body = request.body as AcceptImportBody;
           const answer = await acceptImport(trx, found.id, {
             by: caller.principalId,
+            revision: body.revision,
             title: body.title ?? found.title ?? stem(found.fileName),
             language: body.language ?? found.language ?? 'en',
             direction: 'ltr',
             ...(body.template === undefined ? {} : { template: body.template }),
+            // Imported again, what the caller may do on each component and on the document.
+            may: async (artifact, permission) => {
+              const facts = await loadFacts(trx, caller.principalId, {
+                kind: 'artifact',
+                id: artifact,
+              });
+              return (
+                facts !== undefined &&
+                decide(permission, { ...facts, scopes: caller.scopes }).allowed
+              );
+            },
           });
           switch (answer.answer) {
             case 'accepted':
@@ -336,6 +541,20 @@ export function importHandlers(
               };
             case 'import.not_proposed':
               throw notProposed();
+            case 'import.changed':
+              throw changedSince();
+            case 'import.not_permitted':
+              throw new AppError(
+                403,
+                'import_not_permitted',
+                'You may not suggest on any of the components this file changes, so nothing was updated.',
+              );
+            case 'import.earlier_missing':
+              throw new AppError(
+                409,
+                'import_earlier_missing',
+                'The document the earlier import made is gone. Import this file as new instead.',
+              );
             case 'import.references_unresolved':
               throw new AppError(
                 409,
@@ -369,8 +588,12 @@ export function importHandlers(
         if (!part) throw notFound();
         const authors = [...new Set(part.changes.map((change) => change.author))];
         const held = JSON.stringify(part.blocks);
+        // Against its component as it is now, so edits made in the space show (IMP-036).
+        const again = await againOf(trx, found, [part]);
+        const current = part.matched === null ? undefined : again.current.get(part.matched);
         return {
-          ...partOf(found, part),
+          ...partOf(found, part, again.views.get(part.id) ?? null),
+          diff: current ? againDiff(current.content, part.blocks) : null,
           blocks: part.blocks.map((block) => ({
             id: block.id,
             type: block.type,
@@ -433,11 +656,7 @@ export function importHandlers(
             case 'import.not_proposed':
               throw notProposed();
             case 'import.changed':
-              throw new AppError(
-                409,
-                'import_changed',
-                'This proposal was changed since you opened it. Open it again to see it as it is.',
-              );
+              throw changedSince();
             default:
               throw new AppError(400, 'import_edit_refused', REFUSALS[answer.refusal]);
           }

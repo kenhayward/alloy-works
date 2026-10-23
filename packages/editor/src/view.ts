@@ -1,9 +1,10 @@
 import { tableView } from './tableWidths.js';
-import type { ReportEntry } from '@alloy-works/domain';
+import type { ReaderResult, ReportEntry } from '@alloy-works/domain';
 import { TextSelection, type EditorState, type Transaction } from 'prosemirror-state';
 import { EditorView } from 'prosemirror-view';
 
 import {
+  breakoutOf,
   pasteInto,
   PRODUCT_CLIPBOARD_TYPE,
   productClipboard,
@@ -39,6 +40,14 @@ export interface MountOptions {
   readonly pasted: (outcome: {
     readonly ok: boolean;
     readonly report: readonly ReportEntry[];
+  }) => void;
+  /**
+   * Given, a paste holding headings is handed here instead of being placed (CNT-168), its HTML and its
+   * reading, for the author to keep as one component (`pasteInto` the reading) or break out.
+   */
+  readonly heldForBreakout?: (held: {
+    readonly html: string;
+    readonly reading: ReaderResult;
   }) => void;
   /** Called instead of inserting anything dropped, which the view still refuses. */
   readonly refused: (what: 'drop') => void;
@@ -150,9 +159,15 @@ export function mountEditor(place: HTMLElement, options: MountOptions): EditorVi
           ? { types: [...data.types], getData: (type) => data.getData(type) }
           : { types: [], getData: () => '' };
         const into = target.state.selection.$from.parent.type.spec.code ? 'preformatted' : 'blocks';
+        const reading = readClipboard(source, into);
+        const html = options.heldForBreakout ? breakoutOf(source, reading) : null;
+        if (html !== null) {
+          options.heldForBreakout!({ html, reading });
+          return true;
+        }
         const outcome = pasteInto(
           target.state,
-          readClipboard(source, into),
+          reading,
           options.newIdentifier ?? newBlockIdentifier,
         );
         if (outcome.ok) target.dispatch(outcome.transaction);

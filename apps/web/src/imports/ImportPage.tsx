@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
 import styles from './Import.module.css';
+import { fileTypeOf } from './ImportFile.js';
+import { IMPORT_HELP, keptBy } from './ImportHelp.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -34,6 +36,15 @@ interface Part {
   readonly flags: readonly Flag[];
   readonly blocks: number;
   readonly source: string;
+  /** In an import again, what it is to what the earlier import made (IMP-036). */
+  readonly again?: Again | null;
+}
+
+interface Again {
+  readonly status: 'unchanged' | 'changed' | 'new';
+  readonly component: string | null;
+  readonly componentTitle: string | null;
+  readonly by: 'provenance' | 'heading' | 'position' | 'importer' | null;
 }
 
 /** One part as its own route answers it (IMP-028), with what its Word authors made (IMc). */
@@ -56,6 +67,9 @@ interface Detail extends Omit<Part, 'blocks'> {
     readonly replies: readonly { readonly author: string; readonly text: string }[];
   }[];
   readonly references?: readonly string[];
+  /** Against its component as it is now, in an import again. */
+  readonly diff?:
+    readonly { readonly change: 'same' | 'added' | 'removed'; readonly text: string }[] | null;
   readonly place: number;
   readonly of: number;
   readonly previous: string | null;
@@ -95,6 +109,7 @@ interface Outside {
 interface View {
   readonly id: string;
   readonly fileName: string;
+  readonly fileType?: 'docx' | 'markdown' | 'html';
   readonly state: 'awaiting' | 'reading' | 'proposed' | 'accepted' | 'abandoned' | 'failed';
   readonly failure: string | null;
   readonly document: string | null;
@@ -110,6 +125,39 @@ interface View {
   readonly identities: readonly Identity[];
   readonly policy: Policy;
   readonly policyApplied: boolean;
+  readonly kind?: 'first' | 'again';
+  readonly earlier?: string | null;
+  readonly recognised?: Recognised | null;
+  readonly earlierMade?: readonly Made[];
+  readonly gone?: readonly Made[];
+  readonly outcome?: Outcome | null;
+}
+
+/** An accepted import in the space holding the same file (IMP-036). */
+interface Recognised {
+  readonly import: string;
+  readonly match: 'hash' | 'name';
+  readonly fileName: string;
+  readonly importerName: string | null;
+  readonly at: string;
+  readonly document: string;
+  readonly documentTitle: string | null;
+}
+
+interface Made {
+  readonly component: string;
+  readonly title: string | null;
+}
+
+interface Outcome {
+  readonly suggested: readonly { readonly component: string }[];
+  readonly made: readonly { readonly component: string; readonly placed: boolean }[];
+  readonly gone: readonly { readonly component: string; readonly flagged: boolean }[];
+  readonly skipped: readonly {
+    readonly component: string;
+    readonly reason: 'suggest' | 'limit' | 'empty' | 'resolved' | 'gone';
+  }[];
+  readonly unchanged: number;
 }
 
 type Edit =
@@ -123,7 +171,8 @@ type Edit =
       reference: string;
       to: { kind: 'block'; block: string } | { kind: 'text' };
     }
-  | { edit: 'identity'; identity: string; member: string | null };
+  | { edit: 'identity'; identity: string; member: string | null }
+  | { edit: 'match'; part: string; component: string | null };
 
 /** What a name in the file is the name of, in words. */
 const CARRIES: Readonly<Record<Identity['carries'][number], string>> = {
@@ -238,6 +287,23 @@ const stem = (name: string) => name.replace(/\.[^.]*$/, '').trim() || name;
 const splitTitle = (text: string, fallback: string) =>
   text.split('\n')[0]!.trim().slice(0, 80) || fallback;
 
+/** A part of an import again, said in the outline and its panel (IMP-036). */
+const againWords = (again: Again, document: string) =>
+  again.status === 'new'
+    ? `New: made and placed in ${document} when accepted.`
+    : again.status === 'changed'
+      ? `Changed: suggested on ${again.componentTitle ?? 'its component'} when accepted.`
+      : `Unchanged from ${again.componentTitle ?? 'its component'}.`;
+
+/** Why a changed component was not suggested on. */
+const SKIPPED: Readonly<Record<Outcome['skipped'][number]['reason'], string>> = {
+  suggest: 'you may not suggest on it',
+  limit: 'you have 20 suggestions pending on it already',
+  empty: 'the suggestion would change nothing',
+  resolved: 'the same suggestion was made and resolved before',
+  gone: 'it was deleted or archived since it was matched',
+};
+
 const WAIT_MS = 1000;
 
 /**
@@ -267,6 +333,7 @@ export function ImportPage({
   const [flag, setFlag] = useState<Flag | ''>('');
   const [matches, setMatches] = useState<ReadonlySet<string> | null>(null);
   const [pointing, setPointing] = useState<Readonly<Record<string, string>>>({});
+  const [matching, setMatching] = useState<string>('');
 
   const load = useCallback(async () => {
     try {
@@ -314,6 +381,7 @@ export function ImportPage({
         const found = read.data as Detail;
         setDetail(found);
         setRename(found.title);
+        setMatching(found.again?.component ?? '');
       })
       .catch(() => undefined);
     return () => {
@@ -350,7 +418,10 @@ export function ImportPage({
               ? 'A component’s heading level must be below a section’s.'
               : (error?.code === 'import_edit_refused' ||
                     error?.code === 'import_changed' ||
-                    error?.code === 'import_references_unresolved') &&
+                    error?.code === 'import_references_unresolved' ||
+                    error?.code === 'import_not_permitted' ||
+                    error?.code === 'import_earlier_missing' ||
+                    error?.code === 'import_earlier_invalid') &&
                   error.message
                 ? error.message
                 : 'That could not be done. Try again.',
@@ -409,6 +480,8 @@ export function ImportPage({
     );
   }
 
+  const updating = view.kind === 'again';
+  const documentName = view.recognised?.documentTitle ?? 'the document the earlier import made';
   const listed = (part: Part) => matches === null || matches.has(part.id);
   const top = view.parts.filter((part) => part.parent === null);
   const under = (section: string) => view.parts.filter((part) => part.parent === section);
@@ -432,6 +505,9 @@ export function ImportPage({
                 {FLAGS[each].said}
               </span>
             ))}
+            {part.again && (
+              <span className={styles['muted']}>{againWords(part.again, documentName)}</span>
+            )}
           </>
         )}
         {children.length > 0 && <ol>{children.map(partItem)}</ol>}
@@ -537,6 +613,66 @@ export function ImportPage({
       )}
     </>
   );
+  const againTitle = shown?.again?.componentTitle ?? 'its component';
+  const againPanel = shown?.again && (
+    <>
+      <p>{againWords(shown.again, documentName)}</p>
+      {shown.diff && (
+        <>
+          <h3>{`What changed against ${againTitle} as it is now`}</h3>
+          <ol
+            aria-label={`What changed against ${againTitle} as it is now`}
+            className={styles['blocks']}
+          >
+            {shown.diff.map((line, index) => (
+              <li key={index} className={styles['source']}>
+                {line.change === 'removed' ? (
+                  <del>{line.text}</del>
+                ) : line.change === 'added' ? (
+                  <ins>{line.text}</ins>
+                ) : (
+                  <span>{line.text}</span>
+                )}
+              </li>
+            ))}
+          </ol>
+          <p className={styles['muted']}>
+            Struck through is in the space and not in the file; underlined is in the file and not in
+            the space. Accepting suggests the file’s text, so nothing in the space is overwritten.
+          </p>
+        </>
+      )}
+      <form
+        className={styles['actions']}
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (matching !== '') edit({ edit: 'match', part: shown.id, component: matching });
+        }}
+      >
+        <label>
+          Matched to
+          <select value={matching} onChange={(event) => setMatching(event.target.value)}>
+            <option value="">Nothing: a new component</option>
+            {(view.earlierMade ?? []).map((each) => (
+              <option key={each.component} value={each.component}>
+                {each.title ?? 'A component you may not read'}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button type="submit" disabled={busy || matching === ''}>
+          Match it
+        </button>
+        <button
+          type="button"
+          disabled={busy || shown.again.component === null}
+          onClick={() => edit({ edit: 'match', part: shown.id, component: null })}
+        >
+          Mark it new
+        </button>
+      </form>
+    </>
+  );
   const partPanel = shown && (
     <section
       aria-label={`Part ${shown.place + 1} of ${shown.of}: ${shown.title}`}
@@ -588,6 +724,7 @@ export function ImportPage({
         </div>
       </div>
       {structure}
+      {againPanel}
       <form
         className={styles['actions']}
         onSubmit={(event) => {
@@ -665,7 +802,11 @@ export function ImportPage({
   const accept = (event: FormEvent) => {
     event.preventDefault();
     void act(
-      () => client.POST('/v1/imports/{id}/accept', { params: { path: { id } }, body: { title } }),
+      () =>
+        client.POST('/v1/imports/{id}/accept', {
+          params: { path: { id } },
+          body: { revision: view.revision, title },
+        }),
       (data) => {
         window.location.hash = `#/documents/${(data as { document: string }).document}`;
       },
@@ -676,6 +817,69 @@ export function ImportPage({
     <section aria-labelledby="import-page-heading" className={styles['page']}>
       <h1 id="import-page-heading">{`Import of ${view.fileName}`}</h1>
       <p role="status">{STATES[view.state]}</p>
+      <section aria-label="What an import keeps">
+        <p className={styles['muted']}>
+          {keptBy(view.fileType ?? fileTypeOf(view.fileName))}{' '}
+          <a href={IMPORT_HELP}>What arrives and what does not</a>
+        </p>
+      </section>
+      {view.recognised && (
+        <section aria-label="Imported before" className={styles['review']}>
+          <h2>Imported before</h2>
+          <p>
+            {`${
+              view.recognised.match === 'hash'
+                ? `This same file, as ${view.recognised.fileName},`
+                : `A file named ${view.recognised.fileName}`
+            } was imported into this space before, by ${view.recognised.importerName ?? 'someone'} on ${new Date(view.recognised.at).toLocaleDateString()}, making `}
+            <a href={`#/documents/${view.recognised.document}`}>
+              {view.recognised.documentTitle ?? 'a document'}
+            </a>
+            .
+          </p>
+          <p className={styles['muted']}>
+            {updating
+              ? 'Updating what it made: each changed part becomes a suggestion on its component as it is now, each new part a new component in its document, and nothing is deleted.'
+              : 'Importing as new makes a document of its own. Updating what it made suggests the changes on its components instead.'}
+          </p>
+          <div className={styles['actions']}>
+            <button
+              type="button"
+              aria-pressed={!updating}
+              disabled={busy}
+              onClick={() =>
+                void act(() =>
+                  client.PUT('/v1/imports/{id}/kind', {
+                    params: { path: { id } },
+                    body: { revision: view.revision, kind: 'first' },
+                  }),
+                )
+              }
+            >
+              Import as new
+            </button>
+            <button
+              type="button"
+              aria-pressed={updating}
+              disabled={busy}
+              onClick={() =>
+                void act(() =>
+                  client.PUT('/v1/imports/{id}/kind', {
+                    params: { path: { id } },
+                    body: {
+                      revision: view.revision,
+                      kind: 'again',
+                      earlier: view.recognised!.import,
+                    },
+                  }),
+                )
+              }
+            >
+              Update what it made
+            </button>
+          </div>
+        </section>
+      )}
       {view.failure !== null && (
         <Notice tone="failed">{FAILURES[view.failure] ?? FAILURES['reading_failed']}</Notice>
       )}
@@ -689,6 +893,24 @@ export function ImportPage({
       )}
       {view.state === 'accepted' && view.document !== null && (
         <a href={`#/documents/${view.document}`}>Open the document</a>
+      )}
+      {view.state === 'accepted' && view.outcome && (
+        <ul aria-label="What the update did">
+          <li>
+            {`Suggested on ${view.outcome.suggested.length} changed ${view.outcome.suggested.length === 1 ? 'component' : 'components'}; ${view.outcome.unchanged} unchanged.`}
+          </li>
+          <li>
+            {`Made ${view.outcome.made.length} new ${view.outcome.made.length === 1 ? 'component' : 'components'}, ${view.outcome.made.filter((each) => each.placed).length} placed in the document.`}
+          </li>
+          <li>
+            {`Kept ${view.outcome.gone.length} gone from the file, ${view.outcome.gone.filter((each) => each.flagged).length} flagged on the document.`}
+          </li>
+          {view.outcome.skipped.map((each) => (
+            <li
+              key={each.component}
+            >{`One component was not suggested on: ${SKIPPED[each.reason]}.`}</li>
+          ))}
+        </ul>
       )}
       {view.state === 'accepted' && view.accepted !== null && (
         <ul aria-label="What was accepted">
@@ -747,13 +969,28 @@ export function ImportPage({
               {top.map(partItem)}
             </ol>
           )}
+          {(view.gone ?? []).length > 0 && (
+            <>
+              <h2>Gone from the file</h2>
+              <ul aria-label="Gone from the file">
+                {view.gone!.map((each) => (
+                  <li key={each.component}>
+                    {`${each.title ?? 'A component you may not read'}: kept, and flagged on the document when accepted.`}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
           {partPanel}
           <form
             className={styles['actions']}
             onSubmit={(event) => {
               event.preventDefault();
               void act(() =>
-                client.PUT('/v1/imports/{id}/levels', { params: { path: { id } }, body: levels }),
+                client.PUT('/v1/imports/{id}/levels', {
+                  params: { path: { id } },
+                  body: { revision: view.revision, ...levels },
+                }),
               );
             }}
           >
@@ -885,11 +1122,21 @@ export function ImportPage({
 
       {view.state === 'proposed' && (
         <form className={styles['actions']} onSubmit={accept}>
-          <label>
-            Document title
-            <input value={title} onChange={(event) => setTitle(event.target.value)} />
-          </label>
-          <button type="submit" className="primary" disabled={busy || title.trim() === ''}>
+          {updating ? (
+            <p className={styles['muted']}>
+              {`Accepting updates ${documentName}; no new document is made.`}
+            </p>
+          ) : (
+            <label>
+              Document title
+              <input value={title} onChange={(event) => setTitle(event.target.value)} />
+            </label>
+          )}
+          <button
+            type="submit"
+            className="primary"
+            disabled={busy || (!updating && title.trim() === '')}
+          >
             Accept
           </button>
         </form>

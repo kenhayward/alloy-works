@@ -3,6 +3,7 @@ import { useId, useState, type FormEvent } from 'react';
 
 import { useCreatableSpaces } from '../spaces.js';
 import styles from './Import.module.css';
+import { IMPORT_HELP } from './ImportHelp.js';
 import { importLink } from './links.js';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -23,6 +24,50 @@ const SAID: Readonly<Record<string, string>> = {
   import_too_large: 'This file is larger than 25 MB, which is more than an import may be.',
   forbidden: 'You may not import into this space.',
 };
+
+/**
+ * Makes an import of a file in a space and sends its bytes as bytes: its id, or what to say. The
+ * import dialog's way in, and a paste broken out (CNT-168).
+ */
+export async function importFile(
+  client: Client,
+  space: string,
+  file: {
+    readonly name: string;
+    readonly type: 'docx' | 'markdown' | 'html';
+    readonly bytes: Uint8Array;
+  },
+): Promise<
+  { readonly ok: true; readonly id: string } | { readonly ok: false; readonly said: string }
+> {
+  try {
+    const made = await client.POST('/v1/spaces/{space}/imports', {
+      params: { path: { space } },
+      body: { fileName: file.name, fileType: file.type },
+    });
+    if (!made.data) {
+      const code = (made.error as { code?: string } | undefined)?.code;
+      return {
+        ok: false,
+        said: (code && SAID[code]) ?? 'The file could not be imported. Try again.',
+      };
+    }
+    const filled = await client.PUT('/v1/imports/{id}/file', {
+      params: { path: { id: made.data.id } },
+      // The bytes as they are, never serialised as JSON (as an image's are).
+      body: file.bytes as unknown as string,
+      bodySerializer: (body: unknown) => body as BodyInit,
+      headers: { 'content-type': 'application/octet-stream' },
+    });
+    if (!filled.data) {
+      const code = (filled.error as { code?: string } | undefined)?.code;
+      return { ok: false, said: (code && SAID[code]) ?? 'The file could not be sent. Try again.' };
+    }
+    return { ok: true, id: made.data.id };
+  } catch {
+    return { ok: false, said: 'The file could not be imported. Try again.' };
+  }
+}
 
 /**
  * **Import a file into a space** (the IM plan, IMa): the space and the file chosen, the import made,
@@ -46,35 +91,11 @@ export function ImportFile({ client }: { client: Client }) {
     }
     setBusy(true);
     setNotice(null);
-    try {
-      const made = await client.POST('/v1/spaces/{space}/imports', {
-        params: { path: { space: where } },
-        body: { fileName: file.name, fileType },
-      });
-      if (!made.data) {
-        const code = (made.error as { code?: string } | undefined)?.code;
-        setNotice((code && SAID[code]) ?? 'The file could not be imported. Try again.');
-        return;
-      }
-      const bytes = new Uint8Array(await file.arrayBuffer());
-      const filled = await client.PUT('/v1/imports/{id}/file', {
-        params: { path: { id: made.data.id } },
-        // The bytes as they are, never serialised as JSON (as an image's are).
-        body: bytes as unknown as string,
-        bodySerializer: (body: unknown) => body as BodyInit,
-        headers: { 'content-type': 'application/octet-stream' },
-      });
-      if (!filled.data) {
-        const code = (filled.error as { code?: string } | undefined)?.code;
-        setNotice((code && SAID[code]) ?? 'The file could not be sent. Try again.');
-        return;
-      }
-      window.location.hash = importLink(made.data.id);
-    } catch {
-      setNotice('The file could not be imported. Try again.');
-    } finally {
-      setBusy(false);
-    }
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const made = await importFile(client, where, { name: file.name, type: fileType, bytes });
+    setBusy(false);
+    if (made.ok) window.location.hash = importLink(made.id);
+    else setNotice(made.said);
   };
 
   return (
@@ -82,7 +103,8 @@ export function ImportFile({ client }: { client: Client }) {
       <h2 id="import-heading">Import</h2>
       <p className={styles['muted']}>
         A Word document, Markdown or HTML file is read into a proposed outline of sections and
-        components. Nothing is made until you accept it.
+        components. Nothing is made until you accept it.{' '}
+        <a href={IMPORT_HELP}>What arrives and what does not</a>
       </p>
       {problem !== null ? (
         <p role="status">The spaces you may create in could not be loaded.</p>

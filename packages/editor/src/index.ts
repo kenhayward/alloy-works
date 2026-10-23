@@ -9,6 +9,7 @@ export {
   type BlockAction,
 } from './blocks.js';
 export {
+  breakoutOf,
   pasteInto,
   PRODUCT_CLIPBOARD_TYPE,
   productClipboard,

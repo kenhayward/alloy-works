@@ -23,7 +23,14 @@ export type CreateImportBody = z.infer<typeof CreateImportBody>;
 export const ImportParams = z.object({ id: LowercaseUuid });
 export type ImportParams = z.infer<typeof ImportParams>;
 
-export const ImportLevelsBody = z.strictObject({
+/** The revision of the import its importer read: a change made against another is refused. */
+const readRevision = z
+  .number()
+  .int()
+  .min(0)
+  .describe('The revision of the import read; `import_changed` where it is no longer its revision');
+
+const ImportLevels = z.strictObject({
   section: z.number().int().min(1).max(8).describe('The heading level that starts a section'),
   component: z
     .number()
@@ -32,9 +39,11 @@ export const ImportLevelsBody = z.strictObject({
     .max(9)
     .describe('The heading level that starts a component, below the section’s'),
 });
+export const ImportLevelsBody = ImportLevels.extend({ revision: readRevision });
 export type ImportLevelsBody = z.infer<typeof ImportLevelsBody>;
 
 export const AcceptImportBody = z.strictObject({
+  revision: readRevision,
   title: z
     .string()
     .min(1)
@@ -100,6 +109,34 @@ const ImportReviewFlag = z.enum([
   'keptDifferently',
 ]);
 
+/** A part of an import again against what the earlier import made (IMP-036); null otherwise. */
+const ImportAgainView = z
+  .object({
+    status: z
+      .enum(['unchanged', 'changed', 'new'])
+      .describe(
+        '`unchanged`: its text is its component’s now; `changed`: it differs, suggested at acceptance; `new`: it matches no component, made and placed at acceptance',
+      ),
+    component: z
+      .string()
+      .nullable()
+      .describe('The component the earlier import made it is matched to'),
+    componentTitle: z
+      .string()
+      .nullable()
+      .describe('That component’s title now, where its importer may read it'),
+    by: z
+      .enum(['provenance', 'heading', 'position', 'importer'])
+      .nullable()
+      .describe(
+        'How it was matched: by the heading the earlier import read it from, by the component’s title now, by its place between two parts matched so, or by its importer',
+      ),
+  })
+  .nullable()
+  .describe(
+    'For an import again, what this part is to what the earlier import made; null otherwise',
+  );
+
 export const ImportPartView = z.object({
   id: z.string(),
   kind: z.enum(['section', 'component']),
@@ -113,6 +150,7 @@ export const ImportPartView = z.object({
     ),
   blocks: z.number().int().describe('How many blocks it holds'),
   source: z.string().describe('Its text as the file had it, its heading first'),
+  again: ImportAgainView,
 });
 export type ImportPartView = z.infer<typeof ImportPartView>;
 
@@ -157,6 +195,17 @@ export const ImportPartDetail = ImportPartView.omit({ blocks: true }).extend({
   references: z
     .array(z.string())
     .describe('The cross-references outside the import it holds, by their key'),
+  diff: z
+    .array(
+      z.object({
+        change: z.enum(['same', 'added', 'removed']),
+        text: z.string().describe('A block’s text, shown as text'),
+      }),
+    )
+    .nullable()
+    .describe(
+      'For a part matched in an import again, its blocks against its component as it is now, so edits made in the space show; null otherwise',
+    ),
 });
 export type ImportPartDetail = z.infer<typeof ImportPartDetail>;
 
@@ -222,6 +271,13 @@ const ImportEdit = z.discriminatedUnion('edit', [
       .describe(
         'A block of the import; a block of a component in the space; or the text it showed, said in the report',
       ),
+  }),
+  z.strictObject({
+    edit: z.literal('match'),
+    part,
+    component: LowercaseUuid.nullable().describe(
+      'A component the earlier import made that no other part is matched to; null marks the part new',
+    ),
   }),
   z.strictObject({
     edit: z.literal('identity'),
@@ -292,8 +348,65 @@ const OutsideReferenceView = z.object({
     .describe('Pointed at a block, made the text it showed, or null: still outside the import'),
 });
 
+/** Importing as new, or as an update of what an earlier accepted import made (IM-K; IMP-036). */
+export const ImportKindBody = z.strictObject({
+  revision: readRevision,
+  kind: z.enum(['first', 'again']),
+  earlier: LowercaseUuid.optional().describe(
+    'For `again`, the accepted import in this space whose document it updates',
+  ),
+});
+export type ImportKindBody = z.infer<typeof ImportKindBody>;
+
+const ImportRecognised = z
+  .object({
+    import: z.string().describe('The earlier import'),
+    match: z
+      .enum(['hash', 'name'])
+      .describe('The same bytes, by their hash, or a file of the same name in this space'),
+    fileName: z.string(),
+    importer: z.string(),
+    importerName: z.string().nullable(),
+    at: z.string().describe('When it was accepted'),
+    document: z.string().describe('The document it made'),
+    documentTitle: z
+      .string()
+      .nullable()
+      .describe('That document’s title now, where its importer may read it'),
+  })
+  .nullable()
+  .describe(
+    'An accepted import in this space that holds the same file (IMP-036), said once the name or the bytes are in, before it is read; null where none does',
+  );
+
+const ImportOutcome = z
+  .object({
+    suggested: z.array(z.object({ component: z.string(), suggestion: z.string() })),
+    made: z
+      .array(z.object({ component: z.string(), placed: z.boolean() }))
+      .describe('Each new component, and whether it was placed in the document'),
+    gone: z
+      .array(z.object({ component: z.string(), flagged: z.boolean() }))
+      .describe(
+        'Each component no part matched: kept, and flagged on the document where it stands',
+      ),
+    skipped: z
+      .array(
+        z.object({
+          component: z.string(),
+          reason: z.enum(['suggest', 'limit', 'empty', 'resolved', 'gone']),
+        }),
+      )
+      .describe(
+        'Each matched component not suggested on: its importer may not suggest there, or has 20 suggestions pending on it; the suggestion would change nothing, or the same one was resolved before; or the component was deleted or archived since it was matched',
+      ),
+    unchanged: z.number().int(),
+  })
+  .nullable()
+  .describe('Once an import again is accepted, what it did (IMP-037)');
+
 export const ImportView = ImportSummary.extend({
-  levels: ImportLevelsBody,
+  levels: ImportLevels,
   title: z.string().nullable().describe('The title the file names, where it names one'),
   parts: z.array(ImportPartView).describe('The proposed outline, in order'),
   revision: z
@@ -315,6 +428,18 @@ export const ImportView = ImportSummary.extend({
     .enum(['map', 'keep', 'discard'])
     .describe('The identity policy applied at acceptance, or, until then, the one that will be'),
   policyApplied: z.boolean().describe('Whether `policy` was applied, at acceptance (IMP-011)'),
+  kind: z
+    .enum(['first', 'again'])
+    .describe('Imported as new, or again as an update of what `earlier` made'),
+  earlier: z.string().nullable().describe('The accepted import an import again updates'),
+  recognised: ImportRecognised,
+  earlierMade: z
+    .array(z.object({ component: z.string(), title: z.string().nullable() }))
+    .describe('For an import again, what the earlier import made that a part may be matched to'),
+  gone: z
+    .array(z.object({ component: z.string(), title: z.string().nullable() }))
+    .describe('For an import again, what the earlier import made that no part matches'),
+  outcome: ImportOutcome,
 });
 export type ImportView = z.infer<typeof ImportView>;
 
@@ -439,7 +564,43 @@ export const importRoutes = {
       },
       401: unauthenticated,
       404: notYours,
-      409: { description: '`import_not_proposed`: it is not proposed', schema: ErrorBody },
+      409: {
+        description:
+          '`import_not_proposed`: it is not proposed; `import_changed`: it was changed since the revision given',
+        schema: ErrorBody,
+      },
+    },
+  },
+  setImportKind: {
+    operationId: 'setImportKind',
+    method: 'PUT',
+    path: '/v1/imports/{id}/kind',
+    summary: 'Import as new, or as an update of what an earlier import of the same file made',
+    tenantScoped: true,
+    access: { check: 'session' },
+    params: ImportParams,
+    body: ImportKindBody,
+    responses: {
+      200: {
+        description: 'The import, its parts matched where it is an update',
+        schema: ImportView,
+      },
+      400: {
+        description:
+          '`import_earlier_invalid`: the earlier import is not one accepted in this space with its document',
+        schema: ErrorBody,
+      },
+      401: unauthenticated,
+      404: {
+        description:
+          'No such import the caller made, or an earlier document the caller may not read',
+        schema: ErrorBody,
+      },
+      409: {
+        description:
+          '`import_not_open`: it is already accepted, abandoned or failed; `import_changed`: it was changed since the revision given',
+        schema: ErrorBody,
+      },
     },
   },
   acceptImport: {
@@ -453,7 +614,7 @@ export const importRoutes = {
     body: AcceptImportBody,
     responses: {
       200: {
-        description: 'The import, accepted, and the document it made',
+        description: 'The import, accepted, and the document it made or, imported again, updated',
         schema: ImportAccepted,
       },
       400: {
@@ -462,11 +623,15 @@ export const importRoutes = {
         schema: ErrorBody,
       },
       401: unauthenticated,
-      403: { description: 'The caller may no longer create in the space', schema: ErrorBody },
+      403: {
+        description:
+          'The caller may no longer create in the space; `import_not_permitted`: imported again, the caller may suggest on none of the components it changes',
+        schema: ErrorBody,
+      },
       404: notYours,
       409: {
         description:
-          '`import_not_proposed`: it is not proposed; `import_references_unresolved`: a cross-reference outside the file is neither retargeted nor made text',
+          '`import_not_proposed`: it is not proposed; `import_changed`: it was changed since the revision given; `import_references_unresolved`: a cross-reference outside the file is neither retargeted nor made text; `import_earlier_missing`: imported again, the earlier import’s document is gone',
         schema: ErrorBody,
       },
     },

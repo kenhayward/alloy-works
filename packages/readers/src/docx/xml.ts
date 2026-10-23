@@ -37,7 +37,7 @@ const PREFIXES: Readonly<Record<string, string>> = {
 const named = (uri: string, local: string) => `${PREFIXES[uri] ?? '?'}:${local}`;
 
 /** Elements and depth one part may hold (IM-C): far past any document, short of what exhausts a worker. */
-export const XML_CAPS = { nodes: 2_000_000, depth: 256 } as const;
+export const XML_CAPS = { nodes: 500_000, depth: 256 } as const;
 
 export type XmlCaps = { readonly nodes: number; readonly depth: number };
 

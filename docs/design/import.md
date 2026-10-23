@@ -68,6 +68,12 @@ importer; the Word author is kept as `attributed_to` text beside it, with the me
 ("Alex (from Word, matched to Alex Smith)"). A confirmation must name the member the identity
 matches, a user of the tenant. Which policy applied is recorded on the import and on each.
 
+Review matches only what its importer could already look up. The directory (`/v1/people`) shows any
+member every name, never an email, so for an importer who does not administer the space a name the
+file carries is matched by name alone: a file of typed addresses learns nothing of whose they are. An
+administrator, who may list members with their emails (`/v1/principals`), sees email matches too.
+Acceptance still maps by email as the policy says.
+
 ## As IMa built it
 
 - **0155**: `import` (state `awaiting` its file, then `reading`, `proposed`, `accepted`, `abandoned` or
@@ -77,9 +83,11 @@ matches, a user of the tenant. Which policy applied is recorded on the import an
   memory limit and a timer; the zip guarded by `docx/zip.ts`, the XML by `saxes` in `docx/xml.ts`,
   the breakout by domain's `proposeImport`. What it does not read yet is reported as `notYetRead`.
 - **Markdown and HTML** go through the paste's readers whole, as one introduction: their breakout is
-  IMe's.
+  IMe's (below).
 - **Accepting** makes a blank document unless a template is named: a space has no default template
-  yet. An accepted import keeps its parts and its file, for IMP-031 and the re-import (IMd).
+  yet. An accepted import keeps its parts and its file, for IMP-031 and the re-import (IMd). The
+  document is titled as its importer typed, else by the file's first Title-style paragraph, else by
+  its name without the ending; the page fills the field with the same.
 
 ## As IMb built it
 
@@ -132,3 +140,62 @@ matches, a user of the tenant. Which policy applied is recorded on the import an
 - **Gaps**: retargeting to another
   component is in the route, not yet in the page; a change crossing a split the importer makes is not
   re-clamped; endnotes are not read.
+
+## As IMd built it
+
+- **0158**: `import.earlier` (the accepted import an `again` one updates) and `import.outcome`, what
+  accepting it did; `import_part.made`, the component each edited part made or updated, recorded at
+  acceptance, and `matched` with `matched_by`; and `import_made` now holds a suggestion beside a
+  version, one of the two.
+- **Recognised first** (IMP-036): `earlierImport` finds the latest accepted import in the space with
+  the same hash, else the same name, accepted before this one. Every view of an open import names it
+  (`recognised`): on the create answer by name, on the file's answer by hash, before the read.
+  `PUT /v1/imports/{id}/kind` chooses `first` or `again`, needing read on the earlier document.
+- **Matching** (domain's `matchAgain`): candidates are the earlier import's parts with `made`, in
+  order, none deleted or archived. A component part matches the one read from the same heading
+  (provenance), then the one whose title now is its title, then, between two parts matched so, those
+  left there in order. A section never matches; what no part matches is gone. Matched in the job's
+  transaction (`recordProposal`), or at once when chosen on a proposal. The `match` edit rematches a
+  part, or marks it new, to a candidate no other part holds.
+- **Status** is by each block's kind and text against the component's latest version (`againStatus`),
+  so an edit made in the space shows as changed; the diff (`againDiff`) is a block-level longest
+  common run. Formatting alone is not compared.
+- **Accepting again** (`acceptAgain`) makes no document. A changed part is one whole-component
+  suggestion against the current version, recorded in `import_made`; its Word authors' changes are
+  suggestions and its comments threads on top, against the same version, as IMc makes them. A new
+  part is a component placed directly in the earlier document after the part before it (no
+  suggestion places, so none is suggested). A gone component is kept and flagged by a thread on the
+  document at its node. Permissions are the caller's (`may`): `suggest` per changed component,
+  skipped and said where missing, the whole refused before anything is written only where none may
+  be; `edit` on the document to place; `comment` to flag.
+- **Gaps**: sections are not made or moved by an update; a cross-reference to a heading is left as
+  it was read; an import accepted before 0158 has no `made`, so nothing matches it; a suggestion
+  accepted later is not recorded as the import's version.
+
+## As IMe built it
+
+- **Markdown and HTML** (IMP-013): `readHtmlOutline` (and `readMarkdownOutline`, Markdown rendered
+  first) is the paste's reader with each heading standing in the top-level flow kept as an
+  `outlineHeading`, which `readImport` makes a flow heading styled `Heading n`; one inside a
+  quotation, list, table or note stays a paragraph, said as a paste's. A `data:` PNG or JPEG image
+  there is a figure held as Word's are (`import_asset`); any other image is never fetched and is
+  reported left out. The paste path (`readHtml`) is unchanged.
+- **Paste breakout** (CNT-168): `breakoutOf` names an HTML paste whose reading made a heading a
+  paragraph. Given `heldForBreakout`, the view holds such a paste rather than placing it, and the
+  component editor's paste report offers **Keep as one component** (the held reading pasted as
+  before) or **Break out into sections and components**: an import of the pasted HTML in the
+  component's space (`importFile`, the dialog's own path), its page opened. Close pastes nothing.
+- **The round trip stated** (IMP-026, IMP-025): the import page's header says what an import of its
+  format keeps and does not (`keptBy`); `#/help/import` (`ImportHelp`) lists what arrives from Word
+  and what does not. Neither says lossless.
+- **Hardening** (the slice's final review): accepting under `discard` blanks every Word author's
+  name on both sets of parts (`import_part_unnamed`, the read set's one allowed change, 0157). An
+  earlier import is recognised only where its importer made it or may read its document. Importing
+  again, each block a matched part shares with its component keeps the component's identifiers
+  (`againIdentifiers`), and references resolve against components as they stand; one that does not
+  is kept and said. Each component not suggested on is skipped with why (`suggest`, `limit`,
+  `empty`, `resolved`, `gone`). Accepting, re-levelling and choosing the kind take the `revision`
+  read. Budgets: 500,000 elements a part, 200 images an import, their checks inside the read's time,
+  a diff paired only past its common ends up to 2,000 blocks a side, one footnote read once.
+- **Gaps**: Paste as Markdown is never held for breakout; a heading's marks and a footnote in it are
+  not kept (the footnote is said); an image inside a paragraph splits it round its figure.

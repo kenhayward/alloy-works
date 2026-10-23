@@ -43,3 +43,5 @@ export type {
 } from './structure.js';
 export { attributionOf, matchIdentity, resolveReferences, suggestedBlocks } from './accept.js';
 export type { AcceptedComponent, ImportMember } from './accept.js';
+export { AGAIN_DIFF_MOST, againDiff, againIdentifiers, againStatus, matchAgain } from './again.js';
+export type { AgainCandidate, AgainLine, AgainMatch, AgainMatchedBy } from './again.js';

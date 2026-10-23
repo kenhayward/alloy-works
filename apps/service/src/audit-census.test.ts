@@ -419,6 +419,7 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   listImports: read,
   getImport: read,
   setImportLevels: { none: 'importing' },
+  setImportKind: { none: 'importing' },
   // Review: a part read, the parts searched, an edit or the importer's place (IMb).
   getImportPart: read,
   searchImportParts: read,

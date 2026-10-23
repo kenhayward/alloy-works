@@ -158,9 +158,12 @@ export function changesOf(
     const at = base.content.find((each) => each.id === baseOf(key));
     groups.set(key, [...(groups.get(key) ?? []), restored(block, read, baseOf, at)]);
   }
-  return [...groups].flatMap(([key, proposed]) => {
-    const block = baseOf(key);
-    return block === undefined ? [] : [{ author, block, proposed }];
+  // A changed block with nothing in the variant was deleted whole, its empty paragraph merged into
+  // the one before by normalising: its deletion proposed too.
+  return candidate.flatMap((each) => {
+    const key = each.id as string;
+    const block = changed.has(key) ? baseOf(key) : undefined;
+    return block === undefined ? [] : [{ author, block, proposed: groups.get(key) ?? [] }];
   });
 }
 

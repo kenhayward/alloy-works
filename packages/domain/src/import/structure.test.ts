@@ -69,6 +69,28 @@ describe('proposeImport, structure (IMc)', () => {
     expect(part!.flags).toEqual([]);
   });
 
+  it('IMP-005 proposes the deletion of each of two paragraphs an author deleted whole, one after the other', () => {
+    const { parts } = proposeImport(
+      [
+        heading(2, 'Sampling'),
+        block([run('Kept.')]),
+        block([run('First gone.', remove('Grace', '4'))]),
+        block([run('Second gone.', remove('Grace', '5'))]),
+        block([run('Also kept.')]),
+      ],
+      DEFAULT_IMPORT_LEVELS,
+      options,
+    );
+    const [part] = parts;
+    const [, first, second] = part!.blocks;
+    expect(part!.changes.map((change) => change.block)).toEqual([first!.id, second!.id]);
+    const proposed = part!.blocks.flatMap((each) => {
+      const change = part!.changes.find((one) => one.block === each.id);
+      return change ? change.proposed : [each];
+    });
+    expect(proposed.map(textOf).filter((text) => text !== '')).toEqual(['Kept.', 'Also kept.']);
+  });
+
   it('IMP-005 keeps a change crossing a split in the part it starts in, flagged', () => {
     const { parts } = proposeImport(
       [

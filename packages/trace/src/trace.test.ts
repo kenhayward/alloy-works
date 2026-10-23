@@ -970,7 +970,10 @@ describe('the citations in the committed model', () => {
     // 2002 (2026-10-23): IMb's review: the edits, search, place and counts, in domain, db, service and web.
     // 2038 (2026-10-23): IMc's structure: references, changes, comments, identities and the policy.
     // 2041 (2026-10-23): IMc's images held until acceptance, and retargeting held to what may be read.
-    expect(model.citations).toHaveLength(2041);
+    // 2049 (2026-10-23): IMd's re-import: recognised, matched, its status and diff, accepted again.
+    // 2054 (2026-10-23): IMe's Markdown and HTML, the paste broken out, and the round trip stated.
+    // 2056 (2026-10-23): the import slice's final review: recognition held to what may be read, re-import identity.
+    expect(model.citations).toHaveLength(2056);
   });
 
   it('cites no identifier the corpus does not hold', () => {
