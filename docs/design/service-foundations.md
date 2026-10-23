@@ -721,9 +721,11 @@ packages/db/migrations/
 The runner is ours, because off-the-shelf tools assume one schema. It:
 
 1. applies pending platform migrations, recording them in `platform.schema_migration`;
-2. for each tenant, applies pending tenant migrations **one tenant per transaction**, as the tenant's
-   owner role, recording them in that schema's own `schema_migration` - so a failure stops at one
-   tenant, leaves every other consistent, and a re-run resumes where it stopped;
+2. for each tenant, applies pending tenant migrations **twenty to a transaction**, as the tenant's
+   owner role, recording each in that schema's own `schema_migration` - so a failure stops at one
+   batch of one tenant, keeps every batch before it, and a re-run resumes where it stopped. One
+   transaction for a tenant's whole history held a lock on everything a fresh tenant makes, and a few
+   made at once outgrew Postgres's default lock table (#773);
 3. provisions a new tenant by creating its roles and schema, then applying every tenant migration.
 
 **Migrations only ever expand** in a release - add a table, add a nullable column - and remove what
