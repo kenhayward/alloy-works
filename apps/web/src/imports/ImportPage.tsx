@@ -16,7 +16,14 @@ type Reason =
   | { readonly rule: 'beforeFirstHeading' }
   | { readonly rule: 'split' };
 
-type Flag = 'empty' | 'refused' | 'notYetRead' | 'leftOut' | 'keptDifferently';
+type Flag =
+  | 'empty'
+  | 'refused'
+  | 'changeClamped'
+  | 'commentClamped'
+  | 'notYetRead'
+  | 'leftOut'
+  | 'keptDifferently';
 
 interface Part {
   readonly id: string;
@@ -29,9 +36,26 @@ interface Part {
   readonly source: string;
 }
 
-/** One part as its own route answers it (IMP-028). */
+/** One part as its own route answers it (IMP-028), with what its Word authors made (IMc). */
 interface Detail extends Omit<Part, 'blocks'> {
-  readonly blocks: readonly { readonly type: string; readonly text: string }[];
+  readonly blocks: readonly {
+    readonly id?: string;
+    readonly type: string;
+    readonly text: string;
+  }[];
+  readonly suggestions?: readonly {
+    readonly author: string;
+    readonly blocks: number;
+    readonly text: string;
+  }[];
+  readonly threads?: readonly {
+    readonly author: string;
+    readonly text: string;
+    readonly quote: string | null;
+    readonly clamped: boolean;
+    readonly replies: readonly { readonly author: string; readonly text: string }[];
+  }[];
+  readonly references?: readonly string[];
   readonly place: number;
   readonly of: number;
   readonly previous: string | null;
@@ -49,6 +73,25 @@ interface Entry {
 
 type Counts = Readonly<Record<'unchanged' | 'edited' | 'merged' | 'split' | 'renamed', number>>;
 
+type Policy = 'map' | 'keep' | 'discard';
+
+interface Identity {
+  readonly name: string;
+  readonly email: string | null;
+  readonly carries: readonly ('changes' | 'comments' | 'creator' | 'lastModifiedBy')[];
+  readonly match: 'email' | 'name' | 'none';
+  readonly member: string | null;
+  readonly memberName: string | null;
+  readonly confirmed: boolean;
+}
+
+interface Outside {
+  readonly key: string;
+  readonly field: string;
+  readonly text: string;
+  readonly resolved: 'retargeted' | 'text' | null;
+}
+
 interface View {
   readonly id: string;
   readonly fileName: string;
@@ -63,6 +106,10 @@ interface View {
   readonly place: string | null;
   readonly accepted: Counts | null;
   readonly report: readonly Entry[];
+  readonly references: readonly Outside[];
+  readonly identities: readonly Identity[];
+  readonly policy: Policy;
+  readonly policyApplied: boolean;
 }
 
 type Edit =
@@ -70,7 +117,37 @@ type Edit =
   | { edit: 'split'; part: string; at: number; title: string }
   | { edit: 'merge'; part: string }
   | { edit: 'rename'; part: string; title: string }
-  | { edit: 'kind'; part: string; kind: 'section' | 'component' };
+  | { edit: 'kind'; part: string; kind: 'section' | 'component' }
+  | {
+      edit: 'reference';
+      reference: string;
+      to: { kind: 'block'; block: string } | { kind: 'text' };
+    }
+  | { edit: 'identity'; identity: string; member: string | null };
+
+/** What a name in the file is the name of, in words. */
+const CARRIES: Readonly<Record<Identity['carries'][number], string>> = {
+  changes: 'tracked changes',
+  comments: 'comments',
+  creator: 'the file’s author',
+  lastModifiedBy: 'who last saved it',
+};
+
+/** What each policy does with the names, said before acceptance and after (IMP-010, IMP-011). */
+const POLICIES: Readonly<Record<Policy, { readonly will: string; readonly did: string }>> = {
+  map: {
+    will: 'When it is accepted, names will be matched to members, as attribution.',
+    did: 'Names were matched to members, as attribution, when it was accepted.',
+  },
+  keep: {
+    will: 'When it is accepted, names will be kept as text.',
+    did: 'Names were kept as text when it was accepted.',
+  },
+  discard: {
+    will: 'When it is accepted, the names will be discarded.',
+    did: 'The names were discarded when it was accepted.',
+  },
+};
 
 const STATES: Readonly<Record<View['state'], string>> = {
   awaiting: 'Waiting for its file.',
@@ -109,6 +186,14 @@ const KINDS: Readonly<Record<string, string>> = {
 const FLAGS: Readonly<Record<Flag, { readonly said: string; readonly filter: string }>> = {
   empty: { said: 'Nothing stands under it.', filter: 'Nothing under it' },
   refused: { said: 'What it held could not be kept; see the report.', filter: 'Could not be kept' },
+  changeClamped: {
+    said: 'A tracked change kept here ran on past it; it stays here.',
+    filter: 'A change cut short',
+  },
+  commentClamped: {
+    said: 'A comment here ran on past where it starts; it is anchored where it starts.',
+    filter: 'A comment cut short',
+  },
   notYetRead: { said: 'It held something the import does not read yet.', filter: 'Not read yet' },
   leftOut: { said: 'Something in it was left out; see the report.', filter: 'Something left out' },
   keptDifferently: {
@@ -181,6 +266,7 @@ export function ImportPage({
   const [query, setQuery] = useState('');
   const [flag, setFlag] = useState<Flag | ''>('');
   const [matches, setMatches] = useState<ReadonlySet<string> | null>(null);
+  const [pointing, setPointing] = useState<Readonly<Record<string, string>>>({});
 
   const load = useCallback(async () => {
     try {
@@ -262,7 +348,9 @@ export function ImportPage({
             ? 'Only the person who imported it may do that.'
             : error?.code === 'import_levels_invalid'
               ? 'A component’s heading level must be below a section’s.'
-              : (error?.code === 'import_edit_refused' || error?.code === 'import_changed') &&
+              : (error?.code === 'import_edit_refused' ||
+                    error?.code === 'import_changed' ||
+                    error?.code === 'import_references_unresolved') &&
                   error.message
                 ? error.message
                 : 'That could not be done. Try again.',
@@ -352,6 +440,103 @@ export function ImportPage({
   };
 
   const shown = detail !== null && detail.id === showing ? detail : null;
+  const outsideIn = (shown?.references ?? []).flatMap((key) => {
+    const found = view.references.find((each) => each.key === key);
+    return found ? [found] : [];
+  });
+  const structure = shown && shown.kind === 'component' && (
+    <>
+      {(shown.suggestions ?? []).length > 0 && (
+        <>
+          <h3>Its tracked changes</h3>
+          <ul aria-label="Suggestions it will make">
+            {shown.suggestions!.map((each) => (
+              <li key={each.author}>
+                {`${each.author} (from Word), ${each.blocks} ${each.blocks === 1 ? 'block' : 'blocks'}: ${each.text}`}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      {(shown.threads ?? []).length > 0 && (
+        <>
+          <h3>Its comments</h3>
+          <ul aria-label="Threads it will make">
+            {shown.threads!.map((each, index) => (
+              <li key={index}>
+                {`${each.author} (from Word)${each.quote === null ? '' : ` on “${each.quote}”`}: ${each.text}`}
+                {each.clamped && (
+                  <span className={styles['muted']}>
+                    {' '}
+                    It ran on, and is anchored where it starts.
+                  </span>
+                )}
+                {each.replies.length > 0 && (
+                  <ul>
+                    {each.replies.map((reply, at) => (
+                      <li key={at}>{`${reply.author} (from Word): ${reply.text}`}</li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      {outsideIn.length > 0 && (
+        <>
+          <h3>Its references outside the import</h3>
+          {outsideIn.map((reference) => (
+            <form
+              key={reference.key}
+              className={styles['actions']}
+              onSubmit={(event) => {
+                event.preventDefault();
+                const block = pointing[reference.key] ?? shown.blocks[0]?.id;
+                if (block !== undefined) {
+                  edit({
+                    edit: 'reference',
+                    reference: reference.key,
+                    to: { kind: 'block', block },
+                  });
+                }
+              }}
+            >
+              <label>
+                {`Point “${reference.text}” at`}
+                <select
+                  value={pointing[reference.key] ?? shown.blocks[0]?.id ?? ''}
+                  onChange={(event) =>
+                    setPointing((was) => ({ ...was, [reference.key]: event.target.value }))
+                  }
+                >
+                  {shown.blocks.map((block, index) =>
+                    block.id === undefined ? null : (
+                      <option key={block.id} value={block.id}>
+                        {`Block ${index + 1}: ${block.text.slice(0, 60)}`}
+                      </option>
+                    ),
+                  )}
+                </select>
+              </label>
+              <button type="submit" disabled={busy}>
+                Point it there
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() =>
+                  edit({ edit: 'reference', reference: reference.key, to: { kind: 'text' } })
+                }
+              >
+                {`Make “${reference.text}” plain text`}
+              </button>
+            </form>
+          ))}
+        </>
+      )}
+    </>
+  );
   const partPanel = shown && (
     <section
       aria-label={`Part ${shown.place + 1} of ${shown.of}: ${shown.title}`}
@@ -402,6 +587,7 @@ export function ImportPage({
           </p>
         </div>
       </div>
+      {structure}
       <form
         className={styles['actions']}
         onSubmit={(event) => {
@@ -603,6 +789,82 @@ export function ImportPage({
               Propose again
             </button>
           </form>
+        </>
+      )}
+
+      {view.state === 'proposed' && view.references.length > 0 && (
+        <>
+          <h2>References outside the import</h2>
+          <p className={styles['muted']}>
+            Each must be pointed at a block of the import, or made the text it showed, before the
+            import can be accepted.
+          </p>
+          <ul aria-label="References outside the import">
+            {view.references.map((each) => (
+              <li key={each.key}>
+                {`“${each.text}”: ${
+                  each.resolved === 'retargeted'
+                    ? 'pointed at a block'
+                    : each.resolved === 'text'
+                      ? 'made plain text'
+                      : 'not resolved yet'
+                }`}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      {view.identities.length > 0 && (
+        <>
+          <h2>Names the file carries</h2>
+          <p>{POLICIES[view.policy][view.policyApplied ? 'did' : 'will']}</p>
+          <p className={styles['muted']}>
+            What the import makes is made by whoever accepts it, and never made by them: a name is
+            recorded beside it, with the member it matches.
+          </p>
+          <ul aria-label="Names the file carries">
+            {view.identities.map((each) => (
+              <li key={each.name}>
+                {`${each.name}${each.email === null ? '' : ` (${each.email})`}, ${each.carries
+                  .map((role) => CARRIES[role])
+                  .join(', ')}: ${
+                  view.policy !== 'map' || each.match === 'none' || each.memberName === null
+                    ? view.policy === 'discard'
+                      ? 'discarded'
+                      : 'kept as text'
+                    : each.match === 'email'
+                      ? `matched to ${each.memberName} by email`
+                      : each.confirmed
+                        ? `matched to ${each.memberName} by name, confirmed`
+                        : `may be ${each.memberName}, by name`
+                }`}
+                {view.state === 'proposed' &&
+                  view.policy === 'map' &&
+                  each.match === 'name' &&
+                  each.member !== null && (
+                    <>
+                      {' '}
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() =>
+                          edit({
+                            edit: 'identity',
+                            identity: each.name,
+                            member: each.confirmed ? null : each.member,
+                          })
+                        }
+                      >
+                        {each.confirmed
+                          ? `Withdraw ${each.name} as ${each.memberName ?? ''}`
+                          : `Confirm ${each.name} is ${each.memberName ?? ''}`}
+                      </button>
+                    </>
+                  )}
+              </li>
+            ))}
+          </ul>
         </>
       )}
 

@@ -1842,6 +1842,11 @@ describe('routes that check a permission', () => {
       payload: { iterationRetentionDays: 7 },
     }),
     setDataSettings: () => ({ url: '/v1/settings/data', status: 403, payload: { rows: 10 } }),
+    setImportSettings: () => ({
+      url: '/v1/settings/import',
+      status: 403,
+      payload: { policy: 'keep' },
+    }),
     createAssetUpload: () => ({
       url: `/v1/spaces/${clinical}/asset-uploads`,
       status: 404,

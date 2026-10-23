@@ -90,7 +90,15 @@ const ImportReason = z
     'Why the part starts where it does: the heading, by its style and text; what came before the first heading under it; or that its importer split it there',
   );
 
-const ImportReviewFlag = z.enum(['empty', 'refused', 'notYetRead', 'leftOut', 'keptDifferently']);
+const ImportReviewFlag = z.enum([
+  'empty',
+  'refused',
+  'changeClamped',
+  'commentClamped',
+  'notYetRead',
+  'leftOut',
+  'keptDifferently',
+]);
 
 export const ImportPartView = z.object({
   id: z.string(),
@@ -101,7 +109,7 @@ export const ImportPartView = z.object({
   flags: z
     .array(ImportReviewFlag)
     .describe(
-      '`empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from',
+      '`empty`: nothing under its heading; `refused`: what it held could not be admitted; `changeClamped`: a tracked change kept here ran on past it; `commentClamped`: a comment anchored here ran past where it starts; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from',
     ),
   blocks: z.number().int().describe('How many blocks it holds'),
   source: z.string().describe('Its text as the file had it, its heading first'),
@@ -120,11 +128,35 @@ export const ImportPartDetail = ImportPartView.omit({ blocks: true }).extend({
   blocks: z
     .array(
       z.object({
+        id: z.string().describe('Its identifier, which a reference may be pointed at'),
         type: z.string().describe('What kind of block it is: paragraph, list, table and so on'),
         text: z.string().describe('Its text, shown as text'),
       }),
     )
     .describe('What it holds, a block at a time'),
+  suggestions: z
+    .array(
+      z.object({
+        author: z.string().describe('The Word author, as the file names them: shown as text'),
+        blocks: z.number().int().describe('How many of its blocks their changes change'),
+        text: z.string().describe('Those blocks as their changes leave them, shown as text'),
+      }),
+    )
+    .describe('The suggestion each Word author’s tracked changes become at acceptance (IMP-005)'),
+  threads: z
+    .array(
+      z.object({
+        author: z.string().describe('The Word author, as the file names them: shown as text'),
+        text: z.string().describe('The comment, shown as text'),
+        quote: z.string().nullable().describe('The words it is on; null where it is on the part'),
+        clamped: z.boolean().describe('Whether its range ran past where it is anchored'),
+        replies: z.array(z.object({ author: z.string(), text: z.string() })),
+      }),
+    )
+    .describe('The thread each comment becomes at acceptance (IMP-005)'),
+  references: z
+    .array(z.string())
+    .describe('The cross-references outside the import it holds, by their key'),
 });
 export type ImportPartDetail = z.infer<typeof ImportPartDetail>;
 
@@ -171,6 +203,33 @@ const ImportEdit = z.discriminatedUnion('edit', [
     part,
     kind: z.enum(['section', 'component']),
   }),
+  z.strictObject({
+    edit: z.literal('reference'),
+    reference: z
+      .string()
+      .regex(/^wx-[0-9]{1,6}$/)
+      .describe('The cross-reference outside the import, by its key'),
+    to: z
+      .discriminatedUnion('kind', [
+        z.strictObject({ kind: z.literal('block'), block: z.string().min(1).max(64) }),
+        z.strictObject({
+          kind: z.literal('component'),
+          component: LowercaseUuid,
+          block: z.string().min(1).max(64),
+        }),
+        z.strictObject({ kind: z.literal('text') }),
+      ])
+      .describe(
+        'A block of the import; a block of a component in the space; or the text it showed, said in the report',
+      ),
+  }),
+  z.strictObject({
+    edit: z.literal('identity'),
+    identity: z.string().min(1).max(300).describe('A name the file carries'),
+    member: LowercaseUuid.nullable().describe(
+      'The member its name matches, confirmed for attribution; null withdraws the confirmation',
+    ),
+  }),
 ]);
 
 export const EditImportBody = z.strictObject({ revision, edit: ImportEdit });
@@ -207,6 +266,32 @@ export const ImportReportEntry = z.object({
     .describe('The part it was about, by its place; null for the file'),
 });
 
+const ImportIdentityView = z.object({
+  name: z.string().describe('As the file carries it: shown as text'),
+  email: z.string().nullable(),
+  carries: z
+    .array(z.enum(['changes', 'comments', 'creator', 'lastModifiedBy']))
+    .describe('What the file names it for'),
+  match: z
+    .enum(['email', 'name', 'none'])
+    .describe(
+      'The member it matches, for attribution only: by an exact email, by name for its importer to confirm, or none',
+    ),
+  member: z.string().nullable(),
+  memberName: z.string().nullable(),
+  confirmed: z.boolean().describe('Whether its importer confirmed a name match'),
+});
+
+const OutsideReferenceView = z.object({
+  key: z.string(),
+  field: z.enum(['REF', 'NOTEREF', 'PAGEREF']),
+  text: z.string().describe('What it showed in the file: shown as text, never content'),
+  resolved: z
+    .enum(['retargeted', 'text'])
+    .nullable()
+    .describe('Pointed at a block, made the text it showed, or null: still outside the import'),
+});
+
 export const ImportView = ImportSummary.extend({
   levels: ImportLevelsBody,
   title: z.string().nullable().describe('The title the file names, where it names one'),
@@ -220,6 +305,16 @@ export const ImportView = ImportSummary.extend({
   report: z
     .array(ImportReportEntry)
     .describe('What was left out, kept differently, or not read yet (IMP-007)'),
+  references: z
+    .array(OutsideReferenceView)
+    .describe('Each cross-reference whose target is not in the file (IMP-033)'),
+  identities: z
+    .array(ImportIdentityView)
+    .describe('Every name the file carries (IMP-009), as carried'),
+  policy: z
+    .enum(['map', 'keep', 'discard'])
+    .describe('The identity policy applied at acceptance, or, until then, the one that will be'),
+  policyApplied: z.boolean().describe('Whether `policy` was applied, at acceptance (IMP-011)'),
 });
 export type ImportView = z.infer<typeof ImportView>;
 
@@ -369,7 +464,11 @@ export const importRoutes = {
       401: unauthenticated,
       403: { description: 'The caller may no longer create in the space', schema: ErrorBody },
       404: notYours,
-      409: { description: '`import_not_proposed`: it is not proposed', schema: ErrorBody },
+      409: {
+        description:
+          '`import_not_proposed`: it is not proposed; `import_references_unresolved`: a cross-reference outside the file is neither retargeted nor made text',
+        schema: ErrorBody,
+      },
     },
   },
   getImportPart: {

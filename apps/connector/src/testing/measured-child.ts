@@ -4,9 +4,8 @@ import { answerRequest } from '../work.js';
 
 /**
  * The child as `child.ts` is, for the suite alone: one line in, one line out, and then, on its
- * standard error, how far its peak resident set rose above where it stood before the request was
- * read, in bytes, so a test can hold a run to a bound (DAT-110) whatever the runtime's own footprint on
- * the machine running it (issue #765). Nothing else differs.
+ * standard error, the most memory it held - its peak resident set, in bytes - so a test can hold a
+ * run to a bound (DAT-110). Nothing else differs.
  */
 async function readInput(): Promise<string> {
   const chunks: Buffer[] = [];
@@ -15,8 +14,6 @@ async function readInput(): Promise<string> {
 }
 
 async function main(): Promise<number> {
-  // The high-water mark once the modules are loaded: the floor a run's own memory is measured from.
-  const floor = process.resourceUsage().maxRSS * 1024;
   let request;
   try {
     request = childRequestSchema.parse(JSON.parse(await readInput()));
@@ -27,7 +24,7 @@ async function main(): Promise<number> {
   await new Promise<void>((resolve) =>
     process.stdout.write(`${JSON.stringify(answer)}\n`, () => resolve()),
   );
-  const peak = process.resourceUsage().maxRSS * 1024 - floor;
+  const peak = process.resourceUsage().maxRSS * 1024;
   await new Promise<void>((resolve) =>
     process.stderr.write(`${JSON.stringify({ peakBytes: peak })}\n`, () => resolve()),
   );

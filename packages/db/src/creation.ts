@@ -183,6 +183,8 @@ export interface NewComponent {
   readonly author: string;
   /** Its first blocks, checked as content is; one empty paragraph where absent (CNT-124). */
   readonly blocks?: readonly BlockNode[];
+  /** Its identifier, where chosen before it is written: an import's, its references resolved to it. */
+  readonly artifactId?: string;
 }
 
 export type CreateComponentAnswer =
@@ -266,6 +268,7 @@ export async function createComponent(
   const version = await createArtifact(trx, {
     author: input.author,
     spaceId: input.spaceId,
+    ...(input.artifactId === undefined ? {} : { artifactId: input.artifactId }),
     substance: {
       kind: 'component',
       content,

@@ -486,6 +486,8 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   setEditingSettings: writes('settings.changed'),
   getDataSettings: read,
   setDataSettings: writes('settings.changed'),
+  getImportSettings: read,
+  setImportSettings: writes('settings.changed'),
   listTokens: read,
   createToken: writes('token.issued'),
   revokeToken: writes('token.revoked'),

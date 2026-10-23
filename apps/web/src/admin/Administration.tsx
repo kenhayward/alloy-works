@@ -14,6 +14,7 @@ import { Webhooks } from './Webhooks.js';
 import { Models } from './Models.js';
 import { TenantExport } from './TenantExport.js';
 import { Editing } from './Editing.js';
+import { ImportPolicy } from './ImportPolicy.js';
 import { Extensions } from './Extensions.js';
 import { Groups } from './Groups.js';
 import { Holds } from './Holds.js';
@@ -39,6 +40,8 @@ const SECTIONS = [
   { slug: 'overview', title: 'Overview', group: 'Environment' },
   { slug: 'spaces', title: 'Spaces', group: 'Environment' },
   { slug: 'editing', title: 'Editing', group: 'Environment' },
+  // What an accepted import keeps of the names a file carries (IMP-010; the IM plan, IM-I).
+  { slug: 'imports', title: 'Imports', group: 'Environment' },
   { slug: 'workflows', title: 'Workflows', group: 'Environment' },
   // The model endpoints the environment calls, and what each purpose uses (GEN-027; the G1 plan).
   { slug: 'models', title: 'Models', group: 'Environment' },
@@ -291,6 +294,9 @@ export function Administration({
         )}
         {shown === 'editing' && (
           <Editing client={client} mayChange={administers.get('tenant') === true} />
+        )}
+        {shown === 'imports' && (
+          <ImportPolicy client={client} mayChange={administers.get('tenant') === true} />
         )}
         {shown === 'workflows' && <Workflows client={client} />}
         {shown === 'people' && <People client={client} />}

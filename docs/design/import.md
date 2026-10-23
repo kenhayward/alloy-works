@@ -31,6 +31,7 @@ and loses, is said in the product.
 | **IMP-009** | The identities the file carries listed before acceptance                                              |
 | **IMP-010** | The tenant's policy: map, keep as text, or discard                                                    |
 | **IMP-011** | Which policy was applied recorded on what was imported                                                |
+| **IMP-032** | Identities shown as carried in review, the policy applied once, at acceptance                         |
 | **IMP-028** | Each part reviewed alone, beside its source and reason                                                |
 | **IMP-033** | A reference whose target is outside the import listed before acceptance, with its source text         |
 | **IMP-034** | Each such reference retargeted, converted to plain text and reported, or the import refused           |
@@ -53,17 +54,19 @@ and loses, is said in the product.
 | **IMP-047** | Macros, embedded objects, outside files and unallowed links never stored, and reported                |
 
 PUB-028's import half is IMP-005's; its export half moves to T8 with Word fidelity. IMP-016 moves to
-T7. The import constraints IMP-032 and IMP-048 are kept here unclaimed. IMP-012 is left unclaimed: the file's own properties are discarded by
+T7. The import constraint IMP-048 is kept here unclaimed. IMP-012 is left unclaimed: the file's own properties are discarded by
 default, but an image's metadata is AST-007's, in T7.
 
 ## Identities
 
 A Word author is a name and sometimes an initials or an email. During review each is shown as
 carried. At acceptance the tenant's policy applies: **map** an exact email match to that member, a
-name match flagged for the importer to confirm, keeping the rest as text (the default); **keep** all as text; **discard**. A suggestion or a
-thread made from the file is authored by the mapped person, else by the importer, with the Word
-author kept as `attributedTo` text beside it ("Alex, from Word"); which policy applied is recorded
-on the import and on each.
+name match flagged for the importer to confirm, keeping the rest as text (the default); **keep** all
+as text; **discard**. **Mapping attributes; it never authors.** A file's names and emails are
+whatever its writer typed, so every suggestion, thread and reply an import makes is made by its
+importer; the Word author is kept as `attributed_to` text beside it, with the member it matched
+("Alex (from Word, matched to Alex Smith)"). A confirmation must name the member the identity
+matches, a user of the tenant. Which policy applied is recorded on the import and on each.
 
 ## As IMa built it
 
@@ -95,3 +98,37 @@ on the import and on each.
   origin), split (an origin shared), edited (kind or blocks changed), renamed, unchanged.
 - A part's source after a move is still the source of what it came from: per-block sources are not
   kept.
+
+## As IMc built it
+
+- **The reader** (`packages/readers/src/docx`) reads footnotes, numbering carried on or restarted,
+  captions (style Caption, after their `SEQ`) onto the adjacent table or figure, images by their
+  relationship (PNG and JPEG, the rest reported), and REF, NOTEREF and PAGEREF fields to the block,
+  footnote or captioned block their bookmark is in, displayed as `write.ts` writes them. A field's
+  result is source text only. OMML has no reader: equations are reported with their text in the
+  source. Text boxes are dropped, content controls and other fields kept as text, each said.
+- **References** carry the reader's identifier through admission; `proposeImport` records where each
+  was admitted (`import.anchors`), and acceptance (`resolveReferences`) points each at its own block,
+  another component's (identities chosen before anything is written), or a heading's node. One whose
+  bookmark is not in the file has a key (`wx-n`) in `import.outside` until retargeted or made text,
+  through the edits route; acceptance is refused before then.
+- **Changes** stay on the reader's text runs, by author. `proposeImport` admits the part as every
+  change rejected, then each author's variant, matched to it by identifier: `import_part.changes`,
+  per top-level block, so edits carry them. A change id in two parts stays in the first, flagged.
+  Comments become `import_part.threads`, anchored to their span where its quote stands, else the
+  component, flagged where clamped.
+- **Images** are held to asset ingest's check (`checkImage`) in the import job, stored by hash and
+  held in `import_asset` against the import, the figure naming a placeholder; a refused one is an
+  empty paragraph. Acceptance makes each an asset, recorded with the header the job read. Abandoning,
+  failing or the sweep deletes the rows and each object nothing else holds (IMP-008): versions are
+  never deleted, so none is made before acceptance.
+- **0157**: `import_policy`, the import's anchors, outside references, identities, confirmations,
+  properties (kept only under `keep`) and the policy applied; `import_asset`; and `import_attribution`, beside each
+  suggestion, thread and reply: the policy, the Word author as text, and the member matched.
+  Everything is made by the importer (the security review): a name or an email in a file is its
+  writer's to type.
+- **Retargeting** to another component asks that its importer may read it, live, and that it holds
+  the block, one refusal for every way it does not.
+- **Gaps**: retargeting to another
+  component is in the route, not yet in the page; a change crossing a split the importer makes is not
+  re-clamped; endnotes are not read.

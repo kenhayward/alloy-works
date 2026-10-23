@@ -26,12 +26,15 @@ import {
   createImport,
   editImport,
   holdObject,
+  importMembers,
   importParts,
+  importPolicy,
   listImports,
   loadFacts,
   readImport,
   receiveImportFile,
   setImportPlace,
+  type ImportEditInput,
   type StoredImport,
   type StoredImportPart,
   type Tenant,
@@ -41,6 +44,7 @@ import {
 import {
   blockText,
   importLevelsSchema,
+  matchIdentity,
   partMatches,
   reviewFlags,
   type ImportEditRefusal,
@@ -96,6 +100,10 @@ const REFUSALS: Readonly<Record<ImportEditRefusal, string>> = {
   kinds_differ: 'Only two components, or two sections, can be merged.',
   title_invalid: 'A part needs a title.',
   content_invalid: 'What this would make is not content a component can hold, so it was not made.',
+  reference_missing: 'There is no such reference outside the import in this proposal.',
+  target_missing: 'There is no such block in this import, or in a component of this space.',
+  identity_invalid:
+    'That member is not who this name matches, or the file does not carry this name.',
 };
 
 const partOf = (found: StoredImport, part: StoredImportPart) => ({
@@ -115,6 +123,8 @@ async function viewOf(trx: TenantTransaction, found: StoredImport): Promise<Impo
     const at = read === null ? -1 : parts.findIndex((part) => part.origins.includes(read));
     return at === -1 ? null : at;
   };
+  // Each name the file carries, with the member it matches: attribution alone, never authorship.
+  const members = found.identities.length === 0 ? [] : await importMembers(trx);
   return {
     ...summaryOf(found),
     levels: found.levels,
@@ -124,6 +134,25 @@ async function viewOf(trx: TenantTransaction, found: StoredImport): Promise<Impo
     place: found.place,
     accepted: found.acceptedCounts,
     report: found.report.map((entry) => ({ ...entry, part: holding(entry.part) })),
+    references: found.outside.map(({ key, field, text, resolved }) => ({
+      key,
+      field,
+      text,
+      resolved,
+    })),
+    identities: found.identities.map((identity) => {
+      const { match, member } = matchIdentity(identity, members);
+      return {
+        ...identity,
+        carries: [...identity.carries],
+        match,
+        member,
+        memberName: members.find((each) => each.id === member)?.name ?? null,
+        confirmed: match === 'name' && found.confirmed[identity.name] === member,
+      };
+    }),
+    policy: found.policy ?? (await importPolicy(trx)),
+    policyApplied: found.policy !== null,
   };
 }
 
@@ -307,6 +336,12 @@ export function importHandlers(
               };
             case 'import.not_proposed':
               throw notProposed();
+            case 'import.references_unresolved':
+              throw new AppError(
+                409,
+                'import_references_unresolved',
+                'A cross-reference points at something outside the import. Point it at a block, or make it the text it showed, before accepting.',
+              );
             case 'space.missing':
             case 'template.missing':
               throw notFound();
@@ -332,9 +367,33 @@ export function importHandlers(
         const at = parts.findIndex((part) => part.id === wanted);
         const part = parts[at];
         if (!part) throw notFound();
+        const authors = [...new Set(part.changes.map((change) => change.author))];
+        const held = JSON.stringify(part.blocks);
         return {
           ...partOf(found, part),
-          blocks: part.blocks.map((block) => ({ type: block.type, text: blockText(block) })),
+          blocks: part.blocks.map((block) => ({
+            id: block.id,
+            type: block.type,
+            text: blockText(block),
+          })),
+          suggestions: authors.map((author) => {
+            const changes = part.changes.filter((change) => change.author === author);
+            return {
+              author,
+              blocks: changes.length,
+              text: changes.flatMap((change) => change.proposed.map(blockText)).join('\n'),
+            };
+          }),
+          threads: part.threads.map((thread) => ({
+            author: thread.author,
+            text: thread.text,
+            quote: thread.span ? thread.quote : null,
+            clamped: thread.clamped,
+            replies: thread.replies.map(({ author, text }) => ({ author, text })),
+          })),
+          references: found.outside
+            .filter((each) => held.includes(JSON.stringify(each.key)))
+            .map((each) => each.key),
           place: at,
           of: parts.length,
           previous: parts[at - 1]?.id ?? null,
@@ -365,7 +424,7 @@ export function importHandlers(
           const body = request.body as EditImportBody;
           const answer = await editImport(trx, found.id, {
             revision: body.revision,
-            edit: body.edit,
+            edit: body.edit as ImportEditInput,
             by: callerOf(request).principalId,
           });
           switch (answer.answer) {

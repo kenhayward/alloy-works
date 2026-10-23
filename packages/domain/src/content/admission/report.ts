@@ -59,6 +59,14 @@ export const reportMessages = {
       'A link to a file outside the document was removed. Nothing outside the file is fetched.',
     notYetRead: 'Something the import does not read yet was left out.',
     pageSetup: 'The page size, margins and columns were left out. The layout decides them.',
+    // An import's (IMc; IM-J, IMP-007): what the file says of itself, and what it holds that is not read.
+    fileProperty:
+      'A property of the file, such as who wrote it or the computer it was saved on, was left out.',
+    textBox: 'A text box was left out.',
+    imageFormat: 'An image in a format other than PNG or JPEG was left out.',
+    imageRefused: 'An image that could not be read as an image was left out.',
+    trackedChange:
+      'A tracked change that could not become a suggestion was rejected, its text left as it stood before.',
   },
   rewritten: {
     hyperlink: 'A link target was rewritten in the form every browser reads the same way.',
@@ -85,6 +93,13 @@ export const reportMessages = {
     cellBlocks: 'A quotation or preformatted text in a table cell was kept as paragraphs.',
     footnoteBlocks:
       'A table, list, quotation or preformatted text in a footnote was kept as paragraphs.',
+    // An import's (IMc): kept as the text it showed.
+    contentControl: 'A content control was kept as its text.',
+    field: 'A field was kept as the text it showed.',
+    caption: 'A caption with no table or figure beside it was kept as a paragraph.',
+    crossReferenceText:
+      'A cross-reference to something outside the import was made the text it showed, as its importer chose.',
+    commentAnchor: 'A comment covering more than one block was anchored where it starts.',
   },
   /**
    * Kept exactly as it arrived, and worth the author knowing: nothing was removed or changed, so it

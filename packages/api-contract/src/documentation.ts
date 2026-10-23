@@ -595,7 +595,14 @@ const operationTags = {
     'getArtifactRelationships',
     'getArtifactPath',
   ],
-  Settings: ['getEditingSettings', 'setEditingSettings', 'getDataSettings', 'setDataSettings'],
+  Settings: [
+    'getEditingSettings',
+    'setEditingSettings',
+    'getDataSettings',
+    'setDataSettings',
+    'getImportSettings',
+    'setImportSettings',
+  ],
   'Legal holds': ['placeHold', 'releaseHold', 'listHolds'],
   'Deletion and retention': ['listDeleted', 'getRetention', 'setRetention'],
   Workflow: [
@@ -1141,19 +1148,19 @@ const descriptions: Readonly<Record<string, string>> = {
   listImports:
     'Lists the caller’s imports in a space, the newest first, or every import there for the space’s administrator: each with its state, and when a proposal left alone is abandoned. Needs read in the space.',
   getImport:
-    'Returns an import: its state, the outline it proposes, each part with the reason it starts where it does and its text as the file had it, and the report of what was left out, kept differently or not read yet. Only its importer and the space’s administrators may read it.',
+    'Returns an import: its state, the outline it proposes, each part with the reason it starts where it does and its text as the file had it, and the report of what was left out, kept differently or not read yet; each cross-reference whose target is not in the file, with the text it showed; and every name the file carries, with the member it matches under the environment’s policy. Only its importer and the space’s administrators may read it.',
   setImportLevels:
     'Changes the heading levels a proposal breaks out at: which level starts a section and which a component. The file is read again. Only its importer may change them.',
   getImportPart:
-    'Returns one part of a proposal, so it can be reviewed alone: its title, kind, the reason it starts where it does, what it is flagged for, its blocks as text beside the text of the file it came from, and the parts before and after it. Only its importer and the space’s administrators may read it.',
+    'Returns one part of a proposal, so it can be reviewed alone: its title, kind, the reason it starts where it does, what it is flagged for, its blocks as text beside the text of the file it came from, the suggestions and threads its tracked changes and comments will become, each by its Word author, and the parts before and after it. Only its importer and the space’s administrators may read it.',
   searchImportParts:
     'Lists the parts of a proposal whose title or text holds the words asked, ignoring case, or that carry a flag: empty, refused, or something the report said was not read yet, left out or kept differently. Only its importer and the space’s administrators may search it.',
   editImport:
-    'Edits a proposal before it is accepted: moves blocks across the split between two components, splits a component at a block, merges a part with the one after it, renames a part, or makes a part a section or a component. Each edit is checked as it is made and refused, saying why, if what it makes could not be accepted. It is made against the revision last read, and refused if the proposal changed since. The proposal as the file was read is kept unchanged beside it. Only its importer may edit it.',
+    'Edits a proposal before it is accepted: moves blocks across the split between two components, splits a component at a block, merges a part with the one after it, renames a part, or makes a part a section or a component. It also points a cross-reference whose target is not in the file at a block of the import or of a component in the space, or makes it the text it showed, said in the report; and confirms the member a name in the file matches by name. Each edit is checked as it is made and refused, saying why, if what it makes could not be accepted. It is made against the revision last read, and refused if the proposal changed since. The proposal as the file was read is kept unchanged beside it. Only its importer may edit it.',
   setImportPlace:
     'Keeps the part of a proposal its importer is at, so that returning to the import, from any session, opens that part. Only its importer may set it.',
   acceptImport:
-    'Accepts a proposal: its document, sections and components are made in one act, by the person accepting, each at 0.1 and each recording the file it came from. Blank, or from the template named. How many parts were accepted unchanged, edited, merged, split or renamed is recorded on the import. Only its importer may accept it, and they need create in the space.',
+    'Accepts a proposal: its document, sections and components are made in one act, by the person accepting, each at 0.1 and each recording the file it came from. Blank, or from the template named. Each Word author’s tracked changes become one suggestion on each component, and each comment a thread with its replies, all made by the person accepting and attributed to the Word author as the environment’s policy says, with the member it matched; the policy applied is recorded on the import and on each. Refused while a cross-reference outside the file is unresolved. How many parts were accepted unchanged, edited, merged, split or renamed is recorded on the import. Only its importer may accept it, and they need create in the space.',
   abandonImport:
     'Abandons an import before it is accepted: its proposal and its file are removed and nothing of it is left in the space. Recorded as an import abandoned. Only its importer and the space’s administrators may abandon it.',
   requestTenantExport:
@@ -1354,6 +1361,10 @@ const descriptions: Readonly<Record<string, string>> = {
     'Reads the limits the environment sets on a query run, each lowered or not, and the ceilings no definition may pass.',
   setDataSettings:
     'Lowers, or stops lowering, the environment limits on the rows, bytes and seconds of a query run. A run takes the least of its definition limits and these.',
+  getImportSettings:
+    'Reads the environment’s identity policy for imports: whether the names a file carries are kept with the member each matches, kept as text, or discarded when an import is accepted.',
+  setImportSettings:
+    'Changes the environment’s identity policy for imports. It applies to each import accepted from then on, once, at acceptance. Needs administer at the environment.',
   startOrganisationSignIn:
     'Browser sign-in route. Redirects to the organisation’s identity provider; an API token cannot complete this flow.',
   finishOrganisationSignIn:

@@ -1,5 +1,6 @@
 import type { BlockNode } from '../content/model/blocks.js';
 import { CURRENT_SCHEMA_VERSION, parseContentDocument } from '../content/model/document.js';
+import { inBlocks, type ProposedChange, type ProposedThread } from './changes.js';
 import { IMPORT_SOURCE_MOST, type ImportPartFlag, type ImportPartReason } from './proposal.js';
 
 /**
@@ -20,7 +21,18 @@ export interface ReviewPart {
   readonly flags: readonly ImportPartFlag[];
   /** The parts as read it came from, by their place: more than one once merged. */
   readonly origins: readonly number[];
+  /** The reader's identifiers of the headings it stands for (IMc): what a reference to one names. */
+  readonly headings: readonly string[];
+  /** Its Word authors' changes and its comments (IM-G), each on one of its blocks. */
+  readonly changes: readonly ProposedChange[];
+  readonly threads: readonly ProposedThread[];
 }
+
+/** Where a reference outside the import is pointed (IMP-034): a block of it, another's, or its text. */
+export type ImportReferenceTarget =
+  | { readonly kind: 'block'; readonly block: string }
+  | { readonly kind: 'component'; readonly component: string; readonly block: string }
+  | { readonly kind: 'text'; readonly text: string };
 
 /** A part's reason, or that its importer split it there. */
 export type ImportReviewReason = ImportPartReason | { readonly rule: 'split' };
@@ -38,7 +50,9 @@ export type ImportEdit =
   /** The part and the one after it, as one. */
   | { readonly edit: 'merge'; readonly part: string }
   | { readonly edit: 'rename'; readonly part: string; readonly title: string }
-  | { readonly edit: 'kind'; readonly part: string; readonly kind: 'section' | 'component' };
+  | { readonly edit: 'kind'; readonly part: string; readonly kind: 'section' | 'component' }
+  /** A reference outside the import, by its key, pointed elsewhere or made the text it showed. */
+  | { readonly edit: 'reference'; readonly reference: string; readonly to: ImportReferenceTarget };
 
 /** Why an edit was refused, by code. */
 export type ImportEditRefusal =
@@ -49,7 +63,10 @@ export type ImportEditRefusal =
   | 'blocks_out_of_range'
   | 'kinds_differ'
   | 'title_invalid'
-  | 'content_invalid';
+  | 'content_invalid'
+  | 'reference_missing'
+  | 'target_missing'
+  | 'identity_invalid';
 
 const flagsOf = (
   kind: ReviewPart['kind'],
@@ -65,6 +82,60 @@ const withBlocks = (part: ReviewPart, blocks: readonly BlockNode[]): ReviewPart 
   blocks,
   flags: flagsOf(part.kind, blocks, [part]),
 });
+
+/** Each change and thread of the parts given, carried to whichever of these now holds its block. */
+function carried(from: readonly ReviewPart[], into: readonly ReviewPart[]): ReviewPart[] {
+  const changes = from.flatMap((part) => part.changes);
+  const threads = from.flatMap((part) => part.threads);
+  const was = new Set(from.flatMap((each) => each.flags));
+  return into.map((part) => {
+    const tops = new Set(part.blocks.map((block) => block.id));
+    const kept = changes.filter((change) => tops.has(change.block));
+    const on = threads.filter((thread) => inBlocks(part.blocks, thread.block));
+    const others = part.flags.filter(
+      (flag) => flag !== 'changeClamped' && flag !== 'commentClamped',
+    );
+    return {
+      ...part,
+      changes: kept,
+      threads: on,
+      flags: [
+        ...others,
+        ...(was.has('changeClamped') && kept.length > 0 ? (['changeClamped'] as const) : []),
+        ...(on.some((thread) => thread.clamped) ? (['commentClamped'] as const) : []),
+      ],
+    };
+  });
+}
+
+/** A value with each reference to `key` given to `replace`: what it stands as, or nothing. */
+function referred(
+  value: unknown,
+  key: string,
+  replace: (node: Record<string, unknown>) => unknown[],
+): { readonly value: unknown; readonly found: number } {
+  let found = 0;
+  const walk = (each: unknown): unknown => {
+    if (Array.isArray(each)) {
+      return each.flatMap((member) => {
+        const node = member as Record<string, unknown> | null;
+        const target = node?.['target'] as Record<string, unknown> | undefined;
+        if (
+          node?.['type'] === 'crossReference' &&
+          target?.['kind'] === 'block' &&
+          target['block'] === key
+        ) {
+          found += 1;
+          return replace(node);
+        }
+        return [walk(member)];
+      });
+    }
+    if (typeof each !== 'object' || each === null) return each;
+    return Object.fromEntries(Object.entries(each).map(([name, member]) => [name, walk(member)]));
+  };
+  return { value: walk(value), found };
+}
 
 /** Whether a component's blocks are content, on the content schema's terms (CNT-013). */
 function valid(
@@ -98,6 +169,7 @@ export function editProposal(
   | { readonly ok: true; readonly parts: readonly ReviewPart[] }
   | { readonly ok: false; readonly refusal: ImportEditRefusal } {
   const refuse = (refusal: ImportEditRefusal) => ({ ok: false as const, refusal });
+  if (edit.edit === 'reference') return retarget(parts, edit, context);
   const at = parts.findIndex((part) => part.id === edit.part);
   const part = parts[at];
   if (!part) return refuse('part_missing');
@@ -121,8 +193,9 @@ export function editProposal(
         id: null,
         title,
         reason: { rule: 'split' },
+        headings: [],
       };
-      changed = [withBlocks(part, part.blocks.slice(0, edit.at)), after];
+      changed = carried([part], [withBlocks(part, part.blocks.slice(0, edit.at)), after]);
       out.splice(at, 1, ...changed);
       break;
     }
@@ -146,9 +219,9 @@ export function editProposal(
         other,
         edit.to === 'previous' ? [...other.blocks, ...moving] : [...moving, ...other.blocks],
       );
-      changed = [withBlocks(part, kept), received];
+      changed = carried([part, other], [withBlocks(part, kept), received]);
       out[at] = changed[0]!;
-      out[there] = received;
+      out[there] = changed[1]!;
       break;
     }
     case 'merge': {
@@ -162,9 +235,10 @@ export function editProposal(
         source: `${part.source}\n${following.source}`.slice(0, IMPORT_SOURCE_MOST),
         flags: flagsOf(part.kind, blocks, [part, following]),
         origins: [...new Set([...part.origins, ...following.origins])].sort((a, b) => a - b),
+        headings: [...part.headings, ...following.headings],
       };
-      changed = [merged];
-      out.splice(at, 2, merged);
+      changed = carried([part, following], [merged]);
+      out.splice(at, 2, ...changed);
       break;
     }
     case 'kind': {
@@ -177,6 +251,51 @@ export function editProposal(
     }
   }
   if (!changed.every((each) => valid(each, context))) return refuse('content_invalid');
+  return { ok: true, parts: out };
+}
+
+/**
+ * A reference outside the import retargeted, or made the text it showed (IMP-034): every one under
+ * its key, in each part's blocks and its suggested changes, each part it changes validated. A block
+ * of the import must be one; another component's is the caller's to check.
+ */
+function retarget(
+  parts: readonly ReviewPart[],
+  edit: Extract<ImportEdit, { edit: 'reference' }>,
+  context: { readonly language: string; readonly direction: 'ltr' | 'rtl' },
+):
+  | { readonly ok: true; readonly parts: readonly ReviewPart[] }
+  | { readonly ok: false; readonly refusal: ImportEditRefusal } {
+  const { to } = edit;
+  if (to.kind === 'block' && !parts.some((part) => inBlocks(part.blocks, to.block))) {
+    return { ok: false, refusal: 'target_missing' };
+  }
+  const replace = (node: Record<string, unknown>): unknown[] => {
+    if (to.kind === 'text') {
+      return to.text === '' ? [] : [{ type: 'text', value: to.text, marks: [] }];
+    }
+    const target =
+      to.kind === 'block'
+        ? { kind: 'block', block: to.block }
+        : { kind: 'component', component: to.component, block: to.block };
+    return [{ ...node, target }];
+  };
+  let found = 0;
+  const out = parts.map((part) => {
+    const blocks = referred(part.blocks, edit.reference, replace);
+    const changes = referred(part.changes, edit.reference, replace);
+    found += blocks.found + changes.found;
+    if (blocks.found + changes.found === 0) return part;
+    return {
+      ...part,
+      blocks: blocks.value as BlockNode[],
+      changes: changes.value as ProposedChange[],
+    };
+  });
+  if (found === 0) return { ok: false, refusal: 'reference_missing' };
+  if (!out.every((part, index) => part === parts[index] || valid(part, context))) {
+    return { ok: false, refusal: 'content_invalid' };
+  }
   return { ok: true, parts: out };
 }
 
@@ -265,6 +384,8 @@ export type ImportReviewFlag = ImportPartFlag | 'notYetRead' | 'leftOut' | 'kept
 export const importReviewFlags: readonly ImportReviewFlag[] = [
   'empty',
   'refused',
+  'changeClamped',
+  'commentClamped',
   'notYetRead',
   'leftOut',
   'keptDifferently',

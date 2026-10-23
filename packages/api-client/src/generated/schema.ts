@@ -3528,7 +3528,7 @@ export interface paths {
         };
         /**
          * An import: its state, its proposed outline and what its report says
-         * @description Returns an import: its state, the outline it proposes, each part with the reason it starts where it does and its text as the file had it, and the report of what was left out, kept differently or not read yet. Only its importer and the space’s administrators may read it.
+         * @description Returns an import: its state, the outline it proposes, each part with the reason it starts where it does and its text as the file had it, and the report of what was left out, kept differently or not read yet; each cross-reference whose target is not in the file, with the text it showed; and every name the file carries, with the member it matches under the environment’s policy. Only its importer and the space’s administrators may read it.
          */
         get: operations["getImport"];
         put?: never;
@@ -3570,7 +3570,7 @@ export interface paths {
         put?: never;
         /**
          * Accept a proposal, making its document, sections and components in one act
-         * @description Accepts a proposal: its document, sections and components are made in one act, by the person accepting, each at 0.1 and each recording the file it came from. Blank, or from the template named. How many parts were accepted unchanged, edited, merged, split or renamed is recorded on the import. Only its importer may accept it, and they need create in the space.
+         * @description Accepts a proposal: its document, sections and components are made in one act, by the person accepting, each at 0.1 and each recording the file it came from. Blank, or from the template named. Each Word author’s tracked changes become one suggestion on each component, and each comment a thread with its replies, all made by the person accepting and attributed to the Word author as the environment’s policy says, with the member it matched; the policy applied is recorded on the import and on each. Refused while a cross-reference outside the file is unresolved. How many parts were accepted unchanged, edited, merged, split or renamed is recorded on the import. Only its importer may accept it, and they need create in the space.
          */
         post: operations["acceptImport"];
         delete?: never;
@@ -3590,7 +3590,7 @@ export interface paths {
         put?: never;
         /**
          * Edit a proposal: move a split, split, merge or rename a part, or change its kind
-         * @description Edits a proposal before it is accepted: moves blocks across the split between two components, splits a component at a block, merges a part with the one after it, renames a part, or makes a part a section or a component. Each edit is checked as it is made and refused, saying why, if what it makes could not be accepted. It is made against the revision last read, and refused if the proposal changed since. The proposal as the file was read is kept unchanged beside it. Only its importer may edit it.
+         * @description Edits a proposal before it is accepted: moves blocks across the split between two components, splits a component at a block, merges a part with the one after it, renames a part, or makes a part a section or a component. It also points a cross-reference whose target is not in the file at a block of the import or of a component in the space, or makes it the text it showed, said in the report; and confirms the member a name in the file matches by name. Each edit is checked as it is made and refused, saying why, if what it makes could not be accepted. It is made against the revision last read, and refused if the proposal changed since. The proposal as the file was read is kept unchanged beside it. Only its importer may edit it.
          */
         post: operations["editImport"];
         delete?: never;
@@ -3668,7 +3668,7 @@ export interface paths {
         };
         /**
          * One part of a proposal, beside the text it came from
-         * @description Returns one part of a proposal, so it can be reviewed alone: its title, kind, the reason it starts where it does, what it is flagged for, its blocks as text beside the text of the file it came from, and the parts before and after it. Only its importer and the space’s administrators may read it.
+         * @description Returns one part of a proposal, so it can be reviewed alone: its title, kind, the reason it starts where it does, what it is flagged for, its blocks as text beside the text of the file it came from, the suggestions and threads its tracked changes and comments will become, each by its Word author, and the parts before and after it. Only its importer and the space’s administrators may read it.
          */
         get: operations["getImportPart"];
         put?: never;
@@ -5428,6 +5428,30 @@ export interface paths {
          * @description Changes the environment’s editing settings. Existing saved changes follow the new policy.
          */
         put: operations["setEditingSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/settings/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The environment's policy for the names an imported file carries
+         * @description Reads the environment’s identity policy for imports: whether the names a file carries are kept with the member each matches, kept as text, or discarded when an import is accepted.
+         */
+        get: operations["getImportSettings"];
+        /**
+         * Change the environment's policy for the names an imported file carries
+         * @description Changes the environment’s identity policy for imports. It applies to each import accepted from then on, once, at acceptance. Needs administer at the environment.
+         */
+        put: operations["setImportSettings"];
         post?: never;
         delete?: never;
         options?: never;
@@ -67959,7 +67983,11 @@ export interface operations {
                      *         "split": -9007199254740991,
                      *         "renamed": -9007199254740991
                      *       },
-                     *       "report": []
+                     *       "report": [],
+                     *       "references": [],
+                     *       "identities": [],
+                     *       "policy": "map",
+                     *       "policyApplied": false
                      *     }
                      */
                     "application/json": {
@@ -68005,8 +68033,8 @@ export interface operations {
                                 text?: string;
                                 level?: number;
                             };
-                            /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from */
-                            flags: ("empty" | "refused" | "notYetRead" | "leftOut" | "keptDifferently")[];
+                            /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted; `changeClamped`: a tracked change kept here ran on past it; `commentClamped`: a comment anchored here ran past where it starts; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from */
+                            flags: ("empty" | "refused" | "changeClamped" | "commentClamped" | "notYetRead" | "leftOut" | "keptDifferently")[];
                             /** @description How many blocks it holds */
                             blocks: number;
                             /** @description Its text as the file had it, its heading first */
@@ -68038,6 +68066,40 @@ export interface operations {
                             /** @description The part it was about, by its place; null for the file */
                             part: number | null;
                         }[];
+                        /** @description Each cross-reference whose target is not in the file (IMP-033) */
+                        references: {
+                            key: string;
+                            /** @enum {string} */
+                            field: "REF" | "NOTEREF" | "PAGEREF";
+                            /** @description What it showed in the file: shown as text, never content */
+                            text: string;
+                            /** @description Pointed at a block, made the text it showed, or null: still outside the import */
+                            resolved: ("retargeted" | "text") | null;
+                        }[];
+                        /** @description Every name the file carries (IMP-009), as carried */
+                        identities: {
+                            /** @description As the file carries it: shown as text */
+                            name: string;
+                            email: string | null;
+                            /** @description What the file names it for */
+                            carries: ("changes" | "comments" | "creator" | "lastModifiedBy")[];
+                            /**
+                             * @description The member it matches, for attribution only: by an exact email, by name for its importer to confirm, or none
+                             * @enum {string}
+                             */
+                            match: "email" | "name" | "none";
+                            member: string | null;
+                            memberName: string | null;
+                            /** @description Whether its importer confirmed a name match */
+                            confirmed: boolean;
+                        }[];
+                        /**
+                         * @description The identity policy applied at acceptance, or, until then, the one that will be
+                         * @enum {string}
+                         */
+                        policy: "map" | "keep" | "discard";
+                        /** @description Whether `policy` was applied, at acceptance (IMP-011) */
+                        policyApplied: boolean;
                     };
                 };
             };
@@ -68152,7 +68214,11 @@ export interface operations {
                      *         "split": -9007199254740991,
                      *         "renamed": -9007199254740991
                      *       },
-                     *       "report": []
+                     *       "report": [],
+                     *       "references": [],
+                     *       "identities": [],
+                     *       "policy": "map",
+                     *       "policyApplied": false
                      *     }
                      */
                     "application/json": {
@@ -68198,8 +68264,8 @@ export interface operations {
                                 text?: string;
                                 level?: number;
                             };
-                            /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from */
-                            flags: ("empty" | "refused" | "notYetRead" | "leftOut" | "keptDifferently")[];
+                            /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted; `changeClamped`: a tracked change kept here ran on past it; `commentClamped`: a comment anchored here ran past where it starts; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from */
+                            flags: ("empty" | "refused" | "changeClamped" | "commentClamped" | "notYetRead" | "leftOut" | "keptDifferently")[];
                             /** @description How many blocks it holds */
                             blocks: number;
                             /** @description Its text as the file had it, its heading first */
@@ -68231,6 +68297,40 @@ export interface operations {
                             /** @description The part it was about, by its place; null for the file */
                             part: number | null;
                         }[];
+                        /** @description Each cross-reference whose target is not in the file (IMP-033) */
+                        references: {
+                            key: string;
+                            /** @enum {string} */
+                            field: "REF" | "NOTEREF" | "PAGEREF";
+                            /** @description What it showed in the file: shown as text, never content */
+                            text: string;
+                            /** @description Pointed at a block, made the text it showed, or null: still outside the import */
+                            resolved: ("retargeted" | "text") | null;
+                        }[];
+                        /** @description Every name the file carries (IMP-009), as carried */
+                        identities: {
+                            /** @description As the file carries it: shown as text */
+                            name: string;
+                            email: string | null;
+                            /** @description What the file names it for */
+                            carries: ("changes" | "comments" | "creator" | "lastModifiedBy")[];
+                            /**
+                             * @description The member it matches, for attribution only: by an exact email, by name for its importer to confirm, or none
+                             * @enum {string}
+                             */
+                            match: "email" | "name" | "none";
+                            member: string | null;
+                            memberName: string | null;
+                            /** @description Whether its importer confirmed a name match */
+                            confirmed: boolean;
+                        }[];
+                        /**
+                         * @description The identity policy applied at acceptance, or, until then, the one that will be
+                         * @enum {string}
+                         */
+                        policy: "map" | "keep" | "discard";
+                        /** @description Whether `policy` was applied, at acceptance (IMP-011) */
+                        policyApplied: boolean;
                     };
                 };
             };
@@ -68378,7 +68478,11 @@ export interface operations {
                      *           "split": -9007199254740991,
                      *           "renamed": -9007199254740991
                      *         },
-                     *         "report": []
+                     *         "report": [],
+                     *         "references": [],
+                     *         "identities": [],
+                     *         "policy": "map",
+                     *         "policyApplied": false
                      *       },
                      *       "document": "example"
                      *     }
@@ -68427,8 +68531,8 @@ export interface operations {
                                     text?: string;
                                     level?: number;
                                 };
-                                /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from */
-                                flags: ("empty" | "refused" | "notYetRead" | "leftOut" | "keptDifferently")[];
+                                /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted; `changeClamped`: a tracked change kept here ran on past it; `commentClamped`: a comment anchored here ran past where it starts; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from */
+                                flags: ("empty" | "refused" | "changeClamped" | "commentClamped" | "notYetRead" | "leftOut" | "keptDifferently")[];
                                 /** @description How many blocks it holds */
                                 blocks: number;
                                 /** @description Its text as the file had it, its heading first */
@@ -68460,6 +68564,40 @@ export interface operations {
                                 /** @description The part it was about, by its place; null for the file */
                                 part: number | null;
                             }[];
+                            /** @description Each cross-reference whose target is not in the file (IMP-033) */
+                            references: {
+                                key: string;
+                                /** @enum {string} */
+                                field: "REF" | "NOTEREF" | "PAGEREF";
+                                /** @description What it showed in the file: shown as text, never content */
+                                text: string;
+                                /** @description Pointed at a block, made the text it showed, or null: still outside the import */
+                                resolved: ("retargeted" | "text") | null;
+                            }[];
+                            /** @description Every name the file carries (IMP-009), as carried */
+                            identities: {
+                                /** @description As the file carries it: shown as text */
+                                name: string;
+                                email: string | null;
+                                /** @description What the file names it for */
+                                carries: ("changes" | "comments" | "creator" | "lastModifiedBy")[];
+                                /**
+                                 * @description The member it matches, for attribution only: by an exact email, by name for its importer to confirm, or none
+                                 * @enum {string}
+                                 */
+                                match: "email" | "name" | "none";
+                                member: string | null;
+                                memberName: string | null;
+                                /** @description Whether its importer confirmed a name match */
+                                confirmed: boolean;
+                            }[];
+                            /**
+                             * @description The identity policy applied at acceptance, or, until then, the one that will be
+                             * @enum {string}
+                             */
+                            policy: "map" | "keep" | "discard";
+                            /** @description Whether `policy` was applied, at acceptance (IMP-011) */
+                            policyApplied: boolean;
                         };
                         /** @description The document it made */
                         document: string;
@@ -68546,7 +68684,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `import_not_proposed`: it is not proposed */
+            /** @description `import_not_proposed`: it is not proposed; `import_references_unresolved`: a cross-reference outside the file is neither retargeted nor made text */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -68655,6 +68793,32 @@ export interface operations {
                         part: string & (unknown & unknown);
                         /** @enum {string} */
                         kind: "section" | "component";
+                    } | {
+                        /** @constant */
+                        edit: "reference";
+                        /** @description The cross-reference outside the import, by its key */
+                        reference: string;
+                        /** @description A block of the import; a block of a component in the space; or the text it showed, said in the report */
+                        to: {
+                            /** @constant */
+                            kind: "block";
+                            block: string;
+                        } | {
+                            /** @constant */
+                            kind: "component";
+                            component: string & (unknown & unknown);
+                            block: string;
+                        } | {
+                            /** @constant */
+                            kind: "text";
+                        };
+                    } | {
+                        /** @constant */
+                        edit: "identity";
+                        /** @description A name the file carries */
+                        identity: string;
+                        /** @description The member its name matches, confirmed for attribution; null withdraws the confirmation */
+                        member: (string & (unknown & unknown)) | null;
                     };
                 };
             };
@@ -68695,7 +68859,11 @@ export interface operations {
                      *         "split": -9007199254740991,
                      *         "renamed": -9007199254740991
                      *       },
-                     *       "report": []
+                     *       "report": [],
+                     *       "references": [],
+                     *       "identities": [],
+                     *       "policy": "map",
+                     *       "policyApplied": false
                      *     }
                      */
                     "application/json": {
@@ -68741,8 +68909,8 @@ export interface operations {
                                 text?: string;
                                 level?: number;
                             };
-                            /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from */
-                            flags: ("empty" | "refused" | "notYetRead" | "leftOut" | "keptDifferently")[];
+                            /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted; `changeClamped`: a tracked change kept here ran on past it; `commentClamped`: a comment anchored here ran past where it starts; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from */
+                            flags: ("empty" | "refused" | "changeClamped" | "commentClamped" | "notYetRead" | "leftOut" | "keptDifferently")[];
                             /** @description How many blocks it holds */
                             blocks: number;
                             /** @description Its text as the file had it, its heading first */
@@ -68774,6 +68942,40 @@ export interface operations {
                             /** @description The part it was about, by its place; null for the file */
                             part: number | null;
                         }[];
+                        /** @description Each cross-reference whose target is not in the file (IMP-033) */
+                        references: {
+                            key: string;
+                            /** @enum {string} */
+                            field: "REF" | "NOTEREF" | "PAGEREF";
+                            /** @description What it showed in the file: shown as text, never content */
+                            text: string;
+                            /** @description Pointed at a block, made the text it showed, or null: still outside the import */
+                            resolved: ("retargeted" | "text") | null;
+                        }[];
+                        /** @description Every name the file carries (IMP-009), as carried */
+                        identities: {
+                            /** @description As the file carries it: shown as text */
+                            name: string;
+                            email: string | null;
+                            /** @description What the file names it for */
+                            carries: ("changes" | "comments" | "creator" | "lastModifiedBy")[];
+                            /**
+                             * @description The member it matches, for attribution only: by an exact email, by name for its importer to confirm, or none
+                             * @enum {string}
+                             */
+                            match: "email" | "name" | "none";
+                            member: string | null;
+                            memberName: string | null;
+                            /** @description Whether its importer confirmed a name match */
+                            confirmed: boolean;
+                        }[];
+                        /**
+                         * @description The identity policy applied at acceptance, or, until then, the one that will be
+                         * @enum {string}
+                         */
+                        policy: "map" | "keep" | "discard";
+                        /** @description Whether `policy` was applied, at acceptance (IMP-011) */
+                        policyApplied: boolean;
                     };
                 };
             };
@@ -68932,7 +69134,11 @@ export interface operations {
                      *         "split": -9007199254740991,
                      *         "renamed": -9007199254740991
                      *       },
-                     *       "report": []
+                     *       "report": [],
+                     *       "references": [],
+                     *       "identities": [],
+                     *       "policy": "map",
+                     *       "policyApplied": false
                      *     }
                      */
                     "application/json": {
@@ -68978,8 +69184,8 @@ export interface operations {
                                 text?: string;
                                 level?: number;
                             };
-                            /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from */
-                            flags: ("empty" | "refused" | "notYetRead" | "leftOut" | "keptDifferently")[];
+                            /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted; `changeClamped`: a tracked change kept here ran on past it; `commentClamped`: a comment anchored here ran past where it starts; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from */
+                            flags: ("empty" | "refused" | "changeClamped" | "commentClamped" | "notYetRead" | "leftOut" | "keptDifferently")[];
                             /** @description How many blocks it holds */
                             blocks: number;
                             /** @description Its text as the file had it, its heading first */
@@ -69011,6 +69217,40 @@ export interface operations {
                             /** @description The part it was about, by its place; null for the file */
                             part: number | null;
                         }[];
+                        /** @description Each cross-reference whose target is not in the file (IMP-033) */
+                        references: {
+                            key: string;
+                            /** @enum {string} */
+                            field: "REF" | "NOTEREF" | "PAGEREF";
+                            /** @description What it showed in the file: shown as text, never content */
+                            text: string;
+                            /** @description Pointed at a block, made the text it showed, or null: still outside the import */
+                            resolved: ("retargeted" | "text") | null;
+                        }[];
+                        /** @description Every name the file carries (IMP-009), as carried */
+                        identities: {
+                            /** @description As the file carries it: shown as text */
+                            name: string;
+                            email: string | null;
+                            /** @description What the file names it for */
+                            carries: ("changes" | "comments" | "creator" | "lastModifiedBy")[];
+                            /**
+                             * @description The member it matches, for attribution only: by an exact email, by name for its importer to confirm, or none
+                             * @enum {string}
+                             */
+                            match: "email" | "name" | "none";
+                            member: string | null;
+                            memberName: string | null;
+                            /** @description Whether its importer confirmed a name match */
+                            confirmed: boolean;
+                        }[];
+                        /**
+                         * @description The identity policy applied at acceptance, or, until then, the one that will be
+                         * @enum {string}
+                         */
+                        policy: "map" | "keep" | "discard";
+                        /** @description Whether `policy` was applied, at acceptance (IMP-011) */
+                        policyApplied: boolean;
                     };
                 };
             };
@@ -69220,7 +69460,11 @@ export interface operations {
                      *         "split": -9007199254740991,
                      *         "renamed": -9007199254740991
                      *       },
-                     *       "report": []
+                     *       "report": [],
+                     *       "references": [],
+                     *       "identities": [],
+                     *       "policy": "map",
+                     *       "policyApplied": false
                      *     }
                      */
                     "application/json": {
@@ -69266,8 +69510,8 @@ export interface operations {
                                 text?: string;
                                 level?: number;
                             };
-                            /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from */
-                            flags: ("empty" | "refused" | "notYetRead" | "leftOut" | "keptDifferently")[];
+                            /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted; `changeClamped`: a tracked change kept here ran on past it; `commentClamped`: a comment anchored here ran past where it starts; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from */
+                            flags: ("empty" | "refused" | "changeClamped" | "commentClamped" | "notYetRead" | "leftOut" | "keptDifferently")[];
                             /** @description How many blocks it holds */
                             blocks: number;
                             /** @description Its text as the file had it, its heading first */
@@ -69299,6 +69543,40 @@ export interface operations {
                             /** @description The part it was about, by its place; null for the file */
                             part: number | null;
                         }[];
+                        /** @description Each cross-reference whose target is not in the file (IMP-033) */
+                        references: {
+                            key: string;
+                            /** @enum {string} */
+                            field: "REF" | "NOTEREF" | "PAGEREF";
+                            /** @description What it showed in the file: shown as text, never content */
+                            text: string;
+                            /** @description Pointed at a block, made the text it showed, or null: still outside the import */
+                            resolved: ("retargeted" | "text") | null;
+                        }[];
+                        /** @description Every name the file carries (IMP-009), as carried */
+                        identities: {
+                            /** @description As the file carries it: shown as text */
+                            name: string;
+                            email: string | null;
+                            /** @description What the file names it for */
+                            carries: ("changes" | "comments" | "creator" | "lastModifiedBy")[];
+                            /**
+                             * @description The member it matches, for attribution only: by an exact email, by name for its importer to confirm, or none
+                             * @enum {string}
+                             */
+                            match: "email" | "name" | "none";
+                            member: string | null;
+                            memberName: string | null;
+                            /** @description Whether its importer confirmed a name match */
+                            confirmed: boolean;
+                        }[];
+                        /**
+                         * @description The identity policy applied at acceptance, or, until then, the one that will be
+                         * @enum {string}
+                         */
+                        policy: "map" | "keep" | "discard";
+                        /** @description Whether `policy` was applied, at acceptance (IMP-011) */
+                        policyApplied: boolean;
                     };
                 };
             };
@@ -69408,7 +69686,7 @@ export interface operations {
         parameters: {
             query?: {
                 q?: string;
-                flag?: "empty" | "refused" | "notYetRead" | "leftOut" | "keptDifferently";
+                flag?: "empty" | "refused" | "changeClamped" | "commentClamped" | "notYetRead" | "leftOut" | "keptDifferently";
             };
             header?: {
                 /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
@@ -69540,7 +69818,10 @@ export interface operations {
                      *       "of": -9007199254740991,
                      *       "previous": "example",
                      *       "next": "example",
-                     *       "blocks": []
+                     *       "blocks": [],
+                     *       "suggestions": [],
+                     *       "threads": [],
+                     *       "references": []
                      *     }
                      */
                     "application/json": {
@@ -69558,8 +69839,8 @@ export interface operations {
                             text?: string;
                             level?: number;
                         };
-                        /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from */
-                        flags: ("empty" | "refused" | "notYetRead" | "leftOut" | "keptDifferently")[];
+                        /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted; `changeClamped`: a tracked change kept here ran on past it; `commentClamped`: a comment anchored here ran past where it starts; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from */
+                        flags: ("empty" | "refused" | "changeClamped" | "commentClamped" | "notYetRead" | "leftOut" | "keptDifferently")[];
                         /** @description Its text as the file had it, its heading first */
                         source: string;
                         /** @description Its place in the outline, from 0 */
@@ -69572,11 +69853,39 @@ export interface operations {
                         next: string | null;
                         /** @description What it holds, a block at a time */
                         blocks: {
+                            /** @description Its identifier, which a reference may be pointed at */
+                            id: string;
                             /** @description What kind of block it is: paragraph, list, table and so on */
                             type: string;
                             /** @description Its text, shown as text */
                             text: string;
                         }[];
+                        /** @description The suggestion each Word author’s tracked changes become at acceptance (IMP-005) */
+                        suggestions: {
+                            /** @description The Word author, as the file names them: shown as text */
+                            author: string;
+                            /** @description How many of its blocks their changes change */
+                            blocks: number;
+                            /** @description Those blocks as their changes leave them, shown as text */
+                            text: string;
+                        }[];
+                        /** @description The thread each comment becomes at acceptance (IMP-005) */
+                        threads: {
+                            /** @description The Word author, as the file names them: shown as text */
+                            author: string;
+                            /** @description The comment, shown as text */
+                            text: string;
+                            /** @description The words it is on; null where it is on the part */
+                            quote: string | null;
+                            /** @description Whether its range ran past where it is anchored */
+                            clamped: boolean;
+                            replies: {
+                                author: string;
+                                text: string;
+                            }[];
+                        }[];
+                        /** @description The cross-references outside the import it holds, by their key */
+                        references: string[];
                     };
                 };
             };
@@ -69703,7 +70012,11 @@ export interface operations {
                      *         "split": -9007199254740991,
                      *         "renamed": -9007199254740991
                      *       },
-                     *       "report": []
+                     *       "report": [],
+                     *       "references": [],
+                     *       "identities": [],
+                     *       "policy": "map",
+                     *       "policyApplied": false
                      *     }
                      */
                     "application/json": {
@@ -69749,8 +70062,8 @@ export interface operations {
                                 text?: string;
                                 level?: number;
                             };
-                            /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from */
-                            flags: ("empty" | "refused" | "notYetRead" | "leftOut" | "keptDifferently")[];
+                            /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted; `changeClamped`: a tracked change kept here ran on past it; `commentClamped`: a comment anchored here ran past where it starts; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from */
+                            flags: ("empty" | "refused" | "changeClamped" | "commentClamped" | "notYetRead" | "leftOut" | "keptDifferently")[];
                             /** @description How many blocks it holds */
                             blocks: number;
                             /** @description Its text as the file had it, its heading first */
@@ -69782,6 +70095,40 @@ export interface operations {
                             /** @description The part it was about, by its place; null for the file */
                             part: number | null;
                         }[];
+                        /** @description Each cross-reference whose target is not in the file (IMP-033) */
+                        references: {
+                            key: string;
+                            /** @enum {string} */
+                            field: "REF" | "NOTEREF" | "PAGEREF";
+                            /** @description What it showed in the file: shown as text, never content */
+                            text: string;
+                            /** @description Pointed at a block, made the text it showed, or null: still outside the import */
+                            resolved: ("retargeted" | "text") | null;
+                        }[];
+                        /** @description Every name the file carries (IMP-009), as carried */
+                        identities: {
+                            /** @description As the file carries it: shown as text */
+                            name: string;
+                            email: string | null;
+                            /** @description What the file names it for */
+                            carries: ("changes" | "comments" | "creator" | "lastModifiedBy")[];
+                            /**
+                             * @description The member it matches, for attribution only: by an exact email, by name for its importer to confirm, or none
+                             * @enum {string}
+                             */
+                            match: "email" | "name" | "none";
+                            member: string | null;
+                            memberName: string | null;
+                            /** @description Whether its importer confirmed a name match */
+                            confirmed: boolean;
+                        }[];
+                        /**
+                         * @description The identity policy applied at acceptance, or, until then, the one that will be
+                         * @enum {string}
+                         */
+                        policy: "map" | "keep" | "discard";
+                        /** @description Whether `policy` was applied, at acceptance (IMP-011) */
+                        policyApplied: boolean;
                     };
                 };
             };
@@ -90058,6 +90405,217 @@ export interface operations {
             };
         };
     };
+    getImportSettings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The import settings */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "policy": "map"
+                     *     }
+                     */
+                    "application/json": {
+                        /**
+                         * @description What an accepted import records of the names a file carries: `map`, the default, keeps each as text with the member its email matches, or a name match its importer confirmed; `keep` keeps each as text; `discard` keeps none. Whatever an import makes is made by its importer
+                         * @enum {string}
+                         */
+                        policy: "map" | "keep" | "discard";
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    setImportSettings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "policy": "map"
+                 *     }
+                 */
+                "application/json": {
+                    /**
+                     * @description What an accepted import records of the names a file carries: `map`, the default, keeps each as text with the member its email matches, or a name match its importer confirmed; `keep` keeps each as text; `discard` keeps none. Whatever an import makes is made by its importer
+                     * @enum {string}
+                     */
+                    policy: "map" | "keep" | "discard";
+                };
+            };
+        };
+        responses: {
+            /** @description The import settings, as changed */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "policy": "map"
+                     *     }
+                     */
+                    "application/json": {
+                        /**
+                         * @description What an accepted import records of the names a file carries: `map`, the default, keeps each as text with the member its email matches, or a name match its importer confirmed; `keep` keeps each as text; `discard` keeps none. Whatever an import makes is made by its importer
+                         * @enum {string}
+                         */
+                        policy: "map" | "keep" | "discard";
+                    };
+                };
+            };
+            /** @description invalid_request: not map, keep or discard */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not administer this environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     startGoogleSignIn: {
         parameters: {
             query?: {
@@ -98268,7 +98826,11 @@ export interface operations {
                      *         "split": -9007199254740991,
                      *         "renamed": -9007199254740991
                      *       },
-                     *       "report": []
+                     *       "report": [],
+                     *       "references": [],
+                     *       "identities": [],
+                     *       "policy": "map",
+                     *       "policyApplied": false
                      *     }
                      */
                     "application/json": {
@@ -98314,8 +98876,8 @@ export interface operations {
                                 text?: string;
                                 level?: number;
                             };
-                            /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from */
-                            flags: ("empty" | "refused" | "notYetRead" | "leftOut" | "keptDifferently")[];
+                            /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted; `changeClamped`: a tracked change kept here ran on past it; `commentClamped`: a comment anchored here ran past where it starts; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from */
+                            flags: ("empty" | "refused" | "changeClamped" | "commentClamped" | "notYetRead" | "leftOut" | "keptDifferently")[];
                             /** @description How many blocks it holds */
                             blocks: number;
                             /** @description Its text as the file had it, its heading first */
@@ -98347,6 +98909,40 @@ export interface operations {
                             /** @description The part it was about, by its place; null for the file */
                             part: number | null;
                         }[];
+                        /** @description Each cross-reference whose target is not in the file (IMP-033) */
+                        references: {
+                            key: string;
+                            /** @enum {string} */
+                            field: "REF" | "NOTEREF" | "PAGEREF";
+                            /** @description What it showed in the file: shown as text, never content */
+                            text: string;
+                            /** @description Pointed at a block, made the text it showed, or null: still outside the import */
+                            resolved: ("retargeted" | "text") | null;
+                        }[];
+                        /** @description Every name the file carries (IMP-009), as carried */
+                        identities: {
+                            /** @description As the file carries it: shown as text */
+                            name: string;
+                            email: string | null;
+                            /** @description What the file names it for */
+                            carries: ("changes" | "comments" | "creator" | "lastModifiedBy")[];
+                            /**
+                             * @description The member it matches, for attribution only: by an exact email, by name for its importer to confirm, or none
+                             * @enum {string}
+                             */
+                            match: "email" | "name" | "none";
+                            member: string | null;
+                            memberName: string | null;
+                            /** @description Whether its importer confirmed a name match */
+                            confirmed: boolean;
+                        }[];
+                        /**
+                         * @description The identity policy applied at acceptance, or, until then, the one that will be
+                         * @enum {string}
+                         */
+                        policy: "map" | "keep" | "discard";
+                        /** @description Whether `policy` was applied, at acceptance (IMP-011) */
+                        policyApplied: boolean;
                     };
                 };
             };

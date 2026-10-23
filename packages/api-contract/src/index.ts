@@ -433,6 +433,7 @@ export {
   DataSettingsBody,
   EditingSettings,
   EditingSettingsBody,
+  ImportSettings,
 } from './settings.js';
 export {
   InvitationBody,

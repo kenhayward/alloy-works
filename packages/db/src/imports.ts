@@ -1,20 +1,46 @@
+import { randomUUID } from 'node:crypto';
 import {
   acceptedCounts,
+  attributionOf,
   contentDocumentSchema,
+  createReport,
   editProposal,
+  inImportBlocks as inBlocks,
+  matchIdentity,
+  parseContentDocument,
+  resolveReferences,
+  suggestedBlocks,
   type AcceptedCounts,
+  type AcceptedComponent,
   type BlockNode,
+  type ContentDocument,
   type ImportEdit,
+  type ImageHeader,
   type ImportEditRefusal,
+  type ImportIdentity,
   type ImportLevels,
+  type ImportMember,
+  type ImportPolicy,
+  type ImportReference,
   type ImportReviewReason,
   type ImportPartFlag,
   type OutlineNode,
+  type ProposedChange,
   type ProposedPart,
+  type ProposedThread,
   type ReportEntry,
 } from '@alloy-works/domain';
 import { sql, type RawBuilder } from 'kysely';
-import { objectInUse } from './assets.js';
+import {
+  createAssetUpload,
+  holdObject,
+  objectInUse,
+  receiveAssetBytes,
+  recordAsset,
+} from './assets.js';
+import { isArchived } from './archival.js';
+import { isDeleted } from './deletion.js';
+import { readableComponents } from './documents.js';
 import {
   checkedLimit,
   isListingRequest,
@@ -30,8 +56,10 @@ import { createComponent } from './creation.js';
 import { createDocument, newNodeIdentifier, type CreateDocumentAnswer } from './documents.js';
 import { enqueueJob } from './queue.js';
 import { notifyTenant } from './realtime.js';
+import { makeSuggestion } from './suggestions.js';
+import { addComment, startThread } from './threads.js';
 import type { TenantTransaction } from './tables.js';
-import type { StoredVersion } from './versions.js';
+import { latestVersion, type StoredVersion } from './versions.js';
 
 /**
  * **Imports** (docs/design/import.md; the IM plan, IM-A to IM-F; ADR-0069): a file uploaded into a
@@ -49,6 +77,11 @@ export type ImportFailure =
 
 /** An entry of an import's report: the admission report's, with the part it was about, if one. */
 export type ImportReportEntry = ReportEntry & { readonly part: number | null };
+
+/** A reference outside the import (IMP-033), and how its importer resolved it (IMP-034). */
+export type OutsideReference = ImportReference & {
+  readonly resolved: null | 'retargeted' | 'text';
+};
 
 /** How long a proposal is kept untouched, and when before that its importer is told (IM-F). */
 export const IMPORT_KEPT_DAYS = 30;
@@ -80,6 +113,16 @@ export interface StoredImport {
   readonly place: string | null;
   /** How the parts accepted compare with the proposal as read, once accepted (IMP-031). */
   readonly acceptedCounts: AcceptedCounts | null;
+  /** Where each block the reader identified was admitted (IMc). */
+  readonly anchors: Readonly<Record<string, string>>;
+  readonly outside: readonly OutsideReference[];
+  /** The identities the file carries (IMP-009), and the member each name match was confirmed as. */
+  readonly identities: readonly ImportIdentity[];
+  readonly confirmed: Readonly<Record<string, string>>;
+  /** The file's own properties, kept only where the policy keeps identities as text (IM-J). */
+  readonly properties: Readonly<Record<string, string>> | null;
+  /** The policy applied at acceptance (IMP-011). */
+  readonly policy: ImportPolicy | null;
 }
 
 export interface StoredImportPart {
@@ -95,6 +138,9 @@ export interface StoredImportPart {
   readonly parent: string | null;
   /** The parts as read it came from, by their place. */
   readonly origins: readonly number[];
+  readonly headings: readonly string[];
+  readonly changes: readonly ProposedChange[];
+  readonly threads: readonly ProposedThread[];
 }
 
 interface Row {
@@ -120,6 +166,12 @@ interface Row {
   revision: number;
   place: string | null;
   accepted: AcceptedCounts | null;
+  anchors: Record<string, string>;
+  outside: OutsideReference[];
+  identities: ImportIdentity[];
+  confirmed: Record<string, string>;
+  properties: Record<string, string> | null;
+  policy: ImportPolicy | null;
 }
 
 const importOf = (row: Row): StoredImport => ({
@@ -145,11 +197,18 @@ const importOf = (row: Row): StoredImport => ({
   revision: row.revision,
   place: row.place,
   acceptedCounts: row.accepted,
+  anchors: row.anchors,
+  outside: row.outside,
+  identities: row.identities,
+  confirmed: row.confirmed,
+  properties: row.properties,
+  policy: row.policy,
 });
 
 const COLUMNS = sql`id, space_id, importer, file_name, file_type, object_key, sha256,
   bytes::text as bytes, kind, state, levels, title, language, report, failure, document_id,
-  created_at, touched_at, finished_at, revision, place, accepted`;
+  created_at, touched_at, finished_at, revision, place, accepted, anchors, outside, identities,
+  confirmed, properties, policy`;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -244,7 +303,12 @@ export async function importParts(
     flags: ImportPartFlag[];
     parent: string | null;
     origins: number[];
-  }>`select id, ord, kind, title, blocks, source, reason, flags, parent, origins from import_part
+    headings: string[];
+    changes: ProposedChange[];
+    threads: ProposedThread[];
+  }>`select id, ord, kind, title, blocks, source, reason, flags, parent, origins, headings, changes,
+            threads
+       from import_part
       where import_id = ${id} and proposal = ${proposal} order by ord`.execute(trx);
   return rows;
 }
@@ -253,6 +317,55 @@ export async function importParts(
 async function forgetProposal(trx: TenantTransaction, id: string): Promise<void> {
   await sql`delete from import_edit where import_id = ${id}`.execute(trx);
   await sql`delete from import_part where import_id = ${id}`.execute(trx);
+}
+
+/** An image the import's job checked and stored by its hash, held for the import until acceptance. */
+export interface HeldImage {
+  readonly placeholder: string;
+  readonly key: string;
+  readonly sha256: string;
+  readonly bytes: number;
+  readonly header: ImageHeader;
+}
+
+/**
+ * An image held for an import being read (IM-C): its bytes already stored by the caller under this
+ * hash, which it holds (`holdObject`). No asset is made until the import is accepted (IMP-008).
+ */
+export async function holdImportImage(
+  trx: TenantTransaction,
+  id: string,
+  image: HeldImage,
+): Promise<boolean> {
+  const { rows } = await sql`
+    insert into import_asset (import_id, placeholder, object_key, sha256, format, bytes, header)
+    select ${id}, ${image.placeholder}, ${image.key}, ${image.sha256}, ${image.header.format},
+           ${image.bytes}, ${JSON.stringify(image.header)}::jsonb
+      from import where id = ${id} and state = 'reading'
+    on conflict (import_id, placeholder) do nothing
+    returning 1`.execute(trx);
+  return rows.length > 0;
+}
+
+/**
+ * The images an import held let go (IMP-008): its rows deleted, and each object removed unless
+ * another import, an asset or an upload holds the same bytes, each held by its hash meanwhile.
+ */
+async function releaseImages(
+  trx: TenantTransaction,
+  id: string,
+  remove: RemoveObject,
+): Promise<void> {
+  const { rows } = await sql<{ object_key: string; sha256: string }>`
+    delete from import_asset where import_id = ${id} returning object_key, sha256`.execute(trx);
+  for (const each of rows) {
+    await holdObject(trx, each.sha256);
+    const { rows: files } = await sql`select 1 from import
+      where object_key = ${each.object_key} limit 1`.execute(trx);
+    if (files.length > 0) continue;
+    if (await objectInUse(trx, each.object_key, '00000000-0000-0000-0000-000000000000')) continue;
+    await remove(each.object_key);
+  }
 }
 
 /** An edit as recorded (IMb): by whom, when, and what was asked. */
@@ -271,6 +384,23 @@ export async function importEdits(trx: TenantTransaction, id: string): Promise<S
   return rows;
 }
 
+/**
+ * What an importer asks of a proposal (IMb, IMc): an edit to its parts; a reference outside it pointed
+ * elsewhere or made the text it showed, which is filled in here; or a name match confirmed.
+ */
+export type ImportEditInput =
+  | Exclude<ImportEdit, { edit: 'reference' }>
+  | {
+      readonly edit: 'reference';
+      readonly reference: string;
+      readonly to:
+        | { readonly kind: 'block'; readonly block: string }
+        | { readonly kind: 'component'; readonly component: string; readonly block: string }
+        | { readonly kind: 'text' };
+    }
+  /** The member a name match is confirmed as, or the confirmation withdrawn. */
+  | { readonly edit: 'identity'; readonly identity: string; readonly member: string | null };
+
 export type EditImportAnswer =
   | { readonly answer: 'edited'; readonly import: StoredImport }
   | { readonly answer: 'import.not_proposed' }
@@ -286,7 +416,7 @@ export type EditImportAnswer =
 export async function editImport(
   trx: TenantTransaction,
   id: string,
-  input: { readonly revision: number; readonly edit: ImportEdit; readonly by: string },
+  input: { readonly revision: number; readonly edit: ImportEditInput; readonly by: string },
 ): Promise<EditImportAnswer> {
   const { rows: held } = await sql<Row>`select ${COLUMNS} from import where id = ${id}
     and state = 'proposed' for update`.execute(trx);
@@ -297,8 +427,64 @@ export async function editImport(
     row.language !== null && contentDocumentSchema.shape.language.safeParse(row.language).success
       ? row.language
       : 'en';
+  const { edit } = input;
+  let changes: { readonly outside?: OutsideReference[]; readonly report?: ImportReportEntry[] } =
+    {};
+  if (edit.edit === 'identity') {
+    const confirmed = { ...row.confirmed };
+    if (edit.member === null) delete confirmed[edit.identity];
+    else confirmed[edit.identity] = edit.member;
+    // A confirmation holds only for the member the name matches, a user of this tenant (IM-I).
+    const identity = row.identities.find((each) => each.name === edit.identity);
+    if (
+      !identity ||
+      (edit.member !== null && matchIdentity(identity, await membersOf(trx)).member !== edit.member)
+    ) {
+      return { answer: 'refused', refusal: 'identity_invalid' };
+    }
+    return recordEdit(
+      trx,
+      id,
+      input,
+      sql`confirmed = ${JSON.stringify(confirmed)}::jsonb, touched_at = now()`,
+    );
+  }
   const before = await importParts(trx, id);
-  const edited = editProposal(before, input.edit, { language, direction: 'ltr' });
+  let asked: ImportEdit;
+  if (edit.edit === 'reference') {
+    const reference = row.outside.find((each) => each.key === edit.reference);
+    if (!reference) return { answer: 'refused', refusal: 'reference_missing' };
+    const { to } = edit;
+    if (to.kind === 'component' && !(await componentHolds(trx, row.space_id, input.by, to))) {
+      return { answer: 'refused', refusal: 'target_missing' };
+    }
+    asked = {
+      edit: 'reference',
+      reference: edit.reference,
+      to: to.kind === 'text' ? { kind: 'text', text: reference.text } : to,
+    };
+    const resolved = to.kind === 'text' ? 'text' : 'retargeted';
+    const holding = before.findIndex((part) =>
+      JSON.stringify(part.blocks).includes(JSON.stringify(edit.reference)),
+    );
+    const said = createReport();
+    if (resolved === 'text') {
+      said.add('read', 'rewritten', 'crossReferenceText', { detail: reference.text });
+    }
+    changes = {
+      outside: row.outside.map((each) =>
+        each.key === edit.reference ? { ...each, resolved } : each,
+      ),
+      report: [
+        ...(row.report ?? []),
+        ...said.entries.map((entry) => ({
+          ...entry,
+          part: holding === -1 ? null : (before[holding]!.origins[0] ?? null),
+        })),
+      ],
+    };
+  } else asked = edit;
+  const edited = editProposal(before, asked, { language, direction: 'ltr' });
   if (!edited.ok) return { answer: 'refused', refusal: edited.refusal };
 
   // Out of the way of the order each is given, then each written where it now stands.
@@ -309,15 +495,19 @@ export async function editImport(
   for (const [ord, part] of edited.parts.entries()) {
     const parent: string | null = part.kind === 'section' ? null : section;
     const values: RawBuilder<unknown> = sql`${part.kind}, ${part.title}, ${JSON.stringify(part.blocks)}::jsonb,
-      ${part.source}, ${[...part.flags]}::text[], ${parent}, ${[...part.origins]}::integer[]`;
+      ${part.source}, ${[...part.flags]}::text[], ${parent}, ${[...part.origins]}::integer[],
+      ${[...part.headings]}::text[], ${JSON.stringify(part.changes)}::jsonb,
+      ${JSON.stringify(part.threads)}::jsonb`;
     const written: readonly { id: string }[] = (
       part.id === null
         ? await sql<{ id: string }>`insert into import_part
-              (import_id, proposal, ord, reason, kind, title, blocks, source, flags, parent, origins)
+              (import_id, proposal, ord, reason, kind, title, blocks, source, flags, parent, origins,
+               headings, changes, threads)
             values (${id}, 'edited', ${ord}, ${JSON.stringify(part.reason)}::jsonb, ${values})
             returning id`.execute(trx)
         : await sql<{ id: string }>`update import_part
-              set ord = ${ord}, (kind, title, blocks, source, flags, parent, origins) = (${values})
+              set ord = ${ord}, (kind, title, blocks, source, flags, parent, origins, headings,
+                                 changes, threads) = (${values})
             where id = ${part.id} and import_id = ${id} and proposal = 'edited'
             returning id`.execute(trx)
     ).rows;
@@ -327,8 +517,26 @@ export async function editImport(
   // What was merged away goes once nothing stands under it.
   await sql`delete from import_part where import_id = ${id} and proposal = 'edited'
      and not (id = any(${kept}::uuid[]))`.execute(trx);
+  return recordEdit(
+    trx,
+    id,
+    input,
+    changes.outside === undefined
+      ? sql`touched_at = now()`
+      : sql`outside = ${JSON.stringify(changes.outside)}::jsonb,
+            report = ${JSON.stringify(changes.report)}::jsonb, touched_at = now()`,
+  );
+}
+
+/** The edit counted against the import's revision and recorded, with what else it set. */
+async function recordEdit(
+  trx: TenantTransaction,
+  id: string,
+  input: { readonly edit: ImportEditInput; readonly by: string },
+  set: RawBuilder<unknown>,
+): Promise<EditImportAnswer> {
   const { rows } = await sql<Row>`
-    update import set revision = revision + 1, touched_at = now()
+    update import set ${set}, revision = revision + 1
      where id = ${id}
     returning ${COLUMNS}`.execute(trx);
   await sql`insert into import_edit (import_id, revision, by_principal, edit)
@@ -336,6 +544,30 @@ export async function editImport(
     trx,
   );
   return { answer: 'edited', import: importOf(rows[0]!) };
+}
+
+/**
+ * Whether a component of this space that `by` may read, neither deleted nor archived, holds this block
+ * at its latest version (IMP-034). One answer for each way it does not, so none says what exists.
+ */
+async function componentHolds(
+  trx: TenantTransaction,
+  spaceId: string,
+  by: string,
+  target: { readonly component: string; readonly block: string },
+): Promise<boolean> {
+  if (!UUID.test(target.component)) return false;
+  const { rows } = await sql`select 1 from artifact
+     where id = ${target.component} and kind = 'component' and space_id = ${spaceId}`.execute(trx);
+  if (rows.length === 0) return false;
+  if (!(await readableComponents(trx, by, [target.component])).has(target.component)) return false;
+  if ((await isDeleted(trx, target.component)) || (await isArchived(trx, target.component))) {
+    return false;
+  }
+  const version = await latestVersion(trx, target.component);
+  return (
+    version !== undefined && inBlocks((version.content as ContentDocument).content, target.block)
+  );
 }
 
 /**
@@ -370,8 +602,18 @@ export async function recordProposal(
     readonly report: readonly ReportEntry[];
     readonly title: string | null;
     readonly language: string | null;
+    readonly anchors?: Readonly<Record<string, string>>;
+    readonly references?: readonly ImportReference[];
+    readonly identities?: readonly ImportIdentity[];
+    /** The file's own properties: kept only where the policy keeps identities as text (IM-J). */
+    readonly properties?: Readonly<Record<string, string>>;
   },
 ): Promise<StoredImport | undefined> {
+  const keep = (await importPolicy(trx)) === 'keep';
+  const outside: OutsideReference[] = (proposal.references ?? []).map((each) => ({
+    ...each,
+    resolved: null,
+  }));
   const report: ImportReportEntry[] = [
     ...proposal.report.map((entry) => ({ ...entry, part: null })),
     ...proposal.parts.flatMap((part, index) =>
@@ -380,7 +622,11 @@ export async function recordProposal(
   ];
   const { rows } = await sql<Row>`
     update import set state = 'proposed', title = ${proposal.title}, language = ${proposal.language},
-           report = ${JSON.stringify(report)}::jsonb, touched_at = now()
+           report = ${JSON.stringify(report)}::jsonb, touched_at = now(),
+           anchors = ${JSON.stringify(proposal.anchors ?? {})}::jsonb,
+           outside = ${JSON.stringify(outside)}::jsonb,
+           identities = ${JSON.stringify(proposal.identities ?? [])}::jsonb, confirmed = '{}',
+           properties = ${keep && proposal.properties !== undefined ? JSON.stringify(proposal.properties) : null}::jsonb
      where id = ${id} and state = 'reading'
     returning ${COLUMNS}`.execute(trx);
   if (!rows[0]) return undefined;
@@ -390,11 +636,13 @@ export async function recordProposal(
       const parent = part.parent === null ? null : ids[part.parent]!;
       const { rows: made } = await sql<{ id: string }>`
         insert into import_part
-          (import_id, proposal, ord, kind, title, blocks, source, reason, flags, parent, origins)
+          (import_id, proposal, ord, kind, title, blocks, source, reason, flags, parent, origins,
+           headings, changes, threads)
         values (${id}, ${set}, ${index}, ${part.kind}, ${part.title},
                 ${JSON.stringify(part.blocks)}::jsonb, ${part.source},
                 ${JSON.stringify(part.reason)}::jsonb, ${[...part.flags]}::text[], ${parent},
-                array[${index}::integer])
+                array[${index}::integer], ${[...part.headings]}::text[],
+                ${JSON.stringify(part.changes)}::jsonb, ${JSON.stringify(part.threads)}::jsonb)
         returning id`.execute(trx);
       ids.push(made[0]!.id);
     }
@@ -466,11 +714,14 @@ export async function failImport(
   remove: RemoveObject,
 ): Promise<StoredImport | undefined> {
   const { rows } = await sql<Row>`
-    update import set state = 'failed', failure = ${failure}, report = null, finished_at = now()
+    update import set state = 'failed', failure = ${failure}, report = null, finished_at = now(),
+           anchors = '{}', outside = '[]', identities = '[]', confirmed = '{}',
+           properties = null
      where id = ${id} and state in ('awaiting', 'reading')
     returning ${COLUMNS}`.execute(trx);
   if (!rows[0]) return undefined;
   await forgetProposal(trx, id);
+  await releaseImages(trx, id, remove);
   await releaseFile(trx, rows[0], remove);
   return importOf({ ...rows[0], object_key: null });
 }
@@ -486,11 +737,14 @@ export async function abandonImport(
   swept = false,
 ): Promise<StoredImport | undefined> {
   const { rows } = await sql<Row>`
-    update import set state = 'abandoned', report = null, finished_at = now()
+    update import set state = 'abandoned', report = null, finished_at = now(),
+           anchors = '{}', outside = '[]', identities = '[]', confirmed = '{}',
+           properties = null
      where id = ${id} and state in ('awaiting', 'reading', 'proposed')
     returning ${COLUMNS}`.execute(trx);
   if (!rows[0]) return undefined;
   await forgetProposal(trx, id);
+  await releaseImages(trx, id, remove);
   await releaseFile(trx, rows[0], remove);
   await recordImportEvent(trx, rows[0], { kind: 'import.abandoned', swept });
   return importOf({ ...rows[0], object_key: null });
@@ -507,11 +761,14 @@ export async function changeImportLevels(
 ): Promise<StoredImport | undefined> {
   const { rows } = await sql<Row>`
     update import set levels = ${JSON.stringify(levels)}::jsonb, state = 'reading', report = null,
-           revision = revision + 1, touched_at = now()
+           revision = revision + 1, touched_at = now(), anchors = '{}', outside = '[]', identities = '[]', confirmed = '{}',
+           properties = null
      where id = ${id} and state = 'proposed'
     returning ${COLUMNS}`.execute(trx);
   if (!rows[0]) return undefined;
   await forgetProposal(trx, id);
+  // Read again, the same file holds the same images by the same hashes: held again, not removed.
+  await sql`delete from import_asset where import_id = ${id}`.execute(trx);
   await enqueueJob(trx, 'import', id);
   return importOf(rows[0]);
 }
@@ -522,8 +779,17 @@ export type NewOutlinePart =
       readonly kind: 'section';
       readonly title: string;
       readonly children: readonly NewOutlinePart[];
+      /** Its node's identifier, where one was chosen before it is written. */
+      readonly node?: string;
     }
-  | { readonly kind: 'component'; readonly title: string; readonly blocks: readonly BlockNode[] };
+  | {
+      readonly kind: 'component';
+      readonly title: string;
+      readonly blocks: readonly BlockNode[];
+      /** Its identifier and its reference node's, where chosen before they are written (IMc). */
+      readonly artifactId?: string;
+      readonly node?: string;
+    };
 
 /**
  * A document made with new components (IM-F), in the caller's transaction: each component at 0.1 by
@@ -561,7 +827,7 @@ export async function createDocumentWithComponents(
         if (typeof children === 'string') return children;
         nodes.push({
           ...base,
-          id: newNodeIdentifier(),
+          id: part.node ?? newNodeIdentifier(),
           type: 'section',
           title: [{ type: 'text', value: part.title, marks: [] }],
           children,
@@ -575,12 +841,13 @@ export async function createDocumentWithComponents(
         direction: input.direction,
         author: input.author,
         blocks: part.blocks,
+        ...(part.artifactId === undefined ? {} : { artifactId: part.artifactId }),
       });
       if (made.answer !== 'created') return made.answer;
       components.push(made.version);
       nodes.push({
         ...base,
-        id: newNodeIdentifier(),
+        id: part.node ?? newNodeIdentifier(),
         type: 'reference',
         component: made.version.artifactId,
         mode: { kind: 'latest' },
@@ -607,16 +874,26 @@ export async function createDocumentWithComponents(
   return { answer: 'created', document: made.version, components };
 }
 
-/** The proposal as edited, as the parts a document is made of. */
-function outlineOf(parts: readonly StoredImportPart[]): NewOutlinePart[] {
+/** The proposal as edited, as the parts a document is made of, each with what was chosen for it. */
+function outlineOf(
+  parts: readonly StoredImportPart[],
+  chosen: ReadonlyMap<string, { readonly node: string; readonly component?: AcceptedComponent }>,
+): NewOutlinePart[] {
   const children = new Map<string | null, StoredImportPart[]>();
   for (const part of parts) children.set(part.parent, [...(children.get(part.parent) ?? []), part]);
   const build = (parent: string | null): NewOutlinePart[] =>
-    (children.get(parent) ?? []).map((part) =>
-      part.kind === 'section'
-        ? { kind: 'section', title: part.title, children: build(part.id) }
-        : { kind: 'component', title: part.title, blocks: part.blocks },
-    );
+    (children.get(parent) ?? []).map((part) => {
+      const { node, component } = chosen.get(part.id)!;
+      return part.kind === 'section'
+        ? { kind: 'section', title: part.title, children: build(part.id), node }
+        : {
+            kind: 'component',
+            title: part.title,
+            blocks: component!.blocks,
+            artifactId: component!.component,
+            node,
+          };
+    });
   return build(null);
 }
 
@@ -628,6 +905,8 @@ export type AcceptImportAnswer =
       readonly components: readonly StoredVersion[];
     }
   | { readonly answer: 'import.not_proposed' }
+  /** A reference outside the import is neither retargeted nor made text (IMP-034). */
+  | { readonly answer: 'import.references_unresolved'; readonly references: readonly string[] }
   | Exclude<Awaited<ReturnType<typeof createDocumentWithComponents>>, { answer: 'created' }>;
 
 /**
@@ -651,7 +930,62 @@ export async function acceptImport(
     and state = 'proposed' for update`.execute(trx);
   const row = held[0];
   if (!row) return { answer: 'import.not_proposed' };
-  const parts = await importParts(trx, id);
+  const waiting = row.outside.filter((each) => each.resolved === null).map((each) => each.key);
+  if (waiting.length > 0) return { answer: 'import.references_unresolved', references: waiting };
+  const parts = placedImages(await importParts(trx, id), await assetsOf(trx, row, input.by));
+
+  // Each component's identity and every node's chosen first, so a reference resolves to them (IMP-006).
+  const chosen = new Map<string, { node: string; component?: AcceptedComponent }>();
+  for (const part of parts) {
+    const node = newNodeIdentifier();
+    chosen.set(
+      part.id,
+      part.kind === 'section'
+        ? { node }
+        : {
+            node,
+            component: {
+              component: randomUUID(),
+              node,
+              headings: part.headings,
+              blocks: part.blocks,
+            },
+          },
+    );
+  }
+  const components = [...chosen.values()].flatMap((each) => each.component ?? []);
+  const within = {
+    components,
+    sections: parts.flatMap((part) =>
+      part.kind === 'section' ? [{ node: chosen.get(part.id)!.node, headings: part.headings }] : [],
+    ),
+    anchors: row.anchors,
+  };
+  const unresolved = new Set<string>();
+  const changes = new Map<string, ProposedChange[]>();
+  for (const part of parts) {
+    const own = chosen.get(part.id)!.component;
+    if (!own) continue;
+    const resolved = resolveReferences(own, within);
+    resolved.unresolved.forEach((each) => unresolved.add(each));
+    changes.set(
+      part.id,
+      part.changes.map((change) => ({
+        ...change,
+        proposed: resolveReferences(
+          { ...own, blocks: [...own.blocks, ...change.proposed] },
+          within,
+        ).blocks.slice(own.blocks.length),
+      })),
+    );
+    chosen.set(part.id, {
+      ...chosen.get(part.id)!,
+      component: { ...own, blocks: resolved.blocks },
+    });
+  }
+  if (unresolved.size > 0) {
+    return { answer: 'import.references_unresolved', references: [...unresolved] };
+  }
   const made = await createDocumentWithComponents(trx, {
     spaceId: row.space_id,
     author: input.by,
@@ -659,7 +993,7 @@ export async function acceptImport(
     language: input.language,
     direction: input.direction,
     ...(input.template === undefined ? {} : { template: input.template }),
-    parts: outlineOf(parts),
+    parts: outlineOf(parts, chosen),
   });
   if (made.answer !== 'created') return made;
   const counts = acceptedCounts(await importParts(trx, id, 'read'), parts);
@@ -667,9 +1001,42 @@ export async function acceptImport(
     await sql`insert into import_made (version_id, artifact_id, import_id)
       values (${version.id}, ${version.artifactId}, ${id})`.execute(trx);
   }
+
+  // The tenant's policy applied once, now (IMP-032): each author's changes a suggestion and each
+  // comment a thread, in order, on the component's 0.1.
+  const policy = await importPolicy(trx);
+  const applied = {
+    policy,
+    identities: row.identities,
+    members: await membersOf(trx),
+    confirmed: row.confirmed,
+  };
+  const report = createReport();
+  for (const part of parts) {
+    const own = chosen.get(part.id)!.component;
+    const version = own && made.components.find((each) => each.artifactId === own.component);
+    if (!version) continue;
+    const skipped = await suggestAndDiscuss(trx, {
+      import: id,
+      importer: input.by,
+      version,
+      changes: changes.get(part.id) ?? [],
+      threads: part.threads,
+      applied,
+    });
+    if (skipped > 0) report.add('read', 'discarded', 'trackedChange', { count: skipped });
+  }
   const { rows } = await sql<Row>`
     update import set state = 'accepted', document_id = ${made.document.artifactId},
-           accepted = ${JSON.stringify(counts)}::jsonb, finished_at = now(), touched_at = now()
+           accepted = ${JSON.stringify(counts)}::jsonb, finished_at = now(), touched_at = now(),
+           policy = ${policy},
+           report = ${JSON.stringify([
+             ...(row.report ?? []),
+             ...report.entries.map((entry) => ({ ...entry, part: null })),
+           ])}::jsonb,
+           identities = ${policy === 'discard' ? '[]' : JSON.stringify(row.identities)}::jsonb,
+           confirmed = ${policy === 'discard' ? '{}' : JSON.stringify(row.confirmed)}::jsonb,
+           properties = ${policy === 'keep' && row.properties !== null ? JSON.stringify(row.properties) : null}::jsonb
      where id = ${id}
     returning ${COLUMNS}`.execute(trx);
   await recordImportEvent(trx, row, {
@@ -683,6 +1050,185 @@ export async function acceptImport(
     document: made.document,
     components: made.components,
   };
+}
+
+/**
+ * The images an import held made assets of its space at acceptance (IM-C), each through an upload
+ * filled and recorded with the header its job read, by the person accepting: each placeholder's
+ * asset version. The rows go; the objects are the assets' now.
+ */
+async function assetsOf(
+  trx: TenantTransaction,
+  row: Row,
+  by: string,
+): Promise<Map<string, string>> {
+  const { rows } = await sql<{
+    placeholder: string;
+    object_key: string;
+    sha256: string;
+    bytes: string;
+    header: ImageHeader;
+  }>`delete from import_asset where import_id = ${row.id}
+     returning placeholder, object_key, sha256, bytes::text as bytes, header`.execute(trx);
+  const made = new Map<string, string>();
+  for (const each of rows) {
+    await holdObject(trx, each.sha256);
+    const upload = await createAssetUpload(trx, {
+      spaceId: row.space_id,
+      uploader: by,
+      alternative: null,
+    });
+    await receiveAssetBytes(
+      trx,
+      upload.id,
+      { key: each.object_key, format: each.header.format, bytes: Number(each.bytes) },
+      false,
+    );
+    made.set(each.placeholder, (await recordAsset(trx, upload.id, each.header)).id);
+  }
+  return made;
+}
+
+/** The parts with each figure's placeholder its asset version. */
+function placedImages(
+  parts: readonly StoredImportPart[],
+  assets: ReadonlyMap<string, string>,
+): StoredImportPart[] {
+  if (assets.size === 0) return [...parts];
+  const walk = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(walk);
+    if (typeof value !== 'object' || value === null) return value;
+    const node = Object.fromEntries(Object.entries(value).map(([key, each]) => [key, walk(each)]));
+    const asset = node['asset'];
+    if (typeof asset === 'string' && assets.has(asset)) node['asset'] = assets.get(asset);
+    return node;
+  };
+  return parts.map((part) => ({
+    ...part,
+    blocks: walk(part.blocks) as BlockNode[],
+    changes: walk(part.changes) as ProposedChange[],
+  }));
+}
+
+/** The tenant's people an identity may match, for attribution: its users, none erased. */
+export async function membersOf(trx: TenantTransaction): Promise<ImportMember[]> {
+  const { rows } = await sql<ImportMember>`
+    select id, email, display_name as name from principal
+     where kind = 'user' and erased_at is null`.execute(trx);
+  return rows;
+}
+
+/** A comment's words as a thread holds them (TH-B): no control character but a line feed, 4,000 at most. */
+const words = (text: string) =>
+  [...text.replace(/(?!\n)\p{Cc}/gu, ' ').trim()].slice(0, 4000).join('') || '(No text)';
+
+/**
+ * A component's suggestions and threads made from its Word authors' changes and comments (IM-G), each
+ * made by the importer and attributed as the policy says (IM-I), beside it (IMP-011): a mapped member
+ * is attribution only, never the author, since a file names whoever its writer typed. Answers how
+ * many authors' changes could not be made a suggestion.
+ */
+async function suggestAndDiscuss(
+  trx: TenantTransaction,
+  input: {
+    readonly import: string;
+    readonly importer: string;
+    readonly version: StoredVersion;
+    readonly changes: readonly ProposedChange[];
+    readonly threads: readonly ProposedThread[];
+    readonly applied: Parameters<typeof attributionOf>[1];
+  },
+): Promise<number> {
+  const { version } = input;
+  const content = version.content as ContentDocument;
+  const attribute = async (
+    made: { suggestion_id?: string; thread_id?: string; comment_id?: string },
+    who: { readonly member: string | null; readonly attributedTo: string | null },
+  ) => {
+    await sql`insert into import_attribution
+        (import_id, suggestion_id, thread_id, comment_id, policy, attributed_to, member)
+      values (${input.import}, ${made.suggestion_id ?? null}, ${made.thread_id ?? null},
+              ${made.comment_id ?? null}, ${input.applied.policy}, ${who.attributedTo},
+              ${who.member})`.execute(trx);
+  };
+  let skipped = 0;
+  const authors = [...new Set(input.changes.map((change) => change.author))];
+  for (const author of authors) {
+    const blocks = suggestedBlocks(
+      content.content,
+      input.changes.filter((change) => change.author === author),
+    );
+    let proposed: ContentDocument;
+    try {
+      proposed = parseContentDocument({ ...content, content: blocks });
+    } catch {
+      skipped += 1;
+      continue;
+    }
+    const who = attributionOf(author, input.applied);
+    const made = await makeSuggestion(trx, {
+      component: version.artifactId,
+      version: version.id,
+      proposed,
+      by: input.importer,
+    });
+    if (made.answer !== 'made') {
+      skipped += 1;
+      continue;
+    }
+    await attribute({ suggestion_id: made.suggestion }, who);
+  }
+  for (const thread of input.threads) {
+    const who = attributionOf(thread.author, input.applied);
+    const start = (anchor: object) =>
+      startThread(trx, {
+        on: version.artifactId,
+        version: version.id,
+        anchor,
+        parts: [{ text: words(thread.text) }],
+        author: input.importer,
+      });
+    let started = thread.span
+      ? await start({
+          kind: 'span',
+          block: thread.block,
+          quote: thread.quote,
+          before: thread.before,
+        })
+      : await start({ kind: 'component' });
+    if (started.answer === 'anchor.invalid') started = await start({ kind: 'component' });
+    if (started.answer !== 'done') continue;
+    await attribute({ thread_id: started.thread }, who);
+    for (const reply of thread.replies) {
+      const by = attributionOf(reply.author, input.applied);
+      const added = await addComment(trx, {
+        thread: started.thread,
+        parts: [{ text: words(reply.text) }],
+        author: input.importer,
+      });
+      if (added.answer === 'done') {
+        await attribute({ comment_id: added.comment }, by);
+      }
+    }
+  }
+  return skipped;
+}
+
+/** The tenant's identity policy (IM-I; IMP-010). */
+export async function importPolicy(trx: TenantTransaction): Promise<ImportPolicy> {
+  const { rows } = await sql<{ policy: ImportPolicy }>`select policy from import_policy`.execute(
+    trx,
+  );
+  return rows[0]?.policy ?? 'map';
+}
+
+/** The tenant's identity policy set; the caller decided `administer` at the tenant. */
+export async function setImportPolicy(
+  trx: TenantTransaction,
+  policy: ImportPolicy,
+): Promise<ImportPolicy> {
+  await sql`update import_policy set policy = ${policy}`.execute(trx);
+  return importPolicy(trx);
 }
 
 /** What a version came from (IMP-035): the file's name and hash, when and by whom; undefined if none. */

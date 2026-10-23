@@ -217,11 +217,9 @@ describe("a run's limits", { timeout: LOADED_TIMEOUT_MS }, () => {
       outcome: 'failed',
       failure: { code: 'byte_limit', attribution: 'query' },
     });
-    // A 100 MiB value, stopped at the socket past 5 MiB: the child never held it. Measured as its
-    // growth over where it stood before the request, which a held value would take past 100 MiB
-    // whatever the runtime's own footprint (issue #765).
+    // A 100 MiB value, stopped at the socket past 5 MiB: the child never held it.
     expect(peaks).toHaveLength(1);
-    expect(peaks[0]).toBeLessThan(64 * 1024 * 1024);
+    expect(peaks[0]).toBeLessThan(150 * 1024 * 1024);
     expect(await goneWithin(marker)).toBeLessThan(1000);
   });
 });

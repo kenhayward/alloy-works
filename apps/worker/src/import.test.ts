@@ -7,6 +7,7 @@ import {
   importParts,
   migrate,
   prepareDatabase,
+  readAssetVersion,
   readImport,
   readVersion,
   receiveImportFile,
@@ -19,6 +20,7 @@ import { freshDatabase, type TestDatabase, testTenantDatabase } from '@alloy-wor
 import { createObjectStores, type ObjectStores, type TenantStore } from '@alloy-works/objects';
 import { testObjectStore, type TestObjectStore } from '@alloy-works/objects/testing';
 import { strToU8, zipSync } from 'fflate';
+import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { importJob } from './jobs/import.js';
 import { processNext, type JobHandler, type WorkerLog } from './worker.js';
@@ -204,6 +206,82 @@ describe('the import job, which reads a file into a proposal (the IM plan, IM-C)
         { type: 'text', value: ' sampled the pond.' },
       ],
     });
+  });
+
+  it("IMP-006 IMP-009 ingests a figure's image as an asset of the space, leaves out one it refuses and one in another format, proposes a comment as a thread, and lists who the file names", async () => {
+    const R = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+    const drawing = (id: string, descr: string) =>
+      `<w:p><w:r><w:drawing><wp:inline><wp:docPr id="1" name="Picture" descr="${descr}"/><a:graphic><a:graphicData><pic:pic><pic:blipFill><a:blip r:embed="${id}"/></pic:blipFill></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>`;
+    const png = await sharp({
+      create: { width: 4, height: 3, channels: 3, background: { r: 10, g: 120, b: 40 } },
+    })
+      .png()
+      .toBuffer();
+    const bytes = zipSync({
+      'word/document.xml': strToU8(
+        `<w:document xmlns:w="${W}" xmlns:r="${R}" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><w:body>` +
+          `<w:p><w:pPr><w:pStyle w:val="Heading2"/></w:pPr><w:r><w:t>Pond</w:t></w:r></w:p>` +
+          drawing('rId9', 'A newt') +
+          `<w:p><w:commentRangeStart w:id="0"/><w:r><w:t>Three newts.</w:t></w:r><w:commentRangeEnd w:id="0"/></w:p>` +
+          drawing('rId10', 'A broken newt') +
+          drawing('rId11', 'A moving newt') +
+          `</w:body></w:document>`,
+      ),
+      'word/styles.xml': strToU8(
+        `<w:styles xmlns:w="${W}"><w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/></w:style></w:styles>`,
+      ),
+      'word/_rels/document.xml.rels': strToU8(
+        `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
+          `<Relationship Id="rId9" Type="${R}/image" Target="media/image1.png"/>` +
+          `<Relationship Id="rId10" Type="${R}/image" Target="media/image2.png"/>` +
+          `<Relationship Id="rId11" Type="${R}/image" Target="media/image3.gif"/></Relationships>`,
+      ),
+      'word/media/image1.png': new Uint8Array(png),
+      'word/media/image2.png': new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0]),
+      'word/media/image3.gif': strToU8('GIF89a'),
+      'word/comments.xml': strToU8(
+        `<w:comments xmlns:w="${W}"><w:comment w:id="0" w:author="Grace"><w:p><w:r><w:t>Recount them.</w:t></w:r></w:p></w:comment></w:comments>`,
+      ),
+    });
+    const made = await imported(bytes, 'Pond.docx');
+    expect(await work()).toBe('done');
+    const read = await service.withTenant(tenant, (trx) => readImport(trx, made.id));
+    expect(read!.identities).toEqual([{ name: 'Grace', email: null, carries: ['comments'] }]);
+    const [part] = await service.withTenant(tenant, (trx) => importParts(trx, made.id));
+    const [figure, words, broken] = part!.blocks as unknown as {
+      type: string;
+      asset?: string;
+      alternative?: object;
+    }[];
+    expect(figure).toMatchObject({ type: 'figure', alternative: { kind: 'own', text: 'A newt' } });
+    // Held for the import, not an asset of the space, until it is accepted (IMP-008).
+    const uploads = await service.withTenant(tenant, (trx) =>
+      trx.selectFrom('asset_upload').select('id').execute(),
+    );
+    expect(uploads).toEqual([]);
+    expect(words!.type).toBe('paragraph');
+    // The image the check refused stands as an empty paragraph, and is said.
+    expect(broken).toMatchObject({ type: 'paragraph', content: [] });
+    expect(part!.threads.map((thread) => [thread.author, thread.text, thread.quote])).toEqual([
+      ['Grace', 'Recount them.', 'Three newts.'],
+    ]);
+    expect(read!.report).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ subject: 'imageFormat', detail: 'gif', part: null }),
+        expect.objectContaining({ subject: 'imageRefused', count: 1, part: null }),
+      ]),
+    );
+    const accepted = await service.withTenant(
+      tenant,
+      (trx) =>
+        acceptImport(trx, made.id, { by: ada, title: 'Pond', language: 'en', direction: 'ltr' }),
+      { actorKind: 'person', actor: ada },
+    );
+    if (accepted.answer !== 'accepted') throw new Error(accepted.answer);
+    const placed = (accepted.components[0]!.content as { content: { asset?: string }[] })
+      .content[0]!;
+    const asset = await service.withTenant(tenant, (trx) => readAssetVersion(trx, placed.asset!));
+    expect(asset).toMatchObject({ spaceId: general });
   });
 
   it('IMP-042 fails a zip bomb leaving nothing behind, and says why', async () => {
