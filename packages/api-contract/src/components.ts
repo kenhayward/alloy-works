@@ -303,6 +303,12 @@ export const ComponentView = z.object({
   lines: z
     .array(LineView)
     .describe('Its divergent lines (LIF-044, LIF-046): none where it has not diverged'),
+  source: z
+    .object({ id: z.uuid(), number: z.string() })
+    .optional()
+    .describe(
+      "On a language line, the source's latest version: the one a cut on the line says it translates (the TR plan, TR-C)",
+    ),
   onHold: z
     .boolean()
     .describe(

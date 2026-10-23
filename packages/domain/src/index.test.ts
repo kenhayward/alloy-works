@@ -1005,6 +1005,12 @@ describe('the domain package', () => {
         'againIdentifiers',
         'againStatus',
         'matchAgain',
+        // TRa: a variant's status, and the language a line may be begun in.
+        'TRANSLATION_STATUSES',
+        'asVariant',
+        'sourceChangesBetween',
+        'translationLanguageRefusal',
+        'translationStatus',
       ].sort(),
     );
   });

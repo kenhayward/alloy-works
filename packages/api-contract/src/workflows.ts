@@ -446,6 +446,10 @@ export const LineView = z.object({
     .describe('The designated revision it diverged from'),
   at: z.iso.datetime().describe('When it diverged'),
   closed: z.boolean().describe('Whether it was brought back, and takes no more versions'),
+  language: z
+    .string()
+    .nullable()
+    .describe("A language line's BCP 47 tag, a translation (TR-A); null for a divergent line"),
 });
 export type LineView = z.infer<typeof LineView>;
 

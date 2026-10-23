@@ -1236,6 +1236,17 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   reference shows. **Bring back**, on a line, compares it with the main line block by block and takes
   the line's side of the blocks chosen into a new main-line version; the line closes, and what was
   carried and what was left behind are recorded.
+- **Translations.** A component's header offers **Translations**: each language it is translated into,
+  with its status (untranslated, translated, or out of date with its source, saying whether the change
+  needs retranslating), and, to whoever may edit, **Begin a translation** from its approved revision.
+  A translation is a line of its own with its own versions, approvals and scope, its blocks the
+  source's, and never brought back. Each version saved on it records the source version it
+  translates, refused if the source has moved on since it was opened. A translation goes out of date
+  the moment its source changes; the source's author, or anybody who may edit it, says whether the
+  latest change needs retranslating. On a translation, Translations shows the source's words changed
+  since, and **Mark current** records it current where nothing needed new words. A translator and the
+  author each hold their own lock, so they edit at once. Publishing in a language, and a translation's
+  status on a document's references and across a space, are not built yet.
 - **Revisions effective by scope.** A component's or document's header offers **Effective for**: the
   markets or sites, condition axis values, its next revision is effective for, while another revision
   stays effective elsewhere; a document reads, publishes and baselines the revision effective under its

@@ -486,6 +486,8 @@ export interface ComponentLockTable {
   taking_session: string | null;
   taking_until: ColumnType<Date | null, Date | null | undefined, Date | null>;
   taken_from: string | null;
+  /** The line it is a lock on, null for the main line (0159; TR-H). */
+  line_id: ColumnType<string | null, string | null | undefined, never>;
 }
 
 /**
@@ -748,6 +750,29 @@ export interface ArtifactLineTable {
   ordinal: ColumnType<number, number, never>;
   name: ColumnType<string, string, never>;
   diverged_from: ColumnType<string, string, never>;
+  by: ColumnType<string, string, never>;
+  at: ColumnType<Date, never, never>;
+  written_by: ColumnType<string, never, never>;
+  /** A language line's BCP 47 tag, null for a divergent line (0159; TR-A). */
+  language: ColumnType<string | null, string | null | undefined, never>;
+}
+
+/** What a version on a language line translates (0159; TR-C): insert-only, the newest a line's. */
+export interface TranslationStateTable {
+  id: ColumnType<string, never, never>;
+  line_id: ColumnType<string, string, never>;
+  version_id: ColumnType<string, string, never>;
+  translates: ColumnType<string, string, never>;
+  by: ColumnType<string, string, never>;
+  at: ColumnType<Date, never, never>;
+  written_by: ColumnType<string, never, never>;
+}
+
+/** Whether a main-line version needs retranslating (0159; TR-D): insert-only, the newest a version's. */
+export interface SourceChangeTable {
+  id: ColumnType<string, never, never>;
+  version_id: ColumnType<string, string, never>;
+  retranslate: ColumnType<boolean, boolean, never>;
   by: ColumnType<string, string, never>;
   at: ColumnType<Date, never, never>;
   written_by: ColumnType<string, never, never>;
@@ -1161,6 +1186,8 @@ export interface TenantTables {
   audit_event: AuditEventTable;
   audit_label: AuditLabelTable;
   component_lock: ComponentLockTable;
+  translation_state: TranslationStateTable;
+  source_change: SourceChangeTable;
   unsaved_discarded: UnsavedDiscardedTable;
   iteration: IterationTable;
   principal: PrincipalTable;

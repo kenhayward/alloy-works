@@ -129,6 +129,8 @@ export const KIND_WORDS: Readonly<Record<AuditKind, string>> = {
   'service_identity.renamed': 'Service identity renamed',
   'service_identity.disabled': 'Service identity disabled',
   'tool.used': 'Tool used',
+  'translation.declared': 'Retranslation declared',
+  'translation.marked_current': 'Translation marked current',
   'webhook.changed': 'Webhook changed',
   'workflow.defined': 'Workflow saved',
   'workflow.transitioned': 'Workflow moved on',
@@ -189,6 +191,7 @@ export const FAMILY_WORDS: Readonly<Record<string, string>> = {
   thread: 'Threads',
   token: 'API tokens',
   tool: 'Tools',
+  translation: 'Translation',
   webhook: 'Webhooks',
   workflow: 'Workflow',
 };

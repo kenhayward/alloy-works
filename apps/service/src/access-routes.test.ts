@@ -814,6 +814,29 @@ describe('routes that check a permission', () => {
       status: 404,
       payload: { revision: 1, name: 'US' },
     }),
+    listComponentTranslations: () => ({
+      url: `/v1/components/${dosing}/translations`,
+      status: 404,
+    }),
+    beginComponentTranslation: () => ({
+      url: `/v1/components/${dosing}/translations`,
+      status: 404,
+      payload: { language: 'fr-FR' },
+    }),
+    markComponentTranslationCurrent: () => ({
+      url: `/v1/components/${dosing}/translations/${MISSING}/current`,
+      status: 404,
+      payload: { translates: MISSING },
+    }),
+    getComponentTranslationChanges: () => ({
+      url: `/v1/components/${dosing}/translations/${MISSING}/source-changes`,
+      status: 404,
+    }),
+    declareComponentSourceChange: () => ({
+      url: `/v1/components/${dosing}/versions/${MISSING}/retranslate`,
+      status: 404,
+      payload: { retranslate: false },
+    }),
     readDocumentEffective: () => ({ url: `/v1/documents/${MISSING}/effective`, status: 404 }),
     createDocument: () => ({
       url: `/v1/spaces/${clinical}/documents`,

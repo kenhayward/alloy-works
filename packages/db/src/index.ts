@@ -492,8 +492,10 @@ export {
   iterationDigest,
   latestSequence,
   LOCK_PERIOD_MINUTES,
+  readAnyLock,
   readLock,
   readLocks,
+  lockLinesStored,
   saveIteration,
   sessionContent,
   TAKE_ASK_LASTS_MS,
@@ -643,7 +645,21 @@ export {
   type LineComparison,
   type ReturnAnswer,
   type Line,
+  translationStored,
 } from './lines.js';
+export {
+  beginTranslation,
+  checkTranslates,
+  declareSourceChange,
+  markCurrent,
+  sourceChanges,
+  translationsOf,
+  type BeginAnswer,
+  type DeclareAnswer,
+  type MarkCurrentAnswer,
+  type Translation,
+  type TranslatesRefusal,
+} from './translation.js';
 export {
   listShares,
   readsOnlyShares,

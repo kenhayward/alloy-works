@@ -235,6 +235,18 @@ export {
   termRoutes,
 } from './terms.js';
 export {
+  MarkCurrentBody,
+  SourceChangeBody,
+  SourceChangeParams,
+  SourceChangeView,
+  SourceChangesView,
+  TranslationBody,
+  TranslationStatusView,
+  TranslationView,
+  TranslationsView,
+  translationRoutes,
+} from './translations.js';
+export {
   AcceptImportBody,
   CreateImportBody,
   EditImportBody,

@@ -14,6 +14,8 @@ export interface LineNow {
   readonly divergedFrom: { readonly revision: number; readonly version: string };
   readonly at: string;
   readonly closed: boolean;
+  /** A language line's tag (the TR plan, TR-A): a translation, offered under Translations instead. */
+  readonly language?: string | null;
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -58,10 +60,13 @@ export function LinesControl({
   const chooserId = useId();
   const [beginning, setBeginning] = useState(false);
   const mayBegin = mayEdit && line === undefined && revision !== null;
-  if (lines.length === 0 && !mayBegin) return null;
+  // A translation is a language line, but not a divergence: Translations opens it (TR-G).
+  const divergent = lines.filter((each) => !each.language);
+  if (lines.some((each) => each.id === line && each.language)) return null;
+  if (divergent.length === 0 && !mayBegin) return null;
   return (
     <>
-      {lines.length > 0 && (
+      {divergent.length > 0 && (
         <span className={className}>
           <label htmlFor={chooserId}>Line</label>{' '}
           <select
@@ -72,7 +77,7 @@ export function LinesControl({
             }
           >
             <option value="">Main line</option>
-            {lines.map((each) => (
+            {divergent.map((each) => (
               <option key={each.id} value={each.id}>
                 {`${each.name}, from revision ${each.divergedFrom.revision}${each.closed ? ', brought back' : ''}`}
               </option>

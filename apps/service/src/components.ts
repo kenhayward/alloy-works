@@ -18,6 +18,7 @@ import {
   isArchived,
   isHeld,
   latestSequence,
+  latestVersion,
   listPeople,
   readsOnlyShares,
   listComponentTypes,
@@ -40,7 +41,9 @@ import {
   readLines,
 } from '@alloy-works/db';
 import {
+  asVariant,
   decide,
+  parseContentDocument,
   storableEverywhere,
   type ContentDocument,
   type EffectiveField,
@@ -91,6 +94,12 @@ export function versionView(version: VersionHeading) {
  * A version as a view shows it, where it may be on a divergent line: a line's as `US 2.3` (LIF-046;
  * ADR-0063), never by the number it is stored at.
  */
+/** A component's main line's latest version, as a language line's view names its source (TR-C). */
+async function sourceView(trx: TenantTransaction, id: string) {
+  const source = (await latestVersion(trx, id))!;
+  return { id: source.id, number: versionView(source).number };
+}
+
 export async function shownVersionView(trx: TenantTransaction, version: StoredVersion) {
   const view = versionView(version);
   if (version.line === null) return view;
@@ -438,13 +447,14 @@ export function componentHandlers(
       const version = await headVersion(trx, id, line);
       if (!version || version.kind !== 'component') throw notFound();
       const lines = await readLines(trx, id);
+      const translating = lines.find((each) => each.id === line)?.language ?? null;
       const space = await trx
         .selectFrom('artifact as a')
         .innerJoin('space as s', 's.id', 'a.space_id')
         .select(['s.id', 's.name'])
         .where('a.id', '=', id)
         .executeTakeFirstOrThrow();
-      const lock = await readLock(trx, id);
+      const lock = await readLock(trx, id, line);
       // The caller's own, and only its time (RC-F): what a closed tab left that was never made a
       // version, offered as Recover. What it holds is read only under the lock.
       // The line's own unsaved work, never another's (the R16 final review).
@@ -464,7 +474,10 @@ export function componentHandlers(
         id,
         space,
         version: await shownVersionView(trx, version),
-        content: version.content as Record<string, unknown>,
+        // A language line's start is the source in its language (the TR plan, TR-B).
+        content: (translating && version.line === null
+          ? asVariant(parseContentDocument(version.content), translating)
+          : version.content) as Record<string, unknown>,
         // What the renderer offers from: the same decision a write would be refused by.
         mayEdit: decide('edit', facts).allowed,
         archived: await isArchived(trx, id),
@@ -478,6 +491,7 @@ export function componentHandlers(
             ? null
             : { id: line, name: lines.find((each) => each.id === line)?.name ?? '' },
         lines: lines.map(lineView),
+        ...(translating ? { source: await sourceView(trx, id) } : {}),
         // Told only to whoever may retire it or administer the environment (AH-G): a hold may be
         // confidential.
         onHold:

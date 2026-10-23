@@ -1,4 +1,5 @@
 import {
+  asVariant,
   carryForward,
   definitionsFor,
   parseContentDocument,
@@ -9,6 +10,7 @@ import { componentFieldsNow } from './component-values.js';
 import {
   holding,
   isComponent,
+  lockLinesStored,
   isRefusal,
   serialise,
   type EditingSession,
@@ -16,12 +18,22 @@ import {
 } from './editing.js';
 import type { TenantTransaction } from './tables.js';
 import { recordVersion, type StoredVersion } from './versions.js';
-import { headVersion } from './lines.js';
+import { headVersion, readLine } from './lines.js';
+import {
+  checkTranslates,
+  declareSourceChange,
+  recordTranslates,
+  type TranslatesRefusal,
+} from './translation.js';
 
 export interface Cut extends EditingSession {
   /** The version the session opened from, which must still be the latest. */
   readonly openedFrom: string;
   readonly note?: string;
+  /** On a language line, the main-line version the translator was shown (the TR plan, TR-C). */
+  readonly translates?: string;
+  /** On the main line, whether the change needs retranslating (TR-D); absent, it does. */
+  readonly retranslate?: boolean;
 }
 
 export type CutAnswer =
@@ -35,7 +47,8 @@ export type CutAnswer =
    * (MET-033): carrying forward never replaces a value that is present, so the cut refuses it.
    */
   | { readonly answer: 'values.invalid'; readonly failures: readonly MetadataFailure[] }
-  | { readonly answer: 'artifact.missing' };
+  | { readonly answer: 'artifact.missing' }
+  | TranslatesRefusal;
 
 export type ReleaseAnswer =
   /** Released; `version` is the one cut, or null when there was nothing to cut. */
@@ -56,6 +69,14 @@ export async function cutVersion(trx: TenantTransaction, input: Cut): Promise<Cu
   const current = await headVersion(trx, input.artifactId, input.line);
   if (!current) return { answer: 'artifact.missing' };
   if (current.id !== input.openedFrom) return { answer: 'version.precondition', current };
+  const translation =
+    input.line === undefined
+      ? undefined
+      : (await readLine(trx, input.artifactId, input.line))?.language;
+  if (translation) {
+    const refused = await checkTranslates(trx, input.artifactId, input.translates);
+    if (refused) return refused;
+  }
 
   // Filtered by principal as well as session: a session id is chosen by the client, not unique per
   // principal, so a session id reused by a second principal after the first's lock lapses must find
@@ -86,13 +107,36 @@ export async function cutVersion(trx: TenantTransaction, input: Cut): Promise<Cu
     ...(input.line === undefined ? {} : { line: input.line }),
     substance: {
       kind: 'component',
-      content: parseContentDocument(iteration.content),
+      // A variant's root is in its line's language, whatever a session sent (TR-B).
+      content: translation
+        ? asVariant(parseContentDocument(iteration.content), translation)
+        : parseContentDocument(iteration.content),
       values: carried.values,
       notCarried: carried.notCarried,
       definitions: definitionsFor(type, schemas, fields),
     },
   });
   if (recorded.answer === 'artifact.missing') return recorded;
+  if (recorded.answer === 'recorded' && translation && input.line !== undefined) {
+    await recordTranslates(trx, {
+      line: input.line,
+      version: recorded.version.id,
+      translates: input.translates!,
+      by: input.principal,
+    });
+  }
+  if (
+    recorded.answer === 'recorded' &&
+    input.line === undefined &&
+    input.retranslate !== undefined
+  ) {
+    await declareSourceChange(trx, {
+      artifactId: input.artifactId,
+      version: recorded.version.id,
+      retranslate: input.retranslate,
+      by: input.principal,
+    });
+  }
   return recorded.answer === 'recorded'
     ? { answer: 'recorded', version: recorded.version }
     : recorded;
@@ -111,6 +155,11 @@ export async function releaseLock(trx: TenantTransaction, input: Cut): Promise<R
     .deleteFrom('component_lock')
     .where('artifact_id', '=', input.artifactId)
     .where('session_id', '=', input.session)
+    .$if(await lockLinesStored(trx), (query) =>
+      input.line === undefined
+        ? query.where('line_id', 'is', null)
+        : query.where('line_id', '=', input.line),
+    )
     .execute();
   return { answer: 'released', version: cut.answer === 'recorded' ? cut.version : null };
 }

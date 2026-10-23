@@ -53,6 +53,8 @@ export interface Line {
   readonly by: string;
   readonly at: Date;
   readonly closed: boolean;
+  /** A language line's BCP 47 tag (the TR plan, TR-A), null for a divergent line. */
+  readonly language: string | null;
 }
 
 interface LineRow {
@@ -65,6 +67,7 @@ interface LineRow {
   by: string;
   at: Date;
   closed: boolean;
+  language: string | null;
 }
 
 const lineOf = (row: LineRow): Line => ({
@@ -76,12 +79,15 @@ const lineOf = (row: LineRow): Line => ({
   by: row.by,
   at: row.at,
   closed: row.closed,
+  language: row.language,
 });
 
 const lines = (trx: TenantTransaction, where: ReturnType<typeof sql>) =>
   sql<LineRow>`
     select l.id, l.artifact_id, l.ordinal, l.name, d.revision_no, l.diverged_from, l.by, l.at,
-           exists (select 1 from line_closed c where c.line_id = l.id) as closed
+           exists (select 1 from line_closed c where c.line_id = l.id) as closed,
+           -- Read through to_jsonb, so a schema before 0159 reads every line as divergent.
+           to_jsonb(l) ->> 'language' as language
       from artifact_line l
       join revision_designation d on d.version_id = l.diverged_from
      where ${where}
@@ -123,6 +129,19 @@ export type DivergeAnswer =
   | { readonly answer: 'diverged'; readonly line: Line }
   | { readonly answer: 'artifact.missing' | 'revision.missing' | 'line.name_taken' };
 
+/** Whether this schema has 0159's language lines: migration tests run this code on older ones. */
+export async function translationStored(trx: TenantTransaction): Promise<boolean> {
+  const known = translationKnown.get(trx);
+  if (known !== undefined) return known;
+  const { rows } = await sql<{
+    present: boolean;
+  }>`select to_regclass('translation_state') is not null as present`.execute(trx);
+  const present = rows[0]?.present === true;
+  translationKnown.set(trx, present);
+  return present;
+}
+const translationKnown = new WeakMap<TenantTransaction, boolean>();
+
 /**
  * Begins a line of a component's revisions from one of its designated revisions (LIF-044; R16-B),
  * under its lock: the next ordinal, a name the component's lines do not hold, in its kind's initial
@@ -135,6 +154,8 @@ export async function diverge(
     readonly revision: number;
     readonly name: string;
     readonly by: string;
+    /** A language line's tag (TR-A, TR-B), checked by the caller; absent for a divergent line. */
+    readonly language?: string;
   },
 ): Promise<DivergeAnswer> {
   if (!UUID.test(input.artifactId)) return { answer: 'artifact.missing' };
@@ -172,6 +193,7 @@ export async function diverge(
       name,
       diverged_from: designated.version_id,
       by: input.by,
+      ...(input.language === undefined ? {} : { language: input.language }),
     })
     .returning('id')
     .executeTakeFirstOrThrow();
@@ -204,6 +226,7 @@ export async function diverge(
         line: line.id,
         name: line.name,
         from: { revision: input.revision, version: designated.version_id },
+        ...(input.language === undefined ? {} : { language: input.language }),
       },
     },
     place.labels,
@@ -286,9 +309,11 @@ export async function compareLines(
   trx: TenantTransaction,
   artifactId: string,
   lineId: string,
-): Promise<LineComparison | undefined> {
+): Promise<LineComparison | 'line.is_translation' | undefined> {
   const line = await readLine(trx, artifactId, lineId);
   if (!line || line.closed) return undefined;
+  // A translation is never brought back, so never compared for it (TR-A).
+  if (line.language !== null) return 'line.is_translation';
   const main = await latestVersion(trx, artifactId);
   const head = await readVersion(trx, await lineHead(trx, line));
   if (!main || !head) return undefined;
@@ -309,7 +334,10 @@ export type ReturnAnswer =
       readonly carried: readonly BlockDifference[];
       readonly left: readonly BlockDifference[];
     }
-  | { readonly answer: 'line.missing' | 'line.closed' | 'carry.invalid' | 'lock.held' }
+  | {
+      readonly answer:
+        'line.missing' | 'line.closed' | 'carry.invalid' | 'lock.held' | 'line.is_translation';
+    }
   | { readonly answer: 'version.precondition'; readonly current: StoredVersion };
 
 /**
@@ -336,8 +364,14 @@ export async function bringLineBack(
   const line = await readLine(trx, input.artifactId, input.line);
   if (!line) return { answer: 'line.missing' };
   if (line.closed) return { answer: 'line.closed' };
+  if (line.language !== null) return { answer: 'line.is_translation' };
   // An open session is never cut under, on either line (the R16 final review), as a restore is not.
-  if (await readLock(trx, input.artifactId)) return { answer: 'lock.held' };
+  if (
+    (await readLock(trx, input.artifactId)) ||
+    (await readLock(trx, input.artifactId, input.line))
+  ) {
+    return { answer: 'lock.held' };
+  }
   const main = await latestVersion(trx, input.artifactId);
   const head = await readVersion(trx, await lineHead(trx, line));
   if (!main || !head) return { answer: 'line.missing' };
@@ -426,6 +460,8 @@ export async function openLinesOf(
     .selectFrom('artifact_line as l')
     .select(['l.artifact_id', 'l.name'])
     .where('l.artifact_id', 'in', ids)
+    // A language line is a translation, not a divergence (TR-G): its status says so instead.
+    .$if(await translationStored(trx), (query) => query.where('l.language', 'is', null))
     .where(({ not, exists, selectFrom }) =>
       not(
         exists(

@@ -2,7 +2,7 @@ import type { ReadableSet } from '@alloy-works/domain';
 import { sql, type RawBuilder, type SqlBool } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
 import { artifactPlace, recordEvent } from './audit.js';
-import { readLock } from './editing.js';
+import { readAnyLock } from './editing.js';
 import { isHeld } from './holds.js';
 import { keptNow } from './keeps.js';
 import {
@@ -312,7 +312,8 @@ async function dependants(
   if (until) refusals.push({ reason: 'kept', until });
 
   if (component) {
-    const lock = await readLock(trx, id);
+    // A lock on any line holds a deletion back (TR-H).
+    const lock = await readAnyLock(trx, id);
     if (lock)
       refusals.push({
         reason: 'locked',

@@ -246,6 +246,17 @@ describe('the rule behind a refusal', () => {
       // The R16 plan's (R16-F): a line brought back already; a block carried that does not differ.
       'line.closed',
       'carry.invalid',
+      // The TR plan's (TR-A to TR-C): a translation never brought back; a cut naming no source, or one
+      // since replaced; a tag that is none, the source's own, begun already, or a source never
+      // designated; nothing yet to mark current. Guards of the design's own.
+      'line.is_translation',
+      'translation.source_required',
+      'translation.source_stale',
+      'translation.language_invalid',
+      'translation.same_language',
+      'translation.exists',
+      'translation.needs_revision',
+      'translation.untranslated',
       // The R17 plan's (R17-A, R17-B, R17-D): a share to one of the organisation's own, to an address
       // an administrator's invitation waits for, twice, to somebody erased, past now or past the cap;
       // the shared reader granted but as a share. Guards of the design's own.

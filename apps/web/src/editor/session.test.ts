@@ -685,6 +685,19 @@ describe('the editing session', () => {
     });
   });
 
+  it('keeps editing and says to reload when a translation is cut after its source moved on', async () => {
+    const { clock, service, session, type } = harness();
+    type('Unbox');
+    await clock.advance(0);
+    service.cutAnswer = async () => ({ ok: false, code: 'translation_source_stale' });
+    await session.saveVersion();
+    expect(session.view()).toMatchObject({
+      phase: 'editing',
+      notice:
+        'The source has changed since this translation was opened. Reload to translate against it: what you typed is saved.',
+    });
+  });
+
   it('re-claims once when Done editing finds the lock lapsed, and stops if the retried release is refused again', async () => {
     const { clock, service, session, type } = harness();
     type('Unbox');
