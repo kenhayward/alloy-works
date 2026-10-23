@@ -785,6 +785,7 @@ export interface TranslationJobTable {
 export interface TranslationJobItemTable {
   job_id: ColumnType<string, string, never>;
   component_id: ColumnType<string, string, never>;
+  position: ColumnType<number, number, never>;
   line_id: ColumnType<string | null, string | null, never>;
   source_version: ColumnType<string | null, string | null, never>;
   line_head: ColumnType<string | null, string | null, never>;

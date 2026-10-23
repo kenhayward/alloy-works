@@ -24,6 +24,8 @@ create index translation_job_document on translation_job (document_id, at desc);
 create table translation_job_item (
   job_id uuid not null references translation_job on delete restrict,
   component_id uuid not null references artifact on delete restrict,
+  -- Where the document placed it, first at 0: the job lists its components in that order.
+  position int not null check (position >= 0),
   line_id uuid references artifact_line on delete restrict,
   source_version uuid references artifact_version on delete restrict,
   line_head uuid references artifact_version on delete restrict,
@@ -54,7 +56,7 @@ begin
   execute format('grant select on translation_job to %I', current_schema());
   execute format('revoke insert, update, delete, truncate on translation_job_item from %I', current_schema());
   execute format(
-    'grant insert (job_id, component_id, line_id, source_version, line_head, not_sent) on translation_job_item to %I',
+    'grant insert (job_id, component_id, position, line_id, source_version, line_head, not_sent) on translation_job_item to %I',
     current_schema()
   );
   execute format(

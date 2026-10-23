@@ -273,6 +273,7 @@ describe('migration 0052, which widens dataset_take to an image', () => {
       '0160_publish_in_language',
       '0161_default_layout_languages',
       '0162_untranslated_note',
+      '0163_translation_jobs',
     ]);
     const kept = await queryAs(
       db.adminUrl,

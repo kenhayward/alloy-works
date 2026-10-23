@@ -3015,6 +3015,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/documents/{id}/translation-jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a document's translation jobs
+         * @description Lists a document's translation jobs, newest first, at most 50: each its language and vendor, who made it and when, whether it is closed, and each component it lists that the caller may read, with the source version sent, why one was not sent, and what has come back. It needs read on the document.
+         */
+        get: operations["listDocumentTranslationJobs"];
+        put?: never;
+        /**
+         * Send a document's components needing a language as a translation job
+         * @description Makes a translation job of a document's components into one language: each component it places, in another language, that needs translating into it, having no translation yet, an untranslated one, or one out of date by a change declared to need retranslating, and that no open job holds out. Each is sent from the source version a translator is shown, its latest designated revision, and a translation is begun where none is. One the caller may not edit, or one never designated, is listed and not sent. Refused where nothing would be sent. Nothing is sent to the vendor: download the job's file and send it. It needs edit on the document.
+         */
+        post: operations["makeDocumentTranslationJob"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{id}/translation-jobs/{job}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Close a translation job, ending what is still out
+         * @description Closes a translation job, so nothing of it is held out and its translations show their own status again. It needs edit on the document.
+         */
+        post: operations["closeDocumentTranslationJob"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{id}/translation-jobs/{job}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download a translation job's XLIFF 2.1 file
+         * @description Downloads a translation job's XLIFF 2.1 file, written from the source versions sent: one file element a component, its title and type as notes, and one unit a translatable text, with the text either side as context and the space's terms it uses in a glossary. References, footnotes, variables, equations, images, code and words in another language are placeholders, and marks are paired codes, none of which a translator may copy or delete. Only components the caller may read now are in it. Each download is audited. It needs edit on the document.
+         */
+        get: operations["downloadDocumentTranslationJob"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/documents/{id}/unarchive": {
         parameters: {
             query?: never;
@@ -62596,6 +62660,662 @@ export interface operations {
                             /** @description The field it seeds, where the rule is that field's and not the parameter's */
                             field?: string;
                         }[];
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listDocumentTranslationJobs: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Its jobs, newest first */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "jobs": []
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description The document's jobs, newest first, at most 50 */
+                        jobs: {
+                            /** Format: uuid */
+                            id: string;
+                            language: string;
+                            vendor: string | null;
+                            /** Format: uuid */
+                            by: string;
+                            /** Format: date-time */
+                            at: string;
+                            /** @description Who closed it and when, ending what was still out; null while open */
+                            closed: {
+                                /** Format: uuid */
+                                by: string;
+                                /** Format: date-time */
+                                at: string;
+                            } | null;
+                            /** @description Each component the job lists that the caller may read, in the order the document places them */
+                            items: {
+                                component: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    title: string;
+                                };
+                                /** @description Its translation, a line of the component; null where not sent */
+                                line: string | null;
+                                /** @description The source version sent, which what comes back translates */
+                                source: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    number: string;
+                                } | null;
+                                /** @description Why it was listed and not sent: the source has no designated revision to translate from, or the maker may not edit it */
+                                notSent: ("needs_revision" | "not_editable") | null;
+                                /** @description What came back of it; null while it is out */
+                                outcome: ("returned" | "held" | "refused") | null;
+                            }[];
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not read this document */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    makeDocumentTranslationJob: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "language": "en"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The BCP 47 tag the components are to be translated into, such as `fr-FR` */
+                    language: string;
+                    /** @description Who the job goes to, as the maker names them; nothing is sent to them by the product */
+                    vendor?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The job made, each component it lists */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "language": "en",
+                     *       "vendor": "example",
+                     *       "by": "00000000-0000-4000-8000-000000000001",
+                     *       "at": "2026-01-01T00:00:00.000Z",
+                     *       "closed": {
+                     *         "by": "00000000-0000-4000-8000-000000000001",
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       },
+                     *       "items": []
+                     *     }
+                     */
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        language: string;
+                        vendor: string | null;
+                        /** Format: uuid */
+                        by: string;
+                        /** Format: date-time */
+                        at: string;
+                        /** @description Who closed it and when, ending what was still out; null while open */
+                        closed: {
+                            /** Format: uuid */
+                            by: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                        /** @description Each component the job lists that the caller may read, in the order the document places them */
+                        items: {
+                            component: {
+                                /** Format: uuid */
+                                id: string;
+                                title: string;
+                            };
+                            /** @description Its translation, a line of the component; null where not sent */
+                            line: string | null;
+                            /** @description The source version sent, which what comes back translates */
+                            source: {
+                                /** Format: uuid */
+                                id: string;
+                                number: string;
+                            } | null;
+                            /** @description Why it was listed and not sent: the source has no designated revision to translate from, or the maker may not edit it */
+                            notSent: ("needs_revision" | "not_editable") | null;
+                            /** @description What came back of it; null while it is out */
+                            outcome: ("returned" | "held" | "refused") | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description translation_language_invalid: not a BCP 47 tag */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the document but may not edit it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description translation_nothing_to_send: no component it places needs translating into the language that the caller may send */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    closeDocumentTranslationJob: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string;
+                job: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The job, closed */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "language": "en",
+                     *       "vendor": "example",
+                     *       "by": "00000000-0000-4000-8000-000000000001",
+                     *       "at": "2026-01-01T00:00:00.000Z",
+                     *       "closed": {
+                     *         "by": "00000000-0000-4000-8000-000000000001",
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       },
+                     *       "items": []
+                     *     }
+                     */
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        language: string;
+                        vendor: string | null;
+                        /** Format: uuid */
+                        by: string;
+                        /** Format: date-time */
+                        at: string;
+                        /** @description Who closed it and when, ending what was still out; null while open */
+                        closed: {
+                            /** Format: uuid */
+                            by: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                        /** @description Each component the job lists that the caller may read, in the order the document places them */
+                        items: {
+                            component: {
+                                /** Format: uuid */
+                                id: string;
+                                title: string;
+                            };
+                            /** @description Its translation, a line of the component; null where not sent */
+                            line: string | null;
+                            /** @description The source version sent, which what comes back translates */
+                            source: {
+                                /** Format: uuid */
+                                id: string;
+                                number: string;
+                            } | null;
+                            /** @description Why it was listed and not sent: the source has no designated revision to translate from, or the maker may not edit it */
+                            notSent: ("needs_revision" | "not_editable") | null;
+                            /** @description What came back of it; null while it is out */
+                            outcome: ("returned" | "held" | "refused") | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the document but may not edit it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document, or job of it, the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description translation_job_closed: it is closed already */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    downloadDocumentTranslationJob: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string;
+                job: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The file, one `<file>` a component sent and one `<unit>` a text */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/xliff+xml": string;
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the document but may not edit it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document, or job of it, the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
                     };
                 };
             };

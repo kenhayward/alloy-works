@@ -248,7 +248,7 @@ describe('translation jobs (the XL plan, XL-D, XL-E)', () => {
       await as((trx) =>
         closeTranslationJob(trx, { documentId: document.id, job: made.job.id, by: ada }),
       ),
-    ).toEqual({ answer: 'job.closed' });
+    ).toEqual({ answer: 'translation.job_closed' });
     const event = await as((trx) =>
       trx
         .selectFrom('audit_event')

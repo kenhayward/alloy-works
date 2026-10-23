@@ -509,6 +509,10 @@ const operationTags = {
     'markComponentTranslationCurrent',
     'getComponentTranslationChanges',
     'declareComponentSourceChange',
+    'listDocumentTranslationJobs',
+    'makeDocumentTranslationJob',
+    'downloadDocumentTranslationJob',
+    'closeDocumentTranslationJob',
   ],
   Prompts: [
     'listPrompts',
@@ -1100,6 +1104,14 @@ const descriptions: Readonly<Record<string, string>> = {
     "Says which of the source's blocks changed since the version a translation translates: added, changed or removed, by block identifier, so a translator starts from the earlier translation. It needs read on the component.",
   declareComponentSourceChange:
     "Declares whether a version of a component's main line needs retranslating, revising what its author declared at its cut. A version declaring nothing needs it. A translation goes out of date at any later source version either way; the declaration says whether that needs new words. It needs edit on the component.",
+  listDocumentTranslationJobs:
+    "Lists a document's translation jobs, newest first, at most 50: each its language and vendor, who made it and when, whether it is closed, and each component it lists that the caller may read, with the source version sent, why one was not sent, and what has come back. It needs read on the document.",
+  makeDocumentTranslationJob:
+    "Makes a translation job of a document's components into one language: each component it places, in another language, that needs translating into it, having no translation yet, an untranslated one, or one out of date by a change declared to need retranslating, and that no open job holds out. Each is sent from the source version a translator is shown, its latest designated revision, and a translation is begun where none is. One the caller may not edit, or one never designated, is listed and not sent. Refused where nothing would be sent. Nothing is sent to the vendor: download the job's file and send it. It needs edit on the document.",
+  downloadDocumentTranslationJob:
+    "Downloads a translation job's XLIFF 2.1 file, written from the source versions sent: one file element a component, its title and type as notes, and one unit a translatable text, with the text either side as context and the space's terms it uses in a glossary. References, footnotes, variables, equations, images, code and words in another language are placeholders, and marks are paired codes, none of which a translator may copy or delete. Only components the caller may read now are in it. Each download is audited. It needs edit on the document.",
+  closeDocumentTranslationJob:
+    'Closes a translation job, so nothing of it is held out and its translations show their own status again. It needs edit on the document.',
   unarchiveBibliographyEntry:
     "Unarchives an entry, returning it to the space's listing. It needs retire on the entry.",
   recordPromptVersion:

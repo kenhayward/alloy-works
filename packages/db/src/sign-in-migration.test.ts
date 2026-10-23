@@ -172,6 +172,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0160_publish_in_language',
       '0161_default_layout_languages',
       '0162_untranslated_note',
+      '0163_translation_jobs',
     ]);
 
     const read = async () =>

@@ -1,3 +1,4 @@
+import { TranslationJobsButton } from '../translation/TranslationJobs.js';
 import type { FieldView } from '@alloy-works/api-client';
 import type { TranslationSaid } from '../translation/Translations.js';
 import { titleIn, type TitleToTranslate } from '../translation/TranslatedTitles.js';
@@ -2897,6 +2898,11 @@ export function DocumentPage({
                               onClear: () => setPublishProfile(null),
                             },
                           })}
+                    />
+                    <TranslationJobsButton
+                      client={client}
+                      documentId={document.id}
+                      mayEdit={document.mayEdit === true && !document.archived}
                     />
                   </div>
                   <div

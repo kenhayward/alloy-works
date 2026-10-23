@@ -74,7 +74,7 @@ async function jobsWhere(
       jobs.map((job) => job.id),
     )
     .orderBy('job_id')
-    .orderBy('component_id')
+    .orderBy('position')
     .execute();
   return jobs.map((job) => ({
     id: job.id,
@@ -222,7 +222,7 @@ export async function makeTranslationJob(
     .executeTakeFirstOrThrow();
   await trx
     .insertInto('translation_job_item')
-    .values(items.map((item) => ({ ...item, job_id: job.id })))
+    .values(items.map((item, position) => ({ ...item, position, job_id: job.id })))
     .execute();
   const place = await artifactPlace(trx, input.documentId);
   await recordEvent(
@@ -240,7 +240,7 @@ export async function makeTranslationJob(
 
 export type CloseTranslationJobAnswer =
   | { readonly answer: 'closed'; readonly job: TranslationJob }
-  | { readonly answer: 'job.missing' | 'job.closed' };
+  | { readonly answer: 'job.missing' | 'translation.job_closed' };
 
 /** Closes a document's job (XL-D), ending what is still out. Audited `translation.job_closed`. */
 export async function closeTranslationJob(
@@ -256,7 +256,7 @@ export async function closeTranslationJob(
     .where('closed_at', 'is', null)
     .returning('id')
     .executeTakeFirst();
-  if (!closed) return { answer: 'job.closed' };
+  if (!closed) return { answer: 'translation.job_closed' };
   const place = await artifactPlace(trx, input.documentId);
   await recordEvent(
     trx,
