@@ -1024,6 +1024,10 @@ describe('the domain package', () => {
         // TRb: a layout's words in further languages, and the default layout's 0.11 frozen beside 0.12.
         'ELEVENTH_DEFAULT_LAYOUT',
         'layoutIn',
+        // XLa: a component as XLIFF 2.1, and back.
+        'writeXliff',
+        'xliffTarget',
+        'xliffUnits',
       ].sort(),
     );
   });
