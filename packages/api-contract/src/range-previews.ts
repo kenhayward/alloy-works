@@ -1,4 +1,4 @@
-import { storedProfileSchema } from '@alloy-works/domain';
+import { contentDocumentSchema, storedProfileSchema } from '@alloy-works/domain';
 import { z } from 'zod';
 import type { RouteContract } from './contract.js';
 import { PublicationRefusal } from './publishing.js';
@@ -28,6 +28,11 @@ export const RequestRangePreviewBody = z.strictObject({
   profile: storedProfileSchema
     .optional()
     .describe("The profile to preview under in place of the document's own (REU-025)"),
+  language: contentDocumentSchema.shape.language
+    .optional()
+    .describe(
+      "The language to make it in (the TR plan, TRb): each component reads its translation into it, falling back to its own language, marked, or refusing, as the document's or the environment's policy says. Absent, the document's own",
+    ),
 });
 export type RequestRangePreviewBody = z.infer<typeof RequestRangePreviewBody>;
 

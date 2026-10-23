@@ -381,7 +381,11 @@ describe('requesting and recording a publication', () => {
           author: ada,
           substance: {
             kind: 'layout',
-            content: { ...declared.layout, formats: { pdf: declared.layout.formats.pdf } },
+            content: {
+              ...declared.layout,
+              translations: undefined,
+              formats: { pdf: declared.layout.formats.pdf },
+            },
           },
         });
         if (pdfOnly.answer !== 'recorded') throw new Error(pdfOnly.answer);
@@ -461,18 +465,18 @@ describe('requesting and recording a publication', () => {
 
   it("PUB-095 refuses a document in a language its layout is not written in, naming both, and takes one in the layout's language", async () => {
     await service.withTenant(production, async (trx) => {
-      // The layout declares its words' language as a BCP 47 tag.
+      // The layout declares its words' language as a BCP 47 tag, and French and German besides (TRb).
       expect((await defaultLayout(trx)).layout.language).toBe('en');
-      const french = await documentIn(trx, 'fr');
+      const spanish = await documentIn(trx, 'es');
       const before = await requestIds(trx);
       expect(
         await requestPublication(trx, {
-          documentId: french.artifactId,
-          version: french.id,
+          documentId: spanish.artifactId,
+          version: spanish.id,
           formats: ['pdf'],
           requester: ada,
         }),
-      ).toEqual({ answer: 'layout.language', document: 'fr', layout: 'en' });
+      ).toEqual({ answer: 'layout.language', document: 'es', layout: 'en' });
       expect(await requestIds(trx)).toEqual(before);
 
       // `en`, taken as a language range, matches `en-GB`.
@@ -519,11 +523,15 @@ describe('requesting and recording a publication', () => {
           },
         });
         if (next.answer !== 'recorded') throw new Error(next.answer);
-        // The default is at 0.11 since 0154, so the version recorded after it is 0.12.
-        expect((await defaultLayout(trx)).number).toBe('0.12');
+        // The default is at 0.12 since 0161, so the version recorded after it is 0.13.
+        expect((await defaultLayout(trx)).number).toBe('0.13');
 
         const inputs = await publicationInputs(trx, id);
-        expect(inputs!.layout).toEqual({ versionId: declared.versionId, layout: declared.layout });
+        // Read in the document's language (TRb): its own words, its further languages left behind.
+        expect(inputs!.layout).toEqual({
+          versionId: declared.versionId,
+          layout: { ...declared.layout, translations: undefined },
+        });
         // The document's version as `revision.version` (VER-009): a first version is 0.1.
         expect(inputs!.revision).toBe('0.1');
         // Thrown to roll the layout's 0.10 back: the rest of the suite publishes under the default.

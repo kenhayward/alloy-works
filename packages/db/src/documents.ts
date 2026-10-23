@@ -1111,6 +1111,44 @@ export async function recordDocumentProfile(
   });
 }
 
+/**
+ * A document's own translation fallback (LOC-037; the TR plan, TR-J), written as its next version with
+ * everything else unchanged, or cleared with null, leaving the tenant's policy to decide.
+ */
+export async function recordDocumentFallback(
+  trx: TenantTransaction,
+  input: {
+    readonly documentId: string;
+    readonly openedFrom: string;
+    readonly author: string;
+    readonly fallback: 'source' | 'refuse' | null;
+  },
+): Promise<RecordAnswer> {
+  const opened = await readVersion(trx, input.openedFrom);
+  if (!opened || opened.artifactId !== input.documentId || opened.kind !== 'document') {
+    return { answer: 'artifact.missing' };
+  }
+  const read = readOutline(opened.content, { artifact: input.documentId, version: opened.id });
+  if (!read.ok) {
+    throw new Error(
+      `The document ${input.documentId} at ${opened.id} does not read: ${read.failure}`,
+    );
+  }
+  const { fallback: was, ...rest } = read.outline;
+  void was;
+  return recordVersion(trx, {
+    artifactId: input.documentId,
+    openedFrom: input.openedFrom,
+    author: input.author,
+    substance: {
+      kind: 'document',
+      content: input.fallback === null ? rest : { ...rest, fallback: input.fallback },
+      values: opened.values,
+      parameters: opened.parameters,
+    },
+  });
+}
+
 /** One change to a document's parameters, as its history shows it (TPL-020; TP1-H). */
 export interface ParameterChange {
   readonly version: { readonly id: string; readonly revision: number; readonly version: number };

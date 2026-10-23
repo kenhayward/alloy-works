@@ -29,6 +29,7 @@ import type { Covers } from './glyphs.js';
 import { publishedLanguage } from './language.js';
 import {
   defaultLayout,
+  layoutIn,
   FIRST_DEFAULT_LAYOUT,
   FOURTH_DEFAULT_LAYOUT,
   FIFTH_DEFAULT_LAYOUT,
@@ -62,6 +63,7 @@ import {
   PUBLISHING_SCHEMA_21,
   PUBLISHING_SCHEMA_22,
   PUBLISHING_SCHEMA_23,
+  PUBLISHING_SCHEMA_24,
   type PublishedBlock,
   type PublishedDocument,
   type PublishedInline,
@@ -154,6 +156,8 @@ const input = (over: Partial<UnderALayout>): UnderALayout => ({
 /** The default layout, changed by `change` and held to the layout's own parse. */
 const layoutWith = (change: (layout: Layout) => void): Layout => {
   const layout = JSON.parse(JSON.stringify(defaultLayout)) as Layout;
+  // Its own words alone: a change to them would leave its further languages incomplete (TRb).
+  delete layout.translations;
   change(layout);
   return parseLayout(layout);
 };
@@ -276,6 +280,7 @@ describe('assemble', () => {
         title: [{ text: 'Introduction', marks: [] }],
         language: null,
         direction: null,
+        untranslated: null,
         blocks: [],
         children: [
           {
@@ -287,6 +292,7 @@ describe('assemble', () => {
             title: [{ text: 'Calibration', marks: [] }],
             language: null,
             direction: null,
+            untranslated: null,
             blocks: [
               {
                 type: 'paragraph',
@@ -309,6 +315,7 @@ describe('assemble', () => {
         title: [{ text: 'Scope', marks: [] }],
         language: null,
         direction: null,
+        untranslated: null,
         blocks: [],
         children: [],
       },
@@ -1174,8 +1181,8 @@ describe('assemble', () => {
     ]);
   });
 
-  it('assembles under a layout as publishing/24, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/24');
+  it('assembles under a layout as publishing/25, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/25');
     // Frozen with templates 3 and 4 and the publications made by them, exactly as `publishing/2` was
     // frozen when a run began to carry its marks: a template version is a record, not something to
     // migrate.
@@ -1761,8 +1768,8 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
     ]);
   });
 
-  it('makes publishing/24, and publishing/4 to publishing/23 are frozen', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/24');
+  it('makes publishing/25, and publishing/4 to publishing/24 are frozen', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/25');
     expect(PUBLISHING_SCHEMA_4).toBe('publishing/4');
     expect(PUBLISHING_SCHEMA_5).toBe('publishing/5');
     expect(PUBLISHING_SCHEMA_6).toBe('publishing/6');
@@ -1783,6 +1790,7 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
     expect(PUBLISHING_SCHEMA_21).toBe('publishing/21');
     expect(PUBLISHING_SCHEMA_22).toBe('publishing/22');
     expect(PUBLISHING_SCHEMA_23).toBe('publishing/23');
+    expect(PUBLISHING_SCHEMA_24).toBe('publishing/24');
   });
 });
 
@@ -4904,7 +4912,7 @@ describe('the theme a publication is set from (themes 1)', () => {
     const theme = resolved();
     const assembled = assemble(oneParagraph(text('Set the tray.')));
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
-    expect(assembled.document.schema).toBe('publishing/24');
+    expect(assembled.document.schema).toBe('publishing/25');
     expect(assembled.document.theme).toEqual(projectTypst(theme));
     expect(Object.keys(assembled.document.theme.tables)).toEqual(['table', 'banded']);
     expect(Object.keys(assembled.document.theme.images)).toEqual([
@@ -7379,6 +7387,28 @@ describe('an approved publication, assembled (the WF2 plan, WF2-I, WF2-J)', () =
     if (!published.ok) throw new Error(JSON.stringify(published.failures));
     expect(published.variables.map((each) => [each.source, each.printed])).toEqual([
       ['query', 'North Quay'],
+    ]);
+  });
+});
+
+describe('a component published in its source language (the TR plan, TRb)', () => {
+  it('LOC-037 marks each component published in its source language for want of a translation, with the words the mark says, and no other', () => {
+    const assembled = assemble(
+      input({
+        layout: layoutIn(defaultLayout, 'fr-FR')!,
+        outline: outline([reference('methods'), reference('results')], 'fr-FR'),
+        occurrences: new Map([
+          [id('methods'), component([paragraph('p1', text('Les étangs.'))], { language: 'fr-FR' })],
+          [id('results'), component([paragraph('p1', text('The ponds.'))])],
+        ]),
+        untranslated: new Map([[id('results'), 'Non traduit (en-GB)']]),
+      }),
+    );
+    expect(assembled.ok, JSON.stringify(assembled)).toBe(true);
+    if (!assembled.ok) return;
+    expect(assembled.document.nodes.map((node) => [node.untranslated, node.language])).toEqual([
+      [null, null],
+      ['Non traduit (en-GB)', { lang: 'en', region: 'GB' }],
     ]);
   });
 });

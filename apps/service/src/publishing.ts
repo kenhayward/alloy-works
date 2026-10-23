@@ -262,7 +262,7 @@ export async function refusePublish(
       throw refused(
         400,
         'layout.language',
-        `This document is in ${answer.document}, and its layout is written in ${answer.layout}. It can be published only under a layout in its own language.`,
+        `This is to be published in ${answer.document}, and its layout gives its words in ${answer.layout} and no language serving it. It can be published only in a language its layout gives its words in.`,
       );
     // REU-027: a profile naming what no axis declares, each named.
     case 'profile.invalid':
@@ -323,6 +323,7 @@ export function publishingHandlers(
         formats: body.formats,
         requester: principalId,
         ...(body.profile === undefined ? {} : { profile: body.profile }),
+        ...(body.language === undefined ? {} : { language: body.language }),
       });
       return answered(trx, id, answer);
     },
@@ -345,6 +346,7 @@ export function publishingHandlers(
         requester: principalId,
         kind: 'preview',
         ...(body.profile === undefined ? {} : { profile: body.profile }),
+        ...(body.language === undefined ? {} : { language: body.language }),
       });
       return answered(trx, id, answer);
     },

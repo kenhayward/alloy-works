@@ -198,6 +198,18 @@ export const DocumentProfileBody = z.strictObject({
 });
 export type DocumentProfileBody = z.infer<typeof DocumentProfileBody>;
 
+/** A document's own translation fallback (LOC-037; the TR plan, TR-J), or null for the policy's. */
+export const DocumentFallbackBody = z.strictObject({
+  openedFrom: LowercaseUuid.describe('The version it was read at, which must be the latest'),
+  fallback: z
+    .enum(['source', 'refuse'])
+    .nullable()
+    .describe(
+      "Where a component has no translation into the language published in: `source` publishes it in its own language, marked as untranslated; `refuse` fails the publish; null takes the environment's translation policy",
+    ),
+});
+export type DocumentFallbackBody = z.infer<typeof DocumentFallbackBody>;
+
 /** A page of a document's parameter history. */
 export const DocumentParametersQuery = z.object({
   limit: z
@@ -410,7 +422,14 @@ export const DocumentView = z.object({
     .object({
       id: z.string(),
       version: z.object({ id: z.string(), number: z.string() }),
-      language: z.string(),
+      language: z
+        .string()
+        .describe("The language of the words below: those serving the document's own language"),
+      languages: z
+        .array(z.string())
+        .describe(
+          'Every language a publish may be made in, as a language range: its own words first, then each further language it gives them in (the TR plan, TRb)',
+        ),
       scheme: z
         .record(z.string(), z.unknown())
         .describe('The numbering scheme this document is numbered and published with'),
@@ -898,6 +917,33 @@ export const documentRoutes = {
           'parameter_fixed: a parameter that may not change was changed; or invalid_request: a body ' +
           'this route does not accept',
         schema: OutlineRefusal,
+      },
+      401: unauthenticated,
+      403: {
+        description: 'The caller may read the document but may not edit it',
+        schema: ErrorBody,
+      },
+      404: notFound,
+      409: {
+        description: 'version_precondition: the document has changed since it was read',
+        schema: OutlineRefusal,
+      },
+    },
+  },
+  recordDocumentFallback: {
+    operationId: 'recordDocumentFallback',
+    method: 'PUT',
+    path: '/v1/documents/{id}/translation-fallback',
+    summary:
+      "Write the document's own translation fallback, as one version with everything else unchanged",
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'edit', target: { artifact: 'id' } },
+    params: DocumentParams,
+    body: DocumentFallbackBody,
+    responses: {
+      200: {
+        description: 'Written, or nothing changed: the document at its latest version',
+        schema: DocumentView,
       },
       401: unauthenticated,
       403: {

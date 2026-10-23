@@ -12,7 +12,13 @@ import {
 import { resolved } from '../theme/theme.fixture.js';
 
 import { assemble, citationPlaces, type AssembleInput } from './assemble.js';
-import { defaultLayout, NINTH_DEFAULT_LAYOUT, parseLayout, type Layout } from './layout.js';
+import {
+  defaultLayout,
+  LAYOUT_SCHEMA_VERSION,
+  NINTH_DEFAULT_LAYOUT,
+  parseLayout,
+  type Layout,
+} from './layout.js';
 import type {
   PublishedBlock,
   PublishedDocument,
@@ -254,7 +260,9 @@ describe('citations published (CIc)', () => {
   it('places no bibliography under a layout declaring none, and links no citation to one', () => {
     expect(NINTH_DEFAULT_LAYOUT.matter.bibliography).toBeUndefined();
     const document = published(
-      publish(component(paragraph('p1', cite(MARLOW))), { layout: NINTH_DEFAULT_LAYOUT }),
+      publish(component(paragraph('p1', cite(MARLOW))), {
+        layout: { ...NINTH_DEFAULT_LAYOUT, schemaVersion: LAYOUT_SCHEMA_VERSION },
+      }),
     );
     expect(citationsOf(document)).toEqual([{ text: '(1)', link: null }]);
     expect(document.back.bibliography).toBeNull();

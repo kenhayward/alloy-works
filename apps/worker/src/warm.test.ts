@@ -71,6 +71,7 @@ function documentWith(lead: string): string {
     refused: [],
     layout: parseLayout({
       ...defaultLayout,
+      translations: undefined,
       matter: { cover: false, contents: null, appendices: { newPage: false }, lists: [] },
     }),
     theme: defaultTheme,

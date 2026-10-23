@@ -283,6 +283,7 @@ const unfinished = (): ContentDocument =>
  */
 const bare = parseLayout({
   ...defaultLayout,
+  translations: undefined,
   matter: { cover: false, contents: null, appendices: { newPage: false }, lists: [] },
 });
 

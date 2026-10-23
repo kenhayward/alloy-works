@@ -32,6 +32,7 @@ const COMPONENT = '00000000-0000-4000-8000-000000000001';
 const TEMPLATE = PUBLICATION_TEMPLATE[TEMPLATE_READING[PUBLISHING_SCHEMA]].file;
 const layout = parseLayout({
   ...defaultLayout,
+  translations: undefined,
   matter: { ...defaultLayout.matter, cover: false, contents: null, lists: [] },
 });
 

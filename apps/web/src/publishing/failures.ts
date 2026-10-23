@@ -517,6 +517,11 @@ export function failureWords(failure: Failure, wordOffered = false): string {
       return failure.detail === 'none'
         ? "The publication's theme names no citation style, so its citations cannot be set. Choose one in the theme."
         : "The theme's citation style no longer sets citations. Choose another in the theme, or upload the style again.";
+    // Publishing in a language (the TR plan, TRb): the document's fallback, or the environment's, refuses.
+    case 'occurrence_untranslated':
+      return 'This component has no translation into the language published in, and the document is not published with an untranslated component. Translate it, or let the document fall back to the source.';
+    case 'translation_out_of_date':
+      return "This component's translation is out of date with a change that needs retranslating. Retranslate it, or mark it current, and publish again.";
     default:
       return 'The publication could not be made. Publish again.';
   }
@@ -538,6 +543,8 @@ export const FAILURE_SUMMARIES: Readonly<Record<PublishFailureCode, string>> = {
   citation_unresolved: 'A citation in it names an entry that cannot be read.',
   entry_incomplete: 'A bibliography entry it cites lacks a field its style needs.',
   style_invalid: 'Its theme names no citation style that sets its citations.',
+  occurrence_untranslated: 'A component in it has no translation into the language published in.',
+  translation_out_of_date: 'A translation in it is out of date with its source.',
   occurrence_unresolved: 'A reference in it waits on an approved version.',
   asset_unreadable: 'A figure in it shows an image you may not see.',
   component_metadata_invalid: 'A component in it has fields not filled in as its type asks.',

@@ -59,8 +59,13 @@ import { DRAFT_NOTICE } from './published.js';
  * (`table_words_missing`) rather than printing English. **`words.note` was added at 7 in place** (the
  * TB3 plan, TB3-F): optional, what a table's whole-table note follows; without it, a note prints
  * unlabelled.
+ *
+ * **Version 8 added `translations`** (the TR plan, TRb; Ken, 2026-10-23): the layout's words in each
+ * further language it is given - its words, its labels, its titles and its running matter's words -
+ * each complete, so a document publishes in that language under the one layout (`layoutIn`). A layout
+ * stored at version 7 reads as having none, for version 2's reason.
  */
-export const LAYOUT_SCHEMA_VERSION = 7;
+export const LAYOUT_SCHEMA_VERSION = 8;
 
 /** The sequences a generated list can list: those a caption-bearing block takes (CNT-081, STR-041). */
 export const LISTED_SEQUENCES = ['figure', 'table', 'equation'] as const;
@@ -111,7 +116,7 @@ export type DocxFormat = PageFormat;
 
 export interface Layout {
   schemaVersion: typeof LAYOUT_SCHEMA_VERSION;
-  /** The one language its words are in: a BCP 47 tag the engine can carry (`publishedLanguage`). */
+  /** The language its own words are in: a BCP 47 tag the engine can carry (`publishedLanguage`). */
   language: string;
   /**
    * The words the product sets itself: the contents' title, the draft notice and its sentence, what
@@ -170,6 +175,37 @@ export interface Layout {
    * Word where the layout makes it.
    */
   formats: { pdf: PdfFormat; docx?: DocxFormat | undefined };
+  /** Its words in each further language (schema 8; TRb): optional, and each complete. */
+  translations?: LayoutTranslation[] | undefined;
+}
+
+/**
+ * **A layout's words in one further language** (schema 8; the TR plan, TRb): everything the layout
+ * says in words, and nothing else - its `words`, each caption label its scheme gives, each title its
+ * matter places, and its running matter with the words in that language and the fields where the
+ * layout's own are. Complete, so nothing prints in the layout's own language by default.
+ */
+export interface LayoutTranslation {
+  language: string;
+  words: Layout['words'];
+  /** By sequence and matter, each label the scheme gives that is not empty. */
+  labels: Record<
+    string,
+    { front?: string | undefined; body?: string | undefined; appendix?: string | undefined }
+  >;
+  titles: {
+    lists?:
+      | { figure?: string | undefined; table?: string | undefined; equation?: string | undefined }
+      | undefined;
+    approvals?: string | undefined;
+    bibliography?: string | undefined;
+    glossary?: string | undefined;
+    abbreviations?: string | undefined;
+  };
+  slots: {
+    pdf: Pick<PageFormat, 'head' | 'foot'>;
+    docx?: Pick<PageFormat, 'head' | 'foot'> | undefined;
+  };
 }
 
 /** The most a layout's words or a slot's words may hold: a line, never a paragraph. */
@@ -294,6 +330,41 @@ export const layoutWordsSchema = z
     'A layout gives its words for above and below together, or neither',
   );
 
+/** The most further languages one layout gives its words in. */
+const MAXIMUM_TRANSLATIONS = 50;
+
+const headFoot = z.strictObject({ head: slots, foot: slots });
+
+const layoutTranslationSchema = z.strictObject({
+  language: z.string().superRefine((tag, context) => {
+    if (publishedLanguage(tag) === null) {
+      context.addIssue({
+        code: 'custom',
+        message: `The layout's language ${tag} is not one the engine can carry`,
+      });
+    }
+  }),
+  words: layoutWordsSchema,
+  labels: z.record(
+    z.string().min(1),
+    z.strictObject({ front: words.optional(), body: words.optional(), appendix: words.optional() }),
+  ),
+  titles: z.strictObject({
+    lists: z
+      .strictObject({
+        figure: words.optional(),
+        table: words.optional(),
+        equation: words.optional(),
+      })
+      .optional(),
+    approvals: words.optional(),
+    bibliography: words.optional(),
+    glossary: words.optional(),
+    abbreviations: words.optional(),
+  }),
+  slots: z.strictObject({ pdf: headFoot, docx: headFoot.optional() }),
+});
+
 /**
  * Every layout version, as it reads at the current schema version. The language is held to the rule
  * `assemble` holds a document's to (`publishedLanguage`, `language_not_publishable`): a tag the engine
@@ -335,8 +406,16 @@ const upgradedLayoutSchema: z.ZodType<Layout> = z
       pdf: pageFormatSchema(pageSide),
       docx: pageFormatSchema(wordPageSide).optional(),
     }),
+    translations: z.array(layoutTranslationSchema).max(MAXIMUM_TRANSLATIONS).optional(),
   })
-  .refine(storableEverywhere, CANNOT_BE_STORED);
+  .refine(storableEverywhere, CANNOT_BE_STORED)
+  .superRefine((layout, context) => {
+    for (const [index, translation] of (layout.translations ?? []).entries()) {
+      for (const problem of translationGaps(layout, translation)) {
+        context.addIssue({ code: 'custom', message: problem, path: ['translations', index] });
+      }
+    }
+  });
 
 /**
  * A layout as it was written at schema versions 4 and 5: with the words a continued table's label adds
@@ -381,6 +460,120 @@ export const layoutSchema: z.ZodType<Layout> = previewLayoutSchema.superRefine(
     }
   },
 );
+
+const sameKeys = (a: object, b: object) =>
+  JSON.stringify(Object.keys(a).sort()) === JSON.stringify(Object.keys(b).sort());
+
+/** What a slot holds apart from its words: each part's kind, and each field. */
+const shapeOf = (format: Pick<PageFormat, 'head' | 'foot'>) =>
+  JSON.stringify(
+    [...format.head, ...format.foot].map((slot) =>
+      slot.map((part) => (part.kind === 'field' ? part.field : 'words')),
+    ),
+  );
+
+/**
+ * What a translation leaves out of, or adds to, what its layout says in words (schema 8): nothing may
+ * print in the layout's own language by default, and nothing is given that the layout does not say.
+ */
+function translationGaps(layout: Layout, translation: LayoutTranslation): string[] {
+  const gaps: string[] = [];
+  if (speaksFor(layout.language, translation.language)) {
+    gaps.push(`The layout's own words serve ${translation.language} already`);
+  }
+  const others = (layout.translations ?? []).filter((each) => each !== translation);
+  if (others.some((each) => each.language.toLowerCase() === translation.language.toLowerCase())) {
+    gaps.push(`The layout gives its words in ${translation.language} twice`);
+  }
+  if (!sameKeys(layout.words, translation.words)) {
+    gaps.push(`A translation gives the same words the layout does, in ${translation.language}`);
+  }
+  for (const [sequence, rules] of Object.entries(layout.scheme.sequences)) {
+    for (const matter of ['front', 'body', 'appendix'] as const) {
+      const given = translation.labels[sequence]?.[matter];
+      if ((rules[matter].label === '') !== (given === undefined)) {
+        gaps.push(`A translation gives a label where the scheme does: ${sequence} ${matter}`);
+      }
+    }
+  }
+  if (Object.keys(translation.labels).some((sequence) => !(sequence in layout.scheme.sequences))) {
+    gaps.push('A translation labels a sequence the scheme does not number');
+  }
+  const listed = layout.matter.lists.map((list) => list.sequence).sort();
+  if (
+    JSON.stringify(Object.keys(translation.titles.lists ?? {}).sort()) !== JSON.stringify(listed)
+  ) {
+    gaps.push('A translation titles each list the layout places, and no other');
+  }
+  for (const title of ['approvals', 'bibliography', 'glossary', 'abbreviations'] as const) {
+    if ((layout.matter[title] === undefined) !== (translation.titles[title] === undefined)) {
+      gaps.push(`A translation titles ${title} where the layout places it`);
+    }
+  }
+  if (shapeOf(layout.formats.pdf) !== shapeOf(translation.slots.pdf)) {
+    gaps.push("A translation's running matter holds the layout's fields where the layout does");
+  }
+  const docx = layout.formats.docx;
+  if ((docx === undefined) !== (translation.slots.docx === undefined)) {
+    gaps.push('A translation gives running matter for Word where the layout makes Word');
+  } else if (docx && shapeOf(docx) !== shapeOf(translation.slots.docx!)) {
+    gaps.push(
+      "A translation's Word running matter holds the layout's fields where the layout does",
+    );
+  }
+  return gaps;
+}
+
+/**
+ * **A layout in a language** (the TR plan, TRb; PUB-095): itself where its own words serve the
+ * language, else its words in the translation that does, everything else its own; null where none
+ * does, so a publish in that language is refused naming it. The answer gives no translations.
+ */
+export function layoutIn(layout: Layout, language: string): Layout | null {
+  const { translations, ...own } = layout;
+  if (speaksFor(layout.language, language)) return own;
+  const translation = (translations ?? []).find((each) => speaksFor(each.language, language));
+  if (!translation) return null;
+  const sequences = Object.fromEntries(
+    Object.entries(layout.scheme.sequences).map(([sequence, rules]) => [
+      sequence,
+      Object.fromEntries(
+        (['front', 'body', 'appendix'] as const).map((matter) => [
+          matter,
+          {
+            ...rules[matter],
+            label: translation.labels[sequence]?.[matter] ?? rules[matter].label,
+          },
+        ]),
+      ),
+    ]),
+  ) as NumberingScheme['sequences'];
+  const titled = (title: 'approvals' | 'bibliography' | 'glossary' | 'abbreviations') =>
+    own.matter[title] === undefined ? {} : { [title]: { title: translation.titles[title]! } };
+  return {
+    ...own,
+    language: translation.language,
+    words: translation.words,
+    scheme: { ...own.scheme, sequences },
+    matter: {
+      ...own.matter,
+      lists: own.matter.lists.map((list) => ({
+        ...list,
+        title: translation.titles.lists?.[list.sequence] ?? list.title,
+      })),
+      ...titled('approvals'),
+      ...titled('bibliography'),
+      ...titled('glossary'),
+      ...titled('abbreviations'),
+    },
+    formats: {
+      pdf: { ...own.formats.pdf, ...translation.slots.pdf },
+      ...(own.formats.docx === undefined
+        ? {}
+        : { docx: { ...own.formats.docx, ...translation.slots.docx! } }),
+    },
+  };
+}
 
 /** The version from which a layout is written with the words a continued table's label adds. */
 const CONTINUED_SINCE = 4;
@@ -436,6 +629,9 @@ export const layoutMigrationChain: MigrationChain = {
     5: (layout) => layout,
     // Version 6 had no words for a bound table, and reads as having none, for version 2's reason.
     6: (layout) => layout,
+    // Version 7 gave its words in no further language, and reads as giving none, for version 2's
+    // reason.
+    7: (layout) => layout,
   },
 };
 
@@ -672,14 +868,26 @@ export const SEVENTH_DEFAULT_LAYOUT: Layout6 = (() => {
   return layout;
 })();
 
+/** A layout as schema version 7 stored it: no further languages. The shape of 0.8 to 0.11's rows. */
+export type Layout7 = Omit<Layout, 'schemaVersion' | 'translations'> & { schemaVersion: 7 };
+
+/**
+ * A frozen schema-7 layout, exactly as its row holds it, checked as 0.2 is to read through today's
+ * chain, and returned unchanged.
+ */
+function frozenAt7(layout: Layout7): Layout7 {
+  parseStoredLayout(layout);
+  return layout;
+}
+
 /**
  * **The default layout's version 0.8, as migration 0055 stored it**: 0.7 with the words a bound table
  * prints with no rows, for a null and before its source (TB1-G), in its language, English, at schema
  * version 7. Frozen for 0.2's reason.
  */
-export const EIGHTH_DEFAULT_LAYOUT: Layout = parseLayout({
+export const EIGHTH_DEFAULT_LAYOUT: Layout7 = frozenAt7({
   ...SEVENTH_DEFAULT_LAYOUT,
-  schemaVersion: LAYOUT_SCHEMA_VERSION,
+  schemaVersion: 7,
   words: {
     ...SEVENTH_DEFAULT_LAYOUT.words,
     noRows: 'No rows',
@@ -692,7 +900,7 @@ export const EIGHTH_DEFAULT_LAYOUT: Layout = parseLayout({
  * **The default layout's version 0.9, as migration 0056 stored it**: 0.8 with the word a table's
  * whole-table note follows (TB3-F), at schema version 7. Frozen for 0.2's reason.
  */
-export const NINTH_DEFAULT_LAYOUT: Layout = parseLayout({
+export const NINTH_DEFAULT_LAYOUT: Layout7 = frozenAt7({
   ...EIGHTH_DEFAULT_LAYOUT,
   words: { ...EIGHTH_DEFAULT_LAYOUT.words, note: 'Note:' },
 });
@@ -701,23 +909,121 @@ export const NINTH_DEFAULT_LAYOUT: Layout = parseLayout({
  * **The default layout's version 0.10, as migration 0148 stored it**: 0.9 placing a bibliography
  * titled _References_ (the CI plan, CId). Frozen for 0.2's reason.
  */
-export const TENTH_DEFAULT_LAYOUT: Layout = parseLayout({
+export const TENTH_DEFAULT_LAYOUT: Layout7 = frozenAt7({
   ...NINTH_DEFAULT_LAYOUT,
   matter: { ...NINTH_DEFAULT_LAYOUT.matter, bibliography: { title: 'References' } },
 });
 
 /**
- * The default layout as it stands, **version 0.11**: 0.10 placing a glossary and a list of
- * abbreviations (the TM plan, TM-H), at schema version 7, where the members were added in place,
- * seeded by migration 0154. A document using no term prints neither.
+ * **The default layout's version 0.11, as migration 0154 stored it**: 0.10 placing a glossary and a
+ * list of abbreviations (the TM plan, TM-H), at schema version 7, where the members were added in
+ * place. Frozen for 0.2's reason.
  */
-export const defaultLayout: Layout = parseLayout({
+export const ELEVENTH_DEFAULT_LAYOUT: Layout7 = frozenAt7({
   ...TENTH_DEFAULT_LAYOUT,
   matter: {
     ...TENTH_DEFAULT_LAYOUT.matter,
     glossary: { title: 'Glossary' },
     abbreviations: { title: 'Abbreviations' },
   },
+});
+
+const runningMatter = (revision: string, page: string): Pick<PageFormat, 'head' | 'foot'> => ({
+  head: defaultPdf.head,
+  foot: [
+    [
+      { kind: 'words', text: revision },
+      { kind: 'field', field: 'revision' },
+    ],
+    [],
+    [
+      { kind: 'words', text: page },
+      { kind: 'field', field: 'page' },
+    ],
+  ],
+});
+
+/**
+ * The default layout as it stands, **version 0.12**: 0.11 at schema version 8, giving its words in
+ * French and German as well as English (the TR plan, TRb), seeded by migration 0161.
+ */
+export const defaultLayout: Layout = parseLayout({
+  ...ELEVENTH_DEFAULT_LAYOUT,
+  schemaVersion: LAYOUT_SCHEMA_VERSION,
+  translations: [
+    {
+      language: 'fr',
+      words: {
+        contents: 'Table des matières',
+        notice: 'Non approuvé',
+        noticeSentence:
+          "Non approuvé. Ceci est une publication provisoire, qui n'a pas été faite à partir d'une version de référence approuvée.",
+        above: 'ci-dessus',
+        below: 'ci-dessous',
+        continued: '(suite)',
+        preview: {
+          notice: 'Aperçu - non approuvé',
+          sentence:
+            "Aperçu - non approuvé. Ceci est un aperçu d'un contenu non approuvé, et non une publication.",
+        },
+        noRows: 'Aucune ligne',
+        notAvailable: 'Non disponible',
+        source: 'Source :',
+        note: 'Note :',
+      },
+      labels: {
+        figure: { front: 'Figure', body: 'Figure', appendix: 'Figure' },
+        table: { front: 'Tableau', body: 'Tableau', appendix: 'Tableau' },
+        equation: { front: 'Équation', body: 'Équation', appendix: 'Équation' },
+      },
+      titles: {
+        lists: { figure: 'Figures', table: 'Tableaux' },
+        bibliography: 'Références',
+        glossary: 'Glossaire',
+        abbreviations: 'Abréviations',
+      },
+      slots: {
+        pdf: runningMatter('Révision ', 'Page '),
+        docx: runningMatter('Révision ', 'Page '),
+      },
+    },
+    {
+      language: 'de',
+      words: {
+        contents: 'Inhaltsverzeichnis',
+        notice: 'Nicht freigegeben',
+        noticeSentence:
+          'Nicht freigegeben. Dies ist eine vorläufige Veröffentlichung, die nicht aus einer freigegebenen Baseline erstellt wurde.',
+        above: 'oben',
+        below: 'unten',
+        continued: '(Fortsetzung)',
+        preview: {
+          notice: 'Vorschau - nicht freigegeben',
+          sentence:
+            'Vorschau - nicht freigegeben. Dies ist eine Vorschau nicht freigegebener Inhalte, keine Veröffentlichung.',
+        },
+        noRows: 'Keine Zeilen',
+        notAvailable: 'Nicht verfügbar',
+        source: 'Quelle:',
+        note: 'Hinweis:',
+      },
+      labels: {
+        figure: { front: 'Abbildung', body: 'Abbildung', appendix: 'Abbildung' },
+        table: { front: 'Tabelle', body: 'Tabelle', appendix: 'Tabelle' },
+        equation: { front: 'Gleichung', body: 'Gleichung', appendix: 'Gleichung' },
+      },
+      titles: {
+        lists: { figure: 'Abbildungen', table: 'Tabellen' },
+        bibliography: 'Literatur',
+        glossary: 'Glossar',
+        abbreviations: 'Abkürzungen',
+      },
+      slots: {
+        pdf: runningMatter('Revision ', 'Seite '),
+        docx: runningMatter('Revision ', 'Seite '),
+      },
+    },
+  ],
 });
 
 /**

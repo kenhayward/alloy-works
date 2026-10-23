@@ -159,6 +159,7 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   getDocumentParameters: read,
   recordDocumentParameters: writes('content.version_cut', 'workflow.transitioned'),
   recordDocumentProfile: writes('content.version_cut', 'workflow.transitioned'),
+  recordDocumentFallback: writes('content.version_cut', 'workflow.transitioned'),
   editOutline: writes(
     'content.version_cut',
     'reference.repointed',
@@ -494,6 +495,8 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   setDataSettings: writes('settings.changed'),
   getImportSettings: read,
   setImportSettings: writes('settings.changed'),
+  getTranslationSettings: read,
+  setTranslationSettings: writes('settings.changed'),
   listTokens: read,
   createToken: writes('token.issued'),
   revokeToken: writes('token.revoked'),

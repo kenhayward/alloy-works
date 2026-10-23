@@ -1482,6 +1482,7 @@ const wordRules = (theme: ResolvedTheme, style: string) => {
 /** No cover, no contents and no lists: the specimen opens the first page after the title. */
 const bare = parseLayout({
   ...defaultLayout,
+  translations: undefined,
   matter: { cover: false, contents: null, appendices: { newPage: false }, lists: [] },
 });
 

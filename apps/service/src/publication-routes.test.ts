@@ -458,7 +458,7 @@ describe('publishing a document through the service', () => {
   });
 
   it('refuses at the door a document in another language than its layout, naming both, and queues nothing', async () => {
-    const french = await documentReferencing([], 'fr');
+    const french = await documentReferencing([], 'es');
     const before = await requestIds();
     const answer = await publish('grace', french);
     expect(answer.statusCode, answer.body).toBe(400);
@@ -466,7 +466,7 @@ describe('publishing a document through the service', () => {
       code: 'layout_language',
       rule: 'PUB-095',
       message:
-        'This document is in fr, and its layout is written in en. It can be published only under a layout in its own language.',
+        'This is to be published in es, and its layout gives its words in en and no language serving it. It can be published only in a language its layout gives its words in.',
       traceId: expect.any(String),
     });
     expect(await requestIds()).toEqual(before);
@@ -1034,7 +1034,7 @@ describe('publishing a document through the service', () => {
     expect(formats.statusCode).toBe(400);
     expect(formats.json()).toMatchObject({ code: 'invalid_request' });
     // Refused in the words a publish is refused in.
-    const french = await documentReferencing([], 'fr');
+    const french = await documentReferencing([], 'es');
     const language = await preview('alice', french);
     expect(language.statusCode, language.body).toBe(400);
     expect(refusal(language)).toEqual(refusal(await publish('grace', french)));

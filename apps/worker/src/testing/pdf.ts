@@ -72,7 +72,12 @@ export interface ReadPdf {
    * so a table on two pages is here twice, every row under it each time, and a row set on the other
    * page holds no text on this one.
    */
-  readonly reading: readonly { readonly role: string; readonly text: string }[];
+  readonly reading: readonly {
+    readonly role: string;
+    readonly text: string;
+    /** Its own `/Lang`, where it declares one apart from its parent's (TRb). */
+    readonly lang?: string;
+  }[];
   /**
    * Every `Figure` structure element in the file, in the order it is written: its `/Alt`, its
    * `/Lang` where it declares one of its own (the engine writes none where the language is its
@@ -415,7 +420,7 @@ export async function readPdf(bytes: Buffer): Promise<ReadPdf> {
     };
     const languages: TaggedLanguage[][] = [];
     const roles: string[] = [];
-    const reading: { role: string; text: string }[] = [];
+    const reading: { role: string; text: string; lang?: string }[] = [];
     const pageSizes: (readonly [number, number])[] = [];
     const textLeft: (number | null)[] = [];
     const textBaselines: ({ top: number; bottom: number } | null)[] = [];
@@ -556,7 +561,11 @@ export async function readPdf(bytes: Buffer): Promise<ReadPdf> {
           : (node.children ?? []).map(textOf).join('');
       const inOrder = (node: StructNode) => {
         if (node.role !== undefined && node.role !== 'Root') {
-          reading.push({ role: node.role, text: textOf(node) });
+          reading.push({
+            role: node.role,
+            text: textOf(node),
+            ...(node.lang === undefined ? {} : { lang: node.lang }),
+          });
         }
         for (const child of node.children ?? []) if (child.type !== 'content') inOrder(child);
       };

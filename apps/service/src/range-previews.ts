@@ -80,6 +80,7 @@ export function rangePreviewHandlers() {
         session: body.session,
         requester: principalId,
         ...(body.profile === undefined ? {} : { profile: body.profile }),
+        ...(body.language === undefined ? {} : { language: body.language }),
       });
       if (answer.answer === 'node.missing') {
         throw refused(400, 'node.missing', 'That version places no component at that node.');

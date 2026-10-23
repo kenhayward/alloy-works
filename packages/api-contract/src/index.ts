@@ -30,6 +30,7 @@ export {
   DocumentListQuery,
   DocumentParams,
   DocumentParametersBody,
+  DocumentFallbackBody,
   DocumentProfileBody,
   DocumentParametersQuery,
   DocumentParametersView,
@@ -447,6 +448,7 @@ export {
   EditingSettings,
   EditingSettingsBody,
   ImportSettings,
+  TranslationSettings,
 } from './settings.js';
 export {
   InvitationBody,

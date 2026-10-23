@@ -29,6 +29,7 @@ const COLUMN = (8.8 * 1229) / 2048;
 /** No cover and no contents, so the blocks open the document on its first page. */
 const bare = parseLayout({
   ...defaultLayout,
+  translations: undefined,
   matter: { cover: false, contents: null, appendices: { newPage: false }, lists: [] },
 });
 const pdfFormat = bare.formats.pdf;

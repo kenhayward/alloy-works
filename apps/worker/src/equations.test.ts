@@ -39,6 +39,7 @@ const NAMESPACE = 'http://www.w3.org/1998/Math/MathML';
 /** The default layout, declaring a list of equations after its lists of figures and of tables. */
 const listing = parseLayout({
   ...defaultLayout,
+  translations: undefined,
   matter: {
     ...defaultLayout.matter,
     lists: [

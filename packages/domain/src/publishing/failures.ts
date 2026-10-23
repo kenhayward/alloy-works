@@ -241,6 +241,11 @@ export const publishFailureCodes = [
   'citation_unresolved',
   'entry_incomplete',
   'style_invalid',
+  // resolve, from TRb (LOC-017, LOC-037; translation.md): a component with no translation into the
+  // language published in, where the document's fallback, or the tenant's, refuses; and one whose
+  // translation is out of date with a change that needs retranslating, where the policy refuses that.
+  'occurrence_untranslated',
+  'translation_out_of_date',
 ] as const;
 
 export type PublishFailureCode = (typeof publishFailureCodes)[number];

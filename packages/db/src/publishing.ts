@@ -14,7 +14,8 @@ import {
   readContent,
   readLayout,
   readOutline,
-  speaksFor,
+  layoutIn,
+  untranslatedNote,
   unsupportedFormats,
   valueFailures,
   walkOutline,
@@ -60,6 +61,12 @@ import {
   type NodeTerms,
 } from './publication-terms.js';
 import { latestRevisionsOf } from './workflow.js';
+import {
+  resolveInLanguage,
+  translationPolicy,
+  type InLanguage,
+  type ReferenceRead,
+} from './translation.js';
 import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
 import { AUDIT_LOG_KEPT, labelled, labels, recordEvent } from './audit.js';
@@ -860,7 +867,19 @@ export interface Publishable {
   readonly terms: readonly { readonly version: string; readonly term: string }[];
   /** What its terms report, which never stops it (LIB-018, LIB-050). */
   readonly termWarnings: readonly TermWarning[];
+  /** The language asked for (the TR plan, TR-I), or undefined: the document's own, read as always. */
+  readonly language?: string;
+  /** What each occurrence resolved to in that language, by node. */
+  readonly translations: ReadonlyMap<string, InLanguage>;
+  /** What reading it in that language reports, which never stops it by itself (TR-J, TR-K). */
+  readonly translationWarnings: readonly TranslationWarning[];
 }
+
+/** What publishing in a language reports (TR-J, TR-K), by node: never a component's words. */
+export type TranslationWarning =
+  | { readonly code: 'component_untranslated'; readonly node: string; readonly language: string }
+  | { readonly code: 'translation_out_of_date'; readonly node: string }
+  | { readonly code: 'override_skipped'; readonly node: string };
 
 /** A refusal a request or a baseline is answered with before anything is recorded. */
 export type PublishRefusal = Exclude<PublicationRequestAnswer, { readonly answer: 'requested' }>;
@@ -881,6 +900,8 @@ export async function resolvePublishable(
     readonly kind: 'publish' | 'preview' | 'range';
     /** The profile it is made under where not the document's own (REU-027). */
     readonly profile?: StoredProfile;
+    /** The language it is made in (the TR plan, TR-I); absent, the document's own, as always. */
+    readonly language?: string;
   },
 ): Promise<Publishable | PublishRefusal> {
   const { formats, kind } = input;
@@ -915,16 +936,67 @@ export async function resolvePublishable(
   }
   const read = readOutline(latest.content, { artifact: input.documentId, version: latest.id });
   if (!read.ok) throw new Error(`The document ${input.documentId} at ${latest.id} does not read`);
-  if (!speaksFor(layout.layout.language, read.outline.language)) {
+  // A publish in a language needs a layout that speaks it (TR-K; PUB-095): in its own words, or in
+  // a further language it gives them in (layout schema 8; TRb).
+  const language = input.language ?? read.outline.language;
+  if (layoutIn(layout.layout, language) === null) {
     return {
       answer: 'layout.language',
-      document: read.outline.language,
+      document: language,
       layout: layout.layout.language,
     };
   }
 
   const profileValues = (input.profile ?? read.outline.profile)?.values ?? {};
-  const outcomes = await resolveOccurrences(trx, read.outline, input.principal, profileValues);
+  const resolvedInOwn = await resolveOccurrences(trx, read.outline, input.principal, profileValues);
+  // In a language asked for, each resolved occurrence reads its variant (TR-I), or falls back.
+  const translations =
+    input.language === undefined
+      ? new Map<string, InLanguage>()
+      : await resolveInLanguage(
+          trx,
+          readsOf(read.outline, resolvedInOwn),
+          input.language,
+          profileValues,
+        );
+  const outcomes = resolvedInOwn.map((each) => {
+    const shown = translations.get(each.node);
+    return each.outcome === 'resolved' && shown ? { ...each, version: shown.version } : each;
+  });
+  const policy = input.language === undefined ? undefined : await translationPolicy(trx);
+  const fallback = read.outline.fallback ?? policy?.fallback ?? 'source';
+  const translationFailures: PublishFailure[] = [];
+  const translationWarnings: TranslationWarning[] = [];
+  for (const [node, shown] of translations) {
+    if (shown.translation === 'untranslated') {
+      if (fallback === 'refuse') {
+        translationFailures.push({
+          stage: 'resolve',
+          code: 'occurrence_untranslated',
+          node,
+          block: null,
+          detail: null,
+        });
+      } else {
+        translationWarnings.push({
+          code: 'component_untranslated',
+          node,
+          language: shown.sourceLanguage,
+        });
+      }
+    }
+    if (shown.translation === 'outOfDate') {
+      if (policy?.outOfDate === 'refuse') {
+        translationFailures.push({
+          stage: 'resolve',
+          code: 'translation_out_of_date',
+          node,
+          block: null,
+          detail: null,
+        });
+      } else translationWarnings.push({ code: 'translation_out_of_date', node });
+    }
+  }
   // What the profile takes out is never published, so it fails nothing here either (R11-C).
   const excluded = new Set(selectOutline(read.outline, profileValues).excluded);
   const failures: PublishFailure[] = outcomes.flatMap((each) =>
@@ -953,11 +1025,27 @@ export async function resolvePublishable(
     ),
   );
   // An override that no longer stands fails loudly, by node and block (REU-015; the R4 plan, R4-C).
+  const variants = new Set(
+    [...translations]
+      .filter(
+        ([, shown]) => shown.translation === 'translated' || shown.translation === 'outOfDate',
+      )
+      .map(([node]) => node),
+  );
+  walkOutline(read.outline.nodes, (node) => {
+    if (node.type === 'reference' && variants.has(node.id) && (node.overrides ?? []).length > 0) {
+      translationWarnings.push({ code: 'override_skipped', node: node.id });
+    }
+  });
   const stale = (
     await applyOutlineOverrides(
       trx,
       read.outline,
-      new Map(resolved.map((each) => [each.node, each.content])),
+      new Map(
+        resolved
+          .filter((each) => !variants.has(each.node))
+          .map((each) => [each.node, each.content]),
+      ),
     )
   ).stale.map(({ node, block }) => ({
     stage: 'resolve' as const,
@@ -1036,7 +1124,14 @@ export async function resolvePublishable(
     layout,
     theme,
     resolved,
-    failures: [...failures, ...stale, ...held, ...generated, ...images.failures],
+    failures: [
+      ...failures,
+      ...translationFailures,
+      ...stale,
+      ...held,
+      ...generated,
+      ...images.failures,
+    ],
     bindings: bindings.held,
     assets: images.assets,
     entries: await resolveEntries(trx, resolved, input.principal),
@@ -1044,9 +1139,38 @@ export async function resolvePublishable(
       trx,
       usesIn(resolved, read.outline, input.documentId),
       input.principal,
-      read.outline.language,
+      language,
     )),
+    ...(input.language === undefined ? {} : { language: input.language }),
+    translations,
+    translationWarnings,
   };
+}
+
+/** Each resolved occurrence with how its reference reads its component (TR-I). */
+function readsOf(outline: OutlineDocument, outcomes: readonly OccurrenceOutcome[]) {
+  const modes = new Map<string, ReferenceRead>();
+  walkOutline(outline.nodes, (node) => {
+    if (node.type !== 'reference') return;
+    modes.set(
+      node.id,
+      node.mode.kind === 'pinned'
+        ? { kind: 'pinned', version: node.mode.version }
+        : { kind: node.mode.kind },
+    );
+  });
+  return outcomes.flatMap((each) =>
+    each.outcome === 'resolved'
+      ? [
+          {
+            node: each.node,
+            component: each.component,
+            version: each.version,
+            read: modes.get(each.node) ?? { kind: 'latest' as const },
+          },
+        ]
+      : [],
+  );
 }
 
 /** `resolveTerms`, named as a publishable holds it. */
@@ -1093,6 +1217,8 @@ export async function requestPublication(
     readonly kind?: 'publish' | 'preview' | 'range';
     /** The profile to make it under in place of the document's (REU-027; the R6 plan, R6-F). */
     readonly profile?: StoredProfile;
+    /** The language to make it in (the TR plan, TR-I); absent, the document's own. */
+    readonly language?: string;
   },
 ): Promise<PublicationRequestAnswer> {
   const kind = input.kind ?? 'publish';
@@ -1107,8 +1233,10 @@ export async function requestPublication(
     formats: input.formats,
     kind,
     ...(input.profile === undefined ? {} : { profile: input.profile }),
+    ...(input.language === undefined ? {} : { language: input.language }),
   });
   if (found.answer !== 'publishable') return found;
+  const warnings = [...found.termWarnings, ...found.translationWarnings];
   const { latest, layout, theme, resolved, failures, bindings } = found;
   // Recorded only where it says something: none is the empty profile, as on a request before 0106.
   const profile = input.profile ?? found.outline.profile;
@@ -1131,8 +1259,11 @@ export async function requestPublication(
       // A preview names its kind; a publish is the column's default, as every request before 0035 was.
       ...(kind === 'publish' ? {} : { kind }),
       ...(said ? { profile: JSON.stringify(profile) } : {}),
-      // What its terms report (TMb), where they report anything, as on a request before 0154.
-      ...(found.termWarnings.length === 0 ? {} : { warnings: JSON.stringify(found.termWarnings) }),
+      // What its terms report (TMb), and its language (TRb), where they report anything, as on a
+      // request before 0154.
+      ...(warnings.length === 0 ? {} : { warnings: JSON.stringify(warnings) }),
+      // Its language where one was asked for, as on a request before 0160 (TR-I).
+      ...(found.language === undefined ? {} : { language: found.language }),
     })
     .returning(['id'])
     .executeTakeFirstOrThrow();
@@ -1145,6 +1276,10 @@ export async function requestPublication(
           node: each.node,
           component_id: each.component,
           version_id: each.version,
+          // What it resolved to in the language asked for (TR-I), where one was.
+          ...(found.translations.get(each.node)?.translation
+            ? { translation: found.translations.get(each.node)!.translation! }
+            : {}),
         })),
       )
       .execute();
@@ -1286,11 +1421,17 @@ export interface PublicationInputs {
      */
     readonly formats: readonly [PublishingFormat, ...PublishingFormat[]];
   };
+  /** The document's outline, in the language the request was made in where it named one (TR-I). */
   readonly outline: OutlineDocument;
   readonly occurrences: ReadonlyMap<
     string,
     { readonly version: string; readonly content: ContentDocument }
   >;
+  /**
+   * Each occurrence published in its source language for want of a translation (TR-J; LOC-037), by
+   * node, with the words its mark says: the tenant's policy's for the request's language.
+   */
+  readonly untranslated: ReadonlyMap<string, string>;
   /**
    * What the document's variables resolve by (REU-016 to REU-019; the R5 plan): the environment's
    * declared variables, and the document version's parameters and field values.
@@ -1621,6 +1762,8 @@ async function inputsOf(
       'l.content as layout_content',
       // Short of 0154 a request recorded no warnings.
       sql<unknown[] | null>`to_jsonb(r) -> 'warnings'`.as('warnings'),
+      // Short of 0160 a request was made in its document's own language.
+      sql<string | null>`to_jsonb(r) ->> 'language'`.as('language'),
     ])
     .where('r.id', '=', requestId)
     .executeTakeFirst();
@@ -1663,7 +1806,10 @@ async function inputsOf(
     if (!stored.ok) {
       throw new Error(`The layout ${stored.artifact} at ${stored.version} does not read`);
     }
-    layout = { versionId: request.layout_version_id, layout: stored.layout };
+    // In the language the publish is made in (TRb): its own words or a further language's, which
+    // the request was refused without.
+    const spoken = layoutIn(stored.layout, request.language ?? read.outline.language);
+    layout = { versionId: request.layout_version_id, layout: spoken ?? stored.layout };
   }
   // A theme that does not read is a broken store: thrown, and so retried and then recorded as the
   // engine's stage, as a layout that does not read is.
@@ -1677,10 +1823,23 @@ async function inputsOf(
   const rows = await trx
     .selectFrom('publication_request_occurrence as o')
     .innerJoin('artifact_version as v', 'v.id', 'o.version_id')
-    .select(['o.node', 'o.version_id', 'o.component_id', 'v.content'])
+    .select([
+      'o.node',
+      'o.version_id',
+      'o.component_id',
+      'v.content',
+      // Short of 0160 nothing was resolved in another language.
+      sql<string | null>`to_jsonb(o) ->> 'translation'`.as('translation'),
+    ])
     .where('o.request_id', '=', requestId)
     .execute();
   const occurrences = new Map<string, { version: string; content: ContentDocument }>();
+  // A variant was made from the source's words, so takes none of its reference's overrides (TR-K).
+  const variants = new Set(
+    rows
+      .filter((row) => row.translation === 'translated' || row.translation === 'outOfDate')
+      .map((row) => row.node),
+  );
   for (const row of rows) {
     const content = readContent(row.content, {
       artifact: row.component_id,
@@ -1699,11 +1858,25 @@ async function inputsOf(
     await applyOutlineOverrides(
       trx,
       read.outline,
-      new Map([...occurrences].map(([node, each]) => [node, each.content])),
+      new Map(
+        [...occurrences]
+          .filter(([node]) => !variants.has(node))
+          .map(([node, each]) => [node, each.content]),
+      ),
     )
   ).contents;
   for (const [node, each] of occurrences) {
     occurrences.set(node, { ...each, content: shown.get(node) ?? each.content });
+  }
+  // Each occurrence fallen back to its source, with the words its mark says (TR-J).
+  const untranslated = new Map<string, string>();
+  const fellBack = rows.filter((row) => row.translation === 'untranslated');
+  if (request.language !== null && fellBack.length > 0) {
+    const { note } = await translationPolicy(trx);
+    for (const row of fellBack) {
+      const source = occurrences.get(row.node)?.content.language ?? read.outline.language;
+      untranslated.set(row.node, untranslatedNote(note, request.language, source));
+    }
   }
   const images = await trx
     .selectFrom('publication_request_asset as q')
@@ -1775,8 +1948,10 @@ async function inputsOf(
       spaceId: request.space_id!,
       formats: request.formats as [PublishingFormat, ...PublishingFormat[]],
     },
-    outline: read.outline,
+    outline:
+      request.language === null ? read.outline : { ...read.outline, language: request.language },
     occurrences,
+    untranslated,
     // Written only by requestPublication, whose failures are `PublishFailure`s it built itself - each
     // of the resolve stage, naming a node, and for an image the figure, and nothing else - so they are
     // read back without a parse.

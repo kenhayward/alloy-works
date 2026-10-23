@@ -16,6 +16,7 @@ import { conditionsSchema, type Conditions } from '../content/model/marks.js';
 import { hasText } from '../content/model/text.js';
 import { canonicalJson } from '../stored/canonical.js';
 import { storedProfileSchema } from '../reuse/conditions.js';
+import { TRANSLATION_FALLBACKS } from '../translation/policy.js';
 import { overridesSchema, type Override } from './overrides.js';
 import { migrateStored, type MigrationChain } from '../stored/migrate.js';
 import { storableEverywhere, storableText } from '../stored/storable.js';
@@ -218,6 +219,12 @@ export const outlineDocumentSchema = z.strictObject({
    * excluded (REU-053), true or absent. Absent, it takes no value on any axis.
    */
   profile: storedProfileSchema.optional(),
+  /**
+   * The document's own translation fallback (LOC-037; the TR plan, TR-J), over the tenant's policy:
+   * a missing variant published in its source language, marked, or refusing the publish. Absent,
+   * the policy's.
+   */
+  fallback: z.enum(TRANSLATION_FALLBACKS).optional(),
 });
 
 export type OutlineDocument = z.infer<typeof outlineDocumentSchema>;
@@ -525,6 +532,9 @@ export function readOutline(
 export function canonicaliseOutline(outline: OutlineDocument): string {
   const members: readonly (readonly [string, string])[] = [
     ['direction', canonicalJson(outline.direction)],
+    ...(outline.fallback === undefined
+      ? []
+      : [['fallback', canonicalJson(outline.fallback)] as const]),
     ['language', canonicalJson(outline.language)],
     ['nodes', canonicaliseOutlineNodes(outline.nodes)],
     ...(outline.profile === undefined

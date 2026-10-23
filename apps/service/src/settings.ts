@@ -4,6 +4,7 @@ import type {
   EditingSettings,
   EditingSettingsBody,
   ImportSettings,
+  TranslationSettings,
 } from '@alloy-works/api-contract';
 import {
   dataPolicy,
@@ -13,6 +14,8 @@ import {
   setDataPolicy,
   setEditingPolicy,
   setImportPolicy,
+  setTranslationPolicy,
+  translationPolicy,
   type Tenant,
   type TenantDatabase,
   type TenantTransaction,
@@ -28,7 +31,7 @@ import { AppError } from './errors.js';
  */
 export async function recordSettingsChanged(
   trx: TenantTransaction,
-  area: 'editing' | 'data' | 'referenceSources' | 'import',
+  area: 'editing' | 'data' | 'referenceSources' | 'import' | 'translation',
   before: object,
   after: object,
 ): Promise<void> {
@@ -107,6 +110,26 @@ export function settingsHandlers(
         policy: await setImportPolicy(trx, (request.body as ImportSettings).policy),
       };
       await recordSettingsChanged(trx, 'import', before, after);
+      return after;
+    },
+
+    // The tenant's translation policy (TR-J; LOC-036): read by anybody signed in, as a publisher is
+    // told what a missing translation does; set whole by an administrator of the environment, audited.
+    getTranslationSettings: async (request: FastifyRequest): Promise<TranslationSettings> =>
+      db.withTenant(tenantOf(request), (trx) => translationPolicy(trx)),
+
+    setTranslationSettings: async (
+      request: FastifyRequest,
+      { trx }: Authorised,
+    ): Promise<TranslationSettings> => {
+      const before = await translationPolicy(trx);
+      const after = await setTranslationPolicy(trx, request.body as TranslationSettings);
+      // The words by language compared as a whole, so an unchanged note is no change.
+      const compared = (policy: TranslationSettings) => ({
+        ...policy,
+        note: JSON.stringify(policy.note),
+      });
+      await recordSettingsChanged(trx, 'translation', compared(before), compared(after));
       return after;
     },
 

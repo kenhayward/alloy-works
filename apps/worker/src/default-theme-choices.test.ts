@@ -43,6 +43,7 @@ const COMPONENT = '00000000-0000-4000-8000-000000000001';
 /** No cover, no contents and no lists: the text opens the first page, the measure 451.28 wide. */
 const bare: Layout = parseLayout({
   ...defaultLayout,
+  translations: undefined,
   matter: { cover: false, contents: null, appendices: { newPage: false }, lists: [] },
 });
 const LEFT = 72;

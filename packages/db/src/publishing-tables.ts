@@ -53,6 +53,8 @@ export interface PublicationRequestTable {
   profile: ColumnType<StoredProfile | null, string | undefined, never>;
   /** What its terms report, written as it is made (0154; TMb): JSONB in as text, never changed. */
   warnings: ColumnType<unknown[], string | undefined, never>;
+  /** The language it is made in, or none: the document's own (0160; the TR plan, TR-I). */
+  language: ColumnType<string | null, string | undefined, never>;
 }
 
 /** Insert and read, nothing else (0017). */
@@ -62,6 +64,12 @@ export interface PublicationRequestOccurrenceTable {
   component_id: ColumnType<string, string, never>;
   version_id: ColumnType<string, string, never>;
   component_kind: ColumnType<'component', never, never>;
+  /** What it resolved to in the request's language (0160; TR-I), or none: its own language. */
+  translation: ColumnType<
+    'translated' | 'untranslated' | 'outOfDate' | null,
+    'translated' | 'untranslated' | 'outOfDate' | undefined,
+    never
+  >;
 }
 
 /** An image a request's components place, as its publisher could read it (figures 3, ruling R6). */

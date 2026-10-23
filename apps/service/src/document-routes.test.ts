@@ -269,6 +269,7 @@ describe('documents through the service', () => {
       id: declared.artifactId,
       version: { id: declared.versionId, number: declared.number },
       language: declared.layout.language,
+      languages: ['en', 'fr', 'de'],
       scheme: declared.layout.scheme,
       // What a relative cross-reference prints for above and below (cross-references 2, ruling R9),
       // beside the rest of the layout's own words.

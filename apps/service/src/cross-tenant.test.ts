@@ -214,6 +214,7 @@ const OTHER_TENANT_IDS: Readonly<
   getDocumentParameters: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   recordDocumentParameters: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   recordDocumentProfile: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  recordDocumentFallback: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   getNumbering: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   getDocumentPresentation: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   getContributions: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
@@ -745,6 +746,7 @@ const VALID_INPUT: Readonly<
   recordDocumentValues: { payload: { openedFrom: SESSION, values: {} } },
   recordDocumentParameters: { payload: { openedFrom: SESSION, parameters: {} } },
   recordDocumentProfile: { payload: { openedFrom: SESSION, profile: null } },
+  recordDocumentFallback: { payload: { openedFrom: SESSION, fallback: null } },
   claimLock: { payload: { session: SESSION } },
   takeLock: { payload: { session: SESSION } },
   requestPublication: { payload: { version: SESSION, formats: ['pdf'] } },
@@ -935,6 +937,7 @@ const VALID_INPUT: Readonly<
   issueServiceIdentityToken: { payload: { name: 'Elsewhere', scopes: [], expiresAt: IN_A_MONTH } },
   setEditingSettings: { payload: { iterationRetentionDays: 7 } },
   setImportSettings: { payload: { policy: 'keep' } },
+  setTranslationSettings: { payload: { fallback: 'refuse', outOfDate: 'publish', note: {} } },
   makeGrant: {
     payload: { role: SESSION, subject: { principal: SESSION }, level: 'tenant', effect: 'allow' },
   },

@@ -976,6 +976,7 @@ describe('the domain package', () => {
         'NINTH_DEFAULT_THEME',
         'NINTH_DEFAULT_THEME_VERSION',
         'PUBLISHING_SCHEMA_23',
+        'PUBLISHING_SCHEMA_24',
         'termPlaces',
         'termSpans',
         'termWarnings',
@@ -1011,6 +1012,16 @@ describe('the domain package', () => {
         'sourceChangesBetween',
         'translationLanguageRefusal',
         'translationStatus',
+        // TRb: the tenant's translation policy, and the words its mark says.
+        'DEFAULT_TRANSLATION_POLICY',
+        'TRANSLATION_FALLBACKS',
+        'TRANSLATION_NOTE_LIMITS',
+        'TRANSLATION_OUT_OF_DATE',
+        'translationPolicySchema',
+        'untranslatedNote',
+        // TRb: a layout's words in further languages, and the default layout's 0.11 frozen beside 0.12.
+        'ELEVENTH_DEFAULT_LAYOUT',
+        'layoutIn',
       ].sort(),
     );
   });

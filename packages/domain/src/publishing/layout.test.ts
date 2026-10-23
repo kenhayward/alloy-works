@@ -20,6 +20,8 @@ import {
   EIGHTH_DEFAULT_LAYOUT,
   NINTH_DEFAULT_LAYOUT,
   TENTH_DEFAULT_LAYOUT,
+  ELEVENTH_DEFAULT_LAYOUT,
+  layoutIn,
   SIXTH_DEFAULT_LAYOUT,
   speaksFor,
   THIRD_DEFAULT_LAYOUT,
@@ -29,7 +31,17 @@ import {
 import { DRAFT_NOTICE } from './published.js';
 
 /** A deep copy of the default, as plain JSON, for a test to change and hand to the parse. */
-const copy = (): Layout => JSON.parse(JSON.stringify(defaultLayout)) as Layout;
+// The default layout without its further languages, which an edit to its own words would leave
+// incomplete: those are tested on their own (TRb).
+const copy = (): Layout => {
+  const { translations, ...own } = JSON.parse(JSON.stringify(defaultLayout)) as Layout;
+  void translations;
+  return own;
+};
+
+/** A frozen schema-7 layout as today's schema reads it. */
+const at8 = (layout: object): Layout =>
+  ({ ...layout, schemaVersion: LAYOUT_SCHEMA_VERSION }) as Layout;
 
 const pdfOf = (layout: Layout) => layout.formats.pdf;
 const docxOf = (layout: Layout) => layout.formats.docx!;
@@ -76,7 +88,7 @@ describe('a layout', () => {
       },
     };
     const expected: Layout = {
-      schemaVersion: 7,
+      schemaVersion: 8,
       language: 'en',
       words: {
         contents: 'Contents',
@@ -120,16 +132,20 @@ describe('a layout', () => {
       // Version 0.6's Word page is its PDF page, copied (Word 1, ruling R4).
       formats: { pdf: page, docx: page },
     };
-    expect(LAYOUT_SCHEMA_VERSION).toBe(7);
+    expect(LAYOUT_SCHEMA_VERSION).toBe(8);
     expect(PUBLISHING_FORMATS).toEqual(['pdf', 'docx']);
-    expect(defaultLayout).toEqual(expected);
-    expect(parseLayout(defaultLayout)).toEqual(expected);
+    // 0.12 is 0.11 at schema 8 with its words in French and German (TRb), which are tested apart.
+    const { translations, ...own } = defaultLayout;
+    expect(translations?.map((each) => each.language)).toEqual(['fr', 'de']);
+    expect(own).toEqual(expected);
+    expect(ELEVENTH_DEFAULT_LAYOUT).toEqual({ ...expected, schemaVersion: 7 });
+    expect(parseLayout(defaultLayout)).toEqual(defaultLayout);
 
     const read = readLayout(JSON.parse(JSON.stringify(defaultLayout)), {
       artifact: 'layout-artifact',
       version: 'layout-version',
     });
-    expect(read).toEqual({ ok: true, layout: expected });
+    expect(read).toEqual({ ok: true, layout: defaultLayout });
   });
 
   it("keeps the default layout's 0.2, as migration 0019 stored it, with its list of tables alone", () => {
@@ -185,7 +201,6 @@ describe('a layout', () => {
   it("keeps the default layout's 0.7, as migration 0035 stored it at schema 6, and 0.8 is 0.7 with the words a bound table prints (TB1-G)", () => {
     expect(SEVENTH_DEFAULT_LAYOUT.schemaVersion).toBe(6);
     expect(SEVENTH_DEFAULT_LAYOUT.words).not.toHaveProperty('noRows');
-    expect(LAYOUT_SCHEMA_VERSION).toBe(7);
     expect(EIGHTH_DEFAULT_LAYOUT).toEqual({
       ...SEVENTH_DEFAULT_LAYOUT,
       schemaVersion: 7,
@@ -212,7 +227,7 @@ describe('a layout', () => {
       matter: { ...NINTH_DEFAULT_LAYOUT.matter, bibliography: { title: 'References' } },
     });
     expect(TENTH_DEFAULT_LAYOUT.matter).not.toHaveProperty('glossary');
-    expect(defaultLayout).toEqual({
+    expect(ELEVENTH_DEFAULT_LAYOUT).toEqual({
       ...TENTH_DEFAULT_LAYOUT,
       matter: {
         ...TENTH_DEFAULT_LAYOUT.matter,
@@ -221,8 +236,8 @@ describe('a layout', () => {
       },
     });
     // Optional at schema 7, in place: a layout without it reads, and fails nothing for its absence.
-    expect(parseLayout(JSON.parse(JSON.stringify(EIGHTH_DEFAULT_LAYOUT)))).toEqual(
-      EIGHTH_DEFAULT_LAYOUT,
+    expect(parseLayout(at8(JSON.parse(JSON.stringify(EIGHTH_DEFAULT_LAYOUT))))).toEqual(
+      at8(EIGHTH_DEFAULT_LAYOUT),
     );
     expect(() => parseLayout({ ...copy(), words: { ...copy().words, note: '' } })).toThrow();
   });
@@ -626,7 +641,7 @@ describe('a layout', () => {
     const placed = copy();
     placed.matter.bibliography = { title: 'References' };
     expect(parseLayout(placed).matter.bibliography).toEqual({ title: 'References' });
-    expect(parseLayout(NINTH_DEFAULT_LAYOUT).matter.bibliography).toBeUndefined();
+    expect(parseLayout(at8(NINTH_DEFAULT_LAYOUT)).matter.bibliography).toBeUndefined();
 
     const blank = copy();
     blank.matter.bibliography = { title: '  ' };
@@ -642,8 +657,8 @@ describe('a layout', () => {
       { title: 'Terms' },
       { title: 'Short forms' },
     ]);
-    expect(parseLayout(TENTH_DEFAULT_LAYOUT).matter).not.toHaveProperty('glossary');
-    expect(parseLayout(TENTH_DEFAULT_LAYOUT).matter).not.toHaveProperty('abbreviations');
+    expect(parseLayout(at8(TENTH_DEFAULT_LAYOUT)).matter).not.toHaveProperty('glossary');
+    expect(parseLayout(at8(TENTH_DEFAULT_LAYOUT)).matter).not.toHaveProperty('abbreviations');
     for (const member of ['glossary', 'abbreviations'] as const) {
       const blank = copy();
       blank.matter[member] = { title: ' ' };
@@ -867,5 +882,62 @@ describe('a layout', () => {
     expect(canonicaliseVersionContent({ kind: 'layout', content: defaultLayout })).toBe(
       canonicalJson(defaultLayout),
     );
+  });
+});
+
+describe('a layout in further languages (schema 8; the TR plan, TRb)', () => {
+  const french = () => structuredClone(defaultLayout.translations![0]!);
+  const withFrench = (translation: object) => ({ ...copy(), translations: [translation] });
+
+  it('serves a language by its own words, else by the translation that speaks it, else none', () => {
+    const { translations, ...own } = defaultLayout;
+    void translations;
+    expect(layoutIn(defaultLayout, 'en-GB')).toEqual(own);
+    const inFrench = layoutIn(defaultLayout, 'fr-FR')!;
+    expect(inFrench.language).toBe('fr');
+    expect(inFrench.words.contents).toBe('Table des matières');
+    expect(inFrench.scheme.sequences['table']!.body.label).toBe('Tableau');
+    expect(inFrench.scheme.sequences['table']!.body.format).toEqual(
+      own.scheme.sequences['table']!.body.format,
+    );
+    expect(inFrench.matter.lists.map((list) => list.title)).toEqual(['Figures', 'Tableaux']);
+    expect(inFrench.matter.bibliography).toEqual({ title: 'Références' });
+    expect(inFrench.formats.pdf.foot[2]).toEqual([
+      { kind: 'words', text: 'Page ' },
+      { kind: 'field', field: 'page' },
+    ]);
+    expect(inFrench.formats.pdf.margins).toEqual(own.formats.pdf.margins);
+    expect(inFrench).not.toHaveProperty('translations');
+    expect(layoutIn(defaultLayout, 'de-AT')!.words.contents).toBe('Inhaltsverzeichnis');
+    expect(layoutIn(defaultLayout, 'es-ES')).toBeNull();
+  });
+
+  it('holds each translation complete: every word, label, title and slot the layout says, and no more', () => {
+    expect(() => parseLayout(withFrench(french()))).not.toThrow();
+    const gaps: [string, (translation: ReturnType<typeof french>) => void][] = [
+      ['a word', (t) => Reflect.deleteProperty(t.words, 'note')],
+      ['a label', (t) => Reflect.deleteProperty(t.labels['figure']!, 'body')],
+      ['a label the scheme does not give', (t) => (t.labels['section'] = { body: 'Section' })],
+      ['a list title', (t) => Reflect.deleteProperty(t.titles.lists!, 'table')],
+      ['a title the layout does not place', (t) => (t.titles.approvals = 'Approbations')],
+      ['a field moved', (t) => (t.slots.pdf.head = [[], [], []])],
+      ['Word running matter', (t) => Reflect.deleteProperty(t.slots, 'docx')],
+      ['its own language', (t) => (t.language = 'en')],
+    ];
+    for (const [gap, change] of gaps) {
+      const translation = french();
+      change(translation);
+      expect(() => parseLayout(withFrench(translation)), gap).toThrow();
+    }
+    expect(() => parseLayout({ ...copy(), translations: [french(), french()] })).toThrow();
+  });
+
+  it('reads a layout stored at schema version 7 as giving its words in no further language', () => {
+    const read = readLayout(JSON.parse(JSON.stringify(ELEVENTH_DEFAULT_LAYOUT)), {
+      artifact: 'layout-artifact',
+      version: 'layout-version',
+    });
+    expect(read).toEqual({ ok: true, layout: at8(ELEVENTH_DEFAULT_LAYOUT) });
+    expect(read.ok && layoutIn(read.layout, 'fr-FR')).toBeNull();
   });
 });

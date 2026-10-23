@@ -66,11 +66,28 @@ function warnedWords(warnings: unknown): string | null {
   };
   const sources = [...counted('source_')].map(([kind, n]) => `${n} ${kind}`);
   const terms = [...counted('term_')].map(([kind, n]) => `${n} ${TERM_WORDS[kind] ?? kind}`);
+  // Publishing in a language (TRb): each by its node, counted here.
+  const byNode = (code: string) =>
+    warnings.filter((each) => isRecord(each) && each.code === code).length;
+  const translation = (
+    [
+      [byNode('component_untranslated'), 'in {its} own language, marked untranslated'],
+      [byNode('translation_out_of_date'), 'translated, but out of date with {its} source'],
+      [byNode('override_skipped'), 'translated, {its} overrides not applied'],
+    ] as const
+  ).flatMap(([n, words]) =>
+    n === 0
+      ? []
+      : [
+          `${n} ${n === 1 ? 'component' : 'components'} ${words.replace('{its}', n === 1 ? 'its' : 'their')}`,
+        ],
+  );
   const said = [
     ...(sources.length === 0
       ? []
       : [`Cited sources flagged by their source: ${sources.join(', ')}. Review lists them.`]),
     ...(terms.length === 0 ? [] : [`Terms used: ${terms.join(', ')}.`]),
+    ...(translation.length === 0 ? [] : [`Published with ${translation.join(', ')}.`]),
   ];
   return said.length === 0 ? null : said.join(' ');
 }
@@ -153,6 +170,9 @@ export function Publishing({
   preview,
   shown = null,
   profile,
+  language,
+  languages = [],
+  fallback,
 }: {
   readonly client: Client;
   readonly document: string;
@@ -183,6 +203,19 @@ export function Publishing({
     readonly said: string;
     readonly onClear: () => void;
   };
+  /** The document's own language, which a publish is made in unless another is chosen (TRb). */
+  readonly language?: string;
+  /** The languages its layout gives its words in, its own first: what else it may be made in. */
+  readonly languages?: readonly string[];
+  /**
+   * The document's own fallback where a component has no translation (LOC-037; TR-J): null for the
+   * environment's policy. Offered where a publish may be made in another language.
+   */
+  readonly fallback?: {
+    readonly own: 'source' | 'refuse' | null;
+    readonly mayChange: boolean;
+    readonly onChange: (next: 'source' | 'refuse' | null) => void;
+  };
 }) {
   const offersWord = formats.includes('docx');
   const [chosen, setChosen] = useState<(typeof CHOICES)[number]>(CHOICES[0]);
@@ -193,6 +226,18 @@ export function Publishing({
   // A publish's warnings: flagged sources it cites and its terms' reports, which never stop it.
   const [warned, setWarned] = useState<string | null>(null);
   const { follow, mounted } = useFollowing(client);
+  // A language its layout gives its words in, besides the one serving the document's own (TRb).
+  const others = languages.filter(
+    (each) =>
+      language === undefined ||
+      !(
+        language.toLowerCase() === each.toLowerCase() ||
+        language.toLowerCase().startsWith(`${each.toLowerCase()}-`)
+      ),
+  );
+  const [publishIn, setPublishIn] = useState('');
+  const languageId = useId();
+  const fallbackId = useId();
 
   useEffect(() => {
     let current = true;
@@ -264,6 +309,7 @@ export function Publishing({
           version,
           formats: offersWord ? [...chosen.formats] : ['pdf'],
           ...(profile === undefined ? {} : { profile: profileOnTheWire(profile.chosen) }),
+          ...(publishIn === '' ? {} : { language: publishIn }),
         },
       });
       if (!mounted.current) return;
@@ -300,6 +346,43 @@ export function Publishing({
             </label>
           ))}
         </div>
+      )}
+      {mayPublish && others.length > 0 && (
+        <p>
+          <label htmlFor={languageId}>Publish in</label>{' '}
+          <select
+            id={languageId}
+            value={publishIn}
+            disabled={publish.state === 'working'}
+            onChange={(event) => setPublishIn(event.target.value)}
+          >
+            <option value="">{`Its own language${language === undefined ? '' : `, ${language}`}`}</option>
+            {others.map((each) => (
+              <option key={each} value={each}>
+                {each}
+              </option>
+            ))}
+          </select>
+        </p>
+      )}
+      {others.length > 0 && fallback !== undefined && (
+        <p>
+          <label htmlFor={fallbackId}>Where a component has no translation</label>{' '}
+          <select
+            id={fallbackId}
+            value={fallback.own ?? ''}
+            disabled={!fallback.mayChange}
+            onChange={(event) =>
+              fallback.onChange(
+                event.target.value === '' ? null : (event.target.value as 'source' | 'refuse'),
+              )
+            }
+          >
+            <option value="">As the environment says</option>
+            <option value="source">Publish it in its own language, marked</option>
+            <option value="refuse">Refuse the publish</option>
+          </select>
+        </p>
       )}
       {mayPublish && profile !== undefined && (
         <p>

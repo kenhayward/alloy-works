@@ -64,6 +64,8 @@ export {
   EIGHTH_DEFAULT_LAYOUT,
   NINTH_DEFAULT_LAYOUT,
   TENTH_DEFAULT_LAYOUT,
+  ELEVENTH_DEFAULT_LAYOUT,
+  layoutIn,
   LAYOUT_SCHEMA_VERSION,
   LISTED_SEQUENCES,
   layoutMigrationChain,
@@ -83,6 +85,8 @@ export type {
   Layout4,
   Layout5,
   Layout6,
+  Layout7,
+  LayoutTranslation,
   LayoutField,
   LayoutList,
   LayoutReadOutcome,
@@ -161,6 +165,7 @@ export {
   PUBLISHING_SCHEMA_22,
   // Frozen by TMb, which made `publishing/24`: the schema template 23 reads.
   PUBLISHING_SCHEMA_23,
+  PUBLISHING_SCHEMA_24,
 } from './published.js';
 export type {
   PublishedApproval,

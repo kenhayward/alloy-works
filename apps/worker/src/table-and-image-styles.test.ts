@@ -56,6 +56,7 @@ const COMPONENT = '00000000-0000-4000-8000-000000000001';
  */
 const small = parseLayout({
   ...defaultLayout,
+  translations: undefined,
   matter: { cover: false, contents: null, appendices: { newPage: true }, lists: [] },
   formats: {
     pdf: {
@@ -1104,7 +1105,7 @@ describe('a caption where its style places it (W14.5)', () => {
         await images(),
       ),
     ]);
-    expect(TEMPLATE_READING[PUBLISHING_SCHEMA]).toBe(24);
+    expect(TEMPLATE_READING[PUBLISHING_SCHEMA]).toBe(25);
     const [was, now] = await Promise.all([readPdf(before), readPdf(after)]);
     expect(now.pages).toBe(was.pages);
     expect(now.taggedText).toEqual(was.taggedText);

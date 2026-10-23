@@ -890,6 +890,11 @@ describe('routes that check a permission', () => {
       status: 404,
       payload: { openedFrom: MISSING, profile: null },
     }),
+    recordDocumentFallback: () => ({
+      url: `/v1/documents/${report}/translation-fallback`,
+      status: 404,
+      payload: { openedFrom: MISSING, fallback: null },
+    }),
     requestPublication: () => ({
       url: `/v1/documents/${report}/publications`,
       status: 404,
@@ -1869,6 +1874,11 @@ describe('routes that check a permission', () => {
       url: '/v1/settings/import',
       status: 403,
       payload: { policy: 'keep' },
+    }),
+    setTranslationSettings: () => ({
+      url: '/v1/settings/translation',
+      status: 403,
+      payload: { fallback: 'refuse', outOfDate: 'publish', note: {} },
     }),
     createAssetUpload: () => ({
       url: `/v1/spaces/${clinical}/asset-uploads`,

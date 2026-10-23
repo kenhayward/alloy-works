@@ -24,6 +24,7 @@ const NODE = 'report'.padEnd(26, 'a');
 /** No cover and no contents, but the default layout's list of tables, which opens the document. */
 const listed = parseLayout({
   ...defaultLayout,
+  translations: undefined,
   matter: { ...defaultLayout.matter, cover: false, contents: null },
 });
 

@@ -1378,9 +1378,29 @@ class Writer {
     if ((contents !== null && depth <= contents.depth) || running) {
       this.flattened(node.title, null, node.number);
     }
+    // Published in its source language for want of a translation, it says so first, in the
+    // document's language (the TR plan, TRb; LOC-037), as template 25 does.
+    const marked =
+      node.untranslated === null
+        ? []
+        : this.flow(
+            [
+              {
+                type: 'paragraph',
+                id: `${node.id}-untranslated`,
+                anchor: null,
+                style: 'body',
+                runs: [{ text: node.untranslated, marks: [{ kind: 'emphasis' }] }],
+              },
+            ],
+            TOP_LEVEL,
+            this.passageOf({ ...node, language: null }),
+            { paragraph: heading, style: style.theme, container: false },
+          );
+    const before = marked[marked.length - 1];
     const blocks = this.flow(node.blocks, TOP_LEVEL, passage, {
-      paragraph: heading,
-      style: style.theme,
+      paragraph: before?.paragraph ?? heading,
+      style: before?.style ?? style.theme,
       container: false,
     });
     // What follows is a heading, spaced from the style the last block ends in, as template 13's
@@ -1394,6 +1414,7 @@ class Writer {
     }
     return [
       heading,
+      ...marked.flatMap((block) => block.body),
       ...blocks.flatMap((block) => block.body),
       ...node.children.flatMap((child) => this.node(child)),
     ];

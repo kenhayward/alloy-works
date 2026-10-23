@@ -96,6 +96,8 @@ export async function requestRangePreview(
     readonly session: string;
     readonly requester: string;
     readonly profile?: StoredProfile;
+    /** The language it is made in (the TR plan, TRb); absent, the document's own. */
+    readonly language?: string;
   },
 ): Promise<RangePreviewAnswer> {
   const asked = await requestPublication(trx, {
@@ -105,6 +107,7 @@ export async function requestRangePreview(
     requester: input.requester,
     kind: 'range',
     ...(input.profile === undefined ? {} : { profile: input.profile }),
+    ...(input.language === undefined ? {} : { language: input.language }),
   });
   if (asked.answer !== 'requested') return asked;
   const occurrence = await trx

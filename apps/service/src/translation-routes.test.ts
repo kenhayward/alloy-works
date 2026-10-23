@@ -83,6 +83,8 @@ describe('translation (the TR plan, TRa)', () => {
     h = await startHarness();
     const approver = await h.tenantDb.withTenant(h.tenant, (trx) => findRole(trx, 'Approver'));
     await h.allow(h.ids.ada!, approver!.id, { kind: 'space', id: h.general });
+    const publisher = await h.tenantDb.withTenant(h.tenant, (trx) => findRole(trx, 'Publisher'));
+    await h.allow(h.ids.ada!, publisher!.id, { kind: 'space', id: h.general });
   }, 120_000);
 
   afterAll(async () => {
@@ -227,6 +229,92 @@ describe('translation (the TR plan, TRa)', () => {
     expect(marked.json()).toMatchObject({
       translates: { id: source2.id },
       status: { status: 'translated' },
+    });
+  });
+
+  it('LOC-010 publishes a document in a language through the API, a component without a translation reported, and LOC-037 refused as the document says', async () => {
+    const translatedOne = await approvedComponent('Methods');
+    const begun = await h.call('grace', 'POST', `/v1/components/${translatedOne.id}/translations`, {
+      language: 'fr-FR',
+    });
+    const line = begun.json<{ line: string }>().line;
+    const french = await cut(
+      'grace',
+      translatedOne.id,
+      translatedOne.version.id,
+      [para('b1', 'Méthodes.')],
+      'fr-FR',
+      { line, translates: translatedOne.version.id },
+    );
+    expect(french.statusCode, french.body).toBe(200);
+    const untranslated = await approvedComponent('Discussion');
+
+    const made = await h.call('ada', 'POST', `/v1/spaces/${h.general}/documents`, {
+      title: 'Pond survey',
+      language: 'en-GB',
+      direction: 'ltr',
+    });
+    let doc = made.json<{ id: string; version: { id: string } }>();
+    for (const [position, component] of [translatedOne.id, untranslated.id].entries()) {
+      const placed = await h.call('ada', 'POST', `/v1/documents/${doc.id}/outline`, {
+        openedFrom: doc.version.id,
+        operation: {
+          operation: 'insert',
+          parent: null,
+          position,
+          node: { type: 'reference', component, mode: { kind: 'latest' } },
+        },
+      });
+      expect(placed.statusCode, placed.body).toBe(200);
+      doc = placed.json();
+    }
+    const nodes = (await h.call('ada', 'GET', `/v1/documents/${doc.id}`)).json<{
+      outline: { nodes: { id: string }[] };
+    }>().outline.nodes;
+
+    const publish = (version: string, language: string) =>
+      h.call('ada', 'POST', `/v1/documents/${doc.id}/publications`, {
+        version,
+        formats: ['pdf'],
+        language,
+      });
+    const asked = await publish(doc.version.id, 'fr-FR');
+    expect(asked.statusCode, asked.body).toBe(200);
+    expect(asked.json()).toMatchObject({
+      failures: [],
+      warnings: [{ code: 'component_untranslated', node: nodes[1]!.id, language: 'en-GB' }],
+    });
+    expect((await publish(doc.version.id, 'es-ES')).json()).toMatchObject({
+      code: 'layout_language',
+    });
+    // A language that is no BCP 47 tag is refused at the door, recording nothing.
+    expect((await publish(doc.version.id, 'French')).statusCode).toBe(400);
+
+    // The environment's policy, read by anybody signed in and set by an administrator.
+    expect((await h.call('alice', 'GET', '/v1/settings/translation')).json()).toEqual({
+      fallback: 'source',
+      outOfDate: 'publish',
+      note: {},
+    });
+    expect(
+      (
+        await h.call('alice', 'PUT', '/v1/settings/translation', {
+          fallback: 'refuse',
+          outOfDate: 'publish',
+          note: {},
+        })
+      ).statusCode,
+    ).toBe(403);
+
+    // The document's own fallback refuses where the environment's falls back.
+    const refusing = await h.call('ada', 'PUT', `/v1/documents/${doc.id}/translation-fallback`, {
+      openedFrom: doc.version.id,
+      fallback: 'refuse',
+    });
+    expect(refusing.statusCode, refusing.body).toBe(200);
+    const refused = await publish(refusing.json<{ version: { id: string } }>().version.id, 'fr-FR');
+    expect(refused.json()).toMatchObject({
+      failures: [{ code: 'occurrence_untranslated', node: nodes[1]!.id }],
     });
   });
 

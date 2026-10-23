@@ -169,6 +169,8 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0157_import_structure',
       '0158_import_again',
       '0159_translation',
+      '0160_publish_in_language',
+      '0161_default_layout_languages',
     ]);
 
     const read = async () =>
