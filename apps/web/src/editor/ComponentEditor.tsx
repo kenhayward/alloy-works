@@ -2,6 +2,7 @@ import type { ComponentView, createApiClient } from '@alloy-works/api-client';
 import { DatesButton, DatesChips, datesIn, type Dates } from '../lifecycle/Dates.js';
 import { NO_SCOPE, ScopeButton, ScopeChips, scopeIn, type ScopeNow } from '../lifecycle/Scope.js';
 import { BringBackButton, LinesControl, linesIn } from '../lifecycle/Lines.js';
+import { sourceOf, TranslationsButton } from '../translation/Translations.js';
 import type { ContentDocument, ReaderResult } from '@alloy-works/domain';
 import {
   bindingDigestInput,
@@ -1604,6 +1605,7 @@ export function ComponentEditor({
             undefined,
             (id) => keeping.rebind(id),
             line,
+            sourceOf(component),
           ),
       sequence: startAt,
       onSent: (sequence) => keeping.sent(sequence),
@@ -2587,9 +2589,30 @@ export function ComponentEditor({
               }}
               className={styles['archive']}
             />
+            {/* Its translations, each a language line (LOC-007, LOC-016; the TR plan, TR-J). */}
+            {/* Only where there is one, or one may be begun: the band has no room to spare. */}
+            {(linesIn(shown).some((each) => each.language) ||
+              (line === undefined &&
+                shown.mayEdit === true &&
+                !archived &&
+                standing?.revision?.number != null)) && (
+              <TranslationsButton
+                client={client}
+                componentId={componentId}
+                line={line}
+                mayEdit={shown.mayEdit === true && !archived}
+                translatable={standing?.revision?.number != null}
+                onGo={(address) => {
+                  window.location.hash = address;
+                }}
+                className={styles['archive']}
+              />
+            )}
             {/* Bringing an open line back, to whoever may edit it (LIF-045; R16-F). */}
             {(() => {
-              const open = linesIn(shown).find((each) => each.id === line && !each.closed);
+              const open = linesIn(shown).find(
+                (each) => each.id === line && !each.closed && !each.language,
+              );
               return open && shown.mayEdit === true && !archived ? (
                 <BringBackButton
                   client={client}

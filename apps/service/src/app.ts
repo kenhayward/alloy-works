@@ -3,6 +3,7 @@ import { templateMoveHandlers } from './template-moves.js';
 import { datesHandlers } from './dates.js';
 import { scopeHandlers } from './scopes.js';
 import { lineHandlers } from './lines.js';
+import { translationHandlers } from './translations.js';
 import { shareHandlers } from './shares.js';
 import { queryUsageHandlers } from './query-usage.js';
 import { IDEMPOTENT_REPLAYED, keyedRequest, once } from './idempotency.js';
@@ -649,6 +650,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...datesHandlers(),
     ...scopeHandlers(),
     ...lineHandlers(),
+    ...translationHandlers(),
     ...shareHandlers(tenantOf, options.objects),
     ...queryUsageHandlers(),
     ...templateMoveHandlers(),

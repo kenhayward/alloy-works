@@ -33,6 +33,11 @@ export const documentationGroups = [
         description:
           "Keep a space's governed terms, their labels per language, definitions and relations, see where each is used, and import and export them as SKOS.",
       },
+      {
+        name: 'Translations',
+        description:
+          "Translate a component into another language as a variant of its own, see each variant's status against its source, and declare which source changes need retranslating.",
+      },
       { name: 'Assets', description: 'Upload and retrieve image assets.' },
       {
         name: 'Imports',
@@ -495,6 +500,13 @@ const operationTags = {
     'archiveTerm',
     'unarchiveTerm',
     'previewComponentTerms',
+  ],
+  Translations: [
+    'listComponentTranslations',
+    'beginComponentTranslation',
+    'markComponentTranslationCurrent',
+    'getComponentTranslationChanges',
+    'declareComponentSourceChange',
   ],
   Prompts: [
     'listPrompts',
@@ -1070,6 +1082,16 @@ const descriptions: Readonly<Record<string, string>> = {
     "Unarchives a term, returning it to the space's listing. It needs retire on the term.",
   previewComponentTerms:
     "Answers the standing and preferred label of each term a component's editor uses, in order, so it can flag a deprecated one with its replacement. A term that is not one of the component's space the caller may read is answered unavailable, and nothing more is said of it. Nothing is kept.",
+  listComponentTranslations:
+    "Lists a component's translations, one per language, each with its newest version recorded against a source, the source version that translates, and its status: untranslated until its first cut, translated, or out of date the moment a source version follows the one it translates, saying whether any change since needs retranslating. Open a translation as any other line of the component. It needs read on the component.",
+  beginComponentTranslation:
+    "Begins a component's translation into a language, as a line of its own begun from the source's latest designated revision, its blocks and their identifiers kept. Nothing is cut: it is untranslated until a version is cut on its line, which names the source version the translator was shown. A source never designated, a tag that is not BCP 47, the source's own language, or one begun already is refused. It needs edit on the component.",
+  markComponentTranslationCurrent:
+    "Records a translation's newest version as translating the source's latest, cutting nothing, for a source change that needed no new words. The source version named must be the latest, or it is refused so nothing is recorded against a source the translator never saw. It needs edit on the component.",
+  getComponentTranslationChanges:
+    "Says which of the source's blocks changed since the version a translation translates: added, changed or removed, by block identifier, so a translator starts from the earlier translation. It needs read on the component.",
+  declareComponentSourceChange:
+    "Declares whether a version of a component's main line needs retranslating, revising what its author declared at its cut. A version declaring nothing needs it. A translation goes out of date at any later source version either way; the declaration says whether that needs new words. It needs edit on the component.",
   unarchiveBibliographyEntry:
     "Unarchives an entry, returning it to the space's listing. It needs retire on the entry.",
   recordPromptVersion:

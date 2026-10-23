@@ -491,7 +491,8 @@ export const auditKindSpecs = {
   // the session it was taken from; the taker is the actor.
   'lock.taken': kind(
     ['COL-009', 'COL-045'],
-    z.strictObject({ from: Id, session: Id }),
+    // The line it was taken on, a divergent or a language line's (the TR plan, TR-H); none for the main line.
+    z.strictObject({ from: Id, session: Id, line: Id.optional() }),
     'apps/service/src/editing.ts',
   ),
   // A thread started, a comment added or edited, a thread resolved (the TH plan): about what the
@@ -594,6 +595,8 @@ export const auditKindSpecs = {
       line: Id,
       name: z.string().min(1).max(80),
       from: z.strictObject({ revision: z.int().positive(), version: Id }),
+      // A language line's language (TR-A, TR-B): a translation, never brought back.
+      language: z.string().min(2).max(35).optional(),
     }),
     'packages/db/src/lines.ts',
   ),
@@ -610,6 +613,19 @@ export const auditKindSpecs = {
       left: z.int().nonnegative(),
     }),
     'packages/db/src/lines.ts',
+  ),
+  // Whether a main-line version needs retranslating, declared at its cut or revised (LOC-015,
+  // LOC-031; the TR plan, TR-D).
+  'translation.declared': kind(
+    ['LOC-031'],
+    z.strictObject({ version: Id, retranslate: z.boolean() }),
+    'packages/db/src/translation.ts',
+  ),
+  // A language line's head recorded against a newer source version without a cut (TR-C).
+  'translation.marked_current': kind(
+    ['LOC-013'],
+    z.strictObject({ line: Id, language: z.string().min(2).max(35), version: Id, translates: Id }),
+    'packages/db/src/translation.ts',
   ),
   // A revision accepted by its party in one scope, so it takes effect there (LIF-047; R15-E).
   'revision.accepted': kind(

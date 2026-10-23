@@ -929,7 +929,12 @@ export function createSession(options: SessionOptions): Session {
         return;
       }
       phase = 'editing';
-      notice = 'The version could not be made.';
+      // A translation names the source it was opened against (the TR plan, TR-C): a newer one needs a
+      // reload, and every iteration is kept meanwhile.
+      notice =
+        result.code === 'translation_source_stale'
+          ? 'The source has changed since this translation was opened. Reload to translate against it: what you typed is saved.'
+          : 'The version could not be made.';
       publish();
       return;
     }

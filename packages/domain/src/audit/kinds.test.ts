@@ -139,6 +139,9 @@ describe('the audit kinds', () => {
       'component.type_changed',
       'theme.moved',
       'style.changed',
+      // The TR plan's (TR-C, TR-D): a source change declared, and a translation marked current.
+      'translation.declared',
+      'translation.marked_current',
     ];
     expect([...auditKinds].sort()).toEqual([...listed].sort());
     for (const kind of auditKinds) {
@@ -157,6 +160,8 @@ describe('the audit kinds', () => {
       'authentication.signed_in': { route: 'organisation', session: ID },
       'import.accepted': { import: ID, components: 3 },
       'import.abandoned': { swept: true },
+      'translation.declared': { version: ID, retranslate: false },
+      'translation.marked_current': { line: ID, language: 'fr-FR', version: ID, translates: OTHER },
       'authentication.sign_in_failed': { route: 'google', failure: 'handoff_expired' },
       'authentication.signed_out': {
         ended: 'expired',

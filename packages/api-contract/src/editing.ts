@@ -24,12 +24,20 @@ export const ClaimBody = z.strictObject({
     .boolean()
     .optional()
     .describe('Continue here: move a lock this principal holds elsewhere'),
+  line: LowercaseUuid.optional().describe(
+    "A component's line, divergent or a language's, whose lock this is (TR-H); its main line's where absent",
+  ),
 });
 export type ClaimBody = z.infer<typeof ClaimBody>;
 
 export const LockAnswer = z.object({ lock: Lock });
 
-export const TakeBody = z.strictObject({ session: LowercaseUuid });
+export const TakeBody = z.strictObject({
+  session: LowercaseUuid,
+  line: LowercaseUuid.optional().describe(
+    "A component's line, divergent or a language's, whose lock this is (TR-H); its main line's where absent",
+  ),
+});
 export type TakeBody = z.infer<typeof TakeBody>;
 
 export const TakeAnswer = z.object({
@@ -77,6 +85,15 @@ export const CutBody = z.strictObject({
   line: LowercaseUuid.optional().describe(
     "A component's divergent line to act on (LIF-044); its main line where absent",
   ),
+  translates: LowercaseUuid.optional().describe(
+    'On a language line, the main-line version the translator was shown, which must be its latest (TR-C)',
+  ),
+  retranslate: z
+    .boolean()
+    .optional()
+    .describe(
+      'On the main line, whether the change needs retranslating (LOC-015, LOC-031); absent, it does',
+    ),
 });
 export type CutBody = z.infer<typeof CutBody>;
 
@@ -86,6 +103,15 @@ export const ReleaseQuery = z.object({
   line: LowercaseUuid.optional().describe(
     "A component's divergent line edited (LIF-044); its main line where absent",
   ),
+  translates: LowercaseUuid.optional().describe(
+    'On a language line, the main-line version the translator was shown, which must be its latest (TR-C)',
+  ),
+  retranslate: z
+    .enum(['true', 'false'])
+    .optional()
+    .describe(
+      'On the main line, whether the change cut needs retranslating (LOC-015, LOC-031); absent, it does',
+    ),
 });
 export type ReleaseQuery = z.infer<typeof ReleaseQuery>;
 
@@ -215,7 +241,7 @@ const forbidden = {
 } as const;
 const refused = {
   description:
-    'lock_held, lock_required, lock_taken (taken from this session, naming who has it), version_precondition, iteration_stale or iteration_conflict',
+    'lock_held, lock_required, lock_taken (taken from this session, naming who has it), version_precondition, iteration_stale, iteration_conflict, or translation_source_stale (a language line’s source moved on: read it again)',
   schema: EditingRefusal,
 } as const;
 const edit = { check: 'permission', permission: 'edit', target: { artifact: 'id' } } as const;
@@ -271,7 +297,8 @@ export const editingRoutes = {
     query: ReleaseQuery,
     responses: {
       400: {
-        description: '`values_invalid`: a fixed value differs from its default at the cut',
+        description:
+          '`values_invalid`: a fixed value differs from its default at the cut; `translation_source_required`: a cut on a language line names no source version',
         schema: EditingRefusal,
       },
       200: { description: 'Released, with the version cut or the latest', schema: CutAnswer },
@@ -323,7 +350,8 @@ export const editingRoutes = {
     body: CutBody,
     responses: {
       400: {
-        description: '`values_invalid`: a fixed value differs from its default at the cut',
+        description:
+          '`values_invalid`: a fixed value differs from its default at the cut; `translation_source_required`: a cut on a language line names no source version',
         schema: EditingRefusal,
       },
       200: { description: 'Cut, or nothing to cut', schema: CutAnswer },

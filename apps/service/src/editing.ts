@@ -32,6 +32,7 @@ import {
   releaseLock,
   saveIteration,
   type HolderRefusal,
+  type TranslatesRefusal,
   type IterationSummary,
   type StoredVersion,
   type TenantTransaction,
@@ -60,7 +61,8 @@ type Refusal =
   | { readonly answer: 'version.precondition'; readonly current: StoredVersion }
   | { readonly answer: 'iteration.stale' | 'iteration.conflict'; readonly latest: number }
   | { readonly answer: 'values.invalid'; readonly failures: readonly MetadataFailure[] }
-  | { readonly answer: 'artifact.missing' };
+  | { readonly answer: 'artifact.missing' }
+  | TranslatesRefusal;
 
 /** Every bound table in some content, wherever it stands. */
 function boundTablesIn(value: unknown): BoundTableNode[] {
@@ -243,6 +245,20 @@ function refuse(refusal: Refusal): AppError {
       });
     case 'artifact.missing':
       return notFound();
+    // A cut on a language line names the source it translates (the TR plan, TR-C).
+    case 'translation.source_required':
+      return refused(
+        400,
+        'translation.source_required',
+        'A translation names the source version it translates.',
+      );
+    case 'translation.source_stale':
+      return refused(
+        409,
+        'translation.source_stale',
+        'The source has changed since this translation was opened: read it again.',
+        { current: versionView(refusal.current) },
+      );
   }
 }
 
@@ -287,6 +303,7 @@ export function editingHandlers() {
         principal: principalId,
         session: body.session,
         ...(body.move === undefined ? {} : { move: body.move }),
+        ...(body.line === undefined ? {} : { line: body.line }),
       });
       if (answer.answer !== 'claimed') throw refuse(answer);
       return { lock: lockView(answer.lock, principalId) };
@@ -301,8 +318,13 @@ export function editingHandlers() {
       { trx, principalId }: Authorised,
     ): Promise<TakeAnswer> => {
       const { id } = request.params as ComponentParams;
-      const { session } = request.body as TakeBody;
-      const answer = await takeLock(trx, { artifactId: id, principal: principalId, session });
+      const { session, line } = request.body as TakeBody;
+      const answer = await takeLock(trx, {
+        artifactId: id,
+        principal: principalId,
+        session,
+        ...(line === undefined ? {} : { line }),
+      });
       switch (answer.answer) {
         case 'taken':
           await recordEvent(
@@ -310,7 +332,11 @@ export function editingHandlers() {
             {
               kind: 'lock.taken',
               subject: { kind: 'component', id },
-              detail: { from: answer.from.holder, session: answer.from.session },
+              detail: {
+                from: answer.from.holder,
+                session: answer.from.session,
+                ...(line === undefined ? {} : { line }),
+              },
             },
             labels(await principalLabel(trx, 'holder', answer.from.holder)),
           );
@@ -439,6 +465,8 @@ export function editingHandlers() {
         openedFrom: body.openedFrom,
         ...(body.note === undefined ? {} : { note: body.note }),
         ...(body.line === undefined ? {} : { line: body.line }),
+        ...(body.translates === undefined ? {} : { translates: body.translates }),
+        ...(body.retranslate === undefined ? {} : { retranslate: body.retranslate }),
       });
       if (answer.answer === 'recorded') {
         return { outcome: 'cut', version: await shownVersionView(trx, answer.version) };
@@ -461,6 +489,8 @@ export function editingHandlers() {
         session: query.session,
         openedFrom: query.openedFrom,
         ...(query.line === undefined ? {} : { line: query.line }),
+        ...(query.translates === undefined ? {} : { translates: query.translates }),
+        ...(query.retranslate === undefined ? {} : { retranslate: query.retranslate === 'true' }),
       });
       if (answer.answer !== 'released') throw refuse(answer);
       if (answer.version)

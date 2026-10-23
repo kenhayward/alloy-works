@@ -20275,6 +20275,39 @@
       ]
     },
     {
+      "document": "translation.md",
+      "owns": [
+        {
+          "id": "LOC-007",
+          "howItIsMet": "A variant is a language line of the one component"
+        },
+        {
+          "id": "LOC-012",
+          "howItIsMet": "A variant's versions are the chain's, on its line"
+        },
+        {
+          "id": "LOC-013",
+          "howItIsMet": "Each version on a language line records the source version it translates"
+        },
+        {
+          "id": "LOC-014",
+          "howItIsMet": "Status is computed: out of date at any later source version, immediately"
+        },
+        {
+          "id": "LOC-015",
+          "howItIsMet": "Out of date says whether any change since needs retranslating"
+        },
+        {
+          "id": "LOC-031",
+          "howItIsMet": "A source cut declares it, defaulting to yes; revisable by whoever may edit; audited"
+        },
+        {
+          "id": "LOC-040",
+          "howItIsMet": "An out-of-date variant opens on its earlier translation, beside the source blocks changed since"
+        }
+      ]
+    },
+    {
       "document": "webhooks.md",
       "owns": [
         {
@@ -21180,13 +21213,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 649,
+      "line": 654,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 662,
+      "line": 667,
       "kind": "title"
     },
     {
@@ -21660,7 +21693,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 2090,
+      "line": 2109,
       "kind": "title"
     },
     {
@@ -23470,6 +23503,36 @@
       "kind": "title"
     },
     {
+      "id": "LOC-007",
+      "file": "apps/service/src/translation-routes.test.ts",
+      "line": 92,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-013",
+      "file": "apps/service/src/translation-routes.test.ts",
+      "line": 92,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-015",
+      "file": "apps/service/src/translation-routes.test.ts",
+      "line": 163,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-031",
+      "file": "apps/service/src/translation-routes.test.ts",
+      "line": 163,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-040",
+      "file": "apps/service/src/translation-routes.test.ts",
+      "line": 163,
+      "kind": "title"
+    },
+    {
       "id": "DAT-016",
       "file": "apps/service/src/uses-routes.test.ts",
       "line": 79,
@@ -23514,13 +23577,13 @@
     {
       "id": "LIF-004",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 875,
+      "line": 876,
       "kind": "rule"
     },
     {
       "id": "LIF-004",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 838,
+      "line": 839,
       "kind": "title"
     },
     {
@@ -23544,19 +23607,19 @@
     {
       "id": "LIF-015",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 785,
+      "line": 786,
       "kind": "title"
     },
     {
       "id": "LIF-016",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 785,
+      "line": 786,
       "kind": "title"
     },
     {
       "id": "LIF-018",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 785,
+      "line": 786,
       "kind": "title"
     },
     {
@@ -23580,7 +23643,7 @@
     {
       "id": "LIF-045",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 698,
+      "line": 699,
       "kind": "title"
     },
     {
@@ -26149,6 +26212,18 @@
       "id": "STY-039",
       "file": "apps/web/src/theme/presentation.test.tsx",
       "line": 45,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-031",
+      "file": "apps/web/src/translation/Translations.test.tsx",
+      "line": 105,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-040",
+      "file": "apps/web/src/translation/Translations.test.tsx",
+      "line": 129,
       "kind": "title"
     },
     {
@@ -29122,6 +29197,36 @@
       "kind": "title"
     },
     {
+      "id": "LOC-007",
+      "file": "packages/db/src/translation.test.ts",
+      "line": 174,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-013",
+      "file": "packages/db/src/translation.test.ts",
+      "line": 222,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-014",
+      "file": "packages/db/src/translation.test.ts",
+      "line": 262,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-031",
+      "file": "packages/db/src/translation.test.ts",
+      "line": 262,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-040",
+      "file": "packages/db/src/translation.test.ts",
+      "line": 319,
+      "kind": "title"
+    },
+    {
       "id": "REL-015",
       "file": "packages/db/src/traversal.test.ts",
       "line": 224,
@@ -29526,13 +29631,13 @@
     {
       "id": "LIF-030",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 251,
+      "line": 256,
       "kind": "title"
     },
     {
       "id": "LIF-070",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 232,
+      "line": 237,
       "kind": "title"
     },
     {
@@ -30486,7 +30591,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1012,
+      "line": 1018,
       "kind": "title"
     },
     {
@@ -32059,6 +32164,24 @@
       "id": "STY-051",
       "file": "packages/domain/src/theme/typst.test.ts",
       "line": 15,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-014",
+      "file": "packages/domain/src/translation/status.test.ts",
+      "line": 49,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-015",
+      "file": "packages/domain/src/translation/status.test.ts",
+      "line": 56,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-040",
+      "file": "packages/domain/src/translation/status.test.ts",
+      "line": 91,
       "kind": "title"
     },
     {

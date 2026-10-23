@@ -565,6 +565,7 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
       divergedFrom: { revision: 1, version: created.version.id },
       at: expect.any(String),
       closed: false,
+      language: null,
     });
     expect((await diverge('ada', { revision: 1, name: 'us' })).json()).toMatchObject({
       code: 'line_name_taken',

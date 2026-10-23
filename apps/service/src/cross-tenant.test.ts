@@ -390,6 +390,20 @@ const OTHER_TENANT_IDS: Readonly<
   previewComponentCitations: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   previewComponentTerms: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   divergeComponent: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
+  listComponentTranslations: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
+  beginComponentTranslation: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
+  markComponentTranslationCurrent: async (tenant, db) => ({
+    id: await componentIdIn(tenant, db),
+    line: '00000000-0000-4000-8000-000000000001',
+  }),
+  getComponentTranslationChanges: async (tenant, db) => ({
+    id: await componentIdIn(tenant, db),
+    line: '00000000-0000-4000-8000-000000000001',
+  }),
+  declareComponentSourceChange: async (tenant, db) => ({
+    id: await componentIdIn(tenant, db),
+    version: '00000000-0000-4000-8000-000000000001',
+  }),
   listComponentLines: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   compareComponentLine: async (tenant, db) => ({
     id: await componentIdIn(tenant, db),
@@ -820,6 +834,11 @@ const VALID_INPUT: Readonly<
   setDocumentScope: { payload: { scope: [] } },
   acceptComponentRevision: { payload: { revision: 1, axis: 'market', value: 'us' } },
   divergeComponent: { payload: { revision: 1, name: 'US' } },
+  beginComponentTranslation: { payload: { language: 'fr-FR' } },
+  markComponentTranslationCurrent: {
+    payload: { translates: '00000000-0000-4000-8000-000000000001' },
+  },
+  declareComponentSourceChange: { payload: { retranslate: false } },
   sharePublication: { payload: { email: 'iris@example.net' } },
   bringComponentLineBack: {
     payload: {

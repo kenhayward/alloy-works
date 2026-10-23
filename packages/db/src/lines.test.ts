@@ -291,7 +291,7 @@ describe('divergent lines (the R16 plan, R16-A to R16-D)', () => {
     );
     if (begun.answer !== 'diverged') throw new Error(begun.answer);
     const session = { artifactId: first.artifactId, principal: ada, session: randomUUID() };
-    await as((trx) => claimLock(trx, session));
+    await as((trx) => claimLock(trx, { ...session, line: begun.line.id }));
     const words = (value: string) => ({
       ...(substanceOf(first).content as object),
       content: [
@@ -434,7 +434,7 @@ describe('divergent lines (the R16 plan, R16-A to R16-D)', () => {
     // The main line moves on, long ago: its cut is no cut of the line's work.
     const main = await edit(first, 'Central wording');
     const session = { artifactId: first.artifactId, principal: ada, session: randomUUID() };
-    await as((trx) => claimLock(trx, session));
+    await as((trx) => claimLock(trx, { ...session, line: begun.line.id }));
     const saved = await as((trx) =>
       saveIteration(trx, {
         ...session,

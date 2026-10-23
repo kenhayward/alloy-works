@@ -48,6 +48,7 @@ understand the storage layer, rather than something to be thrown away.
 | [extensions.md](extensions.md)                         | A source type added as a manifest and a remote service, installed by an administrator, pinned by its digest                                                            |
 | [citations.md](citations.md)                           | A bibliography entry as a space's CSL-JSON artifact, its key and duplicates; citation styles as CSL rendered by citeproc-js; citations and the bibliography at publish |
 | [terms.md](terms.md)                                   | A term as a space's artifact on its own workflow, its labels per language and stated relations; printed forms, glossary and abbreviations; search through terms; SKOS  |
+| [translation.md](translation.md)                       | A variant as a language line of the one component; what each translates; status computed, out of date at a source change; Mark current; a lock per line                |
 | [import.md](import.md)                                 | A Word, Markdown or HTML file read in the worker into a proposal of sections and components, reviewed, accepted or abandoned                                           |
 | [reference-sources.md](reference-sources.md)           | Crossref and PubMed searched through the connector and cited; a cited source's retraction or correction found, flagged and told                                        |
 

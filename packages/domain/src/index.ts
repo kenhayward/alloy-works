@@ -79,6 +79,8 @@ export * from './review/index.js';
 // Workflow: a kind's states and transitions, validated, the seed, and the definition deciding a move
 // (docs/design/workflow.md).
 export * from './workflow/index.js';
+// Translation: language lines and their status (docs/design/translation.md).
+export * from './translation/index.js';
 // Generation: model endpoints, and the connector's model call and its events (docs/design/generation.md).
 export * from './generation/index.js';
 // Citations: a bibliography entry, its key and its identities (docs/design/citations.md).

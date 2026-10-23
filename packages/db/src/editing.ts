@@ -6,13 +6,13 @@ import {
   type MetadataFailure,
   type MetadataValues,
 } from '@alloy-works/domain';
-import { sql } from 'kysely';
+import { sql, type UpdateQueryBuilder, type UpdateResult } from 'kysely';
 import { componentFieldsNow, unstorableValues } from './component-values.js';
 import { isDeleted, shareDeletion } from './deletion.js';
-import type { TenantTransaction } from './tables.js';
+import type { TenantTables, TenantTransaction } from './tables.js';
 import { sha256Hex } from './version-digest.js';
 import { type StoredVersion } from './versions.js';
-import { headVersion } from './lines.js';
+import { headVersion, readLine } from './lines.js';
 
 /**
  * How long a lock lasts without activity unless an administrator changes it (COL-008): fifteen
@@ -127,6 +127,13 @@ async function serialiseLive(trx: TenantTransaction, artifactId: string): Promis
   return !(await isDeleted(trx, artifactId));
 }
 
+/** Whether a session's line, where it names one, is an open line of its own component (TR-H). */
+async function onOpenLine(trx: TenantTransaction, session: EditingSession): Promise<boolean> {
+  if (session.line === undefined) return true;
+  const line = await readLine(trx, session.artifactId, session.line);
+  return line !== undefined && !line.closed;
+}
+
 /** Whether this tenant holds a component by that id. */
 export async function isComponent(trx: TenantTransaction, artifactId: string): Promise<boolean> {
   if (!UUID.test(artifactId)) return false;
@@ -139,9 +146,44 @@ export async function isComponent(trx: TenantTransaction, artifactId: string): P
   return row !== undefined;
 }
 
-/** The live locks on these components, each with its holder, its activity and any ask for it. */
-async function lockRows(trx: TenantTransaction, ids: readonly string[]) {
+const lockLinesKnown = new WeakMap<TenantTransaction, boolean>();
+
+/** Whether this schema keys the lock by line (0159; the TR plan, TR-H): migration tests run older ones. */
+export async function lockLinesStored(trx: TenantTransaction): Promise<boolean> {
+  const known = lockLinesKnown.get(trx);
+  if (known !== undefined) return known;
+  const { rows } = await sql<{ present: boolean }>`
+    select exists (
+      select 1 from information_schema.columns
+       where table_schema = current_schema() and table_name = 'component_lock'
+         and column_name = 'line_id'
+    ) as present`.execute(trx);
+  const present = rows[0]?.present === true;
+  lockLinesKnown.set(trx, present);
+  return present;
+}
+
+/** An update of `component_lock` narrowed to one line's row, the main line's where `line` is undefined. */
+function onLockLine<
+  Q extends UpdateQueryBuilder<TenantTables, 'component_lock', 'component_lock', UpdateResult>,
+>(query: Q, line: string | undefined): Q {
+  return (
+    line === undefined ? query.where('line_id', 'is', null) : query.where('line_id', '=', line)
+  ) as Q;
+}
+
+/**
+ * The live locks on these components' lines, the main line's where `line` is undefined (TR-H), each
+ * with its holder, its activity and any ask for it. Before 0159 a component has one lock, whatever the
+ * line.
+ */
+async function lockRows(
+  trx: TenantTransaction,
+  ids: readonly string[],
+  line?: string | typeof ANY_LINE,
+) {
   if (ids.length === 0) return [];
+  const keyed = (await lockLinesStored(trx)) && line !== ANY_LINE;
   return trx
     .selectFrom('component_lock as l')
     .innerJoin('principal as p', 'p.id', 'l.principal_id')
@@ -168,6 +210,11 @@ async function lockRows(trx: TenantTransaction, ids: readonly string[]) {
     ])
     .where('l.artifact_id', 'in', [...ids])
     .where('l.expires_at', '>', sql<Date>`clock_timestamp()`)
+    .$if(keyed, (query) =>
+      line === undefined
+        ? query.where('l.line_id', 'is', null)
+        : query.where('l.line_id', '=', line as string),
+    )
     .execute();
 }
 
@@ -195,17 +242,32 @@ function lockOf(row: Awaited<ReturnType<typeof lockRows>>[number]): LockState {
   };
 }
 
-/** The unexpired lock on a component, or undefined when nobody holds it. */
+/** The unexpired lock on a component's line, its main line by default; undefined when nobody holds it. */
 export async function readLock(
+  trx: TenantTransaction,
+  artifactId: string,
+  line?: string,
+): Promise<LockState | undefined> {
+  if (!UUID.test(artifactId) || (line !== undefined && !UUID.test(line))) return undefined;
+  const [row] = await lockRows(trx, [artifactId], line);
+  return row && lockOf(row);
+}
+
+const ANY_LINE = Symbol('any line');
+
+/** A live lock on any line of a component, its main line's first, or undefined (TR-H). */
+export async function readAnyLock(
   trx: TenantTransaction,
   artifactId: string,
 ): Promise<LockState | undefined> {
   if (!UUID.test(artifactId)) return undefined;
-  const [row] = await lockRows(trx, [artifactId]);
+  const main = await readLock(trx, artifactId);
+  if (main) return main;
+  const [row] = await lockRows(trx, [artifactId], ANY_LINE);
   return row && lockOf(row);
 }
 
-/** The live lock on each of many artifacts, in one query; an artifact nobody holds is absent. */
+/** The live main-line lock on each of many artifacts, in one query; one nobody holds is absent. */
 export async function readLocks(
   trx: TenantTransaction,
   artifactIds: readonly string[],
@@ -220,7 +282,7 @@ export async function holding(
   trx: TenantTransaction,
   session: EditingSession,
 ): Promise<LockState | HolderRefusal> {
-  const lock = await readLock(trx, session.artifactId);
+  const lock = await readLock(trx, session.artifactId, session.line);
   if (!lock) return { answer: 'lock.required' };
   if (lock.holder !== session.principal || lock.session !== session.session) {
     // Taken from this very session (COL-045): it is told who has it, not merely that somebody does.
@@ -249,7 +311,8 @@ export async function claimLock(
 ): Promise<LockClaimAnswer> {
   if (!(await isComponent(trx, input.artifactId))) return { answer: 'artifact.missing' };
   if (!(await serialiseLive(trx, input.artifactId))) return { answer: 'artifact.missing' };
-  const held = await readLock(trx, input.artifactId);
+  if (!(await onOpenLine(trx, input))) return { answer: 'artifact.missing' };
+  const held = await readLock(trx, input.artifactId, input.line);
   if (
     held &&
     (held.holder !== input.principal || (held.session !== input.session && !input.move))
@@ -270,12 +333,20 @@ export async function claimLock(
     // Whom it was taken from matters only while the taker holds it: a claim anew forgets it.
     taken_from: held !== undefined && held.session === input.session ? held.takenFrom : null,
   };
-  await trx
-    .insertInto('component_lock')
-    .values({ artifact_id: input.artifactId, ...claim })
-    .onConflict((conflict) => conflict.column('artifact_id').doUpdateSet(claim))
-    .execute();
-  return { answer: 'claimed', lock: (await readLock(trx, input.artifactId))! };
+  if (await lockLinesStored(trx)) {
+    await trx
+      .insertInto('component_lock')
+      .values({ artifact_id: input.artifactId, line_id: input.line ?? null, ...claim })
+      .onConflict((conflict) => conflict.constraint('component_lock_line').doUpdateSet(claim))
+      .execute();
+  } else {
+    await trx
+      .insertInto('component_lock')
+      .values({ artifact_id: input.artifactId, ...claim })
+      .onConflict((conflict) => conflict.column('artifact_id').doUpdateSet(claim))
+      .execute();
+  }
+  return { answer: 'claimed', lock: (await readLock(trx, input.artifactId, input.line))! };
 }
 
 /**
@@ -427,8 +498,9 @@ export async function saveIteration(
       taking_until: null,
     })
     .where('artifact_id', '=', input.artifactId)
+    .$if(await lockLinesStored(trx), (query) => onLockLine(query, input.line))
     .execute();
-  const extended = await readLock(trx, input.artifactId);
+  const extended = await readLock(trx, input.artifactId, input.line);
   if (!extended) throw new Error(`The lock on ${input.artifactId} was extended and is not there`);
   return { answer: 'accepted', sequence: input.sequence, repeated: false, lock: extended };
 }
@@ -462,7 +534,8 @@ export type TakeAnswer =
 export async function takeLock(trx: TenantTransaction, input: EditingSession): Promise<TakeAnswer> {
   if (!(await isComponent(trx, input.artifactId))) return { answer: 'artifact.missing' };
   if (!(await serialiseLive(trx, input.artifactId))) return { answer: 'artifact.missing' };
-  const lock = await readLock(trx, input.artifactId);
+  if (!(await onOpenLine(trx, input))) return { answer: 'artifact.missing' };
+  const lock = await readLock(trx, input.artifactId, input.line);
   if (!lock) return { answer: 'lock.free' };
   if (lock.holder === input.principal) return { answer: 'lock.own', lock };
   const { rows } = await sql<{ now: Date }>`select clock_timestamp() as now`.execute(trx);
@@ -491,8 +564,13 @@ export async function takeLock(trx: TenantTransaction, input: EditingSession): P
         taken_from: lock.session,
       })
       .where('artifact_id', '=', input.artifactId)
+      .$if(await lockLinesStored(trx), (query) => onLockLine(query, input.line))
       .execute();
-    return { answer: 'taken', lock: (await readLock(trx, input.artifactId))!, from: lock };
+    return {
+      answer: 'taken',
+      lock: (await readLock(trx, input.artifactId, input.line))!,
+      from: lock,
+    };
   }
   if (now < lock.takeableAt.getTime()) return { answer: 'lock.active', lock };
   await trx
@@ -503,10 +581,11 @@ export async function takeLock(trx: TenantTransaction, input: EditingSession): P
       taking_until: sql<Date>`clock_timestamp() + make_interval(secs => ${TAKE_GRACE_MS / 1000})`,
     })
     .where('artifact_id', '=', input.artifactId)
+    .$if(await lockLinesStored(trx), (query) => onLockLine(query, input.line))
     .execute();
   return {
     answer: 'asked',
-    lock: (await readLock(trx, input.artifactId))!,
+    lock: (await readLock(trx, input.artifactId, input.line))!,
     retryAfterMs: TAKE_GRACE_MS,
   };
 }

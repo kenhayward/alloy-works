@@ -13,7 +13,7 @@ import {
   type WorkflowTransition,
 } from '@alloy-works/domain';
 import { datesStored } from './dates.js';
-import { lineHead, linesStored, readLine } from './lines.js';
+import { lineHead, linesStored, readLine, translationStored } from './lines.js';
 import { revisionScopes, scopesStored } from './scopes.js';
 import { unmetConditions, type UnmetCondition } from './workflow-conditions.js';
 import { sql } from 'kysely';
@@ -131,11 +131,26 @@ export async function latestRevisionsOf(
   if (artifactIds.length === 0 || !(await gatesStored(trx))) return new Map();
   const dated = await datesStored(trx);
   const scoped = await scopesStored(trx);
+  const translated = await translationStored(trx);
   const rows = await trx
     .selectFrom('revision_designation as d')
     .$if(!scoped, (query) => query.distinctOn('d.artifact_id'))
     .select(['d.artifact_id', 'd.revision_no', 'd.version_id', 'd.at'])
     .where('d.artifact_id', 'in', [...artifactIds])
+    // A translation's revision is never another language's, or the source's (the TR plan, TR-G).
+    .$if(translated, (query) =>
+      query.where(({ not, exists, selectFrom }) =>
+        not(
+          exists(
+            selectFrom('artifact_version as v')
+              .innerJoin('artifact_line as l', 'l.id', 'v.line_id')
+              .select('v.id')
+              .whereRef('v.id', '=', 'd.version_id')
+              .where('l.language', 'is not', null),
+          ),
+        ),
+      ),
+    )
     .$if(dated, (query) =>
       query.where(({ not, exists, selectFrom }) =>
         not(

@@ -24,12 +24,17 @@ import { refused } from './wire-codes.js';
 
 /** Divergent lines (storage-and-versioning.md, "Lines"; the R16 plan, R16-B). */
 
+/** A translation is never compared with its source or brought back into it (the TR plan, TR-A). */
+const isTranslation = () =>
+  refused(409, 'line.is_translation', 'A translation is never brought back into its source.');
+
 export const lineView = (line: Line): LineView => ({
   id: line.id,
   name: line.name,
   divergedFrom: { ...line.divergedFrom },
   at: line.at.toISOString(),
   closed: line.closed,
+  language: line.language,
 });
 
 /** `POST /v1/components/{id}/lines`, decided on `edit` by the route. */
@@ -42,6 +47,7 @@ export function lineHandlers() {
       const { id, line } = request.params as LineParams;
       const compared = await compareLines(trx, id, line);
       if (!compared) throw notFound();
+      if (compared === 'line.is_translation') throw isTranslation();
       const main = (await readVersion(trx, compared.main))!;
       const head = (await readVersion(trx, compared.line))!;
       const blocks = (version: typeof main) =>
@@ -77,6 +83,8 @@ export function lineHandlers() {
           throw notFound();
         case 'line.closed':
           throw refused(409, 'line.closed', 'It was brought back already.');
+        case 'line.is_translation':
+          throw isTranslation();
         case 'lock.held':
           throw refused(
             409,
