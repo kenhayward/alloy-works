@@ -992,6 +992,13 @@ describe('the domain package', () => {
         'importReviewFlags',
         'partMatches',
         'reviewFlags',
+        // IMc: the identity policy, its matching, and references and suggestions at acceptance.
+        'IMPORT_POLICIES',
+        'attributionOf',
+        'inImportBlocks',
+        'matchIdentity',
+        'resolveReferences',
+        'suggestedBlocks',
       ].sort(),
     );
   });

@@ -201196,7 +201196,7 @@
       "get": {
         "operationId": "getImport",
         "summary": "An import: its state, its proposed outline and what its report says",
-        "description": "Returns an import: its state, the outline it proposes, each part with the reason it starts where it does and its text as the file had it, and the report of what was left out, kept differently or not read yet. Only its importer and the space’s administrators may read it.",
+        "description": "Returns an import: its state, the outline it proposes, each part with the reason it starts where it does and its text as the file had it, and the report of what was left out, kept differently or not read yet; each cross-reference whose target is not in the file, with the text it showed; and every name the file carries, with the member it matches under the environment’s policy. Only its importer and the space’s administrators may read it.",
         "tags": [
           "Imports"
         ],
@@ -201401,12 +201401,14 @@
                               "enum": [
                                 "empty",
                                 "refused",
+                                "changeClamped",
+                                "commentClamped",
                                 "notYetRead",
                                 "leftOut",
                                 "keptDifferently"
                               ]
                             },
-                            "description": "`empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from"
+                            "description": "`empty`: nothing under its heading; `refused`: what it held could not be admitted; `changeClamped`: a tracked change kept here ran on past it; `commentClamped`: a comment anchored here ran past where it starts; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from"
                           },
                           "blocks": {
                             "type": "integer",
@@ -201547,6 +201549,130 @@
                         ]
                       },
                       "description": "What was left out, kept differently, or not read yet (IMP-007)"
+                    },
+                    "references": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string",
+                            "enum": [
+                              "REF",
+                              "NOTEREF",
+                              "PAGEREF"
+                            ]
+                          },
+                          "text": {
+                            "type": "string",
+                            "description": "What it showed in the file: shown as text, never content"
+                          },
+                          "resolved": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "retargeted",
+                                  "text"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Pointed at a block, made the text it showed, or null: still outside the import"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "field",
+                          "text",
+                          "resolved"
+                        ]
+                      },
+                      "description": "Each cross-reference whose target is not in the file (IMP-033)"
+                    },
+                    "identities": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "description": "As the file carries it: shown as text"
+                          },
+                          "email": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "carries": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "changes",
+                                "comments",
+                                "creator",
+                                "lastModifiedBy"
+                              ]
+                            },
+                            "description": "What the file names it for"
+                          },
+                          "match": {
+                            "type": "string",
+                            "enum": [
+                              "email",
+                              "name",
+                              "none"
+                            ],
+                            "description": "The member it matches, for attribution only: by an exact email, by name for its importer to confirm, or none"
+                          },
+                          "member": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "memberName": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "confirmed": {
+                            "type": "boolean",
+                            "description": "Whether its importer confirmed a name match"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "email",
+                          "carries",
+                          "match",
+                          "member",
+                          "memberName",
+                          "confirmed"
+                        ]
+                      },
+                      "description": "Every name the file carries (IMP-009), as carried"
+                    },
+                    "policy": {
+                      "type": "string",
+                      "enum": [
+                        "map",
+                        "keep",
+                        "discard"
+                      ],
+                      "description": "The identity policy applied at acceptance, or, until then, the one that will be"
+                    },
+                    "policyApplied": {
+                      "type": "boolean",
+                      "description": "Whether `policy` was applied, at acceptance (IMP-011)"
                     }
                   },
                   "required": [
@@ -201566,7 +201692,11 @@
                     "revision",
                     "place",
                     "accepted",
-                    "report"
+                    "report",
+                    "references",
+                    "identities",
+                    "policy",
+                    "policyApplied"
                   ]
                 },
                 "example": {
@@ -201595,7 +201725,11 @@
                     "split": -9007199254740991,
                     "renamed": -9007199254740991
                   },
-                  "report": []
+                  "report": [],
+                  "references": [],
+                  "identities": [],
+                  "policy": "map",
+                  "policyApplied": false
                 }
               }
             },
@@ -201943,12 +202077,14 @@
                               "enum": [
                                 "empty",
                                 "refused",
+                                "changeClamped",
+                                "commentClamped",
                                 "notYetRead",
                                 "leftOut",
                                 "keptDifferently"
                               ]
                             },
-                            "description": "`empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from"
+                            "description": "`empty`: nothing under its heading; `refused`: what it held could not be admitted; `changeClamped`: a tracked change kept here ran on past it; `commentClamped`: a comment anchored here ran past where it starts; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from"
                           },
                           "blocks": {
                             "type": "integer",
@@ -202089,6 +202225,130 @@
                         ]
                       },
                       "description": "What was left out, kept differently, or not read yet (IMP-007)"
+                    },
+                    "references": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string",
+                            "enum": [
+                              "REF",
+                              "NOTEREF",
+                              "PAGEREF"
+                            ]
+                          },
+                          "text": {
+                            "type": "string",
+                            "description": "What it showed in the file: shown as text, never content"
+                          },
+                          "resolved": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "retargeted",
+                                  "text"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Pointed at a block, made the text it showed, or null: still outside the import"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "field",
+                          "text",
+                          "resolved"
+                        ]
+                      },
+                      "description": "Each cross-reference whose target is not in the file (IMP-033)"
+                    },
+                    "identities": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "description": "As the file carries it: shown as text"
+                          },
+                          "email": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "carries": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "changes",
+                                "comments",
+                                "creator",
+                                "lastModifiedBy"
+                              ]
+                            },
+                            "description": "What the file names it for"
+                          },
+                          "match": {
+                            "type": "string",
+                            "enum": [
+                              "email",
+                              "name",
+                              "none"
+                            ],
+                            "description": "The member it matches, for attribution only: by an exact email, by name for its importer to confirm, or none"
+                          },
+                          "member": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "memberName": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "confirmed": {
+                            "type": "boolean",
+                            "description": "Whether its importer confirmed a name match"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "email",
+                          "carries",
+                          "match",
+                          "member",
+                          "memberName",
+                          "confirmed"
+                        ]
+                      },
+                      "description": "Every name the file carries (IMP-009), as carried"
+                    },
+                    "policy": {
+                      "type": "string",
+                      "enum": [
+                        "map",
+                        "keep",
+                        "discard"
+                      ],
+                      "description": "The identity policy applied at acceptance, or, until then, the one that will be"
+                    },
+                    "policyApplied": {
+                      "type": "boolean",
+                      "description": "Whether `policy` was applied, at acceptance (IMP-011)"
                     }
                   },
                   "required": [
@@ -202108,7 +202368,11 @@
                     "revision",
                     "place",
                     "accepted",
-                    "report"
+                    "report",
+                    "references",
+                    "identities",
+                    "policy",
+                    "policyApplied"
                   ]
                 },
                 "example": {
@@ -202137,7 +202401,11 @@
                     "split": -9007199254740991,
                     "renamed": -9007199254740991
                   },
-                  "report": []
+                  "report": [],
+                  "references": [],
+                  "identities": [],
+                  "policy": "map",
+                  "policyApplied": false
                 }
               }
             },
@@ -202321,7 +202589,7 @@
       "post": {
         "operationId": "acceptImport",
         "summary": "Accept a proposal, making its document, sections and components in one act",
-        "description": "Accepts a proposal: its document, sections and components are made in one act, by the person accepting, each at 0.1 and each recording the file it came from. Blank, or from the template named. How many parts were accepted unchanged, edited, merged, split or renamed is recorded on the import. Only its importer may accept it, and they need create in the space.",
+        "description": "Accepts a proposal: its document, sections and components are made in one act, by the person accepting, each at 0.1 and each recording the file it came from. Blank, or from the template named. Each Word author’s tracked changes become one suggestion on each component, and each comment a thread with its replies, all made by the person accepting and attributed to the Word author as the environment’s policy says, with the member it matched; the policy applied is recorded on the import and on each. Refused while a cross-reference outside the file is unresolved. How many parts were accepted unchanged, edited, merged, split or renamed is recorded on the import. Only its importer may accept it, and they need create in the space.",
         "tags": [
           "Imports"
         ],
@@ -202566,12 +202834,14 @@
                                   "enum": [
                                     "empty",
                                     "refused",
+                                    "changeClamped",
+                                    "commentClamped",
                                     "notYetRead",
                                     "leftOut",
                                     "keptDifferently"
                                   ]
                                 },
-                                "description": "`empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from"
+                                "description": "`empty`: nothing under its heading; `refused`: what it held could not be admitted; `changeClamped`: a tracked change kept here ran on past it; `commentClamped`: a comment anchored here ran past where it starts; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from"
                               },
                               "blocks": {
                                 "type": "integer",
@@ -202712,6 +202982,130 @@
                             ]
                           },
                           "description": "What was left out, kept differently, or not read yet (IMP-007)"
+                        },
+                        "references": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "field": {
+                                "type": "string",
+                                "enum": [
+                                  "REF",
+                                  "NOTEREF",
+                                  "PAGEREF"
+                                ]
+                              },
+                              "text": {
+                                "type": "string",
+                                "description": "What it showed in the file: shown as text, never content"
+                              },
+                              "resolved": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "retargeted",
+                                      "text"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "Pointed at a block, made the text it showed, or null: still outside the import"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "field",
+                              "text",
+                              "resolved"
+                            ]
+                          },
+                          "description": "Each cross-reference whose target is not in the file (IMP-033)"
+                        },
+                        "identities": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string",
+                                "description": "As the file carries it: shown as text"
+                              },
+                              "email": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "carries": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "enum": [
+                                    "changes",
+                                    "comments",
+                                    "creator",
+                                    "lastModifiedBy"
+                                  ]
+                                },
+                                "description": "What the file names it for"
+                              },
+                              "match": {
+                                "type": "string",
+                                "enum": [
+                                  "email",
+                                  "name",
+                                  "none"
+                                ],
+                                "description": "The member it matches, for attribution only: by an exact email, by name for its importer to confirm, or none"
+                              },
+                              "member": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "memberName": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "confirmed": {
+                                "type": "boolean",
+                                "description": "Whether its importer confirmed a name match"
+                              }
+                            },
+                            "required": [
+                              "name",
+                              "email",
+                              "carries",
+                              "match",
+                              "member",
+                              "memberName",
+                              "confirmed"
+                            ]
+                          },
+                          "description": "Every name the file carries (IMP-009), as carried"
+                        },
+                        "policy": {
+                          "type": "string",
+                          "enum": [
+                            "map",
+                            "keep",
+                            "discard"
+                          ],
+                          "description": "The identity policy applied at acceptance, or, until then, the one that will be"
+                        },
+                        "policyApplied": {
+                          "type": "boolean",
+                          "description": "Whether `policy` was applied, at acceptance (IMP-011)"
                         }
                       },
                       "required": [
@@ -202731,7 +203125,11 @@
                         "revision",
                         "place",
                         "accepted",
-                        "report"
+                        "report",
+                        "references",
+                        "identities",
+                        "policy",
+                        "policyApplied"
                       ]
                     },
                     "document": {
@@ -202771,7 +203169,11 @@
                       "split": -9007199254740991,
                       "renamed": -9007199254740991
                     },
-                    "report": []
+                    "report": [],
+                    "references": [],
+                    "identities": [],
+                    "policy": "map",
+                    "policyApplied": false
                   },
                   "document": "example"
                 }
@@ -202951,7 +203353,7 @@
             }
           },
           "409": {
-            "description": "`import_not_proposed`: it is not proposed",
+            "description": "`import_not_proposed`: it is not proposed; `import_references_unresolved`: a cross-reference outside the file is neither retargeted nor made text",
             "content": {
               "application/json": {
                 "schema": {
@@ -203039,7 +203441,7 @@
       "post": {
         "operationId": "editImport",
         "summary": "Edit a proposal: move a split, split, merge or rename a part, or change its kind",
-        "description": "Edits a proposal before it is accepted: moves blocks across the split between two components, splits a component at a block, merges a part with the one after it, renames a part, or makes a part a section or a component. Each edit is checked as it is made and refused, saying why, if what it makes could not be accepted. It is made against the revision last read, and refused if the proposal changed since. The proposal as the file was read is kept unchanged beside it. Only its importer may edit it.",
+        "description": "Edits a proposal before it is accepted: moves blocks across the split between two components, splits a component at a block, merges a part with the one after it, renames a part, or makes a part a section or a component. It also points a cross-reference whose target is not in the file at a block of the import or of a component in the space, or makes it the text it showed, said in the report; and confirms the member a name in the file matches by name. Each edit is checked as it is made and refused, saying why, if what it makes could not be accepted. It is made against the revision last read, and refused if the proposal changed since. The proposal as the file was read is kept unchanged beside it. Only its importer may edit it.",
         "tags": [
           "Imports"
         ],
@@ -203268,6 +203670,134 @@
                           "kind"
                         ],
                         "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "edit": {
+                            "type": "string",
+                            "const": "reference"
+                          },
+                          "reference": {
+                            "type": "string",
+                            "pattern": "^wx-[0-9]{1,6}$",
+                            "description": "The cross-reference outside the import, by its key"
+                          },
+                          "to": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "block"
+                                  },
+                                  "block": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 64
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "block"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "component"
+                                  },
+                                  "component": {
+                                    "type": "string",
+                                    "allOf": [
+                                      {
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      {
+                                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                      }
+                                    ]
+                                  },
+                                  "block": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 64
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "component",
+                                  "block"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "text"
+                                  }
+                                },
+                                "required": [
+                                  "kind"
+                                ],
+                                "additionalProperties": false
+                              }
+                            ],
+                            "description": "A block of the import; a block of a component in the space; or the text it showed, said in the report"
+                          }
+                        },
+                        "required": [
+                          "edit",
+                          "reference",
+                          "to"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "edit": {
+                            "type": "string",
+                            "const": "identity"
+                          },
+                          "identity": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 300,
+                            "description": "A name the file carries"
+                          },
+                          "member": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "allOf": [
+                                  {
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  {
+                                    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "The member its name matches, confirmed for attribution; null withdraws the confirmation"
+                          }
+                        },
+                        "required": [
+                          "edit",
+                          "identity",
+                          "member"
+                        ],
+                        "additionalProperties": false
                       }
                     ]
                   }
@@ -203454,12 +203984,14 @@
                               "enum": [
                                 "empty",
                                 "refused",
+                                "changeClamped",
+                                "commentClamped",
                                 "notYetRead",
                                 "leftOut",
                                 "keptDifferently"
                               ]
                             },
-                            "description": "`empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from"
+                            "description": "`empty`: nothing under its heading; `refused`: what it held could not be admitted; `changeClamped`: a tracked change kept here ran on past it; `commentClamped`: a comment anchored here ran past where it starts; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from"
                           },
                           "blocks": {
                             "type": "integer",
@@ -203600,6 +204132,130 @@
                         ]
                       },
                       "description": "What was left out, kept differently, or not read yet (IMP-007)"
+                    },
+                    "references": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string",
+                            "enum": [
+                              "REF",
+                              "NOTEREF",
+                              "PAGEREF"
+                            ]
+                          },
+                          "text": {
+                            "type": "string",
+                            "description": "What it showed in the file: shown as text, never content"
+                          },
+                          "resolved": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "retargeted",
+                                  "text"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Pointed at a block, made the text it showed, or null: still outside the import"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "field",
+                          "text",
+                          "resolved"
+                        ]
+                      },
+                      "description": "Each cross-reference whose target is not in the file (IMP-033)"
+                    },
+                    "identities": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "description": "As the file carries it: shown as text"
+                          },
+                          "email": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "carries": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "changes",
+                                "comments",
+                                "creator",
+                                "lastModifiedBy"
+                              ]
+                            },
+                            "description": "What the file names it for"
+                          },
+                          "match": {
+                            "type": "string",
+                            "enum": [
+                              "email",
+                              "name",
+                              "none"
+                            ],
+                            "description": "The member it matches, for attribution only: by an exact email, by name for its importer to confirm, or none"
+                          },
+                          "member": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "memberName": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "confirmed": {
+                            "type": "boolean",
+                            "description": "Whether its importer confirmed a name match"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "email",
+                          "carries",
+                          "match",
+                          "member",
+                          "memberName",
+                          "confirmed"
+                        ]
+                      },
+                      "description": "Every name the file carries (IMP-009), as carried"
+                    },
+                    "policy": {
+                      "type": "string",
+                      "enum": [
+                        "map",
+                        "keep",
+                        "discard"
+                      ],
+                      "description": "The identity policy applied at acceptance, or, until then, the one that will be"
+                    },
+                    "policyApplied": {
+                      "type": "boolean",
+                      "description": "Whether `policy` was applied, at acceptance (IMP-011)"
                     }
                   },
                   "required": [
@@ -203619,7 +204275,11 @@
                     "revision",
                     "place",
                     "accepted",
-                    "report"
+                    "report",
+                    "references",
+                    "identities",
+                    "policy",
+                    "policyApplied"
                   ]
                 },
                 "example": {
@@ -203648,7 +204308,11 @@
                     "split": -9007199254740991,
                     "renamed": -9007199254740991
                   },
-                  "report": []
+                  "report": [],
+                  "references": [],
+                  "identities": [],
+                  "policy": "map",
+                  "policyApplied": false
                 }
               }
             },
@@ -204090,12 +204754,14 @@
                               "enum": [
                                 "empty",
                                 "refused",
+                                "changeClamped",
+                                "commentClamped",
                                 "notYetRead",
                                 "leftOut",
                                 "keptDifferently"
                               ]
                             },
-                            "description": "`empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from"
+                            "description": "`empty`: nothing under its heading; `refused`: what it held could not be admitted; `changeClamped`: a tracked change kept here ran on past it; `commentClamped`: a comment anchored here ran past where it starts; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from"
                           },
                           "blocks": {
                             "type": "integer",
@@ -204236,6 +204902,130 @@
                         ]
                       },
                       "description": "What was left out, kept differently, or not read yet (IMP-007)"
+                    },
+                    "references": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string",
+                            "enum": [
+                              "REF",
+                              "NOTEREF",
+                              "PAGEREF"
+                            ]
+                          },
+                          "text": {
+                            "type": "string",
+                            "description": "What it showed in the file: shown as text, never content"
+                          },
+                          "resolved": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "retargeted",
+                                  "text"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Pointed at a block, made the text it showed, or null: still outside the import"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "field",
+                          "text",
+                          "resolved"
+                        ]
+                      },
+                      "description": "Each cross-reference whose target is not in the file (IMP-033)"
+                    },
+                    "identities": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "description": "As the file carries it: shown as text"
+                          },
+                          "email": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "carries": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "changes",
+                                "comments",
+                                "creator",
+                                "lastModifiedBy"
+                              ]
+                            },
+                            "description": "What the file names it for"
+                          },
+                          "match": {
+                            "type": "string",
+                            "enum": [
+                              "email",
+                              "name",
+                              "none"
+                            ],
+                            "description": "The member it matches, for attribution only: by an exact email, by name for its importer to confirm, or none"
+                          },
+                          "member": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "memberName": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "confirmed": {
+                            "type": "boolean",
+                            "description": "Whether its importer confirmed a name match"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "email",
+                          "carries",
+                          "match",
+                          "member",
+                          "memberName",
+                          "confirmed"
+                        ]
+                      },
+                      "description": "Every name the file carries (IMP-009), as carried"
+                    },
+                    "policy": {
+                      "type": "string",
+                      "enum": [
+                        "map",
+                        "keep",
+                        "discard"
+                      ],
+                      "description": "The identity policy applied at acceptance, or, until then, the one that will be"
+                    },
+                    "policyApplied": {
+                      "type": "boolean",
+                      "description": "Whether `policy` was applied, at acceptance (IMP-011)"
                     }
                   },
                   "required": [
@@ -204255,7 +205045,11 @@
                     "revision",
                     "place",
                     "accepted",
-                    "report"
+                    "report",
+                    "references",
+                    "identities",
+                    "policy",
+                    "policyApplied"
                   ]
                 },
                 "example": {
@@ -204284,7 +205078,11 @@
                     "split": -9007199254740991,
                     "renamed": -9007199254740991
                   },
-                  "report": []
+                  "report": [],
+                  "references": [],
+                  "identities": [],
+                  "policy": "map",
+                  "policyApplied": false
                 }
               }
             },
@@ -204829,12 +205627,14 @@
                               "enum": [
                                 "empty",
                                 "refused",
+                                "changeClamped",
+                                "commentClamped",
                                 "notYetRead",
                                 "leftOut",
                                 "keptDifferently"
                               ]
                             },
-                            "description": "`empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from"
+                            "description": "`empty`: nothing under its heading; `refused`: what it held could not be admitted; `changeClamped`: a tracked change kept here ran on past it; `commentClamped`: a comment anchored here ran past where it starts; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from"
                           },
                           "blocks": {
                             "type": "integer",
@@ -204975,6 +205775,130 @@
                         ]
                       },
                       "description": "What was left out, kept differently, or not read yet (IMP-007)"
+                    },
+                    "references": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string",
+                            "enum": [
+                              "REF",
+                              "NOTEREF",
+                              "PAGEREF"
+                            ]
+                          },
+                          "text": {
+                            "type": "string",
+                            "description": "What it showed in the file: shown as text, never content"
+                          },
+                          "resolved": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "retargeted",
+                                  "text"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Pointed at a block, made the text it showed, or null: still outside the import"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "field",
+                          "text",
+                          "resolved"
+                        ]
+                      },
+                      "description": "Each cross-reference whose target is not in the file (IMP-033)"
+                    },
+                    "identities": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "description": "As the file carries it: shown as text"
+                          },
+                          "email": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "carries": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "changes",
+                                "comments",
+                                "creator",
+                                "lastModifiedBy"
+                              ]
+                            },
+                            "description": "What the file names it for"
+                          },
+                          "match": {
+                            "type": "string",
+                            "enum": [
+                              "email",
+                              "name",
+                              "none"
+                            ],
+                            "description": "The member it matches, for attribution only: by an exact email, by name for its importer to confirm, or none"
+                          },
+                          "member": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "memberName": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "confirmed": {
+                            "type": "boolean",
+                            "description": "Whether its importer confirmed a name match"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "email",
+                          "carries",
+                          "match",
+                          "member",
+                          "memberName",
+                          "confirmed"
+                        ]
+                      },
+                      "description": "Every name the file carries (IMP-009), as carried"
+                    },
+                    "policy": {
+                      "type": "string",
+                      "enum": [
+                        "map",
+                        "keep",
+                        "discard"
+                      ],
+                      "description": "The identity policy applied at acceptance, or, until then, the one that will be"
+                    },
+                    "policyApplied": {
+                      "type": "boolean",
+                      "description": "Whether `policy` was applied, at acceptance (IMP-011)"
                     }
                   },
                   "required": [
@@ -204994,7 +205918,11 @@
                     "revision",
                     "place",
                     "accepted",
-                    "report"
+                    "report",
+                    "references",
+                    "identities",
+                    "policy",
+                    "policyApplied"
                   ]
                 },
                 "example": {
@@ -205023,7 +205951,11 @@
                     "split": -9007199254740991,
                     "renamed": -9007199254740991
                   },
-                  "report": []
+                  "report": [],
+                  "references": [],
+                  "identities": [],
+                  "policy": "map",
+                  "policyApplied": false
                 }
               }
             },
@@ -205298,6 +206230,8 @@
               "enum": [
                 "empty",
                 "refused",
+                "changeClamped",
+                "commentClamped",
                 "notYetRead",
                 "leftOut",
                 "keptDifferently"
@@ -205479,7 +206413,7 @@
       "get": {
         "operationId": "getImportPart",
         "summary": "One part of a proposal, beside the text it came from",
-        "description": "Returns one part of a proposal, so it can be reviewed alone: its title, kind, the reason it starts where it does, what it is flagged for, its blocks as text beside the text of the file it came from, and the parts before and after it. Only its importer and the space’s administrators may read it.",
+        "description": "Returns one part of a proposal, so it can be reviewed alone: its title, kind, the reason it starts where it does, what it is flagged for, its blocks as text beside the text of the file it came from, the suggestions and threads its tracked changes and comments will become, each by its Word author, and the parts before and after it. Only its importer and the space’s administrators may read it.",
         "tags": [
           "Imports"
         ],
@@ -205600,12 +206534,14 @@
                         "enum": [
                           "empty",
                           "refused",
+                          "changeClamped",
+                          "commentClamped",
                           "notYetRead",
                           "leftOut",
                           "keptDifferently"
                         ]
                       },
-                      "description": "`empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from"
+                      "description": "`empty`: nothing under its heading; `refused`: what it held could not be admitted; `changeClamped`: a tracked change kept here ran on past it; `commentClamped`: a comment anchored here ran past where it starts; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from"
                     },
                     "source": {
                       "type": "string",
@@ -205642,6 +206578,10 @@
                       "items": {
                         "type": "object",
                         "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Its identifier, which a reference may be pointed at"
+                          },
                           "type": {
                             "type": "string",
                             "description": "What kind of block it is: paragraph, list, table and so on"
@@ -205652,11 +206592,100 @@
                           }
                         },
                         "required": [
+                          "id",
                           "type",
                           "text"
                         ]
                       },
                       "description": "What it holds, a block at a time"
+                    },
+                    "suggestions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "author": {
+                            "type": "string",
+                            "description": "The Word author, as the file names them: shown as text"
+                          },
+                          "blocks": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "How many of its blocks their changes change"
+                          },
+                          "text": {
+                            "type": "string",
+                            "description": "Those blocks as their changes leave them, shown as text"
+                          }
+                        },
+                        "required": [
+                          "author",
+                          "blocks",
+                          "text"
+                        ]
+                      },
+                      "description": "The suggestion each Word author’s tracked changes become at acceptance (IMP-005)"
+                    },
+                    "threads": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "author": {
+                            "type": "string",
+                            "description": "The Word author, as the file names them: shown as text"
+                          },
+                          "text": {
+                            "type": "string",
+                            "description": "The comment, shown as text"
+                          },
+                          "quote": {
+                            "description": "The words it is on; null where it is on the part",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "clamped": {
+                            "type": "boolean",
+                            "description": "Whether its range ran past where it is anchored"
+                          },
+                          "replies": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "author": {
+                                  "type": "string"
+                                },
+                                "text": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "author",
+                                "text"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "author",
+                          "text",
+                          "quote",
+                          "clamped",
+                          "replies"
+                        ]
+                      },
+                      "description": "The thread each comment becomes at acceptance (IMP-005)"
+                    },
+                    "references": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "The cross-references outside the import it holds, by their key"
                     }
                   },
                   "required": [
@@ -205671,7 +206700,10 @@
                     "of",
                     "previous",
                     "next",
-                    "blocks"
+                    "blocks",
+                    "suggestions",
+                    "threads",
+                    "references"
                   ]
                 },
                 "example": {
@@ -205688,7 +206720,10 @@
                   "of": -9007199254740991,
                   "previous": "example",
                   "next": "example",
-                  "blocks": []
+                  "blocks": [],
+                  "suggestions": [],
+                  "threads": [],
+                  "references": []
                 }
               }
             },
@@ -206067,12 +207102,14 @@
                               "enum": [
                                 "empty",
                                 "refused",
+                                "changeClamped",
+                                "commentClamped",
                                 "notYetRead",
                                 "leftOut",
                                 "keptDifferently"
                               ]
                             },
-                            "description": "`empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from"
+                            "description": "`empty`: nothing under its heading; `refused`: what it held could not be admitted; `changeClamped`: a tracked change kept here ran on past it; `commentClamped`: a comment anchored here ran past where it starts; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from"
                           },
                           "blocks": {
                             "type": "integer",
@@ -206213,6 +207250,130 @@
                         ]
                       },
                       "description": "What was left out, kept differently, or not read yet (IMP-007)"
+                    },
+                    "references": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string",
+                            "enum": [
+                              "REF",
+                              "NOTEREF",
+                              "PAGEREF"
+                            ]
+                          },
+                          "text": {
+                            "type": "string",
+                            "description": "What it showed in the file: shown as text, never content"
+                          },
+                          "resolved": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "retargeted",
+                                  "text"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Pointed at a block, made the text it showed, or null: still outside the import"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "field",
+                          "text",
+                          "resolved"
+                        ]
+                      },
+                      "description": "Each cross-reference whose target is not in the file (IMP-033)"
+                    },
+                    "identities": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "description": "As the file carries it: shown as text"
+                          },
+                          "email": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "carries": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "changes",
+                                "comments",
+                                "creator",
+                                "lastModifiedBy"
+                              ]
+                            },
+                            "description": "What the file names it for"
+                          },
+                          "match": {
+                            "type": "string",
+                            "enum": [
+                              "email",
+                              "name",
+                              "none"
+                            ],
+                            "description": "The member it matches, for attribution only: by an exact email, by name for its importer to confirm, or none"
+                          },
+                          "member": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "memberName": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "confirmed": {
+                            "type": "boolean",
+                            "description": "Whether its importer confirmed a name match"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "email",
+                          "carries",
+                          "match",
+                          "member",
+                          "memberName",
+                          "confirmed"
+                        ]
+                      },
+                      "description": "Every name the file carries (IMP-009), as carried"
+                    },
+                    "policy": {
+                      "type": "string",
+                      "enum": [
+                        "map",
+                        "keep",
+                        "discard"
+                      ],
+                      "description": "The identity policy applied at acceptance, or, until then, the one that will be"
+                    },
+                    "policyApplied": {
+                      "type": "boolean",
+                      "description": "Whether `policy` was applied, at acceptance (IMP-011)"
                     }
                   },
                   "required": [
@@ -206232,7 +207393,11 @@
                     "revision",
                     "place",
                     "accepted",
-                    "report"
+                    "report",
+                    "references",
+                    "identities",
+                    "policy",
+                    "policyApplied"
                   ]
                 },
                 "example": {
@@ -206261,7 +207426,11 @@
                     "split": -9007199254740991,
                     "renamed": -9007199254740991
                   },
-                  "report": []
+                  "report": [],
+                  "references": [],
+                  "identities": [],
+                  "policy": "map",
+                  "policyApplied": false
                 }
               }
             },
@@ -261885,6 +263054,433 @@
         }
       }
     },
+    "/v1/settings/import": {
+      "get": {
+        "operationId": "getImportSettings",
+        "summary": "The environment's policy for the names an imported file carries",
+        "description": "Reads the environment’s identity policy for imports: whether the names a file carries are kept with the member each matches, kept as text, or discarded when an import is accepted.",
+        "tags": [
+          "Settings"
+        ],
+        "x-alloy-token-enabled": true,
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The import settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "policy": {
+                      "type": "string",
+                      "enum": [
+                        "map",
+                        "keep",
+                        "discard"
+                      ],
+                      "description": "What an accepted import records of the names a file carries: `map`, the default, keeps each as text with the member its email matches, or a name match its importer confirmed; `keep` keeps each as text; `discard` keeps none. Whatever an import makes is made by its importer"
+                    }
+                  },
+                  "required": [
+                    "policy"
+                  ]
+                },
+                "example": {
+                  "policy": "map"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "setImportSettings",
+        "summary": "Change the environment's policy for the names an imported file carries",
+        "description": "Changes the environment’s identity policy for imports. It applies to each import accepted from then on, once, at acceptance. Needs administer at the environment.",
+        "tags": [
+          "Settings"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "administer",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "policy": {
+                    "type": "string",
+                    "enum": [
+                      "map",
+                      "keep",
+                      "discard"
+                    ],
+                    "description": "What an accepted import records of the names a file carries: `map`, the default, keeps each as text with the member its email matches, or a name match its importer confirmed; `keep` keeps each as text; `discard` keeps none. Whatever an import makes is made by its importer"
+                  }
+                },
+                "required": [
+                  "policy"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "policy": "map"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The import settings, as changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "policy": {
+                      "type": "string",
+                      "enum": [
+                        "map",
+                        "keep",
+                        "discard"
+                      ],
+                      "description": "What an accepted import records of the names a file carries: `map`, the default, keeps each as text with the member its email matches, or a name match its importer confirmed; `keep` keeps each as text; `discard` keeps none. Whatever an import makes is made by its importer"
+                    }
+                  },
+                  "required": [
+                    "policy"
+                  ]
+                },
+                "example": {
+                  "policy": "map"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: not map, keep or discard",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may not administer this environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/sign-in/google": {
       "get": {
         "operationId": "startGoogleSignIn",
@@ -290473,12 +292069,14 @@
                               "enum": [
                                 "empty",
                                 "refused",
+                                "changeClamped",
+                                "commentClamped",
                                 "notYetRead",
                                 "leftOut",
                                 "keptDifferently"
                               ]
                             },
-                            "description": "`empty`: nothing under its heading; `refused`: what it held could not be admitted; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from"
+                            "description": "`empty`: nothing under its heading; `refused`: what it held could not be admitted; `changeClamped`: a tracked change kept here ran on past it; `commentClamped`: a comment anchored here ran past where it starts; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from"
                           },
                           "blocks": {
                             "type": "integer",
@@ -290619,6 +292217,130 @@
                         ]
                       },
                       "description": "What was left out, kept differently, or not read yet (IMP-007)"
+                    },
+                    "references": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string",
+                            "enum": [
+                              "REF",
+                              "NOTEREF",
+                              "PAGEREF"
+                            ]
+                          },
+                          "text": {
+                            "type": "string",
+                            "description": "What it showed in the file: shown as text, never content"
+                          },
+                          "resolved": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "retargeted",
+                                  "text"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Pointed at a block, made the text it showed, or null: still outside the import"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "field",
+                          "text",
+                          "resolved"
+                        ]
+                      },
+                      "description": "Each cross-reference whose target is not in the file (IMP-033)"
+                    },
+                    "identities": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "description": "As the file carries it: shown as text"
+                          },
+                          "email": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "carries": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "changes",
+                                "comments",
+                                "creator",
+                                "lastModifiedBy"
+                              ]
+                            },
+                            "description": "What the file names it for"
+                          },
+                          "match": {
+                            "type": "string",
+                            "enum": [
+                              "email",
+                              "name",
+                              "none"
+                            ],
+                            "description": "The member it matches, for attribution only: by an exact email, by name for its importer to confirm, or none"
+                          },
+                          "member": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "memberName": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "confirmed": {
+                            "type": "boolean",
+                            "description": "Whether its importer confirmed a name match"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "email",
+                          "carries",
+                          "match",
+                          "member",
+                          "memberName",
+                          "confirmed"
+                        ]
+                      },
+                      "description": "Every name the file carries (IMP-009), as carried"
+                    },
+                    "policy": {
+                      "type": "string",
+                      "enum": [
+                        "map",
+                        "keep",
+                        "discard"
+                      ],
+                      "description": "The identity policy applied at acceptance, or, until then, the one that will be"
+                    },
+                    "policyApplied": {
+                      "type": "boolean",
+                      "description": "Whether `policy` was applied, at acceptance (IMP-011)"
                     }
                   },
                   "required": [
@@ -290638,7 +292360,11 @@
                     "revision",
                     "place",
                     "accepted",
-                    "report"
+                    "report",
+                    "references",
+                    "identities",
+                    "policy",
+                    "policyApplied"
                   ]
                 },
                 "example": {
@@ -290667,7 +292393,11 @@
                     "split": -9007199254740991,
                     "renamed": -9007199254740991
                   },
-                  "report": []
+                  "report": [],
+                  "references": [],
+                  "identities": [],
+                  "policy": "map",
+                  "policyApplied": false
                 }
               }
             },

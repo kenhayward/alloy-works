@@ -215,32 +215,23 @@ describe('readDocx', () => {
     expect(subjects(read.report)).toEqual([['tableShape', undefined, 1]]);
   });
 
-  it('IMP-007 reports what it does not read yet, and keeps the text a change rejected would leave', () => {
+  it('IMP-007 reports what it does not read yet: a footnote whose note is missing, a drawing with no image, an equation', () => {
     const read = flowOf(
       docx(
         `<w:p><w:r><w:t>Seen</w:t></w:r><w:r><w:footnoteReference w:id="1"/></w:r>` +
-          `<w:ins w:id="1" w:author="Grace"><w:r><w:t>added</w:t></w:r></w:ins>` +
-          `<w:del w:id="2" w:author="Grace"><w:r><w:delText xml:space="preserve"> kept</w:delText></w:r></w:del>` +
-          `<w:commentRangeStart w:id="0"/><w:r><w:commentReference w:id="0"/></w:r>` +
-          `<w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText> REF _Ref1 </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:t xml:space="preserve"> 2</w:t></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r>` +
           `<w:r><w:drawing><w:inline/></w:drawing></w:r><m:oMath><m:r><m:t>x</m:t></m:r></m:oMath></w:p>` +
           `<w:p/><w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr></w:p>` +
           `<w:sectPr><w:pgSz w:w="12240" w:h="15840"/></w:sectPr>`,
       ),
     );
-    expect(blocks(read.flow)).toEqual([text('Seen kept 2')]);
-    expect(subjects(read.report)).toEqual(
-      expect.arrayContaining([
-        ['notYetRead', 'footnote', 1],
-        ['notYetRead', 'trackedChange', 2],
-        ['notYetRead', 'comment', 1],
-        ['notYetRead', 'field', 1],
-        ['notYetRead', 'image', 1],
-        ['notYetRead', 'equation', 1],
-        ['emptyParagraph', undefined, 2],
-        ['pageSetup', undefined, undefined],
-      ]),
-    );
+    expect(blocks(read.flow)).toEqual([text('Seen')]);
+    expect(subjects(read.report)).toEqual([
+      ['notYetRead', 'equation', 1],
+      ['notYetRead', 'footnote', 1],
+      ['notYetRead', 'image', 1],
+      ['emptyParagraph', undefined, 2],
+      ['pageSetup', undefined, undefined],
+    ]);
   });
 
   it('IMP-047 never reads macros, embedded objects or controls, follows no outside file, and drops a link whose scheme is not allowed', () => {
@@ -309,18 +300,22 @@ describe('readDocx', () => {
       ['component', 'This is a numbered heading'],
       ['section', 'This is a cross referenced heading'],
     ]);
-    // The deletion's text is kept and the insertions' left out, as a change rejected would.
+    // The source is the text as every change rejected: the deletion's kept, the insertions' not.
     expect(parts[1]!.source).toContain('contains a footnote This is a paragraph');
     expect(parts[1]!.source).not.toContain('xref');
-    expect(subjects(read.report)).toEqual(
-      expect.arrayContaining([
-        ['notYetRead', 'footnote', 1],
-        ['notYetRead', 'trackedChange', 3],
-        ['notYetRead', 'comment', 1],
-        ['notYetRead', 'field', 1],
-        ['emptyParagraph', undefined, 3],
-        ['pageSetup', undefined, undefined],
-      ]),
-    );
+    // Its footnote, its reference to the heading, its changes and its comment are all read (IMc).
+    expect(read.comments.map((each) => [each.author, each.text])).toEqual([
+      ['Grace Hopper', 'I am a comment'],
+    ]);
+    expect(read.references).toEqual([]);
+    expect(subjects(read.report)).toEqual([
+      ['appearance', undefined, 1],
+      ['emptyParagraph', undefined, 3],
+      ['pageSetup', undefined, undefined],
+      ['fileProperty', 'creator', 1],
+      ['fileProperty', 'lastModifiedBy', 1],
+      ['fileProperty', 'rsid', 1],
+      ['fileProperty', 'template', 1],
+    ]);
   });
 });

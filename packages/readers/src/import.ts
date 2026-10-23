@@ -67,5 +67,16 @@ export function readImport(bytes: Uint8Array, type: ImportFileType): ImportRead 
     block,
     source: textOf(block),
   }));
-  return { ok: true, flow, title: null, language: null, report: read.input.report };
+  return {
+    ok: true,
+    flow,
+    title: null,
+    language: null,
+    report: read.input.report,
+    references: [],
+    comments: [],
+    identities: [],
+    images: [],
+    properties: {},
+  };
 }

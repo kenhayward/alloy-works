@@ -142,12 +142,14 @@ export async function holdObject(trx: TenantTransaction, sha256: string): Promis
 /**
  * Records the bytes an awaiting upload was filled with - already stored under their hash, and already
  * read at the door - moves it to `checking`, and queues the job that proves them, in one transaction.
- * Undefined where the upload is no longer awaiting: a second request filling it lost the race.
+ * Undefined where the upload is no longer awaiting: a second request filling it lost the race. An
+ * import's image is checked by the import's own job as it reads the file (IMc), so is not queued.
  */
 export async function receiveAssetBytes(
   trx: TenantTransaction,
   id: string,
   bytes: { readonly key: string; readonly format: AssetFormat; readonly bytes: number },
+  queued = true,
 ): Promise<StoredAssetUpload | undefined> {
   const row = await trx
     .updateTable('asset_upload')
@@ -157,7 +159,7 @@ export async function receiveAssetBytes(
     .returningAll()
     .executeTakeFirst();
   if (!row) return undefined;
-  await enqueueJob(trx, 'ingest', id);
+  if (queued) await enqueueJob(trx, 'ingest', id);
   return uploadOf(row);
 }
 
@@ -327,6 +329,14 @@ export async function objectInUse(
     .limit(1)
     .executeTakeFirst();
   if (version) return true;
+  // An image an import holds until it is accepted (0157), where this tenant stores them yet.
+  const { rows: stored } = await sql<{ stored: boolean }>`
+    select to_regclass(current_schema() || '.import_asset') is not null as stored`.execute(trx);
+  if (stored[0]?.stored === true) {
+    const { rows: held } =
+      await sql`select 1 from import_asset where object_key = ${key} limit 1`.execute(trx);
+    if (held.length > 0) return true;
+  }
   const upload = await trx
     .selectFrom('asset_upload')
     .select('id')

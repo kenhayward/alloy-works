@@ -3,13 +3,16 @@ import type {
   DataSettingsBody,
   EditingSettings,
   EditingSettingsBody,
+  ImportSettings,
 } from '@alloy-works/api-contract';
 import {
   dataPolicy,
   editingPolicy,
+  importPolicy,
   recordEvent,
   setDataPolicy,
   setEditingPolicy,
+  setImportPolicy,
   type Tenant,
   type TenantDatabase,
   type TenantTransaction,
@@ -25,7 +28,7 @@ import { AppError } from './errors.js';
  */
 export async function recordSettingsChanged(
   trx: TenantTransaction,
-  area: 'editing' | 'data' | 'referenceSources',
+  area: 'editing' | 'data' | 'referenceSources' | 'import',
   before: object,
   after: object,
 ): Promise<void> {
@@ -88,6 +91,23 @@ export function settingsHandlers(
       }
       await recordSettingsChanged(trx, 'editing', before, answer.policy);
       return answer.policy;
+    },
+
+    // The tenant's identity policy for imports (IM-I; IMP-010): read by anybody signed in, as an
+    // importer is told what acceptance will do; set by an administrator of the environment.
+    getImportSettings: async (request: FastifyRequest): Promise<ImportSettings> =>
+      db.withTenant(tenantOf(request), async (trx) => ({ policy: await importPolicy(trx) })),
+
+    setImportSettings: async (
+      request: FastifyRequest,
+      { trx }: Authorised,
+    ): Promise<ImportSettings> => {
+      const before = { policy: await importPolicy(trx) };
+      const after = {
+        policy: await setImportPolicy(trx, (request.body as ImportSettings).policy),
+      };
+      await recordSettingsChanged(trx, 'import', before, after);
+      return after;
     },
 
     // The tenant's lowered limits on a run (D2-N; DAT-050): read by anybody signed in, as a limit a

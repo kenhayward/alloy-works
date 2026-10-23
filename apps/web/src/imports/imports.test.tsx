@@ -31,6 +31,10 @@ const base = {
   revision: 0,
   place: null,
   accepted: null,
+  references: [],
+  identities: [],
+  policy: 'map',
+  policyApplied: false,
 };
 
 const proposed = {
@@ -123,6 +127,7 @@ interface Asked {
 function service(
   views: readonly unknown[] = [proposed],
   edited: (body: unknown) => Response = () => json(200, { ...proposed, revision: 1 }),
+  answered: Record<string, unknown> = details,
 ) {
   const asked: Asked[] = [];
   let read = 0;
@@ -158,8 +163,8 @@ function service(
       return json(200, view);
     }
     const part = /^\/v1\/imports\/[0-9a-f-]+\/parts\/([0-9a-f-]+)$/.exec(path)?.[1];
-    if (request.method === 'GET' && part !== undefined && details[part]) {
-      return json(200, details[part]);
+    if (request.method === 'GET' && part !== undefined && answered[part]) {
+      return json(200, answered[part]);
     }
     if (request.method === 'GET' && path === `/v1/imports/${IMPORT}/parts`) {
       const q = url.searchParams.get('q');
@@ -398,5 +403,138 @@ describe("an import's page", () => {
     expect(counts).toHaveTextContent('2 parts accepted unchanged');
     expect(counts).toHaveTextContent('1 part renamed');
     expect(counts).toHaveTextContent('0 parts merged');
+  });
+});
+
+describe("an import's structure in review (IMc)", () => {
+  const ADA = '77777777-7777-4777-8777-777777777777';
+  const structured = {
+    ...proposed,
+    references: [{ key: 'wx-1', field: 'REF', text: 'Section 9', resolved: null }],
+    identities: [
+      {
+        name: 'Ada',
+        email: 'ada@example.com',
+        carries: ['changes'],
+        match: 'email',
+        member: ADA,
+        memberName: 'Ada Lovelace',
+        confirmed: false,
+      },
+      {
+        name: 'Grace',
+        email: null,
+        carries: ['comments'],
+        match: 'name',
+        member: GENERAL,
+        memberName: 'Grace Hopper',
+        confirmed: false,
+      },
+      {
+        name: 'Edsger',
+        email: null,
+        carries: ['comments'],
+        match: 'none',
+        member: null,
+        memberName: null,
+        confirmed: false,
+      },
+    ],
+  };
+  const parts = {
+    ...details,
+    [INTRODUCTION]: {
+      ...(details[INTRODUCTION] as object),
+      blocks: [
+        { id: 'b1', type: 'paragraph', text: 'Some opening words.' },
+        { id: 'b2', type: 'paragraph', text: 'Ada counted newts.' },
+      ],
+      suggestions: [{ author: 'Ada', blocks: 1, text: 'Some opening words, quickly.' }],
+      threads: [
+        {
+          author: 'Grace',
+          text: 'Check this count.',
+          quote: 'counted newts',
+          clamped: true,
+          replies: [{ author: 'Edsger', text: 'Recounted.' }],
+        },
+      ],
+      references: ['wx-1'],
+    },
+  };
+
+  it("IMP-005 IMP-032 shows each part's suggestions and threads by their Word author, as the file carries them", async () => {
+    const { client } = service([structured], undefined, parts);
+    render(<ImportPage client={client} id={IMPORT} />);
+    const suggestions = await screen.findByRole('list', { name: 'Suggestions it will make' });
+    expect(suggestions).toHaveTextContent('Ada (from Word), 1 block: Some opening words, quickly.');
+    const threads = screen.getByRole('list', { name: 'Threads it will make' });
+    expect(threads).toHaveTextContent('Grace (from Word) on “counted newts”: Check this count.');
+    expect(threads).toHaveTextContent('Edsger (from Word): Recounted.');
+    expect(threads).toHaveTextContent('anchored where it starts');
+  });
+
+  it('IMP-009 IMP-010 lists the names the file carries with the member each matches, as attribution only, and confirms a name match', async () => {
+    const user = userEvent.setup();
+    const { client, asked } = service(
+      [structured],
+      () => json(200, { ...structured, revision: 1 }),
+      parts,
+    );
+    render(<ImportPage client={client} id={IMPORT} />);
+    const names = await screen.findByRole('list', { name: 'Names the file carries' });
+    expect(names).toHaveTextContent(
+      'Ada (ada@example.com), tracked changes: matched to Ada Lovelace by email',
+    );
+    expect(names).toHaveTextContent('Edsger, comments: kept as text');
+    expect(screen.getByText(/never made by them/)).toBeInTheDocument();
+    await user.click(within(names).getByRole('button', { name: 'Confirm Grace is Grace Hopper' }));
+    await waitFor(() =>
+      expect(asked.filter((each) => each.path.endsWith('/edits')).map((each) => each.body)).toEqual(
+        [{ revision: 0, edit: { edit: 'identity', identity: 'Grace', member: GENERAL } }],
+      ),
+    );
+  });
+
+  it('IMP-033 IMP-034 lists each reference outside the import with the text it showed, and points it at a block or makes it text', async () => {
+    const user = userEvent.setup();
+    const { client, asked } = service(
+      [structured],
+      () => json(200, { ...structured, revision: 1 }),
+      parts,
+    );
+    render(<ImportPage client={client} id={IMPORT} />);
+    const outside = await screen.findByRole('list', { name: 'References outside the import' });
+    expect(outside).toHaveTextContent('“Section 9”: not resolved yet');
+    const part = await screen.findByRole('region', { name: 'Part 1 of 3: Introduction' });
+    await user.selectOptions(
+      within(part).getByRole('combobox', { name: 'Point “Section 9” at' }),
+      'b2',
+    );
+    await user.click(within(part).getByRole('button', { name: 'Point it there' }));
+    await user.click(within(part).getByRole('button', { name: 'Make “Section 9” plain text' }));
+    await waitFor(() =>
+      expect(asked.filter((each) => each.path.endsWith('/edits')).map((each) => each.body)).toEqual(
+        [
+          {
+            revision: 0,
+            edit: { edit: 'reference', reference: 'wx-1', to: { kind: 'block', block: 'b2' } },
+          },
+          { revision: 1, edit: { edit: 'reference', reference: 'wx-1', to: { kind: 'text' } } },
+        ],
+      ),
+    );
+  });
+
+  it('IMP-011 says which identity policy was applied once accepted', async () => {
+    const { client } = service([
+      { ...structured, state: 'accepted', document: DOCUMENT, sweepsAt: null, policyApplied: true },
+    ]);
+    render(<ImportPage client={client} id={IMPORT} />);
+    expect(
+      await screen.findByText(
+        'Names were matched to members, as attribution, when it was accepted.',
+      ),
+    ).toBeInTheDocument();
   });
 });

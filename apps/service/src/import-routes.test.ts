@@ -99,12 +99,22 @@ describe('the import routes (the IM plan, IM-A, IM-B, IM-F)', () => {
           stored!.fileType,
         );
         if (!read.ok) throw new Error(read.failure);
-        const { parts } = proposeImport(read.flow, DEFAULT_IMPORT_LEVELS, {
+        const { parts, anchors } = proposeImport(read.flow, DEFAULT_IMPORT_LEVELS, {
           language: 'en',
           direction: 'ltr',
           newIdentifier: () => blockIdentifierFrom(randomBytes(16)),
+          comments: read.comments,
         });
-        await recordProposal(trx, id, { parts, report: read.report, title: null, language: null });
+        await recordProposal(trx, id, {
+          parts,
+          anchors,
+          report: read.report,
+          title: null,
+          language: null,
+          references: read.references,
+          identities: read.identities,
+          properties: read.properties,
+        });
       },
       { actorKind: 'system' },
     );
@@ -319,6 +329,93 @@ describe('the import routes (the IM plan, IM-A, IM-B, IM-F)', () => {
     expect(accepted.json()).toMatchObject({
       import: { accepted: { unchanged: 3, edited: 0, merged: 0, split: 0, renamed: 1 } },
     });
+  });
+
+  /** Grace's notes: a change by Ada, a comment by Edsger, and a reference to what is not in the file. */
+  const notes = () =>
+    zipSync({
+      'word/document.xml': strToU8(
+        `<w:document xmlns:w="${W}"><w:body>` +
+          `<w:p><w:pPr><w:pStyle w:val="Heading2"/></w:pPr><w:r><w:t>Counts</w:t></w:r></w:p>` +
+          `<w:p><w:r><w:t xml:space="preserve">We saw </w:t></w:r><w:commentRangeStart w:id="0"/><w:r><w:t>three newts</w:t></w:r><w:commentRangeEnd w:id="0"/>` +
+          `<w:ins w:id="1" w:author="Ada"><w:r><w:t xml:space="preserve"> today</w:t></w:r></w:ins><w:r><w:t xml:space="preserve">, see </w:t></w:r>` +
+          `<w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText xml:space="preserve"> REF _Ref9 \\h </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:t>Section 9</w:t></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r></w:p>` +
+          `</w:body></w:document>`,
+      ),
+      'word/styles.xml': strToU8(
+        `<w:styles xmlns:w="${W}"><w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/></w:style></w:styles>`,
+      ),
+      'word/comments.xml': strToU8(
+        `<w:comments xmlns:w="${W}"><w:comment w:id="0" w:author="Edsger"><w:p><w:r><w:t>Recount them.</w:t></w:r></w:p></w:comment></w:comments>`,
+      ),
+    });
+
+  it('IMP-005 IMP-009 IMP-032 IMP-033 IMP-034 shows the names the file carries, the references outside it and what becomes suggestions and threads, and refuses acceptance until each reference is resolved', async () => {
+    const created = await made('grace', 'Notes.docx');
+    expect((await send('grace', created.id, notes())).statusCode).toBe(200);
+    await readByTheWorker(created.id);
+    const view = (await h.call('grace', 'GET', `/v1/imports/${created.id}`)).json<
+      View & { identities: Json[]; references: Json[]; policy: string; policyApplied: boolean }
+    >();
+    expect(view.identities).toEqual([
+      expect.objectContaining({ name: 'Ada', carries: ['changes'] }),
+      expect.objectContaining({ name: 'Edsger', carries: ['comments'], match: 'none' }),
+    ]);
+    expect(view.references).toEqual([
+      { key: 'wx-1', field: 'REF', text: 'Section 9', resolved: null },
+    ]);
+    expect(view).toMatchObject({ policy: 'map', policyApplied: false });
+    const part = (
+      await h.call('grace', 'GET', `/v1/imports/${created.id}/parts/${view.parts[0]!.id}`)
+    ).json<{ suggestions: Json[]; threads: Json[]; references: string[]; blocks: Json[] }>();
+    expect(part.suggestions).toEqual([
+      { author: 'Ada', blocks: 1, text: expect.stringContaining('We saw three newts today') },
+    ]);
+    expect(part.threads).toEqual([
+      {
+        author: 'Edsger',
+        text: 'Recount them.',
+        quote: 'three newts',
+        clamped: false,
+        replies: [],
+      },
+    ]);
+    expect(part.references).toEqual(['wx-1']);
+
+    const refused = await h.call('grace', 'POST', `/v1/imports/${created.id}/accept`, {});
+    expect(refused.statusCode).toBe(409);
+    expect(refused.json()).toMatchObject({ code: 'import_references_unresolved' });
+    const retargeted = await h.call('grace', 'POST', `/v1/imports/${created.id}/edits`, {
+      revision: 0,
+      edit: {
+        edit: 'reference',
+        reference: 'wx-1',
+        to: { kind: 'block', block: part.blocks[0]!.id },
+      },
+    });
+    expect(retargeted.statusCode, retargeted.body).toBe(200);
+    const unknown = await h.call('grace', 'POST', `/v1/imports/${created.id}/edits`, {
+      revision: 1,
+      edit: { edit: 'identity', identity: 'Edsger', member: h.ids['grace'] },
+    });
+    expect(unknown.json()).toMatchObject({ code: 'import_edit_refused' });
+    const accepted = await h.call('grace', 'POST', `/v1/imports/${created.id}/accept`, {});
+    expect(accepted.statusCode, accepted.body).toBe(200);
+    expect(accepted.json()).toMatchObject({ import: { policy: 'map', policyApplied: true } });
+  });
+
+  it("IMP-010 sets the environment's identity policy for imports, its administrator alone", async () => {
+    expect((await h.call('grace', 'GET', '/v1/settings/import')).json()).toEqual({ policy: 'map' });
+    expect(
+      (await h.call('grace', 'PUT', '/v1/settings/import', { policy: 'keep' })).statusCode,
+    ).toBe(403);
+    const set = await h.call('ada', 'PUT', '/v1/settings/import', { policy: 'discard' });
+    expect(set.statusCode, set.body).toBe(200);
+    expect(set.json()).toEqual({ policy: 'discard' });
+    expect(
+      (await h.call('ada', 'PUT', '/v1/settings/import', { policy: 'guess' })).statusCode,
+    ).toBe(400);
+    await h.call('ada', 'PUT', '/v1/settings/import', { policy: 'map' });
   });
 
   it('IMP-004 IMP-008 is proposed again at other levels, and abandoned leaving nothing', async () => {

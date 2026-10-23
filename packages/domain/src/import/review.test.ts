@@ -59,6 +59,9 @@ function read(): ReviewPart[] {
     reason: part.reason,
     flags: part.flags,
     origins: [index],
+    headings: part.headings,
+    changes: part.changes,
+    threads: part.threads,
   }));
 }
 
@@ -237,5 +240,127 @@ describe('reviewing a proposal', () => {
       'keptDifferently',
     ]);
     expect(reviewFlags({ flags: [], origins: [0] }, report)).toEqual([]);
+  });
+});
+
+describe('editProposal, structure (IMc)', () => {
+  const run = (value: string, change?: object) => ({
+    type: 'text',
+    value,
+    marks: [],
+    ...(change === undefined ? {} : { change }),
+  });
+  const block = (content: object[], id?: string): ImportFlowItem => ({
+    kind: 'block',
+    block: { type: 'paragraph', ...(id === undefined ? {} : { id }), content },
+    source: '',
+  });
+  const outside = {
+    type: 'crossReference',
+    id: 'wr-1',
+    target: { kind: 'block', block: 'wx-1' },
+    display: 'title',
+  };
+  /** Grace's notes: one component of three paragraphs, an insertion by Ada and a comment on the last. */
+  function notes(): ReviewPart[] {
+    const { parts } = proposeImport(
+      [
+        heading(2, 'Notes'),
+        block([run('First, see '), outside]),
+        block([run('Second '), run('point', { kind: 'insert', author: 'Ada', id: '1' })]),
+        block([run('Third word.')], 'wb-3'),
+        heading(2, 'Later'),
+        block([run('Last.')]),
+      ],
+      DEFAULT_IMPORT_LEVELS,
+      {
+        ...context,
+        newIdentifier,
+        comments: [
+          {
+            id: '0',
+            block: 'wb-3',
+            quote: 'word',
+            before: 'Third ',
+            crossed: false,
+            author: 'Grace',
+            initials: null,
+            date: null,
+            text: 'Which word?',
+            replies: [],
+          },
+        ],
+      },
+    );
+    return parts.map((part, index) => ({
+      id: `n${index}`,
+      kind: part.kind,
+      title: part.title,
+      blocks: part.blocks,
+      source: part.source,
+      reason: part.reason,
+      flags: part.flags,
+      origins: [index],
+      headings: part.headings,
+      changes: part.changes,
+      threads: part.threads,
+    }));
+  }
+
+  it("IMP-005 moves a part's suggested changes and threads with the blocks they are on", () => {
+    const parts = edited(
+      editProposal(notes(), { edit: 'split', part: 'n0', at: 2, title: 'Third' }, context),
+    );
+    expect(parts.map((part) => [part.title, part.changes.length, part.threads.length])).toEqual([
+      ['Notes', 1, 0],
+      ['Third', 0, 1],
+      ['Later', 0, 0],
+    ]);
+    const merged = edited(editProposal(parts, { edit: 'merge', part: 'n0' }, context));
+    expect(merged.map((part) => [part.title, part.changes.length, part.threads.length])).toEqual([
+      ['Notes', 1, 1],
+      ['Later', 0, 0],
+    ]);
+  });
+
+  it('IMP-034 retargets a reference outside the import to a block in it, validated as made', () => {
+    const parts = notes();
+    const target = parts[1]!.blocks[0]!.id;
+    const retargeted = edited(
+      editProposal(
+        parts,
+        { edit: 'reference', reference: 'wx-1', to: { kind: 'block', block: target } },
+        context,
+      ),
+    );
+    const [first] = retargeted[0]!.blocks as unknown as {
+      content: { type: string; target?: object }[];
+    }[];
+    expect(first!.content[1]).toMatchObject({ target: { kind: 'block', block: target } });
+    expect(
+      editProposal(
+        parts,
+        { edit: 'reference', reference: 'wx-1', to: { kind: 'block', block: 'nowhere' } },
+        context,
+      ),
+    ).toEqual({ ok: false, refusal: 'target_missing' });
+    expect(
+      editProposal(
+        parts,
+        { edit: 'reference', reference: 'wx-9', to: { kind: 'text', text: 'x' } },
+        context,
+      ),
+    ).toEqual({ ok: false, refusal: 'reference_missing' });
+  });
+
+  it('IMP-034 makes a reference outside the import the text it showed', () => {
+    const parts = edited(
+      editProposal(
+        notes(),
+        { edit: 'reference', reference: 'wx-1', to: { kind: 'text', text: 'Section 9' } },
+        context,
+      ),
+    );
+    expect(texts(parts[0])[0]).toBe('First, see Section 9');
   });
 });

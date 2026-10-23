@@ -105,6 +105,16 @@ export const DataSettings = z.object({
 });
 export type DataSettings = z.infer<typeof DataSettings>;
 
+/** The environment's identity policy for imports (the IM plan, IM-I; IMP-010). */
+export const ImportSettings = z.strictObject({
+  policy: z
+    .enum(['map', 'keep', 'discard'])
+    .describe(
+      'What an accepted import records of the names a file carries: `map`, the default, keeps each as text with the member its email matches, or a name match its importer confirmed; `keep` keeps each as text; `discard` keeps none. Whatever an import makes is made by its importer',
+    ),
+});
+export type ImportSettings = z.infer<typeof ImportSettings>;
+
 const unauthenticated = {
   description: 'No session, or not one this environment issued',
   schema: ErrorBody,
@@ -158,6 +168,33 @@ export const settingsRoutes = {
     responses: {
       200: { description: 'The data settings, with the ceilings', schema: DataSettings },
       401: unauthenticated,
+    },
+  },
+  getImportSettings: {
+    operationId: 'getImportSettings',
+    method: 'GET',
+    path: '/v1/settings/import',
+    summary: "The environment's policy for the names an imported file carries",
+    tenantScoped: true,
+    access: { check: 'session' },
+    responses: {
+      200: { description: 'The import settings', schema: ImportSettings },
+      401: unauthenticated,
+    },
+  },
+  setImportSettings: {
+    operationId: 'setImportSettings',
+    method: 'PUT',
+    path: '/v1/settings/import',
+    summary: "Change the environment's policy for the names an imported file carries",
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'administer', target: { tenant: true } },
+    body: ImportSettings,
+    responses: {
+      200: { description: 'The import settings, as changed', schema: ImportSettings },
+      400: { description: 'invalid_request: not map, keep or discard', schema: ErrorBody },
+      401: unauthenticated,
+      403: { description: 'The caller may not administer this environment', schema: ErrorBody },
     },
   },
   setDataSettings: {

@@ -2,6 +2,8 @@ import { createHash } from 'node:crypto';
 import { Worker } from 'node:worker_threads';
 import {
   failImport,
+  holdImportImage,
+  holdObject,
   readImport,
   recordProposal,
   type ImportFailure,
@@ -10,19 +12,38 @@ import {
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
-import type { AuditContext, ImportLevels, ProposedPart, ReportEntry } from '@alloy-works/domain';
+import {
+  createReport,
+  type AuditContext,
+  type ImportIdentity,
+  type ImportLevels,
+  type ImportReference,
+  type ProposedPart,
+  type ReportEntry,
+} from '@alloy-works/domain';
 import type { ObjectStores, TenantStore } from '@alloy-works/objects';
 import { JobRefused } from '../refusal.js';
 import type { JobHandler } from '../worker.js';
+import { checkImage, type Decode } from './ingest.js';
 
 /** What a read in its thread answers: the proposal, or why there is none. */
 export type ThreadAnswer =
   | {
       readonly ok: true;
       readonly parts: readonly ProposedPart[];
+      readonly anchors: Readonly<Record<string, string>>;
       readonly report: readonly ReportEntry[];
       readonly title: string | null;
       readonly language: string | null;
+      readonly references: readonly ImportReference[];
+      readonly identities: readonly ImportIdentity[];
+      /** The images inside, each named in the parts by its placeholder until it is an asset. */
+      readonly images: readonly {
+        readonly placeholder: string;
+        readonly format: 'png' | 'jpeg';
+        readonly bytes: Uint8Array;
+      }[];
+      readonly properties: Readonly<Record<string, string>>;
     }
   | {
       readonly ok: false;
@@ -100,8 +121,49 @@ export function importJob(deps: {
   readonly stores: ObjectStores;
   readonly budget?: ImportBudget;
   readonly read?: typeof readInThread;
+  readonly decode?: Decode;
 }): JobHandler {
   const read = deps.read ?? readInThread;
+
+  /**
+   * Each image checked as an upload is (IM-C) and, where it passes, stored by its hash and held for the
+   * import: no asset is made until it is accepted, so abandoning leaves nothing (IMP-008). Answers
+   * whether each placeholder was kept.
+   */
+  const held = async (
+    tenant: Tenant,
+    store: TenantStore,
+    found: StoredImport,
+    images: Extract<ThreadAnswer, { ok: true }>['images'],
+  ): Promise<Map<string, string | null>> => {
+    const kept = new Map<string, string | null>();
+    for (const image of images) {
+      const bytes = Buffer.from(image.bytes);
+      const checked = await checkImage(bytes, deps.decode);
+      if (!checked.ok || checked.header.format !== image.format) {
+        kept.set(image.placeholder, null);
+        continue;
+      }
+      const sha256 = createHash('sha256').update(bytes).digest('hex');
+      await deps.db.withTenant(
+        tenant,
+        async (trx) => {
+          await holdObject(trx, sha256);
+          const stored = await store.put(bytes, `image/${image.format}`);
+          await holdImportImage(trx, found.id, {
+            placeholder: image.placeholder,
+            key: stored.key,
+            sha256,
+            bytes: stored.size,
+            header: checked.header,
+          });
+        },
+        forImporter(found),
+      );
+      kept.set(image.placeholder, image.placeholder);
+    }
+    return kept;
+  };
 
   const fail = async (
     tenant: Tenant,
@@ -146,9 +208,18 @@ export function importJob(deps: {
         // Refused on its merits: the same file fails the same way every time (issue #146).
         throw new JobRefused('import_refused', 'The file could not be read into a proposal');
       }
+      const assets = await held(tenant, store, found, answer.images);
+      const refused = [...assets.values()].filter((each) => each === null).length;
+      const report = createReport(answer.report);
+      if (refused > 0) report.add('read', 'discarded', 'imageRefused', { count: refused });
       await deps.db.withTenant(
         tenant,
-        (trx) => recordProposal(trx, found.id, answer),
+        (trx) =>
+          recordProposal(trx, found.id, {
+            ...answer,
+            parts: placed(answer.parts, assets),
+            report: report.entries,
+          }),
         forImporter(found),
       );
     },
@@ -161,4 +232,36 @@ export function importJob(deps: {
       await fail(tenant, store, found, 'reading_failed');
     },
   };
+}
+
+/**
+ * The parts with each image refused taken out: a figure an empty paragraph in its place, an image in
+ * a run of text left out. A kept one names its placeholder, an asset version from acceptance.
+ */
+export function placed(
+  parts: readonly ProposedPart[],
+  assets: ReadonlyMap<string, string | null>,
+): ProposedPart[] {
+  const walk = (value: unknown): unknown => {
+    if (Array.isArray(value)) {
+      return value.flatMap((each) => {
+        const node = each as Record<string, unknown> | null;
+        const asset = typeof node?.['asset'] === 'string' ? node['asset'] : undefined;
+        if (asset === undefined || !assets.has(asset)) return [walk(each)];
+        const version = assets.get(asset);
+        if (version) return [{ ...node, asset: version }];
+        if (node!['type'] === 'figure') {
+          return [{ type: 'paragraph', id: node!['id'], style: 'body', content: [] }];
+        }
+        return [];
+      });
+    }
+    if (typeof value !== 'object' || value === null) return value;
+    return Object.fromEntries(Object.entries(value).map(([key, each]) => [key, walk(each)]));
+  };
+  return parts.map((part) => ({
+    ...part,
+    blocks: walk(part.blocks) as ProposedPart['blocks'],
+    changes: walk(part.changes) as ProposedPart['changes'],
+  }));
 }

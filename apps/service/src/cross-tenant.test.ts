@@ -913,6 +913,7 @@ const VALID_INPUT: Readonly<
   changeServiceIdentity: { payload: { name: 'Elsewhere' } },
   issueServiceIdentityToken: { payload: { name: 'Elsewhere', scopes: [], expiresAt: IN_A_MONTH } },
   setEditingSettings: { payload: { iterationRetentionDays: 7 } },
+  setImportSettings: { payload: { policy: 'keep' } },
   makeGrant: {
     payload: { role: SESSION, subject: { principal: SESSION }, level: 'tenant', effect: 'allow' },
   },

@@ -16,16 +16,22 @@ if (!read.ok) {
   parentPort!.postMessage({ ok: false, refusal: read.refusal });
 } else {
   const language = read.language ?? 'en';
-  const { parts } = proposeImport(read.flow, input.levels, {
+  const { parts, anchors } = proposeImport(read.flow, input.levels, {
     language,
     direction: 'ltr',
     newIdentifier: () => blockIdentifierFrom(randomBytes(16)),
+    comments: read.comments,
   });
   parentPort!.postMessage({
     ok: true,
     parts,
+    anchors,
     report: read.report,
     title: read.title,
     language: read.language,
+    references: read.references,
+    identities: read.identities,
+    images: read.images,
+    properties: read.properties,
   });
 }

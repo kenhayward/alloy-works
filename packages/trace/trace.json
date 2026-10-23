@@ -18010,6 +18010,10 @@
           "howItIsMet": "Which policy was applied recorded on what was imported"
         },
         {
+          "id": "IMP-032",
+          "howItIsMet": "Identities shown as carried in review, the policy applied once, at acceptance"
+        },
+        {
           "id": "IMP-028",
           "howItIsMet": "Each part reviewed alone, beside its source and reason"
         },
@@ -21176,13 +21180,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 646,
+      "line": 648,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 659,
+      "line": 661,
       "kind": "title"
     },
     {
@@ -21656,7 +21660,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 2087,
+      "line": 2088,
       "kind": "title"
     },
     {
@@ -22124,43 +22128,79 @@
     {
       "id": "IMP-002",
       "file": "apps/service/src/import-routes.test.ts",
-      "line": 248,
+      "line": 258,
       "kind": "title"
     },
     {
       "id": "IMP-004",
       "file": "apps/service/src/import-routes.test.ts",
-      "line": 324,
+      "line": 421,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-005",
+      "file": "apps/service/src/import-routes.test.ts",
+      "line": 353,
       "kind": "title"
     },
     {
       "id": "IMP-008",
       "file": "apps/service/src/import-routes.test.ts",
-      "line": 324,
+      "line": 421,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-009",
+      "file": "apps/service/src/import-routes.test.ts",
+      "line": 353,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-010",
+      "file": "apps/service/src/import-routes.test.ts",
+      "line": 407,
       "kind": "title"
     },
     {
       "id": "IMP-028",
       "file": "apps/service/src/import-routes.test.ts",
-      "line": 220,
+      "line": 230,
       "kind": "title"
     },
     {
       "id": "IMP-029",
       "file": "apps/service/src/import-routes.test.ts",
-      "line": 291,
+      "line": 301,
       "kind": "title"
     },
     {
       "id": "IMP-031",
       "file": "apps/service/src/import-routes.test.ts",
-      "line": 311,
+      "line": 321,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-032",
+      "file": "apps/service/src/import-routes.test.ts",
+      "line": 353,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-033",
+      "file": "apps/service/src/import-routes.test.ts",
+      "line": 353,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-034",
+      "file": "apps/service/src/import-routes.test.ts",
+      "line": 353,
       "kind": "title"
     },
     {
       "id": "IMP-041",
       "file": "apps/service/src/import-routes.test.ts",
-      "line": 248,
+      "line": 258,
       "kind": "title"
     },
     {
@@ -23760,6 +23800,12 @@
       "kind": "title"
     },
     {
+      "id": "IMP-010",
+      "file": "apps/web/src/admin/ImportPolicy.test.tsx",
+      "line": 26,
+      "kind": "title"
+    },
+    {
       "id": "ADM-013",
       "file": "apps/web/src/admin/ModelSpending.test.tsx",
       "line": 139,
@@ -24704,49 +24750,91 @@
     {
       "id": "IMP-002",
       "file": "apps/web/src/imports/imports.test.tsx",
-      "line": 352,
+      "line": 357,
       "kind": "title"
     },
     {
       "id": "IMP-004",
       "file": "apps/web/src/imports/imports.test.tsx",
-      "line": 235,
+      "line": 240,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-005",
+      "file": "apps/web/src/imports/imports.test.tsx",
+      "line": 466,
       "kind": "title"
     },
     {
       "id": "IMP-007",
       "file": "apps/web/src/imports/imports.test.tsx",
-      "line": 235,
+      "line": 240,
       "kind": "title"
     },
     {
       "id": "IMP-008",
       "file": "apps/web/src/imports/imports.test.tsx",
-      "line": 275,
+      "line": 280,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-009",
+      "file": "apps/web/src/imports/imports.test.tsx",
+      "line": 477,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-010",
+      "file": "apps/web/src/imports/imports.test.tsx",
+      "line": 477,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-011",
+      "file": "apps/web/src/imports/imports.test.tsx",
+      "line": 529,
       "kind": "title"
     },
     {
       "id": "IMP-028",
       "file": "apps/web/src/imports/imports.test.tsx",
-      "line": 301,
+      "line": 306,
       "kind": "title"
     },
     {
       "id": "IMP-029",
       "file": "apps/web/src/imports/imports.test.tsx",
-      "line": 319,
+      "line": 324,
       "kind": "title"
     },
     {
       "id": "IMP-031",
       "file": "apps/web/src/imports/imports.test.tsx",
-      "line": 386,
+      "line": 391,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-032",
+      "file": "apps/web/src/imports/imports.test.tsx",
+      "line": 466,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-033",
+      "file": "apps/web/src/imports/imports.test.tsx",
+      "line": 499,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-034",
+      "file": "apps/web/src/imports/imports.test.tsx",
+      "line": 499,
       "kind": "title"
     },
     {
       "id": "IMP-041",
       "file": "apps/web/src/imports/imports.test.tsx",
-      "line": 352,
+      "line": 357,
       "kind": "title"
     },
     {
@@ -26348,37 +26436,49 @@
     {
       "id": "IMP-001",
       "file": "apps/worker/src/import.test.ts",
-      "line": 148,
+      "line": 150,
       "kind": "title"
     },
     {
       "id": "IMP-003",
       "file": "apps/worker/src/import.test.ts",
-      "line": 148,
+      "line": 150,
       "kind": "title"
     },
     {
       "id": "IMP-004",
       "file": "apps/worker/src/import.test.ts",
-      "line": 148,
+      "line": 150,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-006",
+      "file": "apps/worker/src/import.test.ts",
+      "line": 211,
       "kind": "title"
     },
     {
       "id": "IMP-007",
       "file": "apps/worker/src/import.test.ts",
-      "line": 148,
+      "line": 150,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-009",
+      "file": "apps/worker/src/import.test.ts",
+      "line": 211,
       "kind": "title"
     },
     {
       "id": "IMP-017",
       "file": "apps/worker/src/import.test.ts",
-      "line": 148,
+      "line": 150,
       "kind": "title"
     },
     {
       "id": "IMP-042",
       "file": "apps/worker/src/import.test.ts",
-      "line": 209,
+      "line": 287,
       "kind": "title"
     },
     {
@@ -27783,6 +27883,66 @@
       "id": "SCH-024",
       "file": "packages/db/src/impact.test.ts",
       "line": 249,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-005",
+      "file": "packages/db/src/imports-structure.test.ts",
+      "line": 349,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-006",
+      "file": "packages/db/src/imports-structure.test.ts",
+      "line": 325,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-008",
+      "file": "packages/db/src/imports-structure.test.ts",
+      "line": 297,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-009",
+      "file": "packages/db/src/imports-structure.test.ts",
+      "line": 338,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-010",
+      "file": "packages/db/src/imports-structure.test.ts",
+      "line": 349,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-011",
+      "file": "packages/db/src/imports-structure.test.ts",
+      "line": 349,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-032",
+      "file": "packages/db/src/imports-structure.test.ts",
+      "line": 349,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-033",
+      "file": "packages/db/src/imports-structure.test.ts",
+      "line": 456,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-034",
+      "file": "packages/db/src/imports-structure.test.ts",
+      "line": 456,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-042",
+      "file": "packages/db/src/imports-structure.test.ts",
+      "line": 307,
       "kind": "title"
     },
     {
@@ -30138,6 +30298,30 @@
       "kind": "title"
     },
     {
+      "id": "IMP-005",
+      "file": "packages/domain/src/import/accept.test.ts",
+      "line": 107,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-006",
+      "file": "packages/domain/src/import/accept.test.ts",
+      "line": 27,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-010",
+      "file": "packages/domain/src/import/accept.test.ts",
+      "line": 73,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-034",
+      "file": "packages/domain/src/import/accept.test.ts",
+      "line": 27,
+      "kind": "title"
+    },
+    {
       "id": "IMP-001",
       "file": "packages/domain/src/import/proposal.test.ts",
       "line": 38,
@@ -30164,43 +30348,67 @@
     {
       "id": "CNT-013",
       "file": "packages/domain/src/import/review.test.ts",
-      "line": 138,
+      "line": 141,
       "kind": "title"
     },
     {
       "id": "IMP-002",
       "file": "packages/domain/src/import/review.test.ts",
-      "line": 71,
+      "line": 74,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-005",
+      "file": "packages/domain/src/import/review.test.ts",
+      "line": 310,
       "kind": "title"
     },
     {
       "id": "IMP-028",
       "file": "packages/domain/src/import/review.test.ts",
-      "line": 198,
+      "line": 201,
       "kind": "title"
     },
     {
       "id": "IMP-029",
       "file": "packages/domain/src/import/review.test.ts",
-      "line": 219,
+      "line": 222,
       "kind": "title"
     },
     {
       "id": "IMP-031",
       "file": "packages/domain/src/import/review.test.ts",
-      "line": 171,
+      "line": 174,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-034",
+      "file": "packages/domain/src/import/review.test.ts",
+      "line": 326,
       "kind": "title"
     },
     {
       "id": "IMP-041",
       "file": "packages/domain/src/import/review.test.ts",
-      "line": 71,
+      "line": 74,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-005",
+      "file": "packages/domain/src/import/structure.test.ts",
+      "line": 41,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-006",
+      "file": "packages/domain/src/import/structure.test.ts",
+      "line": 139,
       "kind": "title"
     },
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 999,
+      "line": 1006,
       "kind": "title"
     },
     {
@@ -32294,7 +32502,7 @@
     {
       "id": "IMP-001",
       "file": "packages/readers/src/docx/docx.test.ts",
-      "line": 297,
+      "line": 288,
       "kind": "title"
     },
     {
@@ -32312,7 +32520,37 @@
     {
       "id": "IMP-047",
       "file": "packages/readers/src/docx/docx.test.ts",
-      "line": 246,
+      "line": 237,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-005",
+      "file": "packages/readers/src/docx/structure.test.ts",
+      "line": 257,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-006",
+      "file": "packages/readers/src/docx/structure.test.ts",
+      "line": 96,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-007",
+      "file": "packages/readers/src/docx/structure.test.ts",
+      "line": 367,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-009",
+      "file": "packages/readers/src/docx/structure.test.ts",
+      "line": 257,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-033",
+      "file": "packages/readers/src/docx/structure.test.ts",
+      "line": 189,
       "kind": "title"
     },
     {

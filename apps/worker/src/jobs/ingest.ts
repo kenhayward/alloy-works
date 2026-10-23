@@ -88,6 +88,25 @@ const agrees = (
 };
 
 /**
+ * The check an image is held to (assets.md, "The upload and the check"): walked, nothing after its
+ * end, decoded whole, and the two readings agreeing. Its header, or why it is refused; a decoder
+ * failing for its own reasons throws. An import's job holds its images to it too (IM-C).
+ */
+export async function checkImage(
+  bytes: Buffer,
+  decode: Decode = decodeWithSharp,
+): Promise<{ ok: true; header: ImageHeader } | { ok: false; refusal: AssetUploadReason }> {
+  const read = readImageHeader(bytes);
+  if (!read.ok) return { ok: false, refusal: read.refusal };
+  if (read.header.end !== bytes.length) return { ok: false, refusal: 'malformed' };
+  const decoded = await decode(bytes);
+  if (!decoded.ok) return { ok: false, refusal: 'undecodable' };
+  return agrees(read.header, decoded)
+    ? { ok: true, header: read.header }
+    : { ok: false, refusal: 'malformed' };
+}
+
+/**
  * The worker's half of the check (docs/design/assets.md, "The upload and the check"): the bytes read
  * back from the store and held to their key's hash, walked again - a job never trusts what the service
  * decided - decoded whole, and the two readings compared. Then the asset is recorded, or the upload is
