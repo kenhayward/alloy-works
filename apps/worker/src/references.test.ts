@@ -38,6 +38,7 @@ const IMAGE = '00000000-0000-4000-8000-00000000a551';
  */
 const worded = parseLayout({
   ...defaultLayout,
+  translations: undefined,
   words: { ...defaultLayout.words, above: 'earlier', below: 'further on' },
 });
 

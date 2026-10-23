@@ -224,6 +224,14 @@ describe('the outline a document version holds', () => {
     }
   });
 
+  it('LOC-037 holds a document’s own translation fallback in its content and its digest', () => {
+    const declared = parseOutlineDocument({ ...empty, fallback: 'refuse' });
+    expect(declared.fallback).toBe('refuse');
+    expect(canonicaliseOutline(declared)).toContain('"fallback":"refuse"');
+    expect(canonicaliseOutline(parseOutlineDocument(empty))).not.toContain('fallback');
+    expect(() => parseOutlineDocument({ ...empty, fallback: 'mixed' })).toThrow();
+  });
+
   it('canonicalises two identical outlines to one string where their marks were built in two orders', () => {
     const marks = [
       { type: 'emphasis', id: 'm2' },

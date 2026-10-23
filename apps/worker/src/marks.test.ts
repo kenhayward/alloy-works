@@ -120,6 +120,7 @@ const component = () =>
  */
 const bare = parseLayout({
   ...defaultLayout,
+  translations: undefined,
   matter: { cover: false, contents: null, appendices: { newPage: false }, lists: [] },
 });
 

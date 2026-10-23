@@ -30,6 +30,7 @@ const COMPONENT = '00000000-0000-4000-8000-000000000001';
 /** No cover and no contents, but the default layout's list of figures, which opens the document. */
 const listed = parseLayout({
   ...defaultLayout,
+  translations: undefined,
   matter: { ...defaultLayout.matter, cover: false, contents: null },
 });
 
@@ -277,7 +278,7 @@ describe('a figure in the PDF (figures 3)', () => {
       PUBLICATION_TEMPLATE[TEMPLATE_READING[PUBLISHING_SCHEMA]].file,
       assembled.document,
     );
-    expect(TEMPLATE_READING[PUBLISHING_SCHEMA]).toBe(24);
+    expect(TEMPLATE_READING[PUBLISHING_SCHEMA]).toBe(25);
     expect(after.elements).toMatchObject({ TOC: 1, TOCI: 4 });
     expect(after.pages).toBe(before.pages);
     expect(after.taggedText).toEqual(before.taggedText);

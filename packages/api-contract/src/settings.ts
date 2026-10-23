@@ -1,4 +1,4 @@
-import { limitCeilings, runsAtOnce } from '@alloy-works/domain';
+import { limitCeilings, runsAtOnce, translationPolicySchema } from '@alloy-works/domain';
 import { z } from 'zod';
 import type { RouteContract } from './contract.js';
 import { ErrorBody } from './schemas.js';
@@ -115,6 +115,12 @@ export const ImportSettings = z.strictObject({
 });
 export type ImportSettings = z.infer<typeof ImportSettings>;
 
+/** The environment's translation policy (the TR plan, TR-J; LOC-017, LOC-036, LOC-037). */
+export const TranslationSettings = translationPolicySchema.describe(
+  '`fallback`: where a component has no translation into the language a document is published in, `source`, the default, publishes it in its own language, marked as untranslated, and `refuse` fails the publish; a document may say otherwise. `outOfDate`: a translation out of date with a change that needs retranslating, `publish`, the default, publishes it and reports it, and `refuse` fails the publish. `note`: the words the mark says, by language tag, else `Untranslated`',
+);
+export type TranslationSettings = z.infer<typeof TranslationSettings>;
+
 const unauthenticated = {
   description: 'No session, or not one this environment issued',
   schema: ErrorBody,
@@ -193,6 +199,36 @@ export const settingsRoutes = {
     responses: {
       200: { description: 'The import settings, as changed', schema: ImportSettings },
       400: { description: 'invalid_request: not map, keep or discard', schema: ErrorBody },
+      401: unauthenticated,
+      403: { description: 'The caller may not administer this environment', schema: ErrorBody },
+    },
+  },
+  getTranslationSettings: {
+    operationId: 'getTranslationSettings',
+    method: 'GET',
+    path: '/v1/settings/translation',
+    summary: "The environment's policy for publishing in a language",
+    tenantScoped: true,
+    access: { check: 'session' },
+    responses: {
+      200: { description: 'The translation settings', schema: TranslationSettings },
+      401: unauthenticated,
+    },
+  },
+  setTranslationSettings: {
+    operationId: 'setTranslationSettings',
+    method: 'PUT',
+    path: '/v1/settings/translation',
+    summary: "Change the environment's policy for publishing in a language",
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'administer', target: { tenant: true } },
+    body: TranslationSettings,
+    responses: {
+      200: { description: 'The translation settings, as changed', schema: TranslationSettings },
+      400: {
+        description: 'invalid_request: a value it does not take, or a note too long',
+        schema: ErrorBody,
+      },
       401: unauthenticated,
       403: { description: 'The caller may not administer this environment', schema: ErrorBody },
     },

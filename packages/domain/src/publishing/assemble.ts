@@ -164,6 +164,11 @@ export interface AssembleInput {
   readonly outline: OutlineDocument;
   readonly occurrences: ReadonlyMap<string, ContentDocument>;
   /**
+   * Each occurrence published in its source language for want of a translation into the document's
+   * (the TR plan, TR-J; LOC-037), by node, with the words its mark says. Absent, none is.
+   */
+  readonly untranslated?: ReadonlyMap<string, string>;
+  /**
    * The order's second stage (publishing.md, "The order"; PUB-003): what of an occurrence's content
    * survives its conditions. REU's, in T4, and the identity until then. **Every later stage reads what
    * this answers** - contributions, numbering, references, the lists, the checks and the published
@@ -2461,6 +2466,7 @@ export function assemble(given: AssembleInput): Assembled {
       depth,
       matter,
       number: numberText,
+      untranslated: null,
     };
 
     if (node.type === 'section') {
@@ -2548,8 +2554,12 @@ export function assemble(given: AssembleInput): Assembled {
       }
     }
     const children = node.children.map((child) => project(child, depth + 1, matter));
+    // Published in its source language for want of a translation, it says so (TR-J; LOC-037).
+    const untranslated = input.untranslated?.get(node.id) ?? null;
+    if (untranslated !== null) check(untranslated, node.id, null, inPlace('text'));
     return {
       ...shell,
+      untranslated,
       // A component's title is a string, and one run of its words.
       title: content.title === '' ? [] : [{ text: content.title, marks: [] }],
       language: ownLanguage,

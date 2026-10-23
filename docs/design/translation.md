@@ -22,19 +22,24 @@ line holds its own editing lock, so translators and the author edit at once.
 
 ## Requirements owned
 
-| ID          | How it is met                                                                                   |
-| ----------- | ----------------------------------------------------------------------------------------------- |
-| **LOC-007** | A variant is a language line of the one component                                               |
-| **LOC-012** | A variant's versions are the chain's, on its line                                               |
-| **LOC-013** | Each version on a language line records the source version it translates                        |
-| **LOC-014** | Status is computed: out of date at any later source version, immediately                        |
-| **LOC-015** | Out of date says whether any change since needs retranslating                                   |
-| **LOC-031** | A source cut declares it, defaulting to yes; revisable by whoever may edit; audited             |
-| **LOC-040** | An out-of-date variant opens on its earlier translation, beside the source blocks changed since |
+| ID          | How it is met                                                                                                   |
+| ----------- | --------------------------------------------------------------------------------------------------------------- |
+| **LOC-007** | A variant is a language line of the one component                                                               |
+| **LOC-012** | A variant's versions are the chain's, on its line                                                               |
+| **LOC-013** | Each version on a language line records the source version it translates                                        |
+| **LOC-014** | Status is computed: out of date at any later source version, immediately                                        |
+| **LOC-015** | Out of date says whether any change since needs retranslating                                                   |
+| **LOC-031** | A source cut declares it, defaulting to yes; revisable by whoever may edit; audited                             |
+| **LOC-040** | An out-of-date variant opens on its earlier translation, beside the source blocks changed since                 |
+| **LOC-010** | A publish names its language; each reference reads its variant, under the layout's words in it                  |
+| **LOC-017** | A translation out of date with a change needing retranslation refuses a publish where the policy says           |
+| **LOC-037** | A missing variant falls back to the source, marked and reported, or refuses, as the document or the tenant says |
 
-LOC-010, LOC-017 and LOC-037 (publishing in a language, refusal and fallback) and LOC-016 (status
-wherever a component is used, and across a space) are claimed as TRb and TRc build them. LOC-030's
-declared set is defined here, but `machineDrafted` and `inTranslation` are XL's, so XL claims it.
+LOC-016 (status wherever a component is used, and across a space) is claimed as TRc builds it.
+LOC-030's declared set is defined here, but `machineDrafted` and `inTranslation` are XL's, so XL
+claims it. LOC-036 wants every policy it names - fallback, refusal, an external service, a conflicted
+import - declared, versioned and audited: the first two are here, audited `settings.changed`; the
+rest are XL's, which claims it.
 
 ## Storage
 
@@ -63,7 +68,32 @@ marks current; `GET .../translations/{line}/source-changes` says what changed; `
 line and `retranslate` on the main line. A component read on a language line names its source's
 latest version. The claim, take and release of a lock take `line`.
 
+## Publishing in a language
+
+A publish, a preview and a range preview take `language` (0160 records it on the request). Each
+resolved reference reads its component's variant there: latest its line's newest, approved its line's
+newest designated revision, pinned the newest variant translating the pinned version or an earlier
+one. A variant serves the language asked for where either tag is a range of the other, its exact tag
+first. Its reference's overrides are not applied, being made against the source's words, and are reported (`override_skipped`): an override that replaces words, to withhold them, must be made in the translation too. An approved reference reads the variant's newest designated revision in effect, in the profile's scope, translating the source version read or an earlier one; nothing translating words not yet approved.
+
+Where a component has no variant, the document's own `fallback`, else the tenant's
+`translation_policy` - a document's own standing over the environment's, as LOC-037 asks - either publishes the source - its own language tag on its words (PDF `/Lang`,
+Word `w:lang`) and a note before them in the document's, the policy's words for that language or
+`Untranslated`, with the source's tag (publishing/25, template 25, Word) - and reports it
+(`component_untranslated`), or refuses the publish (`occurrence_untranslated`). A variant out of date
+with a change needing retranslation is reported, or refuses where the policy says
+(`translation_out_of_date`). Each occurrence's outcome is recorded on the request.
+
+**A layout gives its words per language** (Ken; layout schema 8): `translations`, each complete - its
+words, its scheme's labels, its matter's titles and its running matter - and `layoutIn` the one place a
+layout is read in a language. A publish whose layout has no words in its language is refused
+(`layout_language`, PUB-095). The default layout's 0.12 gives French and German.
+
 ## The page
+
+The Publishing panel offers **Publish in** each language the document's layout gives its words in,
+and, there, **Where a component has no translation**: the document's own fallback, or the
+environment's. Administration's **Translation** sets the environment's policy and the mark's words.
 
 **Translations** on a component's header lists each translation with its status and opens it; to
 whoever may edit, it begins one and declares whether the source's latest version needs

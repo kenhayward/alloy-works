@@ -167,6 +167,7 @@ const FIXTURE: readonly Node[] = [
 /** The default layout, turned landscape on A4 with a gutter, and heads and feet of its own. */
 const testLayout = parseLayout({
   ...defaultLayout,
+  translations: undefined,
   matter: { ...defaultLayout.matter, contents: { depth: 2 } },
   formats: {
     pdf: {
@@ -201,6 +202,7 @@ const testLayout = parseLayout({
 const letteringAppendices = (layout: Layout): Layout =>
   parseLayout({
     ...layout,
+    translations: undefined,
     formats: {
       pdf: {
         ...layout.formats.pdf,
@@ -425,6 +427,7 @@ describe('template 4 lays out the page', () => {
 
     const uncovered = parseLayout({
       ...defaultLayout,
+      translations: undefined,
       matter: { ...defaultLayout.matter, cover: false, contents: null },
     });
     const { read: bare } = await compiled(FIXTURE, uncovered);
@@ -549,6 +552,7 @@ describe('template 4 lays out the page', () => {
     // contents, and the second appendix runs on from the first.
     const bare = parseLayout({
       ...defaultLayout,
+      translations: undefined,
       matter: { cover: false, contents: null, appendices: { newPage: false }, lists: [] },
     });
     const { read: plain } = await compiled(FIXTURE, bare);
@@ -627,6 +631,7 @@ describe('an approved publication, compiled by template 22 (the WF2 plan, WF2-I,
   ];
   const withPage = parseLayout({
     ...defaultLayout,
+    translations: undefined,
     matter: { ...defaultLayout.matter, approvals: { title: 'Approvals' } },
   });
   const approved = async (layout: Layout) => {

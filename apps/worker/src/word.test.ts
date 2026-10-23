@@ -702,6 +702,7 @@ const equated: AssembleInput & { readonly layout: Layout } = {
   ...input,
   layout: parseLayout({
     ...defaultLayout,
+    translations: undefined,
     matter: {
       ...defaultLayout.matter,
       lists: [...defaultLayout.matter.lists, { sequence: 'equation', title: 'Equations' }],

@@ -262,6 +262,8 @@ describe('migration 0044, over an environment made before it', () => {
       '0157_import_structure',
       '0158_import_again',
       '0159_translation',
+      '0160_publish_in_language',
+      '0161_default_layout_languages',
     ]);
     // Every row still there, and what 0048 seeds beside them: the value catalogue, its 0.1 and the
     // default theme's 0.6 (B1); and what 0055 seeds: the table catalogue's fifth version, the default
@@ -275,7 +277,8 @@ describe('migration 0044, over an environment made before it', () => {
       artifact: counts.artifact! + 6,
       // And 0148's default layout 0.10 (the CI plan, CId).
       // And 0154's term catalogue, default theme 0.10 and default layout 0.11 (TMb).
-      artifact_version: counts.artifact_version! + 18,
+      // And 0161's default layout 0.12 (TRb).
+      artifact_version: counts.artifact_version! + 19,
       // And 0114's shared reader (the R17 plan, R17-B).
       role: counts.role! + 3,
     });

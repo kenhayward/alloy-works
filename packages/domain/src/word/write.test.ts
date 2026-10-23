@@ -414,6 +414,8 @@ function imagesOf(assets: ReadonlyMap<string, PublishingAsset>): Map<string, Uin
 /** The default layout, changed by `change` and held to the layout's own parse. */
 const layoutWith = (change: (layout: Layout) => void): Layout => {
   const layout = structuredClone(defaultLayout);
+  // Its own words alone: a change to them would leave its further languages incomplete (TRb).
+  delete layout.translations;
   change(layout);
   return parseLayout(layout);
 };
@@ -5553,5 +5555,19 @@ describe('writeDocx: terms, the glossary and the abbreviations (the TM plan, TMb
       (each) => each.attrs['w:val'],
     );
     expect(styled).toEqual(['mark-emphasis']);
+  });
+});
+
+describe('a component published in its source language, in Word (the TR plan, TRb)', () => {
+  it('LOC-037 says so before its words, in the document’s language, in emphasis', () => {
+    const { docx } = written({ untranslated: new Map([[id('german'), 'Untranslated (de-DE)']]) });
+    const all = paragraphs(docx);
+    const at = all.findIndex((each) => textOf(each) === 'Untranslated (de-DE)');
+    const said = all[at]!;
+    expect(textOf(all[at + 1]!)).toBe('Grüße aus Berlin.');
+    expect(first(said, 'w:rStyle')?.attrs['w:val']).toBe('mark-emphasis');
+    expect(first(said, 'w:lang')?.attrs['w:val']).not.toBe('de-DE');
+    // Nothing else is marked.
+    expect(all.filter((each) => textOf(each).startsWith('Untranslated'))).toHaveLength(1);
   });
 });

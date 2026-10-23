@@ -249,6 +249,8 @@ describe('migration 0051, which keeps a result waiting on its images', () => {
       '0157_import_structure',
       '0158_import_again',
       '0159_translation',
+      '0160_publish_in_language',
+      '0161_default_layout_languages',
     ]);
     const kept = await queryAs(
       db.adminUrl,

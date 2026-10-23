@@ -1,4 +1,9 @@
-import { outputReportSchema, publishFailureCodes, storedProfileSchema } from '@alloy-works/domain';
+import {
+  contentDocumentSchema,
+  outputReportSchema,
+  publishFailureCodes,
+  storedProfileSchema,
+} from '@alloy-works/domain';
 import { z } from 'zod';
 import { FacetCountView, idsFilter, listingQuery, listingTotal, nextCursor } from './listing.js';
 import type { RouteContract } from './contract.js';
@@ -27,6 +32,11 @@ export const RequestPublicationBody = z.strictObject({
     .describe(
       "The profile to publish under in place of the document's own (REU-027): the values on each condition axis, and whether text conditioned on an axis it does not name may be left out",
     ),
+  language: contentDocumentSchema.shape.language
+    .optional()
+    .describe(
+      "The language to make it in (the TR plan, TRb): each component reads its translation into it, falling back to its own language, marked, or refusing, as the document's or the environment's policy says. Absent, the document's own",
+    ),
 });
 export type RequestPublicationBody = z.infer<typeof RequestPublicationBody>;
 
@@ -41,6 +51,11 @@ export const RequestPreviewBody = z.strictObject({
   profile: storedProfileSchema
     .optional()
     .describe("The profile to preview under in place of the document's own (REU-025)"),
+  language: contentDocumentSchema.shape.language
+    .optional()
+    .describe(
+      "The language to make it in (the TR plan, TRb): each component reads its translation into it, falling back to its own language, marked, or refusing, as the document's or the environment's policy says. Absent, the document's own",
+    ),
 });
 export type RequestPreviewBody = z.infer<typeof RequestPreviewBody>;
 
@@ -167,6 +182,18 @@ export const PublicationRequestView = z.object({
         z.object({
           code: z.enum(['source_retracted', 'source_corrected']),
           count: z.int().positive(),
+        }),
+        z.object({
+          code: z
+            .enum(['component_untranslated', 'translation_out_of_date', 'override_skipped'])
+            .describe(
+              "`component_untranslated`: a component published in its own language, `language`, for want of a translation into the one asked for; `translation_out_of_date`: a translation published out of date with a change that needs retranslating; `override_skipped`: a reference's overrides not applied to a translation, being made against its source's words",
+            ),
+          node: z.string().describe('The outline node, by its identifier'),
+          language: z
+            .string()
+            .optional()
+            .describe('For a component untranslated, the language it was published in: its own'),
         }),
         z.object({
           code: z
@@ -478,7 +505,7 @@ export const publishingRoutes = {
       },
       400: {
         description:
-          "`format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language; `page_reference_without_pdf`: the document cites a page and the PDF was not asked for; `section_required`: a section its template requires is missing; `component_required`: a component it requires is missing with no reason given; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a value a component it places holds has no result in this document, never resolved or changed since it was; `profile_invalid`: the profile names an axis or a value the environment does not declare; `profile_incomplete`: an axis the document's template requires is unset",
+          "`format_unsupported`: a format the layout does not make; `layout_language`: neither the layout's own words nor any further language it gives them in serve the language published in; `page_reference_without_pdf`: the document cites a page and the PDF was not asked for; `section_required`: a section its template requires is missing; `component_required`: a component it requires is missing with no reason given; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a value a component it places holds has no result in this document, never resolved or changed since it was; `profile_invalid`: the profile names an axis or a value the environment does not declare; `profile_incomplete`: an axis the document's template requires is unset",
         schema: PublicationRefusal,
       },
       401: unauthenticated,
@@ -515,7 +542,7 @@ export const publishingRoutes = {
       },
       400: {
         description:
-          "`format_unsupported`: the layout makes no PDF; `layout_language`: the document is not in its layout's language; `section_required`: a section its template requires is missing; `component_required`: a component it requires is missing with no reason given; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a value a component it places holds has no result in this document, never resolved or changed since it was; `profile_invalid`: the profile names an axis or a value the environment does not declare",
+          "`format_unsupported`: the layout makes no PDF; `layout_language`: neither the layout's own words nor any further language it gives them in serve the language published in; `section_required`: a section its template requires is missing; `component_required`: a component it requires is missing with no reason given; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a value a component it places holds has no result in this document, never resolved or changed since it was; `profile_invalid`: the profile names an axis or a value the environment does not declare",
         schema: PublicationRefusal,
       },
       401: unauthenticated,

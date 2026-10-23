@@ -686,6 +686,7 @@ const deepCaptionsLayout: Layout = (() => {
   });
   return parseLayout({
     ...defaultLayout,
+    translations: undefined,
     scheme: {
       ...defaultLayout.scheme,
       sequences: { ...sequences, figure: at('figure', 9), table: at('table', 3) },
@@ -1247,6 +1248,7 @@ interface Fixture {
 
 const withMatter = (matter: Partial<Layout['matter']>): Layout => ({
   ...defaultLayout,
+  translations: undefined,
   matter: { ...defaultLayout.matter, ...matter },
 });
 

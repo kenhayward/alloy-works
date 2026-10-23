@@ -1663,3 +1663,79 @@ describe('publishing from the document page', () => {
     ]);
   });
 });
+
+describe('publishing in a language (the TR plan, TRb)', () => {
+  it('LOC-010 publishes in a language its layout gives its words in, chosen beside Publish, and says what fell back', async () => {
+    const fake = service({
+      [`GET /v1/documents/${DOCUMENT}/publications`]: [listed([])],
+      [`POST /v1/documents/${DOCUMENT}/publications`]: [
+        {
+          ...queued(),
+          warnings: [
+            { code: 'component_untranslated', node: HIDDEN, language: 'en-GB' },
+            { code: 'component_untranslated', node: CALIBRATION, language: 'en-GB' },
+            { code: 'translation_out_of_date', node: HIDDEN },
+          ],
+        },
+      ],
+      [`GET /v1/publication-requests/${REQUEST}`]: [
+        { ...queued(), state: 'done', publication: PUBLICATION },
+      ],
+    });
+    render(
+      <Publishing
+        client={createApiClient({ baseUrl: 'http://acme.example.test', fetch: fake.fetch })}
+        document={DOCUMENT}
+        version={VERSION}
+        mayPublish
+        placeOf={() => '1.1 Calibration'}
+        followMs={0}
+        language="en-GB"
+        languages={['en', 'fr', 'de']}
+      />,
+    );
+    await screen.findByText('Nothing has been published from this document.');
+    const chooser = screen.getByRole('combobox', { name: 'Publish in' });
+    expect([...(chooser as HTMLSelectElement).options].map((each) => each.text)).toEqual([
+      'Its own language, en-GB',
+      'fr',
+      'de',
+    ]);
+    await userEvent.selectOptions(chooser, 'fr');
+    await userEvent.click(screen.getByRole('button', { name: 'Publish as PDF' }));
+    expect(await screen.findByRole('link', { name: 'Open the publication' })).toBeInTheDocument();
+    expect(fake.sent.find((each) => each.method === 'POST')?.body).toMatchObject({
+      language: 'fr',
+    });
+    expect(
+      screen.getByText(
+        'Published with 2 components in their own language, marked untranslated, 1 component translated, but out of date with its source.',
+      ),
+    ).toBeInTheDocument();
+  });
+});
+
+describe('a document’s own translation fallback (the TR plan, TRb)', () => {
+  it('LOC-037 offers the document’s own fallback over the environment’s, to whoever may edit it', async () => {
+    const fake = service({ [`GET /v1/documents/${DOCUMENT}/publications`]: [listed([])] });
+    const changed = vi.fn();
+    render(
+      <Publishing
+        client={createApiClient({ baseUrl: 'http://acme.example.test', fetch: fake.fetch })}
+        document={DOCUMENT}
+        version={VERSION}
+        mayPublish
+        placeOf={() => '1.1 Calibration'}
+        language="en-GB"
+        languages={['en', 'fr']}
+        fallback={{ own: null, mayChange: true, onChange: changed }}
+      />,
+    );
+    const chooser = await screen.findByRole('combobox', {
+      name: 'Where a component has no translation',
+    });
+    expect(chooser).toHaveDisplayValue('As the environment says');
+    await userEvent.selectOptions(chooser, 'Refuse the publish');
+    expect(changed).toHaveBeenCalledWith('refuse');
+  });
+});

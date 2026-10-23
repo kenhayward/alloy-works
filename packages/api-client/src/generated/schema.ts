@@ -2995,6 +2995,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/documents/{id}/translation-fallback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Write the document's own translation fallback, as one version with everything else unchanged
+         * @description Replaces the document's own translation fallback, as one version with its outline, values and parameters unchanged: where a component it places has no translation into the language a publish is made in, `source` publishes it in its own language, marked as untranslated, and `refuse` fails the publish. Null leaves the environment's translation policy to decide. Supply the version previously read.
+         */
+        put: operations["recordDocumentFallback"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/documents/{id}/unarchive": {
         parameters: {
             query?: never;
@@ -5556,6 +5576,30 @@ export interface paths {
          * @description Changes the environment’s identity policy for imports. It applies to each import accepted from then on, once, at acceptance. Needs administer at the environment.
          */
         put: operations["setImportSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/settings/translation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The environment's policy for publishing in a language
+         * @description Reads the environment’s policy for publishing in a language: whether a component with no translation into it is published in its own language, marked as untranslated, or fails the publish; whether a translation out of date with a change that needs retranslating publishes or fails it; and the words the mark says, by language.
+         */
+        get: operations["getTranslationSettings"];
+        /**
+         * Change the environment's policy for publishing in a language
+         * @description Changes the environment’s policy for publishing in a language, whole. A document’s own fallback, where it states one, stands over it. It applies to each publish asked for from then on. Needs administer at the environment.
+         */
+        put: operations["setTranslationSettings"];
         post?: never;
         delete?: never;
         options?: never;
@@ -13166,7 +13210,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -13179,6 +13223,16 @@ export interface operations {
                             /** @enum {string} */
                             code: "source_retracted" | "source_corrected";
                             count: number;
+                        } | {
+                            /**
+                             * @description `component_untranslated`: a component published in its own language, `language`, for want of a translation into the one asked for; `translation_out_of_date`: a translation published out of date with a change that needs retranslating; `override_skipped`: a reference's overrides not applied to a translation, being made against its source's words
+                             * @enum {string}
+                             */
+                            code: "component_untranslated" | "translation_out_of_date" | "override_skipped";
+                            /** @description The outline node, by its identifier */
+                            node: string;
+                            /** @description For a component untranslated, the language it was published in: its own */
+                            language?: string;
                         } | {
                             /**
                              * @description `term_unresolved`: a term printed as the words it covers, being draft, missing or one the requester may not read; `term_deprecated`: a deprecated term printed; `term_fallback`: a term printed in its base language, having no label in the document's
@@ -13283,7 +13337,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -35045,6 +35099,7 @@ export interface operations {
                      *           "number": "example"
                      *         },
                      *         "language": "en",
+                     *         "languages": [],
                      *         "scheme": {},
                      *         "words": {},
                      *         "formats": []
@@ -35289,7 +35344,10 @@ export interface operations {
                                 id: string;
                                 number: string;
                             };
+                            /** @description The language of the words below: those serving the document's own language */
                             language: string;
+                            /** @description Every language a publish may be made in, as a language range: its own words first, then each further language it gives them in (the TR plan, TRb) */
+                            languages: string[];
                             /** @description The numbering scheme this document is numbered and published with */
                             scheme: {
                                 [key: string]: unknown;
@@ -36534,7 +36592,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -36684,7 +36742,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -52445,6 +52503,7 @@ export interface operations {
                      *           "number": "example"
                      *         },
                      *         "language": "en",
+                     *         "languages": [],
                      *         "scheme": {},
                      *         "words": {},
                      *         "formats": []
@@ -52689,7 +52748,10 @@ export interface operations {
                                 id: string;
                                 number: string;
                             };
+                            /** @description The language of the words below: those serving the document's own language */
                             language: string;
+                            /** @description Every language a publish may be made in, as a language range: its own words first, then each further language it gives them in (the TR plan, TRb) */
+                            languages: string[];
                             /** @description The numbering scheme this document is numbered and published with */
                             scheme: {
                                 [key: string]: unknown;
@@ -52962,7 +53024,10 @@ export interface operations {
                                     id: string;
                                     number: string;
                                 };
+                                /** @description The language of the words below: those serving the document's own language */
                                 language: string;
+                                /** @description Every language a publish may be made in, as a language range: its own words first, then each further language it gives them in (the TR plan, TRb) */
+                                languages: string[];
                                 /** @description The numbering scheme this document is numbered and published with */
                                 scheme: {
                                     [key: string]: unknown;
@@ -53338,7 +53403,10 @@ export interface operations {
                                     id: string;
                                     number: string;
                                 };
+                                /** @description The language of the words below: those serving the document's own language */
                                 language: string;
+                                /** @description Every language a publish may be made in, as a language range: its own words first, then each further language it gives them in (the TR plan, TRb) */
+                                languages: string[];
                                 /** @description The numbering scheme this document is numbered and published with */
                                 scheme: {
                                     [key: string]: unknown;
@@ -53756,6 +53824,7 @@ export interface operations {
                      *           "number": "example"
                      *         },
                      *         "language": "en",
+                     *         "languages": [],
                      *         "scheme": {},
                      *         "words": {},
                      *         "formats": []
@@ -54000,7 +54069,10 @@ export interface operations {
                                 id: string;
                                 number: string;
                             };
+                            /** @description The language of the words below: those serving the document's own language */
                             language: string;
+                            /** @description Every language a publish may be made in, as a language range: its own words first, then each further language it gives them in (the TR plan, TRb) */
+                            languages: string[];
                             /** @description The numbering scheme this document is numbered and published with */
                             scheme: {
                                 [key: string]: unknown;
@@ -54273,7 +54345,10 @@ export interface operations {
                                     id: string;
                                     number: string;
                                 };
+                                /** @description The language of the words below: those serving the document's own language */
                                 language: string;
+                                /** @description Every language a publish may be made in, as a language range: its own words first, then each further language it gives them in (the TR plan, TRb) */
+                                languages: string[];
                                 /** @description The numbering scheme this document is numbered and published with */
                                 scheme: {
                                     [key: string]: unknown;
@@ -54649,7 +54724,10 @@ export interface operations {
                                     id: string;
                                     number: string;
                                 };
+                                /** @description The language of the words below: those serving the document's own language */
                                 language: string;
+                                /** @description Every language a publish may be made in, as a language range: its own words first, then each further language it gives them in (the TR plan, TRb) */
+                                languages: string[];
                                 /** @description The numbering scheme this document is numbered and published with */
                                 scheme: {
                                     [key: string]: unknown;
@@ -55214,6 +55292,7 @@ export interface operations {
                      *           "number": "example"
                      *         },
                      *         "language": "en",
+                     *         "languages": [],
                      *         "scheme": {},
                      *         "words": {},
                      *         "formats": []
@@ -55458,7 +55537,10 @@ export interface operations {
                                 id: string;
                                 number: string;
                             };
+                            /** @description The language of the words below: those serving the document's own language */
                             language: string;
+                            /** @description Every language a publish may be made in, as a language range: its own words first, then each further language it gives them in (the TR plan, TRb) */
+                            languages: string[];
                             /** @description The numbering scheme this document is numbered and published with */
                             scheme: {
                                 [key: string]: unknown;
@@ -55731,7 +55813,10 @@ export interface operations {
                                     id: string;
                                     number: string;
                                 };
+                                /** @description The language of the words below: those serving the document's own language */
                                 language: string;
+                                /** @description Every language a publish may be made in, as a language range: its own words first, then each further language it gives them in (the TR plan, TRb) */
+                                languages: string[];
                                 /** @description The numbering scheme this document is numbered and published with */
                                 scheme: {
                                     [key: string]: unknown;
@@ -56107,7 +56192,10 @@ export interface operations {
                                     id: string;
                                     number: string;
                                 };
+                                /** @description The language of the words below: those serving the document's own language */
                                 language: string;
+                                /** @description Every language a publish may be made in, as a language range: its own words first, then each further language it gives them in (the TR plan, TRb) */
+                                languages: string[];
                                 /** @description The numbering scheme this document is numbered and published with */
                                 scheme: {
                                     [key: string]: unknown;
@@ -56365,6 +56453,8 @@ export interface operations {
                         /** @constant */
                         excludeUnset?: true;
                     };
+                    /** @description The language to make it in (the TR plan, TRb): each component reads its translation into it, falling back to its own language, marked, or refusing, as the document's or the environment's policy says. Absent, the document's own */
+                    language?: string;
                 };
             };
         };
@@ -56409,7 +56499,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -56422,6 +56512,16 @@ export interface operations {
                             /** @enum {string} */
                             code: "source_retracted" | "source_corrected";
                             count: number;
+                        } | {
+                            /**
+                             * @description `component_untranslated`: a component published in its own language, `language`, for want of a translation into the one asked for; `translation_out_of_date`: a translation published out of date with a change that needs retranslating; `override_skipped`: a reference's overrides not applied to a translation, being made against its source's words
+                             * @enum {string}
+                             */
+                            code: "component_untranslated" | "translation_out_of_date" | "override_skipped";
+                            /** @description The outline node, by its identifier */
+                            node: string;
+                            /** @description For a component untranslated, the language it was published in: its own */
+                            language?: string;
                         } | {
                             /**
                              * @description `term_unresolved`: a term printed as the words it covers, being draft, missing or one the requester may not read; `term_deprecated`: a deprecated term printed; `term_fallback`: a term printed in its base language, having no label in the document's
@@ -56451,7 +56551,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `format_unsupported`: the layout makes no PDF; `layout_language`: the document is not in its layout's language; `section_required`: a section its template requires is missing; `component_required`: a component it requires is missing with no reason given; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a value a component it places holds has no result in this document, never resolved or changed since it was; `profile_invalid`: the profile names an axis or a value the environment does not declare */
+            /** @description `format_unsupported`: the layout makes no PDF; `layout_language`: neither the layout's own words nor any further language it gives them in serve the language published in; `section_required`: a section its template requires is missing; `component_required`: a component it requires is missing with no reason given; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a value a component it places holds has no result in this document, never resolved or changed since it was; `profile_invalid`: the profile names an axis or a value the environment does not declare */
             400: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -56809,6 +56909,7 @@ export interface operations {
                      *           "number": "example"
                      *         },
                      *         "language": "en",
+                     *         "languages": [],
                      *         "scheme": {},
                      *         "words": {},
                      *         "formats": []
@@ -57053,7 +57154,10 @@ export interface operations {
                                 id: string;
                                 number: string;
                             };
+                            /** @description The language of the words below: those serving the document's own language */
                             language: string;
+                            /** @description Every language a publish may be made in, as a language range: its own words first, then each further language it gives them in (the TR plan, TRb) */
+                            languages: string[];
                             /** @description The numbering scheme this document is numbered and published with */
                             scheme: {
                                 [key: string]: unknown;
@@ -57326,7 +57430,10 @@ export interface operations {
                                     id: string;
                                     number: string;
                                 };
+                                /** @description The language of the words below: those serving the document's own language */
                                 language: string;
+                                /** @description Every language a publish may be made in, as a language range: its own words first, then each further language it gives them in (the TR plan, TRb) */
+                                languages: string[];
                                 /** @description The numbering scheme this document is numbered and published with */
                                 scheme: {
                                     [key: string]: unknown;
@@ -57702,7 +57809,10 @@ export interface operations {
                                     id: string;
                                     number: string;
                                 };
+                                /** @description The language of the words below: those serving the document's own language */
                                 language: string;
+                                /** @description Every language a publish may be made in, as a language range: its own words first, then each further language it gives them in (the TR plan, TRb) */
+                                languages: string[];
                                 /** @description The numbering scheme this document is numbered and published with */
                                 scheme: {
                                     [key: string]: unknown;
@@ -58388,6 +58498,8 @@ export interface operations {
                         /** @constant */
                         excludeUnset?: true;
                     };
+                    /** @description The language to make it in (the TR plan, TRb): each component reads its translation into it, falling back to its own language, marked, or refusing, as the document's or the environment's policy says. Absent, the document's own */
+                    language?: string;
                 };
             };
         };
@@ -58432,7 +58544,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -58445,6 +58557,16 @@ export interface operations {
                             /** @enum {string} */
                             code: "source_retracted" | "source_corrected";
                             count: number;
+                        } | {
+                            /**
+                             * @description `component_untranslated`: a component published in its own language, `language`, for want of a translation into the one asked for; `translation_out_of_date`: a translation published out of date with a change that needs retranslating; `override_skipped`: a reference's overrides not applied to a translation, being made against its source's words
+                             * @enum {string}
+                             */
+                            code: "component_untranslated" | "translation_out_of_date" | "override_skipped";
+                            /** @description The outline node, by its identifier */
+                            node: string;
+                            /** @description For a component untranslated, the language it was published in: its own */
+                            language?: string;
                         } | {
                             /**
                              * @description `term_unresolved`: a term printed as the words it covers, being draft, missing or one the requester may not read; `term_deprecated`: a deprecated term printed; `term_fallback`: a term printed in its base language, having no label in the document's
@@ -58474,7 +58596,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language; `page_reference_without_pdf`: the document cites a page and the PDF was not asked for; `section_required`: a section its template requires is missing; `component_required`: a component it requires is missing with no reason given; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a value a component it places holds has no result in this document, never resolved or changed since it was; `profile_invalid`: the profile names an axis or a value the environment does not declare; `profile_incomplete`: an axis the document's template requires is unset */
+            /** @description `format_unsupported`: a format the layout does not make; `layout_language`: neither the layout's own words nor any further language it gives them in serve the language published in; `page_reference_without_pdf`: the document cites a page and the PDF was not asked for; `section_required`: a section its template requires is missing; `component_required`: a component it requires is missing with no reason given; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a value a component it places holds has no result in this document, never resolved or changed since it was; `profile_invalid`: the profile names an axis or a value the environment does not declare; `profile_incomplete`: an axis the document's template requires is unset */
             400: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -58738,6 +58860,8 @@ export interface operations {
                         /** @constant */
                         excludeUnset?: true;
                     };
+                    /** @description The language to make it in (the TR plan, TRb): each component reads its translation into it, falling back to its own language, marked, or refusing, as the document's or the environment's policy says. Absent, the document's own */
+                    language?: string;
                 };
             };
         };
@@ -61624,6 +61748,792 @@ export interface operations {
             };
         };
     };
+    recordDocumentFallback: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "openedFrom": "00000000-0000-4000-8000-000000000001",
+                 *       "fallback": "source"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The version it was read at, which must be the latest */
+                    openedFrom: string & (unknown & unknown);
+                    /** @description Where a component has no translation into the language published in: `source` publishes it in its own language, marked as untranslated; `refuse` fails the publish; null takes the environment's translation policy */
+                    fallback: ("source" | "refuse") | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Written, or nothing changed: the document at its latest version */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "outline": {},
+                     *       "values": {},
+                     *       "parameters": {},
+                     *       "fields": {
+                     *         "document": [],
+                     *         "section": []
+                     *       },
+                     *       "schemas": [],
+                     *       "template": {
+                     *         "id": "example",
+                     *         "name": "example",
+                     *         "version": {
+                     *           "id": "example",
+                     *           "number": "example"
+                     *         },
+                     *         "newest": {
+                     *           "id": "example",
+                     *           "number": "example"
+                     *         },
+                     *         "required": [],
+                     *         "departures": {
+                     *           "added": [],
+                     *           "missing": []
+                     *         }
+                     *       },
+                     *       "mayEdit": false,
+                     *       "archived": false,
+                     *       "mayRetire": false,
+                     *       "state": {
+                     *         "key": "example",
+                     *         "name": "example",
+                     *         "approved": false
+                     *       },
+                     *       "transitions": [],
+                     *       "gates": [],
+                     *       "revision": {
+                     *         "number": 1,
+                     *         "versionId": "00000000-0000-4000-8000-000000000001",
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       },
+                     *       "dates": {
+                     *         "effectiveAt": "2026-01-01T00:00:00.000Z",
+                     *         "reviewBy": "2026-01-01",
+                     *         "owner": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "name": "example"
+                     *         },
+                     *         "pastReview": false,
+                     *         "effectiveFrom": "2026-01-01T00:00:00.000Z"
+                     *       },
+                     *       "scope": {
+                     *         "scope": [],
+                     *         "pending": []
+                     *       },
+                     *       "onHold": false,
+                     *       "mayHold": false,
+                     *       "mayPublish": false,
+                     *       "mayComment": false,
+                     *       "maySuggest": false,
+                     *       "mayReview": false,
+                     *       "layout": {
+                     *         "id": "example",
+                     *         "version": {
+                     *           "id": "example",
+                     *           "number": "example"
+                     *         },
+                     *         "language": "en",
+                     *         "languages": [],
+                     *         "scheme": {},
+                     *         "words": {},
+                     *         "formats": []
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        space: {
+                            id: string;
+                            name: string;
+                        };
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        /** @description The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read */
+                        outline: {
+                            [key: string]: unknown;
+                        };
+                        /** @description The latest version's own field values, by field identifier: empty for a document with no template */
+                        values: {
+                            [key: string]: unknown;
+                        };
+                        /** @description The latest version's parameter values, by name (templates.md, "Recorded on the document"): empty for a document with none */
+                        parameters: {
+                            [key: string]: unknown;
+                        };
+                        /** @description The fields the document's template applies to the document and to each of its sections, at the current definitions; none for a document made blank, or whose template no longer resolves */
+                        fields: {
+                            document: {
+                                id: string;
+                                name: string;
+                                dataType: string;
+                                /** @enum {string} */
+                                multiplicity: "one" | "many";
+                                maxValues?: number;
+                                validation: {
+                                    [key: string]: unknown;
+                                };
+                                required: boolean;
+                                /** @description Every schema that makes it required, by identifier */
+                                requiredBy: string[];
+                                fixed: boolean;
+                                /** @description Every schema that fixes it, by identifier */
+                                fixedBy: string[];
+                                /** @description Absent where no schema gives one */
+                                default?: unknown;
+                            }[];
+                            section: {
+                                id: string;
+                                name: string;
+                                dataType: string;
+                                /** @enum {string} */
+                                multiplicity: "one" | "many";
+                                maxValues?: number;
+                                validation: {
+                                    [key: string]: unknown;
+                                };
+                                required: boolean;
+                                /** @description Every schema that makes it required, by identifier */
+                                requiredBy: string[];
+                                fixed: boolean;
+                                /** @description Every schema that fixes it, by identifier */
+                                fixedBy: string[];
+                                /** @description Absent where no schema gives one */
+                                default?: unknown;
+                            }[];
+                        };
+                        /** @description The schemas behind those fields, by name, for naming which require or fix one */
+                        schemas: {
+                            id: string;
+                            name: string;
+                        }[];
+                        /** @description The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read */
+                        template: {
+                            id: string;
+                            name: string;
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            /** @description The template’s newest version, where it is newer than the one the document is bound to (TPL-033) */
+                            newest: {
+                                id: string;
+                                number: string;
+                            } | null;
+                            /** @description The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029) */
+                            required: string[];
+                            /** @description How the document departs from its template (TPL-028) */
+                            departures: {
+                                /** @description Each section the document has that its template does not */
+                                added: {
+                                    node: string;
+                                    title: string;
+                                }[];
+                                /** @description Each starting section none of its sections came from */
+                                missing: {
+                                    key: string;
+                                    title: string;
+                                    required: boolean;
+                                    /** @description Why a required one was removed, as its remover said */
+                                    reason: string | null;
+                                }[];
+                            };
+                        } | null;
+                        /** @description Whether the caller may restructure the outline */
+                        mayEdit: boolean;
+                        /** @description Archived: left out of ordinary listings and search, and still read, referenced and published */
+                        archived: boolean;
+                        /** @description Whether the caller may archive and unarchive it */
+                        mayRetire: boolean;
+                        /** @description Its workflow state now, named by the definition deciding its next move */
+                        state: {
+                            key: string;
+                            name: string;
+                            /** @description Whether it counts as approved: a save starts a new draft */
+                            approved: boolean;
+                        };
+                        /** @description The workflow transitions the caller may take from its state now, in order */
+                        transitions: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            reasonRequired: boolean;
+                        }[];
+                        /** @description Each gate from its state, decided by its approvers */
+                        gates: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to once passed */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            /** @description What a rejection is called, and the state it returns to */
+                            reject: {
+                                name: string;
+                                /** @description Its workflow state now, named by the definition deciding its next move */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                            };
+                            /**
+                             * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                             * @enum {string}
+                             */
+                            publication: "none" | "permitted" | "required";
+                            /** @description Where it permits one, whether the caller may ask for it as they approve */
+                            mayPublish: boolean;
+                            /** @description Approvals this round on the current version */
+                            count: number;
+                            /** @description Approvals it needs, each by a distinct person */
+                            required: number;
+                            /** @description Whether the caller has approved it this round */
+                            approvedByCaller: boolean;
+                            /** @description Whether the caller may approve or reject it now */
+                            mayDecide: boolean;
+                        }[];
+                        /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                        revision: {
+                            number: number;
+                            /** Format: uuid */
+                            versionId: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                        /** @description Its effective and review-by dates, and its review's owner */
+                        dates: {
+                            /** @description When a revision approved from now takes effect, with the offset it was set in */
+                            effectiveAt: string | null;
+                            /** @description The day it is to be reviewed by */
+                            reviewBy: string | null;
+                            /** @description Who is prompted to review it */
+                            owner: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string | null;
+                            } | null;
+                            /** @description Whether its review-by day has passed */
+                            pastReview: boolean;
+                            /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
+                            effectiveFrom: string | null;
+                        };
+                        /** @description The scope a revision approved from now is effective for, and what waits on acceptance */
+                        scope: {
+                            /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
+                            scope: {
+                                axis: string;
+                                value: string;
+                                /** @description Who must accept a revision before it takes effect in this scope */
+                                party: {
+                                    /** @enum {string} */
+                                    kind: "principal" | "group";
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                } | null;
+                            }[];
+                            /** @description Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted */
+                            pending: {
+                                revision: number;
+                                axis: string;
+                                value: string;
+                                party: {
+                                    /** @enum {string} */
+                                    kind: "principal" | "group";
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                };
+                                /** @description Whether the caller is the party, or one of the group */
+                                mayAccept: boolean;
+                            }[];
+                        };
+                        /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
+                        onHold: boolean;
+                        /** @description Whether the caller may place a legal hold: an environment administrator */
+                        mayHold: boolean;
+                        /** @description Whether the caller may publish the document */
+                        mayPublish: boolean;
+                        /** @description Whether the caller may start and answer threads on the document */
+                        mayComment: boolean;
+                        /** @description Whether the caller may suggest changes to the document’s components where they may */
+                        maySuggest: boolean;
+                        /** @description Whether Review is offered the caller: they may comment on or suggest to the document */
+                        mayReview: boolean;
+                        /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
+                        layout: {
+                            id: string;
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            /** @description The language of the words below: those serving the document's own language */
+                            language: string;
+                            /** @description Every language a publish may be made in, as a language range: its own words first, then each further language it gives them in (the TR plan, TRb) */
+                            languages: string[];
+                            /** @description The numbering scheme this document is numbered and published with */
+                            scheme: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9), and `continued`, the words a continued table's label adds after its label, which a layout read at schema 3 or before has none of (themes 2, ruling R2), and `preview`, the notice and sentence a preview says in place of the draft's, which a layout read at schema 5 or before has none of (the preview, PV-D) */
+                            words: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14) */
+                            formats: string[];
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the document but may not edit it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description version_precondition: the document has changed since it was read */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description profile_invalid: each axis, or `axis.value`, the environment does not declare */
+                        unknown?: string[];
+                        /** @description version_precondition: the document as it now stands */
+                        current?: {
+                            id: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            /** @description The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read */
+                            outline: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The latest version's own field values, by field identifier: empty for a document with no template */
+                            values: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The latest version's parameter values, by name (templates.md, "Recorded on the document"): empty for a document with none */
+                            parameters: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The fields the document's template applies to the document and to each of its sections, at the current definitions; none for a document made blank, or whose template no longer resolves */
+                            fields: {
+                                document: {
+                                    id: string;
+                                    name: string;
+                                    dataType: string;
+                                    /** @enum {string} */
+                                    multiplicity: "one" | "many";
+                                    maxValues?: number;
+                                    validation: {
+                                        [key: string]: unknown;
+                                    };
+                                    required: boolean;
+                                    /** @description Every schema that makes it required, by identifier */
+                                    requiredBy: string[];
+                                    fixed: boolean;
+                                    /** @description Every schema that fixes it, by identifier */
+                                    fixedBy: string[];
+                                    /** @description Absent where no schema gives one */
+                                    default?: unknown;
+                                }[];
+                                section: {
+                                    id: string;
+                                    name: string;
+                                    dataType: string;
+                                    /** @enum {string} */
+                                    multiplicity: "one" | "many";
+                                    maxValues?: number;
+                                    validation: {
+                                        [key: string]: unknown;
+                                    };
+                                    required: boolean;
+                                    /** @description Every schema that makes it required, by identifier */
+                                    requiredBy: string[];
+                                    fixed: boolean;
+                                    /** @description Every schema that fixes it, by identifier */
+                                    fixedBy: string[];
+                                    /** @description Absent where no schema gives one */
+                                    default?: unknown;
+                                }[];
+                            };
+                            /** @description The schemas behind those fields, by name, for naming which require or fix one */
+                            schemas: {
+                                id: string;
+                                name: string;
+                            }[];
+                            /** @description The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read */
+                            template: {
+                                id: string;
+                                name: string;
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description The template’s newest version, where it is newer than the one the document is bound to (TPL-033) */
+                                newest: {
+                                    id: string;
+                                    number: string;
+                                } | null;
+                                /** @description The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029) */
+                                required: string[];
+                                /** @description How the document departs from its template (TPL-028) */
+                                departures: {
+                                    /** @description Each section the document has that its template does not */
+                                    added: {
+                                        node: string;
+                                        title: string;
+                                    }[];
+                                    /** @description Each starting section none of its sections came from */
+                                    missing: {
+                                        key: string;
+                                        title: string;
+                                        required: boolean;
+                                        /** @description Why a required one was removed, as its remover said */
+                                        reason: string | null;
+                                    }[];
+                                };
+                            } | null;
+                            /** @description Whether the caller may restructure the outline */
+                            mayEdit: boolean;
+                            /** @description Archived: left out of ordinary listings and search, and still read, referenced and published */
+                            archived: boolean;
+                            /** @description Whether the caller may archive and unarchive it */
+                            mayRetire: boolean;
+                            /** @description Its workflow state now, named by the definition deciding its next move */
+                            state: {
+                                key: string;
+                                name: string;
+                                /** @description Whether it counts as approved: a save starts a new draft */
+                                approved: boolean;
+                            };
+                            /** @description The workflow transitions the caller may take from its state now, in order */
+                            transitions: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                reasonRequired: boolean;
+                            }[];
+                            /** @description Each gate from its state, decided by its approvers */
+                            gates: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to once passed */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                /** @description What a rejection is called, and the state it returns to */
+                                reject: {
+                                    name: string;
+                                    /** @description Its workflow state now, named by the definition deciding its next move */
+                                    to: {
+                                        key: string;
+                                        name: string;
+                                    };
+                                };
+                                /**
+                                 * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                                 * @enum {string}
+                                 */
+                                publication: "none" | "permitted" | "required";
+                                /** @description Where it permits one, whether the caller may ask for it as they approve */
+                                mayPublish: boolean;
+                                /** @description Approvals this round on the current version */
+                                count: number;
+                                /** @description Approvals it needs, each by a distinct person */
+                                required: number;
+                                /** @description Whether the caller has approved it this round */
+                                approvedByCaller: boolean;
+                                /** @description Whether the caller may approve or reject it now */
+                                mayDecide: boolean;
+                            }[];
+                            /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                            revision: {
+                                number: number;
+                                /** Format: uuid */
+                                versionId: string;
+                                /** Format: date-time */
+                                at: string;
+                            } | null;
+                            /** @description Its effective and review-by dates, and its review's owner */
+                            dates: {
+                                /** @description When a revision approved from now takes effect, with the offset it was set in */
+                                effectiveAt: string | null;
+                                /** @description The day it is to be reviewed by */
+                                reviewBy: string | null;
+                                /** @description Who is prompted to review it */
+                                owner: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                } | null;
+                                /** @description Whether its review-by day has passed */
+                                pastReview: boolean;
+                                /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
+                                effectiveFrom: string | null;
+                            };
+                            /** @description The scope a revision approved from now is effective for, and what waits on acceptance */
+                            scope: {
+                                /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
+                                scope: {
+                                    axis: string;
+                                    value: string;
+                                    /** @description Who must accept a revision before it takes effect in this scope */
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    } | null;
+                                }[];
+                                /** @description Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted */
+                                pending: {
+                                    revision: number;
+                                    axis: string;
+                                    value: string;
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    };
+                                    /** @description Whether the caller is the party, or one of the group */
+                                    mayAccept: boolean;
+                                }[];
+                            };
+                            /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
+                            onHold: boolean;
+                            /** @description Whether the caller may place a legal hold: an environment administrator */
+                            mayHold: boolean;
+                            /** @description Whether the caller may publish the document */
+                            mayPublish: boolean;
+                            /** @description Whether the caller may start and answer threads on the document */
+                            mayComment: boolean;
+                            /** @description Whether the caller may suggest changes to the document’s components where they may */
+                            maySuggest: boolean;
+                            /** @description Whether Review is offered the caller: they may comment on or suggest to the document */
+                            mayReview: boolean;
+                            /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
+                            layout: {
+                                id: string;
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description The language of the words below: those serving the document's own language */
+                                language: string;
+                                /** @description Every language a publish may be made in, as a language range: its own words first, then each further language it gives them in (the TR plan, TRb) */
+                                languages: string[];
+                                /** @description The numbering scheme this document is numbered and published with */
+                                scheme: {
+                                    [key: string]: unknown;
+                                };
+                                /** @description The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9), and `continued`, the words a continued table's label adds after its label, which a layout read at schema 3 or before has none of (themes 2, ruling R2), and `preview`, the notice and sentence a preview says in place of the draft's, which a layout read at schema 5 or before has none of (the preview, PV-D) */
+                                words: {
+                                    [key: string]: unknown;
+                                };
+                                /** @description The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14) */
+                                formats: string[];
+                            };
+                        };
+                        /** @description outline_invalid: why the operation does not apply */
+                        reason?: string;
+                        /** @description values_invalid: each value that does not fit its field, in MET-022's shape */
+                        failures?: {
+                            code: string;
+                            field: string;
+                            rule: string;
+                            schemas: string[];
+                            detail: string;
+                        }[];
+                        /** @description values_unresolved: what the document's template names that does not resolve now */
+                        unresolved?: {
+                            /** @enum {string} */
+                            reference: "theme" | "layout" | "library" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
+                            id: string;
+                            /** @description component and query: the key of the required component it concerns */
+                            key?: string;
+                            /**
+                             * @description component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow
+                             * @enum {string}
+                             */
+                            why?: "missing" | "foreign" | "unapproved";
+                            field?: string;
+                            /** @enum {string} */
+                            level?: "document" | "section";
+                            schemas?: string[];
+                        }[];
+                        /** @description parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
+                        parameters?: {
+                            parameter: string;
+                            /** @description The field it seeds, where that is what is refused */
+                            field?: string;
+                            message?: string;
+                        }[];
+                        /** @description parameter_invalid: each parameter missing a required value or given an invalid one, with the rule it breaks and the value (TPL-018, TPL-045) */
+                        problems?: {
+                            parameter: string;
+                            rule: string;
+                            value: string;
+                            /** @description The field it seeds, where the rule is that field's and not the parameter's */
+                            field?: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     unarchiveDocument: {
         parameters: {
             query?: never;
@@ -61986,6 +62896,7 @@ export interface operations {
                      *           "number": "example"
                      *         },
                      *         "language": "en",
+                     *         "languages": [],
                      *         "scheme": {},
                      *         "words": {},
                      *         "formats": []
@@ -62230,7 +63141,10 @@ export interface operations {
                                 id: string;
                                 number: string;
                             };
+                            /** @description The language of the words below: those serving the document's own language */
                             language: string;
+                            /** @description Every language a publish may be made in, as a language range: its own words first, then each further language it gives them in (the TR plan, TRb) */
+                            languages: string[];
                             /** @description The numbering scheme this document is numbered and published with */
                             scheme: {
                                 [key: string]: unknown;
@@ -62503,7 +63417,10 @@ export interface operations {
                                     id: string;
                                     number: string;
                                 };
+                                /** @description The language of the words below: those serving the document's own language */
                                 language: string;
+                                /** @description Every language a publish may be made in, as a language range: its own words first, then each further language it gives them in (the TR plan, TRb) */
+                                languages: string[];
                                 /** @description The numbering scheme this document is numbered and published with */
                                 scheme: {
                                     [key: string]: unknown;
@@ -62879,7 +63796,10 @@ export interface operations {
                                     id: string;
                                     number: string;
                                 };
+                                /** @description The language of the words below: those serving the document's own language */
                                 language: string;
+                                /** @description Every language a publish may be made in, as a language range: its own words first, then each further language it gives them in (the TR plan, TRb) */
+                                languages: string[];
                                 /** @description The numbering scheme this document is numbered and published with */
                                 scheme: {
                                     [key: string]: unknown;
@@ -82000,7 +82920,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -82013,6 +82933,16 @@ export interface operations {
                             /** @enum {string} */
                             code: "source_retracted" | "source_corrected";
                             count: number;
+                        } | {
+                            /**
+                             * @description `component_untranslated`: a component published in its own language, `language`, for want of a translation into the one asked for; `translation_out_of_date`: a translation published out of date with a change that needs retranslating; `override_skipped`: a reference's overrides not applied to a translation, being made against its source's words
+                             * @enum {string}
+                             */
+                            code: "component_untranslated" | "translation_out_of_date" | "override_skipped";
+                            /** @description The outline node, by its identifier */
+                            node: string;
+                            /** @description For a component untranslated, the language it was published in: its own */
+                            language?: string;
                         } | {
                             /**
                              * @description `term_unresolved`: a term printed as the words it covers, being draft, missing or one the requester may not read; `term_deprecated`: a deprecated term printed; `term_fallback`: a term printed in its base language, having no label in the document's
@@ -92669,6 +93599,229 @@ export interface operations {
             };
         };
     };
+    getTranslationSettings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The translation settings */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "fallback": "source",
+                     *       "outOfDate": "publish",
+                     *       "note": {}
+                     *     }
+                     */
+                    "application/json": {
+                        /** @enum {string} */
+                        fallback: "source" | "refuse";
+                        /** @enum {string} */
+                        outOfDate: "publish" | "refuse";
+                        note: {
+                            [key: string]: string;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    setTranslationSettings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "fallback": "source",
+                 *       "outOfDate": "publish",
+                 *       "note": {}
+                 *     }
+                 */
+                "application/json": {
+                    /** @enum {string} */
+                    fallback: "source" | "refuse";
+                    /** @enum {string} */
+                    outOfDate: "publish" | "refuse";
+                    note: {
+                        [key: string]: string;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description The translation settings, as changed */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "fallback": "source",
+                     *       "outOfDate": "publish",
+                     *       "note": {}
+                     *     }
+                     */
+                    "application/json": {
+                        /** @enum {string} */
+                        fallback: "source" | "refuse";
+                        /** @enum {string} */
+                        outOfDate: "publish" | "refuse";
+                        note: {
+                            [key: string]: string;
+                        };
+                    };
+                };
+            };
+            /** @description invalid_request: a value it does not take, or a note too long */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not administer this environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     startGoogleSignIn: {
         parameters: {
             query?: {
@@ -100211,6 +101364,7 @@ export interface operations {
                      *           "number": "example"
                      *         },
                      *         "language": "en",
+                     *         "languages": [],
                      *         "scheme": {},
                      *         "words": {},
                      *         "formats": []
@@ -100456,7 +101610,10 @@ export interface operations {
                                 id: string;
                                 number: string;
                             };
+                            /** @description The language of the words below: those serving the document's own language */
                             language: string;
+                            /** @description Every language a publish may be made in, as a language range: its own words first, then each further language it gives them in (the TR plan, TRb) */
+                            languages: string[];
                             /** @description The numbering scheme this document is numbered and published with */
                             scheme: {
                                 [key: string]: unknown;

@@ -17,6 +17,7 @@ import {
   PUBLISHING_SCHEMA_21,
   PUBLISHING_SCHEMA_22,
   PUBLISHING_SCHEMA_23,
+  PUBLISHING_SCHEMA_24,
   type PublishedDocument,
   type PublishedDocument1,
 } from '@alloy-works/domain';
@@ -35,7 +36,7 @@ export type PublishedSchema = (PublishedDocument | PublishedDocument1)['schema']
  * for `publishing/12`, W14.4 for `publishing/13`, W14.5 for `publishing/14`, TB1.2 for
  * `publishing/15`, TB3.1 for `publishing/16`, TB3.2 for `publishing/17`, TG1 for `publishing/18`, TG2 for `publishing/19`, TG3 for `publishing/20`, WF2b for `publishing/21`, CIc for `publishing/22` and TMb for `publishing/23`.
  */
-export const PUBLISHING_SCHEMA_CURRENT: 'publishing/24' = PUBLISHING_SCHEMA;
+export const PUBLISHING_SCHEMA_CURRENT: 'publishing/25' = PUBLISHING_SCHEMA;
 
 const at = (version: number) =>
   fileURLToPath(new URL(`../templates/publication/${version}/main.typ`, import.meta.url));
@@ -125,6 +126,9 @@ export const PUBLICATION_TEMPLATE = {
   // TMb repointed `PUBLISHING_SCHEMA` at `publishing/24`, and the guard above asked for this row:
   // template 24, which sets a term's forms and the glossary and the abbreviations after the last node.
   24: { name: 'publication', version: 24, file: at(24) },
+  // TRb repointed `PUBLISHING_SCHEMA` at `publishing/25`, and the guard above asked for this row:
+  // template 25, which says a component is published in its source language for want of a translation.
+  25: { name: 'publication', version: 25, file: at(25) },
 } as const;
 
 /**
@@ -161,7 +165,8 @@ export const TEMPLATE_READING = {
   [PUBLISHING_SCHEMA_21]: 21,
   [PUBLISHING_SCHEMA_22]: 22,
   [PUBLISHING_SCHEMA_23]: 23,
-  [PUBLISHING_SCHEMA_CURRENT]: 24,
+  [PUBLISHING_SCHEMA_24]: 24,
+  [PUBLISHING_SCHEMA_CURRENT]: 25,
 } as const satisfies Record<
   | PublishedSchema
   | typeof PUBLISHING_SCHEMA_9
@@ -178,6 +183,7 @@ export const TEMPLATE_READING = {
   | typeof PUBLISHING_SCHEMA_20
   | typeof PUBLISHING_SCHEMA_21
   | typeof PUBLISHING_SCHEMA_22
-  | typeof PUBLISHING_SCHEMA_23,
+  | typeof PUBLISHING_SCHEMA_23
+  | typeof PUBLISHING_SCHEMA_24,
   keyof typeof PUBLICATION_TEMPLATE
 >;

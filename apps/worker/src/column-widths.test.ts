@@ -33,6 +33,7 @@ const NODE = 'widths'.padEnd(26, 'a');
 const TEMPLATE = PUBLICATION_TEMPLATE[TEMPLATE_READING[PUBLISHING_SCHEMA]].file;
 const layout = parseLayout({
   ...defaultLayout,
+  translations: undefined,
   matter: { ...defaultLayout.matter, cover: false, contents: null, lists: [] },
 });
 const MARGINS = layout.formats.pdf.margins;

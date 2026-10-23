@@ -197,6 +197,11 @@ interface Opened {
    */
   readonly formats: readonly string[];
   /**
+   * The languages its layout gives its words in, its own first (the TR plan, TRb): what a publish
+   * may be made in. None where the view names none.
+   */
+  readonly languages: readonly string[];
+  /**
    * The fields its template applies to it and to each of its sections, the schemas behind them, and
    * its own values (definitions.md, "A document's and a section's"): none for a blank document.
    */
@@ -297,6 +302,10 @@ function documentIn(data: unknown): Read {
       isRecord(layout) && Array.isArray(layout.formats)
         ? layout.formats.filter((format): format is string => typeof format === 'string')
         : ['pdf'],
+    languages:
+      isRecord(layout) && Array.isArray(layout.languages)
+        ? layout.languages.filter((each): each is string => typeof each === 'string')
+        : [],
     fields: {
       document: isRecord(fields) ? fieldsIn(fields.document) : [],
       section: isRecord(fields) ? fieldsIn(fields.section) : [],
@@ -1608,6 +1617,46 @@ export function DocumentPage({
     [client, id, opened, show],
   );
 
+  /**
+   * The document's own translation fallback, as its next version (LOC-037; the TR plan, TR-J), or
+   * null for the environment's policy: the parameters' way, refused or stale said in the notice.
+   */
+  const saveFallback = useCallback(
+    async (next: 'source' | 'refuse' | null): Promise<void> => {
+      if (pending.current || opened === null) return;
+      const before = latest.current ?? opened;
+      pending.current = true;
+      setBusy(true);
+      try {
+        const { data, error, response } = await client.PUT(
+          '/v1/documents/{id}/translation-fallback',
+          { params: { path: { id } }, body: { openedFrom: before.version.id, fallback: next } },
+        );
+        const after = documentIn(data);
+        if (after !== undefined && after !== 'unreadable') {
+          show(after);
+          setNotice(null);
+          return;
+        }
+        if (response.status === 409) {
+          const refusal: unknown = error;
+          const current = documentIn(isRecord(refusal) ? refusal.current : undefined);
+          if (current !== undefined && current !== 'unreadable') show(current);
+          else setAttempt((count) => count + 1);
+          setNotice(SOMEBODY_ELSE);
+          return;
+        }
+        setNotice('The fallback was not saved. Try again.');
+      } catch {
+        setNotice('The fallback was not saved. Try again.');
+      } finally {
+        pending.current = false;
+        setBusy(false);
+      }
+    },
+    [client, id, opened, show],
+  );
+
   /** The document's profile, whole, as its next version (REU-022; the R6 plan, R6-B), as parameters are. */
   const saveProfile = useCallback(
     async (next: StoredProfile | null): Promise<ProfileSaved> => {
@@ -2790,6 +2839,13 @@ export function DocumentPage({
                       }
                       followMs={followMs}
                       formats={document.formats}
+                      language={document.outline.language}
+                      languages={document.languages}
+                      fallback={{
+                        own: document.outline.fallback ?? null,
+                        mayChange: document.mayEdit === true && !document.archived,
+                        onChange: (next) => void saveFallback(next),
+                      }}
                       shown={atPanel?.request ?? null}
                       {...(publishProfile === null
                         ? {}

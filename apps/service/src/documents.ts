@@ -3,6 +3,7 @@ import type {
   DocumentParams,
   DocumentListQuery,
   DocumentParametersBody,
+  DocumentFallbackBody,
   DocumentProfileBody,
   DocumentParametersQuery,
   DocumentParametersView,
@@ -37,6 +38,7 @@ import {
   readLocks,
   recordDocumentParameters,
   recordDocumentProfile,
+  recordDocumentFallback,
   recordDocumentValues,
   versionContents,
   latestVersionsOf,
@@ -69,6 +71,7 @@ import {
   decide,
   number,
   PUBLISHING_FORMATS,
+  layoutIn,
   readOutline,
   resolve,
   templateDefinitionSchema,
@@ -226,6 +229,9 @@ async function documentView(
   version: StoredVersion,
 ): Promise<DocumentView> {
   const layout = await documentLayout(viewer.trx, document.id);
+  // Its words as they serve the document's own language: its own, or a further language's (TRb).
+  const read = readOutline(version.content, { artifact: document.id, version: version.id });
+  const spoken = (read.ok ? layoutIn(layout.layout, read.outline.language) : null) ?? layout.layout;
   return {
     id: document.id,
     space: document.space,
@@ -251,9 +257,14 @@ async function documentView(
     layout: {
       id: layout.artifactId,
       version: { id: layout.versionId, number: layout.number },
-      language: layout.layout.language,
-      scheme: { ...layout.layout.scheme },
-      words: { ...layout.layout.words },
+      language: spoken.language,
+      // Every language a publish may be made in: its own words', then each further language's.
+      languages: [
+        layout.layout.language,
+        ...(layout.layout.translations ?? []).map((each) => each.language),
+      ],
+      scheme: { ...spoken.scheme },
+      words: { ...spoken.words },
       // Every layout makes the PDF; Word only where it declares a Word page (Word 1, ruling R4).
       formats: PUBLISHING_FORMATS.filter((format) => layout.layout.formats[format] !== undefined),
     },
@@ -933,6 +944,43 @@ export function documentHandlers(
           if (current.version.id !== body.openedFrom) throw stale(current);
           throw refusedParameters(answer);
         }
+      }
+    },
+    recordDocumentFallback: async (
+      request: FastifyRequest,
+      { trx, principalId, facts }: Authorised,
+    ): Promise<DocumentView> => {
+      const { id } = request.params as DocumentParams;
+      const body = request.body as DocumentFallbackBody;
+      const viewer = {
+        trx,
+        principalId,
+        mayEdit: decide('edit', facts).allowed,
+        mayPublish: decide('publish', facts).allowed,
+        mayRetire: decide('retire', facts).allowed,
+        mayHold: administersTenant(facts),
+        facts,
+        mayComment: decide('comment', facts).allowed,
+        mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
+        maySuggest: decide('suggest', facts).allowed,
+      };
+      const document = await readDocument(trx, id);
+      if (!document) throw notFound();
+      const answer = await recordDocumentFallback(trx, {
+        documentId: id,
+        openedFrom: body.openedFrom,
+        author: principalId,
+        fallback: body.fallback,
+      });
+      switch (answer.answer) {
+        case 'recorded':
+          return documentView(viewer, document, answer.version);
+        case 'version.unchanged':
+          return documentView(viewer, document, answer.current);
+        case 'version.precondition':
+          throw stale(await documentView(viewer, document, answer.current));
+        case 'artifact.missing':
+          throw stale(await latestView(viewer, id));
       }
     },
     recordDocumentProfile: async (

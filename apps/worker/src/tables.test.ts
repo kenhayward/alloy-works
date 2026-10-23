@@ -26,6 +26,7 @@ const COMPONENT = '00000000-0000-4000-8000-000000000001';
 /** No cover and no contents, but the default layout's list of tables, which opens the document. */
 const listed = parseLayout({
   ...defaultLayout,
+  translations: undefined,
   matter: { ...defaultLayout.matter, cover: false, contents: null },
 });
 
@@ -218,7 +219,7 @@ describe('a table in the PDF (tables 2)', () => {
         )
         .then(readPdf),
     ]);
-    expect(TEMPLATE_READING[PUBLISHING_SCHEMA]).toBe(24);
+    expect(TEMPLATE_READING[PUBLISHING_SCHEMA]).toBe(25);
     expect(after.pages).toBe(before.pages);
     expect(after.taggedText).toEqual(before.taggedText);
     expect(after.artifactText).toEqual(before.artifactText);

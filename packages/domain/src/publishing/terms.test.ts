@@ -11,7 +11,12 @@ import type { ResolvedTheme } from '../theme/read.js';
 import { resolved } from '../theme/theme.fixture.js';
 
 import { assemble } from './assemble.js';
-import { defaultLayout, TENTH_DEFAULT_LAYOUT, type Layout } from './layout.js';
+import {
+  defaultLayout,
+  LAYOUT_SCHEMA_VERSION,
+  TENTH_DEFAULT_LAYOUT,
+  type Layout,
+} from './layout.js';
 import type {
   PublishedBlock,
   PublishedDocument,
@@ -385,7 +390,7 @@ describe('terms published (TMb)', () => {
   it('places neither under a layout declaring none, and links no use', () => {
     const document = published(
       publish(component(paragraph('p1', termed('rpm', 'm1', RPM))), {
-        layout: TENTH_DEFAULT_LAYOUT,
+        layout: { ...TENTH_DEFAULT_LAYOUT, schemaVersion: LAYOUT_SCHEMA_VERSION },
       }),
     );
     expect(document.back).toMatchObject({ glossary: null, abbreviations: null });

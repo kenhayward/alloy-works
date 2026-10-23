@@ -40,6 +40,7 @@ const TEMPLATE = PUBLICATION_TEMPLATE[TEMPLATE_READING[PUBLISHING_SCHEMA]].file;
 /** No cover, contents or lists: the document's own pages alone, numbered from 1. */
 const layout = parseLayout({
   ...defaultLayout,
+  translations: undefined,
   matter: { ...defaultLayout.matter, cover: false, contents: null, lists: [] },
 });
 const PAGE = layout.formats.pdf.page;

@@ -106,6 +106,7 @@ const compile = async () => {
     refused: [],
     layout: parseLayout({
       ...defaultLayout,
+      translations: undefined,
       matter: {
         ...defaultLayout.matter,
         cover: false,

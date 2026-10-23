@@ -48,7 +48,13 @@ import type { MathsTree } from './maths.js';
  * stored - only its digest is, on the publication - so a later shape is a new schema string and a new
  * template version, not a migration.
  */
-export const PUBLISHING_SCHEMA = 'publishing/24';
+export const PUBLISHING_SCHEMA = 'publishing/25';
+
+/**
+ * The document as it stood before a component could be marked untranslated, frozen by TRb for the
+ * reason `publishing/16` is: `apps/worker/templates/publication/24/` asserts it.
+ */
+export const PUBLISHING_SCHEMA_24 = 'publishing/24';
 
 /**
  * The document as it stood before a run could be a term, frozen by TMb for the reason
@@ -746,6 +752,11 @@ export interface PublishedNode {
   readonly direction: 'ltr' | 'rtl' | null;
   readonly blocks: readonly PublishedBlock[];
   readonly children: readonly PublishedNode[];
+  /**
+   * Since `publishing/25` (the TR plan, TRb): a component published in its source language for want
+   * of a translation into the document's, the words its mark says before it; else null (LOC-037).
+   */
+  readonly untranslated: string | null;
 }
 
 /**

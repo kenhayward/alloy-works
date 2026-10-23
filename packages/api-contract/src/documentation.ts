@@ -317,6 +317,7 @@ const operationTags = {
     'getDocumentParameters',
     'recordDocumentParameters',
     'recordDocumentProfile',
+    'recordDocumentFallback',
     'getContributions',
   ],
   Definitions: ['listDefinitions', 'createDefinition', 'getDefinition', 'recordDefinitionVersion'],
@@ -614,6 +615,8 @@ const operationTags = {
     'setDataSettings',
     'getImportSettings',
     'setImportSettings',
+    'getTranslationSettings',
+    'setTranslationSettings',
   ],
   'Legal holds': ['placeHold', 'releaseHold', 'listHolds'],
   'Deletion and retention': ['listDeleted', 'getRetention', 'setRetention'],
@@ -877,6 +880,8 @@ const descriptions: Readonly<Record<string, string>> = {
     'Returns the parameters the document’s template declares, their current values, and each change with who made it and when, newest first.',
   recordDocumentParameters:
     'Replaces the document’s parameter values as one version while leaving its outline and values unchanged. A parameter its template does not declare changeable keeps its value. Supply the version previously read.',
+  recordDocumentFallback:
+    "Replaces the document's own translation fallback, as one version with its outline, values and parameters unchanged: where a component it places has no translation into the language a publish is made in, `source` publishes it in its own language, marked as untranslated, and `refuse` fails the publish. Null leaves the environment's translation policy to decide. Supply the version previously read.",
   recordDocumentProfile:
     'Replaces the profile the document declares, the values it takes on each condition axis, as one version with its outline, values and parameters unchanged. A publish keeps the text its profile selects. Supply the version previously read.',
   getContributions:
@@ -1390,6 +1395,10 @@ const descriptions: Readonly<Record<string, string>> = {
     'Reads the environment’s identity policy for imports: whether the names a file carries are kept with the member each matches, kept as text, or discarded when an import is accepted.',
   setImportSettings:
     'Changes the environment’s identity policy for imports. It applies to each import accepted from then on, once, at acceptance. Needs administer at the environment.',
+  getTranslationSettings:
+    'Reads the environment’s policy for publishing in a language: whether a component with no translation into it is published in its own language, marked as untranslated, or fails the publish; whether a translation out of date with a change that needs retranslating publishes or fails it; and the words the mark says, by language.',
+  setTranslationSettings:
+    'Changes the environment’s policy for publishing in a language, whole. A document’s own fallback, where it states one, stands over it. It applies to each publish asked for from then on. Needs administer at the environment.',
   startOrganisationSignIn:
     'Browser sign-in route. Redirects to the organisation’s identity provider; an API token cannot complete this flow.',
   finishOrganisationSignIn:

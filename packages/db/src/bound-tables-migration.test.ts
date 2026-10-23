@@ -185,7 +185,10 @@ describe('migration 0055, which gives the default theme and layout what a bound 
       fields: SEVENTH_DEFAULT_CATALOGUES.table.styles[0]!.fields,
       unitBrackets: 'parentheses',
     });
-    expect(layout).toMatchObject({ number: '0.8', layout: EIGHTH_DEFAULT_LAYOUT });
+    expect(layout).toMatchObject({
+      number: '0.8',
+      layout: { ...EIGHTH_DEFAULT_LAYOUT, schemaVersion: LAYOUT_SCHEMA_VERSION },
+    });
     // The request waiting keeps the 0.6 and the 0.7 it was made under; one made now records the new.
     expect(handed!.theme!.versionId).toBe(SIXTH_DEFAULT_THEME_VERSION);
     expect(handed!.layout).toEqual({
