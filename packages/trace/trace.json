@@ -6367,7 +6367,7 @@
       "id": "IMP-012",
       "area": "IMP",
       "statement": "Embedded metadata that is not content - device, location, account identifiers - must be handled by declared policy (**AST-007**)",
-      "tranche": "T6",
+      "tranche": "T7",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
       "line": 98
