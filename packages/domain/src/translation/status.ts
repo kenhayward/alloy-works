@@ -15,20 +15,23 @@ export const TRANSLATION_STATUSES = [
 ] as const;
 
 export type TranslationStatus =
-  | { readonly status: 'untranslated' | 'translated' }
+  | { readonly status: 'untranslated' | 'translated' | 'inTranslation' }
   /** `retranslate` where any later source version was declared to need it (LOC-015, LOC-031). */
   | { readonly status: 'outOfDate'; readonly retranslate: boolean };
 
 /**
  * A variant's status, never stored (TR-E; LOC-014): untranslated where nothing records what it
- * translates; out of date the moment any main-line version follows the one it translates.
+ * translates; out of date the moment any main-line version follows the one it translates; in
+ * translation over either while a job holds it out (XL-E).
  */
 export function translationStatus(input: {
   readonly translates: string | null;
   readonly laterSource: readonly { readonly retranslate: boolean }[];
+  readonly inTranslation?: boolean | undefined;
 }): TranslationStatus {
+  if (input.translates !== null && input.laterSource.length === 0) return { status: 'translated' };
+  if (input.inTranslation === true) return { status: 'inTranslation' };
   if (input.translates === null) return { status: 'untranslated' };
-  if (input.laterSource.length === 0) return { status: 'translated' };
   return { status: 'outOfDate', retranslate: input.laterSource.some((each) => each.retranslate) };
 }
 

@@ -142,6 +142,9 @@ describe('the audit kinds', () => {
       // The TR plan's (TR-C, TR-D): a source change declared, and a translation marked current.
       'translation.declared',
       'translation.marked_current',
+      // The XL plan's (XL-D): a job sent, and one closed.
+      'translation.job_sent',
+      'translation.job_closed',
     ];
     expect([...auditKinds].sort()).toEqual([...listed].sort());
     for (const kind of auditKinds) {

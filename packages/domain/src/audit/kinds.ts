@@ -141,8 +141,8 @@ const Revised = z.strictObject({
   became: Canonical,
 });
 
-/** An export, and what of. */
-const Exported = z.strictObject({ export: Id, of: z.enum(['audit', 'tenant']) });
+/** An export, and what of: a translation job's file is downloaded as it is written (XL-D). */
+const Exported = z.strictObject({ export: Id, of: z.enum(['audit', 'tenant', 'translation_job']) });
 
 interface KindSpec {
   /** The requirements it answers (LIF-063). */
@@ -626,6 +626,24 @@ export const auditKindSpecs = {
     ['LOC-013'],
     z.strictObject({ line: Id, language: z.string().min(2).max(35), version: Id, translates: Id }),
     'packages/db/src/translation.ts',
+  ),
+  // A document's components sent to a language as a job (LOC-033; the XL plan, XL-D): how many were
+  // sent and how many listed as not, never their words.
+  'translation.job_sent': kind(
+    ['LOC-033'],
+    z.strictObject({
+      job: Id,
+      language: z.string().min(2).max(35),
+      sent: z.int().nonnegative(),
+      notSent: z.int().nonnegative(),
+    }),
+    'packages/db/src/translation-jobs.ts',
+  ),
+  // A job closed, ending what was still out (XL-D): how many items had not come back.
+  'translation.job_closed': kind(
+    ['LOC-033'],
+    z.strictObject({ job: Id, outstanding: z.int().nonnegative() }),
+    'packages/db/src/translation-jobs.ts',
   ),
   // A revision accepted by its party in one scope, so it takes effect there (LIF-047; R15-E).
   'revision.accepted': kind(
