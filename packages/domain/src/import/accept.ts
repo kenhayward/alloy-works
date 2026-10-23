@@ -1,5 +1,5 @@
 import type { BlockNode } from '../content/model/blocks.js';
-import { inBlocks, type ProposedChange } from './changes.js';
+import { nodesIn, type ProposedChange } from './changes.js';
 import type { ImportIdentity, ImportPolicy } from './structure.js';
 
 /**
@@ -14,6 +14,34 @@ export interface AcceptedComponent {
   readonly node: string;
   readonly headings: readonly string[];
   readonly blocks: readonly BlockNode[];
+}
+
+type Within = Parameters<typeof resolveReferences>[1];
+
+/** Each identifier's first component, and each heading's node: indexed once for each `within`. */
+const indexes = new WeakMap<
+  Within,
+  { readonly blocks: Map<string, string>; readonly headings: Map<string, string> }
+>();
+const identifiersIn = (blocks: readonly unknown[]) =>
+  new Set([...nodesIn(blocks)].flatMap((each) => (typeof each.id === 'string' ? [each.id] : [])));
+
+function indexOf(within: Within) {
+  let index = indexes.get(within);
+  if (index) return index;
+  index = { blocks: new Map(), headings: new Map() };
+  for (const each of within.components) {
+    for (const id of identifiersIn(each.blocks)) {
+      if (!index.blocks.has(id)) index.blocks.set(id, each.component);
+    }
+  }
+  for (const each of [...within.sections, ...within.components]) {
+    for (const heading of each.headings) {
+      if (!index.headings.has(heading)) index.headings.set(heading, each.node);
+    }
+  }
+  indexes.set(within, index);
+  return index;
 }
 
 /**
@@ -31,16 +59,16 @@ export function resolveReferences(
   },
 ): { readonly blocks: readonly BlockNode[]; readonly unresolved: readonly string[] } {
   const unresolved: string[] = [];
+  const index = indexOf(within);
+  const mine = identifiersIn(own.blocks);
   const target = (block: string): object | undefined => {
-    if (inBlocks(own.blocks, block)) return { kind: 'block', block };
+    if (mine.has(block)) return { kind: 'block', block };
     const admitted = within.anchors[block] ?? block;
-    if (inBlocks(own.blocks, admitted)) return { kind: 'block', block: admitted };
-    const other = within.components.find((each) => inBlocks(each.blocks, admitted));
-    if (other) return { kind: 'component', component: other.component, block: admitted };
-    const heading = [...within.sections, ...within.components].find((each) =>
-      each.headings.includes(block),
-    );
-    if (heading) return { kind: 'node', node: heading.node };
+    if (mine.has(admitted)) return { kind: 'block', block: admitted };
+    const other = index.blocks.get(admitted);
+    if (other !== undefined) return { kind: 'component', component: other, block: admitted };
+    const heading = index.headings.get(block);
+    if (heading !== undefined) return { kind: 'node', node: heading };
     unresolved.push(block);
     return undefined;
   };

@@ -11,27 +11,32 @@ const input = workerData as {
   readonly type: ImportFileType;
   readonly levels: ImportLevels;
 };
-const read = readImport(input.bytes, input.type);
-if (!read.ok) {
-  parentPort!.postMessage({ ok: false, refusal: read.refusal });
-} else {
-  const language = read.language ?? 'en';
-  const { parts, anchors } = proposeImport(read.flow, input.levels, {
-    language,
-    direction: 'ltr',
-    newIdentifier: () => blockIdentifierFrom(randomBytes(16)),
-    comments: read.comments,
-  });
-  parentPort!.postMessage({
-    ok: true,
-    parts,
-    anchors,
-    report: read.report,
-    title: read.title,
-    language: read.language,
-    references: read.references,
-    identities: read.identities,
-    images: read.images,
-    properties: read.properties,
-  });
+// Whatever the reading throws is the file's fault: the same bytes fail the same way every time.
+try {
+  const read = readImport(input.bytes, input.type);
+  if (!read.ok) {
+    parentPort!.postMessage({ ok: false, refusal: read.refusal });
+  } else {
+    const language = read.language ?? 'en';
+    const { parts, anchors } = proposeImport(read.flow, input.levels, {
+      language,
+      direction: 'ltr',
+      newIdentifier: () => blockIdentifierFrom(randomBytes(16)),
+      comments: read.comments,
+    });
+    parentPort!.postMessage({
+      ok: true,
+      parts,
+      anchors,
+      report: read.report,
+      title: read.title,
+      language: read.language,
+      references: read.references,
+      identities: read.identities,
+      images: read.images,
+      properties: read.properties,
+    });
+  }
+} catch {
+  parentPort!.postMessage({ ok: false, refusal: 'unreadable' });
 }

@@ -65,6 +65,7 @@ export const reportMessages = {
     textBox: 'A text box was left out.',
     imageFormat: 'An image in a format other than PNG or JPEG was left out.',
     imageRefused: 'An image that could not be read as an image was left out.',
+    imageLimit: 'Images past the most one import may hold were left out.',
     trackedChange:
       'A tracked change that could not become a suggestion was rejected, its text left as it stood before.',
   },

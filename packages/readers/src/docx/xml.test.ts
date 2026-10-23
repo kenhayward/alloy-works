@@ -76,6 +76,13 @@ describe('readXml', () => {
     });
   });
 
+  it('refuses a part of more than about half a million elements by default', () => {
+    const many = (count: number) =>
+      strToU8(`<w:body xmlns:w="${W}">${'<w:p/>'.repeat(count)}</w:body>`);
+    expect(readXml(many(600_000), keepT)).toMatchObject({ ok: false, refusal: 'nodes' });
+    expect(readXml(many(400_000), keepT).ok).toBe(true);
+  });
+
   it('refuses what is not well formed', () => {
     expect(readXml(strToU8(`<w:p xmlns:w="${W}"><w:r></w:p>`), keepT)).toMatchObject({
       ok: false,

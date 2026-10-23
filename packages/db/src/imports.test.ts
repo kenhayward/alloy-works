@@ -311,13 +311,13 @@ describe('an import', () => {
   it('IMP-004 is read again at the levels its importer chooses', async () => {
     const made = await proposed();
     const changed = await tenant((trx) =>
-      changeImportLevels(trx, made.id, { section: 2, component: 3 }),
+      changeImportLevels(trx, made.id, { section: 2, component: 3 }, remove),
     );
     expect(changed).toMatchObject({ state: 'reading', levels: { section: 2, component: 3 } });
     expect(await tenant((trx) => importParts(trx, made.id))).toEqual([]);
     // Not again while it is being read.
     expect(
-      await tenant((trx) => changeImportLevels(trx, made.id, { section: 1, component: 2 })),
+      await tenant((trx) => changeImportLevels(trx, made.id, { section: 1, component: 2 }, remove)),
     ).toBeUndefined();
   });
 

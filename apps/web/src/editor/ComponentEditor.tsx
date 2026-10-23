@@ -2,7 +2,7 @@ import type { ComponentView, createApiClient } from '@alloy-works/api-client';
 import { DatesButton, DatesChips, datesIn, type Dates } from '../lifecycle/Dates.js';
 import { NO_SCOPE, ScopeButton, ScopeChips, scopeIn, type ScopeNow } from '../lifecycle/Scope.js';
 import { BringBackButton, LinesControl, linesIn } from '../lifecycle/Lines.js';
-import type { ContentDocument } from '@alloy-works/domain';
+import type { ContentDocument, ReaderResult } from '@alloy-works/domain';
 import {
   bindingDigestInput,
   bindingsIn,
@@ -141,6 +141,8 @@ import { Chip } from '../parts/Chip.js';
 import { ConfirmDialog } from '../parts/ConfirmDialog.js';
 import { ListPanel } from './ListPanel.js';
 import { PasteReport, shownOfPaste } from './PasteReport.js';
+import { importFile } from '../imports/ImportFile.js';
+import { importLink } from '../imports/links.js';
 import { PreformattedPanel } from './PreformattedPanel.js';
 import {
   dismissedFor,
@@ -453,6 +455,8 @@ const NOT_DROPPED = 'Dragging content in is not available yet. Copy and paste it
 /** A link names a block the newest version no longer holds (SCH-057): the page says so. */
 export const LINKED_PART_GONE =
   'The part the link names is no longer in this component. This is its latest version.';
+const PASTE_HELD =
+  'This paste holds headings. Keep it as one component or break it out: the paste report offers both.';
 const CLIPBOARD_UNREADABLE =
   'The clipboard could not be read, so nothing was pasted. Allow this page to see the clipboard and try again.';
 
@@ -786,6 +790,12 @@ export function ComponentEditor({
   // until it is closed or the next paste replaces it.
   const pasteRegion = useRef<HTMLElement | null>(null);
   const [pasteReport, setPasteReport] = useState<readonly ReportEntry[] | null>(null);
+  // A paste holding headings, waiting on the author's choice (CNT-168).
+  const [heldPaste, setHeldPaste] = useState<{
+    readonly html: string;
+    readonly reading: ReaderResult;
+  } | null>(null);
+  const [breakingOut, setBreakingOut] = useState(false);
   // What a paste said while the lock it is the first change for was still being claimed. The claim
   // announces itself when it lands, in the one live region, and would otherwise replace it unheard.
   const pasteSaid = useRef<string | null>(null);
@@ -1766,7 +1776,13 @@ export function ComponentEditor({
           editing.changed();
         }
       },
+      heldForBreakout: (held) => {
+        setHeldPaste(held);
+        setPasteReport(shownOfPaste(held.reading.ok ? held.reading.input.report : []));
+        setNotice(PASTE_HELD);
+      },
       pasted: ({ ok, report }) => {
+        setHeldPaste(null);
         const { beside, said } = pasteSentence(ok, report);
         setPasteReport(beside.length > 0 ? beside : null);
         setNotice(said);
@@ -2422,6 +2438,41 @@ export function ComponentEditor({
     if (outcome.ok && controls.current?.view().phase !== 'editing') pasteSaid.current = said;
     (openFootnote(view) ?? view).focus();
   };
+  /** A held paste kept as one component: placed as any paste is, its headings made paragraphs. */
+  const keepPaste = () => {
+    const view = surface;
+    if (view === null || heldPaste === null) return;
+    setHeldPaste(null);
+    const outcome = pasteInto(view.state, heldPaste.reading, newBlockIdentifier);
+    if (outcome.ok) view.dispatch(outcome.transaction);
+    const { beside, said } = pasteSentence(outcome.ok, outcome.report);
+    setPasteReport(beside.length > 0 ? beside : null);
+    setNotice(said);
+    if (outcome.ok && controls.current?.view().phase !== 'editing') pasteSaid.current = said;
+    view.focus();
+  };
+  /**
+   * A held paste broken out (CNT-168): an import of its HTML in this component's space, opened for
+   * review there. Nothing is placed here; what accepting it makes follows the import's rules.
+   */
+  const breakOutPaste = async () => {
+    if (heldPaste === null || spaceId === null) return;
+    setBreakingOut(true);
+    const stamp = new Date().toISOString().slice(0, 16).replace('T', ' ').replace(':', '.');
+    const made = await importFile(client, spaceId, {
+      name: `Pasted ${stamp}.html`,
+      type: 'html',
+      bytes: new TextEncoder().encode(heldPaste.html),
+    });
+    setBreakingOut(false);
+    if (!made.ok) {
+      setNotice(made.said);
+      return;
+    }
+    setHeldPaste(null);
+    setPasteReport(null);
+    window.location.hash = importLink(made.id);
+  };
   const size = surface === null ? undefined : sizeOf(surface.state.doc);
   const mayCut = shown.mayEdit && loaded.state === 'open';
   // Standalone, Done is Done editing and releases a lock only this session can hold. In place it is
@@ -2999,7 +3050,17 @@ export function ComponentEditor({
               <PasteReport
                 ref={pasteRegion}
                 entries={pasteReport}
+                {...(heldPaste === null
+                  ? {}
+                  : {
+                      held: {
+                        onKeep: keepPaste,
+                        onBreakOut: () => void breakOutPaste(),
+                        busy: breakingOut,
+                      },
+                    })}
                 onClose={() => {
+                  setHeldPaste(null);
                   setPasteReport(null);
                   surface.focus();
                 }}

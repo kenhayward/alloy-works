@@ -3570,7 +3570,7 @@ export interface paths {
         put?: never;
         /**
          * Accept a proposal, making its document, sections and components in one act
-         * @description Accepts a proposal: its document, sections and components are made in one act, by the person accepting, each at 0.1 and each recording the file it came from. Blank, or from the template named. Each Word author’s tracked changes become one suggestion on each component, and each comment a thread with its replies, all made by the person accepting and attributed to the Word author as the environment’s policy says, with the member it matched; the policy applied is recorded on the import and on each. Refused while a cross-reference outside the file is unresolved. How many parts were accepted unchanged, edited, merged, split or renamed is recorded on the import. Only its importer may accept it, and they need create in the space.
+         * @description Accepts a proposal: its document, sections and components are made in one act, by the person accepting, each at 0.1 and each recording the file it came from. Blank, or from the template named. Each Word author’s tracked changes become one suggestion on each component, and each comment a thread with its replies, all made by the person accepting and attributed to the Word author as the environment’s policy says, with the member it matched; the policy applied is recorded on the import and on each. Refused while a cross-reference outside the file is unresolved. How many parts were accepted unchanged, edited, merged, split or renamed is recorded on the import. Imported again, no document is made: each changed part becomes one suggestion against its component as it is now, by the person accepting, so an edit made in the space is never overwritten, its tracked changes and comments on top; each new part a new component placed in the earlier document after the part before it; and each component no part matched is kept and flagged on the document by a thread. A component the person accepting may not suggest on, or one deleted or archived since it was matched, is skipped and said, unless none can be suggested on. Only its importer may accept it, and they need create in the space. It is made against the revision of the import its importer read, and refused as `import_changed` once the import is past it.
          */
         post: operations["acceptImport"];
         delete?: never;
@@ -3590,7 +3590,7 @@ export interface paths {
         put?: never;
         /**
          * Edit a proposal: move a split, split, merge or rename a part, or change its kind
-         * @description Edits a proposal before it is accepted: moves blocks across the split between two components, splits a component at a block, merges a part with the one after it, renames a part, or makes a part a section or a component. It also points a cross-reference whose target is not in the file at a block of the import or of a component in the space, or makes it the text it showed, said in the report; and confirms the member a name in the file matches by name. Each edit is checked as it is made and refused, saying why, if what it makes could not be accepted. It is made against the revision last read, and refused if the proposal changed since. The proposal as the file was read is kept unchanged beside it. Only its importer may edit it.
+         * @description Edits a proposal before it is accepted: moves blocks across the split between two components, splits a component at a block, merges a part with the one after it, renames a part, or makes a part a section or a component. Imported again, it matches a part to another component the earlier import made, or marks it new. It also points a cross-reference whose target is not in the file at a block of the import or of a component in the space, or makes it the text it showed, said in the report; and confirms the member a name in the file matches by name. Each edit is checked as it is made and refused, saying why, if what it makes could not be accepted. It is made against the revision last read, and refused if the proposal changed since. The proposal as the file was read is kept unchanged beside it. Only its importer may edit it.
          */
         post: operations["editImport"];
         delete?: never;
@@ -3619,6 +3619,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/imports/{id}/kind": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Import as new, or as an update of what an earlier import of the same file made
+         * @description Chooses whether a file is imported as new or as an update of what an earlier accepted import of the same file made: the import names that earlier one once its name or its bytes are in, before they are read. Imported again, each component part is matched to a component that import made: by the heading it was read from, then by the component’s title now, then by its place between two parts matched so; each is then unchanged, changed against the component as it is now, or new, and what no part matches is gone. Its importer may change a match, or mark a part new, through the edits. Only its importer may choose, and they need read on the earlier document. It is made against the revision of the import its importer read, and refused as `import_changed` once the import is past it.
+         */
+        put: operations["setImportKind"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/imports/{id}/levels": {
         parameters: {
             query?: never;
@@ -3629,7 +3649,7 @@ export interface paths {
         get?: never;
         /**
          * Change the heading levels a proposal breaks out at, reading it again
-         * @description Changes the heading levels a proposal breaks out at: which level starts a section and which a component. The file is read again. Only its importer may change them.
+         * @description Changes the heading levels a proposal breaks out at: which level starts a section and which a component. The file is read again. Only its importer may change them. It is made against the revision of the import its importer read, and refused as `import_changed` once the import is past it.
          */
         put: operations["setImportLevels"];
         post?: never;
@@ -67987,7 +68007,28 @@ export interface operations {
                      *       "references": [],
                      *       "identities": [],
                      *       "policy": "map",
-                     *       "policyApplied": false
+                     *       "policyApplied": false,
+                     *       "kind": "first",
+                     *       "earlier": "example",
+                     *       "recognised": {
+                     *         "import": "example",
+                     *         "match": "hash",
+                     *         "fileName": "example",
+                     *         "importer": "example",
+                     *         "importerName": "example",
+                     *         "at": "example",
+                     *         "document": "example",
+                     *         "documentTitle": "example"
+                     *       },
+                     *       "earlierMade": [],
+                     *       "gone": [],
+                     *       "outcome": {
+                     *         "suggested": [],
+                     *         "made": [],
+                     *         "gone": [],
+                     *         "skipped": [],
+                     *         "unchanged": -9007199254740991
+                     *       }
                      *     }
                      */
                     "application/json": {
@@ -68039,6 +68080,20 @@ export interface operations {
                             blocks: number;
                             /** @description Its text as the file had it, its heading first */
                             source: string;
+                            /** @description For an import again, what this part is to what the earlier import made; null otherwise */
+                            again: {
+                                /**
+                                 * @description `unchanged`: its text is its component’s now; `changed`: it differs, suggested at acceptance; `new`: it matches no component, made and placed at acceptance
+                                 * @enum {string}
+                                 */
+                                status: "unchanged" | "changed" | "new";
+                                /** @description The component the earlier import made it is matched to */
+                                component: string | null;
+                                /** @description That component’s title now, where its importer may read it */
+                                componentTitle: string | null;
+                                /** @description How it was matched: by the heading the earlier import read it from, by the component’s title now, by its place between two parts matched so, or by its importer */
+                                by: ("provenance" | "heading" | "position" | "importer") | null;
+                            } | null;
                         }[];
                         /** @description How many edits it has had: what the next edit is made against */
                         revision: number;
@@ -68100,6 +68155,66 @@ export interface operations {
                         policy: "map" | "keep" | "discard";
                         /** @description Whether `policy` was applied, at acceptance (IMP-011) */
                         policyApplied: boolean;
+                        /**
+                         * @description Imported as new, or again as an update of what `earlier` made
+                         * @enum {string}
+                         */
+                        kind: "first" | "again";
+                        /** @description The accepted import an import again updates */
+                        earlier: string | null;
+                        /** @description An accepted import in this space that holds the same file (IMP-036), said once the name or the bytes are in, before it is read; null where none does */
+                        recognised: {
+                            /** @description The earlier import */
+                            import: string;
+                            /**
+                             * @description The same bytes, by their hash, or a file of the same name in this space
+                             * @enum {string}
+                             */
+                            match: "hash" | "name";
+                            fileName: string;
+                            importer: string;
+                            importerName: string | null;
+                            /** @description When it was accepted */
+                            at: string;
+                            /** @description The document it made */
+                            document: string;
+                            /** @description That document’s title now, where its importer may read it */
+                            documentTitle: string | null;
+                        } | null;
+                        /** @description For an import again, what the earlier import made that a part may be matched to */
+                        earlierMade: {
+                            component: string;
+                            title: string | null;
+                        }[];
+                        /** @description For an import again, what the earlier import made that no part matches */
+                        gone: {
+                            component: string;
+                            title: string | null;
+                        }[];
+                        /** @description Once an import again is accepted, what it did (IMP-037) */
+                        outcome: {
+                            suggested: {
+                                component: string;
+                                suggestion: string;
+                            }[];
+                            /** @description Each new component, and whether it was placed in the document */
+                            made: {
+                                component: string;
+                                placed: boolean;
+                            }[];
+                            /** @description Each component no part matched: kept, and flagged on the document where it stands */
+                            gone: {
+                                component: string;
+                                flagged: boolean;
+                            }[];
+                            /** @description Each matched component not suggested on: its importer may not suggest there, or has 20 suggestions pending on it; the suggestion would change nothing, or the same one was resolved before; or the component was deleted or archived since it was matched */
+                            skipped: {
+                                component: string;
+                                /** @enum {string} */
+                                reason: "suggest" | "limit" | "empty" | "resolved" | "gone";
+                            }[];
+                            unchanged: number;
+                        } | null;
                     };
                 };
             };
@@ -68218,7 +68333,28 @@ export interface operations {
                      *       "references": [],
                      *       "identities": [],
                      *       "policy": "map",
-                     *       "policyApplied": false
+                     *       "policyApplied": false,
+                     *       "kind": "first",
+                     *       "earlier": "example",
+                     *       "recognised": {
+                     *         "import": "example",
+                     *         "match": "hash",
+                     *         "fileName": "example",
+                     *         "importer": "example",
+                     *         "importerName": "example",
+                     *         "at": "example",
+                     *         "document": "example",
+                     *         "documentTitle": "example"
+                     *       },
+                     *       "earlierMade": [],
+                     *       "gone": [],
+                     *       "outcome": {
+                     *         "suggested": [],
+                     *         "made": [],
+                     *         "gone": [],
+                     *         "skipped": [],
+                     *         "unchanged": -9007199254740991
+                     *       }
                      *     }
                      */
                     "application/json": {
@@ -68270,6 +68406,20 @@ export interface operations {
                             blocks: number;
                             /** @description Its text as the file had it, its heading first */
                             source: string;
+                            /** @description For an import again, what this part is to what the earlier import made; null otherwise */
+                            again: {
+                                /**
+                                 * @description `unchanged`: its text is its component’s now; `changed`: it differs, suggested at acceptance; `new`: it matches no component, made and placed at acceptance
+                                 * @enum {string}
+                                 */
+                                status: "unchanged" | "changed" | "new";
+                                /** @description The component the earlier import made it is matched to */
+                                component: string | null;
+                                /** @description That component’s title now, where its importer may read it */
+                                componentTitle: string | null;
+                                /** @description How it was matched: by the heading the earlier import read it from, by the component’s title now, by its place between two parts matched so, or by its importer */
+                                by: ("provenance" | "heading" | "position" | "importer") | null;
+                            } | null;
                         }[];
                         /** @description How many edits it has had: what the next edit is made against */
                         revision: number;
@@ -68331,6 +68481,66 @@ export interface operations {
                         policy: "map" | "keep" | "discard";
                         /** @description Whether `policy` was applied, at acceptance (IMP-011) */
                         policyApplied: boolean;
+                        /**
+                         * @description Imported as new, or again as an update of what `earlier` made
+                         * @enum {string}
+                         */
+                        kind: "first" | "again";
+                        /** @description The accepted import an import again updates */
+                        earlier: string | null;
+                        /** @description An accepted import in this space that holds the same file (IMP-036), said once the name or the bytes are in, before it is read; null where none does */
+                        recognised: {
+                            /** @description The earlier import */
+                            import: string;
+                            /**
+                             * @description The same bytes, by their hash, or a file of the same name in this space
+                             * @enum {string}
+                             */
+                            match: "hash" | "name";
+                            fileName: string;
+                            importer: string;
+                            importerName: string | null;
+                            /** @description When it was accepted */
+                            at: string;
+                            /** @description The document it made */
+                            document: string;
+                            /** @description That document’s title now, where its importer may read it */
+                            documentTitle: string | null;
+                        } | null;
+                        /** @description For an import again, what the earlier import made that a part may be matched to */
+                        earlierMade: {
+                            component: string;
+                            title: string | null;
+                        }[];
+                        /** @description For an import again, what the earlier import made that no part matches */
+                        gone: {
+                            component: string;
+                            title: string | null;
+                        }[];
+                        /** @description Once an import again is accepted, what it did (IMP-037) */
+                        outcome: {
+                            suggested: {
+                                component: string;
+                                suggestion: string;
+                            }[];
+                            /** @description Each new component, and whether it was placed in the document */
+                            made: {
+                                component: string;
+                                placed: boolean;
+                            }[];
+                            /** @description Each component no part matched: kept, and flagged on the document where it stands */
+                            gone: {
+                                component: string;
+                                flagged: boolean;
+                            }[];
+                            /** @description Each matched component not suggested on: its importer may not suggest there, or has 20 suggestions pending on it; the suggestion would change nothing, or the same one was resolved before; or the component was deleted or archived since it was matched */
+                            skipped: {
+                                component: string;
+                                /** @enum {string} */
+                                reason: "suggest" | "limit" | "empty" | "resolved" | "gone";
+                            }[];
+                            unchanged: number;
+                        } | null;
                     };
                 };
             };
@@ -68430,8 +68640,14 @@ export interface operations {
         };
         requestBody: {
             content: {
-                /** @example {} */
+                /**
+                 * @example {
+                 *       "revision": 0
+                 *     }
+                 */
                 "application/json": {
+                    /** @description The revision of the import read; `import_changed` where it is no longer its revision */
+                    revision: number;
                     /** @description The document’s title; the one the file names, or its name, where absent */
                     title?: string;
                     /** @description The template to make the document from; a blank document where absent */
@@ -68442,7 +68658,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description The import, accepted, and the document it made */
+            /** @description The import, accepted, and the document it made or, imported again, updated */
             200: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -68482,7 +68698,28 @@ export interface operations {
                      *         "references": [],
                      *         "identities": [],
                      *         "policy": "map",
-                     *         "policyApplied": false
+                     *         "policyApplied": false,
+                     *         "kind": "first",
+                     *         "earlier": "example",
+                     *         "recognised": {
+                     *           "import": "example",
+                     *           "match": "hash",
+                     *           "fileName": "example",
+                     *           "importer": "example",
+                     *           "importerName": "example",
+                     *           "at": "example",
+                     *           "document": "example",
+                     *           "documentTitle": "example"
+                     *         },
+                     *         "earlierMade": [],
+                     *         "gone": [],
+                     *         "outcome": {
+                     *           "suggested": [],
+                     *           "made": [],
+                     *           "gone": [],
+                     *           "skipped": [],
+                     *           "unchanged": -9007199254740991
+                     *         }
                      *       },
                      *       "document": "example"
                      *     }
@@ -68537,6 +68774,20 @@ export interface operations {
                                 blocks: number;
                                 /** @description Its text as the file had it, its heading first */
                                 source: string;
+                                /** @description For an import again, what this part is to what the earlier import made; null otherwise */
+                                again: {
+                                    /**
+                                     * @description `unchanged`: its text is its component’s now; `changed`: it differs, suggested at acceptance; `new`: it matches no component, made and placed at acceptance
+                                     * @enum {string}
+                                     */
+                                    status: "unchanged" | "changed" | "new";
+                                    /** @description The component the earlier import made it is matched to */
+                                    component: string | null;
+                                    /** @description That component’s title now, where its importer may read it */
+                                    componentTitle: string | null;
+                                    /** @description How it was matched: by the heading the earlier import read it from, by the component’s title now, by its place between two parts matched so, or by its importer */
+                                    by: ("provenance" | "heading" | "position" | "importer") | null;
+                                } | null;
                             }[];
                             /** @description How many edits it has had: what the next edit is made against */
                             revision: number;
@@ -68598,6 +68849,66 @@ export interface operations {
                             policy: "map" | "keep" | "discard";
                             /** @description Whether `policy` was applied, at acceptance (IMP-011) */
                             policyApplied: boolean;
+                            /**
+                             * @description Imported as new, or again as an update of what `earlier` made
+                             * @enum {string}
+                             */
+                            kind: "first" | "again";
+                            /** @description The accepted import an import again updates */
+                            earlier: string | null;
+                            /** @description An accepted import in this space that holds the same file (IMP-036), said once the name or the bytes are in, before it is read; null where none does */
+                            recognised: {
+                                /** @description The earlier import */
+                                import: string;
+                                /**
+                                 * @description The same bytes, by their hash, or a file of the same name in this space
+                                 * @enum {string}
+                                 */
+                                match: "hash" | "name";
+                                fileName: string;
+                                importer: string;
+                                importerName: string | null;
+                                /** @description When it was accepted */
+                                at: string;
+                                /** @description The document it made */
+                                document: string;
+                                /** @description That document’s title now, where its importer may read it */
+                                documentTitle: string | null;
+                            } | null;
+                            /** @description For an import again, what the earlier import made that a part may be matched to */
+                            earlierMade: {
+                                component: string;
+                                title: string | null;
+                            }[];
+                            /** @description For an import again, what the earlier import made that no part matches */
+                            gone: {
+                                component: string;
+                                title: string | null;
+                            }[];
+                            /** @description Once an import again is accepted, what it did (IMP-037) */
+                            outcome: {
+                                suggested: {
+                                    component: string;
+                                    suggestion: string;
+                                }[];
+                                /** @description Each new component, and whether it was placed in the document */
+                                made: {
+                                    component: string;
+                                    placed: boolean;
+                                }[];
+                                /** @description Each component no part matched: kept, and flagged on the document where it stands */
+                                gone: {
+                                    component: string;
+                                    flagged: boolean;
+                                }[];
+                                /** @description Each matched component not suggested on: its importer may not suggest there, or has 20 suggestions pending on it; the suggestion would change nothing, or the same one was resolved before; or the component was deleted or archived since it was matched */
+                                skipped: {
+                                    component: string;
+                                    /** @enum {string} */
+                                    reason: "suggest" | "limit" | "empty" | "resolved" | "gone";
+                                }[];
+                                unchanged: number;
+                            } | null;
                         };
                         /** @description The document it made */
                         document: string;
@@ -68644,7 +68955,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may no longer create in the space */
+            /** @description The caller may no longer create in the space; `import_not_permitted`: imported again, the caller may suggest on none of the components it changes */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -68684,7 +68995,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `import_not_proposed`: it is not proposed; `import_references_unresolved`: a cross-reference outside the file is neither retargeted nor made text */
+            /** @description `import_not_proposed`: it is not proposed; `import_changed`: it was changed since the revision given; `import_references_unresolved`: a cross-reference outside the file is neither retargeted nor made text; `import_earlier_missing`: imported again, the earlier import’s document is gone */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -68814,6 +69125,13 @@ export interface operations {
                         };
                     } | {
                         /** @constant */
+                        edit: "match";
+                        /** @description The part it is made to */
+                        part: string & (unknown & unknown);
+                        /** @description A component the earlier import made that no other part is matched to; null marks the part new */
+                        component: (string & (unknown & unknown)) | null;
+                    } | {
+                        /** @constant */
                         edit: "identity";
                         /** @description A name the file carries */
                         identity: string;
@@ -68863,7 +69181,28 @@ export interface operations {
                      *       "references": [],
                      *       "identities": [],
                      *       "policy": "map",
-                     *       "policyApplied": false
+                     *       "policyApplied": false,
+                     *       "kind": "first",
+                     *       "earlier": "example",
+                     *       "recognised": {
+                     *         "import": "example",
+                     *         "match": "hash",
+                     *         "fileName": "example",
+                     *         "importer": "example",
+                     *         "importerName": "example",
+                     *         "at": "example",
+                     *         "document": "example",
+                     *         "documentTitle": "example"
+                     *       },
+                     *       "earlierMade": [],
+                     *       "gone": [],
+                     *       "outcome": {
+                     *         "suggested": [],
+                     *         "made": [],
+                     *         "gone": [],
+                     *         "skipped": [],
+                     *         "unchanged": -9007199254740991
+                     *       }
                      *     }
                      */
                     "application/json": {
@@ -68915,6 +69254,20 @@ export interface operations {
                             blocks: number;
                             /** @description Its text as the file had it, its heading first */
                             source: string;
+                            /** @description For an import again, what this part is to what the earlier import made; null otherwise */
+                            again: {
+                                /**
+                                 * @description `unchanged`: its text is its component’s now; `changed`: it differs, suggested at acceptance; `new`: it matches no component, made and placed at acceptance
+                                 * @enum {string}
+                                 */
+                                status: "unchanged" | "changed" | "new";
+                                /** @description The component the earlier import made it is matched to */
+                                component: string | null;
+                                /** @description That component’s title now, where its importer may read it */
+                                componentTitle: string | null;
+                                /** @description How it was matched: by the heading the earlier import read it from, by the component’s title now, by its place between two parts matched so, or by its importer */
+                                by: ("provenance" | "heading" | "position" | "importer") | null;
+                            } | null;
                         }[];
                         /** @description How many edits it has had: what the next edit is made against */
                         revision: number;
@@ -68976,6 +69329,66 @@ export interface operations {
                         policy: "map" | "keep" | "discard";
                         /** @description Whether `policy` was applied, at acceptance (IMP-011) */
                         policyApplied: boolean;
+                        /**
+                         * @description Imported as new, or again as an update of what `earlier` made
+                         * @enum {string}
+                         */
+                        kind: "first" | "again";
+                        /** @description The accepted import an import again updates */
+                        earlier: string | null;
+                        /** @description An accepted import in this space that holds the same file (IMP-036), said once the name or the bytes are in, before it is read; null where none does */
+                        recognised: {
+                            /** @description The earlier import */
+                            import: string;
+                            /**
+                             * @description The same bytes, by their hash, or a file of the same name in this space
+                             * @enum {string}
+                             */
+                            match: "hash" | "name";
+                            fileName: string;
+                            importer: string;
+                            importerName: string | null;
+                            /** @description When it was accepted */
+                            at: string;
+                            /** @description The document it made */
+                            document: string;
+                            /** @description That document’s title now, where its importer may read it */
+                            documentTitle: string | null;
+                        } | null;
+                        /** @description For an import again, what the earlier import made that a part may be matched to */
+                        earlierMade: {
+                            component: string;
+                            title: string | null;
+                        }[];
+                        /** @description For an import again, what the earlier import made that no part matches */
+                        gone: {
+                            component: string;
+                            title: string | null;
+                        }[];
+                        /** @description Once an import again is accepted, what it did (IMP-037) */
+                        outcome: {
+                            suggested: {
+                                component: string;
+                                suggestion: string;
+                            }[];
+                            /** @description Each new component, and whether it was placed in the document */
+                            made: {
+                                component: string;
+                                placed: boolean;
+                            }[];
+                            /** @description Each component no part matched: kept, and flagged on the document where it stands */
+                            gone: {
+                                component: string;
+                                flagged: boolean;
+                            }[];
+                            /** @description Each matched component not suggested on: its importer may not suggest there, or has 20 suggestions pending on it; the suggestion would change nothing, or the same one was resolved before; or the component was deleted or archived since it was matched */
+                            skipped: {
+                                component: string;
+                                /** @enum {string} */
+                                reason: "suggest" | "limit" | "empty" | "resolved" | "gone";
+                            }[];
+                            unchanged: number;
+                        } | null;
                     };
                 };
             };
@@ -69138,7 +69551,28 @@ export interface operations {
                      *       "references": [],
                      *       "identities": [],
                      *       "policy": "map",
-                     *       "policyApplied": false
+                     *       "policyApplied": false,
+                     *       "kind": "first",
+                     *       "earlier": "example",
+                     *       "recognised": {
+                     *         "import": "example",
+                     *         "match": "hash",
+                     *         "fileName": "example",
+                     *         "importer": "example",
+                     *         "importerName": "example",
+                     *         "at": "example",
+                     *         "document": "example",
+                     *         "documentTitle": "example"
+                     *       },
+                     *       "earlierMade": [],
+                     *       "gone": [],
+                     *       "outcome": {
+                     *         "suggested": [],
+                     *         "made": [],
+                     *         "gone": [],
+                     *         "skipped": [],
+                     *         "unchanged": -9007199254740991
+                     *       }
                      *     }
                      */
                     "application/json": {
@@ -69190,6 +69624,20 @@ export interface operations {
                             blocks: number;
                             /** @description Its text as the file had it, its heading first */
                             source: string;
+                            /** @description For an import again, what this part is to what the earlier import made; null otherwise */
+                            again: {
+                                /**
+                                 * @description `unchanged`: its text is its component’s now; `changed`: it differs, suggested at acceptance; `new`: it matches no component, made and placed at acceptance
+                                 * @enum {string}
+                                 */
+                                status: "unchanged" | "changed" | "new";
+                                /** @description The component the earlier import made it is matched to */
+                                component: string | null;
+                                /** @description That component’s title now, where its importer may read it */
+                                componentTitle: string | null;
+                                /** @description How it was matched: by the heading the earlier import read it from, by the component’s title now, by its place between two parts matched so, or by its importer */
+                                by: ("provenance" | "heading" | "position" | "importer") | null;
+                            } | null;
                         }[];
                         /** @description How many edits it has had: what the next edit is made against */
                         revision: number;
@@ -69251,6 +69699,66 @@ export interface operations {
                         policy: "map" | "keep" | "discard";
                         /** @description Whether `policy` was applied, at acceptance (IMP-011) */
                         policyApplied: boolean;
+                        /**
+                         * @description Imported as new, or again as an update of what `earlier` made
+                         * @enum {string}
+                         */
+                        kind: "first" | "again";
+                        /** @description The accepted import an import again updates */
+                        earlier: string | null;
+                        /** @description An accepted import in this space that holds the same file (IMP-036), said once the name or the bytes are in, before it is read; null where none does */
+                        recognised: {
+                            /** @description The earlier import */
+                            import: string;
+                            /**
+                             * @description The same bytes, by their hash, or a file of the same name in this space
+                             * @enum {string}
+                             */
+                            match: "hash" | "name";
+                            fileName: string;
+                            importer: string;
+                            importerName: string | null;
+                            /** @description When it was accepted */
+                            at: string;
+                            /** @description The document it made */
+                            document: string;
+                            /** @description That document’s title now, where its importer may read it */
+                            documentTitle: string | null;
+                        } | null;
+                        /** @description For an import again, what the earlier import made that a part may be matched to */
+                        earlierMade: {
+                            component: string;
+                            title: string | null;
+                        }[];
+                        /** @description For an import again, what the earlier import made that no part matches */
+                        gone: {
+                            component: string;
+                            title: string | null;
+                        }[];
+                        /** @description Once an import again is accepted, what it did (IMP-037) */
+                        outcome: {
+                            suggested: {
+                                component: string;
+                                suggestion: string;
+                            }[];
+                            /** @description Each new component, and whether it was placed in the document */
+                            made: {
+                                component: string;
+                                placed: boolean;
+                            }[];
+                            /** @description Each component no part matched: kept, and flagged on the document where it stands */
+                            gone: {
+                                component: string;
+                                flagged: boolean;
+                            }[];
+                            /** @description Each matched component not suggested on: its importer may not suggest there, or has 20 suggestions pending on it; the suggestion would change nothing, or the same one was resolved before; or the component was deleted or archived since it was matched */
+                            skipped: {
+                                component: string;
+                                /** @enum {string} */
+                                reason: "suggest" | "limit" | "empty" | "resolved" | "gone";
+                            }[];
+                            unchanged: number;
+                        } | null;
                     };
                 };
             };
@@ -69396,7 +69904,7 @@ export interface operations {
             };
         };
     };
-    setImportLevels: {
+    setImportKind: {
         parameters: {
             query?: never;
             header?: {
@@ -69412,20 +69920,22 @@ export interface operations {
             content: {
                 /**
                  * @example {
-                 *       "section": 1,
-                 *       "component": 2
+                 *       "revision": 0,
+                 *       "kind": "first"
                  *     }
                  */
                 "application/json": {
-                    /** @description The heading level that starts a section */
-                    section: number;
-                    /** @description The heading level that starts a component, below the section’s */
-                    component: number;
+                    /** @description The revision of the import read; `import_changed` where it is no longer its revision */
+                    revision: number;
+                    /** @enum {string} */
+                    kind: "first" | "again";
+                    /** @description For `again`, the accepted import in this space whose document it updates */
+                    earlier?: string & (unknown & unknown);
                 };
             };
         };
         responses: {
-            /** @description The import, reading again */
+            /** @description The import, its parts matched where it is an update */
             200: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -69464,7 +69974,28 @@ export interface operations {
                      *       "references": [],
                      *       "identities": [],
                      *       "policy": "map",
-                     *       "policyApplied": false
+                     *       "policyApplied": false,
+                     *       "kind": "first",
+                     *       "earlier": "example",
+                     *       "recognised": {
+                     *         "import": "example",
+                     *         "match": "hash",
+                     *         "fileName": "example",
+                     *         "importer": "example",
+                     *         "importerName": "example",
+                     *         "at": "example",
+                     *         "document": "example",
+                     *         "documentTitle": "example"
+                     *       },
+                     *       "earlierMade": [],
+                     *       "gone": [],
+                     *       "outcome": {
+                     *         "suggested": [],
+                     *         "made": [],
+                     *         "gone": [],
+                     *         "skipped": [],
+                     *         "unchanged": -9007199254740991
+                     *       }
                      *     }
                      */
                     "application/json": {
@@ -69516,6 +70047,20 @@ export interface operations {
                             blocks: number;
                             /** @description Its text as the file had it, its heading first */
                             source: string;
+                            /** @description For an import again, what this part is to what the earlier import made; null otherwise */
+                            again: {
+                                /**
+                                 * @description `unchanged`: its text is its component’s now; `changed`: it differs, suggested at acceptance; `new`: it matches no component, made and placed at acceptance
+                                 * @enum {string}
+                                 */
+                                status: "unchanged" | "changed" | "new";
+                                /** @description The component the earlier import made it is matched to */
+                                component: string | null;
+                                /** @description That component’s title now, where its importer may read it */
+                                componentTitle: string | null;
+                                /** @description How it was matched: by the heading the earlier import read it from, by the component’s title now, by its place between two parts matched so, or by its importer */
+                                by: ("provenance" | "heading" | "position" | "importer") | null;
+                            } | null;
                         }[];
                         /** @description How many edits it has had: what the next edit is made against */
                         revision: number;
@@ -69577,6 +70122,450 @@ export interface operations {
                         policy: "map" | "keep" | "discard";
                         /** @description Whether `policy` was applied, at acceptance (IMP-011) */
                         policyApplied: boolean;
+                        /**
+                         * @description Imported as new, or again as an update of what `earlier` made
+                         * @enum {string}
+                         */
+                        kind: "first" | "again";
+                        /** @description The accepted import an import again updates */
+                        earlier: string | null;
+                        /** @description An accepted import in this space that holds the same file (IMP-036), said once the name or the bytes are in, before it is read; null where none does */
+                        recognised: {
+                            /** @description The earlier import */
+                            import: string;
+                            /**
+                             * @description The same bytes, by their hash, or a file of the same name in this space
+                             * @enum {string}
+                             */
+                            match: "hash" | "name";
+                            fileName: string;
+                            importer: string;
+                            importerName: string | null;
+                            /** @description When it was accepted */
+                            at: string;
+                            /** @description The document it made */
+                            document: string;
+                            /** @description That document’s title now, where its importer may read it */
+                            documentTitle: string | null;
+                        } | null;
+                        /** @description For an import again, what the earlier import made that a part may be matched to */
+                        earlierMade: {
+                            component: string;
+                            title: string | null;
+                        }[];
+                        /** @description For an import again, what the earlier import made that no part matches */
+                        gone: {
+                            component: string;
+                            title: string | null;
+                        }[];
+                        /** @description Once an import again is accepted, what it did (IMP-037) */
+                        outcome: {
+                            suggested: {
+                                component: string;
+                                suggestion: string;
+                            }[];
+                            /** @description Each new component, and whether it was placed in the document */
+                            made: {
+                                component: string;
+                                placed: boolean;
+                            }[];
+                            /** @description Each component no part matched: kept, and flagged on the document where it stands */
+                            gone: {
+                                component: string;
+                                flagged: boolean;
+                            }[];
+                            /** @description Each matched component not suggested on: its importer may not suggest there, or has 20 suggestions pending on it; the suggestion would change nothing, or the same one was resolved before; or the component was deleted or archived since it was matched */
+                            skipped: {
+                                component: string;
+                                /** @enum {string} */
+                                reason: "suggest" | "limit" | "empty" | "resolved" | "gone";
+                            }[];
+                            unchanged: number;
+                        } | null;
+                    };
+                };
+            };
+            /** @description `import_earlier_invalid`: the earlier import is not one accepted in this space with its document */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such import the caller made, or an earlier document the caller may not read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `import_not_open`: it is already accepted, abandoned or failed; `import_changed`: it was changed since the revision given */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    setImportLevels: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "section": 1,
+                 *       "component": 2,
+                 *       "revision": 0
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The heading level that starts a section */
+                    section: number;
+                    /** @description The heading level that starts a component, below the section’s */
+                    component: number;
+                    /** @description The revision of the import read; `import_changed` where it is no longer its revision */
+                    revision: number;
+                };
+            };
+        };
+        responses: {
+            /** @description The import, reading again */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": "example",
+                     *       "importer": "example",
+                     *       "fileName": "example",
+                     *       "fileType": "docx",
+                     *       "state": "awaiting",
+                     *       "failure": "file_unreadable",
+                     *       "document": "example",
+                     *       "createdAt": "example",
+                     *       "sweepsAt": "example",
+                     *       "levels": {
+                     *         "section": 1,
+                     *         "component": 2
+                     *       },
+                     *       "title": "example",
+                     *       "parts": [],
+                     *       "revision": -9007199254740991,
+                     *       "place": "example",
+                     *       "accepted": {
+                     *         "unchanged": -9007199254740991,
+                     *         "edited": -9007199254740991,
+                     *         "merged": -9007199254740991,
+                     *         "split": -9007199254740991,
+                     *         "renamed": -9007199254740991
+                     *       },
+                     *       "report": [],
+                     *       "references": [],
+                     *       "identities": [],
+                     *       "policy": "map",
+                     *       "policyApplied": false,
+                     *       "kind": "first",
+                     *       "earlier": "example",
+                     *       "recognised": {
+                     *         "import": "example",
+                     *         "match": "hash",
+                     *         "fileName": "example",
+                     *         "importer": "example",
+                     *         "importerName": "example",
+                     *         "at": "example",
+                     *         "document": "example",
+                     *         "documentTitle": "example"
+                     *       },
+                     *       "earlierMade": [],
+                     *       "gone": [],
+                     *       "outcome": {
+                     *         "suggested": [],
+                     *         "made": [],
+                     *         "gone": [],
+                     *         "skipped": [],
+                     *         "unchanged": -9007199254740991
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        space: string;
+                        importer: string;
+                        fileName: string;
+                        /** @enum {string} */
+                        fileType: "docx" | "markdown" | "html";
+                        /**
+                         * @description `awaiting` its file; `reading` it; `proposed`, its outline to review; `accepted` into a document; `abandoned`, or `failed` with why, leaving nothing
+                         * @enum {string}
+                         */
+                        state: "awaiting" | "reading" | "proposed" | "accepted" | "abandoned" | "failed";
+                        /** @description Why it failed, once failed */
+                        failure: ("file_unreadable" | "file_unsafe" | "file_too_large" | "file_missing" | "reading_failed") | null;
+                        /** @description The document it made, once accepted */
+                        document: string | null;
+                        createdAt: string;
+                        /** @description When a proposal left alone is abandoned: 30 days after it last changed */
+                        sweepsAt: string | null;
+                        levels: {
+                            /** @description The heading level that starts a section */
+                            section: number;
+                            /** @description The heading level that starts a component, below the section’s */
+                            component: number;
+                        };
+                        /** @description The title the file names, where it names one */
+                        title: string | null;
+                        /** @description The proposed outline, in order */
+                        parts: {
+                            id: string;
+                            /** @enum {string} */
+                            kind: "section" | "component";
+                            title: string;
+                            /** @description The section it stands under; null at the top */
+                            parent: string | null;
+                            /** @description Why the part starts where it does: the heading, by its style and text; what came before the first heading under it; or that its importer split it there */
+                            reason: {
+                                /** @enum {string} */
+                                rule: "heading" | "beforeFirstComponent" | "beforeFirstHeading" | "split";
+                                style?: string;
+                                text?: string;
+                                level?: number;
+                            };
+                            /** @description `empty`: nothing under its heading; `refused`: what it held could not be admitted; `changeClamped`: a tracked change kept here ran on past it; `commentClamped`: a comment anchored here ran past where it starts; `notYetRead`, `leftOut` and `keptDifferently`: what the report said of what it came from */
+                            flags: ("empty" | "refused" | "changeClamped" | "commentClamped" | "notYetRead" | "leftOut" | "keptDifferently")[];
+                            /** @description How many blocks it holds */
+                            blocks: number;
+                            /** @description Its text as the file had it, its heading first */
+                            source: string;
+                            /** @description For an import again, what this part is to what the earlier import made; null otherwise */
+                            again: {
+                                /**
+                                 * @description `unchanged`: its text is its component’s now; `changed`: it differs, suggested at acceptance; `new`: it matches no component, made and placed at acceptance
+                                 * @enum {string}
+                                 */
+                                status: "unchanged" | "changed" | "new";
+                                /** @description The component the earlier import made it is matched to */
+                                component: string | null;
+                                /** @description That component’s title now, where its importer may read it */
+                                componentTitle: string | null;
+                                /** @description How it was matched: by the heading the earlier import read it from, by the component’s title now, by its place between two parts matched so, or by its importer */
+                                by: ("provenance" | "heading" | "position" | "importer") | null;
+                            } | null;
+                        }[];
+                        /** @description How many edits it has had: what the next edit is made against */
+                        revision: number;
+                        /** @description The part its importer was last at */
+                        place: string | null;
+                        /** @description Once accepted, how much was accepted unchanged */
+                        accepted: {
+                            unchanged: number;
+                            edited: number;
+                            merged: number;
+                            split: number;
+                            renamed: number;
+                        } | null;
+                        /** @description What was left out, kept differently, or not read yet (IMP-007) */
+                        report: {
+                            stage: string;
+                            /** @enum {string} */
+                            action: "discarded" | "rewritten" | "kept" | "refused";
+                            subject: string;
+                            /** @description A fixed sentence saying what happened, never quoting the file */
+                            message: string;
+                            /** @description What it was about, as data: shown as text */
+                            detail?: string;
+                            count?: number;
+                            /** @description The part it was about, by its place; null for the file */
+                            part: number | null;
+                        }[];
+                        /** @description Each cross-reference whose target is not in the file (IMP-033) */
+                        references: {
+                            key: string;
+                            /** @enum {string} */
+                            field: "REF" | "NOTEREF" | "PAGEREF";
+                            /** @description What it showed in the file: shown as text, never content */
+                            text: string;
+                            /** @description Pointed at a block, made the text it showed, or null: still outside the import */
+                            resolved: ("retargeted" | "text") | null;
+                        }[];
+                        /** @description Every name the file carries (IMP-009), as carried */
+                        identities: {
+                            /** @description As the file carries it: shown as text */
+                            name: string;
+                            email: string | null;
+                            /** @description What the file names it for */
+                            carries: ("changes" | "comments" | "creator" | "lastModifiedBy")[];
+                            /**
+                             * @description The member it matches, for attribution only: by an exact email, by name for its importer to confirm, or none
+                             * @enum {string}
+                             */
+                            match: "email" | "name" | "none";
+                            member: string | null;
+                            memberName: string | null;
+                            /** @description Whether its importer confirmed a name match */
+                            confirmed: boolean;
+                        }[];
+                        /**
+                         * @description The identity policy applied at acceptance, or, until then, the one that will be
+                         * @enum {string}
+                         */
+                        policy: "map" | "keep" | "discard";
+                        /** @description Whether `policy` was applied, at acceptance (IMP-011) */
+                        policyApplied: boolean;
+                        /**
+                         * @description Imported as new, or again as an update of what `earlier` made
+                         * @enum {string}
+                         */
+                        kind: "first" | "again";
+                        /** @description The accepted import an import again updates */
+                        earlier: string | null;
+                        /** @description An accepted import in this space that holds the same file (IMP-036), said once the name or the bytes are in, before it is read; null where none does */
+                        recognised: {
+                            /** @description The earlier import */
+                            import: string;
+                            /**
+                             * @description The same bytes, by their hash, or a file of the same name in this space
+                             * @enum {string}
+                             */
+                            match: "hash" | "name";
+                            fileName: string;
+                            importer: string;
+                            importerName: string | null;
+                            /** @description When it was accepted */
+                            at: string;
+                            /** @description The document it made */
+                            document: string;
+                            /** @description That document’s title now, where its importer may read it */
+                            documentTitle: string | null;
+                        } | null;
+                        /** @description For an import again, what the earlier import made that a part may be matched to */
+                        earlierMade: {
+                            component: string;
+                            title: string | null;
+                        }[];
+                        /** @description For an import again, what the earlier import made that no part matches */
+                        gone: {
+                            component: string;
+                            title: string | null;
+                        }[];
+                        /** @description Once an import again is accepted, what it did (IMP-037) */
+                        outcome: {
+                            suggested: {
+                                component: string;
+                                suggestion: string;
+                            }[];
+                            /** @description Each new component, and whether it was placed in the document */
+                            made: {
+                                component: string;
+                                placed: boolean;
+                            }[];
+                            /** @description Each component no part matched: kept, and flagged on the document where it stands */
+                            gone: {
+                                component: string;
+                                flagged: boolean;
+                            }[];
+                            /** @description Each matched component not suggested on: its importer may not suggest there, or has 20 suggestions pending on it; the suggestion would change nothing, or the same one was resolved before; or the component was deleted or archived since it was matched */
+                            skipped: {
+                                component: string;
+                                /** @enum {string} */
+                                reason: "suggest" | "limit" | "empty" | "resolved" | "gone";
+                            }[];
+                            unchanged: number;
+                        } | null;
                     };
                 };
             };
@@ -69640,7 +70629,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `import_not_proposed`: it is not proposed */
+            /** @description `import_not_proposed`: it is not proposed; `import_changed`: it was changed since the revision given */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -69814,6 +70803,12 @@ export interface operations {
                      *       },
                      *       "flags": [],
                      *       "source": "example",
+                     *       "again": {
+                     *         "status": "unchanged",
+                     *         "component": "example",
+                     *         "componentTitle": "example",
+                     *         "by": "provenance"
+                     *       },
                      *       "place": -9007199254740991,
                      *       "of": -9007199254740991,
                      *       "previous": "example",
@@ -69821,7 +70816,8 @@ export interface operations {
                      *       "blocks": [],
                      *       "suggestions": [],
                      *       "threads": [],
-                     *       "references": []
+                     *       "references": [],
+                     *       "diff": []
                      *     }
                      */
                     "application/json": {
@@ -69843,6 +70839,20 @@ export interface operations {
                         flags: ("empty" | "refused" | "changeClamped" | "commentClamped" | "notYetRead" | "leftOut" | "keptDifferently")[];
                         /** @description Its text as the file had it, its heading first */
                         source: string;
+                        /** @description For an import again, what this part is to what the earlier import made; null otherwise */
+                        again: {
+                            /**
+                             * @description `unchanged`: its text is its component’s now; `changed`: it differs, suggested at acceptance; `new`: it matches no component, made and placed at acceptance
+                             * @enum {string}
+                             */
+                            status: "unchanged" | "changed" | "new";
+                            /** @description The component the earlier import made it is matched to */
+                            component: string | null;
+                            /** @description That component’s title now, where its importer may read it */
+                            componentTitle: string | null;
+                            /** @description How it was matched: by the heading the earlier import read it from, by the component’s title now, by its place between two parts matched so, or by its importer */
+                            by: ("provenance" | "heading" | "position" | "importer") | null;
+                        } | null;
                         /** @description Its place in the outline, from 0 */
                         place: number;
                         /** @description How many parts the outline holds */
@@ -69886,6 +70896,13 @@ export interface operations {
                         }[];
                         /** @description The cross-references outside the import it holds, by their key */
                         references: string[];
+                        /** @description For a part matched in an import again, its blocks against its component as it is now, so edits made in the space show; null otherwise */
+                        diff: {
+                            /** @enum {string} */
+                            change: "same" | "added" | "removed";
+                            /** @description A block’s text, shown as text */
+                            text: string;
+                        }[] | null;
                     };
                 };
             };
@@ -70016,7 +71033,28 @@ export interface operations {
                      *       "references": [],
                      *       "identities": [],
                      *       "policy": "map",
-                     *       "policyApplied": false
+                     *       "policyApplied": false,
+                     *       "kind": "first",
+                     *       "earlier": "example",
+                     *       "recognised": {
+                     *         "import": "example",
+                     *         "match": "hash",
+                     *         "fileName": "example",
+                     *         "importer": "example",
+                     *         "importerName": "example",
+                     *         "at": "example",
+                     *         "document": "example",
+                     *         "documentTitle": "example"
+                     *       },
+                     *       "earlierMade": [],
+                     *       "gone": [],
+                     *       "outcome": {
+                     *         "suggested": [],
+                     *         "made": [],
+                     *         "gone": [],
+                     *         "skipped": [],
+                     *         "unchanged": -9007199254740991
+                     *       }
                      *     }
                      */
                     "application/json": {
@@ -70068,6 +71106,20 @@ export interface operations {
                             blocks: number;
                             /** @description Its text as the file had it, its heading first */
                             source: string;
+                            /** @description For an import again, what this part is to what the earlier import made; null otherwise */
+                            again: {
+                                /**
+                                 * @description `unchanged`: its text is its component’s now; `changed`: it differs, suggested at acceptance; `new`: it matches no component, made and placed at acceptance
+                                 * @enum {string}
+                                 */
+                                status: "unchanged" | "changed" | "new";
+                                /** @description The component the earlier import made it is matched to */
+                                component: string | null;
+                                /** @description That component’s title now, where its importer may read it */
+                                componentTitle: string | null;
+                                /** @description How it was matched: by the heading the earlier import read it from, by the component’s title now, by its place between two parts matched so, or by its importer */
+                                by: ("provenance" | "heading" | "position" | "importer") | null;
+                            } | null;
                         }[];
                         /** @description How many edits it has had: what the next edit is made against */
                         revision: number;
@@ -70129,6 +71181,66 @@ export interface operations {
                         policy: "map" | "keep" | "discard";
                         /** @description Whether `policy` was applied, at acceptance (IMP-011) */
                         policyApplied: boolean;
+                        /**
+                         * @description Imported as new, or again as an update of what `earlier` made
+                         * @enum {string}
+                         */
+                        kind: "first" | "again";
+                        /** @description The accepted import an import again updates */
+                        earlier: string | null;
+                        /** @description An accepted import in this space that holds the same file (IMP-036), said once the name or the bytes are in, before it is read; null where none does */
+                        recognised: {
+                            /** @description The earlier import */
+                            import: string;
+                            /**
+                             * @description The same bytes, by their hash, or a file of the same name in this space
+                             * @enum {string}
+                             */
+                            match: "hash" | "name";
+                            fileName: string;
+                            importer: string;
+                            importerName: string | null;
+                            /** @description When it was accepted */
+                            at: string;
+                            /** @description The document it made */
+                            document: string;
+                            /** @description That document’s title now, where its importer may read it */
+                            documentTitle: string | null;
+                        } | null;
+                        /** @description For an import again, what the earlier import made that a part may be matched to */
+                        earlierMade: {
+                            component: string;
+                            title: string | null;
+                        }[];
+                        /** @description For an import again, what the earlier import made that no part matches */
+                        gone: {
+                            component: string;
+                            title: string | null;
+                        }[];
+                        /** @description Once an import again is accepted, what it did (IMP-037) */
+                        outcome: {
+                            suggested: {
+                                component: string;
+                                suggestion: string;
+                            }[];
+                            /** @description Each new component, and whether it was placed in the document */
+                            made: {
+                                component: string;
+                                placed: boolean;
+                            }[];
+                            /** @description Each component no part matched: kept, and flagged on the document where it stands */
+                            gone: {
+                                component: string;
+                                flagged: boolean;
+                            }[];
+                            /** @description Each matched component not suggested on: its importer may not suggest there, or has 20 suggestions pending on it; the suggestion would change nothing, or the same one was resolved before; or the component was deleted or archived since it was matched */
+                            skipped: {
+                                component: string;
+                                /** @enum {string} */
+                                reason: "suggest" | "limit" | "empty" | "resolved" | "gone";
+                            }[];
+                            unchanged: number;
+                        } | null;
                     };
                 };
             };
@@ -98830,7 +99942,28 @@ export interface operations {
                      *       "references": [],
                      *       "identities": [],
                      *       "policy": "map",
-                     *       "policyApplied": false
+                     *       "policyApplied": false,
+                     *       "kind": "first",
+                     *       "earlier": "example",
+                     *       "recognised": {
+                     *         "import": "example",
+                     *         "match": "hash",
+                     *         "fileName": "example",
+                     *         "importer": "example",
+                     *         "importerName": "example",
+                     *         "at": "example",
+                     *         "document": "example",
+                     *         "documentTitle": "example"
+                     *       },
+                     *       "earlierMade": [],
+                     *       "gone": [],
+                     *       "outcome": {
+                     *         "suggested": [],
+                     *         "made": [],
+                     *         "gone": [],
+                     *         "skipped": [],
+                     *         "unchanged": -9007199254740991
+                     *       }
                      *     }
                      */
                     "application/json": {
@@ -98882,6 +100015,20 @@ export interface operations {
                             blocks: number;
                             /** @description Its text as the file had it, its heading first */
                             source: string;
+                            /** @description For an import again, what this part is to what the earlier import made; null otherwise */
+                            again: {
+                                /**
+                                 * @description `unchanged`: its text is its component’s now; `changed`: it differs, suggested at acceptance; `new`: it matches no component, made and placed at acceptance
+                                 * @enum {string}
+                                 */
+                                status: "unchanged" | "changed" | "new";
+                                /** @description The component the earlier import made it is matched to */
+                                component: string | null;
+                                /** @description That component’s title now, where its importer may read it */
+                                componentTitle: string | null;
+                                /** @description How it was matched: by the heading the earlier import read it from, by the component’s title now, by its place between two parts matched so, or by its importer */
+                                by: ("provenance" | "heading" | "position" | "importer") | null;
+                            } | null;
                         }[];
                         /** @description How many edits it has had: what the next edit is made against */
                         revision: number;
@@ -98943,6 +100090,66 @@ export interface operations {
                         policy: "map" | "keep" | "discard";
                         /** @description Whether `policy` was applied, at acceptance (IMP-011) */
                         policyApplied: boolean;
+                        /**
+                         * @description Imported as new, or again as an update of what `earlier` made
+                         * @enum {string}
+                         */
+                        kind: "first" | "again";
+                        /** @description The accepted import an import again updates */
+                        earlier: string | null;
+                        /** @description An accepted import in this space that holds the same file (IMP-036), said once the name or the bytes are in, before it is read; null where none does */
+                        recognised: {
+                            /** @description The earlier import */
+                            import: string;
+                            /**
+                             * @description The same bytes, by their hash, or a file of the same name in this space
+                             * @enum {string}
+                             */
+                            match: "hash" | "name";
+                            fileName: string;
+                            importer: string;
+                            importerName: string | null;
+                            /** @description When it was accepted */
+                            at: string;
+                            /** @description The document it made */
+                            document: string;
+                            /** @description That document’s title now, where its importer may read it */
+                            documentTitle: string | null;
+                        } | null;
+                        /** @description For an import again, what the earlier import made that a part may be matched to */
+                        earlierMade: {
+                            component: string;
+                            title: string | null;
+                        }[];
+                        /** @description For an import again, what the earlier import made that no part matches */
+                        gone: {
+                            component: string;
+                            title: string | null;
+                        }[];
+                        /** @description Once an import again is accepted, what it did (IMP-037) */
+                        outcome: {
+                            suggested: {
+                                component: string;
+                                suggestion: string;
+                            }[];
+                            /** @description Each new component, and whether it was placed in the document */
+                            made: {
+                                component: string;
+                                placed: boolean;
+                            }[];
+                            /** @description Each component no part matched: kept, and flagged on the document where it stands */
+                            gone: {
+                                component: string;
+                                flagged: boolean;
+                            }[];
+                            /** @description Each matched component not suggested on: its importer may not suggest there, or has 20 suggestions pending on it; the suggestion would change nothing, or the same one was resolved before; or the component was deleted or archived since it was matched */
+                            skipped: {
+                                component: string;
+                                /** @enum {string} */
+                                reason: "suggest" | "limit" | "empty" | "resolved" | "gone";
+                            }[];
+                            unchanged: number;
+                        } | null;
                     };
                 };
             };

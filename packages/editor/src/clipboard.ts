@@ -85,6 +85,19 @@ export async function readMarkdownText(
   return readMarkdown(text);
 }
 
+/**
+ * The HTML of a paste the author may break out into sections and components instead (CNT-168): one
+ * from HTML - Word's, a page's - whose reading made a heading a paragraph. Null for any other paste,
+ * which is placed as it always was.
+ */
+export function breakoutOf(source: ClipboardSource, reading: ReaderResult): string | null {
+  if (!reading.ok || !source.types.includes('text/html')) return null;
+  const heading = reading.input.report.some(
+    (entry) => entry.action === 'rewritten' && entry.subject === 'heading',
+  );
+  return heading ? source.getData('text/html') : null;
+}
+
 export type PasteOutcome =
   | {
       readonly ok: true;

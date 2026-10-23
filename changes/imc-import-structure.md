@@ -1,3 +1,0 @@
-### Added
-
-- **Structure from Word.** An import reads footnotes, list numbering, captions, figures and their alternative text, and cross-references as structure, never as the text they showed. A cross-reference to something outside the file is listed with the text it showed, and is pointed at a block or made that text before the import is accepted. Each Word author's tracked changes become a suggestion and each comment, with its replies, a thread, all made by whoever accepts the import and attributed to the Word author as the environment's new identity policy says, set in Administration's Imports. The names the file carries are listed before accepting, and the file's own properties are never kept as content.

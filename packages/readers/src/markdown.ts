@@ -1,7 +1,7 @@
 import type { ReaderResult } from '@alloy-works/domain';
 import MarkdownIt from 'markdown-it';
 
-import { readHtml } from './html.js';
+import { readHtml, readHtmlOutline } from './html.js';
 import { refuseOversized } from './text.js';
 
 /**
@@ -22,4 +22,10 @@ const markdown = new MarkdownIt({ html: true, linkify: false, typographer: false
  */
 export function readMarkdown(text: string): ReaderResult {
   return refuseOversized(text) ?? readHtml(markdown.render(text));
+}
+
+/** Markdown as an import reads it (IMP-013): rendered, then read as HTML is for an import. */
+export function readMarkdownOutline(text: string): ReturnType<typeof readHtmlOutline> {
+  const refused = refuseOversized(text);
+  return refused && !refused.ok ? refused : readHtmlOutline(markdown.render(text));
 }

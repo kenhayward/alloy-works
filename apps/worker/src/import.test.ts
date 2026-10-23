@@ -1,13 +1,16 @@
 import { createHash } from 'node:crypto';
 import {
   acceptImport,
+  chooseImportKind,
   createImport,
+  earlierImport,
   createJobQueue,
   createTenant,
   importParts,
   migrate,
   prepareDatabase,
   readAssetVersion,
+  abandonImport,
   readImport,
   readVersion,
   receiveImportFile,
@@ -22,13 +25,13 @@ import { testObjectStore, type TestObjectStore } from '@alloy-works/objects/test
 import { strToU8, zipSync } from 'fflate';
 import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { importJob } from './jobs/import.js';
+import { importJob, readInThread } from './jobs/import.js';
 import { processNext, type JobHandler, type WorkerLog } from './worker.js';
 
 const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 
 /** A small Word document built here: a title, a section of two components, a list and a table. */
-function report(): Uint8Array {
+function report(sampled = ' sampled the pond.'): Uint8Array {
   const p = (text: string, style?: string) =>
     `<w:p>${style ? `<w:pPr><w:pStyle w:val="${style}"/></w:pPr>` : ''}<w:r><w:t xml:space="preserve">${text}</w:t></w:r></w:p>`;
   const body = [
@@ -36,7 +39,7 @@ function report(): Uint8Array {
     p('Some opening words.'),
     p('Methods', 'Heading1'),
     p('Sampling', 'Heading2'),
-    `<w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Grace</w:t></w:r><w:r><w:t xml:space="preserve"> sampled the pond.</w:t></w:r></w:p>`,
+    `<w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Grace</w:t></w:r><w:r><w:t xml:space="preserve">${sampled}</w:t></w:r></w:p>`,
     `<w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr></w:pPr><w:r><w:t>Nets</w:t></w:r></w:p>`,
     p('Analysis', 'Heading2'),
     `<w:tbl><w:tr><w:tc>${p('Species')}</w:tc><w:tc>${p('Count')}</w:tc></w:tr><w:tr><w:tc>${p('Newt')}</w:tc><w:tc>${p('3')}</w:tc></w:tr></w:tbl>`,
@@ -59,6 +62,45 @@ function report(): Uint8Array {
   });
 }
 
+/** A Word document of one heading and a figure for each image given, each its own media part. */
+function pictured(images: readonly Uint8Array[]): Uint8Array {
+  const R = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+  const drawing = (at: number) =>
+    `<w:p><w:r><w:drawing><wp:inline><wp:docPr id="${at + 1}" name="Picture" descr="Newt ${at}"/><a:graphic><a:graphicData><pic:pic><pic:blipFill><a:blip r:embed="rId${at + 9}"/></pic:blipFill></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>`;
+  return zipSync({
+    'word/document.xml': strToU8(
+      `<w:document xmlns:w="${W}" xmlns:r="${R}" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><w:body>` +
+        `<w:p><w:pPr><w:pStyle w:val="Heading2"/></w:pPr><w:r><w:t>Pond</w:t></w:r></w:p>` +
+        images.map((_, at) => drawing(at)).join('') +
+        `</w:body></w:document>`,
+    ),
+    'word/styles.xml': strToU8(
+      `<w:styles xmlns:w="${W}"><w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/></w:style></w:styles>`,
+    ),
+    'word/_rels/document.xml.rels': strToU8(
+      `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
+        images
+          .map(
+            (_, at) =>
+              `<Relationship Id="rId${at + 9}" Type="${R}/image" Target="media/image${at}.png"/>`,
+          )
+          .join('') +
+        `</Relationships>`,
+    ),
+    ...Object.fromEntries(images.map((bytes, at) => [`word/media/image${at}.png`, bytes])),
+  });
+}
+
+/** A PNG of a few pixels, its colour from `shade`, so each is its own bytes. */
+const png = async (shade: number) =>
+  new Uint8Array(
+    await sharp({
+      create: { width: 4, height: 3, channels: 3, background: { r: shade, g: 120, b: 40 } },
+    })
+      .png()
+      .toBuffer(),
+  );
+
 describe('the import job, which reads a file into a proposal (the IM plan, IM-C)', () => {
   let db: TestDatabase;
   let objects: TestObjectStore;
@@ -77,14 +119,18 @@ describe('the import job, which reads a file into a proposal (the IM plan, IM-C)
     processNext({ queue, db: worker, handlers, workerId: 'worker-1', leaseMs: 60_000, log });
 
   /** An import filled with these bytes as the service fills one: stored, and its job queued. */
-  const imported = async (bytes: Uint8Array, fileName = 'Field notes.docx') => {
+  const imported = async (
+    bytes: Uint8Array,
+    fileName = 'Field notes.docx',
+    fileType: 'docx' | 'markdown' | 'html' = 'docx',
+  ) => {
     const stored = await store.put(bytes, 'application/octet-stream');
     return service.withTenant(tenant, async (trx) => {
       const made = await createImport(trx, {
         spaceId: general,
         importer: ada,
         fileName,
-        fileType: 'docx',
+        fileType,
       });
       return (await receiveImportFile(trx, made.id, {
         key: stored.key,
@@ -284,6 +330,103 @@ describe('the import job, which reads a file into a proposal (the IM plan, IM-C)
     expect(asset).toMatchObject({ spaceId: general });
   });
 
+  it('IMP-013 reads Markdown and HTML into sections and components as Word is, holding a data image for an asset and never fetching one by its address', async () => {
+    const markdown = await imported(
+      strToU8(
+        ['# Methods', '## Sampling', 'Ada *netted* it.', '## Analysis', 'Grace counted.'].join(
+          String.fromCharCode(10, 10),
+        ),
+      ),
+      'Field notes.md',
+      'markdown',
+    );
+    expect(await work()).toBe('done');
+    const parts = await service.withTenant(tenant, (trx) => importParts(trx, markdown.id));
+    expect(parts.map((part) => [part.kind, part.title, part.reason])).toEqual([
+      ['section', 'Methods', { rule: 'heading', style: 'Heading 1', text: 'Methods', level: 1 }],
+      [
+        'component',
+        'Sampling',
+        { rule: 'heading', style: 'Heading 2', text: 'Sampling', level: 2 },
+      ],
+      [
+        'component',
+        'Analysis',
+        { rule: 'heading', style: 'Heading 2', text: 'Analysis', level: 2 },
+      ],
+    ]);
+
+    const png = await sharp({
+      create: { width: 4, height: 3, channels: 3, background: { r: 10, g: 120, b: 40 } },
+    })
+      .png()
+      .toBuffer();
+    const html = await imported(
+      strToU8(
+        `<h2>Pond</h2><p><img alt="A newt" src="data:image/png;base64,${png.toString('base64')}"></p>` +
+          '<p><img alt="A far newt" src="https://example.com/newt.png"></p><p>Three newts.</p>',
+      ),
+      'Pond.html',
+      'html',
+    );
+    expect(await work()).toBe('done');
+    const read = await service.withTenant(tenant, (trx) => readImport(trx, html.id));
+    expect(read!.report).toEqual(
+      expect.arrayContaining([expect.objectContaining({ subject: 'image', count: 1 })]),
+    );
+    const [pond] = await service.withTenant(tenant, (trx) => importParts(trx, html.id));
+    expect(pond!.blocks.map((block) => block.type)).toEqual(['figure', 'paragraph']);
+    const accepted = await service.withTenant(
+      tenant,
+      (trx) =>
+        acceptImport(trx, html.id, { by: ada, title: 'Pond', language: 'en', direction: 'ltr' }),
+      { actorKind: 'person', actor: ada },
+    );
+    if (accepted.answer !== 'accepted') throw new Error(accepted.answer);
+    const placed = (accepted.components[0]!.content as { content: { asset?: string }[] })
+      .content[0]!;
+    const asset = await service.withTenant(tenant, (trx) => readAssetVersion(trx, placed.asset!));
+    expect(asset).toMatchObject({ spaceId: general });
+  });
+
+  it('IMP-036 recognises a file imported before by its hash or its name, and reads it again matched to what that import made', async () => {
+    // Built once: a zip carries the time it was made, so two builds are two files.
+    const file = report();
+    const first = await imported(file, 'Pond.docx');
+    expect(await work()).toBe('done');
+    const accepted = await service.withTenant(
+      tenant,
+      (trx) =>
+        acceptImport(trx, first.id, { by: ada, title: 'Pond', language: 'en', direction: 'ltr' }),
+      { actorKind: 'person', actor: ada },
+    );
+    if (accepted.answer !== 'accepted') throw new Error(accepted.answer);
+
+    // Said once its bytes are in, before they are read.
+    const sameBytes = await imported(file, 'Renamed.docx');
+    const sameName = await imported(report(' sampled the pond twice.'), 'Pond.docx');
+    const said = await service.withTenant(tenant, async (trx) => ({
+      sameBytes: await earlierImport(trx, sameBytes.id),
+      sameName: await earlierImport(trx, sameName.id),
+      kinds: [sameBytes.state, sameName.state],
+      again: await chooseImportKind(trx, sameName.id, { kind: 'again', earlier: first.id }),
+    }));
+    expect(said.kinds).toEqual(['reading', 'reading']);
+    expect(said.sameBytes).toMatchObject({ id: first.id, match: 'hash' });
+    expect(said.sameName).toMatchObject({ id: first.id, match: 'name' });
+    expect(said.again).toMatchObject({ kind: 'again', state: 'reading' });
+
+    while ((await work()) === 'done');
+    const parts = await service.withTenant(tenant, (trx) => importParts(trx, sameName.id));
+    const [introduction, sampling, analysis] = accepted.components;
+    expect(parts.map((part) => [part.title, part.matched, part.matchedBy])).toEqual([
+      ['Introduction', introduction!.artifactId, 'provenance'],
+      ['Methods', null, null],
+      ['Sampling', sampling!.artifactId, 'provenance'],
+      ['Analysis', analysis!.artifactId, 'provenance'],
+    ]);
+  });
+
   it('IMP-042 fails a zip bomb leaving nothing behind, and says why', async () => {
     const bomb = zipSync({ 'word/document.xml': new Uint8Array(21 * 1024 * 1024) }, { level: 9 });
     const made = await imported(bomb, 'Bomb.docx');
@@ -313,4 +456,98 @@ describe('the import job, which reads a file into a proposal (the IM plan, IM-C)
       'file_unreadable',
     );
   });
+  it('IMP-042 answers a read that throws in its thread as a file it could not read, never an error to try again', async () => {
+    expect(await readInThread({ bytes: report(), type: 'docx', levels: null as never })).toEqual({
+      ok: false,
+      refusal: 'unreadable',
+    });
+  });
+
+  it('IMP-008 removes an image it stored for an import abandoned while it was read', async () => {
+    const keys: string[] = [];
+    const recording: ObjectStores = {
+      forTenant: async (trx, which) => {
+        const real = await stores.forTenant(trx, which);
+        return {
+          put: async (body, type) => {
+            const stored = await real.put(body, type);
+            keys.push(stored.key);
+            return stored;
+          },
+          putFile: (path, type) => real.putFile(path, type),
+          get: (key) => real.get(key),
+          remove: (key) => real.remove(key),
+          signedLink: (key, seconds, name) => real.signedLink(key, seconds, name),
+        };
+      },
+    };
+    let made: Awaited<ReturnType<typeof imported>> | undefined;
+    handlers = {
+      import: importJob({
+        db: worker,
+        stores: recording,
+        // Abandoned by its importer while its file is read.
+        read: async (input, budget) => {
+          await service.withTenant(tenant, (trx) => abandonImport(trx, made!.id, async () => {}), {
+            actorKind: 'person',
+            actor: ada,
+          });
+          return readInThread(input, budget);
+        },
+      }),
+    };
+    try {
+      made = await imported(pictured([await png(201)]), 'Abandoned.docx');
+      expect(await work()).toBe('done');
+      expect(keys).toHaveLength(1);
+      expect(await gone(keys[0]!)).toBe(true);
+    } finally {
+      handlers = { import: importJob({ db: worker, stores }) };
+    }
+  });
+
+  it('IMP-042 holds at most so many images for an import, leaving out the rest and saying so', async () => {
+    handlers = {
+      import: importJob({
+        db: worker,
+        stores,
+        budget: { timeMs: 60_000, memoryMb: 512, images: 2 },
+      }),
+    };
+    try {
+      const made = await imported(
+        pictured([await png(1), await png(2), await png(3)]),
+        'Many newts.docx',
+      );
+      expect(await work()).toBe('done');
+      const read = await service.withTenant(tenant, (trx) => readImport(trx, made.id));
+      const [part] = await service.withTenant(tenant, (trx) => importParts(trx, made.id));
+      expect(part!.blocks.map((block) => block.type)).toEqual(['figure', 'figure', 'paragraph']);
+      expect(read!.report).toEqual(
+        expect.arrayContaining([expect.objectContaining({ subject: 'imageLimit', count: 1 })]),
+      );
+    } finally {
+      handlers = { import: importJob({ db: worker, stores }) };
+    }
+  });
+
+  it('IMP-042 counts the time its images take to check against the read’s budget, failing the import past it', async () => {
+    handlers = {
+      import: importJob({
+        db: worker,
+        stores,
+        budget: { timeMs: 4_000, memoryMb: 512 },
+        // A decode that never finishes.
+        decode: () => new Promise(() => {}),
+      }),
+    };
+    try {
+      const made = await imported(pictured([await png(4)]), 'Slow newt.docx');
+      expect(await work()).toBe('failed');
+      const read = await service.withTenant(tenant, (trx) => readImport(trx, made.id));
+      expect(read).toMatchObject({ state: 'failed', failure: 'file_too_large' });
+    } finally {
+      handlers = { import: importJob({ db: worker, stores }) };
+    }
+  }, 20_000);
 });

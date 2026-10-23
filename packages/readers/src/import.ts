@@ -1,8 +1,8 @@
 import type { ImportFlowItem } from '@alloy-works/domain';
 import { readDocx, type DocxRead } from './docx/docx.js';
 import { readZip } from './docx/zip.js';
-import { readHtml } from './html.js';
-import { readMarkdown } from './markdown.js';
+import { OUTLINE_HEADING, readHtmlOutline } from './html.js';
+import { readMarkdownOutline } from './markdown.js';
 
 export { readDocx } from './docx/docx.js';
 export type { DocxRead, DocxRefusal } from './docx/docx.js';
@@ -46,14 +46,15 @@ function textOf(value: unknown): string {
 }
 
 /**
- * A file read for an import. Markdown and HTML go through the paste's readers whole, as one run of
- * blocks, their headings kept as paragraphs and said: breaking them out is IMe's.
+ * A file read for an import. Markdown and HTML go through the paste's readers in their import mode
+ * (IMP-013): each heading kept as one, by its level, as Word's Heading 1 to 6 are, so they break out
+ * as Word does; a `data:` image held as Word's are.
  */
 export function readImport(bytes: Uint8Array, type: ImportFileType): ImportRead {
   if (type === 'docx') return readDocx(bytes);
   const text = asText(bytes);
   if (text === undefined) return { ok: false, refusal: 'unreadable', failure: 'Not UTF-8 text' };
-  const read = type === 'markdown' ? readMarkdown(text) : readHtml(text);
+  const read = type === 'markdown' ? readMarkdownOutline(text) : readHtmlOutline(text);
   if (!read.ok) {
     return {
       ok: false,
@@ -61,22 +62,28 @@ export function readImport(bytes: Uint8Array, type: ImportFileType): ImportRead 
       failure: read.failure,
     };
   }
-  const { content } = read.input.candidate as { content: unknown[] };
-  const flow: ImportFlowItem[] = content.map((block) => ({
-    kind: 'block',
-    block,
-    source: textOf(block),
-  }));
+  const flow: ImportFlowItem[] = read.blocks.map((block) => {
+    if (block.type === OUTLINE_HEADING) {
+      const level = block.level as number;
+      return { kind: 'heading', level, style: `Heading ${level}`, text: block.text as string };
+    }
+    const alternative = block.alternative as { text?: string } | undefined;
+    return {
+      kind: 'block',
+      block,
+      source: block.type === 'figure' ? (alternative?.text ?? '') : textOf(block),
+    };
+  });
   return {
     ok: true,
     flow,
     title: null,
     language: null,
-    report: read.input.report,
+    report: read.report,
     references: [],
     comments: [],
     identities: [],
-    images: [],
+    images: read.images,
     properties: {},
   };
 }

@@ -3,6 +3,7 @@ import {
   CURRENT_SCHEMA_VERSION,
   isLanguageLabel,
   type ReaderResult,
+  type ReportEntry,
 } from '@alloy-works/domain';
 import { parse, type DefaultTreeAdapterTypes } from 'parse5';
 
@@ -197,6 +198,58 @@ class Tally {
   footnotes = 0;
   /** Tables, lists, quotations and preformatted text in a Word note, kept as its paragraphs. */
   footnoteBlocks = 0;
+  /** Set where an import reads the HTML, keeping its outline (IMP-013); null for a paste. */
+  outline: Outline | null = null;
+}
+
+/** An image the HTML held as a `data:` address, for asset ingest as a Word one is (IM-C). */
+export interface HeldImage {
+  readonly placeholder: string;
+  readonly format: 'png' | 'jpeg';
+  readonly bytes: Uint8Array;
+}
+
+/** A heading kept as one, by its level, where an import reads the HTML (IMP-013). */
+export const OUTLINE_HEADING = 'outlineHeading';
+
+/** What an import's reading keeps beyond a paste's: its top-level blocks' sink, and images held. */
+interface Outline {
+  readonly top: Sink;
+  readonly images: HeldImage[];
+  readonly placed: Map<string, string | null>;
+}
+
+const DATA_IMAGE = /^data:image\/(png|jpe?g);base64,([a-z0-9+/=\s]+)$/i;
+
+/**
+ * A `data:` image's placeholder, the same for each use of one address; null for anything else, which
+ * is never fetched (IM-C), or whose bytes are not the format it says.
+ */
+function holdImage(outline: Outline, src: string | undefined): string | null {
+  if (src === undefined) return null;
+  if (outline.placed.has(src)) return outline.placed.get(src)!;
+  const match = DATA_IMAGE.exec(src.trim());
+  let held: string | null = null;
+  if (match) {
+    let bytes: Uint8Array | undefined;
+    try {
+      bytes = Uint8Array.from(atob(match[2]!.replace(/\s/g, '')), (each) => each.charCodeAt(0));
+    } catch {
+      bytes = undefined;
+    }
+    const format = match[1]!.toLowerCase() === 'png' ? ('png' as const) : ('jpeg' as const);
+    const fits =
+      bytes !== undefined &&
+      (format === 'png'
+        ? bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47
+        : bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff);
+    if (fits) {
+      held = `00000000-0000-4000-8000-${(outline.images.length + 1).toString(16).padStart(12, '0')}`;
+      outline.images.push({ placeholder: held, format, bytes: bytes! });
+    }
+  }
+  outline.placed.set(src, held);
+  return held;
 }
 
 /**
@@ -249,6 +302,22 @@ class Sink {
       ...(handlers.length > 0 ? { handlers } : {}),
     });
     return true;
+  }
+
+  /** Closes the open runs as a heading of the outline (IMP-013): its text, its marks not kept. */
+  heading(level: number): void {
+    const runs = tidy(this.runs, this.tally);
+    this.runs = [];
+    this.presentation = {};
+    // A footnote cannot stand in a title: left out, and said.
+    this.tally.footnotes += runs.filter((run) => !isRun(run)).length;
+    const text = runs
+      .filter(isRun)
+      .map((run) => run.value)
+      .join('')
+      .trim();
+    if (text === '') this.tally.empties += 1;
+    else this.blocks.push({ type: OUTLINE_HEADING, level, text });
   }
 
   finish(): Block[] {
@@ -450,7 +519,21 @@ function walk(node: ChildNode, context: Context, sink: Sink, tally: Tally): void
     return;
   }
   if (name === 'img') {
-    tally.images += 1;
+    const outline = tally.outline?.top === sink ? tally.outline : null;
+    const held = outline === null ? null : holdImage(outline, attribute(node, 'src'));
+    if (held === null) {
+      tally.images += 1;
+      return;
+    }
+    const alt = (attribute(node, 'alt') ?? '').trim();
+    sink.close(false);
+    sink.blocks.push({
+      type: 'figure',
+      asset: held,
+      imageStyle: 'figure',
+      caption: [],
+      alternative: alt === '' ? { kind: 'inherited' } : { kind: 'own', text: alt },
+    });
     return;
   }
   if (name === 'math') {
@@ -477,6 +560,12 @@ function walk(node: ChildNode, context: Context, sink: Sink, tally: Tally): void
   }
 
   const inner = within(node, context);
+  if (HEADINGS.has(name) && tally.outline?.top === sink) {
+    sink.close(false);
+    walkChildren(node.childNodes, { ...inner, handlers: context.handlers }, sink, tally);
+    sink.heading(Number(name.slice(1)));
+    return;
+  }
   if (name === 'p' || HEADINGS.has(name)) {
     sink.close(false);
     const before = sink.blocks.length;
@@ -1008,6 +1097,33 @@ function paragraphsOf(blocks: readonly Block[], tally: Tally): Block[] {
 export function readHtml(html: string): ReaderResult {
   const refused = refuseOversized(html);
   if (refused) return refused;
+  const { content, report } = readAll(html, false);
+  return {
+    ok: true,
+    input: { candidate: { schemaVersion: CURRENT_SCHEMA_VERSION, content }, report },
+  };
+}
+
+/**
+ * HTML as an import reads it (IMP-013): as a paste is, but each heading not inside another block kept
+ * as an `OUTLINE_HEADING` by its level, for breakout, and each `data:` PNG or JPEG image a figure
+ * whose image is held for asset ingest. An image at any other address is never fetched, and is said.
+ */
+export function readHtmlOutline(html: string):
+  | {
+      readonly ok: true;
+      readonly blocks: readonly Block[];
+      readonly report: readonly ReportEntry[];
+      readonly images: readonly HeldImage[];
+    }
+  | Extract<ReaderResult, { ok: false }> {
+  const refused = refuseOversized(html);
+  if (refused && !refused.ok) return refused;
+  const { content, report, images } = readAll(html, true);
+  return { ok: true, blocks: content, report, images };
+}
+
+function readAll(html: string, outline: boolean) {
   const tally = new Tally();
   const document = parse(html);
   const context: Context = {
@@ -1019,8 +1135,10 @@ export function readHtml(html: string): ReaderResult {
     notes: wordNotes(document.childNodes),
     inNote: false,
   };
-  const content = blocksOf(document.childNodes, context, tally);
-
+  const sink = new Sink(tally);
+  if (outline) tally.outline = { top: sink, images: [], placed: new Map() };
+  walkChildren(document.childNodes, context, sink, tally);
+  const content = sink.finish();
   const report = createReport();
   const say = (count: number, add: (extra: { count: number }) => void) => {
     if (count > 0) add({ count });
@@ -1038,11 +1156,5 @@ export function readHtml(html: string): ReaderResult {
   say(tally.footnotes, (extra) => report.add('read', 'discarded', 'footnote', extra));
   say(tally.footnoteBlocks, (extra) => report.add('read', 'rewritten', 'footnoteBlocks', extra));
 
-  return {
-    ok: true,
-    input: {
-      candidate: { schemaVersion: CURRENT_SCHEMA_VERSION, content },
-      report: report.entries,
-    },
-  };
+  return { content, report: report.entries, images: tally.outline?.images ?? [] };
 }

@@ -1,17 +1,22 @@
 import { randomUUID } from 'node:crypto';
 import {
   acceptedCounts,
+  againIdentifiers,
+  againStatus,
   attributionOf,
   contentDocumentSchema,
   createReport,
   editProposal,
   inImportBlocks as inBlocks,
+  matchAgain,
   matchIdentity,
   parseContentDocument,
   resolveReferences,
   suggestedBlocks,
   type AcceptedCounts,
   type AcceptedComponent,
+  type AgainCandidate,
+  type AgainMatchedBy,
   type BlockNode,
   type ContentDocument,
   type ImportEdit,
@@ -24,6 +29,7 @@ import {
   type ImportReference,
   type ImportReviewReason,
   type ImportPartFlag,
+  type OutlineDocument,
   type OutlineNode,
   type ProposedChange,
   type ProposedPart,
@@ -53,7 +59,12 @@ import {
 } from './listing.js';
 import { labelled, labels, recordEvent } from './audit.js';
 import { createComponent } from './creation.js';
-import { createDocument, newNodeIdentifier, type CreateDocumentAnswer } from './documents.js';
+import {
+  createDocument,
+  editOutline,
+  newNodeIdentifier,
+  type CreateDocumentAnswer,
+} from './documents.js';
 import { enqueueJob } from './queue.js';
 import { notifyTenant } from './realtime.js';
 import { makeSuggestion } from './suggestions.js';
@@ -123,6 +134,10 @@ export interface StoredImport {
   readonly properties: Readonly<Record<string, string>> | null;
   /** The policy applied at acceptance (IMP-011). */
   readonly policy: ImportPolicy | null;
+  /** The accepted import one gain updates (IMd). */
+  readonly earlier: string | null;
+  /** What accepting it again did, once accepted. */
+  readonly outcome: ImportOutcome | null;
 }
 
 export interface StoredImportPart {
@@ -141,6 +156,39 @@ export interface StoredImportPart {
   readonly headings: readonly string[];
   readonly changes: readonly ProposedChange[];
   readonly threads: readonly ProposedThread[];
+  /** The component it made or updated, once accepted: what a later import matches it by (IMd). */
+  readonly made: string | null;
+  /** In an import again, the component the earlier import made that it is matched to, and how. */
+  readonly matched: string | null;
+  readonly matchedBy: AgainMatchedBy | null;
+}
+
+/**
+ * Why a changed component was not suggested on: its importer may not, has as many pending on it as
+ * one may, the suggestion would change nothing or was made and resolved before, or the component was
+ * deleted or archived since it was matched.
+ */
+export type SkippedReason = 'suggest' | 'limit' | 'empty' | 'resolved' | 'gone';
+
+const SKIPPED: Readonly<
+  Record<'missing' | `suggestion.${'empty' | 'limit' | 'resolved'}`, SkippedReason>
+> = {
+  missing: 'gone',
+  'suggestion.empty': 'empty',
+  'suggestion.limit': 'limit',
+  'suggestion.resolved': 'resolved',
+};
+
+/**
+ * What accepting an import again did (IM-K): each suggestion made, each new component and whether it
+ * was placed, each component gone and whether it was flagged, and each skipped, with why.
+ */
+export interface ImportOutcome {
+  readonly suggested: readonly { readonly component: string; readonly suggestion: string }[];
+  readonly made: readonly { readonly component: string; readonly placed: boolean }[];
+  readonly gone: readonly { readonly component: string; readonly flagged: boolean }[];
+  readonly skipped: readonly { readonly component: string; readonly reason: SkippedReason }[];
+  readonly unchanged: number;
 }
 
 interface Row {
@@ -172,6 +220,8 @@ interface Row {
   confirmed: Record<string, string>;
   properties: Record<string, string> | null;
   policy: ImportPolicy | null;
+  earlier: string | null;
+  outcome: ImportOutcome | null;
 }
 
 const importOf = (row: Row): StoredImport => ({
@@ -203,14 +253,33 @@ const importOf = (row: Row): StoredImport => ({
   confirmed: row.confirmed,
   properties: row.properties,
   policy: row.policy,
+  earlier: row.earlier,
+  outcome: row.outcome,
 });
 
 const COLUMNS = sql`id, space_id, importer, file_name, file_type, object_key, sha256,
   bytes::text as bytes, kind, state, levels, title, language, report, failure, document_id,
   created_at, touched_at, finished_at, revision, place, accepted, anchors, outside, identities,
-  confirmed, properties, policy`;
+  confirmed, properties, policy, earlier, outcome`;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+/**
+ * Whether the import, held for update, is in one of these states, and at the revision its importer
+ * read where they gave one: `state`, else `changed`, else held.
+ */
+async function heldAt(
+  trx: TenantTransaction,
+  id: string,
+  states: readonly ImportState[],
+  revision: number | undefined,
+): Promise<'state' | 'changed' | 'held'> {
+  const { rows } = await sql<{ state: ImportState; revision: number }>`
+    select state, revision from import where id = ${id} for update`.execute(trx);
+  const row = rows[0];
+  if (!row || !states.includes(row.state)) return 'state';
+  return revision !== undefined && row.revision !== revision ? 'changed' : 'held';
+}
 
 /** An import made in a space, awaiting its file (IM-B). `create` in the space is the caller's to decide. */
 export async function createImport(
@@ -286,6 +355,144 @@ export async function receiveImportFile(
   return importOf(rows[0]);
 }
 
+/** An accepted import a file was imported in before (IMP-036): who, when, and the document it made. */
+export interface EarlierImport {
+  readonly id: string;
+  readonly fileName: string;
+  readonly importer: string;
+  readonly finishedAt: Date;
+  readonly documentId: string;
+  /** The same bytes, by their hash; else the same file name in the space. */
+  readonly match: 'hash' | 'name';
+}
+
+/**
+ * The accepted import in this import's space that holds the same file (IM-K): by its hash, else by
+ * its name, the latest first, accepted before this one was, and the first of them `seen` passes,
+ * so none is said that its importer may not know of. Said first, before anything is read.
+ */
+export async function earlierImport(
+  trx: TenantTransaction,
+  id: string,
+  seen: (earlier: EarlierImport) => Promise<boolean> = async () => true,
+): Promise<EarlierImport | undefined> {
+  if (!UUID.test(id)) return undefined;
+  const { rows } = await sql<{
+    id: string;
+    file_name: string;
+    importer: string;
+    finished_at: Date;
+    document_id: string;
+    hash: boolean;
+  }>`select e.id, e.file_name, e.importer, e.finished_at, e.document_id,
+            coalesce(e.sha256 = i.sha256, false) as hash
+       from import i join import e on e.space_id = i.space_id and e.id <> i.id
+      where i.id = ${id} and e.state = 'accepted' and e.document_id is not null
+        and e.finished_at < coalesce(i.finished_at, now())
+        and (e.sha256 = i.sha256 or e.file_name = i.file_name)
+      order by coalesce(e.sha256 = i.sha256, false) desc, e.finished_at desc, e.id`.execute(trx);
+  for (const found of rows) {
+    const earlier: EarlierImport = {
+      id: found.id,
+      fileName: found.file_name,
+      importer: found.importer,
+      finishedAt: found.finished_at,
+      documentId: found.document_id,
+      match: found.hash ? 'hash' : 'name',
+    };
+    if (await seen(earlier)) return earlier;
+  }
+  return undefined;
+}
+
+/**
+ * Imported as new, or as an update of what an accepted import in the space made (IM-K): its parts
+ * matched to that import's components now if it is proposed, else once it is. Undefined where it is
+ * past its proposal; `import.changed` where it is past the revision given; `import.earlier_invalid`
+ * where the earlier one is not an accepted import of this space with its document.
+ */
+export async function chooseImportKind(
+  trx: TenantTransaction,
+  id: string,
+  choice: { readonly kind: 'first' } | { readonly kind: 'again'; readonly earlier: string },
+  revision?: number,
+): Promise<StoredImport | 'import.earlier_invalid' | 'import.changed' | undefined> {
+  const held = await heldAt(trx, id, ['awaiting', 'reading', 'proposed'], revision);
+  if (held === 'state') return undefined;
+  if (held === 'changed') return 'import.changed';
+  const earlier = choice.kind === 'again' ? choice.earlier : null;
+  if (earlier !== null) {
+    if (!UUID.test(earlier) || earlier === id) return 'import.earlier_invalid';
+    const { rows: found } =
+      await sql`select 1 from import e join import i on i.space_id = e.space_id
+       where i.id = ${id} and e.id = ${earlier} and e.state = 'accepted'
+         and e.document_id is not null`.execute(trx);
+    if (found.length === 0) return 'import.earlier_invalid';
+  }
+  const { rows } = await sql<Row>`
+    update import set kind = ${choice.kind}, earlier = ${earlier}, revision = revision + 1,
+           touched_at = now()
+     where id = ${id} and state in ('awaiting', 'reading', 'proposed')
+    returning ${COLUMNS}`.execute(trx);
+  if (!rows[0]) return undefined;
+  if (rows[0].state === 'proposed') await matchParts(trx, rows[0]);
+  return importOf(rows[0]);
+}
+
+/**
+ * What an earlier import made that a part may match (IM-K): each component an edited part of it made
+ * or updated, in order, by the heading it was read from and its title now; none deleted or archived.
+ */
+export async function againCandidates(
+  trx: TenantTransaction,
+  earlier: string,
+): Promise<AgainCandidate[]> {
+  const { rows } = await sql<{ made: string; title: string; reason: ImportReviewReason }>`
+    select made, title, reason from import_part
+     where import_id = ${earlier} and proposal = 'edited' and kind = 'component' and made is not null
+     order by ord`.execute(trx);
+  const candidates: AgainCandidate[] = [];
+  for (const row of rows) {
+    if ((await isDeleted(trx, row.made)) || (await isArchived(trx, row.made))) continue;
+    if (candidates.some((each) => each.component === row.made)) continue;
+    const latest = await latestVersion(trx, row.made);
+    const title = (latest?.content as { readonly title?: unknown } | undefined)?.title;
+    candidates.push({
+      component: row.made,
+      heading: 'text' in row.reason && row.reason.text !== undefined ? row.reason.text : row.title,
+      title: typeof title === 'string' ? title : row.title,
+    });
+  }
+  return candidates;
+}
+
+/** An import's edited parts matched again (IM-K), or every match cleared where it is a first. */
+async function matchParts(trx: TenantTransaction, row: Row): Promise<void> {
+  if (row.kind !== 'again' || row.earlier === null) {
+    await sql`update import_part set matched = null, matched_by = null
+       where import_id = ${row.id} and proposal = 'edited'`.execute(trx);
+    return;
+  }
+  const parts = await importParts(trx, row.id);
+  const { matches } = matchAgain(parts, await againCandidates(trx, row.earlier));
+  for (const [index, part] of parts.entries()) {
+    const match = matches[index] ?? null;
+    await sql`update import_part set matched = ${match?.component ?? null},
+              matched_by = ${match?.by ?? null}
+       where id = ${part.id}`.execute(trx);
+  }
+}
+
+/** What the earlier import made that no part of this one matches: gone (IM-K). */
+export async function goneComponents(trx: TenantTransaction, id: string): Promise<string[]> {
+  const found = await readImport(trx, id);
+  if (found?.kind !== 'again' || found.earlier === null) return [];
+  const held = new Set((await importParts(trx, id)).map((part) => part.matched));
+  return (await againCandidates(trx, found.earlier))
+    .map((each) => each.component)
+    .filter((component) => !held.has(component));
+}
+
 /** An import's parts, in order, as read or as edited. */
 export async function importParts(
   trx: TenantTransaction,
@@ -306,8 +513,11 @@ export async function importParts(
     headings: string[];
     changes: ProposedChange[];
     threads: ProposedThread[];
+    made: string | null;
+    matched: string | null;
+    matchedBy: AgainMatchedBy | null;
   }>`select id, ord, kind, title, blocks, source, reason, flags, parent, origins, headings, changes,
-            threads
+            threads, made, matched, matched_by as "matchedBy"
        from import_part
       where import_id = ${id} and proposal = ${proposal} order by ord`.execute(trx);
   return rows;
@@ -348,8 +558,7 @@ export async function holdImportImage(
 }
 
 /**
- * The images an import held let go (IMP-008): its rows deleted, and each object removed unless
- * another import, an asset or an upload holds the same bytes, each held by its hash meanwhile.
+ * The images an import held let go (IMP-008): its rows deleted, and each object released.
  */
 async function releaseImages(
   trx: TenantTransaction,
@@ -358,14 +567,27 @@ async function releaseImages(
 ): Promise<void> {
   const { rows } = await sql<{ object_key: string; sha256: string }>`
     delete from import_asset where import_id = ${id} returning object_key, sha256`.execute(trx);
-  for (const each of rows) {
-    await holdObject(trx, each.sha256);
-    const { rows: files } = await sql`select 1 from import
-      where object_key = ${each.object_key} limit 1`.execute(trx);
-    if (files.length > 0) continue;
-    if (await objectInUse(trx, each.object_key, '00000000-0000-0000-0000-000000000000')) continue;
-    await remove(each.object_key);
-  }
+  for (const each of rows)
+    await releaseObject(trx, { key: each.object_key, sha256: each.sha256 }, remove);
+}
+
+/**
+ * An object an import stored let go: removed unless an import's file or image, an asset or an upload
+ * still holds the same bytes, held by its hash meanwhile so nothing comes to need it between the
+ * question and the removal. Answers whether it was removed.
+ */
+export async function releaseObject(
+  trx: TenantTransaction,
+  object: { readonly key: string; readonly sha256: string },
+  remove: RemoveObject,
+): Promise<boolean> {
+  await holdObject(trx, object.sha256);
+  const { rows: files } = await sql`select 1 from import
+    where object_key = ${object.key} limit 1`.execute(trx);
+  if (files.length > 0) return false;
+  if (await objectInUse(trx, object.key, '00000000-0000-0000-0000-000000000000')) return false;
+  await remove(object.key);
+  return true;
 }
 
 /** An edit as recorded (IMb): by whom, when, and what was asked. */
@@ -399,7 +621,9 @@ export type ImportEditInput =
         | { readonly kind: 'text' };
     }
   /** The member a name match is confirmed as, or the confirmation withdrawn. */
-  | { readonly edit: 'identity'; readonly identity: string; readonly member: string | null };
+  | { readonly edit: 'identity'; readonly identity: string; readonly member: string | null }
+  /** In an import again, a part matched to another component the earlier import made, or new. */
+  | { readonly edit: 'match'; readonly part: string; readonly component: string | null };
 
 export type EditImportAnswer =
   | { readonly answer: 'edited'; readonly import: StoredImport }
@@ -448,6 +672,25 @@ export async function editImport(
       input,
       sql`confirmed = ${JSON.stringify(confirmed)}::jsonb, touched_at = now()`,
     );
+  }
+  if (edit.edit === 'match') {
+    // Only to a component the earlier import made that no other part holds (IMP-037).
+    const parts = await importParts(trx, id);
+    const part = parts.find((each) => each.id === edit.part && each.kind === 'component');
+    if (!part) return { answer: 'refused', refusal: 'part_missing' };
+    if (edit.component !== null) {
+      const candidates = row.earlier === null ? [] : await againCandidates(trx, row.earlier);
+      if (
+        !candidates.some((each) => each.component === edit.component) ||
+        parts.some((each) => each.id !== part.id && each.matched === edit.component)
+      ) {
+        return { answer: 'refused', refusal: 'match_invalid' };
+      }
+    }
+    await sql`update import_part set matched = ${edit.component},
+              matched_by = ${edit.component === null ? null : 'importer'}
+       where id = ${part.id}`.execute(trx);
+    return recordEdit(trx, id, input, sql`touched_at = now()`);
   }
   const before = await importParts(trx, id);
   let asked: ImportEdit;
@@ -647,6 +890,8 @@ export async function recordProposal(
       ids.push(made[0]!.id);
     }
   }
+  // Read again, then matched to what the earlier import made (IM-K).
+  if (rows[0].kind === 'again') await matchParts(trx, rows[0]);
   return importOf(rows[0]);
 }
 
@@ -660,15 +905,9 @@ export type RemoveObject = (key: string) => Promise<void>;
  */
 async function releaseFile(trx: TenantTransaction, row: Row, remove: RemoveObject): Promise<void> {
   if (row.object_key === null || row.sha256 === null) return;
-  await sql`select pg_advisory_xact_lock(hashtextextended(${`alloy-works:object:${row.sha256}`}, 0))`.execute(
-    trx,
-  );
+  await holdObject(trx, row.sha256);
   await sql`update import set object_key = null where id = ${row.id}`.execute(trx);
-  const { rows: others } = await sql`select 1 from import
-    where object_key = ${row.object_key} and id <> ${row.id} limit 1`.execute(trx);
-  if (others.length > 0) return;
-  if (await objectInUse(trx, row.object_key, '00000000-0000-0000-0000-000000000000')) return;
-  await remove(row.object_key);
+  await releaseObject(trx, { key: row.object_key, sha256: row.sha256 }, remove);
 }
 
 /** The import's event on the log, in its space, with the space's name kept beside it. */
@@ -751,14 +990,19 @@ export async function abandonImport(
 }
 
 /**
- * The levels changed (IM-D): the proposal read again at them, its parts deleted and its job queued.
- * Undefined where it is not proposed.
+ * The levels changed (IM-D): the proposal read again at them, its parts and images let go and its
+ * job queued. Undefined where it is not proposed; `import.changed` where it is past the revision given.
  */
 export async function changeImportLevels(
   trx: TenantTransaction,
   id: string,
   levels: ImportLevels,
-): Promise<StoredImport | undefined> {
+  remove: RemoveObject,
+  revision?: number,
+): Promise<StoredImport | 'import.changed' | undefined> {
+  const held = await heldAt(trx, id, ['proposed'], revision);
+  if (held === 'state') return undefined;
+  if (held === 'changed') return 'import.changed';
   const { rows } = await sql<Row>`
     update import set levels = ${JSON.stringify(levels)}::jsonb, state = 'reading', report = null,
            revision = revision + 1, touched_at = now(), anchors = '{}', outside = '[]', identities = '[]', confirmed = '{}',
@@ -767,8 +1011,8 @@ export async function changeImportLevels(
     returning ${COLUMNS}`.execute(trx);
   if (!rows[0]) return undefined;
   await forgetProposal(trx, id);
-  // Read again, the same file holds the same images by the same hashes: held again, not removed.
-  await sql`delete from import_asset where import_id = ${id}`.execute(trx);
+  // Read again, its images are stored and held again: these are let go, as abandoning does.
+  await releaseImages(trx, id, remove);
   await enqueueJob(trx, 'import', id);
   return importOf(rows[0]);
 }
@@ -905,9 +1149,32 @@ export type AcceptImportAnswer =
       readonly components: readonly StoredVersion[];
     }
   | { readonly answer: 'import.not_proposed' }
+  /** It was changed since the revision its importer read. */
+  | { readonly answer: 'import.changed' }
   /** A reference outside the import is neither retargeted nor made text (IMP-034). */
   | { readonly answer: 'import.references_unresolved'; readonly references: readonly string[] }
+  /** Imported again: its importer may suggest on none of the components it changes (IM-K). */
+  | { readonly answer: 'import.not_permitted' }
+  /** Imported again: the earlier import's document is gone. */
+  | { readonly answer: 'import.earlier_missing' }
   | Exclude<Awaited<ReturnType<typeof createDocumentWithComponents>>, { answer: 'created' }>;
+
+/** What accepting takes: who, the document's title, language and template, and what they may do. */
+export interface AcceptImportInput {
+  readonly by: string;
+  /** The revision its importer read; any where absent. */
+  readonly revision?: number;
+  readonly title: string;
+  readonly language: string;
+  readonly direction: 'ltr' | 'rtl';
+  readonly template?: string;
+  /**
+   * Whether `by` holds a permission on an artifact, for an import again: `suggest` on a component it
+   * changes, `comment` on one it flags, `edit` on the document it places in. The caller's to decide;
+   * all held where absent.
+   */
+  readonly may?: (artifact: string, permission: 'suggest' | 'comment' | 'edit') => Promise<boolean>;
+}
 
 /**
  * Accepted (IM-F): the document and its components made from the proposal as edited, by the person
@@ -918,20 +1185,18 @@ export type AcceptImportAnswer =
 export async function acceptImport(
   trx: TenantTransaction,
   id: string,
-  input: {
-    readonly by: string;
-    readonly title: string;
-    readonly language: string;
-    readonly direction: 'ltr' | 'rtl';
-    readonly template?: string;
-  },
+  input: AcceptImportInput,
 ): Promise<AcceptImportAnswer> {
   const { rows: held } = await sql<Row>`select ${COLUMNS} from import where id = ${id}
     and state = 'proposed' for update`.execute(trx);
   const row = held[0];
   if (!row) return { answer: 'import.not_proposed' };
+  if (input.revision !== undefined && row.revision !== input.revision) {
+    return { answer: 'import.changed' };
+  }
   const waiting = row.outside.filter((each) => each.resolved === null).map((each) => each.key);
   if (waiting.length > 0) return { answer: 'import.references_unresolved', references: waiting };
+  if (row.kind === 'again') return acceptAgain(trx, row, input);
   const parts = placedImages(await importParts(trx, id), await assetsOf(trx, row, input.by));
 
   // Each component's identity and every node's chosen first, so a reference resolves to them (IMP-006).
@@ -1001,6 +1266,11 @@ export async function acceptImport(
     await sql`insert into import_made (version_id, artifact_id, import_id)
       values (${version.id}, ${version.artifactId}, ${id})`.execute(trx);
   }
+  // What each part made, for a later import of the same file to match against (IM-K).
+  for (const part of parts) {
+    const own = chosen.get(part.id)!.component;
+    if (own) await recordMade(trx, part.id, own.component);
+  }
 
   // The tenant's policy applied once, now (IMP-032): each author's changes a suggestion and each
   // comment a thread, in order, on the component's 0.1.
@@ -1026,6 +1296,7 @@ export async function acceptImport(
     });
     if (skipped > 0) report.add('read', 'discarded', 'trackedChange', { count: skipped });
   }
+  if (policy === 'discard') await unnameParts(trx, id);
   const { rows } = await sql<Row>`
     update import set state = 'accepted', document_id = ${made.document.artifactId},
            accepted = ${JSON.stringify(counts)}::jsonb, finished_at = now(), touched_at = now(),
@@ -1050,6 +1321,330 @@ export async function acceptImport(
     document: made.document,
     components: made.components,
   };
+}
+
+/**
+ * Every Word author's name and initials blanked on its parts, as read and as edited, once accepted
+ * under `discard` (IMP-010): the one change the read set allows (0157).
+ */
+async function unnameParts(trx: TenantTransaction, id: string): Promise<void> {
+  await sql`update import_part set changes = import_part_unnamed(changes),
+            threads = import_part_unnamed_threads(threads)
+     where import_id = ${id}`.execute(trx);
+}
+
+/** The component an edited part made or updated, recorded at acceptance (IM-K). */
+async function recordMade(trx: TenantTransaction, part: string, component: string): Promise<void> {
+  await sql`update import_part set made = ${component} where id = ${part}`.execute(trx);
+}
+
+/** Where a component is referenced in an outline: its node, its parent's and its place there. */
+function referenceIn(
+  nodes: readonly OutlineNode[],
+  component: string,
+  parent: string | null = null,
+):
+  { readonly node: string; readonly parent: string | null; readonly position: number } | undefined {
+  for (const [position, node] of nodes.entries()) {
+    if (node.type === 'reference' && node.component === component) {
+      return { node: node.id, parent, position };
+    }
+    const within = referenceIn(node.children, component, node.id);
+    if (within) return within;
+  }
+  return undefined;
+}
+
+/** A gone component's flag on the document (IM-K): words only, its file named as data. */
+const goneText = (fileName: string) =>
+  `Imported again from ${fileName}, no part of the file matched this component. It was kept as it is; nothing was deleted.`;
+
+/**
+ * Accepted again (IM-K; IMP-037): no document is made. Each changed part is a whole-component
+ * suggestion against its component's current version, by the importer, its Word authors' changes
+ * and comments on top as IMc makes them, so an edit made in the space is never overwritten. Each new
+ * part is a new component placed in the earlier import's document after the part before it; a
+ * placement is never suggested, since no suggestion places. What no part matches is flagged on the
+ * document and kept. A component its importer may not suggest on is skipped and said; none being
+ * suggestable refuses the whole before anything is written.
+ */
+async function acceptAgain(
+  trx: TenantTransaction,
+  row: Row,
+  input: AcceptImportInput,
+): Promise<AcceptImportAnswer> {
+  const may = input.may ?? (async () => true);
+  const { rows: earlier } = await sql<{ document_id: string | null }>`
+    select document_id from import where id = ${row.earlier}`.execute(trx);
+  const documentId = earlier[0]?.document_id ?? null;
+  if (documentId === null || (await isDeleted(trx, documentId))) {
+    return { answer: 'import.earlier_missing' };
+  }
+
+  // What each part does, and who may, decided before anything is written.
+  const stored = await importParts(trx, row.id);
+  const plans: {
+    act: 'none' | 'new' | 'gone' | 'unchanged' | 'changed';
+    version?: StoredVersion;
+  }[] = [];
+  for (const part of stored) {
+    const version =
+      part.kind === 'component' && part.matched !== null
+        ? await latestVersion(trx, part.matched)
+        : undefined;
+    if (part.kind !== 'component') plans.push({ act: 'none' });
+    else if (!version) plans.push({ act: 'new' });
+    // Deleted or archived since it was matched: skipped, and said.
+    else if (
+      (await isDeleted(trx, version.artifactId)) ||
+      (await isArchived(trx, version.artifactId))
+    ) {
+      plans.push({ act: 'gone', version });
+    } else {
+      const status = againStatus(part.blocks, (version.content as ContentDocument).content);
+      plans.push({ act: status === 'unchanged' ? 'unchanged' : 'changed', version });
+    }
+  }
+  const suggestable = new Map<string, boolean>();
+  for (const plan of plans) {
+    if (plan.version && plan.act !== 'gone') {
+      suggestable.set(plan.version.artifactId, await may(plan.version.artifactId, 'suggest'));
+    }
+  }
+  const changed = plans.filter((plan) => plan.act === 'changed');
+  if (changed.length > 0 && changed.every((plan) => !suggestable.get(plan.version!.artifactId))) {
+    return { answer: 'import.not_permitted' };
+  }
+
+  // Each block a matched part shares with its component keeps the component's identifiers, so what
+  // anchors to it stands (IMP-037); the rest are new.
+  const carried = new Map<string, string>();
+  const parts = placedImages(stored, await assetsOf(trx, row, input.by)).map((part, index) => {
+    const version = plans[index]!.version;
+    if (!version) return part;
+    const given = againIdentifiers((version.content as ContentDocument).content, part.blocks);
+    given.forEach((to, from) => carried.set(from, to));
+    return renamed(part, given);
+  });
+  const ids = new Map(parts.map((part) => [part.id, part.matched ?? randomUUID()] as const));
+  // References within the file resolve among its components: a matched one's blocks as they stand
+  // now, a new one's as proposed. One to a heading, or to a block a component does not hold yet, is
+  // left as it is and said.
+  const within = {
+    components: parts.flatMap((part, index) => {
+      if (part.kind !== 'component') return [];
+      const version = plans[index]!.version;
+      const blocks = version ? (version.content as ContentDocument).content : part.blocks;
+      return [{ component: ids.get(part.id)!, node: '', headings: [], blocks }];
+    }),
+    sections: [],
+    anchors: Object.fromEntries(
+      Object.entries(row.anchors).map(([read, admitted]) => [
+        read,
+        carried.get(admitted) ?? admitted,
+      ]),
+    ),
+  };
+  const unresolved = new Set<string>();
+  const resolved = (part: StoredImportPart, blocks: readonly BlockNode[]) => {
+    const answer = resolveReferences(
+      { component: ids.get(part.id)!, node: '', headings: [], blocks },
+      within,
+    );
+    answer.unresolved.forEach((each) => unresolved.add(each));
+    return answer.blocks;
+  };
+  const applied = {
+    policy: await importPolicy(trx),
+    identities: row.identities,
+    members: await membersOf(trx),
+    confirmed: row.confirmed,
+  };
+  const report = createReport();
+  const outcome: {
+    suggested: { component: string; suggestion: string }[];
+    made: { component: string; placed: boolean }[];
+    gone: { component: string; flagged: boolean }[];
+    skipped: { component: string; reason: SkippedReason }[];
+    unchanged: number;
+  } = { suggested: [], made: [], gone: [], skipped: [], unchanged: 0 };
+  const components: StoredVersion[] = [];
+  const mayEdit = await may(documentId, 'edit');
+
+  for (const [index, part] of parts.entries()) {
+    const plan = plans[index]!;
+    if (plan.act === 'none') continue;
+    const blocks = resolved(part, part.blocks);
+    const changes = part.changes.map((change) => ({
+      ...change,
+      proposed: resolved(part, [...part.blocks, ...change.proposed]).slice(part.blocks.length),
+    }));
+    if (plan.act === 'new') {
+      const made = await createComponent(trx, {
+        spaceId: row.space_id,
+        title: part.title,
+        language: input.language,
+        direction: input.direction,
+        author: input.by,
+        blocks,
+        artifactId: ids.get(part.id)!,
+      });
+      if (made.answer !== 'created') {
+        return {
+          answer: made.answer === 'component_type.missing' ? made.answer : 'content.invalid',
+        } as { answer: 'component_type.missing' } | { answer: 'content.invalid' };
+      }
+      components.push(made.version);
+      await sql`insert into import_made (version_id, artifact_id, import_id)
+        values (${made.version.id}, ${made.version.artifactId}, ${row.id})`.execute(trx);
+      await recordMade(trx, part.id, made.version.artifactId);
+      const placed = mayEdit && (await placeAfter(trx, documentId, input.by, parts, ids, index));
+      outcome.made.push({ component: made.version.artifactId, placed });
+      const skipped = await suggestAndDiscuss(trx, {
+        import: row.id,
+        importer: input.by,
+        version: made.version,
+        changes,
+        threads: part.threads,
+        applied,
+      });
+      if (skipped > 0) report.add('read', 'discarded', 'trackedChange', { count: skipped });
+      continue;
+    }
+    const version = plan.version!;
+    if (plan.act === 'gone') {
+      outcome.skipped.push({ component: version.artifactId, reason: 'gone' });
+      continue;
+    }
+    if (plan.act === 'unchanged') outcome.unchanged += 1;
+    const allowed = suggestable.get(version.artifactId) === true;
+    if (plan.act === 'changed') {
+      if (!allowed) {
+        outcome.skipped.push({ component: version.artifactId, reason: 'suggest' });
+        continue;
+      }
+      const content = version.content as ContentDocument;
+      const made = await makeSuggestion(trx, {
+        component: version.artifactId,
+        version: version.id,
+        proposed: parseContentDocument({ ...content, content: blocks }),
+        by: input.by,
+      });
+      if (made.answer !== 'made') {
+        outcome.skipped.push({ component: version.artifactId, reason: SKIPPED[made.answer] });
+        continue;
+      }
+      outcome.suggested.push({ component: version.artifactId, suggestion: made.suggestion });
+      await sql`insert into import_made (suggestion_id, artifact_id, import_id)
+        values (${made.suggestion}, ${version.artifactId}, ${row.id})`.execute(trx);
+    }
+    // Recorded only where it was suggested on, or left as it is.
+    await recordMade(trx, part.id, version.artifactId);
+    // Its Word authors' changes and its comments on top, against the same version (IMc's rules).
+    const skipped = await suggestAndDiscuss(trx, {
+      import: row.id,
+      importer: input.by,
+      version,
+      changes: allowed ? changes : [],
+      threads: (await may(version.artifactId, 'comment')) ? part.threads : [],
+      applied,
+      base: blocks,
+    });
+    if (skipped > 0) report.add('read', 'discarded', 'trackedChange', { count: skipped });
+  }
+
+  if (unresolved.size > 0) {
+    report.add('read', 'kept', 'crossReferenceUnresolved', { count: unresolved.size });
+  }
+
+  // What no part matches is gone: kept, and flagged on the document where it stands there.
+  const held = new Set(parts.map((part) => part.matched));
+  const mayComment = await may(documentId, 'comment');
+  for (const candidate of await againCandidates(trx, row.earlier!)) {
+    if (held.has(candidate.component)) continue;
+    const document = await latestVersion(trx, documentId);
+    const at = referenceIn((document!.content as OutlineDocument).nodes, candidate.component);
+    const started =
+      mayComment && at
+        ? await startThread(trx, {
+            on: documentId,
+            version: document!.id,
+            anchor: { kind: 'node', node: at.node },
+            parts: [{ text: words(goneText(row.file_name)) }],
+            author: input.by,
+          })
+        : undefined;
+    outcome.gone.push({ component: candidate.component, flagged: started?.answer === 'done' });
+  }
+
+  const document = (await latestVersion(trx, documentId))!;
+  const counts = acceptedCounts(await importParts(trx, row.id, 'read'), parts);
+  if (applied.policy === 'discard') await unnameParts(trx, row.id);
+  const { rows } = await sql<Row>`
+    update import set state = 'accepted', document_id = ${documentId},
+           accepted = ${JSON.stringify(counts)}::jsonb, finished_at = now(), touched_at = now(),
+           policy = ${applied.policy}, outcome = ${JSON.stringify(outcome)}::jsonb,
+           report = ${JSON.stringify([
+             ...(row.report ?? []),
+             ...report.entries.map((entry) => ({ ...entry, part: null })),
+           ])}::jsonb,
+           identities = ${applied.policy === 'discard' ? '[]' : JSON.stringify(row.identities)}::jsonb,
+           confirmed = ${applied.policy === 'discard' ? '{}' : JSON.stringify(row.confirmed)}::jsonb,
+           properties = ${applied.policy === 'keep' && row.properties !== null ? JSON.stringify(row.properties) : null}::jsonb
+     where id = ${row.id}
+    returning ${COLUMNS}`.execute(trx);
+  await recordImportEvent(trx, row, {
+    kind: 'import.accepted',
+    document,
+    components: components.length,
+  });
+  return { answer: 'accepted', import: importOf(rows[0]!), document, components };
+}
+
+/**
+ * A new component placed in the document (IM-K): after the nearest part before it whose component
+ * the document references, else before the nearest after it, else last. Answers whether it was.
+ */
+async function placeAfter(
+  trx: TenantTransaction,
+  documentId: string,
+  by: string,
+  parts: readonly StoredImportPart[],
+  ids: ReadonlyMap<string, string>,
+  index: number,
+): Promise<boolean> {
+  const document = await latestVersion(trx, documentId);
+  if (!document) return false;
+  const { nodes } = document.content as OutlineDocument;
+  const component = ids.get(parts[index]!.id)!;
+  const near = (from: number, step: 1 | -1) => {
+    for (let at = from + step; at >= 0 && at < parts.length; at += step) {
+      const part = parts[at]!;
+      if (part.kind !== 'component') continue;
+      const found = referenceIn(nodes, ids.get(part.id)!);
+      if (found) return found;
+    }
+    return undefined;
+  };
+  const before = near(index, -1);
+  const after = before ? undefined : near(index, 1);
+  const at = before
+    ? { parent: before.parent, position: before.position + 1 }
+    : after
+      ? { parent: after.parent, position: after.position }
+      : { parent: null, position: nodes.length };
+  const recorded = await editOutline(trx, {
+    artifactId: documentId,
+    openedFrom: document.id,
+    author: by,
+    operation: {
+      operation: 'insert',
+      parent: at.parent,
+      position: at.position,
+      node: { type: 'reference', component, mode: { kind: 'latest' } },
+    },
+  });
+  return recorded.answer === 'recorded';
 }
 
 /**
@@ -1087,6 +1682,29 @@ async function assetsOf(
     made.set(each.placeholder, (await recordAsset(trx, upload.id, each.header)).id);
   }
   return made;
+}
+
+/** A part with each identifier `given` names, of a node or of a block it names, given instead. */
+function renamed(part: StoredImportPart, given: ReadonlyMap<string, string>): StoredImportPart {
+  if (given.size === 0) return part;
+  const walk = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(walk);
+    if (typeof value !== 'object' || value === null) return value;
+    return Object.fromEntries(
+      Object.entries(value).map(([key, each]) => [
+        key,
+        (key === 'id' || key === 'block') && typeof each === 'string'
+          ? (given.get(each) ?? each)
+          : walk(each),
+      ]),
+    );
+  };
+  return {
+    ...part,
+    blocks: walk(part.blocks) as BlockNode[],
+    changes: walk(part.changes) as ProposedChange[],
+    threads: walk(part.threads) as ProposedThread[],
+  };
 }
 
 /** The parts with each figure's placeholder its asset version. */
@@ -1137,6 +1755,8 @@ async function suggestAndDiscuss(
     readonly changes: readonly ProposedChange[];
     readonly threads: readonly ProposedThread[];
     readonly applied: Parameters<typeof attributionOf>[1];
+    /** The blocks its changes are made to: the version's, unless an import again proposes others. */
+    readonly base?: readonly BlockNode[];
   },
 ): Promise<number> {
   const { version } = input;
@@ -1155,7 +1775,7 @@ async function suggestAndDiscuss(
   const authors = [...new Set(input.changes.map((change) => change.author))];
   for (const author of authors) {
     const blocks = suggestedBlocks(
-      content.content,
+      input.base ?? content.content,
       input.changes.filter((change) => change.author === author),
     );
     let proposed: ContentDocument;

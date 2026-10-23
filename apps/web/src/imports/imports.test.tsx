@@ -1,9 +1,10 @@
 import { createApiClient } from '@alloy-works/api-client';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { ImportFile } from './ImportFile.js';
+import { ImportHelp } from './ImportHelp.js';
 import { ImportPage } from './ImportPage.js';
 
 const GENERAL = '11111111-1111-4111-8111-111111111111';
@@ -12,6 +13,9 @@ const DOCUMENT = '33333333-3333-4333-8333-333333333333';
 const SECTION = '44444444-4444-4444-8444-444444444444';
 const INTRODUCTION = '55555555-5555-4555-8555-555555555555';
 const SAMPLING = '66666666-6666-4666-8666-666666666666';
+const EARLIER = '77777777-7777-4777-8777-777777777777';
+const MADE_SAMPLING = '88888888-8888-4888-8888-888888888888';
+const MADE_RESULTS = '99999999-9999-4999-8999-999999999999';
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
@@ -35,6 +39,12 @@ const base = {
   identities: [],
   policy: 'map',
   policyApplied: false,
+  kind: 'first',
+  earlier: null,
+  recognised: null,
+  earlierMade: [],
+  gone: [],
+  outcome: null,
 };
 
 const proposed = {
@@ -188,6 +198,9 @@ function service(
     if (request.method === 'POST' && path === `/v1/imports/${IMPORT}/abandon`) {
       return json(200, { ...base, state: 'abandoned', sweepsAt: null, parts: [], report: [] });
     }
+    if (request.method === 'PUT' && path === `/v1/imports/${IMPORT}/kind`) {
+      return json(200, { ...(views.at(-1) as object), kind: 'again', earlier: EARLIER });
+    }
     if (request.method === 'PUT' && path === `/v1/imports/${IMPORT}/levels`) {
       return json(200, { ...base, state: 'reading', parts: [], report: [] });
     }
@@ -273,6 +286,7 @@ describe("an import's page", () => {
     await user.click(screen.getByRole('button', { name: 'Accept' }));
     await waitFor(() => expect(window.location.hash).toBe(`#/documents/${DOCUMENT}`));
     expect(asked.find((each) => each.path.endsWith('/accept'))?.body).toEqual({
+      revision: 0,
       title: 'Pond survey',
     });
   });
@@ -297,6 +311,7 @@ describe("an import's page", () => {
     await user.click(screen.getByRole('button', { name: 'Propose again' }));
     await waitFor(() =>
       expect(asked.find((each) => each.path.endsWith('/levels'))?.body).toEqual({
+        revision: 0,
         section: 1,
         component: 3,
       }),
@@ -536,5 +551,186 @@ describe("an import's structure in review (IMc)", () => {
         'Names were matched to members, as attribution, when it was accepted.',
       ),
     ).toBeInTheDocument();
+  });
+});
+
+describe('importing a file again (IMd)', () => {
+  const recognised = {
+    import: EARLIER,
+    match: 'name',
+    fileName: 'Pond survey.docx',
+    importer: GENERAL,
+    importerName: 'Grace Hopper',
+    at: '2026-10-20T09:00:00.000Z',
+    document: DOCUMENT,
+    documentTitle: 'Pond survey',
+  };
+  const again = {
+    ...proposed,
+    kind: 'again',
+    earlier: EARLIER,
+    recognised,
+    earlierMade: [
+      { component: MADE_SAMPLING, title: 'Sampling' },
+      { component: MADE_RESULTS, title: 'Results' },
+    ],
+    gone: [{ component: MADE_RESULTS, title: 'Results' }],
+    parts: [
+      {
+        ...proposed.parts[0],
+        again: { status: 'new', component: null, componentTitle: null, by: null },
+      },
+      { ...proposed.parts[1], again: null },
+      {
+        ...proposed.parts[2],
+        again: {
+          status: 'changed',
+          component: MADE_SAMPLING,
+          componentTitle: 'Sampling',
+          by: 'provenance',
+        },
+      },
+    ],
+  };
+  const againDetails = {
+    ...details,
+    [INTRODUCTION]: {
+      ...(details[INTRODUCTION] as object),
+      again: again.parts[0]!.again,
+      diff: null,
+    },
+    [SAMPLING]: {
+      ...(details[SAMPLING] as object),
+      again: again.parts[2]!.again,
+      diff: [
+        { change: 'removed', text: 'Grace counted newts twice.' },
+        { change: 'added', text: 'Ada counted newts.' },
+      ],
+    },
+  };
+
+  it('IMP-036 says first that the file was imported before, by whom, when and into what, and offers to update what it made', async () => {
+    const user = userEvent.setup();
+    const { client, asked } = service([{ ...proposed, recognised }]);
+    render(<ImportPage client={client} id={IMPORT} />);
+    const banner = await screen.findByRole('region', { name: 'Imported before' });
+    expect(banner).toHaveTextContent(
+      'A file named Pond survey.docx was imported into this space before, by Grace Hopper',
+    );
+    expect(within(banner).getByRole('link', { name: 'Pond survey' })).toHaveAttribute(
+      'href',
+      `#/documents/${DOCUMENT}`,
+    );
+    // It stands before the outline.
+    expect(
+      banner.compareDocumentPosition(screen.getByRole('list', { name: 'Proposed outline' })) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(within(banner).getByRole('button', { name: 'Import as new' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await user.click(within(banner).getByRole('button', { name: 'Update what it made' }));
+    await waitFor(() =>
+      expect(asked.find((each) => each.path.endsWith('/kind'))?.body).toEqual({
+        revision: 0,
+        kind: 'again',
+        earlier: EARLIER,
+      }),
+    );
+  });
+
+  it('IMP-036 IMP-037 shows each part as unchanged, changed or new, what changed against the space, and lets a part be matched again', async () => {
+    const user = userEvent.setup();
+    const { client, asked } = service(
+      [again],
+      () => json(200, { ...again, revision: 1 }),
+      againDetails,
+    );
+    render(<ImportPage client={client} id={IMPORT} />);
+    const outline = await screen.findByRole('list', { name: 'Proposed outline' });
+    expect(outline).toHaveTextContent('New: made and placed in Pond survey when accepted.');
+    expect(outline).toHaveTextContent('Changed: suggested on Sampling when accepted.');
+    expect(screen.getByRole('list', { name: 'Gone from the file' })).toHaveTextContent(
+      'Results: kept, and flagged on the document',
+    );
+
+    await user.click(within(outline).getByRole('button', { name: 'Component: Sampling' }));
+    const part = await screen.findByRole('region', { name: 'Part 3 of 3: Sampling' });
+    const diff = within(part).getByRole('list', {
+      name: 'What changed against Sampling as it is now',
+    });
+    expect(within(diff).getByText('Grace counted newts twice.').closest('del')).not.toBeNull();
+    expect(within(diff).getByText('Ada counted newts.').closest('ins')).not.toBeNull();
+
+    await user.selectOptions(
+      within(part).getByRole('combobox', { name: 'Matched to' }),
+      MADE_RESULTS,
+    );
+    await user.click(within(part).getByRole('button', { name: 'Match it' }));
+    await waitFor(() =>
+      expect(asked.find((each) => each.path.endsWith('/edits'))?.body).toEqual({
+        revision: 0,
+        edit: { edit: 'match', part: SAMPLING, component: MADE_RESULTS },
+      }),
+    );
+    await user.click(within(part).getByRole('button', { name: 'Mark it new' }));
+    await waitFor(() =>
+      expect(asked.filter((each) => each.path.endsWith('/edits')).at(-1)?.body).toMatchObject({
+        edit: { edit: 'match', part: SAMPLING, component: null },
+      }),
+    );
+  });
+});
+
+describe('what an import keeps (IMe)', () => {
+  it("IMP-026 states on the import what this file's format keeps and what it does not, never as lossless", async () => {
+    const { client } = service();
+    render(<ImportPage client={client} id={IMPORT} />);
+    const kept = await screen.findByRole('region', { name: 'What an import keeps' });
+    expect(kept).toHaveTextContent(/headings, lists, tables, footnotes/);
+    expect(kept).toHaveTextContent(/does not keep its appearance/);
+    expect(kept).not.toHaveTextContent(/lossless/i);
+    expect(
+      within(kept).getByRole('link', { name: 'What arrives and what does not' }),
+    ).toHaveAttribute('href', '#/help/import');
+    cleanup();
+
+    const markdown = service([{ ...proposed, fileName: 'Pond survey.md', fileType: 'markdown' }]);
+    render(<ImportPage client={markdown.client} id={IMPORT} />);
+    const said = await screen.findByRole('region', { name: 'What an import keeps' });
+    expect(said).toHaveTextContent(/never fetched/);
+    expect(said).not.toHaveTextContent(/tracked changes/);
+  });
+
+  it('IMP-026 lists in Help the Word structures that arrive and those that do not', () => {
+    render(<ImportHelp />);
+    const arrives = screen.getByRole('list', { name: 'What arrives from Word' });
+    for (const each of [
+      'Headings',
+      'Lists',
+      'Tables',
+      'Footnotes',
+      'Captions',
+      'Figures',
+      'Cross-references',
+      'Tracked changes',
+      'Comments',
+    ]) {
+      expect(within(arrives).getByText(new RegExp(`^${each}`))).toBeInTheDocument();
+    }
+    const not = screen.getByRole('list', { name: 'What does not arrive' });
+    for (const each of [
+      'Text boxes',
+      'Content controls',
+      'Equations',
+      'Endnotes',
+      'Page setup',
+      'Macros and embedded objects',
+      'File properties',
+    ]) {
+      expect(within(not).getByText(new RegExp(`^${each}`))).toBeInTheDocument();
+    }
+    expect(document.body).not.toHaveTextContent(/lossless/i);
   });
 });

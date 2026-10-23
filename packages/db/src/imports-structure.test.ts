@@ -15,6 +15,7 @@ import { bootstrapCluster } from './bootstrap.js';
 import {
   abandonImport,
   acceptImport,
+  changeImportLevels,
   createImport,
   editImport,
   failImport,
@@ -313,6 +314,18 @@ describe("an import's structure (IMc)", () => {
     expect(await left(id)).toEqual({ held: 0, assets: before.assets });
   });
 
+  it('IMP-008 lets go of the images an import held when it is read again at other levels', async () => {
+    const { id, key } = await withImage();
+    await propose(id);
+    removed.length = 0;
+    const changed = await tenant((trx) =>
+      changeImportLevels(trx, id, { section: 2, component: 3 }, remove),
+    );
+    expect(changed).toMatchObject({ state: 'reading' });
+    expect(removed).toContain(key);
+    expect((await left(id)).held).toBe(0);
+  });
+
   it('IMP-008 keeps an image another import of the same bytes still holds', async () => {
     const sha256 = randomBytes(32).toString('hex');
     const first = await withImage(sha256);
@@ -372,7 +385,22 @@ describe("an import's structure (IMc)", () => {
     });
   });
 
-  it('IMP-010 IMP-011 keeps every Word author as text under keep, and none under discard', async () => {
+  it('IMP-010 IMP-011 keeps every Word author as text under keep, and none under discard, not even on its parts as read and as edited', async () => {
+    // Every name a part's changes, threads and replies carry, in both sets.
+    const names = (id: string) =>
+      tenant(async (trx) =>
+        (await Promise.all((['read', 'edited'] as const).map((set) => importParts(trx, id, set))))
+          .flat()
+          .flatMap((part) => [
+            ...part.changes.map((change) => change.author),
+            ...part.threads.flatMap((thread) => [
+              thread.author,
+              thread.initials,
+              ...thread.replies.flatMap((reply) => [reply.author, reply.initials]),
+            ]),
+          ])
+          .filter((each) => each !== null && each !== ''),
+      );
     const before = await tenant((trx) => importPolicy(trx));
     expect(before).toBe('map');
     await tenant((trx) => setImportPolicy(trx, 'keep'));
@@ -383,6 +411,7 @@ describe("an import's structure (IMc)", () => {
       { by: ada, policy: 'keep', to: 'Edsger (from Word)', member: null },
       { by: ada, policy: 'keep', to: 'Grace (from Word)', member: null },
     ]);
+    expect(new Set(await names(kept.id))).toEqual(new Set(['Edsger', 'Grace', 'EW']));
     await tenant((trx) => setImportPolicy(trx, 'discard'));
     const discarded = await proposed();
     const answer = await accept(discarded.id);
@@ -394,6 +423,14 @@ describe("an import's structure (IMc)", () => {
     expect((await made(discarded.id)).threads).toEqual([
       { by: ada, policy: 'discard', to: null, member: null },
     ]);
+    expect(await names(discarded.id)).toEqual([]);
+    // Blanking is the one change the read set allows.
+    await expect(
+      tenant((trx) =>
+        sql`update import_part set changes = '[]' where import_id = ${discarded.id}
+             and proposal = 'read' and changes <> '[]'`.execute(trx),
+      ),
+    ).rejects.toThrow(/never changed/);
     await tenant((trx) => setImportPolicy(trx, 'map'));
   });
 

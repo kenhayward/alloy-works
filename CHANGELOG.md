@@ -3,6 +3,24 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.209.0 - 2026-10-23 (PR #776)
+
+Import (the IM plan).
+
+### Added
+
+- **Import.** Import a Word document, Markdown or HTML file into a space from Documents. A Word document is read into a proposed outline, a section per Heading 1 and a component per Heading 2, each with its reason, and a report of what was left out or not read yet. Accept it to make the document and its components in one act, or abandon it.
+- **Reviewing an import.** An import's page shows one part at a time beside the text it came from, with next and previous, and returns to the part you were last at. Search the parts by their text, filter them by what they are flagged for, and move a split, split, merge, rename or change a part before accepting it; an edit that would not make content is refused, saying why. Once accepted, the import says how many parts were accepted unchanged, edited, merged, split or renamed.
+- **Structure from Word.** An import reads footnotes, list numbering, captions, figures and their alternative text, and cross-references as structure, never as the text they showed. A cross-reference to something outside the file is listed with the text it showed, and is pointed at a block or made that text before the import is accepted. Each Word author's tracked changes become a suggestion and each comment, with its replies, a thread, all made by whoever accepts the import and attributed to the Word author as the environment's new identity policy says, set in Administration's Imports. The names the file carries are listed before accepting, and the file's own properties are never kept as content.
+- **Importing a file again.** A file whose bytes or name an earlier accepted import in the space holds is said so first, naming that import, who made it, when, and its document. **Update what it made** shows each part as unchanged, changed against its component as the space has it now, or new, and what the file no longer holds as gone; a part can be matched to another component or marked new. Accepting suggests each change on its component, so nothing made in the space is overwritten, adds each new part to the document, and flags what is gone without deleting it.
+- **Markdown and HTML imports keep their headings.** A Markdown or HTML file is broken out into sections and components by its headings, as a Word document is, and an image it holds as data arrives as a figure; an image at an address is never fetched, and is said to be left out.
+- **Breaking out a paste.** A paste from Word or a web page holding headings offers to keep it as one component, its headings made paragraphs, or to break it out into sections and components through an import, reviewed before anything is made.
+- **What an import keeps.** The import's page says what an import of its file keeps and what it does not, and Help lists what arrives from Word and what does not.
+
+### Fixed
+
+- **Several environments can be created at once again.** Each migration now commits on its own, so creating environments together no longer runs the database out of shared memory.
+
 ## 0.208.0 - 2026-10-22 (PR #769)
 
 Terms (the TM plan).

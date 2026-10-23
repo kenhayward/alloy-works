@@ -24,6 +24,23 @@ const NODE_S = 'ssssssssssssssssssssssssss';
 const COMPONENT_B = '00000000-0000-4000-8000-00000000000b';
 
 describe('accepting an import (IMc)', () => {
+  it('resolves many references among many components in time that grows with their sum, not their product', () => {
+    const count = 3000;
+    const components = Array.from({ length: count }, (_, at) => ({
+      component: `c-${at}`,
+      node: NODE_A,
+      headings: [],
+      blocks: [paragraph(`b-${at}`, [reference(`b-${count - 1 - at}`)])],
+    }));
+    const within = { components, sections: [], anchors: {} };
+    const started = performance.now();
+    for (const own of components) resolveReferences(own, within);
+    expect(performance.now() - started).toBeLessThan(1500);
+    expect(targets(resolveReferences(components[0]!, within).blocks)).toEqual([
+      { kind: 'component', component: `c-${count - 1}`, block: `b-${count - 1}` },
+    ]);
+  });
+
   it('IMP-006 IMP-034 resolves each reference within the import to the block in its own component, a block of another component, or a heading, and names any still outside it', () => {
     const own = {
       component: '00000000-0000-4000-8000-00000000000a',
