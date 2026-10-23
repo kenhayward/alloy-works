@@ -624,6 +624,8 @@ describe('the listings through the service', () => {
       'listReferenceSources',
       // And a document's flagged sources: those what it places cites, flagged alone (XRb).
       'getDocumentFlaggedSources',
+      // And a space's translations: capped at 500 and saying so (the TR plan, TR-M).
+      'getSpaceTranslations',
       // And a person's conversations, at most 200, the newest first (the G5 plan).
       'listConversations',
       // And the endpoints a turn may run on: the tenant's handful in use, as the endpoints are.

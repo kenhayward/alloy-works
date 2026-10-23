@@ -140,6 +140,8 @@ describe('translation (the TR plan, TRa)', () => {
       source: {
         language: 'en-GB',
         latest: { id: component.version.id, number: component.version.number },
+        // What a translation is made against: the approved revision (the TR final review).
+        from: { id: component.version.id, number: component.version.number },
       },
       translations: [
         {
@@ -216,14 +218,12 @@ describe('translation (the TR plan, TRa)', () => {
       changes: [{ block: 'b1', change: 'changed', words: 'Findings, spelt right.' }],
     });
 
-    // Marked current against the source it was shown, and against no older one.
+    // Marked current against a version of its source, and nothing else (the TR final review).
     const mark = (translates: string) =>
       h.call('grace', 'POST', `/v1/components/${component.id}/translations/${line}/current`, {
         translates,
       });
-    expect((await mark(component.version.id)).json()).toMatchObject({
-      code: 'translation_source_stale',
-    });
+    expect((await mark(line)).json()).toMatchObject({ code: 'translation_source_invalid' });
     const marked = await mark(source2.id);
     expect(marked.statusCode, marked.body).toBe(200);
     expect(marked.json()).toMatchObject({
@@ -282,13 +282,42 @@ describe('translation (the TR plan, TRa)', () => {
     expect(asked.statusCode, asked.body).toBe(200);
     expect(asked.json()).toMatchObject({
       failures: [],
-      warnings: [{ code: 'component_untranslated', node: nodes[1]!.id, language: 'en-GB' }],
+      warnings: [
+        { code: 'component_untranslated', node: nodes[1]!.id, language: 'en-GB' },
+        { code: 'title_untranslated', node: null },
+      ],
     });
     expect((await publish(doc.version.id, 'es-ES')).json()).toMatchObject({
       code: 'layout_language',
     });
     // A language that is no BCP 47 tag is refused at the door, recording nothing.
     expect((await publish(doc.version.id, 'French')).statusCode).toBe(400);
+
+    // Each reference says its component's translations, and the space reports them (TR-M).
+    const texts = await h.call('alice', 'GET', `/v1/documents/${doc.id}/texts`);
+    expect(texts.statusCode, texts.body).toBe(200);
+    const rows = texts.json<{ occurrences: { node: string; translations?: unknown }[] }>()
+      .occurrences;
+    expect(rows.find((each) => each.node === nodes[0]!.id)?.translations).toEqual([
+      { language: 'fr-FR', status: 'translated' },
+    ]);
+    expect(rows.find((each) => each.node === nodes[1]!.id)).not.toHaveProperty('translations');
+    const report = await h.call('alice', 'GET', `/v1/spaces/${h.general}/translations`);
+    expect(report.statusCode, report.body).toBe(200);
+    expect(
+      report
+        .json<{ items: { component: { id: string } }[] }>()
+        .items.map((each) => each.component.id),
+    ).toContain(translatedOne.id);
+    expect(report.json()).toMatchObject({ capped: false });
+    expect(
+      report
+        .json<{ items: { component: { id: string } }[] }>()
+        .items.map((each) => each.component.id),
+    ).not.toContain(untranslated.id);
+    expect(
+      (await h.call('ivy', 'GET', `/v1/spaces/${h.general}/translations`)).statusCode,
+    ).toBeGreaterThanOrEqual(403);
 
     // The environment's policy, read by anybody signed in and set by an administrator.
     expect((await h.call('alice', 'GET', '/v1/settings/translation')).json()).toEqual({

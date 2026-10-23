@@ -7,7 +7,7 @@ import { checkAxe, type Arrival, type Sign } from './testing/axe.js';
 import { generalSpace, makeComponent, uploadImage } from './testing/component.js';
 import { everyBlock } from './testing/every-block.js';
 import { allowPageNoise, withPage } from './testing/page.js';
-import { approvedTerm } from './testing/fixtures.js';
+import { approvedTerm, translatedComponent } from './testing/fixtures.js';
 import { pondSurvey } from './testing/word.js';
 
 /**
@@ -664,6 +664,43 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       });
       await page.getByRole('button', { name: 'Edit', exact: true }).click();
       await check('a term being edited', { shows: page.getByRole('form', { name: 'Edit term' }) });
+    });
+  });
+
+  it('passes axe on translation: a component’s Translations, a translation’s, the space report and the policy (the TR plan, TRc)', async ({
+    task,
+  }) => {
+    const translated = await translatedComponent(api());
+    await withPage(async (page) => {
+      const check = async (state: string, arrival: Arrival) => {
+        await arrive(arrival);
+        await checkAxe(page, state, task.meta, arrival);
+      };
+      await page.goto(`${SERVICE}/#/components/${translated.id}`);
+      await page.getByRole('button', { name: 'Translations' }).click();
+      await check("a component's translations", {
+        shows: [
+          page.getByRole('dialog', { name: 'Translations' }),
+          page.getByRole('list', { name: 'Translations' }),
+        ],
+      });
+      await page.keyboard.press('Escape');
+      await page.goto(`${SERVICE}/#/components/${translated.id}/lines/${translated.line}`);
+      await page.getByRole('button', { name: 'Translations' }).click();
+      await check('a translation, untranslated', {
+        shows: page.getByRole('dialog', { name: 'Translations' }),
+      });
+      await page.keyboard.press('Escape');
+      await page.goto(`${SERVICE}/#/translations`);
+      const space = page.getByRole('combobox', { name: 'Space' });
+      if ((await space.count()) > 0) await space.selectOption({ label: 'General' });
+      await check("a space's translations", {
+        shows: page.getByRole('table', { name: /Translated components/ }),
+      });
+      await page.goto(`${SERVICE}/#/admin/translation`);
+      await check('the translation policy', {
+        shows: page.getByRole('textbox', { name: 'What the mark says, by language' }),
+      });
     });
   });
 

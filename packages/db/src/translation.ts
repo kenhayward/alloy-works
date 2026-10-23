@@ -14,6 +14,7 @@ import {
 import { sql } from 'kysely';
 import { artifactPlace, recordEvent } from './audit.js';
 import { datesStored } from './dates.js';
+import { readableComponents } from './documents.js';
 import { diverge, readLine, translationStored, type Line } from './lines.js';
 import { revisionScopes } from './scopes.js';
 import type { TenantTransaction } from './tables.js';
@@ -84,12 +85,14 @@ export async function beginTranslation(
 export type TranslatesRefusal =
   /** A cut on a language line names no source version (TR-C). */
   | { readonly answer: 'translation.source_required' }
-  /** The source version named is not the main line's latest: the translator was shown an older one. */
-  | { readonly answer: 'translation.source_stale'; readonly current: StoredVersion };
+  /** The source version named is no version of the component's main line. */
+  | { readonly answer: 'translation.source_invalid' };
 
 /**
- * Checks the source version a write on a language line says it translates (TR-C): the main line's
- * latest version of the same component, else refused, so nothing records a source never shown.
+ * Checks the source version a write on a language line says it translates (TR-C): a version of the
+ * same component's main line - its approved revision, as a translator is shown it, or a later one -
+ * else refused. Never only the latest: a translation of the approved revision stands beside drafts
+ * of the source made since (the TR final review).
  */
 export async function checkTranslates(
   trx: TenantTransaction,
@@ -97,9 +100,28 @@ export async function checkTranslates(
   translates: string | undefined,
 ): Promise<TranslatesRefusal | null> {
   if (translates === undefined) return { answer: 'translation.source_required' };
-  const current = await latestVersion(trx, artifactId);
-  if (!current) return { answer: 'translation.source_required' };
-  return current.id === translates ? null : { answer: 'translation.source_stale', current };
+  if (!UUID.test(translates)) return { answer: 'translation.source_invalid' };
+  const version = await trx
+    .selectFrom('artifact_version')
+    .select('id')
+    .where('id', '=', translates)
+    .where('artifact_id', '=', artifactId)
+    .where('line_id', 'is', null)
+    .executeTakeFirst();
+  return version ? null : { answer: 'translation.source_invalid' };
+}
+
+/**
+ * The source version a translation is made against (TR-C; the TR final review): the main line's
+ * latest designated revision, which an approved reference reads, else its latest version.
+ */
+export async function translationSource(
+  trx: TenantTransaction,
+  artifactId: string,
+): Promise<StoredVersion | undefined> {
+  const approved = await latestRevision(trx, artifactId);
+  if (approved) return readVersion(trx, approved.versionId);
+  return latestVersion(trx, artifactId);
 }
 
 /** Records what a version on a language line translates (TR-C), checked by `checkTranslates` first. */
@@ -544,4 +566,73 @@ async function needsRetranslating(
                         where c.version_id = v.id order by c.id desc limit 1), true)
     ) as stale`.execute(trx);
   return rows[0]?.stale === true;
+}
+
+/** The most components a space's translation report names (API-058): capped, and said so. */
+export const TRANSLATION_REPORT_MOST = 500;
+
+/**
+ * **A space's translations** (the TR plan, TR-M; LOC-016): each component of it the principal may
+ * read that has a translation, by its title, with each translation's status - filtered to what may
+ * be read before anything is counted or capped - at most `TRANSLATION_REPORT_MOST`, and whether more.
+ */
+export async function spaceTranslations(
+  trx: TenantTransaction,
+  spaceId: string,
+  principalId: string,
+): Promise<{
+  readonly items: readonly {
+    readonly component: { readonly id: string; readonly title: string };
+    readonly translations: readonly Translation[];
+  }[];
+  readonly capped: boolean;
+}> {
+  if (!UUID.test(spaceId) || !(await translationStored(trx))) return { items: [], capped: false };
+  const held = await trx
+    .selectFrom('artifact_line as l')
+    .innerJoin('artifact as a', 'a.id', 'l.artifact_id')
+    .select('l.artifact_id')
+    .distinct()
+    .where('a.space_id', '=', spaceId)
+    .where('l.language', 'is not', null)
+    .where(({ not, exists, selectFrom }) =>
+      not(
+        exists(
+          selectFrom('line_closed as c').select('c.line_id').whereRef('c.line_id', '=', 'l.id'),
+        ),
+      ),
+    )
+    .execute();
+  const readable = await readableComponents(
+    trx,
+    principalId,
+    held.map((row) => row.artifact_id),
+  );
+  const ids = [...readable];
+  const titles = await trx
+    .selectFrom('artifact_version as v')
+    .select(['v.artifact_id', sql<string>`v.content ->> 'title'`.as('title')])
+    .distinctOn('v.artifact_id')
+    .where('v.artifact_id', 'in', ids.length === 0 ? ['00000000-0000-4000-8000-000000000000'] : ids)
+    .where('v.line_id', 'is', null)
+    .orderBy('v.artifact_id')
+    .orderBy('v.revision_no', 'desc')
+    .orderBy('v.version_no', 'desc')
+    .execute();
+  // Ordered and capped before any status is read, so the cap bounds the work (the TR final review).
+  const ordered = [...titles].sort(
+    (a, b) => a.title.localeCompare(b.title) || a.artifact_id.localeCompare(b.artifact_id),
+  );
+  const named = ordered.slice(0, TRANSLATION_REPORT_MOST);
+  const statuses = await translationsOf(
+    trx,
+    named.map((row) => row.artifact_id),
+  );
+  return {
+    items: named.map((row) => ({
+      component: { id: row.artifact_id, title: row.title },
+      translations: statuses.get(row.artifact_id) ?? [],
+    })),
+    capped: ordered.length > TRANSLATION_REPORT_MOST,
+  };
 }

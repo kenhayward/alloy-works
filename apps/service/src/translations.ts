@@ -4,6 +4,8 @@ import type {
   SourceChangeBody,
   SourceChangeParams,
   SourceChangesView,
+  SpaceParams,
+  SpaceTranslationsView,
   TranslationBody,
   TranslationsView,
   TranslationView,
@@ -13,9 +15,12 @@ import {
   beginTranslation,
   declareSourceChange,
   latestVersion,
+  lineNumbers,
   markCurrent,
   readVersion,
   sourceChanges,
+  spaceTranslations,
+  translationSource,
   translationsOf,
   type TenantTransaction,
   type Translation,
@@ -37,6 +42,33 @@ async function shown(trx: TenantTransaction, id: string | null) {
   const version = await readVersion(trx, id);
   if (!version) return null;
   return { id: version.id, number: (await shownVersionView(trx, version)).number };
+}
+
+/** Versions by id, as shown, in two reads whatever their number (`shown`'s answer, batched). */
+async function shownMany(
+  trx: TenantTransaction,
+  ids: readonly (string | null)[],
+): Promise<Map<string, { id: string; number: string }>> {
+  const asked = [...new Set(ids.filter((id): id is string => id !== null))];
+  if (asked.length === 0) return new Map();
+  const rows = await trx
+    .selectFrom('artifact_version')
+    .select(['id', 'revision_no', 'version_no', 'line_id'])
+    .where('id', 'in', asked)
+    .execute();
+  const onLines = await lineNumbers(
+    trx,
+    rows.filter((row) => row.line_id !== null).map((row) => row.id),
+  );
+  return new Map(
+    rows.map((row) => [
+      row.id,
+      {
+        id: row.id,
+        number: onLines.get(row.id)?.number ?? `${row.revision_no}.${row.version_no}`,
+      },
+    ]),
+  );
 }
 
 async function translationView(
@@ -61,6 +93,34 @@ async function translationOn(trx: TenantTransaction, id: string, line: string) {
 
 export function translationHandlers() {
   return {
+    getSpaceTranslations: async (
+      request: FastifyRequest,
+      { trx, principalId }: Authorised,
+    ): Promise<SpaceTranslationsView> => {
+      const { space } = request.params as SpaceParams;
+      const report = await spaceTranslations(trx, space, principalId);
+      // Every version named, shown in two reads, not two a translation (the TR final review).
+      const shownBy = await shownMany(
+        trx,
+        report.items.flatMap((item) =>
+          item.translations.flatMap((each) => [each.head, each.translates]),
+        ),
+      );
+      return {
+        items: report.items.map((item) => ({
+          component: { ...item.component },
+          translations: item.translations.map((each) => ({
+            line: each.line,
+            language: each.language,
+            head: each.head === null ? null : (shownBy.get(each.head) ?? null),
+            translates: each.translates === null ? null : (shownBy.get(each.translates) ?? null),
+            status: { ...each.status },
+          })),
+        })),
+        capped: report.capped,
+      };
+    },
+
     listComponentTranslations: async (
       request: FastifyRequest,
       { trx }: Authorised,
@@ -73,6 +133,10 @@ export function translationHandlers() {
         source: {
           language: parseContentDocument(source.content).language,
           latest: { id: source.id, number: versionView(source).number },
+          from: await (async () => {
+            const from = (await translationSource(trx, id)) ?? source;
+            return { id: from.id, number: versionView(from).number };
+          })(),
         },
         translations: await Promise.all(translations.map((each) => translationView(trx, each))),
       };
@@ -124,11 +188,11 @@ export function translationHandlers() {
         case 'translation.untranslated':
           throw refused(409, answer.answer, 'Nothing is translated yet to mark current.');
         case 'translation.source_required':
-        case 'translation.source_stale':
+        case 'translation.source_invalid':
           throw refused(
-            409,
-            'translation.source_stale',
-            'The source has changed since this translation was opened: read it again.',
+            400,
+            'translation.source_invalid',
+            'A translation is marked current against a version of its own source.',
           );
       }
     },

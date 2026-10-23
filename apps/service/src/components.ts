@@ -19,6 +19,7 @@ import {
   isHeld,
   latestSequence,
   latestVersion,
+  translationSource,
   listPeople,
   readsOnlyShares,
   listComponentTypes,
@@ -96,7 +97,7 @@ export function versionView(version: VersionHeading) {
  */
 /** A component's main line's latest version, as a language line's view names its source (TR-C). */
 async function sourceView(trx: TenantTransaction, id: string) {
-  const source = (await latestVersion(trx, id))!;
+  const source = (await translationSource(trx, id)) ?? (await latestVersion(trx, id))!;
   return { id: source.id, number: versionView(source).number };
 }
 

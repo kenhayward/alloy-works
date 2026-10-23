@@ -251,7 +251,7 @@ describe('the rule behind a refusal', () => {
       // designated; nothing yet to mark current. Guards of the design's own.
       'line.is_translation',
       'translation.source_required',
-      'translation.source_stale',
+      'translation.source_invalid',
       'translation.language_invalid',
       'translation.same_language',
       'translation.exists',

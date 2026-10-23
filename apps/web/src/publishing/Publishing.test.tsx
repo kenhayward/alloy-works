@@ -1675,6 +1675,8 @@ describe('publishing in a language (the TR plan, TRb)', () => {
             { code: 'component_untranslated', node: HIDDEN, language: 'en-GB' },
             { code: 'component_untranslated', node: CALIBRATION, language: 'en-GB' },
             { code: 'translation_out_of_date', node: HIDDEN },
+            { code: 'title_untranslated', node: null },
+            { code: 'title_untranslated', node: CALIBRATION },
           ],
         },
       ],
@@ -1709,7 +1711,7 @@ describe('publishing in a language (the TR plan, TRb)', () => {
     });
     expect(
       screen.getByText(
-        'Published with 2 components in their own language, marked untranslated, 1 component translated, but out of date with its source.',
+        'Published with 2 components in their own language, marked untranslated, 1 component translated, but out of date with its source. 2 titles in the document’s own language.',
       ),
     ).toBeInTheDocument();
   });

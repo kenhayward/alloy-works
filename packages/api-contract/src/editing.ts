@@ -241,7 +241,7 @@ const forbidden = {
 } as const;
 const refused = {
   description:
-    'lock_held, lock_required, lock_taken (taken from this session, naming who has it), version_precondition, iteration_stale, iteration_conflict, or translation_source_stale (a language line’s source moved on: read it again)',
+    'lock_held, lock_required, lock_taken (taken from this session, naming who has it), version_precondition, iteration_stale, iteration_conflict',
   schema: EditingRefusal,
 } as const;
 const edit = { check: 'permission', permission: 'edit', target: { artifact: 'id' } } as const;
@@ -298,7 +298,7 @@ export const editingRoutes = {
     responses: {
       400: {
         description:
-          '`values_invalid`: a fixed value differs from its default at the cut; `translation_source_required`: a cut on a language line names no source version',
+          '`values_invalid`: a fixed value differs from its default at the cut; `translation_source_required`: a cut on a language line names no source version; `translation_source_invalid`: one that is no version of its source',
         schema: EditingRefusal,
       },
       200: { description: 'Released, with the version cut or the latest', schema: CutAnswer },
@@ -351,7 +351,7 @@ export const editingRoutes = {
     responses: {
       400: {
         description:
-          '`values_invalid`: a fixed value differs from its default at the cut; `translation_source_required`: a cut on a language line names no source version',
+          '`values_invalid`: a fixed value differs from its default at the cut; `translation_source_required`: a cut on a language line names no source version; `translation_source_invalid`: one that is no version of its source',
         schema: EditingRefusal,
       },
       200: { description: 'Cut, or nothing to cut', schema: CutAnswer },

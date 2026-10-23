@@ -1,4 +1,9 @@
 import type { createApiClient } from '@alloy-works/api-client';
+import {
+  TranslatedTitles,
+  type TitleToTranslate,
+  type TitleTranslation,
+} from '../translation/TranslatedTitles.js';
 import type { StoredProfile } from '@alloy-works/domain';
 import { useEffect, useId, useState } from 'react';
 
@@ -88,6 +93,12 @@ function warnedWords(warnings: unknown): string | null {
       : [`Cited sources flagged by their source: ${sources.join(', ')}. Review lists them.`]),
     ...(terms.length === 0 ? [] : [`Terms used: ${terms.join(', ')}.`]),
     ...(translation.length === 0 ? [] : [`Published with ${translation.join(', ')}.`]),
+    // And each title with no words in the language (TR-L).
+    ...(byNode('title_untranslated') === 0
+      ? []
+      : [
+          `${byNode('title_untranslated')} ${byNode('title_untranslated') === 1 ? 'title' : 'titles'} in the document’s own language.`,
+        ]),
   ];
   return said.length === 0 ? null : said.join(' ');
 }
@@ -173,6 +184,7 @@ export function Publishing({
   language,
   languages = [],
   fallback,
+  titles,
 }: {
   readonly client: Client;
   readonly document: string;
@@ -215,6 +227,12 @@ export function Publishing({
     readonly own: 'source' | 'refuse' | null;
     readonly mayChange: boolean;
     readonly onChange: (next: 'source' | 'refuse' | null) => void;
+  };
+  /** The document's titles in the language chosen, and a way to give them (the TR plan, TR-L). */
+  readonly titles?: {
+    readonly in: (language: string) => readonly TitleToTranslate[];
+    readonly mayEdit: boolean;
+    readonly onSave: (change: TitleTranslation) => Promise<boolean>;
   };
 }) {
   const offersWord = formats.includes('docx');
@@ -365,6 +383,14 @@ export function Publishing({
           </select>
         </p>
       )}
+      {mayPublish && publishIn !== '' && titles !== undefined && (
+        <TranslatedTitles
+          language={publishIn}
+          titles={titles.in(publishIn)}
+          mayEdit={titles.mayEdit}
+          onSave={titles.onSave}
+        />
+      )}
       {others.length > 0 && fallback !== undefined && (
         <p>
           <label htmlFor={fallbackId}>Where a component has no translation</label>{' '}
@@ -396,7 +422,9 @@ export function Publishing({
       {(mayPublish || preview !== undefined) && (
         // Preview beside Publish, as layout C draws them; Preview alone where Publish is not offered.
         <div className={styles['actions']}>
-          {preview !== undefined && <PreviewButton preview={preview} />}
+          {preview !== undefined && (
+            <PreviewButton preview={preview} language={publishIn === '' ? undefined : publishIn} />
+          )}
           {mayPublish && (
             <button
               className="primary"

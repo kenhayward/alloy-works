@@ -1,4 +1,5 @@
 import type { createApiClient } from '@alloy-works/api-client';
+import { statusWords, type TranslationSaid } from '../translation/Translations.js';
 import type { OverrideView } from './overrides.js';
 import { Chip } from '../parts/Chip.js';
 import {
@@ -440,6 +441,7 @@ export function DocumentText({
   pastReview,
   lines,
   diverged,
+  translated,
   overridesOf,
   onOverride,
   choosing,
@@ -496,6 +498,8 @@ export function DocumentText({
   lines?: ReadonlyMap<string, string>;
   /** Each node's component's open lines, by node (LIF-046; R16-E): none where it has not diverged. */
   diverged?: ReadonlyMap<string, readonly string[]>;
+  /** Each reference's component's translations, with each status (LOC-016; the TR plan, TR-M). */
+  translated?: ReadonlyMap<string, readonly TranslationSaid[]>;
   /** Each reference's local overrides by node, and whether each stands (REU-011; the R4 plan, R4-G). */
   overridesOf?: ReadonlyMap<string, readonly OverrideView[]>;
   /** Asked to change a reference's overrides, by node: offered to whoever may edit the document. */
@@ -688,6 +692,12 @@ export function DocumentText({
                     {lines?.has(node.id) !== true && (diverged?.get(node.id)?.length ?? 0) > 0 && (
                       <Chip>{`Main line; also ${diverged!.get(node.id)!.join(', ')}`}</Chip>
                     )}
+                    {(translated?.get(node.id) ?? []).map((each) => (
+                      <Chip
+                        key={each.language}
+                        {...(each.status === 'translated' ? {} : { tone: 'warn' as const })}
+                      >{`${each.language}: ${statusWords(each)}`}</Chip>
+                    ))}
                     {pastReview?.has(node.id) === true && <Chip tone="warn">Past review</Chip>}
                     {(overridesOf?.get(node.id) ?? []).some((each) => !each.stale) && (
                       <Chip>Overridden here</Chip>

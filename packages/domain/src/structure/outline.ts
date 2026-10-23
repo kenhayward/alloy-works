@@ -78,6 +78,8 @@ export type SectionNode = {
   readonly origin?: string | undefined;
   /** What a profile must select for it to be published, with its subtree (REU-021; R11-A). */
   readonly conditions?: Conditions | undefined;
+  /** Its title in further languages, plain words by BCP 47 tag (the TR plan, TR-L). */
+  readonly titles?: Readonly<Record<string, string>> | undefined;
   readonly children: readonly OutlineNode[];
 };
 
@@ -168,6 +170,27 @@ export const sectionTitleSchema = z.array(inlineNodeSchema).transform((title, co
   return parsed;
 });
 
+/** The most languages a title is given in besides its own (the TR plan, TR-L). */
+export const TITLE_LANGUAGES_MOST = 50;
+
+/**
+ * A title in further languages (the TR plan, TR-L; LOC-Q04 settled): plain words by BCP 47 tag, each
+ * with something to say and storable. Never the outline's own language, which `translateTitle`
+ * refuses; a translated title carries no marks.
+ */
+export const translatedTitleSchema = z
+  .string()
+  .max(500)
+  .refine(hasText, 'A title needs words')
+  .refine(storableText, 'A title holds a character that cannot be stored');
+
+export const translatedTitlesSchema = z
+  .record(contentDocumentSchema.shape.language, translatedTitleSchema)
+  .refine(
+    (titles) => Object.keys(titles).length <= TITLE_LANGUAGES_MOST,
+    `At most ${TITLE_LANGUAGES_MOST} languages`,
+  );
+
 export const sectionNodeSchema = z.strictObject({
   type: z.literal('section'),
   ...positional,
@@ -178,6 +201,8 @@ export const sectionNodeSchema = z.strictObject({
     .optional(),
   // Additive at schema 3, as `origin` was (the R11 plan, R11-A): no node stored before holds any.
   conditions: conditionsSchema.optional(),
+  // Additive, as `conditions` was (the TR plan, TR-L): its title in further languages.
+  titles: translatedTitlesSchema.optional(),
   children: z.array(outlineNodeSchema),
 });
 
@@ -225,6 +250,8 @@ export const outlineDocumentSchema = z.strictObject({
    * the policy's.
    */
   fallback: z.enum(TRANSLATION_FALLBACKS).optional(),
+  /** Its title in further languages (the TR plan, TR-L); absent, its own alone. */
+  titles: translatedTitlesSchema.optional(),
 });
 
 export type OutlineDocument = z.infer<typeof outlineDocumentSchema>;
@@ -542,6 +569,7 @@ export function canonicaliseOutline(outline: OutlineDocument): string {
       : [['profile', canonicalJson(outline.profile)] as const]),
     ['schemaVersion', canonicalJson(outline.schemaVersion)],
     ['title', canonicalJson(outline.title)],
+    ...(outline.titles === undefined ? [] : [['titles', canonicalJson(outline.titles)] as const]),
   ];
   return `{${members.map(([name, value]) => `${JSON.stringify(name)}:${value}`).join(',')}}`;
 }
@@ -580,6 +608,8 @@ function canonicaliseOutlineNode(node: OutlineNode): string {
           ...(node.origin === undefined ? [] : ([['origin', canonicalJson(node.origin)]] as const)),
           ['pageBreak', canonicalJson(node.pageBreak)],
           ['title', canonicaliseTitle(node.title)],
+          // Only where there are some: an outline stored before TRc digests as it did.
+          ...(node.titles === undefined ? [] : ([['titles', canonicalJson(node.titles)]] as const)),
           ['type', canonicalJson(node.type)],
           ['values', canonicalJson(node.values)],
         ]

@@ -70,6 +70,8 @@ export interface PublicationRequestOccurrenceTable {
     'translated' | 'untranslated' | 'outOfDate' | undefined,
     never
   >;
+  /** Where it fell back to its source, the words its mark says, as at request (0162). */
+  untranslated: ColumnType<string | null, string | undefined, never>;
 }
 
 /** An image a request's components place, as its publisher could read it (figures 3, ruling R6). */

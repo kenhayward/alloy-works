@@ -507,3 +507,31 @@ describe('a preview on the document page (W10.3)', () => {
     expect(answered).toBe(1);
   });
 });
+
+describe('a preview in a language (the TR plan, TRc)', () => {
+  it('asks for a preview in the language a publish beside it would be made in', async () => {
+    const fake = service({
+      [`POST /v1/documents/${DOCUMENT}/previews`]: [queued()],
+      [`GET /v1/publication-requests/${REQUEST}`]: [done(1)],
+    });
+    function InFrench() {
+      const preview = usePreview({
+        client: createApiClient({ baseUrl: 'http://acme.example.test', fetch: fake.fetch }),
+        document: DOCUMENT,
+        version: { id: VERSION, number: '0.3' },
+        title: 'The dosing report',
+        followMs: 0,
+        follow: () => {},
+      });
+      return <PreviewButton preview={preview} language="fr" />;
+    }
+    render(<InFrench />);
+    await userEvent.click(screen.getByRole('button', { name: 'Preview' }));
+    await waitFor(() =>
+      expect(fake.sent.find((each) => each.method === 'POST')?.body).toEqual({
+        version: VERSION,
+        language: 'fr',
+      }),
+    );
+  });
+});

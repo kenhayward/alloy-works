@@ -417,6 +417,7 @@ describe('the outline a document version holds', () => {
         section(NODE, {
           origin: 'introduction',
           conditions: [{ axis: 'audience', values: ['regulator'] }],
+          titles: { fr: 'Introduction' },
           children: [
             {
               type: 'reference',

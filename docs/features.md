@@ -1245,14 +1245,15 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   the moment its source changes; the source's author, or anybody who may edit it, says whether the
   latest change needs retranslating. On a translation, Translations shows the source's words changed
   since, and **Mark current** records it current where nothing needed new words. A translator and the
-  author each hold their own lock, so they edit at once. A translation's status on a document's
-  references and across a space is not built yet.
+  author each hold their own lock, so they edit at once. A document's references say each
+  translation of the component they place and its status, and **Translations**, linked from
+  Components, lists every translated component of a space with each language's status.
 - **Publishing in a language.** The Publishing panel offers **Publish in** each language the document's
   layout gives its words in, the default layout English, French and German. Each component is
   published in its translation into that language; its overrides, made against its source's words,
   are not applied, and that is reported. A component with no translation is published in its own
   language, marked by a note before it, or the publish is refused, as the document's own fallback,
-  chosen there, or Administration's **Translation** says; a translation out of date with a change
+  chosen there, or Administration's **Translation** says; **Preview** beside it previews in the same language, and **Translate titles** gives the document's title and each section's in it, a title without one printed in the document's own language and reported; a translation out of date with a change
   that needs retranslating is reported, or refuses the publish where the environment says.
 - **Revisions effective by scope.** A component's or document's header offers **Effective for**: the
   markets or sites, condition axis values, its next revision is effective for, while another revision

@@ -197,6 +197,17 @@ export const PublicationRequestView = z.object({
         }),
         z.object({
           code: z
+            .literal('title_untranslated')
+            .describe(
+              "A title given no words in the language published in, printed in the document's own (the TR plan, TR-L)",
+            ),
+          node: z
+            .string()
+            .nullable()
+            .describe("The section, by its outline node, or null for the document's own title"),
+        }),
+        z.object({
+          code: z
             .enum(['term_unresolved', 'term_deprecated', 'term_fallback'])
             .describe(
               "`term_unresolved`: a term printed as the words it covers, being draft, missing or one the requester may not read; `term_deprecated`: a deprecated term printed; `term_fallback`: a term printed in its base language, having no label in the document's",

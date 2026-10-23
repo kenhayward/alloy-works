@@ -10,6 +10,7 @@ import { componentFieldsNow } from './component-values.js';
 import {
   holding,
   isComponent,
+  onIterationLine,
   lockLinesStored,
   isRefusal,
   serialise,
@@ -19,6 +20,7 @@ import {
 import type { TenantTransaction } from './tables.js';
 import { recordVersion, type StoredVersion } from './versions.js';
 import { headVersion, readLine } from './lines.js';
+import { iterationLinesStored } from './retention.js';
 import {
   checkTranslates,
   declareSourceChange,
@@ -88,6 +90,7 @@ export async function cutVersion(trx: TenantTransaction, input: Cut): Promise<Cu
     .where('principal_id', '=', input.principal)
     .where('session_id', '=', input.session)
     .where('opened_from', '=', input.openedFrom)
+    .$if(await iterationLinesStored(trx), (query) => onIterationLine(query, input.line))
     .orderBy('sequence', 'desc')
     .limit(1)
     .executeTakeFirst();

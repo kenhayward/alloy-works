@@ -219,7 +219,7 @@ describe('translation as a line per language (the TR plan, TR-A to TR-H)', () =>
     ).toEqual({ answer: 'line.is_translation' });
   });
 
-  it('LOC-013 records the source version each cut translates, refusing one the translator was not shown', async () => {
+  it('LOC-013 records the source version each cut translates, refusing one that is no version of its source', async () => {
     const first = await component('Findings');
     await approve(first);
     const begun = await as((trx) =>
@@ -237,11 +237,12 @@ describe('translation as a line per language (the TR plan, TR-A to TR-H)', () =>
       contentOf(first, 'en-GB', para('b1', 'Ponds.')),
     );
     if (source2.answer !== 'recorded') throw new Error(source2.answer);
-    const stale = await cut(first.artifactId, first.id, german, {
+    // No version of its source's main line is refused; any of them may be named (the TR final review).
+    const elsewhere = await cut(first.artifactId, first.id, german, {
       line: begun.line.id,
-      translates: first.id,
+      translates: '00000000-0000-4000-8000-000000000009',
     });
-    expect(stale.answer).toBe('translation.source_stale');
+    expect(elsewhere.answer).toBe('translation.source_invalid');
 
     const translated = await cut(first.artifactId, first.id, german, {
       line: begun.line.id,
@@ -351,11 +352,11 @@ describe('translation as a line per language (the TR plan, TR-A to TR-H)', () =>
         markCurrent(trx, {
           artifactId: first.artifactId,
           line: begun.line.id,
-          translates: source2.version.id,
+          translates: begun.line.id,
           by: ada,
         }),
       ),
-    ).toEqual(expect.objectContaining({ answer: 'translation.source_stale' }));
+    ).toEqual({ answer: 'translation.source_invalid' });
     expect(
       await as((trx) =>
         markCurrent(trx, {
@@ -375,7 +376,7 @@ describe('translation as a line per language (the TR plan, TR-A to TR-H)', () =>
     ]);
   });
 
-  it('keeps approval a workflow state of the variant: its revision never becomes the source’s, or another language’s, approved revision', async () => {
+  it('LOC-012 versions a variant as any content, cut and designated on its own line, its approval a workflow state of the variant: its revision never becomes the source’s, or another language’s, approved revision', async () => {
     const first = await component('Discussion');
     await approve(first);
     const begun = await as((trx) =>
@@ -426,6 +427,53 @@ describe('translation as a line per language (the TR plan, TR-A to TR-H)', () =>
     expect((await as((trx) => readLock(trx, first.artifactId)))?.holder).toBe(ada);
     expect((await as((trx) => readLock(trx, first.artifactId, begun.line.id)))?.holder).toBe(grace);
     expect((await as((trx) => latestVersion(trx, first.artifactId)))?.id).toBe(first.id);
+  });
+
+  it('keeps one session’s words on each line apart: a cut on either takes its own line’s alone', async () => {
+    const first = await component('Conclusion');
+    await approve(first);
+    const begun = await as((trx) =>
+      beginTranslation(trx, { artifactId: first.artifactId, language: 'fr-FR', by: ada }),
+    );
+    if (begun.answer !== 'begun') throw new Error(begun.answer);
+    // One tab, one session id, on both lines, each opened from the same version.
+    const session = randomUUID();
+    const on = (line?: string) => ({
+      artifactId: first.artifactId,
+      principal: ada,
+      session,
+      ...(line === undefined ? {} : { line }),
+    });
+    const words = (language: string, value: string) =>
+      contentOf(first, language, para('b1', value));
+    await as(async (trx) => {
+      await claimLock(trx, { ...on(), move: true });
+      await claimLock(trx, { ...on(begun.line.id), move: true });
+      const english = await saveIteration(trx, {
+        ...on(),
+        sequence: 1,
+        openedFrom: first.id,
+        content: words('en-GB', 'English words.'),
+      });
+      const french = await saveIteration(trx, {
+        ...on(begun.line.id),
+        // A session's sequence is one count across its lines.
+        sequence: 2,
+        openedFrom: first.id,
+        content: words('fr-FR', 'Des mots français.'),
+      });
+      expect([english.answer, french.answer]).toEqual(['accepted', 'accepted']);
+    });
+    const text = (version: StoredVersion) =>
+      JSON.stringify(parseContentDocument(version.content).content);
+    const onLine = await as((trx) =>
+      cutVersion(trx, { ...on(begun.line.id), openedFrom: first.id, translates: first.id }),
+    );
+    if (onLine.answer !== 'recorded') throw new Error(onLine.answer);
+    expect(text(onLine.version)).toContain('Des mots français.');
+    const onMain = await as((trx) => cutVersion(trx, { ...on(), openedFrom: first.id }));
+    if (onMain.answer !== 'recorded') throw new Error(onMain.answer);
+    expect(text(onMain.version)).toContain('English words.');
   });
 
   it('refuses a lock on a line that is not the component’s, or a version recording another’s source', async () => {

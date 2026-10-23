@@ -11,10 +11,13 @@ import {
   referenceModeSchema,
   referenceNodeSchema,
   sectionNodeSchema,
+  TITLE_LANGUAGES_MOST,
+  translatedTitleSchema,
   walkOutline,
   type OutlineDocument,
   type OutlineNode,
 } from './outline.js';
+import { contentDocumentSchema } from '../content/model/document.js';
 import { OVERRIDES_MAX, overrideSchema } from './overrides.js';
 
 // Reused rather than restated: every identifier and every switch an operation names is the same zod
@@ -66,6 +69,14 @@ export const outlineOperationSchema = z
       operation: z.literal('retitle'),
       node: nodeIdentifier,
       title: sectionNodeSchema.shape.title,
+    }),
+    // A title in a further language, the document's (`node` null) or a section's, or null to clear
+    // it (the TR plan, TR-L).
+    z.strictObject({
+      operation: z.literal('translateTitle'),
+      node: nodeIdentifier.nullable(),
+      language: contentDocumentSchema.shape.language,
+      title: translatedTitleSchema.nullable(),
     }),
     z.strictObject({
       operation: z.literal('set'),
@@ -393,6 +404,49 @@ function retitle(
   return applyNodes(outline, result.nodes);
 }
 
+/** Whether one language tag serves another: equal, or either a range of the other (TR-I). */
+const serves = (a: string, b: string) => {
+  const [x, y] = [a.toLowerCase(), b.toLowerCase()];
+  return x === y || x.startsWith(`${y}-`) || y.startsWith(`${x}-`);
+};
+
+/** A title's words in a further language, set or cleared (TR-L): never in the outline's own. */
+function translateTitle(
+  outline: OutlineDocument,
+  operation: Extract<OutlineOperation, { operation: 'translateTitle' }>,
+): OutlineApplied {
+  if (serves(outline.language, operation.language)) {
+    return refuse(`The title is in ${outline.language} already: change it there`);
+  }
+  // One title a language, its tag matched whatever its case (the TR final review).
+  const asked = operation.language.toLowerCase();
+  const titled = <T extends { readonly titles?: Readonly<Record<string, string>> | undefined }>(
+    holder: T,
+  ): T | null => {
+    const rest = Object.fromEntries(
+      Object.entries(holder.titles ?? {}).filter(([tag]) => tag.toLowerCase() !== asked),
+    );
+    const titles =
+      operation.title === null ? rest : { ...rest, [operation.language]: operation.title };
+    if (Object.keys(titles).length > TITLE_LANGUAGES_MOST) return null;
+    const { titles: dropped, ...bare } = holder;
+    void dropped;
+    return (Object.keys(titles).length === 0 ? bare : { ...bare, titles }) as T;
+  };
+  const tooMany = refuse(`A title is given in at most ${TITLE_LANGUAGES_MOST} further languages`);
+  if (operation.node === null) {
+    const outlined = titled(outline);
+    return outlined === null ? tooMany : { applied: true, outline: outlined };
+  }
+  const node = findNode(outline.nodes, operation.node);
+  if (!node) return refuse('The node is not in this outline');
+  if (node.type !== 'section') return refuse('Only a section has a title to translate');
+  const renamed = titled(node);
+  if (renamed === null) return tooMany;
+  const result = replaceNode(outline.nodes, operation.node, renamed);
+  return applyNodes(outline, result.nodes);
+}
+
 function set(
   outline: OutlineDocument,
   operation: Extract<OutlineOperation, { operation: 'set' }>,
@@ -484,6 +538,8 @@ export function applyOutlineOperation(
       return remove(outline, operation);
     case 'retitle':
       return retitle(outline, operation);
+    case 'translateTitle':
+      return translateTitle(outline, operation);
     case 'set':
       return set(outline, operation, rules.sectionFields ?? []);
   }

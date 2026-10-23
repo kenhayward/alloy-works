@@ -503,6 +503,7 @@ const operationTags = {
     'previewComponentTerms',
   ],
   Translations: [
+    'getSpaceTranslations',
     'listComponentTranslations',
     'beginComponentTranslation',
     'markComponentTranslationCurrent',
@@ -1087,6 +1088,8 @@ const descriptions: Readonly<Record<string, string>> = {
     "Unarchives a term, returning it to the space's listing. It needs retire on the term.",
   previewComponentTerms:
     "Answers the standing and preferred label of each term a component's editor uses, in order, so it can flag a deprecated one with its replacement. A term that is not one of the component's space the caller may read is answered unavailable, and nothing more is said of it. Nothing is kept.",
+  getSpaceTranslations:
+    'Reports the components of a space that have translations, by title, each translation with its status: untranslated, translated, or out of date with its source, saying whether any change since needs retranslating. Only components the caller may read are named or counted. At most 500 are named, and the report says when there are more. It needs read on the space.',
   listComponentTranslations:
     "Lists a component's translations, one per language, each with its newest version recorded against a source, the source version that translates, and its status: untranslated until its first cut, translated, or out of date the moment a source version follows the one it translates, saying whether any change since needs retranslating. Open a translation as any other line of the component. It needs read on the component.",
   beginComponentTranslation:

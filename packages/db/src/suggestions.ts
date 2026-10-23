@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto';
+import { iterationLinesStored } from './retention.js';
 import {
   applySuggestion,
   blockIdentifierFrom,
@@ -380,6 +381,8 @@ async function resolving(
       .where('principal_id', '=', by)
       .where('session_id', '=', lock.session)
       .where('opened_from', '=', current!.id)
+      // The main line's, whose lock this is (the TR final review).
+      .$if(await iterationLinesStored(trx), (query) => query.where('line_id', 'is', null))
       .limit(1)
       .executeTakeFirst();
     if (saved) return { answer: 'edits.pending' };

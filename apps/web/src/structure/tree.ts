@@ -325,6 +325,17 @@ export function inverseOf(
       if (node?.type !== 'section') return null;
       return { operation: 'retitle', node: node.id, title: [...node.title] };
     }
+    // A title in a further language back to what it was, or cleared (TR-L).
+    case 'translateTitle': {
+      const titles =
+        operation.node === null
+          ? before.titles
+          : (() => {
+              const node = placeOf(before.nodes, operation.node)?.node;
+              return node?.type === 'section' ? node.titles : undefined;
+            })();
+      return { ...operation, title: titles?.[operation.language] ?? null };
+    }
     case 'set': {
       const node = placeOf(before.nodes, operation.node)?.node;
       if (!node) return null;

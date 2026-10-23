@@ -1012,6 +1012,8 @@ describe('the domain package', () => {
         'sourceChangesBetween',
         'translationLanguageRefusal',
         'translationStatus',
+        // TRc: titles by language.
+        'titlesIn',
         // TRb: the tenant's translation policy, and the words its mark says.
         'DEFAULT_TRANSLATION_POLICY',
         'TRANSLATION_FALLBACKS',

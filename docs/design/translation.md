@@ -35,7 +35,8 @@ line holds its own editing lock, so translators and the author edit at once.
 | **LOC-017** | A translation out of date with a change needing retranslation refuses a publish where the policy says           |
 | **LOC-037** | A missing variant falls back to the source, marked and reported, or refuses, as the document or the tenant says |
 
-LOC-016 (status wherever a component is used, and across a space) is claimed as TRc builds it.
+LOC-016 asks for status wherever a component is used: a document's references say it, and a space
+reports it, but a search result and the components listing do not yet, so it is not claimed.
 LOC-030's declared set is defined here, but `machineDrafted` and `inTranslation` are XL's, so XL
 claims it. LOC-036 wants every policy it names - fallback, refusal, an external service, a conflicted
 import - declared, versioned and audited: the first two are here, audited `settings.changed`; the
@@ -89,10 +90,26 @@ words, its scheme's labels, its matter's titles and its running matter - and `la
 layout is read in a language. A publish whose layout has no words in its language is refused
 (`layout_language`, PUB-095). The default layout's 0.12 gives French and German.
 
+## Titles by language
+
+A document's title and each section's may be given in further languages (the outline's optional
+`titles`, plain words by BCP 47 tag, never in its own; `translateTitle` sets or clears one). A
+publish in a language prints each title given in it - in the contents, bookmarks, running heads and
+cross-references, which read the outline - and its own where none is, reported
+(`title_untranslated`). A translated title carries no marks.
+
+## Status where used
+
+A document's reference rows say each translation of the component placed and its status. `GET
+/v1/spaces/{space}/translations` reports each component of a space the caller may read that has a
+translation, read-filtered before it is capped at 500 and saying so; the **Translations** page,
+linked from Components, shows it.
+
 ## The page
 
 The Publishing panel offers **Publish in** each language the document's layout gives its words in,
-and, there, **Where a component has no translation**: the document's own fallback, or the
+**Preview** beside it in the same language, **Translate titles**, and **Where a component has no
+translation**: the document's own fallback, or the
 environment's. Administration's **Translation** sets the environment's policy and the mark's words.
 
 **Translations** on a component's header lists each translation with its status and opens it; to

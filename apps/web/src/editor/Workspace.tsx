@@ -26,6 +26,7 @@ import { BIBLIOGRAPHY, entryAddress } from '../bibliography/links.js';
 import { TermPage } from '../terms/TermPage.js';
 import { Terms } from '../terms/Terms.js';
 import { termAddress, TERMS } from '../terms/links.js';
+import { SpaceTranslations, TRANSLATIONS } from '../translation/SpaceTranslations.js';
 import { ImportPage } from '../imports/ImportPage.js';
 import { importAddress } from '../imports/links.js';
 import { IMPORT_HELP, ImportHelp } from '../imports/ImportHelp.js';
@@ -87,6 +88,7 @@ const LISTS = new Set([
   '#/prompts/libraries',
   '#/bibliography',
   '#/terms',
+  '#/translations',
 ]);
 const isWork = (hash: string) => !LISTS.has(hash) && !hash.startsWith('#/admin');
 
@@ -461,6 +463,7 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
     const term = termAddress(hash);
     if (term !== null) return <TermPage key={term} client={client} id={term} />;
     if (hash === TERMS) return <Terms client={client} />;
+    if (hash === TRANSLATIONS) return <SpaceTranslations client={client} />;
     const imported = importAddress(hash);
     if (imported !== null) return <ImportPage key={imported} client={client} id={imported} />;
     if (hash === IMPORT_HELP) return <ImportHelp />;

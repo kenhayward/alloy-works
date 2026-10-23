@@ -241,6 +241,7 @@ export {
   SourceChangeParams,
   SourceChangeView,
   SourceChangesView,
+  SpaceTranslationsView,
   TranslationBody,
   TranslationStatusView,
   TranslationView,

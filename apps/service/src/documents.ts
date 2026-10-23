@@ -64,6 +64,7 @@ import {
   applyOutlineOverrides,
   lineNumbers,
   openLinesOf,
+  translationsOf,
 } from '@alloy-works/db';
 import type { AfterCommit } from './after-commit.js';
 import {
@@ -641,6 +642,8 @@ export function documentHandlers(
       const locks = await readLocks(trx, readable);
       // Each readable component's open lines, whichever is shown (LIF-046; R16-E).
       const openLines = await openLinesOf(trx, readable);
+      // And its translations, each with its status (LOC-016; TR-M).
+      const translations = await translationsOf(trx, readable);
       // How many suggestions wait on each (SG-M), of those the caller may read.
       const pending = await pendingCounts(trx, readable);
       // Each readable component's latest version: what a reference pinned below it is told is newer
@@ -781,6 +784,14 @@ export function documentHandlers(
             ...(component !== undefined && openLines.has(component)
               ? { lines: openLines.get(component)! }
               : {}),
+            ...(component !== undefined && translations.has(component)
+              ? {
+                  translations: translations.get(component)!.map((each) => ({
+                    language: each.language,
+                    ...each.status,
+                  })),
+                }
+              : {}),
             ...newer,
             ...tracked,
             ...moved,
@@ -828,7 +839,8 @@ export function documentHandlers(
       const table = number(
         // Under its own profile, so what it leaves out takes no number here either (STR-036; R11).
         conditions(resolve(outline, inputs.contributions), outline.profile?.values ?? {}),
-        layout.layout.scheme,
+        // Labelled in the document's own language: its layout's words for it (TRb).
+        (layoutIn(layout.layout, outline.language) ?? layout.layout).scheme,
       );
       return {
         document: id,
