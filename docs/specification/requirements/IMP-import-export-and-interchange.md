@@ -95,7 +95,7 @@ its diagnostics as much as on its output.
 | **IMP-009** | Import must surface the identities a document carries - authors of tracked changes, comment authors, document metadata - before accepting it                                                                                                                                                                                               | T6         | Specified |
 | **IMP-010** | A tenant must be able to choose, as policy, whether those identities are mapped to its own users, retained as text, or discarded                                                                                                                                                                                                           | T6         | Specified |
 | **IMP-011** | Which policy was applied must be recorded on what was imported                                                                                                                                                                                                                                                                             | T6         | Specified |
-| **IMP-012** | Embedded metadata that is not content - device, location, account identifiers - must be handled by declared policy (**AST-007**)                                                                                                                                                                                                           | T6         | Specified |
+| **IMP-012** | Embedded metadata that is not content - device, location, account identifiers - must be handled by declared policy (**AST-007**)                                                                                                                                                                                                           | T7         | Specified |
 | **IMP-032** | The order must be: identities are shown as the source carries them while a person reviews (IMP-009), and the tenant's policy (IMP-010) is applied once, at acceptance. So a tracked change is attributed to its Word author during review (IMP-005) and mapped, retained or discarded on commit, with which was applied recorded (IMP-011) | Constraint | Specified |
 
 **Section 4 exists because importing a customer's documents ingests the identity of everyone who
@@ -309,6 +309,21 @@ identifier, and only its tranche changes.
 | What was found                                                                          | Change                  |
 | --------------------------------------------------------------------------------------- | ----------------------- |
 | A standard XML vocabulary needs a stated mapping, nearer the product's own format in T7 | **IMP-016 moved to T7** |
+
+| Counts       | Before | After |
+| ------------ | ------ | ----- |
+| Requirements | 48     | 48    |
+
+### Embedded metadata moved to T7, 2026-10-23
+
+Not a review. Closing import, Ken moved the policy for embedded metadata to the tranche that brings
+AST-007's asset metadata policy, which it rests on; an import already discards a file's own properties
+by default (the IM plan, IM-J). A row moving tranche whole keeps its identifier, and only its tranche
+changes.
+
+| What was found                                       | Change                  |
+| ---------------------------------------------------- | ----------------------- |
+| Embedded metadata's policy is AST-007's, built in T7 | **IMP-012 moved to T7** |
 
 | Counts       | Before | After |
 | ------------ | ------ | ----- |

@@ -54,8 +54,8 @@ and loses, is said in the product.
 | **IMP-047** | Macros, embedded objects, outside files and unallowed links never stored, and reported                |
 
 PUB-028's import half is IMP-005's; its export half moves to T8 with Word fidelity. IMP-016 moves to
-T7. The import constraint IMP-048 is kept here unclaimed. IMP-012 is left unclaimed: the file's own properties are discarded by
-default, but an image's metadata is AST-007's, in T7.
+T7. The import constraint IMP-048 is kept here unclaimed. IMP-012 moved to T7 with AST-007, the
+metadata policy it rests on; the file's own properties are discarded by default.
 
 ## Identities
 
