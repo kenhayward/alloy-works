@@ -46,7 +46,7 @@ export function Pager({
           >
             <Icon name="Previous page" />
           </IconButton>
-          <span>{words('parts.page-of', { value1: page + 1, pages })}</span>
+          <span>{words('parts.page-of', { page: page + 1, pages })}</span>
           <IconButton
             label={words('parts.next-page')}
             className={styles['pagerButton']}

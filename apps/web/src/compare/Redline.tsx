@@ -1,7 +1,7 @@
 import type { UnitChange, UnitText } from '@alloy-works/domain';
 
 import styles from './Redline.module.css';
-import { words } from '../words/words.js';
+import { formats, words } from '../words/words.js';
 
 /** What a unit is called where it holds no text of its own. */
 const TYPE_WORDS: Record<string, string> = {
@@ -47,8 +47,12 @@ const TYPE_WORDS: Record<string, string> = {
 };
 
 const ATTRIBUTE_WORDS: Record<string, string> = {
-  style: 'style',
-  marks: 'formatting',
+  get style() {
+    return words('compare.style');
+  },
+  get marks() {
+    return words('compare.formatting');
+  },
   get shape() {
     return words('compare.rows-or-columns');
   },
@@ -65,16 +69,25 @@ export interface RedlineTexts {
   readonly names?: ReadonlyMap<string, string>;
 }
 
-const Added = ({ text }: { text: string }) => (
+/** A unit's text, the tenant's, or where it holds none, what it is in the interface's words. */
+interface Named {
+  readonly text: string;
+  readonly content: boolean;
+}
+
+const Shown = ({ text, content }: Named) =>
+  content ? <span data-content>{text}</span> : <>{text}</>;
+
+const Added = ({ text, content = true }: { text: string; content?: boolean }) => (
   <ins className={styles['added']}>
     <span className={styles['hidden']}>{words('compare.added')}</span>
-    {text}
+    <Shown text={text} content={content} />
   </ins>
 );
-const Removed = ({ text }: { text: string }) => (
+const Removed = ({ text, content = true }: { text: string; content?: boolean }) => (
   <del className={styles['removed']}>
     <span className={styles['hidden']}>{words('compare.removed')}</span>
-    {text}
+    <Shown text={text} content={content} />
   </del>
 );
 
@@ -103,8 +116,12 @@ export function Redline({
   texts: RedlineTexts;
   label: string;
 }) {
-  const nameOf = (key: string, text: UnitText | undefined) =>
-    text?.text || texts.names?.get(key) || TYPE_WORDS[text?.type ?? ''] || words('compare.part');
+  const nameOf = (key: string, text: UnitText | undefined): Named => {
+    const own = text?.text || texts.names?.get(key);
+    return own
+      ? { text: own, content: true }
+      : { text: TYPE_WORDS[text?.type ?? ''] || words('compare.part'), content: false };
+  };
   const changed = changes.some(
     (each) =>
       each.change !== 'matched' ||
@@ -127,7 +144,7 @@ export function Redline({
               style={{ marginInlineStart: `${depthOf(change.newer, texts.newer) * 16}px` }}
             >
               <span className={styles['badge']}>{words('compare.added-2')}</span>
-              <Added text={nameOf(change.newer, text)} />
+              <Added {...nameOf(change.newer, text)} />
             </li>
           );
         }
@@ -141,7 +158,7 @@ export function Redline({
               style={{ marginInlineStart: `${depthOf(change.older, texts.older) * 16}px` }}
             >
               <span className={styles['badge']}>{words('compare.removed-2')}</span>
-              <Removed text={nameOf(change.older, text)} />
+              <Removed {...nameOf(change.older, text)} />
             </li>
           );
         }
@@ -164,7 +181,10 @@ export function Redline({
           ...(change.changed.length > 0
             ? [
                 words('compare.changed', {
-                  value1: change.changed.map((name) => ATTRIBUTE_WORDS[name] ?? name).join(', '),
+                  what: formats().list(
+                    change.changed.map((name) => ATTRIBUTE_WORDS[name] ?? name),
+                    { type: 'unit', style: 'short' },
+                  ),
                 }),
               ]
             : []),
@@ -190,7 +210,9 @@ export function Redline({
               </span>
             )}
             {change.edited === null ? (
-              <span>{nameOf(change.newer, now)}</span>
+              <span>
+                <Shown {...nameOf(change.newer, now)} />
+              </span>
             ) : 'whole' in change.edited ? (
               <>
                 <Removed text={was?.text ?? ''} /> <Added text={now?.text ?? ''} />
@@ -199,7 +221,9 @@ export function Redline({
               <span>
                 {change.edited.ops.map((op, index) =>
                   op.op === 'keep' ? (
-                    <span key={index}>{op.text}</span>
+                    <span key={index} data-content>
+                      {op.text}
+                    </span>
                   ) : op.op === 'insert' ? (
                     <Added key={index} text={op.text} />
                   ) : (
@@ -226,17 +250,26 @@ export function redlineHtml(title: string, root: HTMLElement): string {
   // without them the redline still reads by its underlining and striking through.
   const token = (name: string) =>
     getComputedStyle(root.ownerDocument.documentElement).getPropertyValue(name).trim() || 'inherit';
-  return words('compare.doctype-html-html-lang-en', {
-    value1: escape(title),
-    value2: token('--text'),
-    value3: token('--surface'),
-    value4: token('--ok'),
-    value5: token('--ok-bg'),
-    value6: token('--danger'),
-    value7: token('--danger-bg'),
-    value8: escape(title),
-    innerHTML: root.innerHTML,
-  });
+  // In the interface's language, which its words around the tenant's are in.
+  return `<!doctype html>
+<html lang="${formats().language.tag}">
+<head>
+<meta charset="utf-8">
+<title>${escape(title)}</title>
+<style>
+body { font-family: system-ui, sans-serif; margin: 2rem; line-height: 1.5; color: ${token('--text')}; background: ${token('--surface')}; }
+ol { list-style: none; padding: 0; }
+li { margin: 0.25rem 0; }
+ins { color: ${token('--ok')}; background: ${token('--ok-bg')}; text-decoration: underline; }
+del { color: ${token('--danger')}; background: ${token('--danger-bg')}; text-decoration: line-through; }
+.hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+</style>
+</head>
+<body>
+<h1>${escape(title)}</h1>
+${root.innerHTML}
+</body>
+</html>`;
 }
 
 /** Saves `html` as a file without navigating the page (a download never does). */

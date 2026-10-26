@@ -69,17 +69,21 @@ export function Environment({ fetch: given, follow = followStream }: Environment
   return (
     <section>
       <h2>{words('shell.environment')}</h2>
-      <p>{environment ?? 'asking...'}</p>
+      {environment === undefined ? (
+        <p>{words('shell.asking')}</p>
+      ) : (
+        <p data-content>{environment}</p>
+      )}
       {who === 'nobody' && <a href="/v1/sign-in/organisation">{words('shell.signIn')}</a>}
       {who !== undefined && who !== 'nobody' && (
         <>
-          <p>{who.name}</p>
+          <p data-content>{who.name}</p>
           <button type="button" onClick={() => void ask()}>
             {words('shell.make-a-sample')}
           </button>
           <ul>
             {samples.map((sample) => (
-              <li key={sample.id}>
+              <li key={sample.id} data-content>
                 {sample.id}: {sample.state}
               </li>
             ))}

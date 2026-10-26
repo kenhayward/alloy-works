@@ -1,4 +1,4 @@
-import { words } from '../words/words.js';
+import { formats, words } from '../words/words.js';
 /**
  * The shapes below are the service's, written out rather than taken from `@alloy-works/api-client`:
  * that package's built declarations do not carry its generated types, so a type named from them is
@@ -136,7 +136,7 @@ export function placesFor(
 ): Place[] {
   if (at.kind === 'tenant') return [TENANT];
   if (at.kind === 'space') return [spacePlace(at), TENANT];
-  if (space === undefined) throw new Error(words('access.an-artifact-is-placed-in'));
+  if (space === undefined) throw new Error('An artifact is placed in its space');
   return [
     {
       target: `artifact:${at.id}`,
@@ -217,14 +217,20 @@ export function isShownInvitation(value: unknown): value is ShownInvitation {
  * A waiting invitation as a line: "ivy@example.com, until 2026-10-01", saying when it is from outside
  * the organisation, and "lapsed" rather than a date nobody can still accept it by.
  */
-export function describeInvitation(invitation: ShownInvitation): string {
-  const outside = invitation.external ? words('access.from-outside-the-organisation') : '';
-  const until = invitation.lapsed
-    ? words('access.lapsed-invite-them-again-to')
-    : invitation.expiresAt === null
-      ? ''
-      : words('access.until', { value1: invitation.expiresAt.slice(0, 10) });
-  return `${invitation.email}${outside}${until}`;
+export function describeInvitation(invitation: ShownInvitation, renewed = false): string {
+  return words('access.invitation-line', {
+    email: invitation.email,
+    outside: invitation.external ? 'yes' : 'no',
+    // A day as the service stores it, the same in every language: `2026-10-01`.
+    state: invitation.lapsed
+      ? 'lapsed'
+      : invitation.expiresAt === null
+        ? 'open'
+        : renewed
+          ? 'renewed'
+          : 'until',
+    until: invitation.expiresAt?.slice(0, 10) ?? '',
+  });
 }
 
 /** A group exactly as `GET /v1/groups` lists one, checked rather than assumed. */
@@ -313,27 +319,21 @@ export function refusalMessage(error: unknown): string | null {
 
 /** One grant as a line in a listing: "Allowed Author to Grace", and when it ends if it does. */
 export function describeGrant(grant: ShownGrant): string {
-  const who =
-    'principal' in grant.subject
-      ? personName(grant.subject.principal)
-      : words('access.the-group', { name: grant.subject.group.name });
-  const until =
-    grant.expiresAt === null
-      ? ''
-      : words('access.until-2', { value1: grant.expiresAt.slice(0, 10) });
-  return words('access.to', {
-    value1: grant.effect === 'allow' ? 'Allowed' : 'Denied',
-    name: grant.role.name,
-    who,
-    until,
+  return words('access.grant-line', {
+    effect: grant.effect,
+    role: grant.role.name,
+    to: 'principal' in grant.subject ? 'person' : 'group',
+    name:
+      'principal' in grant.subject ? personName(grant.subject.principal) : grant.subject.group.name,
+    ends: grant.expiresAt === null ? 'no' : 'yes',
+    until: grant.expiresAt?.slice(0, 10) ?? '',
   });
 }
 
 /** A permission as a person reads it: `manage_definitions` is "manage definitions". */
 export function permissionName(permission: string): string {
-  // SQL is an initialism, and reads as one.
-  if (permission === 'write_sql') return words('access.write-sql');
-  return permission.replaceAll('_', ' ');
+  // One the catalogue does not know yet reads as its code spelled out.
+  return words('access.permission-name', { permission, spelled: permission.replaceAll('_', ' ') });
 }
 
 /**
@@ -350,41 +350,35 @@ export function explainAnswer(
     places.find((place) => place.target === target)?.named ?? target;
   const grants = answer.grants
     .map((reached) => {
-      // A group by its name (IAM-030), and "a group" only where the service could not name it.
-      const group =
-        reached.groupName === null
-          ? words('access.a-group-2')
-          : words('access.the-group-2', { groupName: reached.groupName });
       const person = 'principal' in reached.subject ? people.get(reached.subject.principal) : null;
-      const who =
-        'group' in reached.subject
-          ? group
-          : person
-            ? personName(person)
-            : words('access.a-person-2');
-      // Naming the group it reached them "through" only makes sense when the grant is to a person: a
-      // grant already made to a group names that group, whatever `through` holds.
-      const through =
-        'principal' in reached.subject && reached.through !== null
-          ? words('access.through', { group })
-          : '';
-      const effect = reached.effect === 'allow' ? 'allowed' : 'denied';
-      return words('access.to-2', { role: reached.role, effect, who, through });
+      return words('access.grant-reached', {
+        role: reached.role,
+        effect: reached.effect,
+        to: 'group' in reached.subject ? 'group' : person ? 'person' : 'somebody',
+        name: person ? personName(person) : '',
+        // A group by its name (IAM-030), and "a group" only where the service could not name it.
+        group: reached.groupName === null ? 'unnamed' : 'named',
+        groupName: reached.groupName ?? '',
+        // Naming the group it reached them "through" only makes sense when the grant is to a person:
+        // a grant already made to a group names that group, whatever `through` holds.
+        through: 'principal' in reached.subject && reached.through !== null ? 'yes' : 'no',
+      });
     })
+    // Each grant is a whole clause; the clauses are set apart as the service's own sentences are.
     .join('; ');
   switch (answer.reason) {
     case 'allowed':
-      return words('access.allowed-at-by', { value1: where(answer.level!), grants });
+      return words('access.allowed-at-by', { place: where(answer.level!), grants });
     case 'denied':
-      return words('access.refused-at-by', { value1: where(answer.level!), grants });
+      return words('access.refused-at-by', { place: where(answer.level!), grants });
     case 'not_granted':
       return words('access.refused-nothing-grants-it-at', {
-        value1: answer.checked.map(where).join(', '),
+        places: formats().list(answer.checked.map(where), { type: 'unit', style: 'short' }),
       });
     case 'capped':
       return words('access.refused-someone-from-outside-the');
     case 'scoped':
-      return words('access.not-allowed-by-this-token', { grants, value2: where(answer.level!) });
+      return words('access.not-allowed-by-this-token', { grants, place: where(answer.level!) });
     default:
       // Only reachable from a body this page did not validate as an ExplainedPermission: a defensive
       // fallback, not a state the service is expected to send.

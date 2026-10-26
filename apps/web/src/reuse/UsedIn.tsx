@@ -3,7 +3,7 @@ import { useEffect, useId, useState } from 'react';
 import { Modal } from '../layouts/Modal.js';
 import { StateLozenge } from '../states/Lozenge.js';
 import styles from './UsedIn.module.css';
-import { words } from '../words/words.js';
+import { words, wordsWith } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 export type Uses =
@@ -89,12 +89,6 @@ export function reachesAny(uses: Uses, related: readonly Related[] = []): boolea
   return reachedBy(uses).length > 0 || uses.unreadableDocuments || related.length > 0;
 }
 
-const KIND_SAID: Readonly<Record<string, string>> = {
-  get queryDefinition() {
-    return words('reuse.query-definition');
-  },
-};
-
 /** How one reference follows the component, in the reader's words (REU-007). */
 export function followsSaid(reference: UsingReference): string {
   switch (reference.mode) {
@@ -103,14 +97,18 @@ export function followsSaid(reference: UsingReference): string {
     case 'approved':
       return words('reuse.follows-approved-revisions');
     case 'pinned':
-      return `Pinned to version ${reference.version?.number ?? ''}`.trimEnd();
+      return reference.version
+        ? words('reuse.pinned-to-version', { number: reference.version.number })
+        : words('reuse.pinned-to-a-version');
   }
 }
 
 function DocumentItem({ document }: { document: UsingDocument }) {
   return (
     <li>
-      <a href={`#/documents/${document.id}`}>{document.title}</a>
+      <a href={`#/documents/${document.id}`} data-content>
+        {document.title}
+      </a>
       {document.state && <StateLozenge state={document.state} />}
       <ul className={styles['references']}>
         {document.references.map((reference) => (
@@ -278,16 +276,15 @@ export function ReachDialog({
     <Modal labelledBy={headingId} size="narrow" onClose={onCancel}>
       <div className={styles['dialog']}>
         <h2 id={headingId}>
-          {act.startsWith('Approve')
-            ? `${act} ${title}?`
+          {/* Approving asks as its own act: the act is the Workflow's words, in this language. */}
+          {act === words('lifecycle.approve') || act === words('lifecycle.approve-and-publish')
+            ? words('reuse.act-on', { act, title })
             : words('reuse.save-a-version-of', { title })}
         </h2>
         {(count > 0 || uses.unreadableDocuments) && (
           <p>
             {count > 0
-              ? words('reuse.it-reaches-that-follow-this', {
-                  value1: count === 1 ? 'one document' : `${count} documents`,
-                })
+              ? words('reuse.it-reaches-that-follow-this', { count })
               : words('reuse.it-may-reach-documents-that')}
           </p>
         )}
@@ -299,7 +296,13 @@ export function ReachDialog({
             <h3 id={`${headingId}related`}>{words('reuse.related-through-relationships')}</h3>
             <ul className={styles['list']}>
               {related.map((each) => (
-                <li key={each.id}>{`${each.title} (${KIND_SAID[each.kind] ?? each.kind})`}</li>
+                <li key={each.id}>
+                  {wordsWith(
+                    'reuse.related-item',
+                    { kind: each.kind },
+                    { title: <span data-content>{each.title}</span> },
+                  )}
+                </li>
               ))}
             </ul>
           </section>

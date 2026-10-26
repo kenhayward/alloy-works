@@ -13,7 +13,7 @@ import { StateLozenge } from '../states/Lozenge.js';
 import { Notice } from '../states/Notice.js';
 import { termLink, TERMS } from './links.js';
 import { baseLabel, isSummary, said, type Summary, type Term } from './shape.js';
-import { words as say } from '../words/words.js';
+import { formats, words as say } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -124,7 +124,9 @@ export function TermPage({ client, id }: { readonly client: Client; readonly id:
       <p>
         <a href={TERMS}>{say('terms.terms')}</a>
       </p>
-      <h1 id="term-heading">{baseLabel(term).preferred}</h1>
+      <h1 id="term-heading" data-content>
+        {baseLabel(term).preferred}
+      </h1>
       <p>
         {standing && <StateLozenge state={standing.state} />}{' '}
         <RevisionChip revision={standing?.revision} />
@@ -133,7 +135,7 @@ export function TermPage({ client, id }: { readonly client: Client; readonly id:
         <p role="note">
           {term.replacedBy === undefined
             ? say('terms.this-term-is-deprecated')
-            : say('terms.this-term-is-deprecated-use', { value1: nameOf(term.replacedBy) })}
+            : say('terms.this-term-is-deprecated-use', { term: nameOf(term.replacedBy) })}
         </p>
       )}
       {standing && (
@@ -170,14 +172,16 @@ export function TermPage({ client, id }: { readonly client: Client; readonly id:
         <tbody>
           {term.labels.map((each) => (
             <tr key={each.language}>
-              <td>
-                {each.language === term.base
-                  ? say('terms.base', { language: each.language })
-                  : each.language}
+              {each.language === term.base ? (
+                <td>{say('terms.base', { language: each.language })}</td>
+              ) : (
+                <td data-content>{each.language}</td>
+              )}
+              <td data-content>{each.preferred}</td>
+              <td data-content>
+                {formats().list(each.alternatives, { type: 'unit', style: 'short' })}
               </td>
-              <td>{each.preferred}</td>
-              <td>{each.alternatives.join(', ')}</td>
-              <td>{each.abbreviation ?? ''}</td>
+              <td data-content>{each.abbreviation ?? ''}</td>
             </tr>
           ))}
         </tbody>
@@ -186,7 +190,7 @@ export function TermPage({ client, id }: { readonly client: Client; readonly id:
         {term.definition.map((each) => (
           <div key={each.language}>
             <dt>{say('terms.definition', { language: each.language })}</dt>
-            <dd>{each.text}</dd>
+            <dd data-content>{each.text}</dd>
           </div>
         ))}
         {RELATIONS.map(({ key, label }) =>
@@ -197,7 +201,9 @@ export function TermPage({ client, id }: { readonly client: Client; readonly id:
                 {term[key].map((other, at) => (
                   <span key={other}>
                     {at > 0 && ', '}
-                    <a href={termLink(other)}>{nameOf(other)}</a>
+                    <a href={termLink(other)} data-content>
+                      {nameOf(other)}
+                    </a>
                   </span>
                 ))}
               </dd>
@@ -208,12 +214,14 @@ export function TermPage({ client, id }: { readonly client: Client; readonly id:
           <div>
             <dt>{say('terms.replaced-by')}</dt>
             <dd>
-              <a href={termLink(term.replacedBy)}>{nameOf(term.replacedBy)}</a>
+              <a href={termLink(term.replacedBy)} data-content>
+                {nameOf(term.replacedBy)}
+              </a>
             </dd>
           </div>
         )}
         <dt>{say('terms.space')}</dt>
-        <dd>{shown.space.name}</dd>
+        <dd data-content>{shown.space.name}</dd>
         <dt>{say('terms.version')}</dt>
         <dd>{shown.version.number}</dd>
       </dl>
@@ -246,7 +254,9 @@ export function TermPage({ client, id }: { readonly client: Client; readonly id:
             <ul>
               {uses.named.map((each) => (
                 <li key={each.id}>
-                  <a href={`#/components/${each.id}`}>{each.title}</a>
+                  <a href={`#/components/${each.id}`} data-content>
+                    {each.title}
+                  </a>
                 </li>
               ))}
             </ul>
@@ -373,7 +383,11 @@ function EditTerm({
     <form aria-label={say('terms.edit-term')} onSubmit={(event) => void submit(event)}>
       {rows.map((row, at) => (
         <fieldset key={at}>
-          <legend>{row.language === '' ? say('terms.a-new-language') : row.language}</legend>
+          {row.language === '' ? (
+            <legend>{say('terms.a-new-language')}</legend>
+          ) : (
+            <legend data-content>{row.language}</legend>
+          )}
           <label>
             {say('terms.language')}{' '}
             <input value={row.language} onChange={(e) => change(at, 'language', e.target.value)} />
@@ -428,7 +442,7 @@ function EditTerm({
           {rows
             .filter((row) => row.language.trim() !== '')
             .map((row) => (
-              <option key={row.language} value={row.language.trim()}>
+              <option key={row.language} value={row.language.trim()} data-content>
                 {row.language.trim()}
               </option>
             ))}
@@ -449,7 +463,7 @@ function EditTerm({
             }
           >
             {others.map((each) => (
-              <option key={each.id} value={each.id}>
+              <option key={each.id} value={each.id} data-content>
                 {each.label}
               </option>
             ))}
@@ -461,7 +475,7 @@ function EditTerm({
         <select value={replacedBy} onChange={(event) => setReplacedBy(event.target.value)}>
           <option value="">{say('terms.none')}</option>
           {others.map((each) => (
-            <option key={each.id} value={each.id}>
+            <option key={each.id} value={each.id} data-content>
               {each.label}
             </option>
           ))}

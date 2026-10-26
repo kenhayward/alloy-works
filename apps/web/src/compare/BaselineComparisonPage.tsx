@@ -12,9 +12,13 @@ import { useEffect, useRef, useState } from 'react';
 import { baselineLink, documentLink } from '../structure/links.js';
 import styles from './BaselineComparisonPage.module.css';
 import { Redline, redlineHtml, saveHtml } from './Redline.js';
-import { words } from '../words/words.js';
+import { formats, words, wordsWith } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
+
+/** A bound value as printed: the data's own, or nothing. */
+const Value = ({ value }: { value: string | null }) =>
+  value === null ? <>{words('compare.nothing')}</> : <span data-content>{value}</span>;
 
 /** What made a difference, in words (VER-031, VER-045). */
 const DOCUMENT_CAUSES = {
@@ -75,6 +79,8 @@ interface Shown {
   readonly components: readonly {
     readonly node: string;
     readonly title: string;
+    /** Whether the title is the component's own, not the interface's word for one. */
+    readonly titled: boolean;
     readonly heading: string;
     readonly changes: readonly UnitChange[];
     readonly older: ContentDocument;
@@ -149,8 +155,8 @@ export function BaselineComparisonPage({
         const titles = new Map(data.titles.map((each) => [each.node, each.title]));
         setShown({
           title: words('compare.compared-with', {
-            value1: sideName(data.older),
-            value2: sideName(data.newer),
+            older: sideName(data.older),
+            newer: sideName(data.newer),
           }),
           structure: data.structure as readonly UnitChange[],
           outlines: { older: outline(data.older), newer: outline(data.newer) },
@@ -158,7 +164,8 @@ export function BaselineComparisonPage({
           components: data.components.map((each) => ({
             node: each.node,
             title: titles.get(each.node) ?? words('compare.a-component'),
-            heading: words('compare.to', { number: each.from.number, number2: each.to.number }),
+            titled: titles.has(each.node),
+            heading: words('compare.to', { from: each.from.number, to: each.to.number }),
             changes: each.changes as readonly UnitChange[],
             older: each.older as unknown as ContentDocument,
             newer: each.newer as unknown as ContentDocument,
@@ -218,7 +225,8 @@ export function BaselineComparisonPage({
           {shown.components.map((each) => (
             <section key={each.node} aria-label={each.title} className={styles['component']}>
               <h3 className={styles['component-title']}>
-                {each.title} <span className={styles['note']}>{each.heading}</span>
+                {each.titled ? <span data-content>{each.title}</span> : each.title}{' '}
+                <span className={styles['note']}>{each.heading}</span>
               </h3>
               <Redline
                 changes={each.changes}
@@ -244,9 +252,9 @@ export function BaselineComparisonPage({
                 {printed.document.length === 0
                   ? words('compare.the-layout-theme-template-and')
                   : words('compare.for-the-whole-document', {
-                      value1: printed.document
-                        .map((cause) => DOCUMENT_CAUSES[cause])
-                        .join(', and '),
+                      causes: formats().list(
+                        printed.document.map((cause) => DOCUMENT_CAUSES[cause]),
+                      ),
                     })}
               </p>
               {printed.nodes.length === 0 && (
@@ -258,23 +266,45 @@ export function BaselineComparisonPage({
               >
                 {printed.nodes.map((each) => (
                   <li key={each.node}>
-                    <strong>{each.title || words('compare.a-component')}</strong>
-                    {': '}
-                    {each.causes.map((cause) => NODE_CAUSES[cause]).join('; ')}
+                    {wordsWith(
+                      'compare.prints-differently-because',
+                      {
+                        causes: formats().list(
+                          each.causes.map((cause) => NODE_CAUSES[cause]),
+                          { type: 'unit', style: 'short' },
+                        ),
+                      },
+                      {
+                        title: each.title ? (
+                          <strong data-content>{each.title}</strong>
+                        ) : (
+                          <strong>{words('compare.a-component')}</strong>
+                        ),
+                      },
+                    )}
                     {each.values.length > 0 && (
                       <ul>
                         {each.values.map((value) => (
                           <li key={value.binding}>
-                            {`${value.binding}: `}
-                            <del>
-                              <span className={styles['hidden']}>{words('compare.was')}</span>
-                              {value.older ?? 'nothing'}
-                            </del>
-                            {' to '}
-                            <ins>
-                              <span className={styles['hidden']}>{words('compare.now')}</span>
-                              {value.newer ?? 'nothing'}
-                            </ins>
+                            {wordsWith(
+                              'compare.value-was-now',
+                              {},
+                              {
+                                binding: <span data-content>{value.binding}</span>,
+                                older: (
+                                  <del>
+                                    <span className={styles['hidden']}>{words('compare.was')}</span>
+                                    <Value value={value.older} />
+                                  </del>
+                                ),
+                                newer: (
+                                  <ins>
+                                    <span className={styles['hidden']}>{words('compare.now')}</span>
+                                    <Value value={value.newer} />
+                                  </ins>
+                                ),
+                              },
+                            )}
                           </li>
                         ))}
                       </ul>

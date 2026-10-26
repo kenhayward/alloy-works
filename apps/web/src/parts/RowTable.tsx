@@ -70,7 +70,7 @@ export function RowTable({
             {bins && (
               <td className={styles['rowBin']}>
                 <IconButton
-                  label={row.remove ?? words('parts.remove-2', { value1: at + 1 })}
+                  label={row.remove ?? words('parts.remove-row', { row: at + 1 })}
                   className={styles['rowIcon']}
                   onClick={row.onRemove}
                 >

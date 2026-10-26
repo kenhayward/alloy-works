@@ -41,25 +41,6 @@ export function yearOf(csl: Csl): string {
   return /\d{4}/.exec(csl.issued?.literal ?? csl.issued?.raw ?? '')?.[0] ?? '';
 }
 
-/** What found a match, as a person reads it. */
-export const FOUND_BY: Readonly<Record<string, string>> = {
-  get doi() {
-    return words('bibliography.its-doi');
-  },
-  get pmid() {
-    return words('bibliography.its-pubmed-identifier');
-  },
-  get isbn() {
-    return words('bibliography.its-isbn');
-  },
-  get issn() {
-    return words('bibliography.its-issn');
-  },
-  get work() {
-    return words('bibliography.its-title-year-and-first');
-  },
-};
-
 /** The source types the hand-made form offers, by CSL's names. */
 export const TYPES: readonly { readonly value: string; readonly label: string }[] = [
   {

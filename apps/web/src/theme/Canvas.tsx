@@ -11,7 +11,7 @@ import { usePresentation, useZoom, ZOOMS, type Zoom } from './presentation.js';
 import { Icon } from '../editor/Icon.js';
 import { IconButton } from '../parts/IconButton.js';
 import { Notice } from '../states/Notice.js';
-import { words } from '../words/words.js';
+import { formats, words } from '../words/words.js';
 
 /** Points to CSS pixels: a CSS inch is 96 pixels and 72 points. */
 const PX_PER_PT = 96 / 72;
@@ -71,7 +71,7 @@ export function useCanvas(
   const zoom = zooming.zoom === 'fit' ? fitted : zooming.zoom;
   return {
     ref,
-    className: sheet ? words('theme.aw-canvas-aw-sheet') : 'aw-canvas',
+    className: sheet ? 'aw-canvas aw-sheet' : 'aw-canvas',
     style: {
       '--aw-measure': `${ready.frame.measure}pt`,
       '--aw-zoom': String(Number(zoom.toFixed(4))),
@@ -151,13 +151,7 @@ export function Canvas({ children, sheet = false }: { children: ReactNode; sheet
   );
 }
 
-const LABELS: Record<string, string> = {
-  get fit() {
-    return words('theme.fit');
-  },
-};
-
-const percent = (zoom: number) => `${Math.round(zoom * 100)}%`;
+const percent = (zoom: number) => formats().number(zoom, { style: 'percent' });
 
 /**
  * How large a reader sees a page's text, at the status bar's right (ADR-0056): Zoom out, a slider and
@@ -211,7 +205,7 @@ export function ZoomControl() {
       >
         {[...ZOOMS, 'fit' as const].map((each: Zoom) => (
           <option key={each} value={String(each)}>
-            {LABELS[String(each)] ?? percent(each as number)}
+            {each === 'fit' ? words('theme.fit') : percent(each)}
           </option>
         ))}
       </select>
@@ -229,12 +223,10 @@ export function UnheldFaces() {
   return (
     <Notice tone="failed">
       <p>
-        {words('theme.the-typefaces', { count: presentation.unheld.length })}
-        {presentation.unheld.join(', ')}
-        {words('theme.are', { count: presentation.unheld.length })}{' '}
-        {words('theme.not-available-here-so-the')}{' '}
-        {words('theme.them', { count: presentation.unheld.length })}{' '}
-        {words('theme.is-shown-in-the-application')}
+        {words('theme.unheld-faces', {
+          count: presentation.unheld.length,
+          families: formats().list(presentation.unheld),
+        })}
       </p>
     </Notice>
   );

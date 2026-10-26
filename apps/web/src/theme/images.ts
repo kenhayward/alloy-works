@@ -1,7 +1,6 @@
 import { styledSize, type Place, type ResolvedTheme } from '@alloy-works/domain';
 import { useEffect, type RefObject } from 'react';
 import { usePixels, usePresentation, type Pixels } from './presentation.js';
-import { words } from '../words/words.js';
 
 /**
  * The size, in points, of the text an image in a line stands in: its paragraph's style, a stored
@@ -47,7 +46,7 @@ export function sizeImages(
     void pixelsOf(asset).then((pixels) => {
       if (!pixels || pixels.width <= 0 || pixels.height <= 0) return;
       const { width } = styledSize(style, pixels, { ...frame, size });
-      image.style.width = words('theme.calc-pt-var-aw-zoom', { value1: Number(width.toFixed(3)) });
+      image.style.width = `calc(${Number(width.toFixed(3))}pt * var(--aw-zoom))`;
       image.style.height = 'auto';
       image.setAttribute('data-sized', key);
     });

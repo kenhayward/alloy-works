@@ -7,8 +7,8 @@ import { Empty } from '../states/Empty.js';
 import { Notice } from '../states/Notice.js';
 import styles from '../structure/DocumentList.module.css';
 import { entryLink } from './links.js';
-import { authorsShort, authorsTyped, FOUND_BY, TYPES, yearOf, type Csl } from './shape.js';
-import { words } from '../words/words.js';
+import { authorsShort, authorsTyped, TYPES, yearOf, type Csl } from './shape.js';
+import { formats, words, wordsWith } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -50,7 +50,12 @@ const FORMATS = [
       return words('bibliography.bibtex');
     },
   },
-  { value: 'ris', label: 'RIS' },
+  {
+    value: 'ris',
+    get label() {
+      return words('bibliography.ris');
+    },
+  },
 ] as const;
 
 const isSummary = (value: unknown): value is Summary =>
@@ -59,16 +64,26 @@ const isSummary = (value: unknown): value is Summary =>
   typeof value.key === 'string' &&
   isRecord(value.csl);
 
-/** What one record of an import came to, as a sentence. */
+/**
+ * What one record of an import came to, as a sentence, with what of it was not kept. A refusal's
+ * message is the service's, in English for integrators.
+ */
 function importedLine(record: Imported): string {
+  const values = {
+    key: record.entry?.key ?? '',
+    by: record.by ?? '',
+    dropped: record.dropped.length > 0 ? 'some' : 'none',
+    fields: formats().list(record.dropped),
+  };
   if (record.outcome === 'refused')
-    return words('bibliography.refused', { value1: record.message ?? '' });
-  const key = record.entry?.key ?? '';
-  if (record.outcome === 'created') return words('bibliography.made', { key });
-  const found = words('bibliography.found-by', { value1: FOUND_BY[record.by ?? ''] ?? record.by });
+    return words('bibliography.refused', { ...values, message: record.message ?? '' });
+  if (record.outcome === 'created') return words('bibliography.made', values);
   return record.merged.length === 0
-    ? words('bibliography.already-here-nothing-new', { key, found })
-    : words('bibliography.merged-and-given', { key, found, value3: record.merged.join(', ') });
+    ? words('bibliography.already-here-nothing-new', values)
+    : words('bibliography.merged-and-given', {
+        ...values,
+        merged: formats().list(record.merged),
+      });
 }
 
 /**
@@ -161,7 +176,7 @@ export function Bibliography({ client }: { readonly client: Client }) {
           {words('bibliography.space')}{' '}
           <select value={space ?? ''} onChange={(event) => setSpace(event.target.value)}>
             {spaces.map((each) => (
-              <option key={each.id} value={each.id}>
+              <option key={each.id} value={each.id} data-content>
                 {each.name}
               </option>
             ))}
@@ -179,12 +194,7 @@ export function Bibliography({ client }: { readonly client: Client }) {
       ) : (
         <>
           <p className={styles['summary']}>
-            <span>
-              {words('bibliography.you-may-read', {
-                total,
-                value2: total === 1 ? 'entry' : 'entries',
-              })}
-            </span>
+            <span>{words('bibliography.you-may-read', { total })}</span>
             {entries.length < total && (
               <span>{words('bibliography.showing-1-to', { length: entries.length })}</span>
             )}
@@ -203,11 +213,15 @@ export function Bibliography({ client }: { readonly client: Client }) {
                 {entries.map((entry) => (
                   <tr key={entry.id}>
                     <td className={styles['title']}>
-                      <a href={entryLink(entry.id)}>{entry.key}</a>
+                      <a href={entryLink(entry.id)} data-content>
+                        {entry.key}
+                      </a>
                     </td>
-                    <td>{authorsShort(entry.csl)}</td>
-                    <td>{entry.csl.title ?? ''}</td>
-                    <td className={styles['muted']}>{yearOf(entry.csl)}</td>
+                    <td data-content>{authorsShort(entry.csl)}</td>
+                    <td data-content>{entry.csl.title ?? ''}</td>
+                    <td className={styles['muted']} data-content>
+                      {yearOf(entry.csl)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -299,7 +313,8 @@ function NewEntry({ client, space }: { readonly client: Client; readonly space: 
         <input value={year} inputMode="numeric" onChange={(event) => setYear(event.target.value)} />
       </label>
       <label>
-        DOI <input value={doi} onChange={(event) => setDoi(event.target.value)} />
+        {words('bibliography.doi')}{' '}
+        <input value={doi} onChange={(event) => setDoi(event.target.value)} />
       </label>
       <button type="submit" className="primary" disabled={busy || title.trim() === ''}>
         {words('bibliography.make-entry')}
@@ -315,9 +330,18 @@ function NewEntry({ client, space }: { readonly client: Client; readonly space: 
           <ul>
             {matches.map((each) => (
               <li key={each.entry.id}>
-                <a href={entryLink(each.entry.id)}>{each.entry.key}</a> {each.entry.csl.title ?? ''}
-                {words('bibliography.found-by-2')}
-                {FOUND_BY[each.by] ?? each.by}.
+                {wordsWith(
+                  'bibliography.match-found-by',
+                  { by: each.by },
+                  {
+                    key: (
+                      <a href={entryLink(each.entry.id)} data-content>
+                        {each.entry.key}
+                      </a>
+                    ),
+                    title: <span data-content>{each.entry.csl.title ?? ''}</span>,
+                  },
+                )}
               </li>
             ))}
           </ul>
@@ -398,11 +422,7 @@ function ImportRecords({
         <section aria-label={words('bibliography.imported')}>
           <ul>
             {done.map((record, at) => (
-              <li key={at}>
-                {importedLine(record)}
-                {record.dropped.length > 0 &&
-                  words('bibliography.not-kept', { value1: record.dropped.join(', ') })}
-              </li>
+              <li key={at}>{importedLine(record)}</li>
             ))}
           </ul>
         </section>
