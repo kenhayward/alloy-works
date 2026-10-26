@@ -116,7 +116,7 @@ describe('the Term dialog (the TM plan, TMc)', () => {
 
   it('says quietly when the space held more terms than are offered', () => {
     open({ truncated: true });
-    expect(screen.getByText(TERMS_TRUNCATED)).toBeInTheDocument();
-    expect(screen.getByText(TERMS_TRUNCATED)).not.toHaveAttribute('role');
+    expect(screen.getByText(TERMS_TRUNCATED())).toBeInTheDocument();
+    expect(screen.getByText(TERMS_TRUNCATED())).not.toHaveAttribute('role');
   });
 });

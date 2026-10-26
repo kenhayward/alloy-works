@@ -883,7 +883,7 @@
   "editor.citation.in-bibliography-flagged": " (In the bibliography as {key}, {flag})",
   "editor.recovery.time-on-day": "{time} on {day}",
   "editor.format.currency": "{symbol}, {position, select, before {before the number} other {after the number}}{spaced, select, true {, spaced} other {}}",
-  "editor.format.duration": "{from, select, seconds {Seconds} other {Minutes}} as {show, select, h:mm {hours and minutes} other {hours, minutes and seconds}}",
+  "editor.format.duration": "{from, select, seconds {Seconds} other {Minutes}} as {show, select, minutes {hours and minutes} other {hours, minutes and seconds}}",
   "editor.query.in-space": "- {space}",
   "editor.query.in-space-runs-as": "- {space} - Runs as {identity}",
   "editor.citation.no-entries": "This space holds no bibliography entries you may read.",
@@ -900,5 +900,17 @@
   "editor.variable.no-variables": "No variables are declared yet.",
   "editor.variable.variables-unread": "The variables could not be read.",
   "editor.session.newer-text": "Newer text was saved from another window, or from before this page was reloaded. It is kept. Continuing starts a new session from what is on screen.",
-  "editor.format.style-takes": "{style}: {value}"
+  "editor.format.style-takes": "{style}: {value}",
+  "editor.condition.alternative-said": "To word this differently for other readers, add an alternative: a copy kept for the other values, to rewrite.",
+  "editor.symbol.dimmed-note": "Symbols the typeface here does not have are dimmed; set them in an equation.",
+  "editor.value.checked": "Checked",
+  "editor.value.checked-means": "looked for each time the document is opened",
+  "editor.value.pinned": "Pinned",
+  "editor.value.pinned-means": "never looked for",
+  "editor.bound-table.too-many-notes": "A table holds at most {most, number} notes.",
+  "editor.term.terms-truncated": "Only the first {most, number} terms of the space are offered.",
+  "editor.discard.question": "Discard these changes?",
+  "editor.discard.sentence": "These changes will no longer be offered for recovery. They stay in Saved text until they expire.",
+  "editor.discard.keep": "Keep",
+  "editor.discard.act": "Discard"
 }

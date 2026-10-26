@@ -154,7 +154,10 @@ export function memberSaid(member: keyof FieldFormat, format: FieldFormat): stri
     }
     case 'duration': {
       const duration = value as NonNullable<FieldFormat['duration']>;
-      return say('editor.format.duration', { from: duration.from, show: duration.show });
+      return say('editor.format.duration', {
+        from: duration.from,
+        show: duration.show === 'h:mm' ? 'minutes' : 'seconds',
+      });
     }
     default:
       return String(value);

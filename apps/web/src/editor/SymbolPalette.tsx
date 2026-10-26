@@ -24,8 +24,7 @@ export interface SymbolPaletteProps {
 }
 
 /** What the palette says, once, where the typeface at the cursor lacks some of what it offers. */
-export const DIMMED_NOTE =
-  'Symbols the typeface here does not have are dimmed; set them in an equation.';
+export const DIMMED_NOTE = (): string => words('editor.symbol.dimmed-note');
 
 /** A group's symbols in rows of `PALETTE_COLUMNS`, as the grid's rows hold them. */
 const rowsOf = <T,>(items: readonly T[]): T[][] => {
@@ -149,7 +148,7 @@ export function SymbolPalette({ onChoose, onCancel, typeface = null }: SymbolPal
             </span>
             {words('editor.symbols')}
           </h2>
-          {lacking.size > 0 && <p className={own['note']}>{DIMMED_NOTE}</p>}
+          {lacking.size > 0 && <p className={own['note']}>{DIMMED_NOTE()}</p>}
           {SYMBOL_GROUPS.map((group, g) => (
             <section key={group.name} className={own['group']}>
               <h3 id={`${id}-group-${g}`} className={own['name']}>

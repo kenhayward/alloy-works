@@ -286,7 +286,9 @@ export const BOUND_TABLE_WORDS = {
     return say('editor.the-key-of-its-query');
   },
   keyNeeded: (column: string) => say('editor.type-a-value-of-for', { column }),
-  tooManyNotes: `A table holds at most ${BOUND_TABLE_NOTES_MAX} notes.`,
+  get tooManyNotes() {
+    return say('editor.bound-table.too-many-notes', { most: BOUND_TABLE_NOTES_MAX });
+  },
   noteStands: (column: string) => say('editor.a-note-stands-on-remove', { column }),
 } as const;
 

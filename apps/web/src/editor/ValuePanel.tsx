@@ -12,9 +12,13 @@ import { words } from '../words/words.js';
 
 /** Each mode's word on its chip, and the rest of what it means, said after it and in its title. */
 const MODES = {
-  checked: ['Checked', 'looked for each time the document is opened'],
-  pinned: ['Pinned', 'never looked for'],
-} as const;
+  get checked() {
+    return [words('editor.value.checked'), words('editor.value.checked-means')] as const;
+  },
+  get pinned() {
+    return [words('editor.value.pinned'), words('editor.value.pinned-means')] as const;
+  },
+};
 
 export interface ValuePanelProps {
   /** The binding selected whole, or a bound figure's or a bound table's, as the component stores it. */

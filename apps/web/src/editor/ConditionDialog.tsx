@@ -22,8 +22,7 @@ export const NO_AXES = (): string => words('editor.condition.no-axes');
 /** What it says where the axes could not be read. */
 export const AXES_UNREAD = (): string => words('editor.condition.axes-unread');
 /** Why an alternative is offered: the documented way to word text differently per profile. */
-export const ALTERNATIVE_SAID =
-  'To word this differently for other readers, add an alternative: a copy kept for the other values, to rewrite.';
+export const ALTERNATIVE_SAID = (): string => words('editor.condition.alternative-said');
 
 /** The keys of every declared axis, from the listing alone: what a paste keeps conditions on. */
 export async function declaredAxisKeys(client: Client): Promise<string[]> {
@@ -200,7 +199,7 @@ export function ConditionDialog({
                 ))}
               </fieldset>
               {onAlternative !== undefined && already !== undefined && others.length > 0 && (
-                <p className={own['said']}>{ALTERNATIVE_SAID}</p>
+                <p className={own['said']}>{ALTERNATIVE_SAID()}</p>
               )}
               <div className={own['actions']}>
                 <button

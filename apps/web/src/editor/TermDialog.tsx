@@ -4,7 +4,7 @@ import shell from '../layouts/Modal.module.css';
 import { Icon } from './Icon.js';
 import styles from './MarkPrompt.module.css';
 import own from './ReferenceDialog.module.css';
-import type { TermChoice } from './terming.js';
+import { TERMS_HELD_MOST, type TermChoice } from './terming.js';
 import { words } from '../words/words.js';
 
 /** What the dialog says where the space holds no term to offer. */
@@ -12,7 +12,8 @@ export const NO_TERMS = (): string => words('editor.term.no-terms');
 /** What it says where the terms could not be read. */
 export const TERMS_UNREAD = (): string => words('editor.term.terms-unread');
 /** What it says where the space held more terms than are offered. */
-export const TERMS_TRUNCATED = 'Only the first 5,000 terms of the space are offered.';
+export const TERMS_TRUNCATED = (): string =>
+  words('editor.term.terms-truncated', { most: TERMS_HELD_MOST });
 
 export interface TermDialogProps {
   /** The space's terms, null while they are read. */
@@ -121,7 +122,7 @@ export function TermDialog({
           )}
           {terms === null && <p role="status">{words('editor.reading-the-terms')}</p>}
           {terms === 'unread' && <p role="alert">{TERMS_UNREAD()}</p>}
-          {truncated && <p className={styles['note']}>{TERMS_TRUNCATED}</p>}
+          {truncated && <p className={styles['note']}>{TERMS_TRUNCATED()}</p>}
           {Array.isArray(terms) && offered.length === 0 && (
             <p className={styles['note']}>{NO_TERMS()}</p>
           )}

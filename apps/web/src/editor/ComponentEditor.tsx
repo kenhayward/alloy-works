@@ -3188,10 +3188,10 @@ export function ComponentEditor({
       {discarding !== null && (
         // Discard (the R2 plan): set aside, not deleted, so it says where the changes still are.
         <ConfirmDialog
-          question="Discard these changes?"
-          sentence="These changes will no longer be offered for recovery. They stay in Saved text until they expire."
-          keep="Keep"
-          act="Discard"
+          question={say('editor.discard.question')}
+          sentence={say('editor.discard.sentence')}
+          keep={say('editor.discard.keep')}
+          act={say('editor.discard.act')}
           onKeep={() => setDiscarding(null)}
           onAct={async () => {
             const { response } = await client.PUT('/v1/components/{id}/unsaved/discarded', {

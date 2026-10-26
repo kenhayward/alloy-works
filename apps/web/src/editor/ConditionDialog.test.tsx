@@ -78,7 +78,7 @@ describe('the Condition dialog (the R6 plan, R6-H)', () => {
         onCancel={() => undefined}
       />,
     );
-    expect(await screen.findByText(ALTERNATIVE_SAID)).toBeInTheDocument();
+    expect(await screen.findByText(ALTERNATIVE_SAID())).toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: 'Regulator' })).toBeChecked();
     await userEvent.click(screen.getByRole('button', { name: 'Add alternative' }));
     expect(alternative).toHaveBeenCalledWith({ axis: 'audience', values: ['internal'] });
