@@ -331,7 +331,11 @@ export function Header({
         />
         {words('shell.product')}
       </a>
-      {environment !== undefined && <span className={styles['environment']}>{environment}</span>}
+      {environment !== undefined && (
+        <span className={styles['environment']} data-content>
+          {environment}
+        </span>
+      )}
       <span className={styles['spacer']} />
       <button
         type="button"
@@ -374,7 +378,11 @@ export function Header({
               <span className={styles['initials']} aria-hidden="true">
                 {initialsOf(who)}
               </span>
-              {who.displayName ?? who.email ?? words('shell.signedIn')}
+              {(who.displayName ?? who.email) ? (
+                <span data-content>{who.displayName ?? who.email}</span>
+              ) : (
+                words('shell.signedIn')
+              )}
               {unread > 0 && (
                 <>
                   {' '}

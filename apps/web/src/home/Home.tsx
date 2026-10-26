@@ -283,7 +283,11 @@ export function Home({ client }: { client: Client }) {
       <h1 id="home-heading" className={styles['greeting']}>
         {name === null ? words('home.welcome-back') : words('home.welcome-back-2', { name })}
       </h1>
-      {environment !== null && <p className={styles['environment']}>{environment}</p>}
+      {environment !== null && (
+        <p className={styles['environment']} data-content>
+          {environment}
+        </p>
+      )}
       <div className={styles['columns']}>
         <Attention client={client} />
         <div className={styles['groups']}>
