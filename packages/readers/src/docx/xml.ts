@@ -7,7 +7,7 @@ export type XmlNode = {
   readonly children: (XmlNode | string)[];
 };
 
-/** The namespaces a Word package uses, transitional and strict, each by the prefix this reader names it. */
+/** The namespaces a Word package and an XLIFF file use, each by the prefix this reader names it. */
 const PREFIXES: Readonly<Record<string, string>> = {
   'http://schemas.openxmlformats.org/wordprocessingml/2006/main': 'w',
   'http://purl.oclc.org/ooxml/wordprocessingml/main': 'w',
@@ -32,6 +32,9 @@ const PREFIXES: Readonly<Record<string, string>> = {
   'http://schemas.openxmlformats.org/officeDocument/2006/custom-properties': 'op',
   'http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes': 'vt',
   'http://www.w3.org/XML/1998/namespace': 'xml',
+  // XLIFF 2, for a translation job's file returned (the XL plan, XL-F).
+  'urn:oasis:names:tc:xliff:document:2.0': 'x',
+  'urn:oasis:names:tc:xliff:glossary:2.0': 'gls',
 };
 
 const named = (uri: string, local: string) => `${PREFIXES[uri] ?? '?'}:${local}`;

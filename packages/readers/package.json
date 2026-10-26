@@ -17,6 +17,10 @@
     "./import": {
       "types": "./dist/import.d.ts",
       "default": "./dist/import.js"
+    },
+    "./xliff": {
+      "types": "./dist/xliff.d.ts",
+      "default": "./dist/xliff.js"
     }
   },
   "files": [
