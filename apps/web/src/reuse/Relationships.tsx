@@ -15,7 +15,7 @@ import {
   type GraphFilter,
 } from './graph.js';
 import styles from './Relationships.module.css';
-import { words as say } from '../words/words.js';
+import { formats, words as say, wordsWith } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -87,32 +87,15 @@ export async function declaredTypes(client: Client): Promise<OfferedType[] | nul
   return types.filter((each): each is OfferedType => each !== null);
 }
 
-const KIND_PLURAL: Readonly<Record<string, string>> = {
-  document: 'documents',
-  component: 'components',
-  template: 'templates',
-  asset: 'assets',
-  get queryDefinition() {
-    return say('reuse.query-definitions');
-  },
-  publication: 'publications',
-};
-const KIND_ONE: Readonly<Record<string, string>> = {
-  document: 'document',
-  component: 'component',
-  template: 'template',
-  asset: 'asset',
-  get queryDefinition() {
-    return say('reuse.query-definition');
-  },
-  publication: 'publication',
-};
-const plural = (kind: string) => KIND_PLURAL[kind] ?? kind;
-
 /** How a relationship reads from the artifact it was read from: its name, or its inverse's. */
 export function saidFrom(edge: GraphEdge, types: readonly OfferedType[]): string {
+  return namedFrom(edge, types) ?? say('reuse.related-to');
+}
+
+/** The relationship's type's name read from this end; null where its type is not declared. */
+function namedFrom(edge: GraphEdge, types: readonly OfferedType[]): string | null {
   const type = types.find((each) => each.id === edge.relationship.type);
-  if (!type) return say('reuse.related-to');
+  if (!type) return null;
   const outward = edge.relationship.from.artifact === edge.from;
   return outward || !type.directed ? type.name : type.inverseName;
 }
@@ -269,7 +252,7 @@ export function RelationshipsDialog({
             >
               <option value="">{say('reuse.every-type')}</option>
               {(types ?? []).map((each) => (
-                <option key={each.id} value={each.id}>
+                <option key={each.id} value={each.id} data-content>
                   {each.name}
                 </option>
               ))}
@@ -301,8 +284,7 @@ export function RelationshipsDialog({
         </form>
         {/* Every view is a query an integrator can ask too (REL-028). */}
         <p className={styles['relQuery']}>
-          {say('reuse.answered-by')}
-          <code>{queryOf(centre.id, filter)}</code>
+          {wordsWith('reuse.answered-by', {}, { query: <code>{queryOf(centre.id, filter)}</code> })}
         </p>
         {notice && <p role="status">{notice}</p>}
         {(read === undefined || types === undefined) && (
@@ -331,7 +313,7 @@ export function RelationshipsDialog({
                 {say('reuse.some-relationships-lead-to-artifacts')}
               </p>
             )}
-            {read.more && <p className={styles['relMuted']}>{say('reuse.only-the-first-1-000')}</p>}
+            {read.more && <p className={styles['relMuted']}>{say('reuse.only-the-first-1-000', { count: 1000 })}</p>}
             <Relate
               client={client}
               centre={centre}
@@ -375,7 +357,7 @@ function ValueFilter({
         {say('reuse.field')}
         <select value={field} onChange={(event) => onFilter(event.target.value, filter.value)}>
           {fields.map((each) => (
-            <option key={each.id} value={each.id}>
+            <option key={each.id} value={each.id} data-content>
               {each.name}
             </option>
           ))}
@@ -415,7 +397,7 @@ function Drawing({
       viewBox={`0 0 ${SIZE} ${SIZE}`}
       role="img"
       aria-label={say('reuse.a-graph-of-related-artifacts', {
-        value1: drawn.nodes.length - 1 + drawn.counts.reduce((n, each) => n + each.ids.length, 0),
+        count: drawn.nodes.length - 1 + drawn.counts.reduce((n, each) => n + each.ids.length, 0),
       })}
     >
       {drawn.lines.map((line) => (
@@ -429,7 +411,7 @@ function Drawing({
           onClick={() => node.ring > 0 && !graph.expanded.has(node.id) && onExpand(node.id)}
         >
           <circle r={node.ring === 0 ? 10 : 7} />
-          <text y={22}>
+          <text y={22} data-content>
             {node.title.length > 24 ? `${node.title.slice(0, 23)}...` : node.title}
           </text>
         </g>
@@ -442,8 +424,8 @@ function Drawing({
           onClick={() => onFold(count.key)}
         >
           <circle r={16} />
-          <text y={4}>{count.ids.length}</text>
-          <text y={30}>{plural(count.kind)}</text>
+          <text y={4}>{formats().number(count.ids.length)}</text>
+          <text y={30}>{say('reuse.kinds', { kind: count.kind, count: count.ids.length })}</text>
         </g>
       ))}
     </svg>
@@ -480,7 +462,7 @@ function Listing({
         const folded = folds.filter((fold) => fold.parent === source);
         return (
           <section key={source} aria-label={say('reuse.relationships-of', { title: from.title })}>
-            {source !== graph.centre && <h3>{from.title}</h3>}
+            {source !== graph.centre && <h3 data-content>{from.title}</h3>}
             <ul className={styles['relList']}>
               {shown.map((edge) => (
                 <EdgeItem
@@ -499,7 +481,7 @@ function Listing({
                     aria-expanded={openFold === fold.key}
                     onClick={() => onFold(fold.key)}
                   >
-                    {`${fold.ids.length} ${plural(fold.kind)}`}
+                    {say('reuse.kinds-counted', { kind: fold.kind, count: fold.ids.length })}
                   </button>
                   {openFold === fold.key && (
                     <ul className={styles['relList']}>
@@ -542,10 +524,17 @@ function EdgeItem({
 }) {
   const other = graph.nodes.get(edge.to)!;
   const href = linkOf(other);
+  const named = namedFrom(edge, types);
   return (
     <li>
-      <span>{saidFrom(edge, types)}</span>
-      {href ? <a href={href}>{other.title}</a> : <span>{other.title}</span>}
+      {named === null ? <span>{say('reuse.related-to')}</span> : <span data-content>{named}</span>}
+      {href ? (
+        <a href={href} data-content>
+          {other.title}
+        </a>
+      ) : (
+        <span data-content>{other.title}</span>
+      )}
       {!graph.expanded.has(other.id) && (
         <button
           type="button"
@@ -558,10 +547,15 @@ function EdgeItem({
       <button
         type="button"
         onClick={() => onRemove(edge.relationship.id)}
-        aria-label={say('reuse.remove', {
-          value1: saidFrom(edge, types).toLowerCase(),
-          title: other.title,
-        })}
+        aria-label={
+          named === null
+            ? say('reuse.remove-related', { title: other.title })
+            : // The type's name is the tenant's, read here as a verb in the middle of a sentence.
+              say('reuse.remove', {
+                relation: named.toLocaleLowerCase(formats().language.formats),
+                title: other.title,
+              })
+        }
       >
         {say('reuse.remove-2')}
       </button>
@@ -609,9 +603,7 @@ function Relate({
   if (offers.length === 0) {
     return (
       <p className={styles['relMuted']}>
-        {say('reuse.no-relationship-type-relates-a', {
-          value1: KIND_ONE[centre.kind] ?? centre.kind,
-        })}
+        {say('reuse.no-relationship-type-relates-a', { kind: centre.kind })}
       </p>
     );
   }
@@ -662,7 +654,10 @@ function Relate({
         <select value={offer} onChange={(event) => setOffer(Number(event.target.value))}>
           {offers.map((each, at) => (
             <option key={`${each.type.id}${each.end}`} value={at}>
-              {`${centre.title} ${each.end === 'from' ? each.type.name : each.type.inverseName}`}
+              {say('reuse.relation-offer', {
+                title: centre.title,
+                relation: each.end === 'from' ? each.type.name : each.type.inverseName,
+              })}
             </option>
           ))}
         </select>
@@ -692,7 +687,7 @@ function Relate({
                 checked={chosen === each.id}
                 onChange={() => setChosen(each.id)}
               />
-              {each.title}
+              <span data-content>{each.title}</span>
             </label>
           ))}
         </fieldset>
