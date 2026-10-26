@@ -38,11 +38,16 @@ line holds its own editing lock, so translators and the author edit at once.
 | **LOC-018** | A job's file goes out as XLIFF 2.1 and comes back, read by the same mapping into each translation               |
 | **LOC-033** | A job records what was sent, from which source version, when, to whom, and what came back                       |
 | **LOC-035** | A return whose source or translation moved is held; a person accepts it as the older version's or rejects it    |
+| **LOC-030** | The declared set, untranslated, machine drafted, in translation, translated and out of date, approval apart     |
+| **LOC-023** | A machine draft is a version of the variant's line, a draft until accepted                                      |
+| **LOC-024** | A machine draft is marked, on every later version of its line, until a person accepts it                        |
+| **LOC-025** | The terms the source uses go with each piece, and the draft is checked against their labels                     |
+| **LOC-026** | Sending to machine translation is the tenant's policy, off by default, inside or any boundary                   |
+| **LOC-041** | Accepting needs approve on the component, and is audited naming who accepted                                    |
 
 LOC-016 asks for status wherever a component is used: a document's references say it, and a space
 reports it, but a search result and the components listing do not yet, so it is not claimed.
-LOC-030's declared set is defined here, but `machineDrafted` and `inTranslation` are XL's, so XL
-claims it. LOC-036 wants every policy it names - fallback, refusal, an external service, a conflicted
+LOC-036 wants every policy it names - fallback, refusal, an external service, a conflicted
 import - declared, versioned and audited: the first two are here, audited `settings.changed`; the
 rest are XL's, which claims it.
 
@@ -151,6 +156,32 @@ blocks changed since. `POST .../decision` lets a person with edit on the compone
 translation of the version sent and so out of date at once, or reject it; audited
 `translation.job_decided`. `translation_policy.conflict` (`review`, the default; `accept`; `reject`)
 chooses the decision offered first and never decides.
+
+## Machine drafts
+
+`POST .../translations/{line}/machine-draft` decides everything before any call, in the route's
+transaction:
+
+- `translation_policy.machine` (0165) against the boundary of the endpoint routed `translate`: `off`,
+  the default, `inside`, or `any`;
+- the line's lock;
+- each piece's size and the guardrails on what it sends;
+- the hourly limit.
+
+The source a translator is shown goes in pieces of about 9 KB of words. Each piece is an XLIFF 2.1
+file of the units it holds, their neighbours as context and the space's terms as a glossary. Each
+call is a run. The reply's file is read back by `readXliff` and `xliffTarget`, as strictly as a
+vendor's file: a code missing, repeated or invented refuses the whole draft, as does a guardrail on
+what came back. The draft is cut by `cutReturned` and marked in `machine_draft`, with its runs and the
+terms whose spans hold none of the target labels.
+
+A line with a mark not accepted is **machine drafted**, over every other status. The mark covers that
+version and every later one, so an edit does not lift it. A publish refuses such a version
+(`translation_machine_drafted`). `POST .../machine-draft/accept` needs `approve`, accepts every mark on
+the line and is audited `translation.machine_accepted`.
+
+Left: an out-of-date variant whose head is an unaccepted draft opens on that draft, not the newest
+person's version (XL-I asked for the latter).
 
 ## The page
 
