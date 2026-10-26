@@ -12,14 +12,15 @@
 - Two pseudo-locales run the interface suites from the first PR onwards, so LOC-029 and LOC-042 are verified, not asserted.
 - The default theme sets Arabic (STY-075).
 
-| PR  | Holds                                                                                                                                                                   |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| UIa | This plan. The mechanism (UI-A to UI-D), the person's language (UI-E), the ratchet (UI-F) and the pseudo harness (UI-J). The shell, sign-in, Home and navigation moved. |
-| UIb | Collation (UI-H) and the listing contract's cursor. The component editor and `packages/editor`'s node views moved.                                                      |
-| UIc | The document page, structure, publishing, translation and imports moved. The service's sentences in successful answers worded by code (UI-L).                           |
-| UId | Administration, settings, data, generation, libraries, search and what remains moved. The ratchet and the pseudo check now cover the whole renderer.                    |
-| UIe | Right to left (UI-G) and the desktop shell (UI-I).                                                                                                                      |
-| UIf | STY-075 (UI-K). The review and the close.                                                                                                                               |
+| PR   | Holds                                                                                                                                                                                                          |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| UIa  | This plan. The mechanism (UI-A to UI-D), the person's language (UI-E), the ratchet (UI-F) and the pseudo harness (UI-J). The shell, sign-in, Home and navigation moved.                                        |
+| UIb  | Collation (UI-H) and the listing contract's cursor. The component editor and `packages/editor`'s node views moved.                                                                                             |
+| UIc  | The document page, structure, publishing, translation and imports moved, with the shared listing, states and layouts.                                                                                          |
+| UIc2 | The service's sentences in successful answers worded by code (UI-L): its own PR, since three answers gain codes they lack (the prompt's refusal, the assistant's step summaries, a restore's outline reasons). |
+| UId  | Administration, settings, data, generation, libraries, search and what remains moved. The ratchet and the pseudo check now cover the whole renderer.                                                           |
+| UIe  | Right to left (UI-G) and the desktop shell (UI-I).                                                                                                                                                             |
+| UIf  | STY-075 (UI-K). The review and the close.                                                                                                                                                                      |
 
 ## Decisions
 
