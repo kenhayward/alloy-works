@@ -91,12 +91,15 @@ export function styleCheckFor(theme: ResolvedTheme, unheld: readonly string[]): 
   };
 }
 
+/** Which catalogue a style that will not resolve is of. */
+type Kind = 'paragraph' | 'table' | 'image';
+
 const LABEL = {
-  missing: (kind: string, style: string) => words('theme.is-not-in-this-theme', { kind, style }),
-  misplaced: (kind: string, style: string) => words('theme.does-not-apply-here', { kind, style }),
+  missing: (kind: Kind, style: string) => words('theme.is-not-in-this-theme', { kind, style }),
+  misplaced: (kind: Kind, style: string) => words('theme.does-not-apply-here', { kind, style }),
 };
 
-function mark(element: Element, status: Unresolved | null, kind: string, style: string): void {
+function mark(element: Element, status: Unresolved | null, kind: Kind, style: string): void {
   if (status === null) {
     element.removeAttribute('data-unresolved');
     return;
@@ -121,16 +124,16 @@ export function markUnresolved(root: ParentNode, check: StyleCheck): void {
         ? 'footnote'
         : (element.getAttribute('data-place') ?? 'text')
     ) as Place;
-    mark(element, check.paragraph(style, place), words('theme.style'), style);
+    mark(element, check.paragraph(style, place), 'paragraph', style);
   }
   for (const element of root.querySelectorAll('[data-table-style]')) {
     const style = element.getAttribute('data-table-style')!;
-    mark(element, check.table(style), words('theme.table-style'), style);
+    mark(element, check.table(style), 'table', style);
   }
   for (const element of root.querySelectorAll('[data-image-style]')) {
     const style = element.getAttribute('data-image-style')!;
     const target = element.tagName === 'FIGURE' ? 'figure' : 'inlineImage';
-    mark(element, check.image(style, target), words('theme.image-style'), style);
+    mark(element, check.image(style, target), 'image', style);
   }
 }
 

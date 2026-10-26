@@ -92,9 +92,18 @@ export function StyleSelect({
             {words('theme.several-styles')}
           </option>
         )}
-        {value !== null && !known && <option value={value}>{value}</option>}
+        {value !== null && !known && (
+          <option value={value} data-content>
+            {value}
+          </option>
+        )}
         {choices.map((choice) => (
-          <option key={choice.value} value={choice.value}>
+          <option
+            key={choice.value}
+            value={choice.value}
+            // A style's name is the theme's; only the default is said in the interface's words.
+            {...(choice.value === 'body' ? {} : { 'data-content': '' })}
+          >
             {choice.label}
           </option>
         ))}

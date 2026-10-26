@@ -1,5 +1,4 @@
 import { DEFAULT_CATALOGUES_BY_VERSION, DEFAULT_THEME } from '@alloy-works/domain';
-import { words } from '../words/words.js';
 
 /** The environment's default theme and layout, as `GET /v1/presentation` answers them. */
 export const DEFAULT_PRESENTATION = {
@@ -50,25 +49,19 @@ export const CHOOSING_PRESENTATION = presentationWith({
   paragraph: [
     {
       id: 'plain',
-      get name() {
-        return words('theme.plain');
-      },
+      name: 'Plain',
       appliesTo: ['text', 'quotation'],
       properties: { spaceAfter: 0 },
     },
     {
       id: 'small-note',
-      get name() {
-        return words('theme.small-note');
-      },
+      name: 'Small note',
       appliesTo: ['footnote'],
       properties: { size: 8, lineSpacing: 9.5 },
     },
     {
       id: 'pull-quote',
-      get name() {
-        return words('theme.pull-quote');
-      },
+      name: 'Pull quote',
       appliesTo: ['quotation'],
       properties: { italic: true },
     },
@@ -76,9 +69,7 @@ export const CHOOSING_PRESENTATION = presentationWith({
   image: [
     {
       id: 'icon',
-      get name() {
-        return words('theme.icon');
-      },
+      name: 'Icon',
       appliesTo: ['inlineImage'],
       fixed: { dimension: 'height', value: 1, unit: 'em' },
       maximum: { value: 1, unit: 'measure' },
