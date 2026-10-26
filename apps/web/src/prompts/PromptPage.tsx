@@ -95,7 +95,7 @@ function problemsIn(error: unknown): string[] {
     isRecord(each) && typeof each.message === 'string'
       ? [
           typeof each.path === 'string' && each.path !== ''
-            ? `${each.path}: ${each.message}`
+            ? say('prompts.problem-at', { path: each.path, problem: each.message })
             : each.message,
         ]
       : [],
@@ -257,8 +257,7 @@ export function PromptPage({ client, id }: { readonly client: Client; readonly i
             onChange={(event) => change({ instructions: event.target.value })}
           />
           <span className={styles['promptHint']}>
-            {say('prompts.place-a-parameter-the-context')}
-            {'{{name}}'}.
+            {say('prompts.place-a-parameter-the-context', { example: '{{name}}' })}
           </span>
         </label>
       </fieldset>
@@ -268,7 +267,7 @@ export function PromptPage({ client, id }: { readonly client: Client; readonly i
         {draft.context.map((each, at) => (
           <div key={at} className={styles['source']}>
             <label>
-              {say('prompts.source', { value1: at + 1 })}
+              {say('prompts.source', { number: at + 1 })}
               <select
                 value={each.source}
                 onChange={(event) =>
@@ -363,7 +362,7 @@ export function PromptPage({ client, id }: { readonly client: Client; readonly i
             )}
             <button
               type="button"
-              aria-label={say('prompts.remove-source', { value1: at + 1 })}
+              aria-label={say('prompts.remove-source', { number: at + 1 })}
               onClick={() => change({ context: draft.context.filter((_, i) => i !== at) })}
             >
               {say('prompts.remove-2')}
@@ -439,7 +438,12 @@ export function PromptPage({ client, id }: { readonly client: Client; readonly i
       trail={
         <>
           <a href={PROMPTS}>{say('prompts.prompts')}</a>
-          {shown !== null && ` / ${shown.space.name}`}
+          {shown !== null && (
+            <>
+              {' / '}
+              <span data-content>{shown.space.name}</span>
+            </>
+          )}
         </>
       }
       title={isNew ? say('prompts.new-prompt') : shown!.prompt.title}
@@ -453,7 +457,7 @@ export function PromptPage({ client, id }: { readonly client: Client; readonly i
             {standing && <StateLozenge state={standing.state} />}
             <RevisionChip revision={standing?.revision} />
             {shown.prompt.description !== '' && (
-              <span className={styles['described']}>{shown.prompt.description}</span>
+              <span className={styles['described']} data-content>{shown.prompt.description}</span>
             )}
           </>
         )

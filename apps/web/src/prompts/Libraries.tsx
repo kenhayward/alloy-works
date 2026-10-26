@@ -10,7 +10,7 @@ import { Notice } from '../states/Notice.js';
 import listStyles from '../structure/DocumentList.module.css';
 import { LIBRARIES, libraryLink, PROMPTS, promptLink } from './links.js';
 import styles from './PromptPage.module.css';
-import { words } from '../words/words.js';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -115,12 +115,17 @@ export function PromptLibraries({ client }: { readonly client: Client }) {
               {items.map((item) => (
                 <tr key={item.id}>
                   <td className={listStyles['title']}>
-                    <a href={libraryLink(item.id)}>{item.name}</a>
+                    <a href={libraryLink(item.id)} data-content>
+                      {item.name}
+                    </a>
                     {item.isDefault && (
-                      <span className={listStyles['muted']}> {words('prompts.default')}</span>
+                      <>
+                        {' '}
+                        <span className={listStyles['muted']}>{words('prompts.default-2')}</span>
+                      </>
                     )}
                   </td>
-                  <td>{item.prompts}</td>
+                  <td>{formats().number(item.prompts)}</td>
                 </tr>
               ))}
             </tbody>
@@ -195,14 +200,15 @@ export function LibraryPage({ client, id }: { readonly client: Client; readonly 
   }
   if (!isNew && shown === null) return null;
   const mayEdit = isNew || shown!.mayEdit;
-  const titleOf = (prompt: string): string => {
+  /** A prompt's title, or null where the reader may not read it. */
+  const knownTitle = (prompt: string): string | null => {
     const listed = shown?.prompts.find((each) => each.id === prompt);
     if (listed?.state === 'approved') return listed.prompt.title;
     if (listed?.state === 'unapproved') return listed.title;
-    return (
-      readable.find((each) => each.id === prompt)?.title ?? words('prompts.a-prompt-you-may-not')
-    );
+    return readable.find((each) => each.id === prompt)?.title ?? null;
   };
+  const titleOf = (prompt: string): string =>
+    knownTitle(prompt) ?? words('prompts.a-prompt-you-may-not');
   const addable = readable.filter((each) => !prompts.includes(each.id));
 
   const save = async (event: FormEvent) => {
@@ -244,7 +250,13 @@ export function LibraryPage({ client, id }: { readonly client: Client; readonly 
       <p>
         <a href={LIBRARIES}>{words('prompts.prompt-libraries')}</a>
       </p>
-      <h1 id="library-heading">{isNew ? words('prompts.new-library') : shown!.library.name}</h1>
+      {isNew ? (
+        <h1 id="library-heading">{words('prompts.new-library')}</h1>
+      ) : (
+        <h1 id="library-heading" data-content>
+          {shown!.library.name}
+        </h1>
+      )}
       {shown !== null && (
         <p>
           <Chip className={styles['mono']}>
@@ -269,14 +281,22 @@ export function LibraryPage({ client, id }: { readonly client: Client; readonly 
                 return (
                   <li key={prompt} className={styles['source']}>
                     <span>
-                      <a href={promptLink(prompt)}>{titleOf(prompt)}</a>
+                      <a
+                        href={promptLink(prompt)}
+                        {...(knownTitle(prompt) === null ? {} : { 'data-content': '' })}
+                      >
+                        {titleOf(prompt)}
+                      </a>
                       {listed && (
-                        <span className={styles['promptHint']}>{` ${STATE_WORDS(listed)}`}</span>
+                        <>
+                          {' '}
+                          <span className={styles['promptHint']}>{STATE_WORDS(listed)}</span>
+                        </>
                       )}
                     </span>
                     <button
                       type="button"
-                      aria-label={words('prompts.remove', { value1: titleOf(prompt) })}
+                      aria-label={words('prompts.remove', { title: titleOf(prompt) })}
                       onClick={() => setPrompts((was) => was.filter((each) => each !== prompt))}
                     >
                       {words('prompts.remove-2')}

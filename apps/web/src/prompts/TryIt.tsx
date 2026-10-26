@@ -2,6 +2,7 @@ import { streamPost, type createApiClient, type StreamPostOptions } from '@alloy
 import { useEffect, useRef, useState } from 'react';
 
 import { isRecord } from '../data/shapes.js';
+import { failedWords } from '../structure/runWords.js';
 import styles from './PromptPage.module.css';
 import { words } from '../words/words.js';
 
@@ -34,10 +35,10 @@ export function partsOf(outline: unknown): Part[] {
       ) {
         parts.push({
           node: each.id,
-          label: words('prompts.part', {
-            value1: parts.length + 1,
-            value2: section === null ? '' : `, in ${section}`,
-          }),
+          label:
+            section === null
+              ? words('prompts.part', { number: parts.length + 1 })
+              : words('prompts.part-in-section', { number: parts.length + 1, section }),
         });
       }
       visit(each.children, each.type === 'section' ? titleOf(each.title) : section);
@@ -134,12 +135,12 @@ export function TryIt({
               : frame.tokensIn === null
                 ? words('prompts.tried-no-tokens-were-reported')
                 : words('prompts.tried-tokens-in-out', {
-                    value1: String(frame.tokensIn),
-                    value2: String(frame.tokensOut),
+                    tokensIn: Number(frame.tokensIn),
+                    tokensOut: Number(frame.tokensOut),
                   }),
           );
         }
-        if (name === 'failed') setSaid(String(frame.message));
+        if (name === 'failed') setSaid(failedWords(frame));
       },
     });
     if (outcome.kind === 'refused') {

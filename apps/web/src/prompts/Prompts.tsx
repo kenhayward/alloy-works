@@ -170,17 +170,11 @@ export function Prompts({ client }: { readonly client: Client }) {
         <p className={styles['summary']}>
           <span>
             {spaces.length > 0
-              ? words('prompts.in-the-spaces-chosen', {
-                  total: listing.total,
-                  value2: listing.total === 1 ? 'prompt is' : 'prompts are',
-                })
-              : words('prompts.you-may-read', {
-                  total: listing.total,
-                  value2: listing.total === 1 ? 'prompt' : 'prompts',
-                })}
+              ? words('prompts.in-the-spaces-chosen', { total: listing.total })
+              : words('prompts.you-may-read', { total: listing.total })}
           </span>
           {items.length < listing.total && (
-            <span>{words('prompts.showing-1-to', { length: items.length })}</span>
+            <span>{words('prompts.showing-1-to', { count: items.length })}</span>
           )}
         </p>
         {items.length === 0 ? (
@@ -202,9 +196,13 @@ export function Prompts({ client }: { readonly client: Client }) {
                 {items.map((item) => (
                   <tr key={item.id}>
                     <td className={styles['title']}>
-                      <a href={promptLink(item.id)}>{item.title}</a>
+                      <a href={promptLink(item.id)} data-content>
+                        {item.title}
+                      </a>
                     </td>
-                    <td className={styles['muted']}>{item.space.name}</td>
+                    <td className={styles['muted']} data-content>
+                      {item.space.name}
+                    </td>
                     <td>{PURPOSES[item.purpose as keyof typeof PURPOSES] ?? item.purpose}</td>
                     <td className={styles['muted']}>
                       <time dateTime={item.changedAt}>{whenChanged(item.changedAt)}</time>
@@ -215,7 +213,7 @@ export function Prompts({ client }: { readonly client: Client }) {
             </table>
           </div>
         )}
-        <More listing={listing} what="prompts" />
+        <More listing={listing} what={words('prompts.more-what')} />
       </section>
     </ListLayout>
   );
