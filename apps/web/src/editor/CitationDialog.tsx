@@ -20,9 +20,9 @@ import { words } from '../words/words.js';
 type Client = ReturnType<typeof createApiClient>;
 
 /** What the dialog says where the space holds no entry the author may read. */
-export const NO_ENTRIES = 'This space holds no bibliography entries you may read.';
+export const NO_ENTRIES = (): string => words('editor.citation.no-entries');
 /** What it says where the entries could not be read. */
-export const ENTRIES_UNREAD = 'The bibliography could not be read.';
+export const ENTRIES_UNREAD = (): string => words('editor.citation.entries-unread');
 export { MAY_NOT_MAKE } from './CitationSearch.js';
 
 export interface CitationDialogProps {
@@ -198,9 +198,9 @@ export function CitationDialog({ client, space, current, onDone, onCancel }: Cit
               className={styles['form']}
             >
               {entries === null && <p role="status">{words('editor.reading-the-bibliography')}</p>}
-              {entries === 'unread' && <p role="alert">{ENTRIES_UNREAD}</p>}
+              {entries === 'unread' && <p role="alert">{ENTRIES_UNREAD()}</p>}
               {Array.isArray(entries) && entries.length === 0 && (
-                <p className={styles['note']}>{NO_ENTRIES}</p>
+                <p className={styles['note']}>{NO_ENTRIES()}</p>
               )}
               {Array.isArray(entries) && entries.length > 0 && (
                 <>

@@ -8,9 +8,9 @@ import type { TermChoice } from './terming.js';
 import { words } from '../words/words.js';
 
 /** What the dialog says where the space holds no term to offer. */
-export const NO_TERMS = 'This space holds no approved terms you may read.';
+export const NO_TERMS = (): string => words('editor.term.no-terms');
 /** What it says where the terms could not be read. */
-export const TERMS_UNREAD = 'The terms could not be read.';
+export const TERMS_UNREAD = (): string => words('editor.term.terms-unread');
 /** What it says where the space held more terms than are offered. */
 export const TERMS_TRUNCATED = 'Only the first 5,000 terms of the space are offered.';
 
@@ -120,10 +120,10 @@ export function TermDialog({
             <p className={styles['note']}>{words('editor.on-4', { selected })}</p>
           )}
           {terms === null && <p role="status">{words('editor.reading-the-terms')}</p>}
-          {terms === 'unread' && <p role="alert">{TERMS_UNREAD}</p>}
+          {terms === 'unread' && <p role="alert">{TERMS_UNREAD()}</p>}
           {truncated && <p className={styles['note']}>{TERMS_TRUNCATED}</p>}
           {Array.isArray(terms) && offered.length === 0 && (
-            <p className={styles['note']}>{NO_TERMS}</p>
+            <p className={styles['note']}>{NO_TERMS()}</p>
           )}
           {offered.length > 0 && (
             <>

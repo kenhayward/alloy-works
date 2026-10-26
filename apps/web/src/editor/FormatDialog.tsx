@@ -117,8 +117,8 @@ export const FORMAT_WORDS = {
 } as const;
 
 /** What a member left unset says it takes: the table style's value, in words. */
-export const STYLE_SAYS = 'Table style';
-export const STYLE_SETS_NONE = 'not set';
+export const STYLE_SAYS = (): string => say('editor.format.table-style');
+export const STYLE_SETS_NONE = (): string => say('editor.format.not-set');
 
 const NUMBER_TYPES = new Set(['integer', 'decimal']);
 const FRACTION_TYPES = new Set(['time', 'localDateTime', 'instant']);
@@ -135,7 +135,7 @@ export function membersFor(type: ColumnType | null): (keyof FieldFormat)[] {
 /** A member's value in words, as the style or the column holds it. */
 export function memberSaid(member: keyof FieldFormat, format: FieldFormat): string {
   const value = format[member];
-  if (value === undefined) return STYLE_SETS_NONE;
+  if (value === undefined) return STYLE_SETS_NONE();
   switch (member) {
     case 'style':
     case 'rounding':
@@ -257,7 +257,8 @@ export function FormatDialog({ header, type, style, format, onDone, onCancel }: 
   }, []);
 
   const set_ = (name: string, value: string | boolean) => setDraft({ ...draft, [name]: value });
-  const unset = (member: keyof FieldFormat) => `${STYLE_SAYS}: ${memberSaid(member, style)}`;
+  const unset = (member: keyof FieldFormat) =>
+    say('editor.format.style-takes', { style: STYLE_SAYS(), value: memberSaid(member, style) });
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Escape') {

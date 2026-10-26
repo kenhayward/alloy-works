@@ -185,7 +185,7 @@ describe("the Cite dialog's Search tab (the XR plan, XR-D)", () => {
     expect(matched.closest('label')).toHaveTextContent('In the bibliography as marlow2021');
     const quollsRadio = screen.getByRole('radio', { name: /Quolls/ });
     expect(quollsRadio).toBeDisabled();
-    expect(quollsRadio).toHaveAccessibleDescription(MAY_NOT_MAKE);
+    expect(quollsRadio).toHaveAccessibleDescription(MAY_NOT_MAKE());
     await userEvent.click(matched);
     await userEvent.click(screen.getByRole('button', { name: 'Insert' }));
     expect(done).toHaveBeenCalledWith({ entry: MARLOW, locator: null });

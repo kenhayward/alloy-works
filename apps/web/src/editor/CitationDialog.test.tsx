@@ -121,7 +121,7 @@ describe('the Cite dialog (the CI plan, CId)', () => {
         onCancel={cancelled}
       />,
     );
-    expect(await screen.findByText(NO_ENTRIES)).toBeInTheDocument();
+    expect(await screen.findByText(NO_ENTRIES())).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Insert' })).toBeNull();
     await userEvent.keyboard('{Escape}');
     expect(cancelled).toHaveBeenCalled();

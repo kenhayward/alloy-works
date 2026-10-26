@@ -18,9 +18,9 @@ export interface OfferedAxis {
 }
 
 /** What the dialog says where the environment declares no axis. */
-export const NO_AXES = 'No condition axes are declared yet.';
+export const NO_AXES = (): string => words('editor.condition.no-axes');
 /** What it says where the axes could not be read. */
-export const AXES_UNREAD = 'The condition axes could not be read.';
+export const AXES_UNREAD = (): string => words('editor.condition.axes-unread');
 /** Why an alternative is offered: the documented way to word text differently per profile. */
 export const ALTERNATIVE_SAID =
   'To word this differently for other readers, add an alternative: a copy kept for the other values, to rewrite.';
@@ -159,8 +159,8 @@ export function ConditionDialog({
             {words('editor.condition')}
           </h2>
           {axes === null && <p role="status">{words('editor.reading-the-condition-axes')}</p>}
-          {axes === 'unread' && <p role="alert">{AXES_UNREAD}</p>}
-          {read !== null && read.length === 0 && <p>{NO_AXES}</p>}
+          {axes === 'unread' && <p role="alert">{AXES_UNREAD()}</p>}
+          {read !== null && read.length === 0 && <p>{NO_AXES()}</p>}
           {read !== null && read.length > 0 && (
             <>
               <div className={styles['field']}>

@@ -12,9 +12,9 @@ type Client = ReturnType<typeof createApiClient>;
 type SourceId = string;
 
 /** Why a result is shown but cannot be chosen. */
-export const MAY_NOT_MAKE = "You may not add entries to this space's bibliography.";
+export const MAY_NOT_MAKE = (): string => words('editor.citation.may-not-make');
 /** What the tab says where no source is on. */
-export const NO_SOURCES = 'No reference source is on in this environment.';
+export const NO_SOURCES = (): string => words('editor.citation.no-sources');
 
 /** What a chosen result cites: an entry already in the space, or a source's record to make one of. */
 export type Picked =
@@ -124,7 +124,7 @@ export function CitationSearch({
   if (sources === null) return <p role="status">{words('editor.reading-the-reference-sources')}</p>;
   if (sources === 'unread')
     return <p role="alert">{words('editor.the-reference-sources-could-not')}</p>;
-  if (sources.length === 0) return <p className={styles['note']}>{NO_SOURCES}</p>;
+  if (sources.length === 0) return <p className={styles['note']}>{NO_SOURCES()}</p>;
   const name = sources.find((each) => each.id === source)?.name ?? '';
   return (
     <>
@@ -198,7 +198,7 @@ export function CitationSearch({
               </div>
               {!found.mayCreate && (
                 <p id={`${id}-barred`} className={styles['note']}>
-                  {MAY_NOT_MAKE}
+                  {MAY_NOT_MAKE()}
                 </p>
               )}
             </fieldset>

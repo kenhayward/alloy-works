@@ -438,12 +438,12 @@ describe('the Bound table panel (TB2-F)', () => {
     // Modal in full: the page behind it inert, the panel beside the text among it (ADR-0052).
     expect(panel.closest('body > *')).toHaveAttribute('inert');
     const places = within(dialog).getByLabelText('Decimal places');
-    expect(places).toHaveAccessibleDescription(`Left unset. ${STYLE_SAYS}: 3`);
+    expect(places).toHaveAccessibleDescription(`Left unset. ${STYLE_SAYS()}: 3`);
     expect(within(dialog).getByLabelText('Negative numbers')).toHaveDisplayValue(
-      `${STYLE_SAYS}: ${FORMAT_WORDS.negative.parentheses}`,
+      `${STYLE_SAYS()}: ${FORMAT_WORDS.negative.parentheses}`,
     );
     expect(within(dialog).getByLabelText('Rounding')).toHaveDisplayValue(
-      `${STYLE_SAYS}: ${FORMAT_WORDS.rounding.halfAwayFromZero}`,
+      `${STYLE_SAYS()}: ${FORMAT_WORDS.rounding.halfAwayFromZero}`,
     );
     // Only what a number takes: no fraction of a second.
     expect(within(dialog).queryByLabelText(FORMAT_MEMBERS.fraction)).toBeNull();
@@ -459,7 +459,7 @@ describe('the Bound table panel (TB2-F)', () => {
     const again = await screen.findByRole('dialog', { name: 'Format of Depth' });
     expect(within(again).getByLabelText('Decimal places')).toHaveValue(1);
     expect(within(again).getByLabelText('Negative numbers')).toHaveDisplayValue(
-      `${STYLE_SAYS}: ${FORMAT_WORDS.negative.parentheses}`,
+      `${STYLE_SAYS()}: ${FORMAT_WORDS.negative.parentheses}`,
     );
   });
 
@@ -750,7 +750,7 @@ describe('the Bound table panel (TB2-F)', () => {
       BOUND_TABLE_WORDS,
       FORMAT_MEMBERS,
       FORMAT_WORDS,
-      STYLE_SAYS,
+      STYLE_SAYS(),
       PLACE_AS,
       columnsLeftOut(1),
       columnsLeftOut(6),

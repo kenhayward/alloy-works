@@ -16,9 +16,9 @@ interface Offered {
 }
 
 /** What the dialog says where the environment declares no variable. */
-export const NO_VARIABLES = 'No variables are declared yet.';
+export const NO_VARIABLES = (): string => words('editor.variable.no-variables');
 /** What it says where the definitions could not be read. */
-export const VARIABLES_UNREAD = 'The variables could not be read.';
+export const VARIABLES_UNREAD = (): string => words('editor.variable.variables-unread');
 
 /** Every declared variable, by name, from every page of the definitions. */
 async function declared(client: Client): Promise<readonly Offered[]> {
@@ -107,8 +107,8 @@ export function VariableDialog({ client, onChoose, onCancel }: VariableDialogPro
             {words('editor.variable')}
           </h2>
           {offered === null && <p role="status">{words('editor.reading-the-variables')}</p>}
-          {offered === 'unread' && <p role="alert">{VARIABLES_UNREAD}</p>}
-          {Array.isArray(offered) && offered.length === 0 && <p>{NO_VARIABLES}</p>}
+          {offered === 'unread' && <p role="alert">{VARIABLES_UNREAD()}</p>}
+          {Array.isArray(offered) && offered.length === 0 && <p>{NO_VARIABLES()}</p>}
           {Array.isArray(offered) && offered.length > 0 && (
             <ul className={own['list']} aria-label={words('editor.declared-variables')}>
               {offered.map((each) => (

@@ -885,5 +885,20 @@
   "editor.format.currency": "{symbol}, {position, select, before {before the number} other {after the number}}{spaced, select, true {, spaced} other {}}",
   "editor.format.duration": "{from, select, seconds {Seconds} other {Minutes}} as {show, select, h:mm {hours and minutes} other {hours, minutes and seconds}}",
   "editor.query.in-space": "- {space}",
-  "editor.query.in-space-runs-as": "- {space} - Runs as {identity}"
+  "editor.query.in-space-runs-as": "- {space} - Runs as {identity}",
+  "editor.citation.no-entries": "This space holds no bibliography entries you may read.",
+  "editor.citation.entries-unread": "The bibliography could not be read.",
+  "editor.citation.no-sources": "No reference source is on in this environment.",
+  "editor.citation.may-not-make": "You may not add entries to this space's bibliography.",
+  "editor.linked-part-gone": "The part the link names is no longer in this component. This is its latest version.",
+  "editor.condition.no-axes": "No condition axes are declared yet.",
+  "editor.condition.axes-unread": "The condition axes could not be read.",
+  "editor.format.table-style": "Table style",
+  "editor.format.not-set": "not set",
+  "editor.term.no-terms": "This space holds no approved terms you may read.",
+  "editor.term.terms-unread": "The terms could not be read.",
+  "editor.variable.no-variables": "No variables are declared yet.",
+  "editor.variable.variables-unread": "The variables could not be read.",
+  "editor.session.newer-text": "Newer text was saved from another window, or from before this page was reloaded. It is kept. Continuing starts a new session from what is on screen.",
+  "editor.format.style-takes": "{style}: {value}"
 }

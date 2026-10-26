@@ -455,8 +455,7 @@ const PASTED_WITH_REPORT = (): string => say('editor.pasted-some-of-it-was');
 const NOT_DROPPED = (): string => say('editor.dragging-content-in-is-not');
 
 /** A link names a block the newest version no longer holds (SCH-057): the page says so. */
-export const LINKED_PART_GONE =
-  'The part the link names is no longer in this component. This is its latest version.';
+export const LINKED_PART_GONE = (): string => say('editor.linked-part-gone');
 const PASTE_HELD = (): string => say('editor.this-paste-holds-headings-keep-2');
 const CLIPBOARD_UNREADABLE = (): string => say('editor.the-clipboard-could-not-be');
 
@@ -1844,7 +1843,7 @@ export function ComponentEditor({
     const { doc } = surface.state;
     const at = whereBlockIs(doc, linkedBlock);
     if (at === undefined) {
-      setNotice(LINKED_PART_GONE);
+      setNotice(LINKED_PART_GONE());
       return;
     }
     const node = doc.nodeAt(at);

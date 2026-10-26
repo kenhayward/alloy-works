@@ -353,9 +353,7 @@ export interface Session {
 const HELD = 'lock_held';
 
 /** A save refused as stale or conflicting, or a reload found behind the service: the same notice. */
-const NEWER_TEXT =
-  'Newer text was saved from another window, or from before this page was reloaded. ' +
-  'It is kept. Continuing starts a new session from what is on screen.';
+const NEWER_TEXT = (): string => words('editor.session.newer-text');
 
 /** Recovery, announced as it opens (component-editor.md, "Accessibility"). */
 const RECOVERY_OPENED = (): string => words('editor.your-saved-text-is-listed');
@@ -616,8 +614,8 @@ export function createSession(options: SessionOptions): Session {
       failing = null;
       savedAt = clock.now();
       if (
-        notice === 'Not saved. Retrying.' ||
-        notice === 'Not saved, so no version was made.' ||
+        notice === words('editor.not-saved-retrying') ||
+        notice === words('editor.not-saved-so-no-version') ||
         (notice !== null && notice === refusalNotice)
       ) {
         notice = null;
@@ -673,7 +671,7 @@ export function createSession(options: SessionOptions): Session {
       // overwritten, so it stops rather than guess: the author is offered a fresh session, starting
       // from what is on screen now (component-editor.md, "Undo across a reload").
       dirty = true;
-      lose(NEWER_TEXT, true);
+      lose(NEWER_TEXT(), true);
       return false;
     }
     // Held, not lost: the next attempt sends everything again under a higher sequence.
@@ -732,7 +730,7 @@ export function createSession(options: SessionOptions): Session {
     // answer at all - leaves the save the service holds at that number perhaps somebody else's, which
     // nothing may be sent over: as `behind`.
     if (isRefusal(result.code)) lose(refusalMessage(result.code, true));
-    else lose(NEWER_TEXT, true);
+    else lose(NEWER_TEXT(), true);
     return false;
   };
 
@@ -1025,7 +1023,7 @@ export function createSession(options: SessionOptions): Session {
     behind() {
       if (phase !== 'reading' || disposed) return;
       dirty = true;
-      lose(NEWER_TEXT, true);
+      lose(NEWER_TEXT(), true);
     },
     recover() {
       if (phase === 'editing') {

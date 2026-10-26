@@ -77,6 +77,7 @@ export default tseslint.config(
       'apps/web/src/shell/**/*.{ts,tsx}',
       'apps/web/src/home/**/*.{ts,tsx}',
       'apps/web/src/words/**/*.{ts,tsx}',
+      'apps/web/src/editor/**/*.{ts,tsx}',
     ],
     ignores: ['**/*.test.{ts,tsx}'],
     plugins: { alloy: { rules: { 'interface-words': interfaceWords } } },

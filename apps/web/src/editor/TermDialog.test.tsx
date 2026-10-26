@@ -111,7 +111,7 @@ describe('the Term dialog (the TM plan, TMc)', () => {
 
   it('says where the space holds no term to offer', () => {
     open({ terms: [] });
-    expect(screen.getByText(NO_TERMS)).toBeInTheDocument();
+    expect(screen.getByText(NO_TERMS())).toBeInTheDocument();
   });
 
   it('says quietly when the space held more terms than are offered', () => {
