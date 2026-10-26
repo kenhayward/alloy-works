@@ -3114,7 +3114,7 @@ export function ComponentEditor({
             <UnheldFaces />
             {/* On its own, a sheet on a desk; in place, the document's sheet is the paper (ADR-0056). */}
             <Canvas sheet={onDone === undefined}>
-              <div ref={place} className={styles['surface']} tabIndex={-1} />
+              <div ref={place} className={styles['surface']} tabIndex={-1} data-content />
             </Canvas>
             {/* Beside the surface, wherever the type gives the component fields: its values are
                 part of the iteration, saved with the content (definitions.md, "Shown as they

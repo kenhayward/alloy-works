@@ -1,5 +1,8 @@
+import type { Locator, Page } from 'playwright-core';
 import { describe, expect, it } from 'vitest';
 import { SERVICE } from './testing/addresses.js';
+import { apiAs, words } from './testing/api.js';
+import { makeComponent } from './testing/component.js';
 import { withPage } from './testing/page.js';
 import { signInFromNode } from './testing/setup.js';
 import { chooseLanguage, say, unlocalised } from './testing/words.js';
@@ -10,26 +13,47 @@ import { chooseLanguage, say, unlocalised } from './testing/words.js';
  * nothing spilling sideways, and `ar-XB` laid out right to left. Grace walks it, her language chosen
  * for the walk and given back after, so no other walk, as Ada, sees it. The surfaces grow each PR.
  */
-const SURFACES: readonly {
+interface Surface {
   readonly name: string;
   readonly address: string;
   readonly regions: readonly string[];
-}[] = [
-  { name: 'Home, the header and the rail', address: '#/', regions: ['header', 'nav', 'main'] },
+  /** What shows once the surface is drawn, in the language walked. */
+  readonly ready: (page: Page, language: Language) => Locator;
+}
+
+type Language = 'en-XA' | 'ar-XB';
+
+/** The surfaces moved so far, a component of Grace's own among them. */
+const surfaces = (component: string): readonly Surface[] => [
+  {
+    name: 'Home, the header and the rail',
+    address: '#/',
+    regions: ['header', 'nav', 'main'],
+    ready: (page, language) =>
+      page.getByRole('heading', { level: 2, name: say(language, 'home.needs-your-attention') }),
+  },
+  {
+    name: 'The component editor',
+    address: `#/components/${component}`,
+    regions: ['main'],
+    ready: (page, language) =>
+      page.getByRole('button', { name: say(language, 'pm.command.strong'), exact: true }),
+  },
 ];
 
 /** Each moved surface walked in `language`, its words made over, none cut short, nothing spilling. */
-async function walk(language: 'en-XA' | 'ar-XB') {
+async function walk(language: Language) {
   const cookie = await signInFromNode('grace');
+  const component = await makeComponent(await apiAs('grace'), 'Pseudo', [
+    { type: 'paragraph', id: 'b1', style: 'body', content: words('The pond survey found newts.') },
+  ]);
   await chooseLanguage(cookie, language);
   try {
     await withPage(
       async (page) => {
-        for (const surface of SURFACES) {
+        for (const surface of surfaces(component.id)) {
           await page.goto(`${SERVICE}/${surface.address}`);
-          await page
-            .getByRole('heading', { level: 2, name: say(language, 'home.needs-your-attention') })
-            .waitFor();
+          await surface.ready(page, language).waitFor();
           expect(await page.evaluate(() => document.documentElement.lang)).toBe(language);
           expect(await page.evaluate(() => document.documentElement.dir)).toBe(
             language === 'ar-XB' ? 'rtl' : 'ltr',
