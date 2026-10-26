@@ -4923,5 +4923,8 @@
   "parts.after-name-from-outside": ", from outside the organisation",
   "metadata.failure": "{name}: {detail}",
   "metadata.which-at": "{which, select, first {The first} other {The second}}, at UTC{offset}",
-  "shell.asking": "asking..."
+  "shell.asking": "asking...",
+  "editor.base-language": "Base language: {tag}",
+  "editor.base-direction": "Base direction: {direction}",
+  "editor.direction-short": "{direction, select, rtl {RTL} other {LTR}}"
 }

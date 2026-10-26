@@ -2580,6 +2580,7 @@ export function ComponentEditor({
           >
             <span
               className={styles['version']}
+              data-content
               {...(number === undefined && size !== undefined ? { title: size } : {})}
             >
               {session?.version.number ?? shown.version.number} · {shown.space.name}
@@ -2740,9 +2741,13 @@ export function ComponentEditor({
         ) : (
           <>
             <h2 id="component-title" className={styles['fallbackTitle']}>
-              {typeof title === 'string' ? title : say('editor.untitled')}
+              {typeof title === 'string' ? (
+                <span data-content>{title}</span>
+              ) : (
+                say('editor.untitled')
+              )}
             </h2>
-            <span className={styles['version']}>
+            <span className={styles['version']} data-content>
               {shown.version.number} · {shown.space.name}
             </span>
           </>

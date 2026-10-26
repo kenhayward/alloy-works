@@ -42,9 +42,9 @@ export function SpacePane({
   }, [client, space.id]);
 
   return (
-    <nav className={styles['pane']} aria-label={space.name}>
+    <nav className={styles['pane']} aria-label={space.name} data-content-name>
       <div className={styles['head']}>
-        <p className={styles['overline']} aria-hidden="true">
+        <p className={styles['overline']} aria-hidden="true" data-content>
           {space.name}
         </p>
         {pane && <PaneToggle label={words('editor.space-pane')} pane={pane} />}

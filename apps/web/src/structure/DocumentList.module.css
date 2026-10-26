@@ -112,12 +112,21 @@
 .titleRow {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: var(--space-16);
 }
 
 .titleRow h1 {
   margin: 0;
+}
+
+/* A title row's acts, which wrap under the title where a language makes them long. */
+.titleRow > .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+  width: auto;
 }
 
 .status {

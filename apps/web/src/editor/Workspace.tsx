@@ -308,7 +308,11 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
               <OutlineRail
                 pane={spacePane}
                 chosen="space"
-                tabs={[{ key: 'space', label: placed?.space.name ?? words('editor.space') }]}
+                tabs={[
+                  placed === undefined || placed === null
+                    ? { key: 'space', label: words('editor.space') }
+                    : { key: 'space', label: placed.space.name, content: true },
+                ]}
                 label={words('editor.space-pane')}
                 className={styles['rail']}
               />
@@ -324,7 +328,12 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
           <div className={styles['editor']}>
             <nav aria-label={words('editor.breadcrumb')} className={styles['trail']}>
               <a href="#/components">{words('editor.components')}</a>
-              {placed?.component === opened && <span>{` / ${placed.space.name}`}</span>}
+              {placed?.component === opened && (
+                <span>
+                  {' / '}
+                  <span data-content>{placed.space.name}</span>
+                </span>
+              )}
             </nav>
             {/* A component on its own is set in the environment's theme and layout (themes.md, ET-A). */}
             <PresentationProvider client={client}>

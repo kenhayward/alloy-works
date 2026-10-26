@@ -143,6 +143,7 @@ export function QueryDefinitions({ client }: { readonly client: Client }) {
       </div>
       <Facet
         legend={words('data.space')}
+        content
         values={listing.facets?.spaces ?? []}
         chosen={spaces}
         onToggle={(value) => setSpaces((held) => toggled(held, value))}

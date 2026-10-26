@@ -213,7 +213,7 @@ export function Overview({
               <dd data-content>{environment ?? ''}</dd>
               <dt>{say('admin.address')}</dt>
               <dd>
-                <code>{window.location.host}</code>
+                <code data-content>{window.location.host}</code>
               </dd>
               <dt>{say('admin.spaces')}</dt>
               <dd data-content>
