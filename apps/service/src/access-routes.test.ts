@@ -855,6 +855,19 @@ describe('routes that check a permission', () => {
       url: `/v1/documents/${MISSING}/translation-jobs/${MISSING}/close`,
       status: 404,
     }),
+    returnDocumentTranslationJob: () => ({
+      url: `/v1/documents/${MISSING}/translation-jobs/${MISSING}/return`,
+      status: 404,
+    }),
+    getDocumentTranslationJobHeld: () => ({
+      url: `/v1/documents/${MISSING}/translation-jobs/${MISSING}/items/${MISSING}/held`,
+      status: 404,
+    }),
+    decideDocumentTranslationJobItem: () => ({
+      url: `/v1/documents/${MISSING}/translation-jobs/${MISSING}/items/${MISSING}/decision`,
+      status: 404,
+      payload: { decision: 'reject' },
+    }),
     readDocumentEffective: () => ({ url: `/v1/documents/${MISSING}/effective`, status: 404 }),
     createDocument: () => ({
       url: `/v1/spaces/${clinical}/documents`,

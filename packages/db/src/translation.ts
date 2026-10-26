@@ -307,7 +307,8 @@ export async function translationsOf(
                ? sql`exists (
                    select 1 from translation_job_item i
                      join translation_job j on j.id = i.job_id
-                    where i.line_id = l.id and i.outcome is null and j.closed_at is null)`
+                    where i.line_id = l.id and (i.outcome is null or i.outcome = 'held')
+                      and j.closed_at is null)`
                : sql`false`
            } as in_translation
       from artifact_line l
@@ -389,21 +390,37 @@ export async function translationPolicy(trx: TenantTransaction): Promise<Transla
     fallback: TranslationPolicy['fallback'];
     out_of_date: TranslationPolicy['outOfDate'];
     note: Record<string, string>;
-  }>`select fallback, out_of_date, note from translation_policy`.execute(trx);
+    conflict: TranslationPolicy['conflict'] | null;
+  }>`select fallback, out_of_date, note, to_jsonb(p) ->> 'conflict' as conflict
+       from translation_policy p`.execute(trx);
   const row = found.rows[0];
   return row
-    ? { fallback: row.fallback, outOfDate: row.out_of_date, note: row.note }
+    ? {
+        fallback: row.fallback,
+        outOfDate: row.out_of_date,
+        note: row.note,
+        // Before 0164, a conflicted return was not yet a thing: placed for review, its default.
+        conflict: row.conflict ?? DEFAULT_TRANSLATION_POLICY.conflict,
+      }
     : DEFAULT_TRANSLATION_POLICY;
 }
 
-/** The tenant's translation policy set, whole; the caller decided `administer` at the tenant. */
+/**
+ * The tenant's translation policy set, whole but for a conflict left out, which stays as it is; the
+ * caller decided `administer` at the tenant.
+ */
 export async function setTranslationPolicy(
   trx: TenantTransaction,
-  policy: TranslationPolicy,
+  policy: Omit<TranslationPolicy, 'conflict'> & {
+    readonly conflict?: TranslationPolicy['conflict'];
+  },
 ): Promise<TranslationPolicy> {
   await sql`update translation_policy
                set fallback = ${policy.fallback}, out_of_date = ${policy.outOfDate},
                    note = ${JSON.stringify(policy.note)}::jsonb`.execute(trx);
+  if (policy.conflict !== undefined) {
+    await sql`update translation_policy set conflict = ${policy.conflict}`.execute(trx);
+  }
   return translationPolicy(trx);
 }
 

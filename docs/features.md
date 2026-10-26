@@ -1260,7 +1260,11 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   revision, as one job, listing any it could not send and why, and its XLIFF 2.1 file downloads for a
   vendor, carrying each text's neighbours, the component's title and type, and the terms it uses, with
   references, marks and code held as codes a translator cannot change. A component sent is **In
-  translation** until the job is closed. Reading a returned file back is still to come.
+  translation** until the job is closed. **Return the file** gives the vendor's translated file
+  back: each component becomes a version of its translation, translating the version sent. One whose
+  source or translation changed since, or that somebody is editing, is held for review: **Review**
+  shows the source's changes beside the words returned, and a person accepts it, out of date, or
+  rejects it. Administration's **Translation** says which is offered first.
 - **Revisions effective by scope.** A component's or document's header offers **Effective for**: the
   markets or sites, condition axis values, its next revision is effective for, while another revision
   stays effective elsewhere; a document reads, publishes and baselines the revision effective under its

@@ -794,6 +794,26 @@ export interface TranslationJobItemTable {
   version_id: ColumnType<string | null, never, string | null>;
   decided_by: ColumnType<string | null, never, string | null>;
   decided_at: ColumnType<Date | null, never, Date | null>;
+  /** The return it came back in, and the words held for a person (0164; XL-G). */
+  return_id: ColumnType<string | null, never, string | null>;
+  held_content: ColumnType<unknown, never, string | null>;
+}
+
+/** A job's file returned (0164; XL-F): kept by its hash, read by the worker. */
+export interface TranslationJobReturnTable {
+  id: ColumnType<string, string | undefined, never>;
+  job_id: ColumnType<string, string, never>;
+  object_key: ColumnType<string, string, never>;
+  sha256: ColumnType<string, string, never>;
+  bytes: ColumnType<number, number, never>;
+  by: ColumnType<string, string, never>;
+  at: ColumnType<Date, never, never>;
+  state: ColumnType<'reading' | 'read' | 'failed', never, 'read' | 'failed'>;
+  failure: ColumnType<string | null, never, string | null>;
+  returned: ColumnType<number | null, never, number>;
+  held: ColumnType<number | null, never, number>;
+  refused: ColumnType<number | null, never, number>;
+  read_at: ColumnType<Date | null, never, Date>;
 }
 
 /** Whether a main-line version needs retranslating (0159; TR-D): insert-only, the newest a version's. */
@@ -1218,6 +1238,7 @@ export interface TenantTables {
   source_change: SourceChangeTable;
   translation_job: TranslationJobTable;
   translation_job_item: TranslationJobItemTable;
+  translation_job_return: TranslationJobReturnTable;
   unsaved_discarded: UnsavedDiscardedTable;
   iteration: IterationTable;
   principal: PrincipalTable;

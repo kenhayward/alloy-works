@@ -12,7 +12,8 @@ import type { PlatformTables, TenantTransaction } from './tables.js';
  * A `cohort` makes a cohort's pending rows into documents, its subject the job (the R7 plan, R7-E).
  * An `embed` embeds an artifact's blocks its latest version lacks vectors for, its subject the artifact
  * (the G7 plan, G7-F). An `import` reads an import's file into its proposal, its subject the import (the
- * IM plan, IM-C).
+ * IM plan, IM-C). A `translation_return` reads a translation job's returned file, its subject the
+ * return (the XL plan, XL-F).
  */
 export type JobKind =
   | 'sample_pdf'
@@ -26,7 +27,8 @@ export type JobKind =
   | 'tenant_export'
   | 'range'
   | 'embed'
-  | 'import';
+  | 'import'
+  | 'translation_return';
 
 /** What a worker is told: whose work, of what kind, about which id. Never any content. */
 export interface Job {

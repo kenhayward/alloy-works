@@ -645,6 +645,32 @@ export const auditKindSpecs = {
     z.strictObject({ job: Id, outstanding: z.int().nonnegative() }),
     'packages/db/src/translation-jobs.ts',
   ),
+  // A job's file returned and read (LOC-018, LOC-033; XL-F): how many items it made a version of,
+  // held for a person and refused, or why the file was refused whole. Never its words.
+  'translation.job_returned': kind(
+    ['LOC-033'],
+    z.strictObject({
+      job: Id,
+      return: Id,
+      returned: z.int().nonnegative(),
+      held: z.int().nonnegative(),
+      refused: z.int().nonnegative(),
+      failure: z.string().max(40).nullable(),
+    }),
+    'packages/db/src/translation-jobs.ts',
+  ),
+  // A held item decided by a person (LOC-035; XL-G): accepted as a translation of the version sent,
+  // and the version it made, or rejected.
+  'translation.job_decided': kind(
+    ['LOC-035'],
+    z.strictObject({
+      job: Id,
+      component: Id,
+      decision: z.enum(['accept', 'reject']),
+      version: Id.nullable(),
+    }),
+    'packages/db/src/translation-jobs.ts',
+  ),
   // A revision accepted by its party in one scope, so it takes effect there (LIF-047; R15-E).
   'revision.accepted': kind(
     ['LIF-047'],

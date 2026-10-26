@@ -39,6 +39,8 @@ const REASONS = {
     "A person's own inbox: what they were told, read, cleared or chose, none of the tenant's content",
   metering:
     "A query run's slot and its record, which meter the tenant's runs (the R18 plan) and change none of its content",
+  returning:
+    "A translation job's file kept for the worker to read (XL-F), which writes translation.job_returned as it applies it; nothing of the content changes here",
   started:
     "A reviewer saying they have started (RR-A): kept on the round's own rows, which its readers read, and no change to the tenant's content",
 } as const;
@@ -351,6 +353,9 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   makeDocumentTranslationJob: writes('translation.job_sent', 'line.diverged'),
   downloadDocumentTranslationJob: writes('export.downloaded'),
   closeDocumentTranslationJob: writes('translation.job_closed'),
+  returnDocumentTranslationJob: { none: 'returning' },
+  getDocumentTranslationJobHeld: read,
+  decideDocumentTranslationJobItem: writes('translation.job_decided', 'content.version_cut'),
   listComponentLines: read,
   compareComponentLine: read,
   bringComponentLineBack: writes('line.returned'),
@@ -565,6 +570,8 @@ const WRITERS: Readonly<Record<string, Readonly<Record<string, Entry>>>> = {
     embed: writes('generation.run'),
     // A proposal written, or the import failed with nothing left (the IM plan, IM-C).
     import: { none: 'importing' },
+    // Each component it applies cut, and what came back recorded (the XL plan, XL-F).
+    translation_return: writes('translation.job_returned', 'content.version_cut'),
   },
   /** The worker's sweeps (apps/worker/src/sweep.ts). */
   sweeps: {

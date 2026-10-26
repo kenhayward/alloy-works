@@ -17,11 +17,14 @@ const noteWords = z
 /**
  * The tenant's translation policy (docs/design/translation.md; the TR plan, TR-J; LOC-017, LOC-036,
  * LOC-037): whether a missing variant falls back to the source, marked, or refuses the publish;
- * whether an out-of-date one publishes or refuses; and the words the mark says, by language. A
- * document may override its fallback.
+ * whether an out-of-date one publishes or refuses; the words the mark says, by language; and the
+ * decision offered first for a returned translation whose source or line moved since it was sent
+ * (XL-G; LOC-035), which a person always takes. A document may override its fallback.
  */
 export const TRANSLATION_FALLBACKS = ['source', 'refuse'] as const;
 export const TRANSLATION_OUT_OF_DATE = ['publish', 'refuse'] as const;
+/** Placed for review, accepted as a translation of the version sent, or rejected (LOC-035). */
+export const TRANSLATION_CONFLICTS = ['review', 'accept', 'reject'] as const;
 
 /** The most languages a note is given in, and the most characters it says in each. */
 export const TRANSLATION_NOTE_LIMITS = { languages: 50, characters: 80 } as const;
@@ -35,14 +38,20 @@ export const translationPolicySchema = z.strictObject({
       (note) => Object.keys(note).length <= TRANSLATION_NOTE_LIMITS.languages,
       `At most ${TRANSLATION_NOTE_LIMITS.languages} languages`,
     ),
+  // Absent from a policy stored before XLb, which placed nothing for review: read as the default.
+  conflict: z.enum(TRANSLATION_CONFLICTS).default('review'),
 });
 export type TranslationPolicy = z.infer<typeof translationPolicySchema>;
 
-/** What a tenant starts with (LOC-036): fall back, marked; publish what is out of date. */
+/**
+ * What a tenant starts with (LOC-036): fall back, marked; publish what is out of date; place a
+ * conflicted return for review.
+ */
 export const DEFAULT_TRANSLATION_POLICY: TranslationPolicy = {
   fallback: 'source',
   outOfDate: 'publish',
   note: {},
+  conflict: 'review',
 };
 
 /**

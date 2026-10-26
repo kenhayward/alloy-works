@@ -1,6 +1,14 @@
-import { parseContentDocument, translationLanguageRefusal } from '@alloy-works/domain';
+import {
+  parseContentDocument,
+  translationLanguageRefusal,
+  xliffTarget,
+  type ContentDocument,
+  type XliffPart,
+} from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { artifactPlace, recordEvent } from './audit.js';
+import { cutReturned } from './promotion.js';
+import { enqueueJob } from './queue.js';
 import type { TenantTransaction } from './tables.js';
 import { beginTranslation, jobsStored, translationSource, translationsOf } from './translation.js';
 
@@ -29,6 +37,23 @@ export interface JobItem {
   /** What came back (XLb); null while it is out. */
   readonly outcome: 'returned' | 'held' | 'refused' | null;
   readonly version: string | null;
+  /** Who recorded the outcome - the uploader, or the person who decided a held item - and when. */
+  readonly decided: { readonly by: string; readonly at: Date } | null;
+}
+
+/** A job's file returned (XL-F): who sent it and when, and what reading it did. */
+export interface JobReturn {
+  readonly id: string;
+  readonly job: string;
+  readonly by: string;
+  readonly at: Date;
+  readonly state: 'reading' | 'read' | 'failed';
+  readonly failure: string | null;
+  readonly returned: number | null;
+  readonly held: number | null;
+  readonly refused: number | null;
+  readonly objectKey: string;
+  readonly sha256: string;
 }
 
 export interface TranslationJob {
@@ -41,7 +66,43 @@ export interface TranslationJob {
   readonly at: Date;
   readonly closed: { readonly by: string; readonly at: Date } | null;
   readonly items: readonly JobItem[];
+  /** Each file returned to it, newest first. */
+  readonly returns: readonly JobReturn[];
 }
+
+/** Whether 0164 has run; a tenant before it holds no return. */
+async function returnsStored(trx: TenantTransaction): Promise<boolean> {
+  const { rows } = await sql<{
+    present: boolean;
+  }>`select to_regclass('translation_job_return') is not null as present`.execute(trx);
+  return rows[0]?.present === true;
+}
+
+const returnOf = (row: {
+  id: string;
+  job_id: string;
+  by: string;
+  at: Date;
+  state: 'reading' | 'read' | 'failed';
+  failure: string | null;
+  returned: number | null;
+  held: number | null;
+  refused: number | null;
+  object_key: string;
+  sha256: string;
+}): JobReturn => ({
+  id: row.id,
+  job: row.job_id,
+  by: row.by,
+  at: row.at,
+  state: row.state,
+  failure: row.failure,
+  returned: row.returned,
+  held: row.held,
+  refused: row.refused,
+  objectKey: row.object_key,
+  sha256: row.sha256,
+});
 
 async function jobsWhere(
   trx: TenantTransaction,
@@ -60,9 +121,21 @@ async function jobsWhere(
     .limit(JOBS_LISTED)
     .execute();
   if (jobs.length === 0) return [];
+  // Never the words held for review, which a listing does not show.
   const items = await trx
     .selectFrom('translation_job_item')
-    .selectAll()
+    .select([
+      'job_id',
+      'component_id',
+      'line_id',
+      'source_version',
+      'line_head',
+      'not_sent',
+      'outcome',
+      'version_id',
+      'decided_by',
+      'decided_at',
+    ])
     .where(
       'job_id',
       'in',
@@ -71,6 +144,19 @@ async function jobsWhere(
     .orderBy('job_id')
     .orderBy('position')
     .execute();
+  const returns = (await returnsStored(trx))
+    ? await trx
+        .selectFrom('translation_job_return')
+        .selectAll()
+        .where(
+          'job_id',
+          'in',
+          jobs.map((job) => job.id),
+        )
+        .orderBy('at', 'desc')
+        .orderBy('id')
+        .execute()
+    : [];
   return jobs.map((job) => ({
     id: job.id,
     document: job.document_id,
@@ -93,7 +179,12 @@ async function jobsWhere(
         notSent: item.not_sent,
         outcome: item.outcome,
         version: item.version_id,
+        decided:
+          item.decided_by === null || item.decided_at === null
+            ? null
+            : { by: item.decided_by, at: item.decided_at },
       })),
+    returns: returns.filter((each) => each.job_id === job.id).map(returnOf),
   }));
 }
 
@@ -311,4 +402,324 @@ export async function jobFileParts(
       },
     ];
   });
+}
+
+/** The most bytes a returned file may hold (XL-F), an import's. */
+export const RETURN_MAX_BYTES = 25 * 1024 * 1024;
+
+export type ReceiveReturnAnswer =
+  | { readonly answer: 'received'; readonly job: TranslationJob }
+  | { readonly answer: 'job.missing' | 'translation.job_closed' };
+
+/**
+ * **A job's file returned** (XL-F): kept by the key and hash the caller stored it under, and the
+ * `translation_return` job queued to read it. The caller decided edit on the document.
+ */
+export async function receiveReturn(
+  trx: TenantTransaction,
+  input: {
+    readonly documentId: string;
+    readonly job: string;
+    readonly key: string;
+    readonly sha256: string;
+    readonly bytes: number;
+    readonly by: string;
+  },
+): Promise<ReceiveReturnAnswer> {
+  const job = await readTranslationJob(trx, input.documentId, input.job);
+  if (!job) return { answer: 'job.missing' };
+  if (job.closed !== null) return { answer: 'translation.job_closed' };
+  const made = await trx
+    .insertInto('translation_job_return')
+    .values({
+      job_id: job.id,
+      object_key: input.key,
+      sha256: input.sha256,
+      bytes: input.bytes,
+      by: input.by,
+    })
+    .returning('id')
+    .executeTakeFirstOrThrow();
+  await enqueueJob(trx, 'translation_return', made.id);
+  return { answer: 'received', job: (await readTranslationJob(trx, input.documentId, job.id))! };
+}
+
+/** A return and its job, as the worker reads them; undefined where this tenant holds no such return. */
+export async function readReturn(
+  trx: TenantTransaction,
+  id: string,
+): Promise<{ readonly return: JobReturn; readonly job: TranslationJob } | undefined> {
+  if (!UUID.test(id) || !(await returnsStored(trx))) return undefined;
+  const row = await trx
+    .selectFrom('translation_job_return as r')
+    .innerJoin('translation_job as j', 'j.id', 'r.job_id')
+    .selectAll('r')
+    .select('j.document_id')
+    .where('r.id', '=', id)
+    .executeTakeFirst();
+  if (!row) return undefined;
+  const job = await readTranslationJob(trx, row.document_id, row.job_id);
+  return job && { return: returnOf(row), job };
+}
+
+/** Why a return's file was refused whole (XL-F), as its code. */
+export type ReturnFailure =
+  | 'file_unreadable'
+  | 'file_unsafe'
+  | 'file_too_large'
+  | 'file_not_xliff'
+  | 'language_mismatch'
+  | 'unknown_file'
+  | 'translation_job_closed'
+  | 'reading_failed';
+
+async function finishReturn(
+  trx: TenantTransaction,
+  found: { readonly return: JobReturn; readonly job: TranslationJob },
+  outcome:
+    | { readonly failure: ReturnFailure }
+    | { readonly returned: number; readonly held: number; readonly refused: number },
+): Promise<void> {
+  const failure = 'failure' in outcome ? outcome.failure : null;
+  const counts = 'failure' in outcome ? { returned: 0, held: 0, refused: 0 } : outcome;
+  await trx
+    .updateTable('translation_job_return')
+    .set({
+      state: failure === null ? 'read' : 'failed',
+      failure,
+      ...counts,
+      read_at: new Date(),
+    })
+    .where('id', '=', found.return.id)
+    .execute();
+  const place = await artifactPlace(trx, found.job.document);
+  await recordEvent(
+    trx,
+    {
+      kind: 'translation.job_returned',
+      subject: { kind: 'document', id: found.job.document, version: place.version },
+      space: place.space,
+      detail: { job: found.job.id, return: found.return.id, ...counts, failure },
+    },
+    place.labels,
+  );
+}
+
+/** A return's file refused whole (XL-F): nothing of it is applied, and the job stays out. */
+export async function failReturn(
+  trx: TenantTransaction,
+  id: string,
+  failure: ReturnFailure,
+): Promise<void> {
+  const found = await readReturn(trx, id);
+  if (!found || found.return.state !== 'reading') return;
+  await finishReturn(trx, found, { failure });
+}
+
+/** Each unit a file says, by the file's id: what `readXliff` answers. */
+export type ReturnedFiles = ReadonlyMap<string, ReadonlyMap<string, readonly XliffPart[] | null>>;
+
+/** Whether an item can still take what comes back: sent, and not returned or held already. */
+const open = (item: JobItem) =>
+  item.line !== null && (item.outcome === null || item.outcome === 'refused');
+
+/**
+ * **A returned file applied** (XL-F; LOC-018, LOC-033, LOC-035), by the worker for its uploader: the
+ * file in the job's language, naming no component the job did not send, each component's units read
+ * back against the source version sent by the mapping. Each one whose source and line are as they were
+ * sent, and whose line nobody holds, is cut by `cutReturned`; one that moved is held with its words for
+ * a person (XL-G); one that does not read back, or that the uploader may no longer edit, is refused.
+ * A component the file leaves out stays out. Audited `translation.job_returned`.
+ */
+export async function applyReturn(
+  trx: TenantTransaction,
+  input: {
+    readonly id: string;
+    readonly target: string | null;
+    readonly files: ReturnedFiles;
+    /** Whether the uploader may edit each component now: decided where the facts are. */
+    readonly mayEdit: (component: string) => Promise<boolean>;
+  },
+): Promise<void> {
+  const found = await readReturn(trx, input.id);
+  if (!found || found.return.state !== 'reading') return;
+  const { job } = found;
+  if (job.closed !== null) return finishReturn(trx, found, { failure: 'translation_job_closed' });
+  if (input.target?.toLowerCase() !== job.language.toLowerCase()) {
+    return finishReturn(trx, found, { failure: 'language_mismatch' });
+  }
+  const sent = new Map(job.items.filter(open).map((item) => [`f.${item.component}`, item]));
+  for (const file of input.files.keys()) {
+    const item = job.items.find((each) => `f.${each.component}` === file);
+    if (!item || item.line === null) return finishReturn(trx, found, { failure: 'unknown_file' });
+  }
+  const by = found.return.by;
+  const counts = { returned: 0, held: 0, refused: 0 };
+  for (const [file, units] of input.files) {
+    const item = sent.get(file);
+    // Returned or held already: a second file does not overwrite it.
+    if (!item) continue;
+    const outcome = await returnItem(trx, job, item, units, by, input.mayEdit);
+    counts[outcome] += 1;
+  }
+  await finishReturn(trx, found, counts);
+}
+
+async function returnItem(
+  trx: TenantTransaction,
+  job: TranslationJob,
+  item: JobItem,
+  units: ReadonlyMap<string, readonly XliffPart[] | null>,
+  by: string,
+  mayEdit: (component: string) => Promise<boolean>,
+): Promise<'returned' | 'held' | 'refused'> {
+  const record = (
+    outcome: 'returned' | 'held' | 'refused',
+    extra: { version?: string; held?: ContentDocument } = {},
+  ) =>
+    trx
+      .updateTable('translation_job_item')
+      .set({
+        outcome,
+        version_id: extra.version ?? null,
+        decided_by: by,
+        decided_at: new Date(),
+        held_content: extra.held === undefined ? null : JSON.stringify(extra.held),
+      })
+      .where('job_id', '=', job.id)
+      .where('component_id', '=', item.component)
+      .execute()
+      .then(() => outcome);
+  const source = await trx
+    .selectFrom('artifact_version')
+    .select('content')
+    .where('id', '=', item.sourceVersion!)
+    .executeTakeFirst();
+  if (!source || !(await mayEdit(item.component))) return record('refused');
+  // Every unit given a target; one a tool left untranslated refuses the component, not the file.
+  const targets = new Map<string, readonly XliffPart[]>();
+  for (const [unit, parts] of units) {
+    if (parts === null) return record('refused');
+    targets.set(unit, parts);
+  }
+  const read = xliffTarget(parseContentDocument(source.content), targets, job.language);
+  if (!read.ok) return record('refused');
+  const now = await translationSource(trx, item.component);
+  const head = await lineNewest(trx, item.line!);
+  if (now?.id !== item.sourceVersion || head !== item.lineHead) {
+    return record('held', { held: read.content });
+  }
+  const cut = await cutReturned(trx, {
+    artifactId: item.component,
+    line: item.line!,
+    content: read.content,
+    translates: item.sourceVersion!,
+    by,
+  });
+  if (cut.answer === 'recorded') return record('returned', { version: cut.version.id });
+  // Locked, or moved since it was read here: a person decides.
+  if (cut.answer === 'lock.held' || cut.answer === 'version.precondition') {
+    return record('held', { held: read.content });
+  }
+  return record('refused');
+}
+
+/** A language line's newest version, or null where it has none. */
+async function lineNewest(trx: TenantTransaction, line: string): Promise<string | null> {
+  const head = await trx
+    .selectFrom('artifact_version')
+    .select('id')
+    .where('line_id', '=', line)
+    .orderBy('version_no', 'desc')
+    .limit(1)
+    .executeTakeFirst();
+  return head?.id ?? null;
+}
+
+/** A held item as a person reviews it (XL-G): the words that came back, and the source versions. */
+export interface HeldItem {
+  readonly item: JobItem;
+  readonly content: ContentDocument;
+}
+
+/** A job's held item, its words read back; undefined where the job holds no such held item. */
+export async function readHeld(
+  trx: TenantTransaction,
+  input: { readonly documentId: string; readonly job: string; readonly component: string },
+): Promise<HeldItem | undefined> {
+  const job = await readTranslationJob(trx, input.documentId, input.job);
+  const item = job?.items.find((each) => each.component === input.component);
+  if (!job || !item || item.outcome !== 'held' || !UUID.test(input.component)) return undefined;
+  const row = await trx
+    .selectFrom('translation_job_item')
+    .select('held_content')
+    .where('job_id', '=', job.id)
+    .where('component_id', '=', input.component)
+    .executeTakeFirst();
+  if (!row || row.held_content === null) return undefined;
+  return { item, content: parseContentDocument(row.held_content) };
+}
+
+export type DecideAnswer =
+  | { readonly answer: 'decided'; readonly job: TranslationJob }
+  | { readonly answer: 'item.missing' | 'translation.job_closed' | 'lock.held' };
+
+/**
+ * **A held item decided by a person** (XL-G; LOC-035): accepted, its words cut by `cutReturned` as a
+ * translation of the source version sent - out of date at once where the source moved since - or
+ * rejected, the words dropped and the component out of the job. The caller decided edit on the
+ * document and on the component. Audited `translation.job_decided`.
+ */
+export async function decideHeld(
+  trx: TenantTransaction,
+  input: {
+    readonly documentId: string;
+    readonly job: string;
+    readonly component: string;
+    readonly decision: 'accept' | 'reject';
+    readonly by: string;
+  },
+): Promise<DecideAnswer> {
+  const held = await readHeld(trx, input);
+  if (!held) return { answer: 'item.missing' };
+  const job = (await readTranslationJob(trx, input.documentId, input.job))!;
+  if (job.closed !== null) return { answer: 'translation.job_closed' };
+  let version: string | null = null;
+  if (input.decision === 'accept') {
+    const cut = await cutReturned(trx, {
+      artifactId: input.component,
+      line: held.item.line!,
+      content: held.content,
+      translates: held.item.sourceVersion!,
+      by: input.by,
+    });
+    if (cut.answer === 'lock.held') return { answer: 'lock.held' };
+    if (cut.answer === 'recorded') version = cut.version.id;
+    else if (cut.answer !== 'version.unchanged') return { answer: 'item.missing' };
+    else version = cut.current.id;
+  }
+  await trx
+    .updateTable('translation_job_item')
+    .set({
+      outcome: input.decision === 'accept' ? 'returned' : 'refused',
+      version_id: version,
+      decided_by: input.by,
+      decided_at: new Date(),
+      held_content: null,
+    })
+    .where('job_id', '=', job.id)
+    .where('component_id', '=', input.component)
+    .execute();
+  const place = await artifactPlace(trx, input.documentId);
+  await recordEvent(
+    trx,
+    {
+      kind: 'translation.job_decided',
+      subject: { kind: 'document', id: input.documentId, version: place.version },
+      space: place.space,
+      detail: { job: job.id, component: input.component, decision: input.decision, version },
+    },
+    place.labels,
+  );
+  return { answer: 'decided', job: (await readTranslationJob(trx, input.documentId, job.id))! };
 }

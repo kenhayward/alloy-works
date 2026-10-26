@@ -2,12 +2,23 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_TRANSLATION_POLICY, translationPolicySchema, untranslatedNote } from './policy.js';
 
 describe('the translation policy', () => {
-  it('states its default: fall back to the source, publish what is out of date', () => {
+  it('states its default: fall back to the source, publish what is out of date, place a conflicted return for review', () => {
     expect(DEFAULT_TRANSLATION_POLICY).toEqual({
       fallback: 'source',
       outOfDate: 'publish',
       note: {},
+      conflict: 'review',
     });
+  });
+
+  it('LOC-035 reads a policy stored before conflicts as placing them for review', () => {
+    expect(
+      translationPolicySchema.parse({ fallback: 'source', outOfDate: 'publish', note: {} }),
+    ).toEqual(DEFAULT_TRANSLATION_POLICY);
+    expect(
+      translationPolicySchema.safeParse({ ...DEFAULT_TRANSLATION_POLICY, conflict: 'apply' })
+        .success,
+    ).toBe(false);
   });
 
   it('holds a note by language, each a tag and a few words', () => {

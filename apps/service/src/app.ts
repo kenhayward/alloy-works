@@ -650,7 +650,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...datesHandlers(),
     ...scopeHandlers(),
     ...lineHandlers(),
-    ...translationHandlers(),
+    ...translationHandlers(tenantOf, options.objects),
     ...shareHandlers(tenantOf, options.objects),
     ...queryUsageHandlers(),
     ...templateMoveHandlers(),

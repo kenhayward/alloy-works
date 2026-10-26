@@ -513,6 +513,9 @@ const operationTags = {
     'makeDocumentTranslationJob',
     'downloadDocumentTranslationJob',
     'closeDocumentTranslationJob',
+    'returnDocumentTranslationJob',
+    'getDocumentTranslationJobHeld',
+    'decideDocumentTranslationJobItem',
   ],
   Prompts: [
     'listPrompts',
@@ -1112,6 +1115,12 @@ const descriptions: Readonly<Record<string, string>> = {
     "Downloads a translation job's XLIFF 2.1 file, written from the source versions sent: one file element a component, its title and type as notes, and one unit a translatable text, with the text either side as context and the space's terms it uses in a glossary. References, footnotes, variables, equations, images, code and words in another language are placeholders, and marks are paired codes, none of which a translator may copy or delete. Only components the caller may read now are in it. Each download is audited. It needs edit on the document.",
   closeDocumentTranslationJob:
     'Closes a translation job, so nothing of it is held out and its translations show their own status again. It needs edit on the document.',
+  returnDocumentTranslationJob:
+    "Returns a translation job's file, translated, as its bytes: XLIFF 2, UTF-8 or UTF-16, at most 25 MB, kept as it came. The worker reads it and, acting for the caller, makes each component it translates a version of its translation, translating the source version sent. A component whose source or translation moved since it was sent, or that somebody is editing, is held for a person to decide; one that does not read back, with a code or placeholder missing, repeated or invented, or that the caller may no longer edit, is refused, and a later file may return it again. A file in another language, or naming a component the job did not send, is refused whole. Read the job to see what came back. It needs edit on the document.",
+  getDocumentTranslationJobHeld:
+    "Shows a held translation: the source version sent and the one a translation is made against now, each source block changed between them, and the words returned, block by block, with the decision the environment's policy offers first. It needs edit on the document.",
+  decideDocumentTranslationJobItem:
+    'Decides a held translation: accepted, its words cut as a translation of the source version sent, so out of date at once where the source moved since; or rejected, its words dropped. Refused while somebody is editing the translation. It needs edit on the document and on the component.',
   unarchiveBibliographyEntry:
     "Unarchives an entry, returning it to the space's listing. It needs retire on the entry.",
   recordPromptVersion:
