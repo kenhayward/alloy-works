@@ -30,6 +30,29 @@ sayWith({
 /** A message in the interface's language now, its placeholders filled. */
 export const words = (key: WordKey, values?: Values): string => current.words(key, values);
 
+/**
+ * A whole message with elements where its placeholders stand, a `<time>` or a lozenge in a sentence,
+ * so the sentence stays one message in every language. Each element is keyed by its placeholder.
+ */
+export function wordsWith(
+  key: WordKey,
+  values: Values,
+  elements: Readonly<Record<string, ReactNode>>,
+): ReactNode[] {
+  const names = Object.keys(elements);
+  const marked = Object.fromEntries(names.map((name, i) => [name, `\u{E000}${i}\u{E001}`]));
+  return current
+    .words(key, { ...values, ...marked })
+    .split(/\u{E000}(\d+)\u{E001}/u)
+    .map((part, i) =>
+      i % 2 === 0 ? (
+        part
+      ) : (
+        <Fragment key={names[Number(part)]}>{elements[names[Number(part)]!]}</Fragment>
+      ),
+    );
+}
+
 /** The interface's language now, its formats and its collation. */
 export const formats = (): Words => current;
 

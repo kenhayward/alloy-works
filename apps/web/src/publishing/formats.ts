@@ -1,14 +1,22 @@
+import { formats, words as say } from '../words/words.js';
 /**
  * The words for what a publication was made in and what its outputs report (Word 1, ruling R14). Each
  * format and each report entry has one plain sentence, read by an author rather than a developer.
  */
 
 /** A format by the name an author knows it by; one this renderer does not know, as the service said it. */
-const FORMAT_WORDS: Record<string, string> = { pdf: 'PDF', docx: 'Word' };
+const FORMAT_WORDS: Record<string, string> = {
+  get pdf() {
+    return say('publishing.pdf');
+  },
+  get docx() {
+    return say('publishing.word');
+  },
+};
 
 /** `PDF`, `Word` or `PDF and Word`: the formats a publication holds, in the order it names them. */
-export function formatsWords(formats: readonly string[]): string {
-  return formats.map((format) => FORMAT_WORDS[format] ?? format).join(' and ');
+export function formatsWords(held: readonly string[]): string {
+  return formats().list(held.map((format) => FORMAT_WORDS[format] ?? format));
 }
 
 /** The kinds a report says of one table (Word 2, ruling R7). */
@@ -183,24 +191,36 @@ const isPlaced = (entry: ReportEntry): entry is Extract<ReportEntry, { kind: Pla
 
 /** `one quotation` or `2 quotations`. */
 const counting = (count: number, one: string, many: string) =>
-  count === 1 ? `one ${one}` : `${count} ${many}`;
+  count === 1 ? say('publishing.one', { one }) : `${count} ${many}`;
 
 /** One sentence for a kind named by its place, and how many places it holds (W14.6). */
 function placedWords(kind: PlacedKind, count: number): string {
   switch (kind) {
     case 'quotation_not_structure':
-      return `Word has no mark for a quotation, so it sets a quotation as paragraphs in the quotation style, which a screen reader reads as ordinary text. This applies to ${counting(count, 'quotation', 'quotations')}.`;
+      return say('publishing.word-has-no-mark-for', {
+        value1: counting(count, 'quotation', 'quotations'),
+      });
     case 'quoted_phrase_not_structure':
-      return `Word has no mark for a quotation, so it sets a quoted phrase in its character style alone, which a screen reader reads as ordinary text. This applies to quoted phrases in ${counting(count, 'place', 'places')}.`;
+      return say('publishing.word-has-no-mark-for-2', {
+        value1: counting(count, 'place', 'places'),
+      });
     case 'inline_code_not_structure':
-      return `Word has no mark for code, so it sets inline code in its character style alone, which a screen reader reads as ordinary text. This applies to inline code in ${counting(count, 'place', 'places')}.`;
+      return say('publishing.word-has-no-mark-for-3', {
+        value1: counting(count, 'place', 'places'),
+      });
     case 'preformatted_not_structure':
-      return `Word has no mark for code, so it sets preformatted text as paragraphs in its style, which a screen reader reads as ordinary text. This applies to ${counting(count, 'block', 'blocks')} of preformatted text.`;
+      return say('publishing.word-has-no-mark-for-4', {
+        value1: counting(count, 'block', 'blocks'),
+      });
     case 'definition_list_not_structure':
-      return `Word has no list of terms, so it sets a definition list as its terms and definitions in paragraphs, which a screen reader does not read as a list. This applies to ${counting(count, 'definition list', 'definition lists')}.`;
+      return say('publishing.word-has-no-list-of', {
+        value1: counting(count, 'definition list', 'definition lists'),
+      });
     // Written on the image's run, but not measured in a screen reader (the final review of W14.6).
     case 'description_language_lost':
-      return `Word records no language for an image's description that a screen reader is known to use: the language is written beside the image, but whether a screen reader reads the description in it has not been checked, so it may read a description in another language as if it were in the document's. This applies to descriptions in ${counting(count, 'place', 'places')}.`;
+      return say('publishing.word-records-no-language-for', {
+        value1: counting(count, 'place', 'places'),
+      });
   }
 }
 
@@ -208,38 +228,45 @@ function placedWords(kind: PlacedKind, count: number): string {
 export function reportWords(entry: ReportEntry): string {
   switch (entry.kind) {
     case 'face_substituted':
-      return `The typeface ${entry.family} cannot be embedded in a Word document, so Word shows its text in ${entry.wordFamily}.`;
+      return say('publishing.the-typeface-cannot-be-embedded-2', {
+        family: entry.family,
+        wordFamily: entry.wordFamily,
+      });
     case 'no_page_cited_output':
-      return 'This publication has no PDF, so nothing in it can be cited by page number.';
+      return say('publishing.this-publication-has-no-pdf');
     case 'pages_cite_the_pdf':
-      return "Word lays out its own pages, so its page numbers can differ from the PDF's. A page number cited from this publication is the PDF's.";
+      return say('publishing.word-lays-out-its-own');
     // A table by its label, as the PDF prints it; one with no number is named as such, since this
     // page does not hold the outline its place is in.
     case 'header_column_lost':
-      return `${tableName(entry)} has a header column, which a Word document cannot mark as one, so in Word its cells are read as ordinary cells.`;
+      return say('publishing.has-a-header-column-which', { value1: tableName(entry) });
     case 'header_repeated':
-      return `${tableName(entry)} repeats its header rows on every page it reaches in Word, though its table style does not: Word marks header rows only by repeating them.`;
+      return say('publishing.repeats-its-header-rows-on', { value1: tableName(entry) });
     case 'continuation_label_omitted':
-      return `${tableName(entry)} has no continuation label in Word on the pages it continues on, since Word cannot set one.`;
+      return say('publishing.has-no-continuation-label-in', { value1: tableName(entry) });
     case 'table_reflowed':
-      return `${tableName(entry)} is too wide for the page, so the PDF scales it down to fit; Word cannot scale a table, and fits it to the page by wrapping its text instead.`;
+      return say('publishing.is-too-wide-for-the', { value1: tableName(entry) });
     // A heading by its number and a caption by its label, as the PDF prints them.
     case 'equation_flattened':
-      return `${flattenedName(entry)} holds an equation that Word sets as its characters in a row ${
-        entry.block === null
-          ? 'where it rebuilds the heading, in the contents or a running head, once it updates them'
-          : 'in the list after the contents once it updates the list'
-      }, so a fraction, a script or a root there reads differently from the PDF.`;
+      return say('publishing.holds-an-equation-that-word', {
+        value1: flattenedName(entry),
+        value2:
+          entry.block === null
+            ? 'where it rebuilds the heading, in the contents or a running head, once it updates them'
+            : 'in the list after the contents once it updates the list',
+      });
     case 'equation_numbered_as_table':
-      return `${entry.label} is set in Word as a table of one row, the equation in one cell and its number in the other, so a screen reader announces a table; numbered equations that follow one another are one table.`;
+      return say('publishing.is-set-in-word-as', { label: entry.label });
     case 'equation_alternative_lost':
-      return 'Word reads each equation aloud by its own reading of the maths, not by the description written for it, which the PDF gives a screen reader.';
+      return say('publishing.word-reads-each-equation-aloud');
     case 'maths_coverage_unchecked':
-      return `Word sets equations in ${entry.wordFamily}, whose characters are not checked here: a character it lacks is drawn from another typeface, so it can look different from the PDF.`;
+      return say('publishing.word-sets-equations-in-whose', { wordFamily: entry.wordFamily });
     case 'titles_not_headings':
-      return `Word sets ${listing(entry.titles.map((title) => TITLE_WORDS[title]))} as ordinary paragraphs rather than headings, so that its own contents does not list them; a screen reader does not announce them as headings, as it does in the PDF.`;
+      return say('publishing.word-sets-as-ordinary-paragraphs', {
+        value1: listing(entry.titles.map((title) => TITLE_WORDS[title])),
+      });
     case 'list_not_linked':
-      return 'The list of figures in Word does not link to the figures, since one of them floats, which Word would then list with no page; in the PDF each entry is a link.';
+      return say('publishing.the-list-of-figures-in');
     default:
       return placedWords(entry.kind, 1);
   }
@@ -248,25 +275,30 @@ export function reportWords(entry: ReportEntry): string {
 const flattenedName = (entry: { readonly block: string | null; readonly label: string | null }) =>
   entry.block === null
     ? entry.label === null
-      ? 'A heading with no number'
-      : `The heading numbered ${entry.label}`
+      ? say('publishing.a-heading-with-no-number')
+      : say('publishing.the-heading-numbered', { label: entry.label })
     : entry.label === null
-      ? 'A caption with no number'
-      : `${entry.label}'s caption`;
+      ? say('publishing.a-caption-with-no-number')
+      : say('publishing.s-caption', { label: entry.label });
 
 /** Each title Word sets as body text, as an author knows it. */
 const TITLE_WORDS: Record<UnheadedTitle, string> = {
-  document: "the document's title",
-  contents: 'the title of the contents',
-  lists: 'the titles of the lists of figures, tables and equations',
+  get document() {
+    return say('publishing.the-document-s-title');
+  },
+  get contents() {
+    return say('publishing.the-title-of-the-contents');
+  },
+  get lists() {
+    return say('publishing.the-titles-of-the-lists');
+  },
 };
 
 /** `a`, `a and b`, or `a, b and c`. */
-const listing = (items: readonly string[]) =>
-  items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items.at(-1)!}`;
+const listing = (items: readonly string[]) => formats().list(items);
 
 const tableName = (entry: { readonly label: string | null }) =>
-  entry.label ?? 'A table with no number';
+  entry.label ?? say('publishing.a-table-with-no-number');
 
 /** An entry's key among its report's, which says each thing once. */
 export function reportKey(entry: ReportEntry): string {

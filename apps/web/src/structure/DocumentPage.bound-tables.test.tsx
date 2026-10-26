@@ -360,7 +360,7 @@ describe("a document's bound table", () => {
     await user.click(await screen.findByRole('tab', { name: 'Data' }));
     const panel = screen.getByRole('tabpanel', { name: 'Data' });
     const row = panel.querySelector('[data-binding="b1"]')!;
-    expect(row).toHaveTextContent('A table of 2001 rows');
+    expect(row).toHaveTextContent('A table of 2,001 rows');
     expect(row.querySelector('[data-state]')).toHaveAttribute('data-state', 'failed');
     expect(row).toHaveTextContent(
       "This table's result has 2001 rows, more than a table can print. Narrow the rows in its query.",

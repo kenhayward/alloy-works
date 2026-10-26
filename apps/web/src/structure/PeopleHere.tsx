@@ -1,6 +1,7 @@
 import styles from './DocumentPage.module.css';
 import { OUTSIDE_SAID } from '../parts/Outside.js';
 import type { Freshness, LivePresence } from './live.js';
+import { words } from '../words/words.js';
 
 type Person = LivePresence & { readonly freshness: Freshness };
 
@@ -21,10 +22,10 @@ const initialsOf = (name: string) =>
 
 /** A person's presence in words: their name, what they are doing where it may be told, and staleness. */
 export function presenceWords(person: Person): string {
-  const name = `${person.person.name ?? 'Somebody'}${person.person.external === true ? `, ${OUTSIDE_SAID}` : ''}`;
+  const name = `${person.person.name ?? words('document.somebody')}${person.person.external === true ? `, ${OUTSIDE_SAID}` : ''}`;
   const doing = person.mode === null ? 'here' : DOING[person.mode];
   return person.freshness === 'stale'
-    ? `${name}, ${doing}, not heard from lately`
+    ? words('document.not-heard-from-lately', { name, doing })
     : `${name}, ${doing}`;
 }
 
@@ -41,7 +42,7 @@ export function PeopleHere({
   connected: boolean;
 }) {
   if (!connected) {
-    return <p className={styles['peopleOff']}>Who is here is not known just now</p>;
+    return <p className={styles['peopleOff']}>{words('document.who-is-here-is-not')}</p>;
   }
   if (people.length === 0) return null;
   // One mark a person, however many windows they have open: the freshest says what they are doing.
@@ -52,7 +53,7 @@ export function PeopleHere({
   }
   const shown = [...byPerson.values()];
   return (
-    <ul className={styles['people']} aria-label="Also here">
+    <ul className={styles['people']} aria-label={words('document.also-here')}>
       {shown.map((person) => (
         <li
           key={person.person.id}

@@ -5,6 +5,7 @@ import { refusal } from '../account/TokenTable.js';
 import { Modal } from '../layouts/Modal.js';
 import { ConfirmDialog } from '../parts/ConfirmDialog.js';
 import styles from './PublicationPage.module.css';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -37,7 +38,7 @@ function sharesIn(data: unknown): readonly Share[] | undefined {
 const localDay = (at: Date) =>
   `${at.getFullYear()}-${String(at.getMonth() + 1).padStart(2, '0')}-${String(at.getDate()).padStart(2, '0')}`;
 const inDays = (days: number) => localDay(new Date(Date.now() + days * DAY));
-const when = (at: string) => new Date(at).toLocaleDateString(undefined, { dateStyle: 'long' });
+const when = (at: string) => formats().date(new Date(at), { dateStyle: 'long' });
 
 /**
  * **Shared outside the organisation** (PUB-057, PUB-058, PUB-060; the R17 plan): to whoever may share
@@ -63,14 +64,15 @@ export function Shares({ client, publication }: { client: Client; publication: s
   }, [read]);
 
   if (shares === null) return null;
-  const nameOf = (each: Share) => each.recipient.name ?? each.recipient.email ?? 'Somebody';
+  const nameOf = (each: Share) =>
+    each.recipient.name ?? each.recipient.email ?? words('publishing.somebody');
   return (
     <section className={styles['section']} aria-labelledby={headingId}>
       <h3 id={headingId} className={styles['label']}>
-        Shared outside
+        {words('publishing.shared-outside')}
       </h3>
       {shares.length === 0 ? (
-        <p>Shared with nobody outside the organisation.</p>
+        <p>{words('publishing.shared-with-nobody-outside-the')}</p>
       ) : (
         <ul className={styles['shares']}>
           {shares.map((each) => (
@@ -80,21 +82,29 @@ export function Shares({ client, publication }: { client: Client; publication: s
                 <span className={styles['muted']}>{each.recipient.email}</span>
               )}
               <span className={styles['muted']}>
-                {each.expired ? `Ended ${when(each.expiresAt)}` : `Until ${when(each.expiresAt)}`}
+                {each.expired
+                  ? words('publishing.ended', { value1: when(each.expiresAt) })
+                  : words('publishing.until', { value1: when(each.expiresAt) })}
               </span>
               <span className={styles['muted']}>
                 {!each.recipient.signedIn
-                  ? 'Not signed in yet'
+                  ? words('publishing.not-signed-in-yet')
                   : each.accesses.length === 0
-                    ? 'Not opened yet'
-                    : `Opened ${each.accesses.length} ${each.accesses.length === 1 ? 'time' : 'times'}, last on ${when(each.accesses[0]!.at)}`}
+                    ? words('publishing.not-opened-yet')
+                    : words('publishing.opened-last-on', {
+                        length: each.accesses.length,
+                        value2: each.accesses.length,
+                        value3: when(each.accesses[0]!.at),
+                      })}
               </span>
               <button
                 type="button"
-                aria-label={`Revoke ${each.recipient.email ?? nameOf(each)}`}
+                aria-label={words('publishing.revoke', {
+                  value1: each.recipient.email ?? nameOf(each),
+                })}
                 onClick={() => setRevoking(each)}
               >
-                Revoke
+                {words('publishing.revoke-2')}
               </button>
             </li>
           ))}
@@ -103,7 +113,7 @@ export function Shares({ client, publication }: { client: Client; publication: s
       {said !== '' && <p role="status">{said}</p>}
       <p>
         <button type="button" onClick={() => setSharing(true)}>
-          Share outside
+          {words('publishing.share-outside')}
         </button>
       </p>
       {sharing && (
@@ -113,25 +123,23 @@ export function Shares({ client, publication }: { client: Client; publication: s
           onClose={() => setSharing(false)}
           onShared={(email) => {
             setSharing(false);
-            setSaid(
-              `Shared with ${email}. Send them the address of this page: they read it once they sign in with that address.`,
-            );
+            setSaid(words('publishing.shared-with-send-them-the', { email }));
             void read();
           }}
         />
       )}
       {revoking !== null && (
         <ConfirmDialog
-          question="Revoke this share?"
-          sentence={`${nameOf(revoking)} can no longer open this publication or save its files, from now.`}
-          keep="Keep it"
-          act="Revoke"
+          question={words('publishing.revoke-this-share')}
+          sentence={words('publishing.can-no-longer-open-this', { value1: nameOf(revoking) })}
+          keep={words('publishing.keep-it')}
+          act={words('publishing.revoke-2')}
           onKeep={() => setRevoking(null)}
           onAct={async () => {
             const { error } = await client.DELETE('/v1/publications/{id}/shares/{share}', {
               params: { path: { id: publication, share: revoking.id } },
             });
-            if (error) throw new Error('not revoked');
+            if (error) throw new Error(words('publishing.not-revoked'));
             setRevoking(null);
             setSaid('');
             await read();
@@ -162,12 +170,12 @@ function ShareDialog({
   const share = async (event: React.FormEvent) => {
     event.preventDefault();
     if (email.trim() === '') {
-      setSaid('Give the address of the person to share it with.');
+      setSaid(words('publishing.give-the-address-of-the'));
       return;
     }
     const [year, month, day] = until.split('-').map(Number);
     if (!year || !month || !day) {
-      setSaid('Choose the day the share ends.');
+      setSaid(words('publishing.choose-the-day-the-share'));
       return;
     }
     // The default is the environment's own, so none is sent; another day is sent at this time of
@@ -190,19 +198,16 @@ function ShareDialog({
       .catch(() => ({ data: undefined, error: undefined }));
     setBusy(false);
     if (data) onShared(email.trim().toLowerCase());
-    else setSaid(refusal(error, 'It could not be shared.'));
+    else setSaid(refusal(error, words('publishing.it-could-not-be-shared')));
   };
 
   return (
     <Modal labelledBy={headingId} size="narrow" onClose={onClose}>
       <form className={styles['form']} onSubmit={(event) => void share(event)}>
-        <h2 id={headingId}>Share outside the organisation</h2>
-        <p className={styles['muted']}>
-          Somebody from outside reads this publication alone, and only once they sign in with the
-          address given here. Every time they open it is recorded.
-        </p>
+        <h2 id={headingId}>{words('publishing.share-outside-the-organisation')}</h2>
+        <p className={styles['muted']}>{words('publishing.somebody-from-outside-reads-this')}</p>
         <label>
-          Their email address
+          {words('publishing.their-email-address')}
           <input
             type="email"
             value={email}
@@ -212,7 +217,7 @@ function ShareDialog({
           />
         </label>
         <label>
-          Until
+          {words('publishing.until-2')}
           <input
             type="date"
             required
@@ -225,10 +230,10 @@ function ShareDialog({
         {said !== '' && <p role="alert">{said}</p>}
         <div className={styles['buttons']}>
           <button type="button" onClick={onClose}>
-            Cancel
+            {words('publishing.cancel')}
           </button>
           <button type="submit" className="primary" disabled={busy}>
-            Share
+            {words('publishing.share')}
           </button>
         </div>
       </form>

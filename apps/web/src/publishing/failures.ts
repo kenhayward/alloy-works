@@ -1,4 +1,5 @@
 import type { PublishFailureCode } from '@alloy-works/domain';
+import { words } from '../words/words.js';
 
 /** One failure as the service answers it (`PublishFailureView`). */
 export interface Failure {
@@ -10,11 +11,21 @@ export interface Failure {
 }
 
 const BLOCKS: Readonly<Record<string, string>> = {
-  list: 'A list',
-  table: 'A table',
-  figure: 'A figure',
-  preformatted: 'Preformatted text',
-  blockquote: 'A quotation',
+  get list() {
+    return words('publishing.a-list');
+  },
+  get table() {
+    return words('publishing.a-table');
+  },
+  get figure() {
+    return words('publishing.a-figure');
+  },
+  get preformatted() {
+    return words('publishing.preformatted-text');
+  },
+  get blockquote() {
+    return words('publishing.a-quotation');
+  },
 };
 
 /**
@@ -31,10 +42,18 @@ const BLOCKS: Readonly<Record<string, string>> = {
  * words equations 1 left it with.
  */
 const INLINES: Readonly<Record<string, string>> = {
-  image: 'An image in a line of text cannot be published yet.',
-  footnote: 'A footnote cannot be published yet.',
-  crossReference: 'A cross-reference cannot be published from this request. Publish again.',
-  equation: 'An equation cannot be published from this request. Publish again.',
+  get image() {
+    return words('publishing.an-image-in-a-line');
+  },
+  get footnote() {
+    return words('publishing.a-footnote-cannot-be-published');
+  },
+  get crossReference() {
+    return words('publishing.a-cross-reference-cannot-be');
+  },
+  get equation() {
+    return words('publishing.an-equation-cannot-be-published');
+  },
 };
 
 /**
@@ -44,18 +63,42 @@ const INLINES: Readonly<Record<string, string>> = {
  * but a request refused before then still holds its failure, and is read back by these words.
  */
 const NOT_YET_IN_WORD: Readonly<Record<string, string>> = {
-  list: 'A list',
-  blockquote: 'A quotation',
-  preformatted: 'Preformatted text',
-  table: 'A table',
-  figure: 'A figure',
-  equation: 'An equation',
-  image: 'An image in a line of text',
-  footnote: 'A footnote',
-  crossReference: 'A cross-reference',
-  'listOf:figure': 'The list of figures after the contents',
-  'listOf:table': 'The list of tables after the contents',
-  'listOf:equation': 'The list of equations after the contents',
+  get list() {
+    return words('publishing.a-list');
+  },
+  get blockquote() {
+    return words('publishing.a-quotation');
+  },
+  get preformatted() {
+    return words('publishing.preformatted-text');
+  },
+  get table() {
+    return words('publishing.a-table');
+  },
+  get figure() {
+    return words('publishing.a-figure');
+  },
+  get equation() {
+    return words('publishing.an-equation');
+  },
+  get image() {
+    return words('publishing.an-image-in-a-line-2');
+  },
+  get footnote() {
+    return words('publishing.a-footnote');
+  },
+  get crossReference() {
+    return words('publishing.a-cross-reference');
+  },
+  get 'listOf:figure'() {
+    return words('publishing.the-list-of-figures-after');
+  },
+  get 'listOf:table'() {
+    return words('publishing.the-list-of-tables-after');
+  },
+  get 'listOf:equation'() {
+    return words('publishing.the-list-of-equations-after');
+  },
 };
 
 /**
@@ -65,55 +108,88 @@ const NOT_YET_IN_WORD: Readonly<Record<string, string>> = {
  * number otherwise. An equation's number is judged as a caption's, and said in a caption's words.
  */
 const NUMBERED: Readonly<Record<string, string>> = {
-  section: 'the headings',
-  figure: 'the figures',
-  table: 'the tables',
-  equation: 'the equations',
-  footnote: 'the footnotes',
+  get section() {
+    return words('publishing.the-headings');
+  },
+  get figure() {
+    return words('publishing.the-figures');
+  },
+  get table() {
+    return words('publishing.the-tables');
+  },
+  get equation() {
+    return words('publishing.the-equations');
+  },
+  get footnote() {
+    return words('publishing.the-footnotes');
+  },
 };
 const NUMBERED_IN: Readonly<Record<string, string>> = {
-  front: 'in front matter',
-  body: 'in the body',
-  appendix: 'in the appendices',
+  get front() {
+    return words('publishing.in-front-matter');
+  },
+  get body() {
+    return words('publishing.in-the-body');
+  },
+  get appendix() {
+    return words('publishing.in-the-appendices');
+  },
 };
 const NOT_IN_WORD_BECAUSE: Readonly<Record<string, string>> = {
-  separator: 'its separator holds a % sign, which Word reads as a number',
-  letters: 'a number in letters goes past z, which Word writes differently',
-  roman: 'a number in roman numerals goes past 3999',
-  depth: 'a heading is numbered more than nine levels deep, and Word numbers nine',
-  prefix:
-    "a number's prefix is the number of a heading Word would not find there, such as one with no number",
-  restart:
-    'a number starts again or carries on where Word would not, such as after a heading with no number',
+  get separator() {
+    return words('publishing.its-separator-holds-a-sign');
+  },
+  get letters() {
+    return words('publishing.a-number-in-letters-goes');
+  },
+  get roman() {
+    return words('publishing.a-number-in-roman-numerals');
+  },
+  get depth() {
+    return words('publishing.a-heading-is-numbered-more');
+  },
+  get prefix() {
+    return words('publishing.a-number-s-prefix-is');
+  },
+  get restart() {
+    return words('publishing.a-number-starts-again-or');
+  },
 };
 /** A caption's separator is words between Word's fields, where only a control character fails. */
-const CAPTION_SEPARATOR = 'its separator holds a character Word cannot write';
+const CAPTION_SEPARATOR = (): string => words('publishing.its-separator-holds-a-character');
 /**
  * Word 3's ruling R2: Word numbers a footnote itself, with nothing beside the number, and starts the
  * count again only where a matter's section begins.
  */
 const FOOTNOTE_NOT_IN_WORD_BECAUSE: Readonly<Record<string, string>> = {
-  label: 'a word stands before the number, which Word does not write beside a footnote',
-  prefix:
-    "a chapter's number stands before the number, which Word does not write beside a footnote",
-  restart:
-    'they start again or carry on where Word would not, since Word starts them again only where front matter, the body or the appendices begin',
+  get label() {
+    return words('publishing.a-word-stands-before-the');
+  },
+  get prefix() {
+    return words('publishing.a-chapter-s-number-stands');
+  },
+  get restart() {
+    return words('publishing.they-start-again-or-carry');
+  },
 };
 
 /** The sentence for `numbering_not_in_word`: the layout's to change, and the PDF can be made. */
 function notInWord(detail: string | null): string {
   const [sequence = '', matter = '', why = ''] = (detail ?? '').split(':');
-  const numbered = NUMBERED[sequence] ?? 'the headings';
+  const numbered = NUMBERED[sequence] ?? words('publishing.the-headings');
   const where = NUMBERED_IN[matter] === undefined ? numbered : `${numbered} ${NUMBERED_IN[matter]}`;
   const because =
     sequence === 'footnote' && FOOTNOTE_NOT_IN_WORD_BECAUSE[why] !== undefined
       ? FOOTNOTE_NOT_IN_WORD_BECAUSE[why]
       : why === 'separator' && sequence !== 'section'
-        ? CAPTION_SEPARATOR
+        ? CAPTION_SEPARATOR()
         : NOT_IN_WORD_BECAUSE[why];
   return (
-    `The layout numbers ${where} in a way Word cannot${because === undefined ? '' : `: ${because}`}. ` +
-    'Publish this document as a PDF only, or under a layout Word can number.'
+    (because === undefined
+      ? words('publishing.the-layout-numbers-in-a', { where })
+      : words('publishing.the-layout-numbers-in-a-because', { where, because })) +
+    ' ' +
+    words('publishing.publish-this-document-as-a')
   );
 }
 
@@ -122,9 +198,15 @@ function notInWord(detail: string | null): string {
  * otherwise than the PDF does. The list is the author's to change, and the PDF can be made.
  */
 const LIST_NOT_IN_WORD: Readonly<Record<string, string>> = {
-  depth: 'is nested more than nine levels deep, and Word nests nine',
-  letters: 'is numbered in letters past the 27th, which Word writes differently',
-  roman: 'is numbered in roman numerals past 3999, which Word writes differently',
+  get depth() {
+    return words('publishing.is-nested-more-than-nine');
+  },
+  get letters() {
+    return words('publishing.is-numbered-in-letters-past');
+  },
+  get roman() {
+    return words('publishing.is-numbered-in-roman-numerals');
+  },
 };
 
 /**
@@ -136,14 +218,18 @@ const LIST_NOT_IN_WORD: Readonly<Record<string, string>> = {
  * PDF can be made.
  */
 const REFERENCE_NOT_IN_WORD: Readonly<Record<string, string>> = {
-  footnote:
-    'A cross-reference asks for above or below between a footnote and the text outside it, which Word cannot print.',
-  float:
-    "A cross-reference in a floating figure's caption asks for above or below, which Word cannot print there.",
-  caption:
-    "A cross-reference in a caption asks for that caption's own words, which Word cannot print.",
-  nested:
-    "A cross-reference asks for a caption's words that hold a cross-reference, which Word would print otherwise.",
+  get footnote() {
+    return words('publishing.a-cross-reference-asks-for');
+  },
+  get float() {
+    return words('publishing.a-cross-reference-in-a');
+  },
+  get caption() {
+    return words('publishing.a-cross-reference-in-a-2');
+  },
+  get nested() {
+    return words('publishing.a-cross-reference-asks-for-2');
+  },
 };
 
 /**
@@ -155,19 +241,45 @@ const REFERENCE_NOT_IN_WORD: Readonly<Record<string, string>> = {
  * sets, an accent of more than one character, and an equation that draws nothing at all.
  */
 const EQUATION_PROBLEMS: Readonly<Record<string, string>> = {
-  unreadable: 'is MathML that cannot be read at all',
-  merror: 'holds an error mark',
-  rtl: 'is written with maths right to left',
-  multiscripts: 'holds more than one prescript or postscript on one side',
-  voffset: 'holds a raised or lowered box',
-  spanningCell: 'holds a cell spanning others',
-  mathvariant: 'holds something the typesetter cannot set',
-  element: 'holds something the typesetter cannot set',
-  attribute: 'holds something the typesetter cannot set',
-  text: 'holds something the typesetter cannot set',
-  space: 'holds a space too wide to be set',
-  accent: 'holds an accent made of more than one character',
-  empty: 'draws nothing',
+  get unreadable() {
+    return words('publishing.is-mathml-that-cannot-be');
+  },
+  get merror() {
+    return words('publishing.holds-an-error-mark');
+  },
+  get rtl() {
+    return words('publishing.is-written-with-maths-right');
+  },
+  get multiscripts() {
+    return words('publishing.holds-more-than-one-prescript');
+  },
+  get voffset() {
+    return words('publishing.holds-a-raised-or-lowered');
+  },
+  get spanningCell() {
+    return words('publishing.holds-a-cell-spanning-others');
+  },
+  get mathvariant() {
+    return words('publishing.holds-something-the-typesetter-cannot');
+  },
+  get element() {
+    return words('publishing.holds-something-the-typesetter-cannot');
+  },
+  get attribute() {
+    return words('publishing.holds-something-the-typesetter-cannot');
+  },
+  get text() {
+    return words('publishing.holds-something-the-typesetter-cannot');
+  },
+  get space() {
+    return words('publishing.holds-a-space-too-wide');
+  },
+  get accent() {
+    return words('publishing.holds-an-accent-made-of');
+  },
+  get empty() {
+    return words('publishing.draws-nothing');
+  },
 };
 
 /**
@@ -185,15 +297,21 @@ const EQUATION_PROBLEMS: Readonly<Record<string, string>> = {
  * `numberAndTitle` name, as `number` names an unnumbered equation.
  */
 const FORMS: Readonly<Record<string, string>> = {
-  number:
-    'A cross-reference asks for a number, and what it points at has none: a paragraph, a list, a section with no number of its own, a figure or a table left unnumbered, or an unnumbered equation.',
-  title:
-    'A cross-reference asks for a title, and what it points at has none: a paragraph, a list, a footnote, or an equation. A section or a caption holding an equation has none either, since the equation cannot be printed as a title.',
-  numberAndTitle:
-    'A cross-reference asks for a number and a title, and what it points at is missing one: a paragraph, a list, a footnote, an equation, a section with no number of its own, or a figure or a table left unnumbered. A section or a caption holding an equation is missing one too, since the equation cannot be printed as a title.',
-  page: "A cross-reference asks for a page. A section's title cannot hold one, since the running heads and the contents set the title again in a different place; nor can something standing in a table's header row, which the page repeats.",
-  relative:
-    "A cross-reference asks for above or below. Either this publication's layout has no words for them, or what it points at stands in a table's header row, which repeats.",
+  get number() {
+    return words('publishing.a-cross-reference-asks-for-3');
+  },
+  get title() {
+    return words('publishing.a-cross-reference-asks-for-4');
+  },
+  get numberAndTitle() {
+    return words('publishing.a-cross-reference-asks-for-5');
+  },
+  get page() {
+    return words('publishing.a-cross-reference-asks-for-6');
+  },
+  get relative() {
+    return words('publishing.a-cross-reference-asks-for-7');
+  },
 };
 
 /**
@@ -207,40 +325,50 @@ const FORMS: Readonly<Record<string, string>> = {
 export function failureWords(failure: Failure, wordOffered = false): string {
   switch (failure.code) {
     case 'occurrence_unreadable':
-      return 'A component you may not read is placed here. Only someone who may read every component can publish this document.';
+      return words('publishing.a-component-you-may-not');
     // REU-005: told apart from one there the publisher may not read (REU-043).
     // REU-017: never printed as its name, never blank.
     case 'variable_unresolved':
-      return `The variable ${failure.detail ?? 'here'} has no value for this document. Give the document the parameter or the field it is taken from, or remove it.`;
+      return words('publishing.the-variable-has-no-value', { value1: failure.detail ?? 'here' });
     // REU-048: never published with excluded text in it, however it got there.
     case 'condition_leaked':
-      return `Text this profile leaves out was found in the ${failure.detail === 'docx' ? 'Word document' : 'PDF'}, so nothing was published. Report this; it is a fault in publishing, not in the document.`;
+      return words('publishing.text-this-profile-leaves-out', {
+        value1: failure.detail === 'docx' ? 'Word document' : 'PDF',
+      });
     // GEN-025 (the G3 plan, G3-F): generated content waits to be accepted or rejected.
     case 'generated_unaccepted':
-      return `This part has ${failure.detail === '1' ? 'a generated suggestion' : `${failure.detail ?? 'some'} generated suggestions`} waiting to be accepted or rejected. Resolve ${failure.detail === '1' ? 'it' : 'them'} in Review, then publish.`;
+      return words('publishing.this-part-has-waiting-to', {
+        count: failure.detail === null ? 'some' : Number(failure.detail),
+      });
     // REU-053: an unset axis leaves text out only where the document accepts it.
     case 'axis_unset':
-      return `Content here depends on ${failure.detail ?? 'a condition'}, which the document's profile does not set. Set it in the profile, or accept that such text is left out.`;
+      return words('publishing.content-here-depends-on-which', {
+        value1: failure.detail ?? words('publishing.a-condition'),
+      });
     // REU-015: never applied over a changed paragraph, and never dropped without saying so.
     case 'override_stale':
-      return 'This document overrides a paragraph of the component here that has changed since. Look at the paragraph again, then change the override or remove it.';
+      return words('publishing.this-document-overrides-a-paragraph');
     case 'occurrence_gone':
-      return 'The component placed here is gone: it was deleted. Remove this reference, or place another component.';
+      return words('publishing.the-component-placed-here-is');
     // MET-023: `detail` is the field's name and what is wrong with it, as the definitions word it -
     // never the value, which is the component's.
     case 'component_metadata_invalid':
-      return `This component's fields are not filled in as its type asks: ${failure.detail ?? 'a field'}. Put it right in the component, and publish again.`;
+      return words('publishing.this-component-s-fields-are', {
+        value1: failure.detail ?? words('publishing.a-field'),
+      });
     case 'occurrence_unresolved':
-      return 'This reference waits on an approved version, and nothing can approve one yet.';
+      return words('publishing.this-reference-waits-on-an');
     case 'title_not_publishable':
-      return 'This title holds something that cannot be published yet.';
+      return words('publishing.this-title-holds-something-that');
     case 'block_not_publishable':
       // A block equation reaches this code only from a request made before layouts (equations 2): it
       // publishes under one now, so its sentence says what mends it, worded as the inline equation's
       // and the cross-reference's are, rather than naming a feature that is not built.
       return failure.detail === 'equation'
-        ? 'An equation cannot be published from this request. Publish again.'
-        : `${BLOCKS[failure.detail ?? ''] ?? 'This block'} cannot be published yet.`;
+        ? words('publishing.an-equation-cannot-be-published')
+        : words('publishing.cannot-be-published-yet', {
+            value1: BLOCKS[failure.detail ?? ''] ?? 'This block',
+          });
     // "This text", not "this paragraph": `assemble` raises this code for a definition list's **term**
     // as well as for a paragraph, and names the LIST in that case, because a term carries no
     // identifier of its own. A sentence that said paragraph while pointing at a list would send an
@@ -248,21 +376,18 @@ export function failureWords(failure: Failure, wordOffered = false): string {
     // An image in a line of text is named as one, now an author can place it (figures 4), and so is a
     // footnote (footnotes 1).
     case 'inline_not_publishable':
-      return (
-        INLINES[failure.detail ?? ''] ??
-        'This text holds formatting or an inline item that cannot be published yet.'
-      );
+      return INLINES[failure.detail ?? ''] ?? words('publishing.this-text-holds-formatting-or');
     // A table has a style of its own as a paragraph does (tables 2), and a figure an image style
     // (figures 3); the failure names the block but not its kind, so the sentence names all three.
     // Since themes 1 the styles are the theme's catalogues', so it is the theme that lacks one, and
     // `detail` is the style's identifier as stored, never the author's text.
     case 'style_missing':
-      return `This paragraph, table or figure uses the style ${failure.detail ?? ''}, which the publication's theme does not have.`;
+      return words('publishing.this-paragraph-table-or-figure', { value1: failure.detail ?? '' });
     // Themes 1: the style is the theme's, and declares where it applies (STY-006) - a heading's style
     // on running text, a footnote's in a list. `detail` is the style's identifier, which the theme
     // wrote, never the author's text; the block is named by where it is, as for `style_missing`.
     case 'style_not_applicable':
-      return `This paragraph, table or figure uses the style ${failure.detail ?? ''}, which cannot be used where it stands.`;
+      return words('publishing.this-paragraph-table-or-figure-2', { value1: failure.detail ?? '' });
     // Themes 1 (STY-042): the theme records each typeface's licence, and this one's forbids embedding
     // it in a PDF, or since Word 1 in a Word document. Nothing in the document caused it and another
     // attempt fails the same way, so it blames the theme, as `layout_glyph_missing` blames the layout,
@@ -272,7 +397,10 @@ export function failureWords(failure: Failure, wordOffered = false): string {
       const detail = failure.detail ?? '';
       const word = detail.endsWith(': docx');
       const family = word ? detail.slice(0, -': docx'.length) : detail;
-      return `The typeface ${family} cannot be embedded in ${word ? 'a Word document' : 'a PDF'}: its licence does not permit it. The publication's theme has to change before this document can be published.`;
+      return words('publishing.the-typeface-cannot-be-embedded', {
+        family,
+        value2: word ? 'a Word document' : 'a PDF',
+      });
     }
     // Themes 1 (ruling R5): the theme names a typeface by its files' hashes, and the worker holds only
     // the faces pinned in its image, so a face it does not hold cannot set a word. As the licence's
@@ -281,252 +409,285 @@ export function failureWords(failure: Failure, wordOffered = false): string {
     // the theme wrote, which cannot hold a colon, and a word from a fixed list, never a hash or a
     // number. A reason this page does not know is said as the service not holding the face.
     case 'typeface_unavailable': {
-      const theme = "The publication's theme has to change before this document can be published.";
+      const theme = words('publishing.the-publication-s-theme-has');
       const detail = failure.detail ?? '';
       const at = detail.lastIndexOf(': ');
       const family = at < 0 ? detail : detail.slice(0, at);
       const reason = at < 0 ? '' : detail.slice(at + 2);
       if (reason === 'maths') {
-        return `The typeface ${family} cannot set this publication's equations: it is not a typeface made for mathematics. ${theme}`;
+        return words('publishing.the-typeface-cannot-set-this', { family, theme });
       }
       const because =
         reason === 'metrics'
-          ? "the measurements the theme records for it are not its files' own"
+          ? words('publishing.the-measurements-the-theme-records')
           : reason === 'files'
-            ? 'the publishing service does not hold the files the theme names for it'
-            : 'the publishing service does not hold it';
-      return `The typeface ${family} is not one this publication can be set in: ${because}. ${theme}`;
+            ? words('publishing.the-publishing-service-does-not')
+            : words('publishing.the-publishing-service-does-not-2');
+      return words('publishing.the-typeface-is-not-one', { family, because, theme });
     }
     // Decision K, as Ken reversed it: a tag the engine cannot carry is refused, never shortened, and
     // the author is told what a publication takes (pre-flight finding 9).
     case 'language_not_publishable':
-      return `The language ${failure.detail ?? ''} cannot be published: a publication takes a language of two or three letters and, if any, a region of two, such as en-GB.`;
+      return words('publishing.the-language-cannot-be-published', { value1: failure.detail ?? '' });
     case 'glyph_missing':
-      return `The character ${failure.detail ?? ''} is in no typeface this publication can use.`;
+      return words('publishing.the-character-is-in-no', { value1: failure.detail ?? '' });
     case 'character_disallowed':
-      return `An invisible character, ${failure.detail ?? ''}, cannot be published. Delete it and publish again.`;
+      return words('publishing.an-invisible-character-cannot-be', { value1: failure.detail ?? '' });
     // Another attempt would make the same nothing, so this never says to publish again (PUB-079).
     case 'nothing_to_publish':
-      return 'There is nothing to publish: no part of the outline is left, and the layout sets no cover.';
+      return words('publishing.there-is-nothing-to-publish');
     // The layout's own words and language: nothing in the document caused these, and another attempt
     // would fail the same way, so they blame the layout and never say to publish again.
     case 'layout_glyph_missing':
-      return `This publication's layout uses a character, ${failure.detail ?? ''}, that no typeface it can use has. The layout has to change before this document can be published.`;
+      return words('publishing.this-publication-s-layout-uses', { value1: failure.detail ?? '' });
     case 'layout_language_not_publishable':
-      return `This publication's layout is in the language ${failure.detail ?? ''}, which cannot be published. The layout has to change before this document can be published.`;
+      return words('publishing.this-publication-s-layout-is', { value1: failure.detail ?? '' });
     // Named apart from `glyph_missing`: the body face has this character, so "in no typeface" would
     // be untrue, and the author needs to know it is the code that cannot carry it.
     case 'code_glyph_missing':
-      return `The character ${failure.detail ?? ''} is not in the monospace typeface that preformatted text and inline code are set in.`;
+      return words('publishing.the-character-is-not-in', { value1: failure.detail ?? '' });
     // Equations 2, as `code_glyph_missing`: the body face may have this character, so "in no
     // typeface" would be untrue; it is the equation's maths typeface that cannot set it.
     case 'math_glyph_missing':
-      return `The maths typeface that equations are set in cannot set the character ${failure.detail ?? ''} in this equation.`;
+      return words('publishing.the-maths-typeface-that-equations', {
+        value1: failure.detail ?? '',
+      });
     // CNT-049, ruling R5: what the equation held is never quoted, only the fixed construct
     // `EQUATION_PROBLEMS` names; opening the equation is the one way to change what it holds.
     case 'equation_unrenderable':
-      return `An equation ${EQUATION_PROBLEMS[failure.detail ?? ''] ?? 'holds something the typesetter cannot set'}, so it cannot be published. Open it and rewrite it, or delete it.`;
+      return words('publishing.an-equation-so-it-cannot', {
+        value1:
+          EQUATION_PROBLEMS[failure.detail ?? ''] ?? 'holds something the typesetter cannot set',
+      });
     // As `footnote_unnumbered`: a layout whose scheme prefixes equations with their chapter gives none
     // in a part with no numbered section before it, and an equation the author numbered is refused
     // rather than published with the number it asked for missing (R5).
     case 'equation_unnumbered':
-      return 'An equation here would print with no number: the layout numbers equations within sections, and no numbered section comes before it.';
+      return words('publishing.an-equation-here-would-print');
     case 'line_too_wide':
-      return `A line of this preformatted text is too wide for the page, so it would be cut off: ${failure.detail ?? ''}. Shorten the line or break it.`;
+      return words('publishing.a-line-of-this-preformatted', { value1: failure.detail ?? '' });
     // Tables 2's ruling R8: what a caption is for, so the author knows why it is asked for.
     case 'table_without_caption':
-      return 'A table has no caption. Give it one: the caption names the table in the PDF and to a screen reader.';
+      return words('publishing.a-table-has-no-caption');
     case 'table_header_spans_body':
-      return 'A header cell of this table spans down into rows that are not header rows, so the PDF would present them as headers too. Shorten its span, or make those rows header rows.';
+      return words('publishing.a-header-cell-of-this');
     // Figures 3's ruling R10: what a caption and a description are for, and where each is given.
     case 'figure_without_caption':
-      return 'A figure has no caption. Give it one: the caption names the figure in the PDF and to a screen reader.';
+      return words('publishing.a-figure-has-no-caption');
     // Figures 3's ruling R10 (the comment above `figure_without_caption` covers this code too), and
     // equations 2's R5 beside it: a figure's image with no description of its own and none on the
     // figure either, or an equation with no alternative text, fail alike - never which, since the
     // code is one whichever it is.
     case 'alternative_missing':
-      return "This has no way to be read aloud: an image with no description, and its figure not given one either, or an equation with no alternative text. Describe an image in its figure's panel, or mark it decorative; write an equation's alternative by opening it again.";
+      return words('publishing.this-has-no-way-to');
     // Named by where the figure is, never by the image, which the author may not read.
     case 'asset_unreadable':
-      return 'A figure shows an image you may not see, so you cannot publish it.';
+      return words('publishing.a-figure-shows-an-image');
     // A figure does not break across pages, so its image and caption must stand on one together.
     case 'caption_too_long':
-      return "A figure's caption is too long to stand on a page with its image. Shorten the caption.";
+      return words('publishing.a-figure-s-caption-is');
     // Themes 2's ruling R2: the label is the table style's and its words the layout's, and nothing in
     // the document mends either, so it is theirs to change and another attempt fails the same way.
     // `detail` is the style's identifier, as `style_missing` names one.
     case 'continuation_words_missing':
-      return `This table's style, ${failure.detail ?? ''}, labels each page the table continues onto, but the publication's layout has no words for the label. The layout or the theme has to change before this document can be published.`;
+      return words('publishing.this-table-s-style-labels', { value1: failure.detail ?? '' });
     // W10.1 (PV-D): a preview says so in the layout's words, and this layout has none - one stored
     // before its schema 6 - so, as `continuation_words_missing`, it blames the layout and never says to
     // try again.
     case 'preview_words_missing':
-      return "The layout has no words for a preview's notice, so it cannot mark a preview as one. The layout has to change before this document can be previewed.";
+      return words('publishing.the-layout-has-no-words');
     // Figures 5's ruling R7: an image set in a line has only the line's room, or its cell's.
     case 'image_too_wide':
-      return 'An image in a line of text is wider than the room it stands in. Use a narrower image, or make it a figure.';
+      return words('publishing.an-image-in-a-line-3');
     // The final review of figures 5: a caption is estimated from its words and set again in the lists.
     case 'image_in_caption':
-      return 'A caption holds an image, which a caption cannot publish. Take the image out of the caption.';
+      return words('publishing.a-caption-holds-an-image');
     // Footnotes 2's ruling R9: where a footnote may stand, and what a note on a whole table is.
     case 'footnote_not_publishable_here':
-      return "A footnote stands where it cannot be published. A footnote can stand only in a paragraph's text; a note on a whole table is the table's note.";
+      return words('publishing.a-footnote-stands-where-it');
     case 'footnote_anchor_unresolved':
-      return 'A footnote is anchored to a cell its table does not have.';
+      return words('publishing.a-footnote-is-anchored-to');
     case 'footnote_empty':
-      return 'A footnote has no text. Write it, or delete its mark.';
+      return words('publishing.a-footnote-has-no-text');
     // The layout's rule, not the document's: its scheme prefixes footnotes with their section's
     // number, and this part of the document has no numbered section before it (final review).
     case 'footnote_unnumbered':
-      return 'A footnote here would print with no number: the layout numbers footnotes within sections, and no numbered section comes before it.';
+      return words('publishing.a-footnote-here-would-print');
     // Cross-references 2's ruling R7: the target is missing from this document, a component target's
     // document holds it more than once, or not at all - never which, since neither is the author's to
     // read from another component (STR-062).
     case 'cross_reference_unresolved':
-      return 'A cross-reference points at something this document does not hold, or at a component it holds more than once.';
+      return words('publishing.a-cross-reference-points-at');
     // STR-030 (the R11 plan, R11-D): the target is there, and the profile leaves it out.
     case 'cross_reference_excluded':
-      return 'A cross-reference points at something this profile leaves out. Change the reference, or the conditions or the profile that leave its target out.';
+      return words('publishing.a-cross-reference-points-at-2');
     // Ruling R7 again: `detail` is the form asked, never the author's text.
     case 'cross_reference_form_unavailable':
-      return (
-        FORMS[failure.detail ?? ''] ??
-        'A cross-reference asks for a form of its target that cannot be shown.'
-      );
+      return FORMS[failure.detail ?? ''] ?? words('publishing.a-cross-reference-asks-for-8');
     // Word 1's ruling R3: nothing in the document is wrong, and the PDF can be made of it, so the
     // sentence says so rather than asking for a change or another attempt.
     case 'word_not_yet':
-      return `${NOT_YET_IN_WORD[failure.detail ?? ''] ?? 'Something here'} cannot be published in Word yet. Publish this document as a PDF only.`;
+      return words('publishing.cannot-be-published-in-word', {
+        value1: NOT_YET_IN_WORD[failure.detail ?? ''] ?? 'Something here',
+      });
     // Refused when the request is made (PUB-014), so met only by a request built past that check: the
     // layout's to change, as its words are.
     case 'format_unsupported':
-      return "This publication's layout has no page for Word, so it cannot be published in Word. Publish it as a PDF, or under a layout with a Word page.";
+      return words('publishing.this-publication-s-layout-has');
     // Word 1's ruling R7: nothing in the document is wrong; the layout's scheme asks Word for a number
     // it would print differently from the PDF's.
     case 'numbering_not_in_word':
       return notInWord(failure.detail);
     // Word 2's ruling R4: nothing else in the document is wrong, and the PDF can be made of it.
     case 'list_not_in_word':
-      return `A list here ${LIST_NOT_IN_WORD[failure.detail ?? ''] ?? 'cannot be printed by Word as the PDF prints it'}. Publish this document as a PDF only, or change the list.`;
+      return words('publishing.a-list-here-publish-this', {
+        value1:
+          LIST_NOT_IN_WORD[failure.detail ?? ''] ??
+          'cannot be printed by Word as the PDF prints it',
+      });
     // Word 3's ruling R5: nothing else in the document is wrong, and the PDF can be made of it.
     case 'cross_reference_not_in_word': {
       const why = (failure.detail ?? '').split(':')[1] ?? '';
-      return `${REFERENCE_NOT_IN_WORD[why] ?? 'A cross-reference here cannot be printed by Word as the PDF prints it.'} Publish this document as a PDF only, or change the cross-reference.`;
+      return words('publishing.publish-this-document-as-a-2', {
+        value1:
+          REFERENCE_NOT_IN_WORD[why] ??
+          'A cross-reference here cannot be printed by Word as the PDF prints it.',
+      });
     }
     // W14.2 (W-E, ADR-0031): the place names the heading, a section's or a component's; nothing else in
     // the document is wrong, and Word, which tags nine levels, can be made of it - where Word can be
     // asked for at all, which a preview and a layout with no Word page cannot.
     case 'heading_too_deep':
-      return `This heading is nested more than six levels deep, which a PDF cannot tag as a heading. Move it up a level${wordOffered ? ', or publish this document to Word alone' : ''}.`;
+      return words('publishing.this-heading-is-nested-more', {
+        word: wordOffered ? 'yes' : 'no',
+      });
     // The binding stage (B3): a value with no result recorded for this document, which the service
     // refuses at the door, so this is met only by a request built past it; a take that holds no value;
     // and a stored result the worker could not read whole. `detail` is the binding, never a value.
     case 'binding_unresolved':
-      return 'This value has no result in this document. Resolve it, then publish again.';
+      return words('publishing.this-value-has-no-result');
     case 'value_none':
-      return `This value's result has no row. ${CHANGE_THE_VALUE}`;
+      return words('publishing.this-value-s-result-has', { CHANGE_THE_VALUE: CHANGE_THE_VALUE() });
     case 'value_many':
-      return `This value's result has more than one row, and a value is taken from one. ${CHANGE_THE_VALUE}`;
+      return words('publishing.this-value-s-result-has-2', {
+        CHANGE_THE_VALUE: CHANGE_THE_VALUE(),
+      });
     case 'row_missing':
-      return `This value's result has no row with the key it names. ${CHANGE_THE_VALUE}`;
+      return words('publishing.this-value-s-result-has-3', {
+        CHANGE_THE_VALUE: CHANGE_THE_VALUE(),
+      });
     case 'value_null':
-      return `This value's cell in its result is empty. ${CHANGE_THE_VALUE}`;
+      return words('publishing.this-value-s-cell-in', { CHANGE_THE_VALUE: CHANGE_THE_VALUE() });
     case 'value_empty':
-      return `This value's cell in its result holds only spaces. ${CHANGE_THE_VALUE}`;
+      return words('publishing.this-value-s-cell-in-2', { CHANGE_THE_VALUE: CHANGE_THE_VALUE() });
     case 'take_invalid':
-      return `This value names a column its result does not have. ${CHANGE_THE_VALUE}`;
+      return words('publishing.this-value-names-a-column', {
+        CHANGE_THE_VALUE: CHANGE_THE_VALUE(),
+      });
     case 'result_unreadable':
-      return "This value's stored result could not be read. Resolve it again, then publish again.";
+      return words('publishing.this-value-s-stored-result');
     // B6: a bound image with no description in its row, one in a footnote, and a figure's binding
     // taking a column that holds no image.
     case 'image_description_missing':
-      return `This image's row has no description in the column its query definition names. ${CHANGE_THE_VALUE}`;
+      return words('publishing.this-image-s-row-has', { CHANGE_THE_VALUE: CHANGE_THE_VALUE() });
     case 'image_not_placeable':
-      return 'This image stands in a footnote or a caption, which cannot hold one. Move it into the text.';
+      return words('publishing.this-image-stands-in-a');
     case 'value_not_image':
-      return "This figure's value is not an image. Change it to an image column.";
+      return words('publishing.this-figure-s-value-is');
     // TB1 (TB1-H, TB1-G): a bound table its stage could not lay out. `detail` is the column, the
     // column and the format member as `<column>: <member>`, the row count, or the words missing.
     case 'column_missing':
-      return `This table shows or sorts by the column ${failure.detail ?? ''}, which its result does not have. Change the table, or resolve it again.`;
+      return words('publishing.this-table-shows-or-sorts', { value1: failure.detail ?? '' });
     case 'column_image':
-      return `This table shows the image column ${failure.detail ?? ''}, which a table cannot print. Take the column out of the table.`;
+      return words('publishing.this-table-shows-the-image', { value1: failure.detail ?? '' });
     case 'format_mismatch': {
       const [column, member] = (failure.detail ?? '').split(': ');
-      return `This table's column ${column ?? ''} has a format setting, ${member ?? ''}, that does not apply to its values. Change the column's format.`;
+      return words('publishing.this-table-s-column-has', {
+        value1: column ?? '',
+        value2: member ?? '',
+      });
     }
     case 'table_too_long':
-      return `This table's result has ${failure.detail ?? ''} rows, more than a table can print. Narrow the rows in its query.`;
+      return words('publishing.this-table-s-result-has', { value1: failure.detail ?? '' });
     // TG (TG1): a subtotal column holding something other than true or false, and a row marked a
     // subtotal at two levels of grouping, `detail` its index in the result.
     case 'subtotal_not_boolean':
-      return `This table marks its subtotals with the column ${failure.detail ?? ''}, which does not hold true or false. Choose a column that does.`;
+      return words('publishing.this-table-marks-its-subtotals', { value1: failure.detail ?? '' });
     case 'subtotal_ambiguous':
-      return `Row ${Number(failure.detail ?? '0') + 1} of this table's result is marked a subtotal at two levels. Change the query so each subtotal row is marked once.`;
+      return words('publishing.row-of-this-table-s', { value1: Number(failure.detail ?? '0') + 1 });
     // TG2: a transposed table's result longer than a table turns on its side, `detail` its rows.
     case 'transpose_too_long':
-      return `This table is transposed, and its result has ${failure.detail ?? ''} rows, more than a transposed table can hold. Narrow the rows in its query, or stop transposing it.`;
+      return words('publishing.this-table-is-transposed-and', { value1: failure.detail ?? '' });
     case 'table_words_missing':
-      return "The layout has no words for a table's empty result, a missing value or its source. The layout has to change before this document can be published.";
+      return words('publishing.the-layout-has-no-words-2');
     // TB3 (TB3-B, TB3-C): a note by key on a definition declaring none; a note whose row is gone,
     // `detail` the note, its key as canonical JSON, the definition and, where the key names other
     // columns than the definition's, the definition's key.
     case 'key_required':
-      return 'This table has a note or a value revised by hand on a row, but its query definition declares no key to find the row by. Give the query definition a key, put the note on a column, or withdraw the revision.';
+      return words('publishing.this-table-has-a-note');
     case 'note_row_missing': {
       const [, key, , because] = (failure.detail ?? '').split(': ');
       const own = because?.startsWith('the key is ')
-        ? ` Its query definition's key is ${because.slice('the key is '.length)}.`
+        ? words('publishing.its-query-definition-s-key', {
+            value1: because.slice('the key is '.length),
+          })
         : '';
-      return `A note on this table names the row with the key ${key ?? ''}, which its result no longer has.${own} Change or remove the note, or resolve the table again.`;
+      return words('publishing.a-note-on-this-table', { value1: key ?? '', own });
     }
     // RV (RV-F; DAT-063): a revised cell whose row is gone, `detail` as `note_row_missing`'s.
     case 'revision_row_missing': {
       const [, key, , because] = (failure.detail ?? '').split(': ');
       const own = because?.startsWith('the key is ')
-        ? ` Its query definition's key is ${because.slice('the key is '.length)}.`
+        ? words('publishing.its-query-definition-s-key', {
+            value1: because.slice('the key is '.length),
+          })
         : '';
-      return `A value revised by hand in this table is on the row with the key ${key ?? ''}, which its result no longer has.${own} Withdraw the revision, or resolve the table again.`;
+      return words('publishing.a-value-revised-by-hand', { value1: key ?? '', own });
     }
     // RV (RV-F): a revised cell on a column the table no longer shows, or now keys, groups or turns by.
     case 'revision_column_unavailable': {
       const [, column] = (failure.detail ?? '').split(': ');
-      return `A value revised by hand in this table is in the column ${column ?? ''}, which the table no longer shows, or now groups, totals or turns by. Withdraw the revision, or show the column again.`;
+      return words('publishing.a-value-revised-by-hand-2', { value1: column ?? '' });
     }
     // TB3 (TB3-H): a table too wide for its measure that cannot be set whole, `detail` why.
     case 'table_too_wide':
       return failure.detail === 'turned'
-        ? 'This table is too wide even for a landscape page. Take out some of its columns, or set it to scale.'
+        ? words('publishing.this-table-is-too-wide')
         : failure.detail === 'tall'
-          ? 'This table is too wide for the page, and once scaled to fit it is taller than a page, which a scaled table cannot break across. Set it to rotate onto landscape pages, or take out some of its rows.'
-          : 'This table is too wide to print: it would have to be scaled to less than half its size. Set it to rotate onto landscape pages, or take out some of its columns.';
+          ? words('publishing.this-table-is-too-wide-2')
+          : words('publishing.this-table-is-too-wide-3');
     case 'store_failed':
-      return 'The publication could not be stored. Publish again.';
+      return words('publishing.the-publication-could-not-be-3');
     // CIc (CNT-054, LIB-012): `detail` names the citation by its place and the entry, or the entry and
     // the variable, by identifier and name alone.
     case 'citation_unresolved': {
       const [place, entry] = (failure.detail ?? '').split(': ');
-      return `Citation ${place ?? ''} here names a bibliography entry you may not read, or one not in this space: ${entry ?? ''}. Cite an entry of this space, or remove the citation.`;
+      return words('publishing.citation-here-names-a-bibliography', {
+        value1: place ?? '',
+        value2: entry ?? '',
+      });
     }
     case 'entry_incomplete': {
       const [entry, variable] = (failure.detail ?? '').split(': ');
-      return `The bibliography entry ${entry ?? ''} lacks ${variable ?? 'a field'}, which the citation style needs for its type. Fill it in on the entry, and publish again.`;
+      return words('publishing.the-bibliography-entry-lacks-which', {
+        value1: entry ?? '',
+        value2: variable ?? words('publishing.a-field'),
+      });
     }
     case 'style_invalid':
       return failure.detail === 'none'
-        ? "The publication's theme names no citation style, so its citations cannot be set. Choose one in the theme."
-        : "The theme's citation style no longer sets citations. Choose another in the theme, or upload the style again.";
+        ? words('publishing.the-publication-s-theme-names')
+        : words('publishing.the-theme-s-citation-style');
     // Publishing in a language (the TR plan, TRb): the document's fallback, or the environment's, refuses.
     case 'occurrence_untranslated':
-      return 'This component has no translation into the language published in, and the document is not published with an untranslated component. Translate it, or let the document fall back to the source.';
+      return words('publishing.this-component-has-no-translation');
     case 'translation_out_of_date':
-      return "This component's translation is out of date with a change that needs retranslating. Retranslate it, or mark it current, and publish again.";
+      return words('publishing.this-component-s-translation-is');
     // A machine draft not yet accepted (the XL plan, XL-I).
     case 'translation_machine_drafted':
-      return "This component's translation was drafted by machine and nobody has accepted it. A person who may approve it accepts it under Translations, and then publish again.";
+      return words('publishing.this-component-s-translation-was');
     default:
-      return 'The publication could not be made. Publish again.';
+      return words('publishing.the-publication-could-not-be-4');
   }
 }
 
@@ -536,102 +697,263 @@ export function failureWords(failure: Failure, wordOffered = false): string {
  * author's text. The full words, at each place, are the Publishing panel's (`failureWords`).
  */
 export const FAILURE_SUMMARIES: Readonly<Record<PublishFailureCode, string>> = {
-  occurrence_unreadable: 'It places a component you may not read.',
-  occurrence_gone: 'It places a component that was deleted.',
-  override_stale: 'It overrides a paragraph that has changed since.',
-  variable_unresolved: 'A variable in it has no value for the document.',
-  axis_unset: 'Content in it depends on a condition the document does not set.',
-  condition_leaked: 'Text its profile leaves out was found in what was made.',
-  generated_unaccepted: 'Generated content in it waits to be accepted or rejected.',
-  citation_unresolved: 'A citation in it names an entry that cannot be read.',
-  entry_incomplete: 'A bibliography entry it cites lacks a field its style needs.',
-  style_invalid: 'Its theme names no citation style that sets its citations.',
-  occurrence_untranslated: 'A component in it has no translation into the language published in.',
-  translation_out_of_date: 'A translation in it is out of date with its source.',
-  translation_machine_drafted: 'A translation in it was drafted by machine and not yet accepted.',
-  occurrence_unresolved: 'A reference in it waits on an approved version.',
-  asset_unreadable: 'A figure in it shows an image you may not see.',
-  component_metadata_invalid: 'A component in it has fields not filled in as its type asks.',
-  title_not_publishable: 'A title in it holds something that cannot be published yet.',
-  block_not_publishable: 'It holds a block that cannot be published yet.',
-  inline_not_publishable: 'Its text holds an item that cannot be published yet.',
-  style_missing: "It uses a style the publication's theme does not have.",
-  language_not_publishable: 'It names a language a publication cannot take.',
-  glyph_missing: 'It holds a character that no typeface it can use has.',
-  character_disallowed: 'It holds an invisible character that cannot be published.',
-  nothing_to_publish: 'There is nothing in it to publish.',
-  layout_glyph_missing: 'Its layout uses a character that no typeface it can use has.',
-  layout_language_not_publishable: 'Its layout is in a language that cannot be published.',
-  code_glyph_missing: 'Its code holds a character the monospace typeface does not have.',
-  line_too_wide: 'A line of its preformatted text is too wide for the page.',
-  table_without_caption: 'A table in it has no caption.',
-  table_header_spans_body: 'A header cell of a table in it spans rows that are not header rows.',
-  figure_without_caption: 'A figure in it has no caption.',
-  alternative_missing: 'An image or an equation in it has no way to be read aloud.',
-  caption_too_long: "A figure's caption is too long to stand on a page with its image.",
-  image_too_wide: 'An image in a line of its text is wider than the room it stands in.',
-  image_in_caption: 'A caption in it holds an image.',
-  footnote_not_publishable_here: 'A footnote in it stands where it cannot be published.',
-  footnote_anchor_unresolved: 'A footnote in it is anchored to a cell its table does not have.',
-  footnote_empty: 'A footnote in it has no text.',
-  footnote_unnumbered: 'A footnote in it would print with no number.',
-  cross_reference_unresolved: 'A cross-reference in it points at something it does not hold.',
-  cross_reference_excluded: 'A cross-reference in it points at something its profile leaves out.',
-  cross_reference_form_unavailable:
-    'A cross-reference in it asks for a form of its target that cannot be shown.',
-  equation_unrenderable: 'An equation in it holds something the typesetter cannot set.',
-  equation_unnumbered: 'An equation in it would print with no number.',
-  math_glyph_missing: 'An equation in it holds a character the maths typeface cannot set.',
-  style_not_applicable: 'It uses a style where that style cannot be used.',
-  typeface_not_embeddable: 'Its theme uses a typeface whose licence does not permit embedding it.',
-  typeface_unavailable: 'Its theme names a typeface it cannot be set in.',
-  continuation_words_missing: "Its layout has no words for a table's continuation label.",
-  word_not_yet: 'It holds something that cannot be published in Word yet.',
-  format_unsupported: 'Its layout has no page for Word.',
-  numbering_not_in_word: 'Word would number something in it differently from the PDF.',
-  list_not_in_word: 'Word cannot print a list in it as the PDF prints it.',
-  cross_reference_not_in_word: 'Word cannot print a cross-reference in it as the PDF prints it.',
-  preview_words_missing: "Its layout has no words for a preview's notice.",
-  heading_too_deep: 'A heading in it is nested more than six levels deep.',
-  binding_unresolved: 'A value in it has no result.',
-  value_none: "A value's result in it has no row.",
-  value_many: "A value's result in it has more than one row.",
-  row_missing: "A value's result in it has no row with the key the value names.",
-  value_null: 'A value in it takes an empty cell.',
-  value_empty: 'A value in it takes a cell holding only spaces.',
-  take_invalid: 'A value in it names a column its result does not have.',
-  result_unreadable: "A value's stored result in it could not be read.",
-  image_description_missing: 'An image bound in it has no description.',
-  image_not_placeable: 'An image in it stands in a footnote or a caption.',
-  value_not_image: "A figure's value in it is not an image.",
-  column_missing: 'A table in it uses a column its result does not have.',
-  column_image: 'A table in it shows a column of images.',
-  format_mismatch: "A table in it has a column format that does not apply to the column's values.",
-  table_too_long: 'A table in it has more rows than a table can print.',
-  table_words_missing:
-    "Its layout has no words for a table's empty result, a missing value or its source.",
-  key_required: 'A table in it needs a key to find a row by.',
-  note_row_missing: 'A note on a table in it names a row its result no longer has.',
-  revision_row_missing: 'A value revised by hand in it is on a row its result no longer has.',
-  revision_column_unavailable:
-    'A value revised by hand in it is in a column its table no longer shows as it did.',
-  subtotal_not_boolean: 'A table in it marks subtotals with a column not holding true or false.',
-  subtotal_ambiguous: 'A table in it has a row marked a subtotal at two levels.',
-  transpose_too_long: 'A transposed table in it has more rows than it can hold.',
-  table_too_wide: 'A table in it is too wide to print.',
-  engine_failed: 'The publication could not be made, and nothing in the document caused it.',
-  store_failed: 'The publication could not be stored. Publish again.',
+  get occurrence_unreadable() {
+    return words('publishing.it-places-a-component-you');
+  },
+  get occurrence_gone() {
+    return words('publishing.it-places-a-component-that');
+  },
+  get override_stale() {
+    return words('publishing.it-overrides-a-paragraph-that');
+  },
+  get variable_unresolved() {
+    return words('publishing.a-variable-in-it-has');
+  },
+  get axis_unset() {
+    return words('publishing.content-in-it-depends-on');
+  },
+  get condition_leaked() {
+    return words('publishing.text-its-profile-leaves-out');
+  },
+  get generated_unaccepted() {
+    return words('publishing.generated-content-in-it-waits');
+  },
+  get citation_unresolved() {
+    return words('publishing.a-citation-in-it-names');
+  },
+  get entry_incomplete() {
+    return words('publishing.a-bibliography-entry-it-cites');
+  },
+  get style_invalid() {
+    return words('publishing.its-theme-names-no-citation');
+  },
+  get occurrence_untranslated() {
+    return words('publishing.a-component-in-it-has');
+  },
+  get translation_out_of_date() {
+    return words('publishing.a-translation-in-it-is');
+  },
+  get translation_machine_drafted() {
+    return words('publishing.a-translation-in-it-was');
+  },
+  get occurrence_unresolved() {
+    return words('publishing.a-reference-in-it-waits');
+  },
+  get asset_unreadable() {
+    return words('publishing.a-figure-in-it-shows');
+  },
+  get component_metadata_invalid() {
+    return words('publishing.a-component-in-it-has-2');
+  },
+  get title_not_publishable() {
+    return words('publishing.a-title-in-it-holds');
+  },
+  get block_not_publishable() {
+    return words('publishing.it-holds-a-block-that');
+  },
+  get inline_not_publishable() {
+    return words('publishing.its-text-holds-an-item');
+  },
+  get style_missing() {
+    return words('publishing.it-uses-a-style-the');
+  },
+  get language_not_publishable() {
+    return words('publishing.it-names-a-language-a');
+  },
+  get glyph_missing() {
+    return words('publishing.it-holds-a-character-that');
+  },
+  get character_disallowed() {
+    return words('publishing.it-holds-an-invisible-character');
+  },
+  get nothing_to_publish() {
+    return words('publishing.there-is-nothing-in-it');
+  },
+  get layout_glyph_missing() {
+    return words('publishing.its-layout-uses-a-character');
+  },
+  get layout_language_not_publishable() {
+    return words('publishing.its-layout-is-in-a');
+  },
+  get code_glyph_missing() {
+    return words('publishing.its-code-holds-a-character');
+  },
+  get line_too_wide() {
+    return words('publishing.a-line-of-its-preformatted');
+  },
+  get table_without_caption() {
+    return words('publishing.a-table-in-it-has');
+  },
+  get table_header_spans_body() {
+    return words('publishing.a-header-cell-of-a');
+  },
+  get figure_without_caption() {
+    return words('publishing.a-figure-in-it-has');
+  },
+  get alternative_missing() {
+    return words('publishing.an-image-or-an-equation');
+  },
+  get caption_too_long() {
+    return words('publishing.a-figure-s-caption-is-2');
+  },
+  get image_too_wide() {
+    return words('publishing.an-image-in-a-line-4');
+  },
+  get image_in_caption() {
+    return words('publishing.a-caption-in-it-holds');
+  },
+  get footnote_not_publishable_here() {
+    return words('publishing.a-footnote-in-it-stands');
+  },
+  get footnote_anchor_unresolved() {
+    return words('publishing.a-footnote-in-it-is');
+  },
+  get footnote_empty() {
+    return words('publishing.a-footnote-in-it-has');
+  },
+  get footnote_unnumbered() {
+    return words('publishing.a-footnote-in-it-would');
+  },
+  get cross_reference_unresolved() {
+    return words('publishing.a-cross-reference-in-it');
+  },
+  get cross_reference_excluded() {
+    return words('publishing.a-cross-reference-in-it-2');
+  },
+  get cross_reference_form_unavailable() {
+    return words('publishing.a-cross-reference-in-it-3');
+  },
+  get equation_unrenderable() {
+    return words('publishing.an-equation-in-it-holds');
+  },
+  get equation_unnumbered() {
+    return words('publishing.an-equation-in-it-would');
+  },
+  get math_glyph_missing() {
+    return words('publishing.an-equation-in-it-holds-2');
+  },
+  get style_not_applicable() {
+    return words('publishing.it-uses-a-style-where');
+  },
+  get typeface_not_embeddable() {
+    return words('publishing.its-theme-uses-a-typeface');
+  },
+  get typeface_unavailable() {
+    return words('publishing.its-theme-names-a-typeface');
+  },
+  get continuation_words_missing() {
+    return words('publishing.its-layout-has-no-words');
+  },
+  get word_not_yet() {
+    return words('publishing.it-holds-something-that-cannot');
+  },
+  get format_unsupported() {
+    return words('publishing.its-layout-has-no-page');
+  },
+  get numbering_not_in_word() {
+    return words('publishing.word-would-number-something-in');
+  },
+  get list_not_in_word() {
+    return words('publishing.word-cannot-print-a-list');
+  },
+  get cross_reference_not_in_word() {
+    return words('publishing.word-cannot-print-a-cross');
+  },
+  get preview_words_missing() {
+    return words('publishing.its-layout-has-no-words-2');
+  },
+  get heading_too_deep() {
+    return words('publishing.a-heading-in-it-is');
+  },
+  get binding_unresolved() {
+    return words('publishing.a-value-in-it-has');
+  },
+  get value_none() {
+    return words('publishing.a-value-s-result-in');
+  },
+  get value_many() {
+    return words('publishing.a-value-s-result-in-2');
+  },
+  get row_missing() {
+    return words('publishing.a-value-s-result-in-3');
+  },
+  get value_null() {
+    return words('publishing.a-value-in-it-takes');
+  },
+  get value_empty() {
+    return words('publishing.a-value-in-it-takes-2');
+  },
+  get take_invalid() {
+    return words('publishing.a-value-in-it-names');
+  },
+  get result_unreadable() {
+    return words('publishing.a-value-s-stored-result');
+  },
+  get image_description_missing() {
+    return words('publishing.an-image-bound-in-it');
+  },
+  get image_not_placeable() {
+    return words('publishing.an-image-in-it-stands');
+  },
+  get value_not_image() {
+    return words('publishing.a-figure-s-value-in');
+  },
+  get column_missing() {
+    return words('publishing.a-table-in-it-uses');
+  },
+  get column_image() {
+    return words('publishing.a-table-in-it-shows');
+  },
+  get format_mismatch() {
+    return words('publishing.a-table-in-it-has-2');
+  },
+  get table_too_long() {
+    return words('publishing.a-table-in-it-has-3');
+  },
+  get table_words_missing() {
+    return words('publishing.its-layout-has-no-words-3');
+  },
+  get key_required() {
+    return words('publishing.a-table-in-it-needs');
+  },
+  get note_row_missing() {
+    return words('publishing.a-note-on-a-table');
+  },
+  get revision_row_missing() {
+    return words('publishing.a-value-revised-by-hand-3');
+  },
+  get revision_column_unavailable() {
+    return words('publishing.a-value-revised-by-hand-4');
+  },
+  get subtotal_not_boolean() {
+    return words('publishing.a-table-in-it-marks');
+  },
+  get subtotal_ambiguous() {
+    return words('publishing.a-table-in-it-has-4');
+  },
+  get transpose_too_long() {
+    return words('publishing.a-transposed-table-in-it');
+  },
+  get table_too_wide() {
+    return words('publishing.a-table-in-it-is');
+  },
+  get engine_failed() {
+    return words('publishing.the-publication-could-not-be-5');
+  },
+  get store_failed() {
+    return words('publishing.the-publication-could-not-be-3');
+  },
 };
 
 /** A failed publish's summary by its code; a code this does not know, as a failed publish. */
 export function failureSummary(code: string): string {
   return Object.hasOwn(FAILURE_SUMMARIES, code)
     ? FAILURE_SUMMARIES[code as PublishFailureCode]
-    : 'Its latest publish failed. Publish again.';
+    : words('publishing.its-latest-publish-failed-publish');
 }
 
 /** What an author does about a value taken from a result that holds none (B3). */
-const CHANGE_THE_VALUE = 'Change the value, or resolve it again.';
+const CHANGE_THE_VALUE = (): string => words('publishing.change-the-value-or-resolve');
 
 /**
  * Whether every failure is the product's own - the engine's or the store's, a face changed under the

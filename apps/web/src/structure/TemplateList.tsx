@@ -11,15 +11,40 @@ import { Notice } from '../states/Notice.js';
 import styles from './DocumentList.module.css';
 import { GenerateDialog } from './GenerateDialog.js';
 import { cohortLink, templateAccessLink } from './links.js';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 type Item = Listing['items'][number];
 
 const SORTS: readonly SortOption[] = [
-  { sort: 'name', order: 'asc', label: 'Name, A to Z' },
-  { sort: 'name', order: 'desc', label: 'Name, Z to A' },
-  { sort: 'changed', order: 'desc', label: 'Newest changed first' },
-  { sort: 'changed', order: 'asc', label: 'Oldest changed first' },
+  {
+    sort: 'name',
+    order: 'asc',
+    get label() {
+      return words('document.name-a-to-z');
+    },
+  },
+  {
+    sort: 'name',
+    order: 'desc',
+    get label() {
+      return words('document.name-z-to-a');
+    },
+  },
+  {
+    sort: 'changed',
+    order: 'desc',
+    get label() {
+      return words('document.newest-changed-first');
+    },
+  },
+  {
+    sort: 'changed',
+    order: 'asc',
+    get label() {
+      return words('document.oldest-changed-first');
+    },
+  },
 ];
 
 /**
@@ -53,20 +78,20 @@ export function TemplateList({ client }: { readonly client: Client }) {
     if (listing.failed === undefined) return null;
     return (
       <section aria-labelledby="templates-heading">
-        <h1 id="templates-heading">Templates</h1>
+        <h1 id="templates-heading">{words('document.templates')}</h1>
         {listing.signedOut ? (
           <Notice tone="signedOut">
-            <p>You are signed out. Sign in again to see your templates.</p>
+            <p>{words('document.you-are-signed-out-sign-7')}</p>
           </Notice>
         ) : (
           <Notice tone="failed">
-            <p>The templates could not be loaded.</p>
+            <p>{words('document.the-templates-could-not-be')}</p>
             <button
               type="button"
               disabled={listing.loading}
               onClick={() => void listing.load(null)}
             >
-              Try again
+              {words('document.try-again')}
             </button>
           </Notice>
         )}
@@ -77,15 +102,16 @@ export function TemplateList({ client }: { readonly client: Client }) {
   const filter = (
     <>
       <div className={styles['filterHead']}>
-        <span className={styles['overline']}>Filter</span>
+        <span className={styles['overline']}>{words('document.filter')}</span>
         {spaces.length > 0 && (
           <button type="button" className={styles['clear']} onClick={() => setSpaces([])}>
-            Clear
+            {words('document.clear')}
           </button>
         )}
       </div>
       <Facet
-        legend="Space"
+        legend={words('document.space')}
+        content
         values={listing.facets?.spaces ?? []}
         chosen={spaces}
         onToggle={(value) => setSpaces((held) => toggled(held, value))}
@@ -97,34 +123,37 @@ export function TemplateList({ client }: { readonly client: Client }) {
     <ListLayout filter={filter}>
       <section aria-labelledby="templates-heading">
         <div className={styles['titleRow']}>
-          <h1 id="templates-heading">Templates</h1>
-          <a href="#/cohorts">Cohorts</a>
+          <h1 id="templates-heading">{words('document.templates')}</h1>
+          <a href="#/cohorts">{words('document.cohorts')}</a>
         </div>
         <SortChooser options={SORTS} chosen={sort} onChoose={setSort} />
         <p className={styles['summary']}>
           <span>
             {spaces.length > 0
-              ? `${listing.total} ${listing.total === 1 ? 'template is' : 'templates are'} in the spaces chosen.`
-              : `${listing.total} ${listing.total === 1 ? 'template' : 'templates'} you may read.`}
+              ? words('document.in-the-spaces-chosen', {
+                  total: listing.total,
+                  value2: listing.total,
+                })
+              : words('document.templates-you-may-read', { total: listing.total })}
           </span>
           {listing.items.length < listing.total && (
-            <span>{`Showing 1 to ${listing.items.length}.`}</span>
+            <span>{words('document.showing-1-to', { length: listing.items.length })}</span>
           )}
         </p>
         {listing.items.length === 0 ? (
           <Empty>
-            <p>There are no templates you may read.</p>
+            <p>{words('document.there-are-no-templates-you')}</p>
           </Empty>
         ) : (
           <div className={styles['table']}>
             <table>
               <thead>
                 <tr>
-                  <th scope="col">Name</th>
-                  <th scope="col">Space</th>
-                  <th scope="col">Version</th>
-                  <th scope="col">Changed</th>
-                  <th scope="col">Documents</th>
+                  <th scope="col">{words('document.name')}</th>
+                  <th scope="col">{words('document.space')}</th>
+                  <th scope="col">{words('document.version-2')}</th>
+                  <th scope="col">{words('document.changed')}</th>
+                  <th scope="col">{words('document.documents')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -137,7 +166,7 @@ export function TemplateList({ client }: { readonly client: Client }) {
                         client={client}
                         target={`artifact:${item.id}`}
                         href={templateAccessLink(item.id)}
-                        label={`Manage access to ${item.name}`}
+                        label={words('document.manage-access-to', { name: item.name })}
                       />
                     </td>
                     <td className={styles['muted']}>{item.space.name}</td>
@@ -148,10 +177,12 @@ export function TemplateList({ client }: { readonly client: Client }) {
                     <td>
                       <button
                         type="button"
-                        aria-label={`Generate documents from ${item.name}`}
+                        aria-label={words('document.generate-documents-from-2', {
+                          name: item.name,
+                        })}
                         onClick={() => setGenerating(item)}
                       >
-                        Generate
+                        {words('document.generate')}
                       </button>
                     </td>
                   </tr>

@@ -241,7 +241,7 @@ function Attention({ client }: { client: Client }) {
           ))}
         </ul>
       )}
-      {more > 0 && <p className={styles['attentionMore']}>{more} more</p>}
+      {more > 0 && <p className={styles['attentionMore']}>{words('home.more', { more })}</p>}
     </section>
   );
 }

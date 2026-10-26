@@ -1,5 +1,6 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import { useEffect, useState } from 'react';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -23,31 +24,47 @@ interface Report {
   readonly unreadable: number;
 }
 
-const day = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+const day = (iso: string) =>
+  formats().date(new Date(iso), { day: 'numeric', month: 'short', year: 'numeric' });
 
-const who = (person: { readonly name: string | null } | null) => person?.name ?? 'somebody';
+const who = (person: { readonly name: string | null } | null) =>
+  person?.name ?? words('publishing.somebody-in-sentence');
 
 /** One generated item, said in a sentence. */
 function sentence(item: Report['placements'][number]['items'][number]): string {
-  const by = `Asked of ${item.run.model ?? 'a model'} on ${item.run.endpoint} by ${who(item.askedBy)}.`;
-  const on = item.actedAt === null ? '' : ` on ${day.format(new Date(item.actedAt))}`;
+  const by = words('publishing.asked-of-on-by', {
+    model: item.run.model ?? words('publishing.a-model'),
+    endpoint: item.run.endpoint,
+    who: who(item.askedBy),
+  });
+  const acted = {
+    who: who(item.actedBy),
+    acted: item.actedAt === null ? 'no' : 'yes',
+    day: item.actedAt === null ? '' : day(item.actedAt),
+    by,
+  };
   // A part a model wrote whole, made as the person accepted it (G5-E).
   if (item.kind === 'creation') {
-    return `Made by ${who(item.actedBy)}${on} from a proposal to make it, as ${item.acceptedInto?.number ?? 'its first version'}. ${by}`;
+    return words('publishing.made-by-from-a-proposal', {
+      ...acted,
+      into: item.acceptedInto?.number ?? words('publishing.its-first-version'),
+    });
   }
   switch (item.state) {
     case 'accepted':
-      return `Accepted by ${who(item.actedBy)}${on} into ${item.acceptedInto?.number ?? 'a version'}${
-        item.acceptedInto?.inPlaced === false ? ', a version this does not hold' : ''
-      }. ${by}`;
+      return words('publishing.accepted-by-into', {
+        ...acted,
+        into: item.acceptedInto?.number ?? words('publishing.a-version'),
+        held: item.acceptedInto?.inPlaced === false ? 'no' : 'yes',
+      });
     case 'open':
-      return `Waiting to be accepted or rejected in Review. ${by}`;
+      return words('publishing.waiting-to-be-accepted-or', { by });
     case 'rejected':
-      return `Rejected by ${who(item.actedBy)}${on}. ${by}`;
+      return words('publishing.rejected-by', acted);
     case 'withdrawn':
-      return `Withdrawn by ${who(item.actedBy)}${on}. ${by}`;
+      return words('publishing.withdrawn-by', acted);
     case 'discarded':
-      return `Discarded by ${who(item.actedBy)}${on} before it was suggested. ${by}`;
+      return words('publishing.discarded-by-before-it-was', acted);
   }
 }
 
@@ -58,7 +75,7 @@ function sentence(item: Report['placements'][number]['items'][number]): string {
 export function GeneratedContent({
   client,
   of,
-  placeOf = () => 'A part',
+  placeOf = () => words('publishing.a-part'),
 }: {
   client: Client;
   of: { readonly document: string } | { readonly publication: string };
@@ -96,18 +113,29 @@ export function GeneratedContent({
 
   // A report that cannot be read is left out: a publish still says by name what waits on it.
   if (report === null || report === 'none' || report === 'failed') return null;
-  const heading = document !== null ? 'Generated content' : 'Generated content it printed';
+  const heading =
+    document !== null
+      ? words('publishing.generated-content')
+      : words('publishing.generated-content-it-printed');
   return (
     <section aria-label={heading}>
       <h4>{heading}</h4>
       {report.placements.length === 0 ? (
-        <p>Nothing here came from a model.</p>
+        <p>{words('publishing.nothing-here-came-from-a')}</p>
       ) : (
         <ul>
           {report.placements.map((placement) => (
             <li key={placement.node}>
-              {placeOf(placement.node)}, version {placement.number}
-              {placement.restoredFrom !== null && `, restored from ${placement.restoredFrom}`}
+              {placement.restoredFrom === null
+                ? words('publishing.placed-version', {
+                    place: placeOf(placement.node),
+                    number: placement.number,
+                  })
+                : words('publishing.placed-version-restored', {
+                    place: placeOf(placement.node),
+                    number: placement.number,
+                    restoredFrom: placement.restoredFrom,
+                  })}
               <ul>
                 {placement.items.map((item) => (
                   <li key={item.id}>{sentence(item)}</li>
@@ -118,11 +146,7 @@ export function GeneratedContent({
         </ul>
       )}
       {report.unreadable > 0 && (
-        <p>
-          {report.unreadable === 1
-            ? 'One part you may not read is not shown.'
-            : `${report.unreadable} parts you may not read are not shown.`}
-        </p>
+        <p>{words('publishing.parts-you-may-not-read', { count: report.unreadable })}</p>
       )}
     </section>
   );

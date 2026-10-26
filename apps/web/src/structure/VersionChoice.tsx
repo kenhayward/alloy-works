@@ -2,6 +2,7 @@ import type { ReferenceViewNode } from '@alloy-works/domain';
 import { useEffect, useRef, useState } from 'react';
 
 import styles from './DocumentText.module.css';
+import { formats, words } from '../words/words.js';
 
 /** One version of a component, as the list offers it: its id, its number, and when it was made. */
 export interface OfferedVersion {
@@ -42,15 +43,17 @@ export function versionSaid(
 ): string {
   if (mode.kind === 'approved') {
     return revision === undefined
-      ? 'no approved revision'
-      : `Revision ${revision}, latest approved`;
+      ? words('document.no-approved-revision')
+      : words('document.revision-latest-approved', { revision });
   }
-  return number === undefined ? mode.kind : `Version ${number}, ${mode.kind}`;
+  return number === undefined
+    ? mode.kind
+    : words('document.version-3', { number, kind: mode.kind });
 }
 
 /** When a version was made, as the list says it. */
 const madeOn = (iso: string) =>
-  new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+  formats().date(new Date(iso), { day: 'numeric', month: 'long', year: 'numeric' });
 
 type Listed =
   | { readonly state: 'loading' }
@@ -216,7 +219,7 @@ export function VersionChoice({
         className={styles['version']}
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label={`${said}, choose the version of ${name}`}
+        aria-label={words('document.choose-the-version-of', { said, name })}
         onClick={() => setOpen((was) => !was)}
       >
         {said}
@@ -225,7 +228,7 @@ export function VersionChoice({
         <div
           ref={menu}
           role="menu"
-          aria-label={`Versions of ${name}`}
+          aria-label={words('document.versions-of', { name })}
           aria-busy={listed.state === 'loading' || more !== null}
           className={styles['versions']}
         >
@@ -236,7 +239,7 @@ export function VersionChoice({
             tabIndex={-1}
             onClick={() => void pick({ kind: 'latest' })}
           >
-            Always the latest
+            {words('document.always-the-latest')}
           </button>
           <button
             type="button"
@@ -245,14 +248,16 @@ export function VersionChoice({
             tabIndex={-1}
             onClick={() => void pick({ kind: 'approved' })}
           >
-            Always the latest approved revision
+            {words('document.always-the-latest-approved-revision')}
           </button>
           {listed.state === 'loading' && (
-            <p className={styles['versionsSaid']}>Reading the versions...</p>
+            <p className={styles['versionsSaid']}>{words('document.reading-the-versions')}</p>
           )}
           {listed.state === 'failed' && (
             <>
-              <p className={styles['versionsSaid']}>The versions could not be read.</p>
+              <p className={styles['versionsSaid']}>
+                {words('document.the-versions-could-not-be')}
+              </p>
               <button
                 type="button"
                 role="menuitem"
@@ -265,7 +270,7 @@ export function VersionChoice({
                   setAttempt((count) => count + 1);
                 }}
               >
-                Try again
+                {words('document.try-again')}
               </button>
             </>
           )}
@@ -279,7 +284,10 @@ export function VersionChoice({
                 tabIndex={-1}
                 onClick={() => void pick({ kind: 'pinned', version: version.id })}
               >
-                Version {version.number}, {madeOn(version.createdAt)}
+                {words('document.version-made-on', {
+                  number: version.number,
+                  when: madeOn(version.createdAt),
+                })}
               </button>
             ))}
           {listed.state === 'loaded' && listed.next !== null && (
@@ -292,7 +300,7 @@ export function VersionChoice({
                 if (more === null) setMore(listed.next);
               }}
             >
-              Older versions
+              {words('document.older-versions')}
             </button>
           )}
         </div>

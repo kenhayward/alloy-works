@@ -53,7 +53,10 @@ export function PasteReport({ entries, onClose, held, ref }: PasteReportProps) {
           <li key={index}>
             {entry.message}
             {entry.count !== undefined && entry.count > 1 && (
-              <span className={styles['count']}> {entry.count} times.</span>
+              <span className={styles['count']}>
+                {' '}
+                {words('editor.paste.times', { count: entry.count })}
+              </span>
             )}
             {entry.detail !== undefined && (
               <>

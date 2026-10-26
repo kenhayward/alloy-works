@@ -881,7 +881,9 @@ export function ValueDialog({
                   {row === 'key' &&
                     ready.key.map((name) => (
                       <div key={name} className={styles['field']}>
-                        <label htmlFor={`${id}-key-${name}`}>{name} is</label>
+                        <label htmlFor={`${id}-key-${name}`}>
+                          {words('editor.value.key-is', { name })}
+                        </label>
                         <input
                           id={`${id}-key-${name}`}
                           value={keyTyped[name] ?? ''}

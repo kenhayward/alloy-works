@@ -7,6 +7,7 @@ import { bindingStatesIn, type BindingState } from './bindingContexts.js';
 import { codeOf, identityRefusal, NOT_HELD } from './ownView.js';
 import { followPending, WAITING_ON_IMAGES } from './pendingResult.js';
 import type { RevisionDecision } from './RevisionAsk.js';
+import { words as say } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -15,9 +16,15 @@ export type SettleAct = 'placed' | 'changed' | 'keep' | 'resolve';
 
 /** Why a binding was left holding nothing, in words, by the status the service answered. */
 const WHY = {
-  forbidden: 'This value holds nothing until somebody who may use its connection resolves it.',
-  failed: 'The value could not be fetched. Resolve it again from the Value panel.',
-  moved: 'The value changed meanwhile. Look at it again in the Value panel.',
+  get forbidden() {
+    return say('document.this-value-holds-nothing-until');
+  },
+  get failed() {
+    return say('document.the-value-could-not-be-4');
+  },
+  get moved() {
+    return say('document.the-value-changed-meanwhile-look-3');
+  },
 } as const satisfies Record<'forbidden' | 'failed' | 'moved', string>;
 
 /**
@@ -25,8 +32,12 @@ const WHY = {
  * TP2 plan, TP2-C): `feeds` and `type` name the document's parameter, never its declaration.
  */
 export const ARGUMENT_WORDS = {
-  feeds: 'is not one its template gives to values',
-  type: 'is not of the type the value takes',
+  get feeds() {
+    return say('document.is-not-one-its-template');
+  },
+  get type() {
+    return say('document.is-not-of-the-type');
+  },
 } as const satisfies Record<'feeds' | 'type', string>;
 
 /**
@@ -42,14 +53,16 @@ export function argumentRefusalSaid(error: unknown): string | null {
     const { parameter, rule } = each as { parameter?: unknown; rule?: unknown };
     if (typeof parameter !== 'string' || typeof rule !== 'string') return [];
     if (rule === 'feeds' || rule === 'type') {
-      return [`The document's ${parameter} ${ARGUMENT_WORDS[rule]}.`];
+      return [say('document.the-document-s', { parameter, value2: ARGUMENT_WORDS[rule] })];
     }
     const words = (PARAMETER_WORDS as Record<string, string>)[rule as ParameterRule];
-    return [`This value's ${parameter} ${words ?? 'does not fit its parameter'}.`];
+    return [
+      say('document.this-value-s', { parameter, value2: words ?? 'does not fit its parameter' }),
+    ];
   });
   return sentences.length === 0
     ? null
-    : `${sentences.join(' ')} Change the value's parameters, or the document's.`;
+    : say('document.change-the-value-s-parameters', { value1: sentences.join(' ') });
 }
 
 /** How a settle that waits on a result's images says so, and pauses between asks (a test's). */
@@ -73,8 +86,7 @@ export interface SettleOptions {
 }
 
 /** Said where a binding is left as it is because a value revised by hand stands and nobody decided. */
-export const REVISION_UNDECIDED =
-  'A value revised by hand stands here, so nothing was changed. Resolve or keep it from the Data tab, which asks whether to keep the revision.';
+export const REVISION_UNDECIDED = (): string => say('document.revision-undecided');
 
 /**
  * The binding as a `revision_decision_required` refusal says it stands, or undefined for any other.
@@ -172,10 +184,10 @@ async function settleNow(
         options.decide === undefined
           ? null
           : await options.decide(undecided, replaces !== null ? 'Keep' : 'Resolve');
-      if (answer === null) return REVISION_UNDECIDED;
+      if (answer === null) return REVISION_UNDECIDED();
       revisions = answer;
     } else if (replaces === null && !shares && codeOf(error) === 'acknowledgement_required') {
-      if (options.ask === undefined || !(await options.ask())) return NOT_HELD;
+      if (options.ask === undefined || !(await options.ask())) return NOT_HELD();
       shares = true;
     } else {
       break;
@@ -197,7 +209,7 @@ async function settleNow(
       )?.pending
     : undefined;
   if (typeof pending !== 'string') return null;
-  options.onWaiting?.(WAITING_ON_IMAGES);
+  options.onWaiting?.(WAITING_ON_IMAGES());
   const followed = await followPending(client, pending, options.wait);
   if ('sentence' in followed) return followed.sentence;
   const failure = followed.done.failure as { message?: unknown } | undefined;

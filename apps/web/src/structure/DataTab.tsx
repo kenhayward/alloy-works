@@ -26,27 +26,46 @@ import { useOwnViewAsk } from './OwnViewAsk.js';
 import { useRevisionAsk, type RevisionDecision } from './RevisionAsk.js';
 import { settleBinding, undecidedIn } from './settleBinding.js';
 import { noteFailures, tableFailures, type TableRows } from './tableRows.js';
+import { formats, words as say } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
-const MODES = { checked: 'Checked', pinned: 'Pinned' } as const;
+const MODES = {
+  get checked() {
+    return say('document.checked');
+  },
+  get pinned() {
+    return say('document.pinned');
+  },
+} as const;
 
 const DIFFERS = {
-  digest: 'the binding',
-  dataset: 'its result',
-  definition: 'its definition version',
-  revision: 'its values revised by hand',
+  get digest() {
+    return say('document.the-binding');
+  },
+  get dataset() {
+    return say('document.its-result');
+  },
+  get definition() {
+    return say('document.its-definition-version');
+  },
+  get revision() {
+    return say('document.its-values-revised-by-hand');
+  },
 } as const satisfies Record<SinceDiffers, string>;
 
 /** What an accept the service refused is said as, by its status. */
 const REFUSED = {
-  403: 'This value can be accepted only by somebody who may use its connection.',
-  409: 'The value changed meanwhile. Look at it again in the Data tab.',
+  get 403() {
+    return say('document.this-value-can-be-accepted');
+  },
+  get 409() {
+    return say('document.the-value-changed-meanwhile-look');
+  },
 } as const;
 
 /** `a`, `a and b`, `a, b and c`. */
-const listed = (words: readonly string[]) =>
-  words.length < 2 ? words.join('') : `${words.slice(0, -1).join(', ')} and ${words.at(-1)}`;
+const listed = (words: readonly string[]) => formats().list(words);
 
 /** What a value shows: the query's, or the person's standing in front of it (DAT-115). */
 function revisedTaken(state: BindingState): NonNullable<BindingState['held']>['taken'] {
@@ -59,26 +78,34 @@ function revisedTaken(state: BindingState): NonNullable<BindingState['held']>['t
 
 /** A value revised by hand, in words: its value, a cell's place, who and why, and how it stands. */
 function revisionWords(each: RevisionShown): string {
-  const where =
+  const who = each.by.displayName ?? say('document.somebody-in-sentence');
+  const what =
     each.cell === null
-      ? ''
-      : ` in ${each.cell.column}, the row ${Object.values(each.cell.key).map(String).join(', ')}`;
-  const what = `${String(each.value)}${where}, by ${each.by.displayName ?? 'somebody'}: ${each.reason}`;
-  if (!each.stands) return `Revised by hand before this result, so not shown: ${what}`;
+      ? say('document.revision-said', { value: String(each.value), who, reason: each.reason })
+      : say('document.revision-in-cell', {
+          value: String(each.value),
+          column: each.cell.column,
+          row: formats().list(Object.values(each.cell.key).map(String), { type: 'unit' }),
+          who,
+          reason: each.reason,
+        });
+  if (!each.stands) return say('document.revised-by-hand-before-this', { what });
   if (each.rowMissing === true) {
-    return `Revised by hand on a row the result no longer has: ${what}. Withdraw it from the table's Value panel, or resolve again.`;
+    return say('document.revised-by-hand-on-a', { what });
   }
   if (each.columnUnavailable === true) {
-    return `Revised by hand in a column the table no longer shows, or now groups, totals or turns by: ${what}. Withdraw it from the table's Value panel.`;
+    return say('document.revised-by-hand-in-a', { what });
   }
-  return `Revised by hand: ${what}`;
+  return say('document.revised-by-hand', { what });
 }
 
 /** How a binding differs from the latest publication, in words, or null. */
 function sinceWords(since: BindingState['sincePublished']): string | null {
   if (since === null) return null;
-  if (since === 'new') return 'New since the last publication';
-  return `Since the last publication: ${listed(since.map((each) => DIFFERS[each]))}`;
+  if (since === 'new') return say('document.new-since-the-last-publication');
+  return say('document.since-the-last-publication', {
+    value1: listed(since.map((each) => DIFFERS[each])),
+  });
 }
 
 const key = (node: string, binding: string) => `${node} ${binding}`;
@@ -86,11 +113,16 @@ const key = (node: string, binding: string) => `${node} ${binding}`;
 /** A bound table's result, by its rows (TB2-H). */
 /** A bound table's result in words, and what it groups by where it does (TG2; TAB-022). */
 const tableOf = (rows: number, table: BoundTableNode | undefined) =>
-  `A table of ${rows} ${rows === 1 ? 'row' : 'rows'}` +
-  (table?.groups === undefined
-    ? ''
-    : `, grouped by ${table.groups.map((each) => each.column).join(', then ')}`) +
-  (table?.transpose === undefined ? '' : `, transposed by ${table.transpose.header}`);
+  say('document.table-of', {
+    rows,
+    grouped: table?.groups === undefined ? 'no' : 'yes',
+    groups:
+      table?.groups
+        ?.map((each) => each.column)
+        .reduce((first, next) => say('document.then', { first, next })) ?? '',
+    transposed: table?.transpose === undefined ? 'no' : 'yes',
+    header: table?.transpose?.header ?? '',
+  });
 
 /** A table's failure, or its notes' (TB3.3), as the stage names it. */
 type TableFailing =
@@ -214,7 +246,7 @@ export function DataTab({
       .then((words) => {
         if (words !== null) onNotice(words);
       })
-      .catch(() => onNotice('That could not be done. Try again.'))
+      .catch(() => onNotice(say('document.that-could-not-be-done')))
       .finally(() => {
         setActing(false);
         onChanged();
@@ -257,22 +289,22 @@ export function DataTab({
           },
         });
       const own = state.waiting!.provenance.identity === 'endUser';
-      if (own && !(await ask())) return NOT_HELD;
+      if (own && !(await ask())) return NOT_HELD();
       // Asked before it is sent where the view says a revision stands, and again where the service
       // finds one the view did not show (DAT-060).
       if ((state.revisions ?? []).some((each) => each.stands)) {
-        revisions = await decide(state, 'Accept');
+        revisions = await decide(state, say('document.accept'));
         if (revisions === null) return null;
       }
       let { error, response } = await send(own);
       const undecided = undecidedIn(error);
       if (undecided !== undefined) {
-        revisions = await decide(undecided, 'Accept');
+        revisions = await decide(undecided, say('document.accept'));
         if (revisions === null) return null;
         ({ error, response } = await send(own));
       }
       if (!own && codeOf(error) === 'acknowledgement_required') {
-        if (!(await ask())) return NOT_HELD;
+        if (!(await ask())) return NOT_HELD();
         ({ error, response } = await send(true));
       }
       if (response.ok) return null;
@@ -280,7 +312,7 @@ export function DataTab({
       if (refused !== null) return refused;
       return response.status === 403 || response.status === 409
         ? REFUSED[response.status]
-        : 'The value could not be accepted. Try again.';
+        : say('document.the-value-could-not-be');
     });
 
   const mayCheck = states.some((state) => state.mayCheck);
@@ -290,14 +322,14 @@ export function DataTab({
     <div className={styles['tab']}>
       <div className={styles['controls']}>
         <label htmlFor={filterId} className={styles['muted']}>
-          Show
+          {say('document.show')}
         </label>
         <select
           id={filterId}
           value={filter}
           onChange={(event) => setFilter(event.target.value as DataState | 'all')}
         >
-          <option value="all">{`All, ${rows.length}`}</option>
+          <option value="all">{say('document.all-2', { length: rows.length })}</option>
           {(Object.keys(DATA_STATE_WORDS) as DataState[])
             .filter((state) => present.has(state))
             .map((state) => (
@@ -308,7 +340,7 @@ export function DataTab({
         </select>
         {mayCheck && (
           <IconButton
-            label="Check now"
+            label={say('document.check-now')}
             className={styles['check']}
             onClick={() => !checking && onCheckNow()}
             aria-busy={checking}
@@ -317,7 +349,7 @@ export function DataTab({
           </IconButton>
         )}
       </div>
-      {!mayCheck && <p className={styles['note']}>Values were not checked for you.</p>}
+      {!mayCheck && <p className={styles['note']}>{say('document.values-were-not-checked-for')}</p>}
       {prompt}
       {revisionPrompt}
       {groups.map((group) => (
@@ -342,16 +374,24 @@ export function DataTab({
               const whose = held === null ? null : whoseView(held.provenance, held.by);
               const resolvable =
                 state.mayResolve && (shown === 'never' || shown === 'stale' || shown === 'failed');
-              const kind = takes(state.binding) ? 'A bound value' : 'A bound table';
+              const kind = takes(state.binding)
+                ? say('document.a-bound-value')
+                : say('document.a-bound-table');
               // What is said under the row: why it is as it is, each where it applies.
               const reasons = [
                 ...(state.waiting !== null
-                  ? [`Waiting: ${said(state.waiting.taken, formats, state.binding)}`]
+                  ? [
+                      say('document.waiting-3', {
+                        value1: said(state.waiting.taken, formats, state.binding),
+                      }),
+                    ]
                   : []),
                 ...(whose !== null ? [whose] : []),
                 // Which of the document's parameters changed it (TP2-E), beside any other reason.
                 ...(held?.stale === true
-                  ? (held.parameters ?? []).map((name) => `The document's ${name} changed`)
+                  ? (held.parameters ?? []).map((name) =>
+                      say('document.the-document-s-changed', { name }),
+                    )
                   : []),
                 ...(failure !== undefined ? [failure] : []),
                 ...(state.definitionChanged && shown !== 'definition'
@@ -363,12 +403,14 @@ export function DataTab({
               ];
               const acts = [
                 ...(state.waiting !== null && state.mayResolve
-                  ? [{ label: 'Accept', run: () => accept(state) }]
+                  ? [{ label: say('document.accept'), run: () => accept(state) }]
                   : []),
                 ...(shown === 'stale' && held?.keepable === true && state.mayResolve
-                  ? [{ label: 'Keep', run: () => settle(state, 'keep') }]
+                  ? [{ label: say('document.keep'), run: () => settle(state, 'keep') }]
                   : []),
-                ...(resolvable ? [{ label: 'Resolve', run: () => settle(state, 'resolve') }] : []),
+                ...(resolvable
+                  ? [{ label: say('document.resolve'), run: () => settle(state, 'resolve') }]
+                  : []),
               ];
               return (
                 <li
@@ -388,13 +430,13 @@ export function DataTab({
                     </span>
                     {value === null ? (
                       <span className={`${styles['value']} ${styles['none']}`} data-none="">
-                        No value
+                        {say('document.no-value')}
                       </span>
                     ) : (
                       <span className={styles['value']}>{value}</span>
                     )}
                     <IconButton
-                      label="Go to"
+                      label={say('document.go-to')}
                       className={styles['goTo']}
                       onClick={() => onGoTo(state.node, state.binding.id)}
                     >
@@ -407,7 +449,7 @@ export function DataTab({
                     </span>
                     {' · '}
                     {state.definition === null
-                      ? 'A definition you may not read'
+                      ? say('document.a-definition-you-may-not')
                       : `${state.definition.title} ${state.definition.version}`}
                     {' · '}
                     {MODES[state.binding.mode]}

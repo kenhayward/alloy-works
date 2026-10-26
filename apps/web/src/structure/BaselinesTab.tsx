@@ -3,6 +3,7 @@ import { useCallback, useEffect, useId, useState, type FormEvent } from 'react';
 
 import styles from './BaselinesTab.module.css';
 import { baselineLink, comparisonLink } from './links.js';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -16,23 +17,46 @@ interface Baseline {
 
 type Show = 'all' | 'current' | 'superseded';
 
-const SHOWN: Record<Show, string> = { all: 'All', current: 'Current', superseded: 'Superseded' };
+const SHOWN: Record<Show, string> = {
+  get all() {
+    return words('document.all');
+  },
+  get current() {
+    return words('document.current');
+  },
+  get superseded() {
+    return words('document.superseded');
+  },
+};
 
 /** The formats a baseline may be published to, as the page offers them. */
 const FORMATS = {
   pdf: { label: 'PDF', formats: ['pdf'] },
-  both: { label: 'PDF and Word', formats: ['pdf', 'docx'] },
-  docx: { label: 'Word', formats: ['docx'] },
+  both: {
+    get label() {
+      return words('document.pdf-and-word');
+    },
+    formats: ['pdf', 'docx'],
+  },
+  docx: {
+    get label() {
+      return words('document.word');
+    },
+    formats: ['docx'],
+  },
 } as const;
 type Formats = keyof typeof FORMATS;
 
-const when = new Intl.DateTimeFormat('en-GB', {
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit',
-});
+const when = {
+  format: (at: Date) =>
+    formats().date(at, {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
+};
 
 /** What a refusal says, from the service's own words, or a sentence of ours where it sent none. */
 const refusalOf = (error: unknown, fallback: string) =>
@@ -101,10 +125,10 @@ export function BaselinesTab({
     });
     setBusy(false);
     if (!answer.data) {
-      setRefused(refusalOf(answer.error, 'The baseline could not be made.'));
+      setRefused(refusalOf(answer.error, words('document.the-baseline-could-not-be-2')));
       return;
     }
-    setSaid(`Made ${answer.data.name}.`);
+    setSaid(words('document.made', { name: answer.data.name }));
     setName('');
     await read();
   };
@@ -116,7 +140,7 @@ export function BaselinesTab({
       body: { by },
     });
     if (!answer.data) {
-      setRefused(refusalOf(answer.error, 'It could not be marked superseded.'));
+      setRefused(refusalOf(answer.error, words('document.it-could-not-be-marked')));
       return;
     }
     setMarking(null);
@@ -133,14 +157,15 @@ export function BaselinesTab({
       body: { formats: [...FORMATS[formats].formats] },
     });
     if (!answer.data) {
-      setRefused(refusalOf(answer.error, 'It could not be published.'));
+      setRefused(refusalOf(answer.error, words('document.it-could-not-be-published')));
       return;
     }
     setPublishing(null);
-    setSaid(`Publishing ${baseline.name}. It is listed in Publications once it is made.`);
+    setSaid(words('document.publishing-it-is-listed-in', { name: baseline.name }));
   };
 
-  const nameOf = (id: string) => every.find((each) => each.id === id)?.name ?? 'a later baseline';
+  const nameOf = (id: string) =>
+    every.find((each) => each.id === id)?.name ?? words('document.a-later-baseline');
   const laterThan = (baseline: Baseline) =>
     every.filter((each) => each.id !== baseline.id && each.madeAt > baseline.madeAt);
 
@@ -148,7 +173,7 @@ export function BaselinesTab({
     <div className={styles['tab']}>
       {mayPublish && (
         <form className={styles['make']} onSubmit={(event) => void make(event)}>
-          <label htmlFor={`${ids}-name`}>Name</label>
+          <label htmlFor={`${ids}-name`}>{words('document.name')}</label>
           <input
             id={`${ids}-name`}
             value={name}
@@ -156,7 +181,7 @@ export function BaselinesTab({
             onChange={(event) => setName(event.target.value)}
           />
           <button type="submit" disabled={busy || name.trim() === ''}>
-            Make baseline
+            {words('document.make-baseline')}
           </button>
         </form>
       )}
@@ -169,7 +194,7 @@ export function BaselinesTab({
         </p>
       )}
       <div className={styles['controls']}>
-        <label htmlFor={`${ids}-show`}>Show</label>
+        <label htmlFor={`${ids}-show`}>{words('document.show')}</label>
         <select
           id={`${ids}-show`}
           value={show}
@@ -182,8 +207,12 @@ export function BaselinesTab({
           ))}
         </select>
       </div>
-      {baselines === null && <p className={styles['note']}>The baselines could not be read.</p>}
-      {baselines?.length === 0 && <p className={styles['note']}>No baseline yet.</p>}
+      {baselines === null && (
+        <p className={styles['note']}>{words('document.the-baselines-could-not-be')}</p>
+      )}
+      {baselines?.length === 0 && (
+        <p className={styles['note']}>{words('document.no-baseline-yet')}</p>
+      )}
       {baselines !== undefined && baselines !== null && baselines.length > 0 && (
         <ul className={styles['rows']}>
           {baselines.map((baseline) => {
@@ -195,15 +224,18 @@ export function BaselinesTab({
                   <a href={baselineLink(document, baseline.id)}>{baseline.name}</a>
                 </h3>
                 <span className={styles['note']}>
-                  {`${baseline.madeBy.name ?? 'Somebody'}, ${when.format(new Date(baseline.madeAt))}`}
+                  {words('document.made-by-when', {
+                    who: baseline.madeBy.name ?? words('document.somebody'),
+                    when: when.format(new Date(baseline.madeAt)),
+                  })}
                 </span>
                 <span className={styles['note']}>
                   {baseline.superseded === null
-                    ? 'Current'
-                    : `Superseded by ${nameOf(baseline.superseded.by)}`}
+                    ? words('document.current')
+                    : words('document.superseded-by', { value1: nameOf(baseline.superseded.by) })}
                 </span>
                 <div className={styles['controls']}>
-                  <label htmlFor={`${heading}-against`}>Compare with</label>
+                  <label htmlFor={`${heading}-against`}>{words('document.compare-with')}</label>
                   <select
                     id={`${heading}-against`}
                     value={against[baseline.id] ?? 'now'}
@@ -211,7 +243,7 @@ export function BaselinesTab({
                       setAgainst({ ...against, [baseline.id]: event.target.value })
                     }
                   >
-                    <option value="now">The document now</option>
+                    <option value="now">{words('document.the-document-now-2')}</option>
                     {later.map((each) => (
                       <option key={each.id} value={each.id}>
                         {each.name}
@@ -219,13 +251,13 @@ export function BaselinesTab({
                     ))}
                   </select>
                   <a href={comparisonLink(document, baseline.id, against[baseline.id] ?? 'now')}>
-                    Compare
+                    {words('document.compare')}
                   </a>
                 </div>
                 {mayPublish &&
                   (publishing === baseline.id ? (
                     <div className={styles['controls']}>
-                      <label htmlFor={`${heading}-formats`}>Formats</label>
+                      <label htmlFor={`${heading}-formats`}>{words('document.formats')}</label>
                       <select
                         id={`${heading}-formats`}
                         value={formats}
@@ -238,10 +270,10 @@ export function BaselinesTab({
                         ))}
                       </select>
                       <button type="button" onClick={() => void publish(baseline)}>
-                        Publish now
+                        {words('document.publish-now')}
                       </button>
                       <button type="button" onClick={() => setPublishing(null)}>
-                        Cancel
+                        {words('document.cancel')}
                       </button>
                     </div>
                   ) : (
@@ -250,7 +282,7 @@ export function BaselinesTab({
                       className={styles['act']}
                       onClick={() => setPublishing(baseline.id)}
                     >
-                      Publish
+                      {words('document.publish')}
                     </button>
                   ))}
                 {mayPublish &&
@@ -258,7 +290,7 @@ export function BaselinesTab({
                   later.length > 0 &&
                   (marking === baseline.id ? (
                     <div className={styles['controls']}>
-                      <label htmlFor={`${heading}-by`}>Superseded by</label>
+                      <label htmlFor={`${heading}-by`}>{words('document.superseded-by-2')}</label>
                       <select
                         id={`${heading}-by`}
                         value={by}
@@ -271,10 +303,10 @@ export function BaselinesTab({
                         ))}
                       </select>
                       <button type="button" onClick={() => void mark(baseline.id)}>
-                        Mark
+                        {words('document.mark')}
                       </button>
                       <button type="button" onClick={() => setMarking(null)}>
-                        Cancel
+                        {words('document.cancel')}
                       </button>
                     </div>
                   ) : (
@@ -286,7 +318,7 @@ export function BaselinesTab({
                         setBy(later[later.length - 1]!.id);
                       }}
                     >
-                      Mark superseded
+                      {words('document.mark-superseded')}
                     </button>
                   ))}
               </li>

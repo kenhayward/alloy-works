@@ -8,6 +8,7 @@ import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
 import styles from '../structure/DocumentList.module.css';
 import { statusWords } from './Translations.js';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -81,11 +82,11 @@ export function SpaceTranslations({ client }: { readonly client: Client }) {
   return (
     <section aria-labelledby="translations-heading">
       <div className={styles['titleRow']}>
-        <h1 id="translations-heading">Translations</h1>
+        <h1 id="translations-heading">{words('translation.translations')}</h1>
       </div>
       {spaces !== null && spaces.length > 1 && (
         <label>
-          Space{' '}
+          {words('translation.space')}{' '}
           <select value={space ?? ''} onChange={(event) => setSpace(event.target.value)}>
             {spaces.map((each) => (
               <option key={each.id} value={each.id}>
@@ -97,29 +98,31 @@ export function SpaceTranslations({ client }: { readonly client: Client }) {
       )}
       {spaces !== null && spaces.length === 0 && (
         <Empty>
-          <p>There is no space you may read to report on.</p>
+          <p>{words('translation.there-is-no-space-you')}</p>
         </Empty>
       )}
-      {report === null && (spaces === null || space !== null) && <Waiting>Loading...</Waiting>}
+      {report === null && (spaces === null || space !== null) && (
+        <Waiting>{words('translation.loading')}</Waiting>
+      )}
       {report === 'failed' && (
         <Notice tone="failed">
-          <p>The translations could not be read.</p>
+          <p>{words('translation.the-translations-could-not-be')}</p>
         </Notice>
       )}
       {report !== null && report !== 'failed' && report.items.length === 0 && (
         <Empty>
-          <p>
-            No component of this space is translated yet. Translations on a component begins one.
-          </p>
+          <p>{words('translation.no-component-of-this-space')}</p>
         </Empty>
       )}
       {report !== null && report !== 'failed' && report.items.length > 0 && (
         <table className={styles['table']}>
-          <caption>{`Translated components${report.capped ? ', the first 500' : ''}`}</caption>
+          <caption>
+            {words('translation.translated-components', { capped: report.capped ? 'yes' : 'no' })}
+          </caption>
           <thead>
             <tr>
-              <th scope="col">Component</th>
-              <th scope="col">Translations</th>
+              <th scope="col">{words('translation.component')}</th>
+              <th scope="col">{words('translation.translations')}</th>
             </tr>
           </thead>
           <tbody>

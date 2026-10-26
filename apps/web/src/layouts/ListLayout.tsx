@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import styles from './ListLayout.module.css';
+import { words } from '../words/words.js';
 
 const COLLAPSED = 'aw.filter.collapsed';
 
@@ -48,23 +49,23 @@ export function ListLayout({
           <button
             type="button"
             className={styles['railButton']}
-            aria-label="Show the filter"
-            title="Show the filter"
+            aria-label={words('layouts.show-the-filter')}
+            title={words('layouts.show-the-filter')}
             onClick={() => toggle(false)}
           >
             <span aria-hidden="true">&gt;</span>
           </button>
           <span className={styles['railLabel']} aria-hidden="true">
-            Filter
+            {words('layouts.filter')}
           </span>
         </div>
       ) : (
-        <aside className={styles['filter']} aria-label="Filter">
+        <aside className={styles['filter']} aria-label={words('layouts.filter')}>
           <button
             type="button"
             className={styles['hide']}
-            aria-label="Hide the filter"
-            title="Hide the filter"
+            aria-label={words('layouts.hide-the-filter')}
+            title={words('layouts.hide-the-filter')}
             onClick={() => toggle(true)}
           >
             <span aria-hidden="true">&lt;</span>

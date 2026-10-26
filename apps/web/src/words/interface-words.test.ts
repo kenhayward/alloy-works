@@ -24,6 +24,7 @@ describe('the interface-words rule (the UI plan, UI-F)', () => {
     ],
     invalid: [
       { code: 'const a = <p>Needs your attention</p>;', errors: [{ messageId: 'words' }] },
+      { code: "const f = <p>{who} on{' '}{day}</p>;", errors: [{ messageId: 'words' }] },
       { code: 'const b = <button aria-label="Close menu" />;', errors: [{ messageId: 'words' }] },
       {
         code: "const c = <p>{open ? 'Hide it' : 'Show it'}</p>;",

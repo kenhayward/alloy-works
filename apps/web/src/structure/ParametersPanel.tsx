@@ -13,6 +13,7 @@ import {
   valuesToSend,
   type ParameterValue,
 } from './ParameterInput.js';
+import { formats, words, wordsWith } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -257,10 +258,10 @@ export function ParametersPanel(props: ParametersPanelProps) {
   if (declared === 'failed') {
     return (
       <section aria-labelledby={headingId}>
-        <h2 id={headingId}>Parameters</h2>
-        <p>The parameters could not be loaded.</p>
+        <h2 id={headingId}>{words('document.parameters')}</h2>
+        <p>{words('document.the-parameters-could-not-be-2')}</p>
         <button type="button" disabled={reading} onClick={() => void read(null)}>
-          Try again
+          {words('document.try-again')}
         </button>
       </section>
     );
@@ -272,7 +273,7 @@ export function ParametersPanel(props: ParametersPanelProps) {
   const historyId = `${id}-history`;
   return (
     <section aria-labelledby={headingId}>
-      <h2 id={headingId}>Parameters</h2>
+      <h2 id={headingId}>{words('document.parameters')}</h2>
       {withheld && (
         <dl>
           {Object.keys(props.values)
@@ -295,7 +296,7 @@ export function ParametersPanel(props: ParametersPanelProps) {
               id={`${id}-${parameter.name}`}
               value={held[parameter.name]}
               readOnly={props.readOnly || fixed}
-              {...(fixed ? { note: 'Fixed when the document was made.' } : {})}
+              {...(fixed ? { note: words('document.fixed-when-the-document-was') } : {})}
               {...(problems.has(parameter.name) ? { problem: problems.get(parameter.name)! } : {})}
               onChange={(value) => {
                 const next = { ...heldNow.current, [parameter.name]: value };
@@ -313,25 +314,39 @@ export function ParametersPanel(props: ParametersPanelProps) {
         aria-controls={historyId}
         onClick={() => setShowHistory((was) => !was)}
       >
-        History
+        {words('document.history')}
       </button>
       <div id={historyId} hidden={!showHistory}>
         {history !== null && (
-          <ol aria-label="Changes to the parameters" className={styles['many']}>
+          <ol aria-label={words('document.changes-to-the-parameters')} className={styles['many']}>
             {history.changes.map((change) => (
               <li key={change.version}>
-                {`Version ${change.number}, by ${change.author ?? 'somebody'}, `}
-                <time dateTime={change.createdAt}>{whenChanged(change.createdAt)}</time>
-                {`: ${change.changed
-                  .map((name) => `${name} ${shown(change.parameters[name])}`)
-                  .join(', ')}`}
+                {wordsWith(
+                  'document.parameters-changed',
+                  {
+                    number: change.number,
+                    who: change.author ?? words('document.somebody-in-sentence'),
+                    changes: formats().list(
+                      change.changed.map((name) =>
+                        words('document.parameter-is', {
+                          name,
+                          value: shown(change.parameters[name]),
+                        }),
+                      ),
+                      { type: 'unit' },
+                    ),
+                  },
+                  {
+                    when: <time dateTime={change.createdAt}>{whenChanged(change.createdAt)}</time>,
+                  },
+                )}
               </li>
             ))}
           </ol>
         )}
         {history?.next != null && (
           <button type="button" disabled={reading} onClick={() => void read(history.next)}>
-            Show more changes
+            {words('document.show-more-changes')}
           </button>
         )}
       </div>

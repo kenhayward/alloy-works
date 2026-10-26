@@ -54,7 +54,7 @@ describe("the document's profile (the R6 plan, R6-H)", () => {
     );
     expect(await screen.findByRole('checkbox', { name: 'Regulator' })).toBeChecked();
     await userEvent.click(screen.getByRole('checkbox', { name: 'Internal' }));
-    await userEvent.click(screen.getByRole('checkbox', { name: EXCLUDE_UNSET_SAID }));
+    await userEvent.click(screen.getByRole('checkbox', { name: EXCLUDE_UNSET_SAID() }));
     await userEvent.click(screen.getByRole('button', { name: 'Save profile' }));
     expect(save).toHaveBeenCalledWith({
       values: { audience: ['regulator', 'internal'] },

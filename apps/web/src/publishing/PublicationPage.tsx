@@ -1,6 +1,6 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import { DRAFT_NOTICE } from '@alloy-works/domain';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Notice } from '../states/Notice.js';
 import { baselineLink } from '../structure/links.js';
 import { Chip } from '../parts/Chip.js';
@@ -9,6 +9,7 @@ import { Shares } from './Shares.js';
 import { GeneratedContent } from './GeneratedContent.js';
 import styles from './PublicationPage.module.css';
 import { Waiting } from '../states/Waiting.js';
+import { formats, words, wordsWith } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -111,8 +112,11 @@ function checkIn(value: unknown): Check | null {
 function checkWords(check: Check): string {
   const found = check.compliant
     ? 'passed'
-    : `${check.failedRules.length} ${check.failedRules.length === 1 ? 'rule' : 'rules'} failed`;
-  return `Checked for PDF/UA-1 by veraPDF ${check.checkerVersion}: ${found}.`;
+    : words('publishing.failed', {
+        length: check.failedRules.length,
+        value2: check.failedRules.length,
+      });
+  return words('publishing.checked-for-pdf-ua-1', { checkerVersion: check.checkerVersion, found });
 }
 
 /** A `PublicationView`, checked member by member: the client's bodies are `any`. */
@@ -166,8 +170,14 @@ function shownIn(data: unknown): Shown | undefined {
 }
 
 /** A download's size, in whole kilobytes and never none. */
-const size = (bytes: number | null) =>
-  bytes === null ? '' : ` (${Math.max(1, Math.round(bytes / 1024))} KB)`;
+const sized = (name: ReactNode, bytes: number | null): ReactNode =>
+  bytes === null
+    ? name
+    : wordsWith('publishing.sized', { kb: Math.max(1, Math.round(bytes / 1024)) }, { name });
+
+/** When it was published, in the person's language. */
+const published = (iso: string) =>
+  formats().date(new Date(iso), { dateStyle: 'long', timeStyle: 'short' });
 
 /**
  * One publication at its own address, `#/publications/{id}` (PUB-047): what it is, that it is not
@@ -234,18 +244,18 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
     };
   }, [client, id, attempt]);
 
-  if (shown === null) return <Waiting>Opening...</Waiting>;
+  if (shown === null) return <Waiting>{words('publishing.opening')}</Waiting>;
   if (shown === 'missing') {
     return (
       <Notice tone="refused">
-        <p>There is nothing here, or nothing you may read.</p>
+        <p>{words('publishing.there-is-nothing-here-or')}</p>
       </Notice>
     );
   }
   if (shown === 'failed') {
     return (
       <Notice tone="failed">
-        <p>The publication could not be opened.</p>
+        <p>{words('publishing.the-publication-could-not-be')}</p>
         <button
           type="button"
           onClick={() => {
@@ -253,7 +263,7 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
             setAttempt((count) => count + 1);
           }}
         >
-          Try again
+          {words('publishing.try-again')}
         </button>
       </Notice>
     );
@@ -261,14 +271,19 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
   const pdf = shown.outputs.find((each) => each.format === 'pdf');
   const word = shown.outputs.find((each) => each.format === 'docx');
   const provenance = shown.outputs.find((each) => each.format === 'provenance');
-  const formats = pdf !== undefined && word !== undefined ? 'PDF and Word' : pdf ? 'PDF' : 'Word';
+  const formats =
+    pdf !== undefined && word !== undefined
+      ? words('publishing.pdf-and-word')
+      : pdf
+        ? 'PDF'
+        : words('publishing.word');
   return (
     <article aria-labelledby="publication-title" className={styles['page']}>
       {/* Layout D's head (the Ledger, ADR-0046): where it is, what it is, what can be taken away. */}
       <header className={styles['head']}>
         {!outside && (
-          <nav aria-label="Breadcrumb" className={styles['trail']}>
-            <a href="#/publications">Publications</a>
+          <nav aria-label={words('publishing.breadcrumb')} className={styles['trail']}>
+            <a href="#/publications">{words('publishing.publications')}</a>
           </nav>
         )}
         <div className={styles['titleRow']}>
@@ -278,30 +293,35 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
           <div className={styles['actions']}>
             {!outside && (
               <a className={styles['button']} href={`#/documents/${shown.document}`}>
-                Open the document
+                {words('publishing.open-the-document')}
               </a>
             )}
             {word !== undefined && (
               <a className={styles['button']} href={word.download}>
-                Download the Word document
+                {words('publishing.download-the-word-document')}
               </a>
             )}
             {pdf !== undefined && (
               <a className={`${styles['button']} ${styles['primary']}`} href={pdf.download}>
-                Download the PDF
+                {words('publishing.download-the-pdf')}
               </a>
             )}
           </div>
         </div>
         <div className={styles['facts']}>
-          <Chip className={styles['mono']}>{`from ${shown.version}`}</Chip>
+          <Chip className={styles['mono']}>
+            {words('publishing.from', { version: shown.version })}
+          </Chip>
           <Chip>{formats}</Chip>
-          {shown.approved ? <Chip tone="ok">Approved</Chip> : <Chip tone="warn">Not approved</Chip>}
+          {shown.approved ? (
+            <Chip tone="ok">{words('publishing.approved')}</Chip>
+          ) : (
+            <Chip tone="warn">{words('publishing.not-approved')}</Chip>
+          )}
           <span className={styles['published']}>
-            Published by {shown.publisher ?? 'somebody'} on{' '}
-            {new Date(shown.publishedAt).toLocaleString(undefined, {
-              dateStyle: 'long',
-              timeStyle: 'short',
+            {words('publishing.published-by-on', {
+              who: shown.publisher ?? words('publishing.somebody-in-sentence'),
+              when: published(shown.publishedAt),
             })}
           </span>
         </div>
@@ -309,11 +329,13 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
           <p className={styles['superseded']} role="status">
             {shown.newer !== null ? (
               <>
-                A later publication of this document supersedes this one.{' '}
-                <a href={`#/publications/${shown.newer}`}>Open the newer publication</a>
+                {words('publishing.a-later-publication-of-this')}{' '}
+                <a href={`#/publications/${shown.newer}`}>
+                  {words('publishing.open-the-newer-publication')}
+                </a>
               </>
             ) : (
-              'A later publication of this document supersedes this one. Ask whoever shared it with you for the newer one.'
+              words('publishing.a-later-publication-of-this-2')
             )}
           </p>
         )}
@@ -326,53 +348,57 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
           <iframe className={styles['viewer']} src={pdf.view} title={shown.title} />
         )}
         {pdf === undefined && word !== undefined && (
-          <p className={styles['unshown']}>
-            A Word document is not shown in the page. Download it to open it in Word.
-          </p>
+          <p className={styles['unshown']}>{words('publishing.a-word-document-is-not')}</p>
         )}
       </div>
       <aside className={styles['record']} aria-labelledby="publication-record">
         <h2 id="publication-record" className={styles['recordTitle']}>
-          What it was made from
+          {words('publishing.what-it-was-made-from')}
         </h2>
         <p className={styles['notApproved']}>{DRAFT_NOTICE.text}</p>
-        {sharesOnly === true && (
-          <p>Shared with you to read and save. Your opening it is recorded.</p>
-        )}
+        {sharesOnly === true && <p>{words('publishing.shared-with-you-to-read')}</p>}
         <p>
-          Version {shown.version}, published by {shown.publisher ?? 'somebody'} on{' '}
-          {new Date(shown.publishedAt).toLocaleString(undefined, {
-            dateStyle: 'long',
-            timeStyle: 'short',
+          {words('publishing.version-published-by-on', {
+            version: shown.version,
+            who: shown.publisher ?? words('publishing.somebody-in-sentence'),
+            when: published(shown.publishedAt),
           })}
-          .
         </p>
         {shown.baseline !== null && !outside && (
           <p>
-            Made from the baseline{' '}
-            <a href={baselineLink(shown.document, shown.baseline)}>
-              {baselineName ?? 'its own page'}
-            </a>
-            , as that baseline pinned the document and everything it uses.
+            {wordsWith(
+              'publishing.made-from-the-baseline',
+              {},
+              {
+                baseline: (
+                  <a href={baselineLink(shown.document, shown.baseline)}>
+                    {baselineName ?? words('publishing.its-own-page')}
+                  </a>
+                ),
+              },
+            )}
           </p>
         )}
         {shown.engine !== null && shown.template !== null && (
           <p>
-            Made with Typst {shown.engine} and publication template {shown.template}.
+            {words('publishing.made-with-typst', {
+              engine: shown.engine,
+              template: shown.template,
+            })}
           </p>
         )}
         {/* The writer's version as the template's is named, a number: the store's `word/1` names the
             producer too, which the sentence already does (the final review of Word 1, M7). */}
         {word?.producerVersion != null && (
           <p>
-            The Word document was written by the Word writer, version{' '}
+            {words('publishing.the-word-document-was-written')}{' '}
             {word.producerVersion.replace(/^word\//, '')}.
           </p>
         )}
         {(pdf !== undefined || (word !== undefined && word.report.length > 0)) && (
           <section className={styles['section']} aria-labelledby="publication-checks">
             <h3 id="publication-checks" className={styles['label']}>
-              Checks
+              {words('publishing.checks')}
             </h3>
             {/* Checked by veraPDF after it was recorded (W14.1, ADR-0030): until then, it says so, and
                 where its checks all gave up, that it could not be checked. */}
@@ -381,28 +407,37 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
                 {pdf.check !== null
                   ? checkWords(pdf.check)
                   : pdf.checkGaveUp
-                    ? 'Could not be checked for accessibility.'
-                    : 'Not yet checked for accessibility.'}
+                    ? words('publishing.could-not-be-checked-for')
+                    : words('publishing.not-yet-checked-for-accessibility')}
               </p>
             )}
             {pdf?.check != null && pdf.check.failedRules.length > 0 && (
-              <ul aria-label="Rules the PDF failed">
+              <ul aria-label={words('publishing.rules-the-pdf-failed')}>
                 {pdf.check.failedRules.map((rule) => (
                   <li key={`${rule.clause}-${rule.test}`}>
-                    Clause {rule.clause}, test {rule.test}
-                    {rule.description !== null && `: ${rule.description}`}
+                    {rule.description === null
+                      ? words('publishing.clause-test', { clause: rule.clause, test: rule.test })
+                      : words('publishing.clause-test-described', {
+                          clause: rule.clause,
+                          test: rule.test,
+                          description: rule.description,
+                        })}
                   </li>
                 ))}
               </ul>
             )}
             {pdf?.check?.report != null && (
               <p>
-                <a href={pdf.check.report.download}>Download the full report</a>
-                {size(pdf.check.report.bytes)}
+                {sized(
+                  <a href={pdf.check.report.download}>
+                    {words('publishing.download-the-full-report')}
+                  </a>,
+                  pdf.check.report.bytes,
+                )}
               </p>
             )}
             {word !== undefined && word.report.length > 0 && (
-              <ul aria-label="About the Word document">
+              <ul aria-label={words('publishing.about-the-word-document')}>
                 {reportLines(word.report).map((line) => (
                   <li key={line.key}>{line.words}</li>
                 ))}
@@ -413,14 +448,24 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
         {(pdf !== undefined || word !== undefined || provenance !== undefined) && (
           <section className={styles['section']} aria-labelledby="publication-files">
             <h3 id="publication-files" className={styles['label']}>
-              Files
+              {words('publishing.files')}
             </h3>
-            {pdf !== undefined && <p>PDF{size(pdf.bytes)}</p>}
-            {word !== undefined && <p>Word document{size(word.bytes)}</p>}
+            {pdf !== undefined && <p>{sized(words('publishing.pdf'), pdf.bytes)}</p>}
+            {word !== undefined && <p>{sized(words('publishing.word-document'), word.bytes)}</p>}
             {provenance !== undefined && (
               <p>
-                <a href={provenance.download}>Download where its values came from</a>
-                {size(provenance.bytes)}, provenance.json
+                {wordsWith(
+                  'publishing.provenance-file',
+                  {},
+                  {
+                    file: sized(
+                      <a href={provenance.download}>
+                        {words('publishing.download-where-its-values-came')}
+                      </a>,
+                      provenance.bytes,
+                    ),
+                  },
+                )}
               </p>
             )}
           </section>

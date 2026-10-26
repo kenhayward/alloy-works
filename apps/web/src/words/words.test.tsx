@@ -8,7 +8,7 @@ import { EDITOR_WORDS, sayEditorWord } from '@alloy-works/editor';
 
 import enGB from './en-GB.json';
 import { loadLocaleData } from './polyfills.js';
-import { WordsProvider, makeWords, useWords } from './words.js';
+import { WordsProvider, makeWords, useWords, wordsWith } from './words.js';
 
 const SOURCE = join(process.cwd(), 'src');
 
@@ -52,6 +52,20 @@ describe('the interface’s words (the UI plan, UI-C)', () => {
       </WordsProvider>,
     );
     expect(screen.getByText(/^\[åñð 2 ɱöŕé ŕöŵš/)).toBeInTheDocument();
+  });
+
+  it('places an element where a whole message holds its placeholder', () => {
+    const { container } = render(
+      <p>
+        {wordsWith(
+          'document.parameters-changed',
+          { number: '0.2', who: 'Ada', changes: 'reviewer Grace' },
+          { when: <time dateTime="2026-09-18">18 Sept</time> },
+        )}
+      </p>,
+    );
+    expect(container.textContent).toBe('Version 0.2, by Ada, 18 Sept: reviewer Grace');
+    expect(container.querySelector('time')).toHaveAttribute('datetime', '2026-09-18');
   });
 
   it('formats a date, a number and a list from the bundled locale data, in the person’s language', () => {

@@ -11,6 +11,7 @@ import { useId, useMemo } from 'react';
 
 import { nodeLink } from './links.js';
 import { nodeName, placeOf, type Names } from './tree.js';
+import { words } from '../words/words.js';
 
 /** What the page knows of each occurrence's contributions, keyed by the occurrence's node. */
 export type Known =
@@ -25,9 +26,24 @@ const NOTHING: ReadonlyMap<string, readonly Contribution[]> = new Map();
 
 /** The lists a document generates, in the order a publication prints them (STR-041). */
 const LISTS = [
-  { sequence: 'figure', heading: 'Figures' },
-  { sequence: 'table', heading: 'Tables' },
-  { sequence: 'equation', heading: 'Equations' },
+  {
+    sequence: 'figure',
+    get heading() {
+      return words('document.figures');
+    },
+  },
+  {
+    sequence: 'table',
+    get heading() {
+      return words('document.tables');
+    },
+  },
+  {
+    sequence: 'equation',
+    get heading() {
+      return words('document.equations');
+    },
+  },
 ] as const;
 
 export interface GeneratedListsProps {
@@ -79,21 +95,21 @@ export function GeneratedLists({
   // Nothing at all without a scheme: the page says once why, and no entry here could be labelled or
   // numbered without guessing at what a publication would print.
   if (scheme === null) return null;
-  if (known.state === 'loading') return <p>Reading the figures, tables and equations...</p>;
+  if (known.state === 'loading') return <p>{words('document.reading-the-figures-tables-and')}</p>;
   if (known.state === 'failed') {
     return known.signedOut ? (
-      <p>You are signed out. Sign in again to see the figures, tables and equations.</p>
+      <p>{words('document.you-are-signed-out-sign-4')}</p>
     ) : (
       <>
-        <p>The figures, tables and equations could not be read.</p>
+        <p>{words('document.the-figures-tables-and-equations')}</p>
         <button type="button" onClick={onRetry}>
-          Try again
+          {words('document.try-again')}
         </button>
       </>
     );
   }
   if (lists.every((list) => list.entries.length === 0)) {
-    return <p>This document has no figures, tables or equations.</p>;
+    return <p>{words('document.this-document-has-no-figures')}</p>;
   }
   return (
     <>
@@ -120,7 +136,9 @@ export function GeneratedLists({
                     >
                       {shown}
                     </a>
-                    {holder && <> in {nodeName(holder, names)}</>}
+                    {holder && (
+                      <> {words('document.in-holder', { holder: nodeName(holder, names) })}</>
+                    )}
                   </li>
                 );
               })}

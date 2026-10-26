@@ -69,6 +69,7 @@ import {
 import { StateLozenge } from '../states/Lozenge.js';
 import { HeldFields } from '../metadata/HeldFields.js';
 import { Segmented } from '../parts/Segmented.js';
+import { formats, words as say } from '../words/words.js';
 
 /**
  * The Equation dialog, loaded the first time a title asks for it, and Temml with it - the component
@@ -96,8 +97,7 @@ interface EquationRequest {
 }
 
 /** Said after whatever the page says, when a title gives way under its own Equation dialog. */
-const TITLE_CHANGED =
-  'The title changed while the Equation dialog was open, so nothing was placed.';
+const TITLE_CHANGED = (): string => say('document.the-title-changed-while-the');
 
 /** A component the panel can add a reference to: what `GET /v1/components` lists. */
 export interface ComponentChoice {
@@ -147,27 +147,23 @@ interface LostTitle {
 
 /** "Methods", "Methods and Results", "Scope, Methods and Results". */
 function listed(titles: readonly string[]): string {
-  if (titles.length <= 1) return titles.join('');
-  return `${titles.slice(0, -1).join(', ')} and ${titles[titles.length - 1]}`;
+  return formats().list(titles);
 }
 
 /** Said after a refusal's own sentence, naming each title it took. */
 function titlesNotSaved(titles: readonly string[]): string {
   return titles.length === 1
-    ? `Your title ${listed(titles)} was not saved.`
-    : `Your titles ${listed(titles)} were not saved.`;
+    ? say('document.your-title-was-not-saved', { value1: listed(titles) })
+    : say('document.your-titles-were-not-saved', { value1: listed(titles) });
 }
 
 /** Names every title not saved after its field closed, once none is outstanding. */
 function lostTitles(lost: readonly LostTitle[]): string {
   const titles = lost.map((each) => each.title);
-  const which =
-    titles.length === 1 ? `the title ${listed(titles)} was` : `the titles ${listed(titles)} were`;
+  const said = { titles: listed(titles), count: titles.length };
   return lost.some((each) => each.signedOut)
-    ? `You are signed out, so ${which} not saved. Sign in again to change this document.`
-    : `${which.charAt(0).toUpperCase()}${which.slice(1)} not saved. ${
-        titles.length === 1 ? 'Select the section' : 'Select each section'
-      } and try it again.`;
+    ? say('document.titles-not-saved-signed-out', said)
+    : say('document.titles-not-saved-try-again', said);
 }
 
 /** What a node's row says beside its title (STR-038). */
@@ -200,8 +196,10 @@ export function conditionsWords(
     standing === undefined
       ? ''
       : standing === 'left'
-        ? 'left out by this document’s profile'
-        : `needs a value for ${standing.unset.map(nameOf).join(' and ')} in this document’s profile`;
+        ? say('document.left-out-by-this-document')
+        : say('document.needs-a-value-for-in', {
+            value1: standing.unset.map(nameOf).join(' and '),
+          });
   if (conditions === undefined)
     return after === '' ? null : after[0]!.toUpperCase() + after.slice(1);
   const said = conditions
@@ -213,7 +211,7 @@ export function conditionsWords(
       return `${axis?.name ?? each.axis}: ${values.join(', ')}`;
     })
     .join('; ');
-  return `Kept for ${said}${after === '' ? '' : `; ${after}`}`;
+  return say('document.kept-for', { said, value2: after === '' ? '' : `; ${after}` });
 }
 
 /**
@@ -260,11 +258,12 @@ function standingsBy(
 export function marksWords(marks: NodeMarks | undefined): string[] {
   if (marks === undefined) return [];
   const words: string[] = [];
-  if (marks.heldBy !== undefined) words.push(`Held by ${marks.heldBy ?? 'somebody else'}`);
+  if (marks.heldBy !== undefined)
+    words.push(say('document.held-by', { value1: marks.heldBy ?? 'somebody else' }));
   const broken = marks.brokenReferences ?? 0;
-  if (broken > 0) words.push(broken === 1 ? '1 broken reference' : `${broken} broken references`);
+  if (broken > 0) words.push(say('document.broken-references', { count: broken }));
   const failed = marks.failedValues ?? 0;
-  if (failed > 0) words.push(failed === 1 ? '1 failed value' : `${failed} failed values`);
+  if (failed > 0) words.push(say('document.failed-values', { count: failed }));
   return words;
 }
 
@@ -387,30 +386,66 @@ export interface OutlinePanelProps {
 const NOTHING_KNOWN: ReadonlyMap<string, readonly Contribution[]> = new Map();
 
 const PAGE_BREAKS = [
-  { value: 'none', label: 'Wherever it falls' },
-  { value: 'page', label: 'A new page' },
-  { value: 'recto', label: 'A new right-hand page' },
+  {
+    value: 'none',
+    get label() {
+      return say('document.wherever-it-falls');
+    },
+  },
+  {
+    value: 'page',
+    get label() {
+      return say('document.a-new-page');
+    },
+  },
+  {
+    value: 'recto',
+    get label() {
+      return say('document.a-new-right-hand-page');
+    },
+  },
 ] as const;
 
 /** The three matters a top-level node may be in, in the order a publication prints them (STR-064). */
 const MATTERS = [
-  { value: 'front', label: 'Front matter', short: 'Front' },
-  { value: 'body', label: 'Body', short: 'Body' },
-  { value: 'appendix', label: 'Appendix', short: 'Appendix' },
+  {
+    value: 'front',
+    get label() {
+      return say('document.front-matter');
+    },
+    get short() {
+      return say('document.front');
+    },
+  },
+  {
+    value: 'body',
+    get label() {
+      return say('document.body');
+    },
+    get short() {
+      return say('document.body');
+    },
+  },
+  {
+    value: 'appendix',
+    get label() {
+      return say('document.appendix');
+    },
+    get short() {
+      return say('document.appendix');
+    },
+  },
 ] as const;
 
 /** Said where a key move is refused, in the words of the rule that refused it. */
-const TOP_LEVEL_ONLY = 'Front matter and appendices stay at the top level.';
-const FRONT_FIRST = 'Front matter comes before the rest of the outline.';
+const TOP_LEVEL_ONLY = (): string => say('document.front-matter-and-appendices-stay');
+const FRONT_FIRST = (): string => say('document.front-matter-comes-before-the');
 
 /**
  * The keymap, said once beside the tree and tied to it by `aria-describedby`. A Mac keyboard's delete
  * key is Backspace, which the tree leaves alone, so it says where removing is on one.
  */
-const KEYS =
-  'Move between items with the arrow keys. Move the selected item with Alt and the arrow keys ' +
-  '(Option on a Mac), add a section after it with Enter, remove it with Delete, and undo with ' +
-  'Ctrl+Z (Cmd+Z on a Mac). On a Mac keyboard, remove it with the Remove button.';
+const KEYS = (): string => say('document.outline.keys');
 
 function isPageBreak(value: string): value is OutlineViewNode['pageBreak'] {
   return PAGE_BREAKS.some((each) => each.value === value);
@@ -612,7 +647,7 @@ export function OutlinePanel({
       // Focus, which in a browser scrolls the node into view: the reader asked to be taken here.
       setFocusTarget(linked.node);
     } else {
-      onNotice('The linked part is not in this document.');
+      onNotice(say('document.the-linked-part-is-not'));
     }
   }, [linked, nodes, onNotice]);
 
@@ -678,7 +713,7 @@ export function OutlinePanel({
       const same = named.current !== null && notice === named.current.said;
       const after = [
         same ? named.current!.after : (notice ?? ''),
-        withdrawn.current ? TITLE_CHANGED : '',
+        withdrawn.current ? TITLE_CHANGED() : '',
       ]
         .filter(Boolean)
         .join(' ');
@@ -807,7 +842,7 @@ export function OutlinePanel({
         withheld={withheld}
         nameOf={(node) => {
           const found = placeOf(nodes, node)?.node;
-          return found === undefined ? 'A component' : nodeName(found, names);
+          return found === undefined ? say('document.a-component-2') : nodeName(found, names);
         }}
         linkOf={linkOf}
         onGo={goTo}
@@ -913,8 +948,8 @@ export function OutlinePanel({
       if (!may) return;
       const move = keyMove(nodes, current, direction);
       if (move !== null) void send(move, current);
-      else if (leavesTheTopLevel(nodes, current, direction)) onNotice(TOP_LEVEL_ONLY);
-      else if (breaksFrontFirst(nodes, current, direction)) onNotice(FRONT_FIRST);
+      else if (leavesTheTopLevel(nodes, current, direction)) onNotice(TOP_LEVEL_ONLY());
+      else if (breaksFrontFirst(nodes, current, direction)) onNotice(FRONT_FIRST());
       return;
     }
     switch (event.key) {
@@ -1137,7 +1172,7 @@ export function OutlinePanel({
           >
             {instead}
             {instead === undefined && editable && (
-              <Toolbar label="Outline" className={styles['toolbar']}>
+              <Toolbar label={say('document.outline')} className={styles['toolbar']}>
                 {/* Nothing here is disabled while an act is in flight, because a control that is disabled
               under the focus drops it to the page body in a real browser: each waits instead, and
               Undo says it has nothing to undo through aria-disabled, where it can keep the focus. */}
@@ -1146,8 +1181,8 @@ export function OutlinePanel({
                 <button
                   type="button"
                   className={styles['act']}
-                  aria-label="Add section"
-                  title="Add section"
+                  aria-label={say('document.add-section')}
+                  title={say('document.add-section')}
                   onClick={() => !busy && openAdding('section')}
                 >
                   <Icon name="Add section" />
@@ -1155,8 +1190,8 @@ export function OutlinePanel({
                 <button
                   type="button"
                   className={styles['act']}
-                  aria-label="Add component"
-                  title="Add component"
+                  aria-label={say('document.add-component')}
+                  title={say('document.add-component')}
                   onClick={() => !busy && openAdding('component')}
                 >
                   <Icon name="Add component" />
@@ -1165,8 +1200,8 @@ export function OutlinePanel({
                 <button
                   type="button"
                   className={styles['act']}
-                  aria-label="Undo"
-                  title="Undo"
+                  aria-label={say('document.undo')}
+                  title={say('document.undo')}
                   aria-disabled={!canUndo}
                   onClick={() => {
                     if (!busy && canUndo) void onUndo?.();
@@ -1175,7 +1210,7 @@ export function OutlinePanel({
                   <Icon name="Undo" />
                 </button>
                 <span className={styles['overline']} aria-hidden="true">
-                  Outline
+                  {say('document.outline')}
                 </span>
               </Toolbar>
             )}
@@ -1198,7 +1233,7 @@ export function OutlinePanel({
                     }}
                   >
                     <label>
-                      New section title
+                      {say('document.new-section-title')}
                       {/* Focus goes where the author asked to type: they opened this form themselves. */}
                       <input
                         autoFocus
@@ -1207,10 +1242,12 @@ export function OutlinePanel({
                       />
                     </label>
                     {/* Said about the field as it stands, so it goes the moment the field is fine. */}
-                    {attempted && !hasText(newTitle) && <p>A section needs a title.</p>}
-                    <button type="submit">Add</button>
+                    {attempted && !hasText(newTitle) && (
+                      <p>{say('document.a-section-needs-a-title')}</p>
+                    )}
+                    <button type="submit">{say('document.add-2')}</button>
                     <button type="button" onClick={cancelAdding}>
-                      Cancel
+                      {say('document.cancel')}
                     </button>
                   </form>
                 )}
@@ -1230,15 +1267,15 @@ export function OutlinePanel({
                 {/* Not shown, and still what the tree is described by: a screen reader hears how to move,
             and a pointer finds the acts by their tooltips (interface slice 15). */}
                 <p id={`${prefix}-keys`} className={styles['hidden']}>
-                  {editable ? KEYS : 'Move between items with the arrow keys.'}
+                  {editable ? KEYS() : say('document.move-between-items-with-the')}
                 </p>
                 {nodes.length === 0 ? (
-                  <p>This document has no sections yet.</p>
+                  <p>{say('document.this-document-has-no-sections')}</p>
                 ) : (
                   <ul
                     role="tree"
                     className={styles['tree']}
-                    aria-label="Outline"
+                    aria-label={say('document.outline')}
                     aria-describedby={`${prefix}-keys`}
                     aria-busy={busy}
                     onKeyDown={onTreeKeyDown}
@@ -1272,7 +1309,7 @@ export function OutlinePanel({
                     onDragOver={(event) => allowDrop(event, endTarget)}
                     onDrop={(event) => dropOnto(event, endTarget)}
                   >
-                    Move to the end of the document
+                    {say('document.move-to-the-end-of')}
                   </p>
                 )}
               </>
@@ -1422,12 +1459,12 @@ function NodeLink({
   return (
     <div className={styles['partRow']}>
       <span className={styles['rowLabel']} aria-hidden="true">
-        Link
+        {say('document.link')}
       </span>
       <span className={styles['field']} data-field="">
         <input
           readOnly
-          aria-label={`Link to ${name}`}
+          aria-label={say('document.link-to', { name })}
           className={styles['mono']}
           value={address}
           onFocus={(event) => event.target.select()}
@@ -1435,17 +1472,17 @@ function NodeLink({
         <button
           type="button"
           className={styles['inField']}
-          aria-label="Copy link"
-          title="Copy link"
+          aria-label={say('document.copy-link')}
+          title={say('document.copy-link')}
           onClick={() => {
             const copying = navigator.clipboard?.writeText(address);
             if (!copying) {
-              onNotice('The link could not be copied. Select it and copy it instead.');
+              onNotice(say('document.the-link-could-not-be'));
               return;
             }
             copying.then(
-              () => onNotice(`Copied the link to ${name}.`),
-              () => onNotice('The link could not be copied. Select it and copy it instead.'),
+              () => onNotice(say('document.copied-the-link-to', { name })),
+              () => onNotice(say('document.the-link-could-not-be')),
             );
           }}
         >
@@ -1471,21 +1508,22 @@ function ComponentChooser({
   onCancel: () => void;
   onReload: () => void;
 }) {
-  if (components.state === 'loading') return <p>Reading the components you may add...</p>;
+  if (components.state === 'loading')
+    return <p>{say('document.reading-the-components-you-may')}</p>;
   if (components.state === 'failed') {
     return components.signedOut ? (
-      <p>You are signed out. Sign in again to add a component.</p>
+      <p>{say('document.you-are-signed-out-sign-6')}</p>
     ) : (
       <>
-        <p>The components you may add could not be loaded.</p>
+        <p>{say('document.the-components-you-may-add')}</p>
         <button type="button" onClick={onReload}>
-          Try again
+          {say('document.try-again')}
         </button>
       </>
     );
   }
   const first = components.items[0];
-  if (first === undefined) return <p>There are no components you may add.</p>;
+  if (first === undefined) return <p>{say('document.there-are-no-components-you')}</p>;
   const value = components.items.some((each) => each.id === chosen) ? chosen : first.id;
   const state = components.items.find((each) => each.id === value)?.state;
   return (
@@ -1499,7 +1537,7 @@ function ComponentChooser({
       }}
     >
       <label>
-        Component
+        {say('document.component')}
         <select value={value} onChange={(event) => onChoose(event.target.value)}>
           {components.items.map((each) => (
             <option key={each.id} value={each.id}>
@@ -1509,9 +1547,9 @@ function ComponentChooser({
         </select>
       </label>
       {state && <StateLozenge state={state} />}
-      <button type="submit">Add</button>
+      <button type="submit">{say('document.add-2')}</button>
       <button type="button" onClick={onCancel}>
-        Cancel
+        {say('document.cancel')}
       </button>
     </form>
   );
@@ -1547,17 +1585,17 @@ function ReferencedBy({
   return (
     <div className={styles['partRow']}>
       <span id={label} className={styles['rowLabel']}>
-        Referenced by
+        {say('document.referenced-by')}
       </span>
       {references === 'checking' ? (
-        <span>Checking.</span>
+        <span>{say('document.checking')}</span>
       ) : references === 'unknown' ? (
-        <span>Could not be checked.</span>
+        <span>{say('document.could-not-be-checked')}</span>
       ) : counts.size === 0 ? (
         <span>
           {withheld
-            ? 'Nothing you can read in this document refers to it.'
-            : 'Nothing else in this document refers to it.'}
+            ? say('document.nothing-you-can-read-in')
+            : say('document.nothing-else-in-this-document')}
         </span>
       ) : (
         <ul aria-labelledby={label} className={styles['referring']}>
@@ -1570,8 +1608,7 @@ function ReferencedBy({
                   onGo(from);
                 }}
               >
-                {nameOf(from)}
-                {count > 1 ? `, ${count} references` : ''}
+                {say('document.referenced-from', { name: nameOf(from), count })}
               </a>
             </li>
           ))}
@@ -1581,7 +1618,7 @@ function ReferencedBy({
   );
 }
 
-const IRREVERSIBLE = 'This cannot be undone, and nothing before it can be undone afterwards.';
+const IRREVERSIBLE = (): string => say('document.this-cannot-be-undone-and');
 
 /**
  * Whether a node, or anything beneath it, is a section or a component the template requires (TPL-029,
@@ -1625,37 +1662,35 @@ function ConfirmRemoval({
   return (
     <div
       role="group"
-      aria-label="Confirm removal"
+      aria-label={say('document.confirm-removal')}
       onKeyDown={(event) => {
         if (event.key === 'Escape') onKeep();
       }}
     >
       <p id={question}>
         {node.children.length > 0
-          ? `Remove ${name} and everything beneath it? ${IRREVERSIBLE}`
-          : `Remove ${name}? ${IRREVERSIBLE}`}
+          ? say('document.remove-and-everything-beneath-it', { name, IRREVERSIBLE: IRREVERSIBLE() })
+          : say('document.remove-3', { name, IRREVERSIBLE: IRREVERSIBLE() })}
       </p>
       {referencedBy === 'checking' && (
-        <p id={warning}>
-          Whether anything else in this document refers to it is still being checked.
-        </p>
+        <p id={warning}>{say('document.whether-anything-else-in-this')}</p>
       )}
       {referencedBy === 'unknown' && (
-        <p id={warning}>
-          Whether anything else in this document refers to it could not be checked.
-        </p>
+        <p id={warning}>{say('document.whether-anything-else-in-this-2')}</p>
       )}
       {referencedBy !== null && typeof referencedBy !== 'string' && (
         <>
           <p id={warning}>
-            {`Referenced ${referencedBy.count === 1 ? 'once' : `${referencedBy.count} times`} elsewhere in this document. Removing it breaks each reference.`}
+            {say('document.referenced-elsewhere-in-this-document', {
+              count: referencedBy.count,
+            })}
           </p>
           {referencedBy.list}
         </>
       )}
       {needsReason && (
         <label>
-          Why it is removed
+          {say('document.why-it-is-removed')}
           <textarea
             value={reason}
             maxLength={2000}
@@ -1674,10 +1709,10 @@ function ConfirmRemoval({
           onRemove(needsReason ? reason.trim() : undefined);
         }}
       >
-        Remove
+        {say('document.remove-2')}
       </button>
       <button type="button" onClick={onKeep}>
-        Keep
+        {say('document.keep')}
       </button>
     </div>
   );
@@ -1714,7 +1749,7 @@ function StateRow({
   if (state === undefined) return null;
   return (
     <div className={styles['partRow']}>
-      <span className={styles['rowLabel']}>State</span>
+      <span className={styles['rowLabel']}>{say('document.state')}</span>
       <StateLozenge state={state} />
     </div>
   );
@@ -1739,7 +1774,7 @@ function UsedInRow({
   return (
     <div className={styles['partRow']}>
       <span id={label} className={styles['rowLabel']}>
-        Used in
+        {say('document.used-in')}
       </span>
       <ul aria-labelledby={label} className={styles['referring']}>
         {placed.map((each) => (
@@ -1820,7 +1855,7 @@ function NodeDetails({
   // Ticked, and still without a number: said beside the box, so the tick does not look ignored.
   const hint =
     node.numbered && unnumberedAbove !== undefined
-      ? `Not numbered while ${nodeName(unnumberedAbove, names)} is not.`
+      ? say('document.not-numbered-while-is-not', { value1: nodeName(unnumberedAbove, names) })
       : null;
   // Front matter with front matter after it: every other matter would strand that one after this
   // one, which the outline's parse refuses, so there is nothing this select can be given. Said
@@ -1829,13 +1864,13 @@ function NodeDetails({
   const matterHint =
     frontAfter === undefined
       ? null
-      : `Front matter comes first, so this cannot leave while ${nodeName(frontAfter, names)} is front matter.`;
+      : say('document.front-matter-comes-first-so', { value1: nodeName(frontAfter, names) });
   return (
     <div className={styles['rows']}>
       {/* A component has no title of its own, so its name is a link to it (ADR-0054, decision 8). */}
       {node.type === 'reference' && node.component !== null && (
         <div className={styles['partRow']}>
-          <span className={styles['rowLabel']}>Component</span>
+          <span className={styles['rowLabel']}>{say('document.component')}</span>
           <a className={styles['named']} href={`#/components/${node.component}`}>
             {nodeName(node, names)}
           </a>
@@ -1858,7 +1893,7 @@ function NodeDetails({
           after the last change (definitions.md; STR-060). A component's are its own, in its editor. */}
       {node.type === 'section' && sectionFields.length > 0 && (
         <HeldFields
-          label={`Fields of ${nodeName(node, names)}`}
+          label={say('document.fields-of', { value1: nodeName(node, names) })}
           fields={sectionFields}
           schemas={schemas}
           people={people}
@@ -1876,7 +1911,7 @@ function NodeDetails({
       )}
       <div className={styles['partRow']}>
         <label className={styles['rowLabel']} htmlFor={startsId}>
-          Starts on
+          {say('document.starts-on')}
         </label>
         <select
           id={startsId}
@@ -1901,7 +1936,7 @@ function NodeDetails({
           switch it is; a section's values are sent by its fields, above. */}
       <div className={styles['partRow']}>
         <label className={styles['rowLabel']} htmlFor={numberedId}>
-          Numbered
+          {say('document.numbered')}
         </label>
         <span className={styles['stack']}>
           <input
@@ -1933,11 +1968,11 @@ function NodeDetails({
       {topLevel && (
         <div className={styles['partRow']}>
           <span className={styles['rowLabel']} aria-hidden="true">
-            Matter
+            {say('document.matter')}
           </span>
           <span className={styles['stack']}>
             <Segmented
-              label="Matter"
+              label={say('document.matter')}
               value={node.matter}
               disabled={matterHint !== null}
               describedBy={matterHint === null ? undefined : matterHintId}
@@ -1963,7 +1998,9 @@ function NodeDetails({
       <div className={styles['foot']}>
         <button type="button" className={styles['remove']} onClick={() => !busy && onRemove()}>
           <Icon name="Delete" size={14} />
-          {node.type === 'section' ? 'Remove section' : 'Remove component'}
+          {node.type === 'section'
+            ? say('document.remove-section')
+            : say('document.remove-component')}
         </button>
       </div>
     </div>
@@ -1987,17 +2024,17 @@ function ConditionsRow({
 }) {
   return (
     <div className={styles['partRow']}>
-      <span className={styles['rowLabel']}>Conditions</span>
+      <span className={styles['rowLabel']}>{say('document.conditions')}</span>
       <span className={styles['stack']}>
-        <span>{said ?? 'Kept for every reader'}</span>
+        <span>{said ?? say('document.kept-for-every-reader')}</span>
         {onConditions && (
           <button
             type="button"
             className={styles['named']}
-            aria-label={`Set condition on ${nodeName(node, names)}`}
+            aria-label={say('document.set-condition-on', { value1: nodeName(node, names) })}
             onClick={() => onConditions(node.id)}
           >
-            Set condition
+            {say('document.set-condition')}
           </button>
         )}
       </span>
@@ -2017,15 +2054,15 @@ function withoutFirst(sent: readonly string[], key: string): readonly string[] {
  */
 function heldBack(title: Title): string {
   if (title.some((run) => run.type === 'crossReference')) {
-    return 'This title holds a cross-reference, so it is not changed here.';
+    return say('document.this-title-holds-a-cross');
   }
   if (title.some((run) => run.type === 'footnote')) {
-    return 'This title holds a footnote, so it is not changed here.';
+    return say('document.this-title-holds-a-footnote');
   }
   if (title.some((run) => run.type === 'text' && run.marks.length > 0)) {
-    return 'This title has formatting this field cannot keep, so it is not changed here.';
+    return say('document.this-title-has-formatting-this');
   }
-  return 'This title holds something this field cannot keep, so it is not changed here.';
+  return say('document.this-title-holds-something-this');
 }
 
 /** The words a title's text runs hold, joined: what the store's `hasText` asks of a title. */
@@ -2111,7 +2148,7 @@ function TitleField({
     if (!editable || host === null) return undefined;
     const mounted = mountTitleEditor(host, {
       title: typed.current,
-      label: 'Title',
+      label: say('document.title'),
       language,
       direction,
       onChange: (title) => setField((previous) => ({ ...previous, typed: title })),
@@ -2145,7 +2182,7 @@ function TitleField({
       <>
         <div className={styles['partRow']}>
           <label className={styles['rowLabel']}>
-            Title
+            {say('document.title')}
             <input className={styles['hiddenInput']} value={titleText(node.title)} disabled />
           </label>
           <span className={styles['stack']}>
@@ -2169,12 +2206,12 @@ function TitleField({
       if (title.some((run) => run.type === 'equation')) {
         // An equation is not a title on its own - a title also names its section wherever a name
         // must be words - but it is the author's, so it is kept for them to write words beside.
-        onNotice("A section's title needs words as well as an equation.");
+        onNotice(say('document.a-section-s-title-needs'));
         return;
       }
       // Nothing was sent, so the outline never changed and the comparison above never resyncs this
       // field by itself: it is put back here, or it would sit empty beside a tree showing the title.
-      onNotice('A section needs a title.');
+      onNotice(say('document.a-section-needs-a-title'));
       setField({ typed: node.title, inModel: node.title, sent: [] });
       return;
     }
@@ -2215,14 +2252,14 @@ function TitleField({
       place: (choice) => {
         const into = editor.current;
         if (into === null) {
-          return 'This title can no longer be changed here, so the equation was not placed.';
+          return say('document.this-title-can-no-longer');
         }
         const placed =
           current === null ? into.insertEquation(choice) : into.changeEquation(current.pos, choice);
         if (!placed) {
           return current === null
-            ? 'An equation cannot be placed where the cursor is.'
-            : 'That equation is not there any more.';
+            ? say('document.an-equation-cannot-be-placed')
+            : say('document.that-equation-is-not-there');
         }
         asking.current = false;
         // This render's commit, not the one the dialog was opened from: an answer to an earlier
@@ -2256,7 +2293,7 @@ function TitleField({
       }}
     >
       <span className={styles['rowLabel']} aria-hidden="true">
-        Title
+        {say('document.title')}
       </span>
       <span className={styles['field']} data-field="">
         <div ref={place} className={styles['titleField']} />
@@ -2264,8 +2301,8 @@ function TitleField({
           type="button"
           className={styles['inField']}
           aria-haspopup="dialog"
-          aria-label="Equation"
-          title="Equation (Ctrl or Cmd, Shift and E)"
+          aria-label={say('document.equation')}
+          title={say('document.equation-ctrl-or-cmd-shift')}
           // The caret stays in the title, where the equation goes, as a toolbar's button leaves it.
           onMouseDown={(event) => event.preventDefault()}
           onClick={openEquation}

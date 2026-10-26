@@ -143,6 +143,7 @@ import {
 } from './position.js';
 import type { Choosing, OfferedVersion } from './VersionChoice.js';
 import type { VersionNamed } from './NewerVersion.js';
+import { words as say } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -347,7 +348,7 @@ function placeInOutline(
     if (each.id === node) held.push(each);
   });
   const [found] = held;
-  if (found === undefined) return 'A part no longer in this document';
+  if (found === undefined) return say('document.a-part-no-longer-in');
   if (scheme === null) return nodeName(found, names);
   const numbers = sectionNumbers(
     number(conditions(resolve(outline, NOTHING_KNOWN), outline.profile?.values ?? {}), scheme),
@@ -432,11 +433,11 @@ function doesNotApply(refusal: unknown): string {
     return refusal.message;
   }
   if (!isRecord(refusal) || refusal.code !== 'outline_invalid') {
-    return 'The change could not be made.';
+    return say('document.the-change-could-not-be');
   }
   const { reason } = refusal;
   if (typeof reason !== 'string' || reason.trim() === '' || reason.length > 200) {
-    return 'That change does not apply to the outline as it stands.';
+    return say('document.that-change-does-not-apply');
   }
   return /[.!?]$/.test(reason) ? reason : `${reason}.`;
 }
@@ -450,7 +451,7 @@ type Loaded =
   | { readonly state: 'unreadable' }
   | { readonly state: 'open'; readonly document: Opened };
 
-const SOMEBODY_ELSE = 'Somebody else changed this document. This is how it stands now.';
+const SOMEBODY_ELSE = (): string => say('document.somebody-else-changed-this-document');
 
 /** A profile in words, each axis by its name and each value by its label (the R12 plan). */
 function profileWords(profile: StoredProfile, axes: readonly OfferedAxis[]): string {
@@ -461,24 +462,36 @@ function profileWords(profile: StoredProfile, axes: readonly OfferedAxis[]): str
     );
     return `${axis?.name ?? key}: ${labels.join(', ')}`;
   });
-  const values = said.length === 0 ? 'no value on any axis' : said.join('; ');
+  const values = said.length === 0 ? say('document.no-value-on-any-axis') : said.join('; ');
   // What it accepts is said too, since it leaves text out (the R12 final review).
   return profile.excludeUnset === true
-    ? `${values}; text depending on an axis it does not set is left out`
+    ? say('document.text-depending-on-an-axis', { values })
     : values;
 }
 
 const STARTS = {
-  none: 'no longer starts on a new page',
-  page: 'now starts on a new page',
-  recto: 'now starts on a new right-hand page',
+  get none() {
+    return say('document.no-longer-starts-on-a');
+  },
+  get page() {
+    return say('document.now-starts-on-a-new');
+  },
+  get recto() {
+    return say('document.now-starts-on-a-new-2');
+  },
 } as const;
 
 /** What a node's matter is now, said after its name. */
 const MATTERS = {
-  front: 'is now front matter',
-  body: 'is now in the body',
-  appendix: 'is now an appendix',
+  get front() {
+    return say('document.is-now-front-matter');
+  },
+  get body() {
+    return say('document.is-now-in-the-body');
+  },
+  get appendix() {
+    return say('document.is-now-an-appendix');
+  },
 } as const;
 
 /**
@@ -495,71 +508,85 @@ function announce(
     case 'move': {
       const place = placeOf(after.nodes, operation.node);
       const was = placeOf(before.nodes, operation.node);
-      if (!place) return 'Moved.';
+      if (!place) return say('document.moved');
       const name = nodeName(place.node, names);
       const previous = place.siblings[place.index - 1];
-      const beside = previous ? `, after ${nodeName(previous, names)}` : '';
       const sameParent = (was?.parent?.id ?? null) === (place.parent?.id ?? null);
       if (place.parent !== null) {
         const parent = nodeName(place.parent, names);
         if (sameParent) {
           return previous
-            ? `Moved ${name} after ${nodeName(previous, names)}.`
-            : `Moved ${name} to the start of ${parent}.`;
+            ? say('document.moved-after', { name, value2: nodeName(previous, names) })
+            : say('document.moved-to-the-start-of', { name, parent });
         }
-        return `Moved ${name} under ${parent}${beside}.`;
+        return previous
+          ? say('document.moved-under-after', { name, parent, previous: nodeName(previous, names) })
+          : say('document.moved-under', { name, parent });
       }
-      if (!previous) return `Moved ${name} to the start of the document.`;
+      if (!previous) return say('document.moved-to-the-start-of-2', { name });
       return sameParent
-        ? `Moved ${name} after ${nodeName(previous, names)}.`
-        : `Moved ${name} to the top level${beside}.`;
+        ? say('document.moved-after', { name, value2: nodeName(previous, names) })
+        : say('document.moved-to-the-top-level-after', {
+            name,
+            previous: nodeName(previous, names),
+          });
     }
     case 'insert': {
       const held = new Set(visibleOrder(before.nodes));
       const added = visibleOrder(after.nodes).find((id) => !held.has(id));
       const node = added === undefined ? undefined : placeOf(after.nodes, added)?.node;
-      return node ? `Added ${nodeName(node, names)}.` : 'Added.';
+      return node
+        ? say('document.added', { value1: nodeName(node, names) })
+        : say('document.added-2');
     }
     case 'retitle': {
       const was = placeOf(before.nodes, operation.node)?.node;
       const now = placeOf(after.nodes, operation.node)?.node;
       return was && now
-        ? `Renamed ${nodeName(was, names)} to ${nodeName(now, names)}.`
-        : 'Renamed.';
+        ? say('document.renamed-to', { value1: nodeName(was, names), value2: nodeName(now, names) })
+        : say('document.renamed');
     }
     case 'translateTitle':
       return operation.title === null
-        ? `The title in ${operation.language} is cleared.`
-        : `The title in ${operation.language} is ${operation.title}.`;
+        ? say('document.the-title-in-is-cleared', { language: operation.language })
+        : say('document.the-title-in-is', { language: operation.language, title: operation.title });
     case 'set': {
       const node = placeOf(after.nodes, operation.node)?.node;
-      if (!node) return 'Changed.';
+      if (!node) return say('document.changed-2');
       if (operation.pageBreak !== undefined) {
         return `${nodeName(node, names)} ${STARTS[operation.pageBreak]}.`;
       }
       if (operation.numbered !== undefined) {
-        return `${nodeName(node, names)} is ${operation.numbered ? 'now' : 'no longer'} numbered.`;
+        return say('document.is-numbered', {
+          value1: nodeName(node, names),
+          value2: operation.numbered ? 'now' : 'no longer',
+        });
       }
       if (operation.matter !== undefined) {
         return `${nodeName(node, names)} ${MATTERS[operation.matter]}.`;
       }
       if (operation.conditions !== undefined) {
-        return `${nodeName(node, names)} is now kept for ${operation.conditions.length === 0 ? 'every reader' : 'some readers'}.`;
+        return say('document.is-now-kept-for', {
+          value1: nodeName(node, names),
+          value2: operation.conditions.length === 0 ? 'every reader' : 'some readers',
+        });
       }
       if (operation.mode?.kind === 'latest') {
-        return `${nodeName(node, names)} now shows its latest version.`;
+        return say('document.now-shows-its-latest-version', { value1: nodeName(node, names) });
       }
       if (operation.mode?.kind === 'pinned') {
-        return `${nodeName(node, names)} is now pinned to a version.`;
+        return say('document.is-now-pinned-to-a', { value1: nodeName(node, names) });
       }
       if (operation.mode?.kind === 'approved') {
-        return `${nodeName(node, names)} now shows its latest approved revision.`;
+        return say('document.now-shows-its-latest-approved', { value1: nodeName(node, names) });
       }
-      return `Changed ${nodeName(node, names)}.`;
+      return say('document.changed-3', { value1: nodeName(node, names) });
     }
     case 'remove': {
       const node = placeOf(before.nodes, operation.node)?.node;
-      return node ? `Removed ${nodeName(node, names)}.` : 'Removed.';
+      return node
+        ? say('document.removed', { value1: nodeName(node, names) })
+        : say('document.removed-2');
     }
   }
 }
@@ -624,23 +651,78 @@ type Mode = 'reading' | 'review' | 'authoring';
 /** The panels beside the text, named in words (ADR-0046, decision 6; the LG plan, LG6c). */
 const DOCK_PANELS = [
   // While a component open in place holds a table (ADR-0052).
-  { key: 'table', label: 'Table' },
-  { key: 'part', label: 'Part' },
-  { key: 'document', label: 'Document' },
-  { key: 'lists', label: 'Lists' },
+  {
+    key: 'table',
+    get label() {
+      return say('document.table');
+    },
+  },
+  {
+    key: 'part',
+    get label() {
+      return say('document.part');
+    },
+  },
+  {
+    key: 'document',
+    get label() {
+      return say('document.document');
+    },
+  },
+  {
+    key: 'lists',
+    get label() {
+      return say('document.lists');
+    },
+  },
   // While authoring: the assistant drafting against the document (the G2 plan, G2-K); before
   // Publishing, which stays last, where End reaches it.
-  { key: 'assistant', label: 'Assistant' },
+  {
+    key: 'assistant',
+    get label() {
+      return say('document.assistant');
+    },
+  },
   // A document's versions and their restore (the RS plan, RS-H); before Publishing, which End reaches.
-  { key: 'versions', label: 'Versions' },
-  { key: 'publishing', label: 'Publishing' },
+  {
+    key: 'versions',
+    get label() {
+      return say('document.versions');
+    },
+  },
+  {
+    key: 'publishing',
+    get label() {
+      return say('document.publishing');
+    },
+  },
   // In Review (the TH plan, Task 3; the SG plan, Task 3).
-  { key: 'threads', label: 'Threads' },
-  { key: 'suggestions', label: 'Suggestions' },
+  {
+    key: 'threads',
+    get label() {
+      return say('document.threads');
+    },
+  },
+  {
+    key: 'suggestions',
+    get label() {
+      return say('document.suggestions');
+    },
+  },
   // In Review (the RR plan, Task 4).
-  { key: 'rounds', label: 'Rounds' },
+  {
+    key: 'rounds',
+    get label() {
+      return say('document.rounds');
+    },
+  },
   // In Review: cited sources retracted or corrected (the XR plan, XR-G).
-  { key: 'sources', label: 'Sources' },
+  {
+    key: 'sources',
+    get label() {
+      return say('document.sources');
+    },
+  },
 ] as const;
 
 type DockPanel = (typeof DOCK_PANELS)[number]['key'];
@@ -654,9 +736,24 @@ const keptDock = (): DockPanel =>
   DOCK_PANELS.find((each) => each.key === kept(DOCK_KEY))?.key ?? 'part';
 
 const MODES: readonly { readonly mode: Mode; readonly name: string }[] = [
-  { mode: 'reading', name: 'Reading' },
-  { mode: 'review', name: 'Review' },
-  { mode: 'authoring', name: 'Authoring' },
+  {
+    mode: 'reading',
+    get name() {
+      return say('document.reading');
+    },
+  },
+  {
+    mode: 'review',
+    get name() {
+      return say('document.review');
+    },
+  },
+  {
+    mode: 'authoring',
+    get name() {
+      return say('document.authoring');
+    },
+  },
 ];
 
 const MODE_KEY = 'alloy-works.mode';
@@ -984,7 +1081,10 @@ export function DocumentPage({
                     {
                       pinned: { id: occurrence.moved.id, number: occurrence.moved.number },
                       newer: { id: pinned, number },
-                      said: `Revision ${occurrence.revision} is approved since the last publication, which carried ${occurrence.moved.number}.`,
+                      said: say('document.revision-is-approved-since-the', {
+                        revision: occurrence.revision,
+                        number: occurrence.moved.number,
+                      }),
                     },
                   ] as const,
                 ];
@@ -1143,7 +1243,7 @@ export function DocumentPage({
           ...data.results,
         ];
         const pending = data.results.filter((each) => each.outcome === 'pending');
-        if (pending.length > 0) setNotice(WAITING_ON_IMAGES);
+        if (pending.length > 0) setNotice(WAITING_ON_IMAGES());
         for (const each of pending) {
           const followed = await followPending(client, each.pending);
           const at = results.indexOf(each);
@@ -1153,23 +1253,19 @@ export function DocumentPage({
               : (followed.done as (typeof results)[number]);
         }
         if (pending.length > 0) {
-          setNotice((held) => (held === WAITING_ON_IMAGES ? null : held));
+          setNotice((held) => (held === WAITING_ON_IMAGES() ? null : held));
         }
         for (const each of results) {
           if (each.outcome !== 'failed') continue;
           const said = (each.failure as { message?: unknown }).message;
           failed.set(
             `${each.node} ${each.binding}`,
-            typeof said === 'string' ? said : 'The value could not be checked.',
+            typeof said === 'string' ? said : say('document.the-value-could-not-be-2'),
           );
         }
         setCheckFailures(failed);
         if (failed.size > 0) {
-          setNotice(
-            failed.size === 1
-              ? 'A value could not be checked. See the Data tab.'
-              : `${failed.size} values could not be checked. See the Data tab.`,
-          );
+          setNotice(say('document.values-could-not-be-checked', { count: failed.size }));
         }
       })
       .catch(() => undefined)
@@ -1235,7 +1331,7 @@ export function DocumentPage({
         }),
     })
       // What it says replaces the waiting it said meanwhile, which goes once nothing is to be said.
-      .then((said) => setNotice((held) => said ?? (held === WAITING_ON_IMAGES ? null : held)))
+      .then((said) => setNotice((held) => said ?? (held === WAITING_ON_IMAGES() ? null : held)))
       .catch(() => undefined)
       .finally(() => setBindingsRead((count) => count + 1));
   };
@@ -1551,26 +1647,26 @@ export function DocumentPage({
           const current = documentIn(isRecord(refusal) ? refusal.current : undefined);
           if (current !== undefined && current !== 'unreadable') show(current);
           else setAttempt((count) => count + 1);
-          setNotice(SOMEBODY_ELSE);
+          setNotice(SOMEBODY_ELSE());
           return 'refused';
         }
         if (response.status === 401) {
           setSignedOuts((count) => count + 1);
-          setNotice('You are signed out. Sign in again to change this document.');
+          setNotice(say('document.you-are-signed-out-sign-2'));
           return 'refused';
         }
         if (response.status === 400 || response.status === 403 || response.status === 404) {
           setNotice(
             isRecord(error) && typeof error.message === 'string'
               ? error.message
-              : 'The fields could not be saved.',
+              : say('document.the-fields-could-not-be'),
           );
           return 'refused';
         }
-        setNotice('The fields were not saved. Try again.');
+        setNotice(say('document.the-fields-were-not-saved'));
         return 'unsent';
       } catch {
-        setNotice('The fields were not saved. Try again.');
+        setNotice(say('document.the-fields-were-not-saved'));
         return 'unsent';
       } finally {
         pending.current = false;
@@ -1607,26 +1703,26 @@ export function DocumentPage({
           const current = documentIn(isRecord(refusal) ? refusal.current : undefined);
           if (current !== undefined && current !== 'unreadable') show(current);
           else setAttempt((count) => count + 1);
-          setNotice(SOMEBODY_ELSE);
+          setNotice(SOMEBODY_ELSE());
           return { answer: 'refused' };
         }
         if (response.status === 401) {
           setSignedOuts((count) => count + 1);
-          setNotice('You are signed out. Sign in again to change this document.');
+          setNotice(say('document.you-are-signed-out-sign-2'));
           return { answer: 'refused' };
         }
         if (response.status === 400 || response.status === 403 || response.status === 404) {
           setNotice(
             isRecord(error) && typeof error.message === 'string'
               ? error.message
-              : 'The parameters could not be saved.',
+              : say('document.the-parameters-could-not-be'),
           );
           return { answer: 'refused', refusal: error };
         }
-        setNotice('The parameters were not saved. Try again.');
+        setNotice(say('document.the-parameters-were-not-saved'));
         return { answer: 'unsent' };
       } catch {
-        setNotice('The parameters were not saved. Try again.');
+        setNotice(say('document.the-parameters-were-not-saved'));
         return { answer: 'unsent' };
       } finally {
         pending.current = false;
@@ -1662,12 +1758,12 @@ export function DocumentPage({
           const current = documentIn(isRecord(refusal) ? refusal.current : undefined);
           if (current !== undefined && current !== 'unreadable') show(current);
           else setAttempt((count) => count + 1);
-          setNotice(SOMEBODY_ELSE);
+          setNotice(SOMEBODY_ELSE());
           return;
         }
-        setNotice('The fallback was not saved. Try again.');
+        setNotice(say('document.the-fallback-was-not-saved'));
       } catch {
-        setNotice('The fallback was not saved. Try again.');
+        setNotice(say('document.the-fallback-was-not-saved'));
       } finally {
         pending.current = false;
         setBusy(false);
@@ -1702,26 +1798,26 @@ export function DocumentPage({
           const current = documentIn(isRecord(refusal) ? refusal.current : undefined);
           if (current !== undefined && current !== 'unreadable') show(current);
           else setAttempt((count) => count + 1);
-          setNotice(SOMEBODY_ELSE);
+          setNotice(SOMEBODY_ELSE());
           return 'refused';
         }
         if (response.status === 401) {
           setSignedOuts((count) => count + 1);
-          setNotice('You are signed out. Sign in again to change this document.');
+          setNotice(say('document.you-are-signed-out-sign-2'));
           return 'refused';
         }
         if (response.status === 400 || response.status === 403 || response.status === 404) {
           setNotice(
             isRecord(error) && typeof error.message === 'string'
               ? error.message
-              : 'The profile could not be saved.',
+              : say('document.the-profile-could-not-be'),
           );
           return 'refused';
         }
-        setNotice('The profile was not saved. Try again.');
+        setNotice(say('document.the-profile-was-not-saved'));
         return 'unsent';
       } catch {
-        setNotice('The profile was not saved. Try again.');
+        setNotice(say('document.the-profile-was-not-saved'));
         return 'unsent';
       } finally {
         pending.current = false;
@@ -1758,8 +1854,8 @@ export function DocumentPage({
       const failed = () =>
         unsent(
           undoing
-            ? 'The change was not undone. Try it again.'
-            : 'The change was not saved. Try it again.',
+            ? say('document.the-change-was-not-undone')
+            : say('document.the-change-was-not-saved'),
         );
       try {
         const { data, error, response } = await client.POST('/v1/documents/{id}/outline', {
@@ -1779,7 +1875,7 @@ export function DocumentPage({
           const said = announce(operation, before.outline, after.outline, names);
           if (undoing) {
             spend();
-            setNotice(`Undone. ${said}`);
+            setNotice(say('document.undone', { said }));
           } else {
             const inverse = inverseOf(before.outline, after.outline, operation);
             // An act with no inverse - a removal - ends the stack: every entry under it was computed
@@ -1806,29 +1902,29 @@ export function DocumentPage({
               // A refusal that does not carry a readable outline still means ours is stale: read it.
               setAttempt((count) => count + 1);
             }
-            return refuse(SOMEBODY_ELSE);
+            return refuse(SOMEBODY_ELSE());
           }
           case 401:
             setSignedOuts((count) => count + 1);
-            setNotice('You are signed out. Sign in again to change this document.');
+            setNotice(say('document.you-are-signed-out-sign-2'));
             return 'signedOut';
           case 403:
             // Nothing more is offered that could only be refused again.
             show({ ...before, mayEdit: false });
-            return refuse('You may not change this document.');
+            return refuse(say('document.you-may-not-change-this'));
           case 404:
             // Not readable any more either, so the page stops saying it may be read.
             setWithdrawn(true);
             show({ ...before, mayEdit: false });
-            return refuse('This document is no longer open to you.');
+            return refuse(say('document.this-document-is-no-longer'));
           case 400:
             if (undoing) {
               // Every entry beneath this one was computed for a state that will now never exist.
               setUndo([]);
               return refuse(
                 isRecord(error) && error.code === 'outline_invalid'
-                  ? 'That change cannot be undone any more.'
-                  : 'The change could not be made.',
+                  ? say('document.that-change-cannot-be-undone')
+                  : say('document.the-change-could-not-be'),
               );
             }
             return refuse(doesNotApply(error));
@@ -2048,17 +2144,17 @@ export function DocumentPage({
     }
   };
 
-  if (loaded.state === 'loading') return <Waiting>Opening...</Waiting>;
+  if (loaded.state === 'loading') return <Waiting>{say('document.opening')}</Waiting>;
   // A document that did not open has no outline pane, and so no arrow back: each notice carries it.
   const back = (
     <p>
-      <a href="#/documents">Back to documents</a>
+      <a href="#/documents">{say('document.back-to-documents')}</a>
     </p>
   );
   if (loaded.state === 'missing') {
     return (
       <Notice tone="refused">
-        <p>There is nothing here, or nothing you may read.</p>
+        <p>{say('document.there-is-nothing-here-or')}</p>
         {back}
       </Notice>
     );
@@ -2066,7 +2162,7 @@ export function DocumentPage({
   if (loaded.state === 'deleted') {
     return (
       <Notice tone="refused">
-        <p>This document has been deleted.</p>
+        <p>{say('document.this-document-has-been-deleted')}</p>
         {back}
       </Notice>
     );
@@ -2075,14 +2171,14 @@ export function DocumentPage({
     if (loaded.signedOut) {
       return (
         <Notice tone="signedOut">
-          <p>You are signed out. Sign in again to open this document.</p>
+          <p>{say('document.you-are-signed-out-sign-3')}</p>
           {back}
         </Notice>
       );
     }
     return (
       <Notice tone="failed">
-        <p>The document could not be opened.</p>
+        <p>{say('document.the-document-could-not-be')}</p>
         <button
           type="button"
           onClick={() => {
@@ -2090,7 +2186,7 @@ export function DocumentPage({
             setAttempt((count) => count + 1);
           }}
         >
-          Try again
+          {say('document.try-again')}
         </button>
         {back}
       </Notice>
@@ -2099,7 +2195,7 @@ export function DocumentPage({
   if (loaded.state === 'unreadable') {
     return (
       <Notice tone="failed">
-        <p>This document could not be read.</p>
+        <p>{say('document.this-document-could-not-be')}</p>
         {back}
       </Notice>
     );
@@ -2137,8 +2233,8 @@ export function DocumentPage({
         key: 'selection',
         label:
           proposed.anchor.kind === 'cell'
-            ? `The table cell in ${place(proposed.node)}`
-            : `The selected text ${anchorWords(proposed.anchor)}`,
+            ? say('document.the-table-cell-in', { value1: place(proposed.node) })
+            : say('document.the-selected-text', { value1: anchorWords(proposed.anchor) }),
         on: { kind: 'component', id: proposedComponent },
         version: proposedVersion,
         anchor: proposed.anchor,
@@ -2151,7 +2247,7 @@ export function DocumentPage({
         if (editable.get(node.id)?.mayComment !== true) return;
         targets.push({
           key: `component:${node.id}`,
-          label: `The whole of ${place(node.id)}`,
+          label: say('document.the-whole-of', { value1: place(node.id) }),
           on: { kind: 'component', id: node.component },
           version,
           anchor: { kind: 'component' },
@@ -2159,7 +2255,7 @@ export function DocumentPage({
       } else if (document.mayComment) {
         targets.push({
           key: `node:${node.id}`,
-          label: `The section ${place(node.id)}`,
+          label: say('document.the-section', { value1: place(node.id) }),
           on: { kind: 'document', id: document.id },
           version: document.version.id,
           anchor: { kind: 'node', node: node.id },
@@ -2198,7 +2294,7 @@ export function DocumentPage({
   );
   const tabs = offeredTabs(holdsBindings).map((each) =>
     each.key === 'data' && reviewing && revisedCount > 0
-      ? { ...each, label: `Data, ${revisedCount} revised by hand` }
+      ? { ...each, label: say('document.data-revised-by-hand', { revisedCount }) }
       : each,
   );
   const shown = shownTab(tab, tabs);
@@ -2237,19 +2333,19 @@ export function DocumentPage({
           data-desk-page=""
         >
           <span id="document-mode" hidden>
-            {`in ${MODES.find(({ mode }) => mode === modeNow)!.name}`}
+            {say('document.in', { name: MODES.find(({ mode }) => mode === modeNow)!.name })}
           </span>
-          {!document.mayEdit && !withdrawn && <p>You may read this document but not change it.</p>}
+          {!document.mayEdit && !withdrawn && <p>{say('document.you-may-read-this-document')}</p>}
           {/* The document bar (ADR-0056): where it is, the mode as two segments, Preview, the zoom,
             Show boundaries and, at its end, access - one line on the chrome over the desk. */}
           <div className={styles['bar']}>
-            <nav aria-label="Breadcrumb" className={styles['trail']}>
-              <a href="#/documents">Documents</a>
+            <nav aria-label={say('document.breadcrumb')} className={styles['trail']}>
+              <a href="#/documents">{say('document.documents')}</a>
               <span>{` / ${document.space.name}`}</span>
             </nav>
             <span className={styles['rule']} aria-hidden="true" />
             {offered.length > 1 ? (
-              <div role="radiogroup" aria-label="Mode" className={styles['mode']}>
+              <div role="radiogroup" aria-label={say('document.mode')} className={styles['mode']}>
                 {offered.map(({ mode, name }) => (
                   <label key={mode}>
                     <input
@@ -2264,7 +2360,7 @@ export function DocumentPage({
                 ))}
               </div>
             ) : (
-              <p className={styles['modeShown']}>Reading</p>
+              <p className={styles['modeShown']}>{say('document.reading')}</p>
             )}
             <PreviewButton preview={preview} />
             {editing !== null && (
@@ -2277,7 +2373,7 @@ export function DocumentPage({
               onClick={() => showBoundaries(!boundaries)}
             >
               <Icon name="Show boundaries" size={14} />
-              Show boundaries
+              {say('document.show-boundaries')}
             </button>
             <PeopleHere people={live.people} connected={live.connected} />
             {document.standing && <StateLozenge state={document.standing.state} />}
@@ -2290,11 +2386,11 @@ export function DocumentPage({
               scope={document.scope ?? undefined}
               onAccepted={(scope) => {
                 if (latest.current?.id === document.id) show({ ...latest.current, scope });
-                setNotice('Accepted. It takes effect there.');
+                setNotice(say('document.accepted-it-takes-effect-there'));
               }}
             />
-            {document.archived && <Chip>Archived</Chip>}
-            {document.onHold && <Chip>On hold</Chip>}
+            {document.archived && <Chip>{say('document.archived')}</Chip>}
+            {document.onHold && <Chip>{say('document.on-hold')}</Chip>}
             {/* Access to the document, offered to whoever may administer it (access.md, GP-E), and
               Archive or Unarchive to whoever may retire it (lifecycle.md). */}
             <span className={styles['access']}>
@@ -2326,7 +2422,7 @@ export function DocumentPage({
                   className={styles['toggle']}
                   onSaved={(dates) => {
                     if (latest.current?.id === document.id) show({ ...latest.current, dates });
-                    setNotice('Its dates are saved.');
+                    setNotice(say('document.its-dates-are-saved'));
                   }}
                 />
               )}
@@ -2342,7 +2438,7 @@ export function DocumentPage({
                 className={styles['toggle']}
                 onSaved={(scope) => {
                   if (latest.current?.id === document.id) show({ ...latest.current, scope });
-                  setNotice('Its scope is saved.');
+                  setNotice(say('document.its-scope-is-saved'));
                 }}
               />
               <RelationshipsButton
@@ -2398,7 +2494,7 @@ export function DocumentPage({
           {/* Before the first save of an approved one, what a save does (WF-F). */}
           {authoring && document.mayEdit && document.standing?.state.approved && (
             <p className={styles['approvedNote']}>
-              This is approved. Saving starts a new draft, and the approved version stays as it is.
+              {say('document.this-is-approved-saving-starts')}
             </p>
           )}
           {/* In Authoring, the band a component open in place keeps its strip, toolbar and second line
@@ -2419,7 +2515,7 @@ export function DocumentPage({
                       client,
                       document: document.id,
                       onMoved: () => {
-                        setNotice('Moved to the template’s newest version.');
+                        setNotice(say('document.moved-to-the-template-s'));
                         // Read again whole: its version, values and template are new.
                         setAttempt((count) => count + 1);
                       },
@@ -2430,7 +2526,7 @@ export function DocumentPage({
           )}
           <PreviewSaid preview={preview} />
           <UnheldFaces />
-          {document.scheme === null && <p>This document's numbering could not be read.</p>}
+          {document.scheme === null && <p>{say('document.this-document-s-numbering-could')}</p>}
           <div
             className={styles['layout']}
             data-collapsed={outlinePane.collapsed}
@@ -2543,7 +2639,7 @@ export function DocumentPage({
                     show(after);
                     // An act with no inverse here, as a removal is: the stack ends.
                     setUndo([]);
-                    setNotice('Placed under a new section at the top of the outline.');
+                    setNotice(say('document.placed-under-a-new-section'));
                   }}
                 />
               }
@@ -2565,7 +2661,7 @@ export function DocumentPage({
                   client={client}
                   id={component.id}
                   title={component.title}
-                  label={`Where ${component.title} is used`}
+                  label={say('document.where-is-used', { title: component.title })}
                 />
               )}
               linkOf={(node) =>
@@ -2598,14 +2694,14 @@ export function DocumentPage({
                   pane={dockPane}
                   chosen={shownDock}
                   tabs={dockTabs}
-                  label="document panels"
+                  label={say('document.document-panels')}
                   edge="end"
                 />
               </div>
             )}
             <aside
               className={styles['dock']}
-              aria-label="Panels beside the text"
+              aria-label={say('document.panels-beside-the-text')}
               hidden={dockPane.collapsed}
             >
               <div className={styles['dockBody']}>
@@ -2642,7 +2738,7 @@ export function DocumentPage({
                     is typed, and saved a pause after (definitions.md, "Shown as they arise"). */}
                     {document.fields.document.length > 0 && (
                       <HeldFields
-                        label="Fields of this document"
+                        label={say('document.fields-of-this-document')}
                         fields={document.fields.document}
                         schemas={document.schemas}
                         people={people}
@@ -2718,7 +2814,7 @@ export function DocumentPage({
                         }
                         placeOf={(component) => {
                           const node = [...componentOfNode].find(([, of]) => of === component)?.[0];
-                          return node === undefined ? 'a component' : place(node);
+                          return node === undefined ? say('document.a-component') : place(node);
                         }}
                         onChanged={() => setTextsAttempt((count) => count + 1)}
                       />
@@ -2793,8 +2889,8 @@ export function DocumentPage({
                           if (node !== undefined) return place(node);
                           // Placed nowhere: a component it no longer holds, since deleted (COL-067).
                           return thread.on.kind === 'component'
-                            ? 'A component no longer in this document'
-                            : 'This document';
+                            ? say('document.a-component-no-longer-in')
+                            : say('document.this-document');
                         }}
                         onThreads={setThreadList}
                         opening={
@@ -2925,14 +3021,14 @@ export function DocumentPage({
               </div>
               <div className={styles['dockStrip']}>
                 <PanelTabs
-                  label="Document panels"
+                  label={say('document.document-panels-2')}
                   tabs={dockTabs}
                   chosen={shownDock}
                   onChoose={(key) => setDock(key as DockPanel)}
                   ids={dockIds}
                 />
                 <span className={styles['dockSpacer']} />
-                <PaneToggle label="document panels" pane={dockPane} edge="end" />
+                <PaneToggle label={say('document.document-panels')} pane={dockPane} edge="end" />
               </div>
             </aside>
             {!outlinePane.collapsed && (
@@ -2943,7 +3039,7 @@ export function DocumentPage({
             {!dockPane.collapsed && (
               <div className={styles['dockSeparator']}>
                 <PaneSeparator
-                  label="document panels"
+                  label={say('document.document-panels')}
                   pane={heldTable.holds ? tablePane : dockPane}
                   edge="end"
                 />
@@ -2985,7 +3081,9 @@ export function DocumentPage({
                 <OverrideDialog
                   name={(() => {
                     const held = unoverridden.get(overriding) as { title?: unknown } | undefined;
-                    return typeof held?.title === 'string' ? held.title : 'this component';
+                    return typeof held?.title === 'string'
+                      ? held.title
+                      : say('document.this-component');
                   })()}
                   content={unoverridden.get(overriding)}
                   version={occurrenceVersions.get(overriding) ?? ''}
@@ -3077,13 +3175,23 @@ export function DocumentPage({
                               if (!answer.data) {
                                 setNotice(
                                   (answer.error as { message?: string } | undefined)?.message ??
-                                    'The suggestion could not be sent.',
+                                    say('document.the-suggestion-could-not-be'),
                                 );
                                 return false;
                               }
                               // Announced naming where (CNT-137).
                               setNotice(
-                                `Suggestion sent on ${drafting === null ? 'a component' : placeInOutline(document.outline, drafting, names, document.scheme)}.`,
+                                say('document.suggestion-sent-on', {
+                                  value1:
+                                    drafting === null
+                                      ? say('document.a-component-in-sentence')
+                                      : placeInOutline(
+                                          document.outline,
+                                          drafting,
+                                          names,
+                                          document.scheme,
+                                        ),
+                                }),
                               );
                               setDrafting(null);
                               setSuggestionsRead((count) => count + 1);
@@ -3197,9 +3305,8 @@ function counted(nodes: readonly OutlineViewNode[]): { sections: number; compone
 /** What the status bar says the document is: what it holds, and which version of it in which space. */
 function aboutDocument(document: Opened): readonly string[] {
   const { sections, components } = counted(document.outline.nodes);
-  const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? '' : 's'}`;
   return [
-    `${plural(sections, 'section')}, ${plural(components, 'component')}`,
-    `Version ${document.version.number} in ${document.space.name}`,
+    say('document.holds', { sections, components }),
+    say('document.version-in', { number: document.version.number, name: document.space.name }),
   ];
 }

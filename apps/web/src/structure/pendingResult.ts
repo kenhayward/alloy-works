@@ -1,4 +1,5 @@
 import type { createApiClient } from '@alloy-works/api-client';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -12,11 +13,10 @@ interface PendingResultView {
 export type Followed = { readonly done: Record<string, unknown> } | { readonly sentence: string };
 
 /** Said while a result's images are admitted, to the page's one live region. */
-export const WAITING_ON_IMAGES =
-  'The value holds images, which are being checked. It is shown once every one is.';
+export const WAITING_ON_IMAGES = (): string => words('document.waiting-on-images');
 
-const TOO_SLOW = 'Checking the images is taking longer than it should. Look again in a moment.';
-const LOST = 'The value could not be fetched. Try again.';
+const TOO_SLOW = (): string => words('document.checking-the-images-is-taking');
+const LOST = (): string => words('document.the-value-could-not-be-3');
 
 /** How often a pending result is followed, and for how long: as an upload is (figures 2, ruling R4). */
 const FOLLOW_EVERY_MS = 500;
@@ -38,12 +38,12 @@ export async function followPending(
         params: { path: { id } },
       });
       const followed = data as PendingResultView | undefined;
-      if (followed === undefined) return { sentence: LOST };
+      if (followed === undefined) return { sentence: LOST() };
       if (followed.state === 'done' && followed.result !== null) return { done: followed.result };
       await wait(FOLLOW_EVERY_MS);
     }
-    return { sentence: TOO_SLOW };
+    return { sentence: TOO_SLOW() };
   } catch {
-    return { sentence: LOST };
+    return { sentence: LOST() };
   }
 }

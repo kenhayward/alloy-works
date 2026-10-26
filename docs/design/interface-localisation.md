@@ -30,6 +30,10 @@ whole interface moved, sorted in the person's collation and laid out right to le
   beneath renders and remounts it when the language changes, so a word read in any function as a
   screen renders is in the person's language. With no provider, English.
 - `formats()` gives the language's date, number and list formats and its collation.
+- `wordsWith(key, values, elements)` places an element, a link, a `<time>` or a lozenge, where a whole
+  message holds its placeholder, so a sentence around one stays one message.
+- Text that is the tenant's, a title, a space's or a person's name, a workflow state's, carries
+  `data-content`, so the pseudo walk tells it from the interface's words.
 - A table of words at module scope holds keys, never words, read where it is shown.
 - `en-XA` and `ar-XB` are made from English by `pseudolocalise`: letters accented, words bracketed,
   padded in breakable groups half again as long, twice under twenty characters; placeholders and

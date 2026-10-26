@@ -6,6 +6,7 @@ import { Waiting } from '../states/Waiting.js';
 import styles from './Import.module.css';
 import { fileTypeOf } from './ImportFile.js';
 import { IMPORT_HELP, keptBy } from './ImportHelp.js';
+import { formats, words as say, wordsWith } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -176,99 +177,195 @@ type Edit =
 
 /** What a name in the file is the name of, in words. */
 const CARRIES: Readonly<Record<Identity['carries'][number], string>> = {
-  changes: 'tracked changes',
+  get changes() {
+    return say('imports.tracked-changes');
+  },
   comments: 'comments',
-  creator: 'the file’s author',
-  lastModifiedBy: 'who last saved it',
+  get creator() {
+    return say('imports.the-file-s-author');
+  },
+  get lastModifiedBy() {
+    return say('imports.who-last-saved-it');
+  },
 };
 
 /** What each policy does with the names, said before acceptance and after (IMP-010, IMP-011). */
 const POLICIES: Readonly<Record<Policy, { readonly will: string; readonly did: string }>> = {
   map: {
-    will: 'When it is accepted, names will be matched to members, as attribution.',
-    did: 'Names were matched to members, as attribution, when it was accepted.',
+    get will() {
+      return say('imports.when-it-is-accepted-names');
+    },
+    get did() {
+      return say('imports.names-were-matched-to-members');
+    },
   },
   keep: {
-    will: 'When it is accepted, names will be kept as text.',
-    did: 'Names were kept as text when it was accepted.',
+    get will() {
+      return say('imports.when-it-is-accepted-names-2');
+    },
+    get did() {
+      return say('imports.names-were-kept-as-text');
+    },
   },
   discard: {
-    will: 'When it is accepted, the names will be discarded.',
-    did: 'The names were discarded when it was accepted.',
+    get will() {
+      return say('imports.when-it-is-accepted-the');
+    },
+    get did() {
+      return say('imports.the-names-were-discarded-when');
+    },
   },
 };
 
 const STATES: Readonly<Record<View['state'], string>> = {
-  awaiting: 'Waiting for its file.',
-  reading: 'Reading the file.',
-  proposed: 'Proposed. Review the outline, then accept it or abandon it.',
-  accepted: 'Accepted into a document.',
-  abandoned: 'Abandoned. Nothing of it was kept.',
-  failed: 'Failed. Nothing of it was kept.',
+  get awaiting() {
+    return say('imports.waiting-for-its-file');
+  },
+  get reading() {
+    return say('imports.reading-the-file');
+  },
+  get proposed() {
+    return say('imports.proposed-review-the-outline-then');
+  },
+  get accepted() {
+    return say('imports.accepted-into-a-document');
+  },
+  get abandoned() {
+    return say('imports.abandoned-nothing-of-it-was');
+  },
+  get failed() {
+    return say('imports.failed-nothing-of-it-was');
+  },
 };
 
 /** Why it failed, in words the importer can act on (IMP-042). */
 const FAILURES: Readonly<Record<string, string>> = {
-  file_unreadable: 'The file could not be read: it is damaged, or not what its name says.',
-  file_unsafe: 'The file holds something an import never reads, so it was not read at all.',
-  file_too_large: 'The file is larger, or takes longer to read, than an import allows.',
-  file_missing: 'The file was not there to read.',
-  reading_failed: 'Reading the file failed. Try importing it again.',
+  get file_unreadable() {
+    return say('imports.the-file-could-not-be-3');
+  },
+  get file_unsafe() {
+    return say('imports.the-file-holds-something-an');
+  },
+  get file_too_large() {
+    return say('imports.the-file-is-larger-or');
+  },
+  get file_missing() {
+    return say('imports.the-file-was-not-there');
+  },
+  get reading_failed() {
+    return say('imports.reading-the-file-failed-try');
+  },
 };
 
 /** What the import does not read yet, by kind, in words (IMP-007). */
 const KINDS: Readonly<Record<string, string>> = {
-  footnote: 'Footnotes',
-  endnote: 'Endnotes',
-  image: 'Images',
-  equation: 'Equations',
-  trackedChange: 'Tracked changes, each read as if rejected',
-  comment: 'Comments',
-  field: 'Fields, each kept as the text it showed',
-  internalLink: 'Links within the document, each kept as its text',
-  pageBreak: 'Page breaks',
-  numberFormat: 'List numbering in a format other than numbers, letters or roman numerals',
-  embeddedObject: 'Embedded objects',
+  get footnote() {
+    return say('imports.footnotes');
+  },
+  get endnote() {
+    return say('imports.endnotes');
+  },
+  get image() {
+    return say('imports.images');
+  },
+  get equation() {
+    return say('imports.equations');
+  },
+  get trackedChange() {
+    return say('imports.tracked-changes-each-read-as');
+  },
+  get comment() {
+    return say('imports.comments');
+  },
+  get field() {
+    return say('imports.fields-each-kept-as-the');
+  },
+  get internalLink() {
+    return say('imports.links-within-the-document-each');
+  },
+  get pageBreak() {
+    return say('imports.page-breaks');
+  },
+  get numberFormat() {
+    return say('imports.list-numbering-in-a-format');
+  },
+  get embeddedObject() {
+    return say('imports.embedded-objects');
+  },
 };
 
 /** What a part is flagged for (IMP-029): said of it, and offered as a filter. */
 const FLAGS: Readonly<Record<Flag, { readonly said: string; readonly filter: string }>> = {
-  empty: { said: 'Nothing stands under it.', filter: 'Nothing under it' },
-  refused: { said: 'What it held could not be kept; see the report.', filter: 'Could not be kept' },
+  empty: {
+    get said() {
+      return say('imports.nothing-stands-under-it');
+    },
+    get filter() {
+      return say('imports.nothing-under-it');
+    },
+  },
+  refused: {
+    get said() {
+      return say('imports.what-it-held-could-not');
+    },
+    get filter() {
+      return say('imports.could-not-be-kept');
+    },
+  },
   changeClamped: {
-    said: 'A tracked change kept here ran on past it; it stays here.',
-    filter: 'A change cut short',
+    get said() {
+      return say('imports.a-tracked-change-kept-here');
+    },
+    get filter() {
+      return say('imports.a-change-cut-short');
+    },
   },
   commentClamped: {
-    said: 'A comment here ran on past where it starts; it is anchored where it starts.',
-    filter: 'A comment cut short',
+    get said() {
+      return say('imports.a-comment-here-ran-on');
+    },
+    get filter() {
+      return say('imports.a-comment-cut-short');
+    },
   },
-  notYetRead: { said: 'It held something the import does not read yet.', filter: 'Not read yet' },
-  leftOut: { said: 'Something in it was left out; see the report.', filter: 'Something left out' },
+  notYetRead: {
+    get said() {
+      return say('imports.it-held-something-the-import');
+    },
+    get filter() {
+      return say('imports.not-read-yet');
+    },
+  },
+  leftOut: {
+    get said() {
+      return say('imports.something-in-it-was-left');
+    },
+    get filter() {
+      return say('imports.something-left-out');
+    },
+  },
   keptDifferently: {
-    said: 'Something in it was kept differently; see the report.',
-    filter: 'Kept differently',
+    get said() {
+      return say('imports.something-in-it-was-kept');
+    },
+    get filter() {
+      return say('imports.kept-differently');
+    },
   },
 };
 
 /** How the parts accepted compare with the proposal as read (IMP-031). */
-const COUNTED: readonly (readonly [keyof Counts, string])[] = [
-  ['unchanged', 'accepted unchanged'],
-  ['edited', 'edited'],
-  ['merged', 'merged'],
-  ['split', 'split'],
-  ['renamed', 'renamed'],
-];
+const COUNTED: readonly (keyof Counts)[] = ['unchanged', 'edited', 'merged', 'split', 'renamed'];
 
 /** Why a part starts where it does (IMP-004), as its reviewer reads it. */
 function reasonOf(part: Pick<Part, 'reason' | 'title' | 'kind'>): string {
   const reason = part.reason;
-  if (reason.rule === 'beforeFirstHeading') return 'What stands before the first heading.';
-  if (reason.rule === 'split') return 'You split it here.';
-  const heading = `${reason.style ?? 'A heading'} “${reason.text ?? part.title}”`;
+  if (reason.rule === 'beforeFirstHeading') return say('imports.what-stands-before-the-first');
+  if (reason.rule === 'split') return say('imports.you-split-it-here');
+  const heading = `${reason.style ?? say('imports.a-heading')} “${reason.text ?? part.title}”`;
   return reason.rule === 'heading'
-    ? `${heading} starts this ${part.kind}.`
-    : `What stands under ${heading} before its first lower heading.`;
+    ? say('imports.starts-this', { heading, kind: part.kind })
+    : say('imports.what-stands-under-before-its', { heading });
 }
 
 const entryWords = (entry: Entry) => {
@@ -290,18 +387,30 @@ const splitTitle = (text: string, fallback: string) =>
 /** A part of an import again, said in the outline and its panel (IMP-036). */
 const againWords = (again: Again, document: string) =>
   again.status === 'new'
-    ? `New: made and placed in ${document} when accepted.`
+    ? say('imports.new-made-and-placed-in', { document })
     : again.status === 'changed'
-      ? `Changed: suggested on ${again.componentTitle ?? 'its component'} when accepted.`
-      : `Unchanged from ${again.componentTitle ?? 'its component'}.`;
+      ? say('imports.changed-suggested-on-when-accepted', {
+          value1: again.componentTitle ?? 'its component',
+        })
+      : say('imports.unchanged-from', { value1: again.componentTitle ?? 'its component' });
 
 /** Why a changed component was not suggested on. */
 const SKIPPED: Readonly<Record<Outcome['skipped'][number]['reason'], string>> = {
-  suggest: 'you may not suggest on it',
-  limit: 'you have 20 suggestions pending on it already',
-  empty: 'the suggestion would change nothing',
-  resolved: 'the same suggestion was made and resolved before',
-  gone: 'it was deleted or archived since it was matched',
+  get suggest() {
+    return say('imports.you-may-not-suggest-on');
+  },
+  get limit() {
+    return say('imports.you-have-20-suggestions-pending');
+  },
+  get empty() {
+    return say('imports.the-suggestion-would-change-nothing');
+  },
+  get resolved() {
+    return say('imports.the-same-suggestion-was-made');
+  },
+  get gone() {
+    return say('imports.it-was-deleted-or-archived');
+  },
 };
 
 const WAIT_MS = 1000;
@@ -413,9 +522,9 @@ export function ImportPage({
         if (error?.code === 'import_changed') void load();
         setNotice(
           error?.code === 'not_found'
-            ? 'Only the person who imported it may do that.'
+            ? say('imports.only-the-person-who-imported')
             : error?.code === 'import_levels_invalid'
-              ? 'A component’s heading level must be below a section’s.'
+              ? say('imports.a-component-s-heading-level')
               : (error?.code === 'import_edit_refused' ||
                     error?.code === 'import_changed' ||
                     error?.code === 'import_references_unresolved' ||
@@ -424,11 +533,11 @@ export function ImportPage({
                     error?.code === 'import_earlier_invalid') &&
                   error.message
                 ? error.message
-                : 'That could not be done. Try again.',
+                : say('imports.that-could-not-be-done'),
         );
       }
     } catch {
-      setNotice('That could not be done. Try again.');
+      setNotice(say('imports.that-could-not-be-done'));
     } finally {
       setBusy(false);
     }
@@ -462,26 +571,27 @@ export function ImportPage({
       });
       if (found.data) setMatches(new Set(found.data.parts));
     } catch {
-      setNotice('The parts could not be searched. Try again.');
+      setNotice(say('imports.the-parts-could-not-be'));
     }
   };
 
-  if (view === null) return <Waiting>Opening the import</Waiting>;
+  if (view === null) return <Waiting>{say('imports.opening-the-import')}</Waiting>;
   if (view === 'missing')
-    return <Notice tone="refused">There is no such import, or it is not yours to see.</Notice>;
+    return <Notice tone="refused">{say('imports.there-is-no-such-import')}</Notice>;
   if (view === 'failed') {
     return (
       <Notice tone="failed">
-        The import could not be opened.{' '}
+        {say('imports.the-import-could-not-be')}{' '}
         <button type="button" onClick={() => void load()}>
-          Try again
+          {say('imports.try-again')}
         </button>
       </Notice>
     );
   }
 
   const updating = view.kind === 'again';
-  const documentName = view.recognised?.documentTitle ?? 'the document the earlier import made';
+  const documentName =
+    view.recognised?.documentTitle ?? say('imports.the-document-the-earlier-import');
   const listed = (part: Part) => matches === null || matches.has(part.id);
   const top = view.parts.filter((part) => part.parent === null);
   const under = (section: string) => view.parts.filter((part) => part.parent === section);
@@ -498,7 +608,7 @@ export function ImportPage({
               aria-current={part.id === showing ? 'true' : undefined}
               onClick={() => go(part.id)}
             >
-              {`${part.kind === 'section' ? 'Section' : 'Component'}: ${part.title}`}
+              {`${part.kind === 'section' ? say('imports.section') : say('imports.component')}: ${part.title}`}
             </button>
             {part.flags.map((each) => (
               <span key={each} className={styles['muted']}>
@@ -524,11 +634,16 @@ export function ImportPage({
     <>
       {(shown.suggestions ?? []).length > 0 && (
         <>
-          <h3>Its tracked changes</h3>
-          <ul aria-label="Suggestions it will make">
+          <h3>{say('imports.its-tracked-changes')}</h3>
+          <ul aria-label={say('imports.suggestions-it-will-make')}>
             {shown.suggestions!.map((each) => (
               <li key={each.author}>
-                {`${each.author} (from Word), ${each.blocks} ${each.blocks === 1 ? 'block' : 'blocks'}: ${each.text}`}
+                {say('imports.from-word', {
+                  author: each.author,
+                  blocks: each.blocks,
+                  value3: each.blocks,
+                  text: each.text,
+                })}
               </li>
             ))}
           </ul>
@@ -536,21 +651,24 @@ export function ImportPage({
       )}
       {(shown.threads ?? []).length > 0 && (
         <>
-          <h3>Its comments</h3>
-          <ul aria-label="Threads it will make">
+          <h3>{say('imports.its-comments')}</h3>
+          <ul aria-label={say('imports.threads-it-will-make')}>
             {shown.threads!.map((each, index) => (
               <li key={index}>
-                {`${each.author} (from Word)${each.quote === null ? '' : ` on “${each.quote}”`}: ${each.text}`}
+                {say('imports.from-word-2', {
+                  author: each.author,
+                  value2: each.quote === null ? '' : ` on “${each.quote}”`,
+                  text: each.text,
+                })}
                 {each.clamped && (
-                  <span className={styles['muted']}>
-                    {' '}
-                    It ran on, and is anchored where it starts.
-                  </span>
+                  <span className={styles['muted']}> {say('imports.it-ran-on-and-is')}</span>
                 )}
                 {each.replies.length > 0 && (
                   <ul>
                     {each.replies.map((reply, at) => (
-                      <li key={at}>{`${reply.author} (from Word): ${reply.text}`}</li>
+                      <li key={at}>
+                        {say('imports.from-word-3', { author: reply.author, text: reply.text })}
+                      </li>
                     ))}
                   </ul>
                 )}
@@ -561,7 +679,7 @@ export function ImportPage({
       )}
       {outsideIn.length > 0 && (
         <>
-          <h3>Its references outside the import</h3>
+          <h3>{say('imports.its-references-outside-the-import')}</h3>
           {outsideIn.map((reference) => (
             <form
               key={reference.key}
@@ -579,7 +697,7 @@ export function ImportPage({
               }}
             >
               <label>
-                {`Point “${reference.text}” at`}
+                {say('imports.point-at', { text: reference.text })}
                 <select
                   value={pointing[reference.key] ?? shown.blocks[0]?.id ?? ''}
                   onChange={(event) =>
@@ -589,14 +707,17 @@ export function ImportPage({
                   {shown.blocks.map((block, index) =>
                     block.id === undefined ? null : (
                       <option key={block.id} value={block.id}>
-                        {`Block ${index + 1}: ${block.text.slice(0, 60)}`}
+                        {say('imports.block', {
+                          value1: index + 1,
+                          value2: block.text.slice(0, 60),
+                        })}
                       </option>
                     ),
                   )}
                 </select>
               </label>
               <button type="submit" disabled={busy}>
-                Point it there
+                {say('imports.point-it-there')}
               </button>
               <button
                 type="button"
@@ -605,7 +726,7 @@ export function ImportPage({
                   edit({ edit: 'reference', reference: reference.key, to: { kind: 'text' } })
                 }
               >
-                {`Make “${reference.text}” plain text`}
+                {say('imports.make-plain-text', { text: reference.text })}
               </button>
             </form>
           ))}
@@ -613,15 +734,15 @@ export function ImportPage({
       )}
     </>
   );
-  const againTitle = shown?.again?.componentTitle ?? 'its component';
+  const againTitle = shown?.again?.componentTitle ?? say('imports.its-component');
   const againPanel = shown?.again && (
     <>
       <p>{againWords(shown.again, documentName)}</p>
       {shown.diff && (
         <>
-          <h3>{`What changed against ${againTitle} as it is now`}</h3>
+          <h3>{say('imports.what-changed-against-as-it', { againTitle })}</h3>
           <ol
-            aria-label={`What changed against ${againTitle} as it is now`}
+            aria-label={say('imports.what-changed-against-as-it', { againTitle })}
             className={styles['blocks']}
           >
             {shown.diff.map((line, index) => (
@@ -636,10 +757,7 @@ export function ImportPage({
               </li>
             ))}
           </ol>
-          <p className={styles['muted']}>
-            Struck through is in the space and not in the file; underlined is in the file and not in
-            the space. Accepting suggests the file’s text, so nothing in the space is overwritten.
-          </p>
+          <p className={styles['muted']}>{say('imports.struck-through-is-in-the')}</p>
         </>
       )}
       <form
@@ -650,35 +768,39 @@ export function ImportPage({
         }}
       >
         <label>
-          Matched to
+          {say('imports.matched-to')}
           <select value={matching} onChange={(event) => setMatching(event.target.value)}>
-            <option value="">Nothing: a new component</option>
+            <option value="">{say('imports.nothing-a-new-component')}</option>
             {(view.earlierMade ?? []).map((each) => (
               <option key={each.component} value={each.component}>
-                {each.title ?? 'A component you may not read'}
+                {each.title ?? say('imports.a-component-you-may-not')}
               </option>
             ))}
           </select>
         </label>
         <button type="submit" disabled={busy || matching === ''}>
-          Match it
+          {say('imports.match-it')}
         </button>
         <button
           type="button"
           disabled={busy || shown.again.component === null}
           onClick={() => edit({ edit: 'match', part: shown.id, component: null })}
         >
-          Mark it new
+          {say('imports.mark-it-new')}
         </button>
       </form>
     </>
   );
   const partPanel = shown && (
     <section
-      aria-label={`Part ${shown.place + 1} of ${shown.of}: ${shown.title}`}
+      aria-label={say('imports.part-of', {
+        value1: shown.place + 1,
+        of: shown.of,
+        title: shown.title,
+      })}
       className={styles['review']}
     >
-      <h2>{`${shown.kind === 'section' ? 'Section' : 'Component'}: ${shown.title}`}</h2>
+      <h2>{`${shown.kind === 'section' ? say('imports.section') : say('imports.component')}: ${shown.title}`}</h2>
       <p className={styles['muted']}>{reasonOf(shown)}</p>
       {shown.flags.map((each) => (
         <p key={each} className={styles['muted']}>
@@ -687,11 +809,11 @@ export function ImportPage({
       ))}
       <div className={styles['beside']}>
         <div>
-          <h3>What it holds</h3>
+          <h3>{say('imports.what-it-holds')}</h3>
           {shown.kind === 'section' ? (
-            <p className={styles['muted']}>A section holds components, not blocks.</p>
+            <p className={styles['muted']}>{say('imports.a-section-holds-components-not')}</p>
           ) : (
-            <ol aria-label="What it holds" className={styles['blocks']}>
+            <ol aria-label={say('imports.what-it-holds')} className={styles['blocks']}>
               {shown.blocks.map((block, index) => (
                 <li key={index}>
                   <p className={styles['source']}>{block.text}</p>
@@ -708,7 +830,7 @@ export function ImportPage({
                         })
                       }
                     >
-                      {`Split before block ${index + 1}`}
+                      {say('imports.split-before-block', { value1: index + 1 })}
                     </button>
                   )}
                 </li>
@@ -717,7 +839,7 @@ export function ImportPage({
           )}
         </div>
         <div>
-          <h3 id="import-part-source">From the file</h3>
+          <h3 id="import-part-source">{say('imports.from-the-file')}</h3>
           <p aria-labelledby="import-part-source" role="group" className={styles['source']}>
             {shown.source}
           </p>
@@ -733,11 +855,11 @@ export function ImportPage({
         }}
       >
         <label>
-          Part title
+          {say('imports.part-title')}
           <input value={rename} onChange={(event) => setRename(event.target.value)} />
         </label>
         <button type="submit" disabled={busy || rename.trim() === ''}>
-          Rename
+          {say('imports.rename')}
         </button>
       </form>
       <div className={styles['actions']}>
@@ -748,14 +870,14 @@ export function ImportPage({
               disabled={busy}
               onClick={() => edit({ edit: 'move', part: shown.id, to: 'previous', blocks: 1 })}
             >
-              Move its first block to the part before
+              {say('imports.move-its-first-block-to')}
             </button>
             <button
               type="button"
               disabled={busy}
               onClick={() => edit({ edit: 'move', part: shown.id, to: 'next', blocks: 1 })}
             >
-              Move its last block to the part after
+              {say('imports.move-its-last-block-to')}
             </button>
           </>
         )}
@@ -764,7 +886,7 @@ export function ImportPage({
           disabled={busy}
           onClick={() => edit({ edit: 'merge', part: shown.id })}
         >
-          Merge with the next part
+          {say('imports.merge-with-the-next-part')}
         </button>
         <button
           type="button"
@@ -777,7 +899,9 @@ export function ImportPage({
             })
           }
         >
-          {shown.kind === 'section' ? 'Make it a component' : 'Make it a section'}
+          {shown.kind === 'section'
+            ? say('imports.make-it-a-component')
+            : say('imports.make-it-a-section')}
         </button>
       </div>
       <div className={styles['actions']}>
@@ -786,14 +910,14 @@ export function ImportPage({
           disabled={shown.previous === null}
           onClick={() => shown.previous !== null && go(shown.previous)}
         >
-          Previous part
+          {say('imports.previous-part')}
         </button>
         <button
           type="button"
           disabled={shown.next === null}
           onClick={() => shown.next !== null && go(shown.next)}
         >
-          Next part
+          {say('imports.next-part')}
         </button>
       </div>
     </section>
@@ -815,32 +939,39 @@ export function ImportPage({
 
   return (
     <section aria-labelledby="import-page-heading" className={styles['page']}>
-      <h1 id="import-page-heading">{`Import of ${view.fileName}`}</h1>
+      <h1 id="import-page-heading">{say('imports.import-of', { fileName: view.fileName })}</h1>
       <p role="status">{STATES[view.state]}</p>
-      <section aria-label="What an import keeps">
+      <section aria-label={say('imports.what-an-import-keeps')}>
         <p className={styles['muted']}>
           {keptBy(view.fileType ?? fileTypeOf(view.fileName))}{' '}
-          <a href={IMPORT_HELP}>What arrives and what does not</a>
+          <a href={IMPORT_HELP}>{say('imports.what-arrives-and-what-does')}</a>
         </p>
       </section>
       {view.recognised && (
-        <section aria-label="Imported before" className={styles['review']}>
-          <h2>Imported before</h2>
+        <section aria-label={say('imports.imported-before')} className={styles['review']}>
+          <h2>{say('imports.imported-before')}</h2>
           <p>
-            {`${
-              view.recognised.match === 'hash'
-                ? `This same file, as ${view.recognised.fileName},`
-                : `A file named ${view.recognised.fileName}`
-            } was imported into this space before, by ${view.recognised.importerName ?? 'someone'} on ${new Date(view.recognised.at).toLocaleDateString()}, making `}
-            <a href={`#/documents/${view.recognised.document}`}>
-              {view.recognised.documentTitle ?? 'a document'}
-            </a>
-            .
+            {wordsWith(
+              'imports.was-imported-into-this-space',
+              {
+                same: view.recognised.match === 'hash' ? 'yes' : 'no',
+                file: view.recognised.fileName,
+                who: view.recognised.importerName ?? say('imports.someone'),
+                when: formats().date(new Date(view.recognised.at)),
+              },
+              {
+                document: (
+                  <a href={`#/documents/${view.recognised.document}`}>
+                    {view.recognised.documentTitle ?? say('imports.a-document')}
+                  </a>
+                ),
+              },
+            )}
           </p>
           <p className={styles['muted']}>
             {updating
-              ? 'Updating what it made: each changed part becomes a suggestion on its component as it is now, each new part a new component in its document, and nothing is deleted.'
-              : 'Importing as new makes a document of its own. Updating what it made suggests the changes on its components instead.'}
+              ? say('imports.updating-what-it-made-each')
+              : say('imports.importing-as-new-makes-a')}
           </p>
           <div className={styles['actions']}>
             <button
@@ -856,7 +987,7 @@ export function ImportPage({
                 )
               }
             >
-              Import as new
+              {say('imports.import-as-new')}
             </button>
             <button
               type="button"
@@ -875,7 +1006,7 @@ export function ImportPage({
                 )
               }
             >
-              Update what it made
+              {say('imports.update-what-it-made')}
             </button>
           </div>
         </section>
@@ -884,50 +1015,61 @@ export function ImportPage({
         <Notice tone="failed">{FAILURES[view.failure] ?? FAILURES['reading_failed']}</Notice>
       )}
       {(view.state === 'awaiting' || view.state === 'reading') && (
-        <Waiting>Reading the file</Waiting>
+        <Waiting>{say('imports.reading-the-file-2')}</Waiting>
       )}
       {view.sweepsAt !== null && (
         <p className={styles['muted']}>
-          {`Abandoned on ${new Date(view.sweepsAt).toLocaleDateString()} unless it is accepted or changed before then.`}
+          {say('imports.abandoned-on-unless-it-is', {
+            value1: formats().date(new Date(view.sweepsAt)),
+          })}
         </p>
       )}
       {view.state === 'accepted' && view.document !== null && (
-        <a href={`#/documents/${view.document}`}>Open the document</a>
+        <a href={`#/documents/${view.document}`}>{say('imports.open-the-document')}</a>
       )}
       {view.state === 'accepted' && view.outcome && (
-        <ul aria-label="What the update did">
+        <ul aria-label={say('imports.what-the-update-did')}>
           <li>
-            {`Suggested on ${view.outcome.suggested.length} changed ${view.outcome.suggested.length === 1 ? 'component' : 'components'}; ${view.outcome.unchanged} unchanged.`}
+            {say('imports.suggested-on-changed-unchanged', {
+              length: view.outcome.suggested.length,
+              value2: view.outcome.suggested.length,
+              unchanged: view.outcome.unchanged,
+            })}
           </li>
           <li>
-            {`Made ${view.outcome.made.length} new ${view.outcome.made.length === 1 ? 'component' : 'components'}, ${view.outcome.made.filter((each) => each.placed).length} placed in the document.`}
+            {say('imports.made-new-placed-in-the', {
+              length: view.outcome.made.length,
+              value2: view.outcome.made.length,
+              length3: view.outcome.made.filter((each) => each.placed).length,
+            })}
           </li>
           <li>
-            {`Kept ${view.outcome.gone.length} gone from the file, ${view.outcome.gone.filter((each) => each.flagged).length} flagged on the document.`}
+            {say('imports.kept-gone-from-the-file', {
+              length: view.outcome.gone.length,
+              length2: view.outcome.gone.filter((each) => each.flagged).length,
+            })}
           </li>
           {view.outcome.skipped.map((each) => (
-            <li
-              key={each.component}
-            >{`One component was not suggested on: ${SKIPPED[each.reason]}.`}</li>
+            <li key={each.component}>
+              {say('imports.one-component-was-not-suggested', { value1: SKIPPED[each.reason] })}
+            </li>
           ))}
         </ul>
       )}
       {view.state === 'accepted' && view.accepted !== null && (
-        <ul aria-label="What was accepted">
-          {COUNTED.map(([key, words]) => (
-            <li key={key}>
-              {`${view.accepted![key]} ${view.accepted![key] === 1 ? 'part' : 'parts'} ${words}`}
-            </li>
+        <ul aria-label={say('imports.what-was-accepted')}>
+          {COUNTED.map((key) => (
+            <li key={key}>{say('imports.counted', { count: view.accepted![key], how: key })}</li>
           ))}
         </ul>
       )}
 
       {view.state === 'proposed' && (
         <>
-          <h2>Proposed outline</h2>
+          <h2>{say('imports.proposed-outline')}</h2>
           <form className={styles['actions']} role="search" onSubmit={(event) => void find(event)}>
             <label>
-              Search parts
+              {say('imports.search-parts')}
               <input
                 type="search"
                 value={query}
@@ -935,9 +1077,9 @@ export function ImportPage({
               />
             </label>
             <label>
-              Show
+              {say('imports.show')}
               <select value={flag} onChange={(event) => setFlag(event.target.value as Flag | '')}>
-                <option value="">Every part</option>
+                <option value="">{say('imports.every-part')}</option>
                 {(Object.keys(FLAGS) as Flag[]).map((each) => (
                   <option key={each} value={each}>
                     {FLAGS[each].filter}
@@ -945,11 +1087,11 @@ export function ImportPage({
                 ))}
               </select>
             </label>
-            <button type="submit">Find</button>
+            <button type="submit">{say('imports.find')}</button>
           </form>
           {matches !== null && (
             <p className={styles['muted']}>
-              {`${matches.size} of ${view.parts.length} parts found.`}{' '}
+              {say('imports.of-parts-found', { size: matches.size, length: view.parts.length })}{' '}
               <button
                 type="button"
                 onClick={() => {
@@ -958,24 +1100,26 @@ export function ImportPage({
                   setFlag('');
                 }}
               >
-                Show every part
+                {say('imports.show-every-part')}
               </button>
             </p>
           )}
           {top.length === 0 ? (
-            <p className={styles['muted']}>Nothing was read from the file.</p>
+            <p className={styles['muted']}>{say('imports.nothing-was-read-from-the')}</p>
           ) : (
-            <ol className={styles['outline']} aria-label="Proposed outline">
+            <ol className={styles['outline']} aria-label={say('imports.proposed-outline')}>
               {top.map(partItem)}
             </ol>
           )}
           {(view.gone ?? []).length > 0 && (
             <>
-              <h2>Gone from the file</h2>
-              <ul aria-label="Gone from the file">
+              <h2>{say('imports.gone-from-the-file')}</h2>
+              <ul aria-label={say('imports.gone-from-the-file')}>
                 {view.gone!.map((each) => (
                   <li key={each.component}>
-                    {`${each.title ?? 'A component you may not read'}: kept, and flagged on the document when accepted.`}
+                    {say('imports.kept-and-flagged-on-the', {
+                      value1: each.title ?? 'A component you may not read',
+                    })}
                   </li>
                 ))}
               </ul>
@@ -995,7 +1139,7 @@ export function ImportPage({
             }}
           >
             <label>
-              Sections at heading level
+              {say('imports.sections-at-heading-level')}
               <select
                 value={levels.section}
                 onChange={(event) => setLevels({ ...levels, section: Number(event.target.value) })}
@@ -1008,7 +1152,7 @@ export function ImportPage({
               </select>
             </label>
             <label>
-              Components at heading level
+              {say('imports.components-at-heading-level')}
               <select
                 value={levels.component}
                 onChange={(event) =>
@@ -1023,7 +1167,7 @@ export function ImportPage({
               </select>
             </label>
             <button type="submit" disabled={busy}>
-              Propose again
+              {say('imports.propose-again')}
             </button>
           </form>
         </>
@@ -1031,20 +1175,17 @@ export function ImportPage({
 
       {view.state === 'proposed' && view.references.length > 0 && (
         <>
-          <h2>References outside the import</h2>
-          <p className={styles['muted']}>
-            Each must be pointed at a block of the import, or made the text it showed, before the
-            import can be accepted.
-          </p>
-          <ul aria-label="References outside the import">
+          <h2>{say('imports.references-outside-the-import')}</h2>
+          <p className={styles['muted']}>{say('imports.each-must-be-pointed-at')}</p>
+          <ul aria-label={say('imports.references-outside-the-import')}>
             {view.references.map((each) => (
               <li key={each.key}>
                 {`“${each.text}”: ${
                   each.resolved === 'retargeted'
-                    ? 'pointed at a block'
+                    ? say('imports.pointed-at-a-block')
                     : each.resolved === 'text'
-                      ? 'made plain text'
-                      : 'not resolved yet'
+                      ? say('imports.made-plain-text')
+                      : say('imports.not-resolved-yet')
                 }`}
               </li>
             ))}
@@ -1054,13 +1195,10 @@ export function ImportPage({
 
       {view.identities.length > 0 && (
         <>
-          <h2>Names the file carries</h2>
+          <h2>{say('imports.names-the-file-carries')}</h2>
           <p>{POLICIES[view.policy][view.policyApplied ? 'did' : 'will']}</p>
-          <p className={styles['muted']}>
-            What the import makes is made by whoever accepts it, and never made by them: a name is
-            recorded beside it, with the member it matches.
-          </p>
-          <ul aria-label="Names the file carries">
+          <p className={styles['muted']}>{say('imports.what-the-import-makes-is')}</p>
+          <ul aria-label={say('imports.names-the-file-carries')}>
             {view.identities.map((each) => (
               <li key={each.name}>
                 {`${each.name}${each.email === null ? '' : ` (${each.email})`}, ${each.carries
@@ -1069,12 +1207,14 @@ export function ImportPage({
                   view.policy !== 'map' || each.match === 'none' || each.memberName === null
                     ? view.policy === 'discard'
                       ? 'discarded'
-                      : 'kept as text'
+                      : say('imports.kept-as-text')
                     : each.match === 'email'
-                      ? `matched to ${each.memberName} by email`
+                      ? say('imports.matched-to-by-email', { memberName: each.memberName })
                       : each.confirmed
-                        ? `matched to ${each.memberName} by name, confirmed`
-                        : `may be ${each.memberName}, by name`
+                        ? say('imports.matched-to-by-name-confirmed', {
+                            memberName: each.memberName,
+                          })
+                        : say('imports.may-be-by-name', { memberName: each.memberName })
                 }`}
                 {view.state === 'proposed' &&
                   view.policy === 'map' &&
@@ -1094,8 +1234,14 @@ export function ImportPage({
                         }
                       >
                         {each.confirmed
-                          ? `Withdraw ${each.name} as ${each.memberName ?? ''}`
-                          : `Confirm ${each.name} is ${each.memberName ?? ''}`}
+                          ? say('imports.withdraw-as', {
+                              name: each.name,
+                              value2: each.memberName ?? '',
+                            })
+                          : say('imports.confirm-is', {
+                              name: each.name,
+                              value2: each.memberName ?? '',
+                            })}
                       </button>
                     </>
                   )}
@@ -1107,8 +1253,8 @@ export function ImportPage({
 
       {view.report.length > 0 && (
         <>
-          <h2>What was left out or kept differently</h2>
-          <ul aria-label="Report">
+          <h2>{say('imports.what-was-left-out-or')}</h2>
+          <ul aria-label={say('imports.report')}>
             {view.report.map((entry, index) => (
               <li key={index}>
                 {entry.part !== null && view.parts[entry.part] !== undefined
@@ -1124,11 +1270,11 @@ export function ImportPage({
         <form className={styles['actions']} onSubmit={accept}>
           {updating ? (
             <p className={styles['muted']}>
-              {`Accepting updates ${documentName}; no new document is made.`}
+              {say('imports.accepting-updates-no-new-document', { documentName })}
             </p>
           ) : (
             <label>
-              Document title
+              {say('imports.document-title')}
               <input value={title} onChange={(event) => setTitle(event.target.value)} />
             </label>
           )}
@@ -1137,7 +1283,7 @@ export function ImportPage({
             className="primary"
             disabled={busy || (!updating && title.trim() === '')}
           >
-            Accept
+            {say('imports.accept')}
           </button>
         </form>
       )}
@@ -1150,7 +1296,7 @@ export function ImportPage({
               void act(() => client.POST('/v1/imports/{id}/abandon', { params: { path: { id } } }))
             }
           >
-            Abandon
+            {say('imports.abandon')}
           </button>
         </div>
       )}

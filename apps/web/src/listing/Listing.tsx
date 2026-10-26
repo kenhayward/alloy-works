@@ -2,6 +2,7 @@ import { useId } from 'react';
 
 import { Notice } from '../states/Notice.js';
 import styles from '../structure/DocumentList.module.css';
+import { words } from '../words/words.js';
 
 /** A sort a listing view offers: the listing's sort and order, and what a reader is told. */
 export interface SortOption {
@@ -24,7 +25,7 @@ export function SortChooser({
   const key = (option: SortOption) => `${option.sort}:${option.order}`;
   return (
     <div className={styles['sort']}>
-      <label htmlFor={id}>Sort by</label>
+      <label htmlFor={id}>{words('listing.sort-by')}</label>
       <select
         id={id}
         value={key(chosen)}
@@ -59,9 +60,12 @@ export function Facet({
   values,
   chosen,
   labelOf = (value) => value.label,
+  content = false,
   onToggle,
 }: {
   readonly legend: string;
+  /** Its values are the tenant's, a space's or a document's names, not the interface's words. */
+  readonly content?: boolean;
   readonly values: readonly FacetValue[];
   readonly chosen: readonly string[];
   readonly labelOf?: (value: FacetValue) => string;
@@ -83,7 +87,9 @@ export function Facet({
             checked={chosen.includes(value.value)}
             onChange={() => onToggle(value.value)}
           />
-          <span className={styles['optionName']}>{labelOf(value)}</span>
+          <span className={styles['optionName']} {...(content ? { 'data-content': '' } : {})}>
+            {labelOf(value)}
+          </span>
           <span className={styles['count']}>{value.count}</span>
         </label>
       ))}
@@ -108,14 +114,14 @@ export function ArchivedFilter({
 }) {
   return (
     <fieldset className={styles['facet']}>
-      <legend className={styles['overline']}>Status</legend>
+      <legend className={styles['overline']}>{words('listing.status')}</legend>
       <label className={styles['option']}>
         <input
           type="checkbox"
           checked={chosen}
           onChange={(event) => onChoose(event.target.checked)}
         />
-        <span className={styles['optionName']}>Archived</span>
+        <span className={styles['optionName']}>{words('listing.archived')}</span>
       </label>
       <label className={styles['option']}>
         <input
@@ -123,7 +129,7 @@ export function ArchivedFilter({
           checked={deleted}
           onChange={(event) => onChooseDeleted(event.target.checked)}
         />
-        <span className={styles['optionName']}>Deleted</span>
+        <span className={styles['optionName']}>{words('listing.deleted')}</span>
       </label>
     </fieldset>
   );
@@ -149,13 +155,13 @@ export function More({
   if (listing.failed !== undefined) {
     return (
       <Notice tone="failed">
-        <p>{`The ${what} could not be loaded.`}</p>
+        <p>{words('listing.the-could-not-be-loaded', { what })}</p>
         <button
           type="button"
           disabled={listing.loading}
           onClick={() => void listing.load(listing.failed ?? null)}
         >
-          Try again
+          {words('listing.try-again')}
         </button>
       </Notice>
     );
@@ -168,7 +174,7 @@ export function More({
         disabled={listing.loading}
         onClick={() => void listing.load(listing.next)}
       >
-        Show more
+        {words('listing.show-more')}
       </button>
     </div>
   );

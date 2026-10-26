@@ -1,6 +1,7 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import { useEffect, useId, useState } from 'react';
 import styles from './CohortList.module.css';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -16,25 +17,42 @@ interface Listed {
 
 type State = 'all' | 'complete' | 'failed' | 'pending';
 const STATES: Readonly<Record<State, string>> = {
-  all: 'All',
-  complete: 'Complete',
-  failed: 'With a row that failed',
-  pending: 'Waiting',
+  get all() {
+    return words('document.all');
+  },
+  get complete() {
+    return words('document.complete');
+  },
+  get failed() {
+    return words('document.with-a-row-that-failed');
+  },
+  get pending() {
+    return words('document.waiting');
+  },
 };
 type Sort = 'requested' | 'title';
-const SORTS: Readonly<Record<Sort, string>> = { requested: 'Newest first', title: 'Title' };
+const SORTS: Readonly<Record<Sort, string>> = {
+  get requested() {
+    return words('document.newest-first');
+  },
+  get title() {
+    return words('document.title');
+  },
+};
 
-const when = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+const when = {
+  format: (at: Date) => formats().date(at, { day: 'numeric', month: 'short', year: 'numeric' }),
+};
 
 /** How a cohort's rows stand, in words: what is made, failed and waiting, each only where there is one. */
 export const rowsWords = (rows: Listed['rows']) =>
   [
-    rows.made > 0 ? `${rows.made} made` : '',
-    rows.failed > 0 ? `${rows.failed} failed` : '',
-    rows.pending > 0 ? `${rows.pending} waiting` : '',
+    rows.made > 0 ? words('document.made-2', { made: rows.made }) : '',
+    rows.failed > 0 ? words('document.failed', { failed: rows.failed }) : '',
+    rows.pending > 0 ? words('document.waiting-2', { pending: rows.pending }) : '',
   ]
     .filter(Boolean)
-    .join(', ') || 'No rows';
+    .join(', ') || words('document.no-rows');
 
 /**
  * **Cohorts** (SCH-065, TPL-040; the R14 plan, R14-A): every cohort the reader may read, newest first or
@@ -64,12 +82,12 @@ export function CohortList({ client }: { client: Client }) {
 
   return (
     <section aria-labelledby={`${ids}-heading`} className={styles['page']}>
-      <h1 id={`${ids}-heading`}>Cohorts</h1>
+      <h1 id={`${ids}-heading`}>{words('document.cohorts')}</h1>
       <p>
-        <a href="#/templates">Templates</a>
+        <a href="#/templates">{words('document.templates')}</a>
       </p>
       <div className={styles['filters']}>
-        <label htmlFor={`${ids}-state`}>Show</label>{' '}
+        <label htmlFor={`${ids}-state`}>{words('document.show')}</label>{' '}
         <select
           id={`${ids}-state`}
           value={state}
@@ -81,7 +99,7 @@ export function CohortList({ client }: { client: Client }) {
             </option>
           ))}
         </select>{' '}
-        <label htmlFor={`${ids}-sort`}>Sort by</label>{' '}
+        <label htmlFor={`${ids}-sort`}>{words('document.sort-by')}</label>{' '}
         <select
           id={`${ids}-sort`}
           value={sort}
@@ -94,20 +112,20 @@ export function CohortList({ client }: { client: Client }) {
           ))}
         </select>
       </div>
-      {listed === null && <p role="status">Reading the cohorts.</p>}
-      {listed === 'unread' && <p role="alert">The cohorts could not be read.</p>}
+      {listed === null && <p role="status">{words('document.reading-the-cohorts')}</p>}
+      {listed === 'unread' && <p role="alert">{words('document.the-cohorts-could-not-be')}</p>}
       {listed !== null && listed !== 'unread' && listed.length === 0 && (
-        <p>No cohort here. A template&apos;s Generate makes one.</p>
+        <p>{words('document.no-cohort-here-a-template')}</p>
       )}
       {listed !== null && listed !== 'unread' && listed.length > 0 && (
-        <table aria-label="Cohorts" className={styles['table']}>
+        <table aria-label={words('document.cohorts')} className={styles['table']}>
           <thead>
             <tr>
-              <th scope="col">Title</th>
-              <th scope="col">Template</th>
-              <th scope="col">Space</th>
-              <th scope="col">Rows</th>
-              <th scope="col">Asked for</th>
+              <th scope="col">{words('document.title')}</th>
+              <th scope="col">{words('document.template')}</th>
+              <th scope="col">{words('document.space')}</th>
+              <th scope="col">{words('document.rows')}</th>
+              <th scope="col">{words('document.asked-for-2')}</th>
             </tr>
           </thead>
           <tbody>

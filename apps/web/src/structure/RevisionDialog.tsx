@@ -13,6 +13,7 @@ import { useId, useState } from 'react';
 import { Modal } from '../layouts/Modal.js';
 import type { BindingState, RevisionShown } from './bindingContexts.js';
 import { standingRevision } from './bindingContexts.js';
+import { words as say } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -27,14 +28,30 @@ export interface Revising {
 
 /** Why a revision was refused, in words, by the service's code. */
 const REFUSED: Readonly<Record<string, string>> = {
-  value_invalid: 'That is not a value of its column.',
-  value_empty: 'A value revised by hand is never blank.',
-  key_required: 'Name a value for every key column.',
-  revision_row_missing: 'The result has no row with that key.',
-  revision_not_possible: 'That cannot be revised by hand.',
-  revision_precondition: 'The value changed meanwhile. Look at it again.',
-  revision_not_standing: 'Nothing revised by hand stands there now.',
-  binding_stale: 'The binding changed since its value was taken: resolve it first.',
+  get value_invalid() {
+    return say('document.that-is-not-a-value');
+  },
+  get value_empty() {
+    return say('document.a-value-revised-by-hand-2');
+  },
+  get key_required() {
+    return say('document.name-a-value-for-every');
+  },
+  get revision_row_missing() {
+    return say('document.the-result-has-no-row');
+  },
+  get revision_not_possible() {
+    return say('document.that-cannot-be-revised-by');
+  },
+  get revision_precondition() {
+    return say('document.the-value-changed-meanwhile-look-2');
+  },
+  get revision_not_standing() {
+    return say('document.nothing-revised-by-hand-stands');
+  },
+  get binding_stale() {
+    return say('document.the-binding-changed-since-its');
+  },
 };
 
 /** A canonical value typed in a column's type, or null where it is not one. */
@@ -107,7 +124,7 @@ export function RevisionDialog({
       for (const name of keyColumns) {
         const one = typed(typeOf(name) ?? { base: 'text' }, key[name] ?? '');
         if (one === null) {
-          setRefused(`Give the row's ${name}.`);
+          setRefused(say('document.give-the-row-s', { name }));
           return;
         }
         named[name] = one;
@@ -126,7 +143,7 @@ export function RevisionDialog({
       return;
     }
     if (reason.trim() === '') {
-      setRefused('Say why.');
+      setRefused(say('document.say-why'));
       return;
     }
     setSending(true);
@@ -147,31 +164,36 @@ export function RevisionDialog({
     });
     setSending(false);
     if (response.ok) {
-      onDone(act === 'revise' ? 'Revised by hand.' : 'The revision was withdrawn.');
+      onDone(
+        act === 'revise'
+          ? say('document.revised-by-hand-3')
+          : say('document.the-revision-was-withdrawn'),
+      );
       return;
     }
     const code = (error as { code?: unknown } | undefined)?.code;
     setRefused(
       (typeof code === 'string' ? REFUSED[code] : undefined) ??
-        'That could not be done. Try again.',
+        say('document.that-could-not-be-done'),
     );
   };
 
-  const heading = act === 'revise' ? 'Revise by hand' : 'Withdraw a revision';
+  const heading =
+    act === 'revise' ? say('document.revise-by-hand') : say('document.withdraw-a-revision');
   return (
     <Modal labelledBy={`${ids}-heading`} size="narrow" onClose={onClose}>
       <section aria-labelledby={`${ids}-heading`}>
         <h2 id={`${ids}-heading`}>{heading}</h2>
         <p>
           {act === 'revise'
-            ? 'The value you give stands in front of what the query returned, which is kept, and is marked as revised by hand. A subtotal stays the query’s.'
-            : 'The value the query returned is shown again.'}
+            ? say('document.the-value-you-give-stands')
+            : say('document.the-value-the-query-returned')}
         </p>
         {!inline && act === 'revise' && (
           <>
             {keyColumns.map((name) => (
               <label key={name} htmlFor={`${ids}-key-${name}`}>
-                {`Row: ${name}`}
+                {say('document.row-2', { name })}
                 <input
                   id={`${ids}-key-${name}`}
                   value={key[name] ?? ''}
@@ -180,7 +202,7 @@ export function RevisionDialog({
               </label>
             ))}
             <label htmlFor={`${ids}-column`}>
-              Column
+              {say('document.column')}
               <select
                 id={`${ids}-column`}
                 value={column}
@@ -197,7 +219,7 @@ export function RevisionDialog({
         )}
         {!inline && act === 'withdraw' && (
           <label htmlFor={`${ids}-cell`}>
-            Revision
+            {say('document.revision')}
             <select
               id={`${ids}-cell`}
               value={chosen}
@@ -205,7 +227,11 @@ export function RevisionDialog({
             >
               {standingCells.map((each) => (
                 <option key={each.id} value={each.id}>
-                  {`${String(each.value)} in ${each.cell!.column}, the row ${Object.values(each.cell!.key).map(String).join(', ')}`}
+                  {say('document.in-the-row-2', {
+                    value1: String(each.value),
+                    column: each.cell!.column,
+                    value3: Object.values(each.cell!.key).map(String).join(', '),
+                  })}
                 </option>
               ))}
             </select>
@@ -213,7 +239,7 @@ export function RevisionDialog({
         )}
         {act === 'revise' && (
           <label htmlFor={`${ids}-value`}>
-            Value
+            {say('document.value')}
             <input
               id={`${ids}-value`}
               value={value}
@@ -224,11 +250,13 @@ export function RevisionDialog({
         )}
         {act === 'revise' && (
           <p id={`${ids}-preview`}>
-            {preview === null ? 'Not yet a value of its column.' : `Shown as ${preview}`}
+            {preview === null
+              ? say('document.not-yet-a-value-of')
+              : say('document.shown-as', { preview })}
           </p>
         )}
         <label htmlFor={`${ids}-reason`}>
-          Why
+          {say('document.why')}
           <textarea
             id={`${ids}-reason`}
             value={reason}
@@ -239,10 +267,10 @@ export function RevisionDialog({
         {refused !== null && <p role="alert">{refused}</p>}
         <div>
           <button type="button" onClick={onClose}>
-            Cancel
+            {say('document.cancel')}
           </button>{' '}
           <button type="button" className="primary" onClick={() => void send()}>
-            {act === 'revise' ? 'Revise' : 'Withdraw'}
+            {act === 'revise' ? say('document.revise') : say('document.withdraw')}
           </button>
         </div>
       </section>

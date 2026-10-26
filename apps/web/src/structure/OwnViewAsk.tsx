@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
 import { Modal } from '../layouts/Modal.js';
 import { OWN_VIEW_WARNING } from './ownView.js';
+import { words } from '../words/words.js';
 
 /**
  * DAT-091's warning, asked before a person's own view is held (the D7 plan, D7-H): `ask` opens it and
@@ -40,14 +41,14 @@ export function useOwnViewAsk(): {
     answer === null ? null : (
       <Modal labelledBy={heading} onClose={() => answered(false)}>
         <section aria-labelledby={heading}>
-          <h2 id={heading}>Hold your own view?</h2>
-          <p>{OWN_VIEW_WARNING}</p>
+          <h2 id={heading}>{words('document.hold-your-own-view')}</h2>
+          <p>{OWN_VIEW_WARNING()}</p>
           <div>
             <button type="button" onClick={() => answered(false)}>
-              Cancel
+              {words('document.cancel')}
             </button>{' '}
             <button type="button" className="primary" onClick={() => answered(true)}>
-              Hold my own view
+              {words('document.hold-my-own-view')}
             </button>
           </div>
         </section>

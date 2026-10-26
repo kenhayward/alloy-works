@@ -25,6 +25,7 @@ import {
 } from '@alloy-works/editor';
 
 import type { TableRows } from './tableRows.js';
+import { words as say } from '../words/words.js';
 
 /**
  * What the bindings view says of one binding, as this page reads it (the B1 plan, B1-I): checked
@@ -406,7 +407,9 @@ export function shownValue(
   formats: ValueFormats,
 ): string {
   if ('image' in taken) {
-    return decorative(taken) ? 'A decorative image' : `An image: ${taken.description}`;
+    return decorative(taken)
+      ? say('document.a-decorative-image')
+      : say('document.an-image', { description: taken.description });
   }
   return formatValue(taken.value, taken.column.type, formats);
 }

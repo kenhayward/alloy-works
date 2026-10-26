@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 
 import styles from './AssistantPanel.module.css';
 import { PersonalPrompts } from './PersonalPrompts.js';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -54,14 +55,30 @@ interface Ended {
 }
 
 const TOOL_WORDS: Readonly<Record<string, string>> = {
-  read_outline: 'Read the outline',
-  read_component: 'Read a part',
-  search_document: 'Searched the document',
-  read_values: 'Read the bound values',
-  propose_edit: 'Proposed an edit',
-  search_references: 'Searched a reference source',
-  cite_reference: 'Proposed a citation',
-  declined: 'Declined an instruction',
+  get read_outline() {
+    return words('document.read-the-outline');
+  },
+  get read_component() {
+    return words('document.read-a-part');
+  },
+  get search_document() {
+    return words('document.searched-the-document');
+  },
+  get read_values() {
+    return words('document.read-the-bound-values');
+  },
+  get propose_edit() {
+    return words('document.proposed-an-edit');
+  },
+  get search_references() {
+    return words('document.searched-a-reference-source');
+  },
+  get cite_reference() {
+    return words('document.proposed-a-citation');
+  },
+  get declined() {
+    return words('document.declined-an-instruction');
+  },
 };
 
 /**
@@ -301,15 +318,22 @@ export function AssistantPanel({
       setTitles((was) => new Map(was).set(component, title));
       setFound([]);
       setLooking('');
-    } else setSaid(refusalWords(error, 'That part could not be added.'));
+    } else setSaid(refusalWords(error, words('document.that-part-could-not-be')));
   };
 
   const usage = async () => {
     const { data } = await client.GET('/v1/me/assistant-usage');
     if (!data) return;
-    const costs = data.costs.map((each) => `${each.currency} ${each.cost}`).join(', ');
+    const costs = formats().list(
+      data.costs.map((each) =>
+        words('document.cost', { currency: each.currency, cost: each.cost }),
+      ),
+      { type: 'unit' },
+    );
     setMonth(
-      `This month: ${data.runs} ${data.runs === 1 ? 'run' : 'runs'}${costs === '' ? '' : `, ${costs}`}.`,
+      costs === ''
+        ? words('document.this-month', { runs: data.runs })
+        : words('document.this-month-costing', { runs: data.runs, costs }),
     );
   };
 
@@ -323,7 +347,7 @@ export function AssistantPanel({
         body: { ...(document === null ? {} : { document }), title: ask.trim() },
       });
       if (!data) {
-        setSaid(refusalWords(error, 'The conversation could not be started.'));
+        setSaid(refusalWords(error, words('document.the-conversation-could-not-be')));
         return;
       }
       id = data.conversation.id;
@@ -420,11 +444,11 @@ export function AssistantPanel({
     });
     if (outcome.kind === 'refused') {
       const body = outcome.body as { message?: string } | null;
-      setSaid(body?.message ?? 'The assistant could not be asked.');
+      setSaid(body?.message ?? words('document.the-assistant-could-not-be'));
     } else if (outcome.kind === 'failed') {
-      setSaid('The assistant stopped answering.');
+      setSaid(words('document.the-assistant-stopped-answering'));
     } else if (outcome.kind === 'stopped') {
-      setSaid('Stopped.');
+      setSaid(words('document.stopped'));
     }
     stop.current = null;
     setRunning(false);
@@ -450,16 +474,17 @@ export function AssistantPanel({
                 said:
                   data.proposal.state === 'accepted'
                     ? each.creates !== null
-                      ? 'Accepted: the part is made.'
-                      : 'Accepted: it is a new version of the part.'
+                      ? words('document.accepted-the-part-is-made')
+                      : words('document.accepted-it-is-a-new')
                     : data.proposal.state === 'kept'
-                      ? 'Kept as a suggestion, marked generated, for review.'
-                      : 'Discarded.',
+                      ? words('document.kept-as-a-suggestion-marked')
+                      : words('document.discarded'),
               }
             : {
                 ...each,
                 said:
-                  (error as { message?: string } | undefined)?.message ?? 'It could not be done.',
+                  (error as { message?: string } | undefined)?.message ??
+                  words('document.it-could-not-be-done'),
               },
       ),
     );
@@ -481,15 +506,19 @@ export function AssistantPanel({
   });
 
   return (
-    <section className={styles['assistant']} aria-label="Assistant">
+    <section className={styles['assistant']} aria-label={words('document.assistant')}>
       <p className={styles['muted']}>
         {endpoint === null
-          ? 'The assistant reads what you may read of this document. Nothing it proposes changes the document until you accept it.'
-          : `Using ${endpoint.name}${endpoint.boundary === 'outside' ? ', which is outside your data boundary' : ''}.`}
+          ? words('document.the-assistant-reads-what-you')
+          : words('document.using', {
+              name: endpoint.name,
+              value2:
+                endpoint.boundary === 'outside' ? ', which is outside your data boundary' : '',
+            })}
       </p>
       <div className={styles['actions']}>
         <label className={styles['ask']}>
-          Conversation
+          {words('document.conversation')}
           <select
             value={conversation ?? ''}
             disabled={running}
@@ -506,7 +535,7 @@ export function AssistantPanel({
               if (id !== null) void readTurns(id).catch(() => undefined);
             }}
           >
-            <option value="">A new conversation</option>
+            <option value="">{words('document.a-new-conversation')}</option>
             {conversations.map((each) => (
               <option key={each.id} value={each.id}>
                 {each.title}
@@ -516,7 +545,7 @@ export function AssistantPanel({
         </label>
         {endpoints.length > 0 && (
           <label className={styles['ask']}>
-            Endpoint
+            {words('document.endpoint')}
             <select
               value={chosen}
               disabled={running}
@@ -525,7 +554,7 @@ export function AssistantPanel({
               {endpoints.map((each) => (
                 <option key={each.id} value={each.id}>
                   {each.boundary === 'outside'
-                    ? `${each.name}, outside your data boundary`
+                    ? words('document.outside-your-data-boundary', { name: each.name })
                     : each.name}
                 </option>
               ))}
@@ -534,7 +563,7 @@ export function AssistantPanel({
         )}
       </div>
       {turns.filter((each) => each.run !== current).length > 0 && (
-        <ol aria-label="Earlier turns" className={styles['turns']}>
+        <ol aria-label={words('document.earlier-turns')} className={styles['turns']}>
           {turns
             .filter((each) => each.run !== current)
             .map((each) => (
@@ -544,35 +573,34 @@ export function AssistantPanel({
                   {each.outcome === 'finished'
                     ? (each.reply ?? '')
                     : each.outcome === 'running'
-                      ? 'Still answering.'
-                      : 'This turn did not finish.'}
+                      ? words('document.still-answering')
+                      : words('document.this-turn-did-not-finish')}
                 </p>
               </li>
             ))}
         </ol>
       )}
       {conversation !== null && (
-        <section aria-label="What it reads" className={styles['prompts']}>
-          <h3>What it reads</h3>
+        <section aria-label={words('document.what-it-reads')} className={styles['prompts']}>
+          <h3>{words('document.what-it-reads')}</h3>
           {tray.length === 0 ? (
-            <p className={styles['muted']}>
-              Nothing yet. A part the assistant reads, or one you add, is read again each turn.
-            </p>
+            <p className={styles['muted']}>{words('document.nothing-yet-a-part-the')}</p>
           ) : (
             <ul>
               {tray.map((each) => {
-                const title = nameOf(each.component) ?? titles.get(each.component) ?? 'A part';
+                const title =
+                  nameOf(each.component) ?? titles.get(each.component) ?? words('document.a-part');
                 return (
                   <li key={each.component}>
-                    <span>
-                      {each.readable ? title : 'A part you may no longer read, which is not sent'}
-                    </span>{' '}
+                    <span>{each.readable ? title : words('document.a-part-you-may-no')}</span>{' '}
                     <button
                       type="button"
-                      aria-label={`Remove ${each.readable ? title : 'the part you may no longer read'}`}
+                      aria-label={words('document.remove', {
+                        value1: each.readable ? title : 'the part you may no longer read',
+                      })}
                       onClick={() => void removePart(each.component)}
                     >
-                      Remove
+                      {words('document.remove-2')}
                     </button>
                   </li>
                 );
@@ -581,24 +609,24 @@ export function AssistantPanel({
           )}
           <div className={styles['actions']}>
             <label className={styles['ask']}>
-              Find a part to add
+              {words('document.find-a-part-to-add')}
               <input value={looking} onChange={(change) => setLooking(change.target.value)} />
             </label>
             <button type="button" disabled={looking.trim() === ''} onClick={() => void look()}>
-              Find
+              {words('document.find')}
             </button>
           </div>
           {found.length > 0 && (
-            <ul aria-label="Parts found">
+            <ul aria-label={words('document.parts-found')}>
               {found.map((each) => (
                 <li key={each.id}>
                   <span>{each.title}</span>{' '}
                   <button
                     type="button"
-                    aria-label={`Add ${each.title}`}
+                    aria-label={words('document.add', { title: each.title })}
                     onClick={() => void addPart(each.id, each.title)}
                   >
-                    Add
+                    {words('document.add-2')}
                   </button>
                 </li>
               ))}
@@ -609,25 +637,25 @@ export function AssistantPanel({
       <PersonalPrompts client={client} asking={ask} onUse={setAsk} />
       <form onSubmit={(event) => void submit(event)}>
         <label className={styles['ask']}>
-          Ask the assistant
+          {words('document.ask-the-assistant')}
           <textarea value={ask} rows={3} onChange={(change) => setAsk(change.target.value)} />
         </label>
         <div className={styles['actions']}>
           <button type="submit" className="primary" disabled={running || ask.trim() === ''}>
-            Ask
+            {words('document.ask')}
           </button>
           {running && (
             <button type="button" onClick={() => stop.current?.abort()}>
-              Stop
+              {words('document.stop')}
             </button>
           )}
         </div>
       </form>
       {prompts.length > 0 && (
-        <section aria-label="Prompts" className={styles['prompts']}>
-          <h3>Prompts</h3>
+        <section aria-label={words('document.prompts')} className={styles['prompts']}>
+          <h3>{words('document.prompts')}</h3>
           {node === null ? (
-            <p className={styles['muted']}>Open a part to run a prompt on it.</p>
+            <p className={styles['muted']}>{words('document.open-a-part-to-run')}</p>
           ) : (
             <ul>
               {prompts.map((each) => (
@@ -636,7 +664,7 @@ export function AssistantPanel({
                   <button
                     type="button"
                     disabled={running}
-                    aria-label={`Run ${each.title} on this part`}
+                    aria-label={words('document.run-on-this-part', { title: each.title })}
                     onClick={() =>
                       void run(`${origin}/v1/documents/${document}/prompt-runs`, {
                         prompt: each.id,
@@ -644,7 +672,7 @@ export function AssistantPanel({
                       })
                     }
                   >
-                    Run
+                    {words('document.run')}
                   </button>
                 </li>
               ))}
@@ -654,7 +682,7 @@ export function AssistantPanel({
       )}
       {reused && (
         <p className={styles['muted']}>
-          From your earlier run of this prompt on this part, at no cost.{' '}
+          {words('document.from-your-earlier-run-of')}{' '}
           <button
             type="button"
             disabled={running}
@@ -665,7 +693,7 @@ export function AssistantPanel({
               })
             }
           >
-            Run afresh
+            {words('document.run-afresh')}
           </button>
         </p>
       )}
@@ -675,18 +703,23 @@ export function AssistantPanel({
       {/* Announced as each arrives, as the answer is (GEN-021). */}
       <div aria-live="polite">
         {notices.length > 0 && (
-          <ul aria-label="Instructions not followed" className={styles['muted']}>
+          <ul aria-label={words('document.instructions-not-followed')} className={styles['muted']}>
             {notices.map((each, index) => (
               <li key={index}>
-                {nameOf(each.where) ?? titles.get(each.where) ?? 'Something it read'} asked: “
-                {each.instruction}” Not done.
+                {words('document.instruction-not-done', {
+                  where:
+                    nameOf(each.where) ??
+                    titles.get(each.where) ??
+                    words('document.something-it-read'),
+                  instruction: each.instruction,
+                })}
               </li>
             ))}
           </ul>
         )}
       </div>
       {cited.length > 0 && (
-        <ol aria-label="Sources" className={styles['sources']}>
+        <ol aria-label={words('document.sources')} className={styles['sources']}>
           {cited.map((each) => (
             <li key={`${each.component}#${each.block}`}>
               <button
@@ -694,7 +727,10 @@ export function AssistantPanel({
                 className={styles['link']}
                 onClick={() => onCite(each.component, each.block)}
               >
-                {nameOf(each.component) ?? 'A part'}, block {each.block}
+                {words('document.part-block', {
+                  part: nameOf(each.component) ?? words('document.a-part'),
+                  block: each.block,
+                })}
               </button>
             </li>
           ))}
@@ -703,22 +739,21 @@ export function AssistantPanel({
       {ended?.refused !== undefined && <p role="status">{ended.refused}</p>}
       {ended !== null && ended.dropped.length > 0 && (
         <p className={styles['muted']}>
-          {ended.dropped.length === 1
-            ? 'One citation was'
-            : `${ended.dropped.length} citations were`}{' '}
-          left out: it named text the assistant did not read.
+          {words('document.citations-were', { count: ended.dropped.length })}{' '}
+          {words('document.left-out-it-named-text')}
         </p>
       )}
       {steps.length > 0 && (
         <details className={styles['steps']}>
           <summary>
-            What it did ({steps.length} {steps.length === 1 ? 'step' : 'steps'})
+            {words('document.what-it-did')}
+            {steps.length} {words('document.steps', { count: steps.length })})
           </summary>
           <ol>
             {steps.map((step) => (
               <li key={step.id}>
                 <span className={styles['strong']}>
-                  {TOOL_WORDS[step.name] ?? `Asked for ${step.name}`}
+                  {TOOL_WORDS[step.name] ?? words('document.asked-for', { name: step.name })}
                 </span>
                 {step.summary !== undefined && `: ${step.summary}`}
                 {step.result !== undefined && <pre className={styles['result']}>{step.result}</pre>}
@@ -731,27 +766,33 @@ export function AssistantPanel({
         <article
           key={proposal.id}
           className={styles['proposal']}
-          aria-label={`Proposal ${proposal.number}`}
+          aria-label={words('document.proposal', { number: proposal.number })}
         >
           <h3>
-            Proposal {proposal.number}:{' '}
-            {proposal.creates !== null
-              ? `a new part, ${proposal.creates.title}`
-              : ((proposal.component === null ? undefined : nameOf(proposal.component)) ??
-                'a part')}
+            {words('document.proposal-of', {
+              number: proposal.number,
+              what:
+                proposal.creates !== null
+                  ? words('document.a-new-part', { title: proposal.creates.title })
+                  : ((proposal.component === null ? undefined : nameOf(proposal.component)) ??
+                    words('document.a-part-2')),
+            })}
           </h3>
           <pre className={styles['proposed']}>
             {proposedText(proposal.proposed, proposal.cites)}
           </pre>
           {proposal.cites !== null && (
             <p className={styles['muted']}>
-              Cites {proposal.cites.title ?? 'a work'},{' '}
-              {proposal.cites.source === 'pubmed' ? 'PMID' : 'DOI'} {proposal.cites.identifier} from{' '}
-              {proposal.cites.source}. Its entry is found or made in the space as you accept.
+              {words('document.cites-work', {
+                title: proposal.cites.title ?? words('document.a-work'),
+                scheme: proposal.cites.source === 'pubmed' ? 'pubmed' : 'doi',
+                identifier: proposal.cites.identifier,
+                source: proposal.cites.source,
+              })}
             </p>
           )}
           {proposal.state === 'open' && running ? (
-            <p className={styles['muted']}>It can be acted on once the answer has ended.</p>
+            <p className={styles['muted']}>{words('document.it-can-be-acted-on')}</p>
           ) : proposal.state === 'open' ? (
             <div className={styles['actions']}>
               <button
@@ -759,15 +800,15 @@ export function AssistantPanel({
                 className="primary"
                 onClick={() => void act(proposal, 'acceptance')}
               >
-                Accept
+                {words('document.accept')}
               </button>
               {proposal.creates === null && proposal.cites === null && (
                 <button type="button" onClick={() => void act(proposal, 'keeping')}>
-                  Keep as suggestion
+                  {words('document.keep-as-suggestion')}
                 </button>
               )}
               <button type="button" onClick={() => void act(proposal, 'discarding')}>
-                Discard
+                {words('document.discard')}
               </button>
             </div>
           ) : null}
@@ -777,8 +818,18 @@ export function AssistantPanel({
       {ended !== null && (
         <p className={styles['muted']}>
           {ended.tokensIn === null
-            ? 'No tokens were reported.'
-            : `${ended.tokensIn} tokens in, ${ended.tokensOut} out${ended.cost === null ? '' : `: ${ended.currency} ${ended.cost}`}.`}{' '}
+            ? words('document.no-tokens-were-reported')
+            : ended.cost === null
+              ? words('document.tokens-in-out', {
+                  tokensIn: ended.tokensIn,
+                  tokensOut: ended.tokensOut,
+                })
+              : words('document.tokens-in-out-cost', {
+                  tokensIn: ended.tokensIn,
+                  tokensOut: ended.tokensOut,
+                  currency: ended.currency,
+                  cost: ended.cost,
+                })}{' '}
           {month}
         </p>
       )}

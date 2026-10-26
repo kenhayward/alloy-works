@@ -5,6 +5,7 @@ import { refusal } from '../account/TokenTable.js';
 import { Modal } from '../layouts/Modal.js';
 import styles from '../lifecycle/Hold.module.css';
 import { followInFrame } from '../publishing/Preview.js';
+import { words as say } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -48,57 +49,80 @@ interface HeldNow {
 export function outcomeWords(outcome: JobNow['items'][number]['outcome']): string {
   switch (outcome) {
     case 'returned':
-      return 'translated';
+      return say('translation.outcome-translated');
     case 'held':
-      return 'held for review';
+      return say('translation.held-for-review');
     case 'refused':
-      return 'refused';
+      return say('translation.outcome-refused');
     default:
-      return 'out';
+      return say('translation.outcome-out');
   }
 }
 
 /** Why a returned file was refused whole, in words. */
 const FAILED: Readonly<Record<string, string>> = {
-  file_unreadable: 'it could not be read as XLIFF',
-  file_unsafe: 'it holds a document type, which is never read',
-  file_too_large: 'it took too long or too much memory to read',
-  file_not_xliff: 'it is not an XLIFF 2 file',
-  language_mismatch: "it is not in the job's language",
-  unknown_file: 'it names a component the job did not send',
-  translation_job_closed: 'the job was closed',
-  reading_failed: 'reading it failed; return it again',
+  get file_unreadable() {
+    return say('translation.it-could-not-be-read');
+  },
+  get file_unsafe() {
+    return say('translation.it-holds-a-document-type');
+  },
+  get file_too_large() {
+    return say('translation.it-took-too-long-or');
+  },
+  get file_not_xliff() {
+    return say('translation.it-is-not-an-xliff');
+  },
+  get language_mismatch() {
+    return say('translation.it-is-not-in-the');
+  },
+  get unknown_file() {
+    return say('translation.it-names-a-component-the');
+  },
+  get translation_job_closed() {
+    return say('translation.the-job-was-closed');
+  },
+  get reading_failed() {
+    return say('translation.reading-it-failed-return-it');
+  },
 };
 
 /** The newest file returned to a job, in words. */
 export function returnWords(job: JobNow): string | undefined {
   const newest = job.returns?.[0];
   if (newest === undefined) return undefined;
-  if (newest.state === 'reading') return 'A returned file is being read.';
+  if (newest.state === 'reading') return say('translation.a-returned-file-is-being');
   if (newest.state === 'failed') {
-    return `The returned file was refused: ${FAILED[newest.failure ?? ''] ?? newest.failure}.`;
+    return say('translation.the-returned-file-was-refused', {
+      value1: FAILED[newest.failure ?? ''] ?? newest.failure,
+    });
   }
-  return `The returned file made ${newest.returned ?? 0} translated, ${newest.held ?? 0} held for review and ${newest.refused ?? 0} refused.`;
+  return say('translation.the-returned-file-made-translated', {
+    value1: newest.returned ?? 0,
+    value2: newest.held ?? 0,
+    value3: newest.refused ?? 0,
+  });
 }
 
 /** Why a component was listed and not sent, in words. */
 export function notSentWords(reason: 'needs_revision' | 'not_editable' | 'other_source'): string {
   switch (reason) {
     case 'needs_revision':
-      return 'not sent: approve it first';
+      return say('translation.not-sent-approve-it-first');
     case 'not_editable':
-      return 'not sent: you may not edit it';
+      return say('translation.not-sent-you-may-not');
     case 'other_source':
-      return "not sent: its source is in another language than the job's first, so send it in a job of its own";
+      return say('translation.not-sent-its-source-is');
   }
 }
 
 /** A job in a line: its language, vendor, how many were sent and whether it is closed. */
 export function jobWords(job: JobNow): string {
   const sent = job.items.filter((item) => item.notSent === null).length;
-  const to = job.vendor === null ? '' : ` to ${job.vendor}`;
   const state = job.closed === null ? 'open' : 'closed';
-  return `${job.language}${to}, ${sent} sent, ${state}`;
+  return job.vendor === null
+    ? say('translation.sent', { language: job.language, sent, state })
+    : say('translation.sent-to', { language: job.language, vendor: job.vendor, sent, state });
 }
 
 /**
@@ -120,7 +144,7 @@ export function TranslationJobsButton({
   return (
     <>
       <button type="button" onClick={() => setOpen(true)}>
-        Translation jobs
+        {say('translation.translation-jobs')}
       </button>
       {open && (
         <JobsDialog
@@ -166,7 +190,7 @@ function JobsDialog({
   const send = async (event: React.FormEvent) => {
     event.preventDefault();
     if (language.trim() === '') {
-      setSaid('A job needs a language, such as fr-FR.');
+      setSaid(say('translation.a-job-needs-a-language'));
       return;
     }
     setBusy(true);
@@ -181,10 +205,10 @@ function JobsDialog({
       .catch(() => ({ data: undefined, error: undefined }));
     setBusy(false);
     if (data) {
-      setSaid(`Sent: ${jobWords(data)}. Download its file to send it.`);
+      setSaid(say('translation.sent-download-its-file-to', { value1: jobWords(data) }));
       setLanguage('');
       await read();
-    } else setSaid(refusal(error, 'The job could not be made.'));
+    } else setSaid(refusal(error, say('translation.the-job-could-not-be')));
   };
 
   const giveBack = async (job: string, file: File) => {
@@ -201,9 +225,9 @@ function JobsDialog({
       .catch(() => ({ data: undefined, error: undefined }));
     setBusy(false);
     if (data) {
-      setSaid('The file is being read. Check again in a moment to see what came back.');
+      setSaid(say('translation.the-file-is-being-read'));
       await read();
-    } else setSaid(refusal(error, 'The file could not be returned.'));
+    } else setSaid(refusal(error, say('translation.the-file-could-not-be')));
   };
 
   const close = async (job: string) => {
@@ -215,22 +239,22 @@ function JobsDialog({
       .catch(() => ({ data: undefined, error: undefined }));
     setBusy(false);
     if (data) {
-      setSaid('The job is closed.');
+      setSaid(say('translation.the-job-is-closed'));
       await read();
-    } else setSaid(refusal(error, 'The job could not be closed.'));
+    } else setSaid(refusal(error, say('translation.the-job-could-not-be-2')));
   };
 
   return (
     <Modal labelledBy={headingId} size="wide" onClose={onClose}>
       <div className={styles['form']}>
-        <h2 id={headingId}>Translation jobs</h2>
-        {jobs === null && <p className={styles['muted']}>Reading its jobs…</p>}
-        {jobs === 'unread' && <p role="alert">Its jobs could not be read.</p>}
+        <h2 id={headingId}>{say('translation.translation-jobs')}</h2>
+        {jobs === null && <p className={styles['muted']}>{say('translation.reading-its-jobs')}</p>}
+        {jobs === 'unread' && <p role="alert">{say('translation.its-jobs-could-not-be')}</p>}
         {jobs !== null && jobs !== 'unread' && jobs.length === 0 && (
-          <p>No job has been sent for this document.</p>
+          <p>{say('translation.no-job-has-been-sent')}</p>
         )}
         {jobs !== null && jobs !== 'unread' && jobs.length > 0 && (
-          <ul aria-label="Jobs">
+          <ul aria-label={say('translation.jobs')}>
             {jobs.map((job) => (
               <li key={job.id}>
                 {jobWords(job)}
@@ -240,10 +264,21 @@ function JobsDialog({
                 <ul>
                   {job.items.map((item) => (
                     <li key={item.component.id}>
-                      {item.component.title}
-                      {item.notSent === null
-                        ? `: ${item.source === null ? '' : `version ${item.source.number}, `}${outcomeWords(item.outcome)}`
-                        : `: ${notSentWords(item.notSent)}`}
+                      {item.notSent !== null
+                        ? say('translation.item-said', {
+                            title: item.component.title,
+                            said: notSentWords(item.notSent),
+                          })
+                        : item.source === null
+                          ? say('translation.item-said', {
+                              title: item.component.title,
+                              said: outcomeWords(item.outcome),
+                            })
+                          : say('translation.item-version-said', {
+                              title: item.component.title,
+                              number: item.source.number,
+                              said: outcomeWords(item.outcome),
+                            })}
                       {mayEdit && item.outcome === 'held' && job.closed === null && (
                         <HeldReview
                           client={client}
@@ -267,12 +302,12 @@ function JobsDialog({
                         followInFrame(`/v1/documents/${documentId}/translation-jobs/${job.id}/file`)
                       }
                     >
-                      {`Download the ${job.language} file`}
+                      {say('translation.download-the-file', { language: job.language })}
                     </button>{' '}
                     {job.closed === null && (
                       <>
                         <label>
-                          {`Return the ${job.language} file`}
+                          {say('translation.return-the-file', { language: job.language })}
                           <input
                             type="file"
                             accept=".xlf,.xliff,application/xliff+xml"
@@ -285,10 +320,10 @@ function JobsDialog({
                           />
                         </label>{' '}
                         <button type="button" disabled={busy} onClick={() => void read()}>
-                          Check again
+                          {say('translation.check-again')}
                         </button>{' '}
                         <button type="button" disabled={busy} onClick={() => void close(job.id)}>
-                          {`Close the ${job.language} job`}
+                          {say('translation.close-the-job', { language: job.language })}
                         </button>
                       </>
                     )}
@@ -301,20 +336,19 @@ function JobsDialog({
         {mayEdit && (
           <form onSubmit={(event) => void send(event)}>
             <p className={styles['muted']}>
-              Each component that needs translating into the language is sent from its approved
-              revision.
+              {say('translation.each-component-that-needs-translating')}
             </p>
             <label>
-              Language
+              {say('translation.language')}
               <input
                 value={language}
                 maxLength={35}
-                placeholder="fr-FR"
+                placeholder={say('translation.language-example')}
                 onChange={(event) => setLanguage(event.target.value)}
               />
             </label>{' '}
             <label>
-              Vendor
+              {say('translation.vendor')}
               <input
                 value={vendor}
                 maxLength={200}
@@ -322,14 +356,14 @@ function JobsDialog({
               />
             </label>{' '}
             <button type="submit" disabled={busy}>
-              Send for translation
+              {say('translation.send-for-translation')}
             </button>
           </form>
         )}
         {said !== '' && <p role="status">{said}</p>}
         <div className={styles['buttons']}>
           <button type="button" onClick={onClose}>
-            Close
+            {say('translation.close')}
           </button>
         </div>
       </div>
@@ -386,10 +420,10 @@ function HeldReview({
     if (data) {
       onDecided(
         choice === 'accept'
-          ? `${component.title}: accepted as a translation of the version sent.`
-          : `${component.title}: rejected.`,
+          ? say('translation.accepted-as-a-translation-of', { title: component.title })
+          : say('translation.rejected', { title: component.title }),
       );
-    } else setSaid(refusal(error, 'That could not be decided.'));
+    } else setSaid(refusal(error, say('translation.that-could-not-be-decided')));
   };
 
   if (!open) {
@@ -397,34 +431,39 @@ function HeldReview({
       <>
         {' '}
         <button type="button" onClick={() => void review()}>
-          {`Review ${component.title}`}
+          {say('translation.review', { title: component.title })}
         </button>
       </>
     );
   }
   return (
-    <section aria-label={`Review ${component.title}`}>
-      {held === null && <p className={styles['muted']}>Reading what came back…</p>}
-      {held === 'unread' && <p role="alert">What came back could not be read.</p>}
+    <section aria-label={say('translation.review', { title: component.title })}>
+      {held === null && (
+        <p className={styles['muted']}>{say('translation.reading-what-came-back')}</p>
+      )}
+      {held === 'unread' && <p role="alert">{say('translation.what-came-back-could-not')}</p>}
       {held !== null && held !== 'unread' && (
         <>
           <p>
-            {`Translated from version ${held.sent.number}; the source is at ${held.current.number} now.`}
+            {say('translation.translated-from-version-the-source', {
+              number: held.sent.number,
+              number2: held.current.number,
+            })}
           </p>
           {held.changes.length > 0 && (
-            <ul aria-label="Source changes since it was sent">
+            <ul aria-label={say('translation.source-changes-since-it-was')}>
               {held.changes.map((each) => (
                 <li key={each.block}>{`${each.change}: ${each.words}`}</li>
               ))}
             </ul>
           )}
-          <ul aria-label="Words returned">
+          <ul aria-label={say('translation.words-returned')}>
             {held.returned.map((each) => (
               <li key={each.block}>{each.words}</li>
             ))}
           </ul>
           <fieldset>
-            <legend>Decide</legend>
+            <legend>{say('translation.decide')}</legend>
             <label>
               <input
                 type="radio"
@@ -432,7 +471,7 @@ function HeldReview({
                 checked={choice === 'accept'}
                 onChange={() => setChoice('accept')}
               />
-              Accept as a translation of the version sent
+              {say('translation.accept-as-a-translation-of')}
             </label>
             <label>
               <input
@@ -441,11 +480,11 @@ function HeldReview({
                 checked={choice === 'reject'}
                 onChange={() => setChoice('reject')}
               />
-              Reject
+              {say('translation.reject')}
             </label>
           </fieldset>
           <button type="button" disabled={busy || choice === null} onClick={() => void decide()}>
-            Decide
+            {say('translation.decide')}
           </button>
         </>
       )}

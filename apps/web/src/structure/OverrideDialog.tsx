@@ -2,6 +2,7 @@ import { useId, useState } from 'react';
 import { Modal } from '../layouts/Modal.js';
 import styles from './OverrideDialog.module.css';
 import { paragraphsOf, type OverrideBody, type OverrideView } from './overrides.js';
+import { words as say } from '../words/words.js';
 
 /**
  * **Overrides** of one reference (REU-011, REU-015; the R4 plan, R4-G): each paragraph of its component
@@ -69,21 +70,15 @@ export function OverrideDialog({
   return (
     <Modal labelledBy={headingId} size="narrow" onClose={onClose}>
       <form className={styles['form']} onSubmit={save}>
-        <h2 id={headingId}>{`Overrides of ${name}`}</h2>
-        <p className={styles['muted']}>
-          Change a paragraph&apos;s words in this document alone. The component, and every other
-          document, keeps its own. An overridden paragraph is plain text: its formatting is not
-          kept. A paragraph holding a footnote, a reference, a value or an equation is not offered.
-        </p>
-        {paragraphs.length === 0 && (
-          <p>This component has no paragraph of plain text to override.</p>
-        )}
+        <h2 id={headingId}>{say('document.overrides-of-2', { name })}</h2>
+        <p className={styles['muted']}>{say('document.change-a-paragraph-s-words')}</p>
+        {paragraphs.length === 0 && <p>{say('document.this-component-has-no-paragraph')}</p>}
         {paragraphs.map((paragraph, at) => {
           const override = said.get(paragraph.id);
           return (
             <div key={paragraph.id} className={styles['paragraph']}>
               <label>
-                {`Paragraph ${at + 1}`}
+                {say('document.paragraph', { value1: at + 1 })}
                 <textarea
                   value={typed[paragraph.id] ?? ''}
                   onChange={(event) =>
@@ -94,29 +89,28 @@ export function OverrideDialog({
               </label>
               {override?.stale && (
                 <span role="note" className={styles['stale']}>
-                  This override no longer applies: the paragraph has changed since. Change the words
-                  or set them back.
+                  {say('document.this-override-no-longer-applies')}
                 </span>
               )}
               <span id={`${headingId}${paragraph.id}`} className={styles['muted']}>
                 {override && !override.stale
-                  ? 'Overridden here.'
-                  : `The component says: ${paragraph.text}`}
+                  ? say('document.overridden-here-2')
+                  : say('document.the-component-says', { text: paragraph.text })}
               </span>
             </div>
           );
         })}
         <div className={styles['buttons']}>
           <button type="button" onClick={onClose}>
-            Cancel
+            {say('document.cancel')}
           </button>
           {current.length > 0 && (
             <button type="button" onClick={() => onSave([])} disabled={busy}>
-              Remove every override
+              {say('document.remove-every-override')}
             </button>
           )}
           <button type="submit" className="primary" disabled={busy}>
-            Save
+            {say('document.save')}
           </button>
         </div>
       </form>

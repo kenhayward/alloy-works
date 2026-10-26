@@ -5,6 +5,7 @@ import { refusal } from '../account/TokenTable.js';
 import { Modal } from '../layouts/Modal.js';
 import { lineAddress } from '../lifecycle/Lines.js';
 import styles from '../lifecycle/Hold.module.css';
+import { words, wordsWith } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -56,17 +57,17 @@ export interface TranslationSaid {
 export function statusWords(status: TranslationNow['status']): string {
   switch (status.status) {
     case 'untranslated':
-      return 'Untranslated';
+      return words('translation.untranslated');
     case 'translated':
-      return 'Translated';
+      return words('translation.translated');
     case 'outOfDate':
       return status.retranslate === false
-        ? 'Out of date, no retranslation needed'
-        : 'Out of date, needs retranslating';
+        ? words('translation.out-of-date-no-retranslation')
+        : words('translation.out-of-date-needs-retranslating');
     case 'machineDrafted':
-      return 'Machine drafted';
+      return words('translation.machine-drafted');
     case 'inTranslation':
-      return 'In translation';
+      return words('translation.in-translation');
     default:
       return status.status;
   }
@@ -103,7 +104,7 @@ export function TranslationsButton({
   return (
     <>
       <button type="button" className={className} onClick={() => setOpen(true)}>
-        Translations
+        {words('translation.translations')}
       </button>
       {open && (
         <TranslationsDialog
@@ -163,7 +164,7 @@ function TranslationsDialog({
   const begin = async (event: React.FormEvent) => {
     event.preventDefault();
     if (language.trim() === '') {
-      setSaid('A translation needs a language, such as fr-FR.');
+      setSaid(words('translation.a-translation-needs-a-language'));
       return;
     }
     setBusy(true);
@@ -175,7 +176,7 @@ function TranslationsDialog({
       .catch(() => ({ data: undefined, error: undefined }));
     setBusy(false);
     if (data) onGo(lineAddress(componentId, data.line));
-    else setSaid(refusal(error, 'The translation could not be begun.'));
+    else setSaid(refusal(error, words('translation.the-translation-could-not-be')));
   };
 
   const declare = async (version: string, retranslate: boolean) => {
@@ -190,11 +191,11 @@ function TranslationsDialog({
     if (data) {
       setSaid(
         retranslate
-          ? 'Its translations need retranslating for this version.'
-          : 'This version needs no retranslation.',
+          ? words('translation.its-translations-need-retranslating-for')
+          : words('translation.this-version-needs-no-retranslation'),
       );
       await read();
-    } else setSaid(refusal(error, 'That could not be declared.'));
+    } else setSaid(refusal(error, words('translation.that-could-not-be-declared')));
   };
 
   const here =
@@ -205,31 +206,46 @@ function TranslationsDialog({
   return (
     <Modal labelledBy={headingId} size="standard" onClose={onClose}>
       <div className={styles['form']}>
-        <h2 id={headingId}>Translations</h2>
-        {now === null && <p className={styles['muted']}>Reading its translations…</p>}
-        {now === 'unread' && <p role="alert">Its translations could not be read.</p>}
+        <h2 id={headingId}>{words('translation.translations')}</h2>
+        {now === null && (
+          <p className={styles['muted']}>{words('translation.reading-its-translations')}</p>
+        )}
+        {now === 'unread' && (
+          <p role="alert">{words('translation.its-translations-could-not-be')}</p>
+        )}
         {now !== null && now !== 'unread' && (
           <>
             <p className={styles['muted']}>
-              {`The source is in ${now.source.language}, at version ${now.source.latest.number}.`}
+              {words('translation.the-source-is-in-at', {
+                language: now.source.language,
+                number: now.source.latest.number,
+              })}
             </p>
             {now.translations.length === 0 ? (
-              <p>Not translated into any language yet.</p>
+              <p>{words('translation.not-translated-into-any-language')}</p>
             ) : (
-              <ul aria-label="Translations">
+              <ul aria-label={words('translation.translations')}>
                 {now.translations.map((each) => (
                   <li key={each.line}>
-                    <a
-                      href={lineAddress(componentId, each.line)}
-                      onClick={(event) => {
-                        event.preventDefault();
-                        onGo(lineAddress(componentId, each.line));
-                      }}
-                    >
-                      {each.language}
-                    </a>
-                    {`: ${statusWords(each.status)}`}
-                    {each.translates !== null && `, translates ${each.translates.number}`}
+                    {wordsWith(
+                      each.translates === null
+                        ? 'translation.line-status'
+                        : 'translation.line-status-translates',
+                      { status: statusWords(each.status), number: each.translates?.number ?? 0 },
+                      {
+                        language: (
+                          <a
+                            href={lineAddress(componentId, each.line)}
+                            onClick={(event) => {
+                              event.preventDefault();
+                              onGo(lineAddress(componentId, each.line));
+                            }}
+                          >
+                            {each.language}
+                          </a>
+                        ),
+                      },
+                    )}
                   </li>
                 ))}
               </ul>
@@ -256,50 +272,50 @@ function TranslationsDialog({
             )}
             {line === undefined && mayEdit && (
               <p>
-                {`Does version ${now.source.latest.number} need retranslating? `}
+                {words('translation.does-version-need-retranslating', {
+                  number: now.source.latest.number,
+                })}{' '}
                 <button
                   type="button"
                   disabled={busy}
                   onClick={() => void declare(now.source.latest.id, true)}
                 >
-                  Needs retranslating
+                  {words('translation.needs-retranslating')}
                 </button>{' '}
                 <button
                   type="button"
                   disabled={busy}
                   onClick={() => void declare(now.source.latest.id, false)}
                 >
-                  No retranslation needed
+                  {words('translation.no-retranslation-needed')}
                 </button>
               </p>
             )}
             {line === undefined && mayEdit && translatable && (
               <form onSubmit={(event) => void begin(event)}>
                 <label>
-                  Language
+                  {words('translation.language')}
                   <input
                     value={language}
                     maxLength={35}
-                    placeholder="fr-FR"
+                    placeholder={words('translation.language-example')}
                     onChange={(event) => setLanguage(event.target.value)}
                   />
                 </label>{' '}
                 <button type="submit" disabled={busy}>
-                  Begin a translation
+                  {words('translation.begin-a-translation')}
                 </button>
               </form>
             )}
             {line === undefined && mayEdit && !translatable && (
-              <p className={styles['muted']}>
-                A translation begins from an approved revision: approve this component first.
-              </p>
+              <p className={styles['muted']}>{words('translation.a-translation-begins-from-an')}</p>
             )}
           </>
         )}
         {said !== '' && <p role="status">{said}</p>}
         <div className={styles['buttons']}>
           <button type="button" onClick={onClose}>
-            Close
+            {words('translation.close')}
           </button>
         </div>
       </div>
@@ -318,9 +334,15 @@ interface Changes {
 }
 
 const CHANGE_WORDS: Record<string, string> = {
-  added: 'Added',
-  changed: 'Changed',
-  removed: 'Removed',
+  get added() {
+    return words('translation.added');
+  },
+  get changed() {
+    return words('translation.changed');
+  },
+  get removed() {
+    return words('translation.removed');
+  },
 };
 
 /** What changed in the source since this translation (LOC-040), and **Mark current**. */
@@ -367,17 +389,21 @@ function SourceChanges({
       })
       .catch(() => ({ data: undefined, error: undefined }));
     if (data) {
-      setSaid('Marked current with the source.');
+      setSaid(words('translation.marked-current-with-the-source'));
       onMarked();
-    } else setSaid(refusal(error, 'It could not be marked current.'));
+    } else setSaid(refusal(error, words('translation.it-could-not-be-marked')));
   };
 
   if (!stale) return null;
   return (
-    <section aria-label="Source changes">
-      <h3>{`Changed in the source since ${translation.translates?.number ?? 'it was translated'}`}</h3>
+    <section aria-label={words('translation.source-changes')}>
+      <h3>
+        {words('translation.changed-in-the-source-since', {
+          value1: translation.translates?.number ?? 'it was translated',
+        })}
+      </h3>
       {changes === null ? (
-        <p className={styles['muted']}>Reading what changed…</p>
+        <p className={styles['muted']}>{words('translation.reading-what-changed')}</p>
       ) : (
         <ul>
           {changes.changes.map((each) => (
@@ -390,7 +416,7 @@ function SourceChanges({
       )}
       {mayEdit && translation.head !== null && (
         <button type="button" onClick={() => void mark()}>
-          Mark current
+          {words('translation.mark-current')}
         </button>
       )}
       {said !== '' && <p role="status">{said}</p>}
@@ -425,7 +451,7 @@ function MachineDraft({
 
   const draft = async () => {
     setBusy(true);
-    setSaid('Drafting by machine…');
+    setSaid(words('translation.drafting-by-machine'));
     let drafted: string | undefined;
     let failed: string | undefined;
     const outcome = await stream({
@@ -436,16 +462,17 @@ function MachineDraft({
         if (name === 'drafted') {
           drafted = String((frame.version as { number?: unknown } | undefined)?.number ?? '');
         }
-        if (name === 'failed') failed = String(frame.message ?? 'The draft failed.');
+        if (name === 'failed')
+          failed = String(frame.message ?? words('translation.the-draft-failed'));
       },
     });
     setBusy(false);
     if (outcome.kind === 'refused') {
-      setSaid(refusal(outcome.body, 'The translation could not be drafted.'));
+      setSaid(refusal(outcome.body, words('translation.the-translation-could-not-be-2')));
     } else if (outcome.kind !== 'streamed' || failed !== undefined || drafted === undefined) {
-      setSaid(failed ?? 'The translation could not be drafted.');
+      setSaid(failed ?? words('translation.the-translation-could-not-be-2'));
     } else {
-      setSaid(`Drafted by machine as ${drafted}. It is not published until a person accepts it.`);
+      setSaid(words('translation.drafted-by-machine-as-it', { drafted }));
       onChanged();
     }
   };
@@ -459,31 +486,37 @@ function MachineDraft({
       .catch(() => ({ data: undefined, error: undefined }));
     setBusy(false);
     if (data) {
-      setSaid('The machine draft is accepted.');
+      setSaid(words('translation.the-machine-draft-is-accepted'));
       onChanged();
-    } else setSaid(refusal(error, 'The machine draft could not be accepted.'));
+    } else setSaid(refusal(error, words('translation.the-machine-draft-could-not')));
   };
 
   const machine = translation.machine ?? null;
   if (!mayEdit && machine === null) return null;
   return (
-    <section aria-label="Machine draft">
+    <section aria-label={words('translation.machine-draft')}>
       {machine !== null && (
         <>
-          <p>{`Version ${machine.version.number} was drafted by machine and waits to be accepted.`}</p>
+          <p>
+            {words('translation.version-was-drafted-by-machine', {
+              number: machine.version.number,
+            })}
+          </p>
           {machine.missedTerms.length > 0 && (
             <p>
-              {`Not translated by their labels: ${machine.missedTerms.map((each) => each.label).join(', ')}.`}
+              {words('translation.not-translated-by-their-labels', {
+                value1: machine.missedTerms.map((each) => each.label).join(', '),
+              })}
             </p>
           )}
           <button type="button" disabled={busy} onClick={() => void accept()}>
-            Accept the machine draft
+            {words('translation.accept-the-machine-draft')}
           </button>{' '}
         </>
       )}
       {mayEdit && (
         <button type="button" disabled={busy} onClick={() => void draft()}>
-          Draft by machine
+          {words('translation.draft-by-machine')}
         </button>
       )}
       {said !== '' && <p role="status">{said}</p>}

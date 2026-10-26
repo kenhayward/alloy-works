@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
 import { Modal } from '../layouts/Modal.js';
 import type { RevisionShown } from './bindingContexts.js';
+import { words } from '../words/words.js';
 
 /** What an act recording a resolution says of the values revised by hand standing (DAT-060). */
 export interface RevisionDecision {
@@ -68,33 +69,37 @@ export function useRevisionAsk(): {
     open === null ? null : (
       <Modal labelledBy={heading} onClose={() => answered(null)}>
         <section aria-labelledby={heading}>
-          <h2 id={heading}>A value revised by hand stands here</h2>
+          <h2 id={heading}>{words('document.a-value-revised-by-hand')}</h2>
           <dl>
-            <dt>The query returned</dt>
+            <dt>{words('document.the-query-returned')}</dt>
             <dd>{open.queried}</dd>
-            <dt>Revised by hand</dt>
+            <dt>{words('document.revised-by-hand-2')}</dt>
             {open.standing.map((each) => (
               <dd key={each.id}>
-                {`${revisionSaid(each)}, by ${each.by.displayName ?? 'somebody'}: ${each.reason}`}
+                {words('document.by-2', {
+                  value1: revisionSaid(each),
+                  value2: each.by.displayName ?? words('document.somebody-in-sentence'),
+                  reason: each.reason,
+                })}
               </dd>
             ))}
             {open.next !== null && (
               <>
-                <dt>The new result</dt>
+                <dt>{words('document.the-new-result')}</dt>
                 <dd>{open.next}</dd>
               </>
             )}
           </dl>
-          <p>{`${open.act} replaces what this value holds. Withdraw the revision, or keep it in front of the new result.`}</p>
+          <p>{words('document.replaces-what-this-value-holds', { act: open.act })}</p>
           <div>
             <button type="button" onClick={() => answered(null)}>
-              Cancel
+              {words('document.cancel')}
             </button>{' '}
             <button type="button" onClick={() => answered('withdraw')}>
-              Withdraw my revision
+              {words('document.withdraw-my-revision')}
             </button>{' '}
             <button type="button" className="primary" onClick={() => answered('keep')}>
-              Keep my revision
+              {words('document.keep-my-revision')}
             </button>
           </div>
         </section>

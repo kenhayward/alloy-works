@@ -16,6 +16,7 @@ const USER_PROPS = new Set([
   'alt',
   'label',
   'named',
+  'legend',
   // A confirmation's words (ConfirmDialog).
   'question',
   'sentence',
@@ -62,8 +63,9 @@ export default {
         data: { key: 'area.key', text: text.trim().slice(0, 40) },
       });
     return {
+      // Text in JSX is never a code or a path: a word alone, `on`, is a word.
       JSXText(node) {
-        if (hasWords(node.value)) report(node, node.value);
+        if (/[A-Za-z]{2,}/.test(node.value)) report(node, node.value);
       },
       JSXAttribute(node) {
         const name = node.name.type === 'JSXIdentifier' ? node.name.name : '';
