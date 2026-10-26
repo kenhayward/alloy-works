@@ -511,7 +511,6 @@ function announce(
       if (!place) return say('document.moved');
       const name = nodeName(place.node, names);
       const previous = place.siblings[place.index - 1];
-      const beside = previous ? say('document.after', { value1: nodeName(previous, names) }) : '';
       const sameParent = (was?.parent?.id ?? null) === (place.parent?.id ?? null);
       if (place.parent !== null) {
         const parent = nodeName(place.parent, names);
@@ -520,12 +519,17 @@ function announce(
             ? say('document.moved-after', { name, value2: nodeName(previous, names) })
             : say('document.moved-to-the-start-of', { name, parent });
         }
-        return say('document.moved-under', { name, parent, beside });
+        return previous
+          ? say('document.moved-under-after', { name, parent, previous: nodeName(previous, names) })
+          : say('document.moved-under', { name, parent });
       }
       if (!previous) return say('document.moved-to-the-start-of-2', { name });
       return sameParent
         ? say('document.moved-after', { name, value2: nodeName(previous, names) })
-        : say('document.moved-to-the-top-level', { name, beside });
+        : say('document.moved-to-the-top-level-after', {
+            name,
+            previous: nodeName(previous, names),
+          });
     }
     case 'insert': {
       const held = new Set(visibleOrder(before.nodes));

@@ -115,13 +115,13 @@ export function CohortPage({
     <section aria-labelledby="cohort-heading" className={styles['page']}>
       <h1 id="cohort-heading">{words('document.generated-documents')}</h1>
       <p className={styles['summary']} role="status">
-        {words('document.of-made', { made, length: cohort.rows.length })}
-        {failed.length > 0 ? words('document.failed-2', { length: failed.length }) : ''}
-        {waiting
-          ? words('document.still-making-the-rest')
-          : stoppedAt !== null
-            ? words('document.stopped-at-row-the-rows', { stoppedAt })
-            : '.'}
+        {words('document.cohort-summary', {
+          made,
+          total: cohort.rows.length,
+          failed: failed.length,
+          state: waiting ? 'waiting' : stoppedAt !== null ? 'stopped' : 'done',
+          row: stoppedAt ?? 0,
+        })}
       </p>
       <table className={styles['table']}>
         <thead>

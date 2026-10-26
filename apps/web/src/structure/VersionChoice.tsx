@@ -284,8 +284,10 @@ export function VersionChoice({
                 tabIndex={-1}
                 onClick={() => void pick({ kind: 'pinned', version: version.id })}
               >
-                {words('document.version-4')}
-                {version.number}, {madeOn(version.createdAt)}
+                {words('document.version-made-on', {
+                  number: version.number,
+                  when: madeOn(version.createdAt),
+                })}
               </button>
             ))}
           {listed.state === 'loaded' && listed.next !== null && (

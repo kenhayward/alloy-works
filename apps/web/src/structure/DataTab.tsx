@@ -26,7 +26,7 @@ import { useOwnViewAsk } from './OwnViewAsk.js';
 import { useRevisionAsk, type RevisionDecision } from './RevisionAsk.js';
 import { settleBinding, undecidedIn } from './settleBinding.js';
 import { noteFailures, tableFailures, type TableRows } from './tableRows.js';
-import { words as say } from '../words/words.js';
+import { formats, words as say } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -65,10 +65,7 @@ const REFUSED = {
 } as const;
 
 /** `a`, `a and b`, `a, b and c`. */
-const listed = (words: readonly string[]) =>
-  words.length < 2
-    ? words.join('')
-    : say('document.and', { value1: words.slice(0, -1).join(', '), value2: words.at(-1) });
+const listed = (words: readonly string[]) => formats().list(words);
 
 /** What a value shows: the query's, or the person's standing in front of it (DAT-115). */
 function revisedTaken(state: BindingState): NonNullable<BindingState['held']>['taken'] {
@@ -81,19 +78,17 @@ function revisedTaken(state: BindingState): NonNullable<BindingState['held']>['t
 
 /** A value revised by hand, in words: its value, a cell's place, who and why, and how it stands. */
 function revisionWords(each: RevisionShown): string {
-  const where =
+  const who = each.by.displayName ?? say('document.somebody');
+  const what =
     each.cell === null
-      ? ''
-      : say('document.in-the-row', {
+      ? say('document.revision', { value: String(each.value), who, reason: each.reason })
+      : say('document.revision-in-cell', {
+          value: String(each.value),
           column: each.cell.column,
-          value2: Object.values(each.cell.key).map(String).join(', '),
+          row: formats().list(Object.values(each.cell.key).map(String), { type: 'unit' }),
+          who,
+          reason: each.reason,
         });
-  const what = say('document.by', {
-    value1: String(each.value),
-    where,
-    value3: each.by.displayName ?? 'somebody',
-    reason: each.reason,
-  });
   if (!each.stands) return say('document.revised-by-hand-before-this', { what });
   if (each.rowMissing === true) {
     return say('document.revised-by-hand-on-a', { what });
@@ -118,15 +113,16 @@ const key = (node: string, binding: string) => `${node} ${binding}`;
 /** A bound table's result, by its rows (TB2-H). */
 /** A bound table's result in words, and what it groups by where it does (TG2; TAB-022). */
 const tableOf = (rows: number, table: BoundTableNode | undefined) =>
-  say('document.a-table-of', { rows, value2: rows === 1 ? 'row' : 'rows' }) +
-  (table?.groups === undefined
-    ? ''
-    : say('document.grouped-by', {
-        value1: table.groups.map((each) => each.column).join(', then '),
-      })) +
-  (table?.transpose === undefined
-    ? ''
-    : say('document.transposed-by', { header: table.transpose.header }));
+  say('document.table-of', {
+    rows,
+    grouped: table?.groups === undefined ? 'no' : 'yes',
+    groups:
+      table?.groups
+        ?.map((each) => each.column)
+        .reduce((first, next) => say('document.then', { first, next })) ?? '',
+    transposed: table?.transpose === undefined ? 'no' : 'yes',
+    header: table?.transpose?.header ?? '',
+  });
 
 /** A table's failure, or its notes' (TB3.3), as the stage names it. */
 type TableFailing =

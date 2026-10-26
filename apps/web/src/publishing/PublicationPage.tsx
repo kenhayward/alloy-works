@@ -1,6 +1,6 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import { DRAFT_NOTICE } from '@alloy-works/domain';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Notice } from '../states/Notice.js';
 import { baselineLink } from '../structure/links.js';
 import { Chip } from '../parts/Chip.js';
@@ -9,7 +9,7 @@ import { Shares } from './Shares.js';
 import { GeneratedContent } from './GeneratedContent.js';
 import styles from './PublicationPage.module.css';
 import { Waiting } from '../states/Waiting.js';
-import { words } from '../words/words.js';
+import { formats, words, wordsWith } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -170,8 +170,14 @@ function shownIn(data: unknown): Shown | undefined {
 }
 
 /** A download's size, in whole kilobytes and never none. */
-const size = (bytes: number | null) =>
-  bytes === null ? '' : words('publishing.kb', { value1: Math.max(1, Math.round(bytes / 1024)) });
+const sized = (name: ReactNode, bytes: number | null): ReactNode =>
+  bytes === null
+    ? name
+    : wordsWith('publishing.sized', { kb: Math.max(1, Math.round(bytes / 1024)) }, { name });
+
+/** When it was published, in the person's language. */
+const published = (iso: string) =>
+  formats().date(new Date(iso), { dateStyle: 'long', timeStyle: 'short' });
 
 /**
  * One publication at its own address, `#/publications/{id}` (PUB-047): what it is, that it is not
@@ -313,11 +319,9 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
             <Chip tone="warn">{words('publishing.not-approved')}</Chip>
           )}
           <span className={styles['published']}>
-            {words('publishing.published-by')}
-            {shown.publisher ?? 'somebody'} on{' '}
-            {new Date(shown.publishedAt).toLocaleString(undefined, {
-              dateStyle: 'long',
-              timeStyle: 'short',
+            {words('publishing.published-by-on', {
+              who: shown.publisher ?? words('publishing.somebody'),
+              when: published(shown.publishedAt),
             })}
           </span>
         </div>
@@ -354,30 +358,33 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
         <p className={styles['notApproved']}>{DRAFT_NOTICE.text}</p>
         {sharesOnly === true && <p>{words('publishing.shared-with-you-to-read')}</p>}
         <p>
-          {words('publishing.version-2')}
-          {shown.version}
-          {words('publishing.published-by-2')}
-          {shown.publisher ?? 'somebody'} on{' '}
-          {new Date(shown.publishedAt).toLocaleString(undefined, {
-            dateStyle: 'long',
-            timeStyle: 'short',
+          {words('publishing.version-published-by-on', {
+            version: shown.version,
+            who: shown.publisher ?? words('publishing.somebody'),
+            when: published(shown.publishedAt),
           })}
-          .
         </p>
         {shown.baseline !== null && !outside && (
           <p>
-            {words('publishing.made-from-the-baseline')}{' '}
-            <a href={baselineLink(shown.document, shown.baseline)}>
-              {baselineName ?? words('publishing.its-own-page')}
-            </a>
-            {words('publishing.as-that-baseline-pinned-the')}
+            {wordsWith(
+              'publishing.made-from-the-baseline',
+              {},
+              {
+                baseline: (
+                  <a href={baselineLink(shown.document, shown.baseline)}>
+                    {baselineName ?? words('publishing.its-own-page')}
+                  </a>
+                ),
+              },
+            )}
           </p>
         )}
         {shown.engine !== null && shown.template !== null && (
           <p>
-            {words('publishing.made-with-typst')}
-            {shown.engine} {words('publishing.and-publication-template')}
-            {shown.template}.
+            {words('publishing.made-with-typst', {
+              engine: shown.engine,
+              template: shown.template,
+            })}
           </p>
         )}
         {/* The writer's version as the template's is named, a number: the store's `word/1` names the
@@ -408,21 +415,25 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
               <ul aria-label={words('publishing.rules-the-pdf-failed')}>
                 {pdf.check.failedRules.map((rule) => (
                   <li key={`${rule.clause}-${rule.test}`}>
-                    {words('publishing.clause')}
-                    {rule.clause}
-                    {words('publishing.test')}
-                    {rule.test}
-                    {rule.description !== null && `: ${rule.description}`}
+                    {rule.description === null
+                      ? words('publishing.clause-test', { clause: rule.clause, test: rule.test })
+                      : words('publishing.clause-test-described', {
+                          clause: rule.clause,
+                          test: rule.test,
+                          description: rule.description,
+                        })}
                   </li>
                 ))}
               </ul>
             )}
             {pdf?.check?.report != null && (
               <p>
-                <a href={pdf.check.report.download}>
-                  {words('publishing.download-the-full-report')}
-                </a>
-                {size(pdf.check.report.bytes)}
+                {sized(
+                  <a href={pdf.check.report.download}>
+                    {words('publishing.download-the-full-report')}
+                  </a>,
+                  pdf.check.report.bytes,
+                )}
               </p>
             )}
             {word !== undefined && word.report.length > 0 && (
@@ -439,20 +450,22 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
             <h3 id="publication-files" className={styles['label']}>
               {words('publishing.files')}
             </h3>
-            {pdf !== undefined && <p>PDF{size(pdf.bytes)}</p>}
-            {word !== undefined && (
-              <p>
-                {words('publishing.word-document')}
-                {size(word.bytes)}
-              </p>
-            )}
+            {pdf !== undefined && <p>{sized(words('publishing.pdf'), pdf.bytes)}</p>}
+            {word !== undefined && <p>{sized(words('publishing.word-document'), word.bytes)}</p>}
             {provenance !== undefined && (
               <p>
-                <a href={provenance.download}>
-                  {words('publishing.download-where-its-values-came')}
-                </a>
-                {size(provenance.bytes)}
-                {words('publishing.provenance-json')}
+                {wordsWith(
+                  'publishing.provenance-file',
+                  {},
+                  {
+                    file: sized(
+                      <a href={provenance.download}>
+                        {words('publishing.download-where-its-values-came')}
+                      </a>,
+                      provenance.bytes,
+                    ),
+                  },
+                )}
               </p>
             )}
           </section>

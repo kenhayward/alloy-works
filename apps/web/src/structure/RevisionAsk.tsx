@@ -78,7 +78,7 @@ export function useRevisionAsk(): {
               <dd key={each.id}>
                 {words('document.by-2', {
                   value1: revisionSaid(each),
-                  value2: each.by.displayName ?? 'somebody',
+                  value2: each.by.displayName ?? words('document.somebody'),
                   reason: each.reason,
                 })}
               </dd>

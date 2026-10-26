@@ -8,7 +8,7 @@ import {
 
 import { PARAMETER_WORDS } from '../editor/ValueDialog.js';
 import styles from '../metadata/FieldsForm.module.css';
-import { words as say } from '../words/words.js';
+import { formats, words as say } from '../words/words.js';
 
 /** One value of a parameter as a form holds it: canonical text, or a boolean. */
 export type ParameterEntry = string | boolean;
@@ -117,8 +117,7 @@ export function missingParameters(
 
 /** `a`, `a and b`, `a, b and c`. */
 export function listed(names: readonly string[]): string {
-  if (names.length <= 1) return names.join('');
-  return say('document.and', { value1: names.slice(0, -1).join(', '), value2: names.at(-1) });
+  return formats().list(names);
 }
 
 /**

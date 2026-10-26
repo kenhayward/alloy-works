@@ -69,7 +69,7 @@ import {
 import { StateLozenge } from '../states/Lozenge.js';
 import { HeldFields } from '../metadata/HeldFields.js';
 import { Segmented } from '../parts/Segmented.js';
-import { words as say } from '../words/words.js';
+import { formats, words as say } from '../words/words.js';
 
 /**
  * The Equation dialog, loaded the first time a title asks for it, and Temml with it - the component
@@ -147,11 +147,7 @@ interface LostTitle {
 
 /** "Methods", "Methods and Results", "Scope, Methods and Results". */
 function listed(titles: readonly string[]): string {
-  if (titles.length <= 1) return titles.join('');
-  return say('document.and', {
-    value1: titles.slice(0, -1).join(', '),
-    value2: titles[titles.length - 1],
-  });
+  return formats().list(titles);
 }
 
 /** Said after a refusal's own sentence, naming each title it took. */
@@ -1619,8 +1615,7 @@ function ReferencedBy({
                   onGo(from);
                 }}
               >
-                {nameOf(from)}
-                {count > 1 ? say('document.references', { count }) : ''}
+                {say('document.referenced-from', { name: nameOf(from), count })}
               </a>
             </li>
           ))}

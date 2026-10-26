@@ -114,8 +114,7 @@ export function GenerateDialog({ client, template, onGenerated, onCancel }: Gene
       >
         <div className={styles['form']}>
           <h2 id={`${id}-heading`} className={styles['heading']}>
-            {words('document.generate-documents-from')}
-            {template.name}
+            {words('document.generate-documents-from', { name: template.name })}
           </h2>
           <div className={styles['field']}>
             <label htmlFor={`${id}-file`}>{words('document.a-csv-file-of-rows')}</label>

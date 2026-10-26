@@ -1,4 +1,4 @@
-import { words as say } from '../words/words.js';
+import { formats, words as say } from '../words/words.js';
 /**
  * The words for what a publication was made in and what its outputs report (Word 1, ruling R14). Each
  * format and each report entry has one plain sentence, read by an author rather than a developer.
@@ -293,10 +293,7 @@ const TITLE_WORDS: Record<UnheadedTitle, string> = {
 };
 
 /** `a`, `a and b`, or `a, b and c`. */
-const listing = (items: readonly string[]) =>
-  items.length < 2
-    ? items.join('')
-    : say('publishing.and', { value1: items.slice(0, -1).join(', '), value2: items.at(-1)! });
+const listing = (items: readonly string[]) => formats().list(items);
 
 const tableName = (entry: { readonly label: string | null }) =>
   entry.label ?? say('publishing.a-table-with-no-number');

@@ -291,7 +291,7 @@ function TranslationsDialog({
                   <input
                     value={language}
                     maxLength={35}
-                    placeholder="fr-FR"
+                    placeholder={words('translation.language-example')}
                     onChange={(event) => setLanguage(event.target.value)}
                   />
                 </label>{' '}

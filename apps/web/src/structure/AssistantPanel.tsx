@@ -703,12 +703,13 @@ export function AssistantPanel({
           <ul aria-label={words('document.instructions-not-followed')} className={styles['muted']}>
             {notices.map((each, index) => (
               <li key={index}>
-                {nameOf(each.where) ??
-                  titles.get(each.where) ??
-                  words('document.something-it-read')}{' '}
-                {words('document.asked')}
-                {each.instruction}
-                {words('document.not-done')}
+                {words('document.instruction-not-done', {
+                  where:
+                    nameOf(each.where) ??
+                    titles.get(each.where) ??
+                    words('document.something-it-read'),
+                  instruction: each.instruction,
+                })}
               </li>
             ))}
           </ul>
@@ -723,9 +724,10 @@ export function AssistantPanel({
                 className={styles['link']}
                 onClick={() => onCite(each.component, each.block)}
               >
-                {nameOf(each.component) ?? words('document.a-part')}
-                {words('document.block')}
-                {each.block}
+                {words('document.part-block', {
+                  part: nameOf(each.component) ?? words('document.a-part'),
+                  block: each.block,
+                })}
               </button>
             </li>
           ))}
@@ -764,23 +766,26 @@ export function AssistantPanel({
           aria-label={words('document.proposal', { number: proposal.number })}
         >
           <h3>
-            {words('document.proposal-2')}
-            {proposal.number}:{' '}
-            {proposal.creates !== null
-              ? words('document.a-new-part', { title: proposal.creates.title })
-              : ((proposal.component === null ? undefined : nameOf(proposal.component)) ??
-                words('document.a-part-2'))}
+            {words('document.proposal-of', {
+              number: proposal.number,
+              what:
+                proposal.creates !== null
+                  ? words('document.a-new-part', { title: proposal.creates.title })
+                  : ((proposal.component === null ? undefined : nameOf(proposal.component)) ??
+                    words('document.a-part-2')),
+            })}
           </h3>
           <pre className={styles['proposed']}>
             {proposedText(proposal.proposed, proposal.cites)}
           </pre>
           {proposal.cites !== null && (
             <p className={styles['muted']}>
-              {words('document.cites')}
-              {proposal.cites.title ?? words('document.a-work')},{' '}
-              {proposal.cites.source === 'pubmed' ? 'PMID' : 'DOI'} {proposal.cites.identifier} from{' '}
-              {proposal.cites.source}
-              {words('document.its-entry-is-found-or')}
+              {words('document.cites-work', {
+                title: proposal.cites.title ?? words('document.a-work'),
+                scheme: proposal.cites.source === 'pubmed' ? 'pubmed' : 'doi',
+                identifier: proposal.cites.identifier,
+                source: proposal.cites.source,
+              })}
             </p>
           )}
           {proposal.state === 'open' && running ? (
@@ -811,11 +816,17 @@ export function AssistantPanel({
         <p className={styles['muted']}>
           {ended.tokensIn === null
             ? words('document.no-tokens-were-reported')
-            : words('document.tokens-in-out', {
-                tokensIn: ended.tokensIn,
-                tokensOut: ended.tokensOut,
-                value3: ended.cost === null ? '' : `: ${ended.currency} ${ended.cost}`,
-              })}{' '}
+            : ended.cost === null
+              ? words('document.tokens-in-out', {
+                  tokensIn: ended.tokensIn,
+                  tokensOut: ended.tokensOut,
+                })
+              : words('document.tokens-in-out-cost', {
+                  tokensIn: ended.tokensIn,
+                  tokensOut: ended.tokensOut,
+                  currency: ended.currency,
+                  cost: ended.cost,
+                })}{' '}
           {month}
         </p>
       )}

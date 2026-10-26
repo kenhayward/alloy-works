@@ -28,7 +28,7 @@ import styles from './BaselinePage.module.css';
 import { DocumentText } from './DocumentText.js';
 import { documentLink } from './links.js';
 import type { Names } from './tree.js';
-import { words as say } from '../words/words.js';
+import { words as say, wordsWith } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -297,8 +297,11 @@ export function BaselinePage({
           {/* The document's state now, the one thing here read at its latest (LIF-005). */}
           {shown.state && (
             <span className={styles['note']}>
-              {say('document.the-document-now')}
-              <StateLozenge state={shown.state} />
+              {wordsWith(
+                'document.the-document-now',
+                {},
+                { state: <StateLozenge state={shown.state} /> },
+              )}
             </span>
           )}
         </div>

@@ -421,27 +421,11 @@ export function nodeName(node: OutlineViewNode, names: Names): string {
   return names.get(node.component) ?? words('document.a-component-2');
 }
 
-const MODES = {
-  latest: 'latest',
-  pinned: 'pinned',
-  // Its component's latest approved revision (REU-050; the WF4 plan, WF4-B).
-  get approved() {
-    return words('document.latest-approved');
-  },
-} as const;
-
-const STARTS = {
-  none: '',
-  get page() {
-    return words('document.starts-on-a-new-page');
-  },
-  get recto() {
-    return words('document.starts-on-a-new-right');
-  },
-};
-
 /** A tree item's own label: its name, how a reference resolves, and where it starts. */
 export function nodeLabel(node: OutlineViewNode, names: Names): string {
-  const mode = node.type === 'reference' ? `, ${MODES[node.mode.kind]}` : '';
-  return `${nodeName(node, names)}${mode}${STARTS[node.pageBreak]}`;
+  return words('document.tree-label', {
+    name: nodeName(node, names),
+    mode: node.type === 'reference' ? node.mode.kind : 'none',
+    starts: node.pageBreak,
+  });
 }

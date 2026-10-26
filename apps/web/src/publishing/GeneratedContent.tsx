@@ -1,6 +1,6 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import { useEffect, useState } from 'react';
-import { words } from '../words/words.js';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -24,47 +24,47 @@ interface Report {
   readonly unreadable: number;
 }
 
-const day = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+const day = (iso: string) =>
+  formats().date(new Date(iso), { day: 'numeric', month: 'short', year: 'numeric' });
 
-const who = (person: { readonly name: string | null } | null) => person?.name ?? 'somebody';
+const who = (person: { readonly name: string | null } | null) =>
+  person?.name ?? words('publishing.somebody');
 
 /** One generated item, said in a sentence. */
 function sentence(item: Report['placements'][number]['items'][number]): string {
   const by = words('publishing.asked-of-on-by', {
-    value1: item.run.model ?? 'a model',
+    model: item.run.model ?? words('publishing.a-model'),
     endpoint: item.run.endpoint,
-    value3: who(item.askedBy),
+    who: who(item.askedBy),
   });
-  const on =
-    item.actedAt === null
-      ? ''
-      : words('publishing.on', { value1: day.format(new Date(item.actedAt)) });
+  const acted = {
+    who: who(item.actedBy),
+    acted: item.actedAt === null ? 'no' : 'yes',
+    day: item.actedAt === null ? '' : day(item.actedAt),
+    by,
+  };
   // A part a model wrote whole, made as the person accepted it (G5-E).
   if (item.kind === 'creation') {
     return words('publishing.made-by-from-a-proposal', {
-      value1: who(item.actedBy),
-      on,
-      value3: item.acceptedInto?.number ?? 'its first version',
-      by,
+      ...acted,
+      into: item.acceptedInto?.number ?? words('publishing.its-first-version'),
     });
   }
   switch (item.state) {
     case 'accepted':
       return words('publishing.accepted-by-into', {
-        value1: who(item.actedBy),
-        on,
-        value3: item.acceptedInto?.number ?? 'a version',
-        value4: item.acceptedInto?.inPlaced === false ? ', a version this does not hold' : '',
-        by,
+        ...acted,
+        into: item.acceptedInto?.number ?? words('publishing.a-version'),
+        held: item.acceptedInto?.inPlaced === false ? 'no' : 'yes',
       });
     case 'open':
       return words('publishing.waiting-to-be-accepted-or', { by });
     case 'rejected':
-      return words('publishing.rejected-by', { value1: who(item.actedBy), on, by });
+      return words('publishing.rejected-by', acted);
     case 'withdrawn':
-      return words('publishing.withdrawn-by', { value1: who(item.actedBy), on, by });
+      return words('publishing.withdrawn-by', acted);
     case 'discarded':
-      return words('publishing.discarded-by-before-it-was', { value1: who(item.actedBy), on, by });
+      return words('publishing.discarded-by-before-it-was', acted);
   }
 }
 
@@ -126,11 +126,16 @@ export function GeneratedContent({
         <ul>
           {report.placements.map((placement) => (
             <li key={placement.node}>
-              {placeOf(placement.node)}
-              {words('publishing.version')}
-              {placement.number}
-              {placement.restoredFrom !== null &&
-                words('publishing.restored-from', { restoredFrom: placement.restoredFrom })}
+              {placement.restoredFrom === null
+                ? words('publishing.placed-version', {
+                    place: placeOf(placement.node),
+                    number: placement.number,
+                  })
+                : words('publishing.placed-version-restored', {
+                    place: placeOf(placement.node),
+                    number: placement.number,
+                    restoredFrom: placement.restoredFrom,
+                  })}
               <ul>
                 {placement.items.map((item) => (
                   <li key={item.id}>{sentence(item)}</li>

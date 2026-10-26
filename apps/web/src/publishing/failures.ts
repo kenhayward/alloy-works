@@ -185,10 +185,11 @@ function notInWord(detail: string | null): string {
         ? CAPTION_SEPARATOR()
         : NOT_IN_WORD_BECAUSE[why];
   return (
-    words('publishing.the-layout-numbers-in-a', {
-      where,
-      value2: because === undefined ? '' : `: ${because}`,
-    }) + words('publishing.publish-this-document-as-a')
+    (because === undefined
+      ? words('publishing.the-layout-numbers-in-a', { where })
+      : words('publishing.the-layout-numbers-in-a-because', { where, because })) +
+    ' ' +
+    words('publishing.publish-this-document-as-a')
   );
 }
 
@@ -562,7 +563,7 @@ export function failureWords(failure: Failure, wordOffered = false): string {
     // asked for at all, which a preview and a layout with no Word page cannot.
     case 'heading_too_deep':
       return words('publishing.this-heading-is-nested-more', {
-        value1: wordOffered ? ', or publish this document to Word alone' : '',
+        word: wordOffered ? 'yes' : 'no',
       });
     // The binding stage (B3): a value with no result recorded for this document, which the service
     // refuses at the door, so this is met only by a request built past it; a take that holds no value;

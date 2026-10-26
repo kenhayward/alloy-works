@@ -13,7 +13,7 @@ import {
   valuesToSend,
   type ParameterValue,
 } from './ParameterInput.js';
-import { words } from '../words/words.js';
+import { formats, words, wordsWith } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -321,14 +321,25 @@ export function ParametersPanel(props: ParametersPanelProps) {
           <ol aria-label={words('document.changes-to-the-parameters')} className={styles['many']}>
             {history.changes.map((change) => (
               <li key={change.version}>
-                {words('document.version-by', {
-                  number: change.number,
-                  value2: change.author ?? 'somebody',
-                })}
-                <time dateTime={change.createdAt}>{whenChanged(change.createdAt)}</time>
-                {`: ${change.changed
-                  .map((name) => `${name} ${shown(change.parameters[name])}`)
-                  .join(', ')}`}
+                {wordsWith(
+                  'document.parameters-changed',
+                  {
+                    number: change.number,
+                    who: change.author ?? words('document.somebody'),
+                    changes: formats().list(
+                      change.changed.map((name) =>
+                        words('document.parameter-is', {
+                          name,
+                          value: shown(change.parameters[name]),
+                        }),
+                      ),
+                      { type: 'unit' },
+                    ),
+                  },
+                  {
+                    when: <time dateTime={change.createdAt}>{whenChanged(change.createdAt)}</time>,
+                  },
+                )}
               </li>
             ))}
           </ol>

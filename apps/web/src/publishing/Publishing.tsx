@@ -16,7 +16,7 @@ import { GeneratedContent } from './GeneratedContent.js';
 import styles from './Publishing.module.css';
 import { Waiting } from '../states/Waiting.js';
 import { everyPage } from '../paging.js';
-import { words as say } from '../words/words.js';
+import { formats, words as say, wordsWith } from '../words/words.js';
 
 export { FOLLOW_CAP_MS, FOLLOW_MS, nextFollow } from './following.js';
 
@@ -158,7 +158,7 @@ function listedIn(value: unknown): Listed[] | undefined {
 }
 
 const when = (iso: string) =>
-  new Date(iso).toLocaleString(undefined, { dateStyle: 'long', timeStyle: 'short' });
+  formats().date(new Date(iso), { dateStyle: 'long', timeStyle: 'short' });
 
 /**
  * What introduces a failed publish's list. A failure of the engine's or the store's is the product's,
@@ -395,9 +395,9 @@ export function Publishing({
             onChange={(event) => setPublishIn(event.target.value)}
           >
             <option value="">
-              {say('publishing.its-own-language', {
-                value1: language === undefined ? '' : `, ${language}`,
-              })}
+              {language === undefined
+                ? say('publishing.its-own-language')
+                : say('publishing.its-own-language-named', { language })}
             </option>
             {others.map((each) => (
               <option key={each} value={each}>
@@ -436,8 +436,7 @@ export function Publishing({
       )}
       {mayPublish && profile !== undefined && (
         <p>
-          {say('publishing.publishing-under-a-profile-chosen')}
-          {profile.said}.{' '}
+          {say('publishing.publishing-under-a-profile-chosen', { profile: profile.said })}{' '}
           {/* The request already sent keeps its profile: only the next publish is the document's. */}
           <button type="button" onClick={profile.onClear}>
             {say('publishing.use-the-document-s-profile')}
@@ -457,8 +456,9 @@ export function Publishing({
               disabled={publish.state === 'working'}
               onClick={() => void start()}
             >
-              {say('publishing.publish-as-2')}
-              {offersWord ? chosen.words : 'PDF'}
+              {say('publishing.publish-as-2', {
+                format: offersWord ? chosen.words : say('publishing.pdf'),
+              })}
             </button>
           )}
         </div>
@@ -468,10 +468,17 @@ export function Publishing({
         {publish.state === 'working' && <Waiting>{say('publishing.publishing')}</Waiting>}
         {publish.state === 'done' && (
           <p>
-            {say('publishing.published-2')}
-            <a href={`#/publications/${publish.publication}`}>
-              {say('publishing.open-the-publication')}
-            </a>
+            {wordsWith(
+              'publishing.published-2',
+              {},
+              {
+                link: (
+                  <a href={`#/publications/${publish.publication}`}>
+                    {say('publishing.open-the-publication')}
+                  </a>
+                ),
+              },
+            )}
           </p>
         )}
         {publish.state === 'refused' && <p>{publish.words}</p>}
@@ -507,13 +514,15 @@ export function Publishing({
           {listed.map((each) => (
             <li key={each.id}>
               <a href={`#/publications/${each.id}`}>
-                {say('publishing.version-2')}
-                {each.version.number}
-                {say('publishing.published-by-3')} {each.publisher.displayName ?? 'somebody'} on{' '}
-                {when(each.publishedAt)}
+                {say('publishing.version-published-by-on-short', {
+                  version: each.version.number,
+                  who: each.publisher.displayName ?? say('publishing.somebody'),
+                  when: when(each.publishedAt),
+                })}
               </a>{' '}
-              ({each.formats.length > 0 && `${formatsWords(each.formats)}, `}
-              {say('publishing.not-approved-2')}
+              {each.formats.length > 0
+                ? say('publishing.formats-not-approved', { formats: formatsWords(each.formats) })
+                : say('publishing.not-approved-2')}
             </li>
           ))}
         </ul>

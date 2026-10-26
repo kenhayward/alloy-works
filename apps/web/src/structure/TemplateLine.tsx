@@ -161,20 +161,7 @@ interface Report {
   }[];
 }
 
-const CHANGES: Readonly<Record<string, string>> = {
-  get added() {
-    return words('document.is-now-one-of-its');
-  },
-  get removed() {
-    return words('document.is-no-longer-one-of');
-  },
-  get required() {
-    return words('document.is-now-required');
-  },
-  get optional() {
-    return words('document.is-no-longer-required');
-  },
-};
+const CHANGES = new Set(['added', 'removed', 'required', 'optional']);
 
 /** What a move changes, each in a sentence an author can act on (TPL-034, TPL-058). */
 function reportLines(report: Report): string[] {
@@ -183,7 +170,11 @@ function reportLines(report: Report): string[] {
   if (report.layout !== null) lines.push(words('document.its-layout-changes'));
   for (const each of report.fields) {
     lines.push(
-      `${each.name} ${CHANGES[each.change] ?? 'changes'}${each.level === 'section' ? words('document.for-each-section') : ''}.`,
+      words('document.field-changes', {
+        name: each.name,
+        change: CHANGES.has(each.change) ? each.change : 'other',
+        section: each.level === 'section' ? 'yes' : 'no',
+      }),
     );
   }
   for (const each of report.notCarried) {

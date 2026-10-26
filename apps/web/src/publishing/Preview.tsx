@@ -8,7 +8,7 @@ import { FailureList } from './FailureList.js';
 import { failuresIn, isProductsOwn, type Failure } from './failures.js';
 import { FOLLOW_MS, refusedWords, useFollowing } from './following.js';
 import styles from './Preview.module.css';
-import { words as say } from '../words/words.js';
+import { words as say, wordsWith } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -389,12 +389,14 @@ function Shown({
   return (
     <>
       <p className={styles['made']}>
-        {say('publishing.version-2')}
-        {pane.version}
-        {say('publishing.made-at')}
-        <time dateTime={made.toISOString()}>{clock(made)}</time>
-        {say('publishing.it-is-kept-until')}
-        <time dateTime={expires.toISOString()}>{clock(expires)}</time>.
+        {wordsWith(
+          'publishing.preview-made',
+          { version: pane.version },
+          {
+            made: <time dateTime={made.toISOString()}>{clock(made)}</time>,
+            expires: <time dateTime={expires.toISOString()}>{clock(expires)}</time>,
+          },
+        )}
       </p>
       <p>
         <button type="button" disabled={pane.downloading} onClick={() => void preview.download()}>
