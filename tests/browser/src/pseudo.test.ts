@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { SERVICE } from './testing/addresses.js';
 import { apiAs, words } from './testing/api.js';
 import { makeComponent } from './testing/component.js';
-import { withPage } from './testing/page.js';
+import { allowPageNoise, withPage } from './testing/page.js';
 import { signInFromNode } from './testing/setup.js';
 import { chooseLanguage, say, unlocalised } from './testing/words.js';
 
@@ -33,9 +33,10 @@ const surfaces = (component: string): readonly Surface[] => [
       page.getByRole('heading', { level: 2, name: say(language, 'home.needs-your-attention') }),
   },
   {
+    // Its toolbar: the header's dates, reuse and style move with their own folders (UIc, UId).
     name: 'The component editor',
     address: `#/components/${component}`,
-    regions: ['main'],
+    regions: ['[role="toolbar"]'],
     ready: (page, language) =>
       page.getByRole('button', { name: say(language, 'pm.command.strong'), exact: true }),
   },
@@ -43,6 +44,11 @@ const surfaces = (component: string): readonly Surface[] => [
 
 /** Each moved surface walked in `language`, its words made over, none cut short, nothing spilling. */
 async function walk(language: Language) {
+  // The editor asks for the query definitions Grace may not read, for its Value command, and the
+  // service answers 403, which the browser reports as a failed load: her permissions, not noise.
+  allowPageNoise(
+    /^console\.error: Failed to load resource: .* 403 \(Forbidden\) \(.*\/v1\/definitions:/,
+  );
   const cookie = await signInFromNode('grace');
   const component = await makeComponent(await apiAs('grace'), 'Pseudo', [
     { type: 'paragraph', id: 'b1', style: 'body', content: words('The pond survey found newts.') },
@@ -62,6 +68,15 @@ async function walk(language: Language) {
           expect(found.missed, `${surface.name}: words left in English`).toEqual([]);
           expect(found.clipped, `${surface.name}: words cut short`).toEqual([]);
           expect(found.spills, `${surface.name}: wider than the window`).toEqual([]);
+          // An icon's button has no text to walk: its name is what a screen reader says.
+          const names = await page.$$eval(
+            surface.regions.map((region) => `${region} [aria-label]`).join(', '),
+            (labelled) => labelled.map((each) => each.getAttribute('aria-label') ?? ''),
+          );
+          expect(
+            names.filter((name) => /[A-Za-z]{2,}/.test(name) && !/[[\]]/.test(name)),
+            `${surface.name}: names left in English`,
+          ).toEqual([]);
         }
       },
       { signedInAs: cookie },
