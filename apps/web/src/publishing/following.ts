@@ -1,5 +1,6 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import { useCallback, useEffect, useRef } from 'react';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -70,8 +71,22 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 /** What each act is called in the sentences that refuse it. */
 const ACTS = {
-  publish: { again: 'publish again', subject: 'The publish' },
-  preview: { again: 'preview it again', subject: 'The preview' },
+  publish: {
+    get again() {
+      return words('publishing.publish-again');
+    },
+    get subject() {
+      return words('publishing.the-publish');
+    },
+  },
+  preview: {
+    get again() {
+      return words('publishing.preview-it-again');
+    },
+    get subject() {
+      return words('publishing.the-preview');
+    },
+  },
 } as const;
 
 /**
@@ -87,11 +102,11 @@ export function refusedWords(
   error: unknown,
 ): string {
   if (status === 409) {
-    return `This document has changed since the page opened. Reload it and ${ACTS[act].again}.`;
+    return words('publishing.this-document-has-changed-since', { again: ACTS[act].again });
   }
   // A preview needs `read` alone, which a document the page holds is: only a publish meets this.
-  if (status === 403) return 'You may read this document but not publish it.';
-  if (status === 404) return 'This document is no longer open to you.';
+  if (status === 403) return words('publishing.you-may-read-this-document');
+  if (status === 404) return words('publishing.this-document-is-no-longer');
   if (status === 400 && isRecord(error) && typeof error.message === 'string') return error.message;
-  return `${ACTS[act].subject} could not be asked for. Try again.`;
+  return words('publishing.could-not-be-asked-for', { subject: ACTS[act].subject });
 }

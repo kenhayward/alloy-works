@@ -4,6 +4,7 @@ import { useEffect, useId, useState } from 'react';
 
 import { declaredAxes, type OfferedAxis } from '../editor/ConditionDialog.js';
 import styles from './ProfilePanel.module.css';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -11,8 +12,7 @@ type Client = ReturnType<typeof createApiClient>;
 export type ProfileSaved = 'saved' | 'refused' | 'unsent';
 
 /** What the panel says of the acceptance REU-053 asks for. */
-export const EXCLUDE_UNSET_SAID =
-  'Leave out text that depends on an axis this profile does not set';
+export const EXCLUDE_UNSET_SAID = (): string => words('document.profile.exclude-unset');
 
 export interface ProfilePanelProps {
   readonly client: Client;
@@ -89,7 +89,7 @@ export function ProfilePanel({
   return (
     <section className={styles['panel']} aria-labelledby={`${id}-heading`}>
       <h3 id={`${id}-heading`} className={styles['heading']}>
-        Profile
+        {words('document.profile')}
       </h3>
       <>
         {read.map((axis) => (
@@ -124,20 +124,20 @@ export function ProfilePanel({
             disabled={readOnly}
             onChange={(event) => setExcludeUnset(event.target.checked)}
           />
-          {EXCLUDE_UNSET_SAID}
+          {EXCLUDE_UNSET_SAID()}
         </label>
         <div className={styles['actions']}>
           {!readOnly && (
             <button type="button" onClick={() => void onSave(empty ? null : chosen)}>
-              Save profile
+              {words('document.save-profile')}
             </button>
           )}
           <button type="button" onClick={() => onPreview(chosen)}>
-            Preview this profile
+            {words('document.preview-this-profile')}
           </button>
           {onPublish && (
             <button type="button" onClick={() => onPublish(chosen)}>
-              Publish under this profile
+              {words('document.publish-under-this-profile')}
             </button>
           )}
         </div>

@@ -61,6 +61,7 @@ import { useUnresolvedMarks } from '../theme/check.js';
 import { usePresentation } from '../theme/presentation.js';
 import { NewerVersion, type VersionNamed } from './NewerVersion.js';
 import { VersionChoice, versionSaid, type Choosing } from './VersionChoice.js';
+import { words as say } from '../words/words.js';
 
 /** The room the document's column has for its measure, at Fit: its own, inside its padding. */
 
@@ -139,7 +140,7 @@ const NO_TABLES: ReadonlyMap<string, BoundTableNode> = new Map();
 const NOTHING_KNOWN: ReadonlyMap<string, readonly Contribution[]> = new Map();
 
 /** Said where a component's text does not read, or holds what the editor cannot show yet. */
-const CANNOT_SHOW = 'This component holds content this editor cannot show yet.';
+const CANNOT_SHOW = (): string => say('document.this-component-holds-content-this');
 
 /** Where an editor opened in place stands in the document, and how it is closed. */
 export interface Place {
@@ -214,7 +215,7 @@ function EditableState({ state, openHere }: { state: Editable | undefined; openH
       : null;
   if (lock?.yours) {
     return openHere ? null : (
-      <p className={styles['state']}>You are editing this component in another window.</p>
+      <p className={styles['state']}>{say('document.you-are-editing-this-component')}</p>
     );
   }
   if (lock !== null) {
@@ -225,7 +226,7 @@ function EditableState({ state, openHere }: { state: Editable | undefined; openH
     );
   }
   if (!state.mayEdit) {
-    return <p className={styles['state']}>You may read this component but not edit it.</p>;
+    return <p className={styles['state']}>{say('document.you-may-read-this-component')}</p>;
   }
   return null;
 }
@@ -235,7 +236,7 @@ function ThreadsSaid({ count }: { count: number | undefined }) {
   if (count === undefined || count === 0) return null;
   return (
     <span className={styles['threads']} data-threads={count}>
-      {count === 1 ? '1 thread' : `${count} threads`}
+      {say('document.threads-2', { count: count })}
     </span>
   );
 }
@@ -324,7 +325,7 @@ function RenderedText({
     fonts?.addEventListener?.('loadingdone', again);
     return () => fonts?.removeEventListener?.('loadingdone', again);
   }, [rendered, marksHeld, content]);
-  if (rendered === null) return <p className={styles['cannot']}>{CANNOT_SHOW}</p>;
+  if (rendered === null) return <p className={styles['cannot']}>{CANNOT_SHOW()}</p>;
   const classes = `${styles['body']} ${TEXT_CLASS}`;
   if (!onOpen) {
     return (
@@ -342,7 +343,7 @@ function RenderedText({
       className={classes}
       data-opens="true"
       tabIndex={0}
-      title="Click to edit"
+      title={say('document.click-to-edit')}
       onClick={(event) => {
         const host = place.current;
         if (!host) return;
@@ -382,7 +383,7 @@ function HeadingEquation({ mathml }: { mathml: string }) {
  * it is not named by `nodeName` either, and a title with no words is an untitled section.
  */
 function SectionTitle({ title }: { title: SectionViewNode['title'] }) {
-  if (titleText(title).trim() === '') return <>Untitled section</>;
+  if (titleText(title).trim() === '') return <>{say('document.untitled-section')}</>;
   return (
     <>
       {title.map((run, index) => (
@@ -668,7 +669,7 @@ export function DocumentText({
               <div className={styles['label']} data-label="">
                 <span className={styles['labelName']}>{nodeName(node, names)}</span>
                 {node.component === null ? (
-                  <Lozenge kind="notYoursToRead">Not yours to read</Lozenge>
+                  <Lozenge kind="notYoursToRead">{say('document.not-yours-to-read')}</Lozenge>
                 ) : (
                   <>
                     {choosing ? (
@@ -688,9 +689,15 @@ export function DocumentText({
                         {versionSaid(node.mode, resolved?.get(node.id), revisions?.get(node.id))}
                       </span>
                     )}
-                    {lines?.has(node.id) === true && <Chip>{`${lines.get(node.id)} line`}</Chip>}
+                    {lines?.has(node.id) === true && (
+                      <Chip>{say('document.line', { value1: lines.get(node.id) })}</Chip>
+                    )}
                     {lines?.has(node.id) !== true && (diverged?.get(node.id)?.length ?? 0) > 0 && (
-                      <Chip>{`Main line; also ${diverged!.get(node.id)!.join(', ')}`}</Chip>
+                      <Chip>
+                        {say('document.main-line-also', {
+                          value1: diverged!.get(node.id)!.join(', '),
+                        })}
+                      </Chip>
                     )}
                     {(translated?.get(node.id) ?? []).map((each) => (
                       <Chip
@@ -698,21 +705,23 @@ export function DocumentText({
                         {...(each.status === 'translated' ? {} : { tone: 'warn' as const })}
                       >{`${each.language}: ${statusWords(each)}`}</Chip>
                     ))}
-                    {pastReview?.has(node.id) === true && <Chip tone="warn">Past review</Chip>}
+                    {pastReview?.has(node.id) === true && (
+                      <Chip tone="warn">{say('document.past-review')}</Chip>
+                    )}
                     {(overridesOf?.get(node.id) ?? []).some((each) => !each.stale) && (
-                      <Chip>Overridden here</Chip>
+                      <Chip>{say('document.overridden-here')}</Chip>
                     )}
                     {(overridesOf?.get(node.id) ?? []).some((each) => each.stale) && (
-                      <Chip tone="warn">Override no longer applies</Chip>
+                      <Chip tone="warn">{say('document.override-no-longer-applies')}</Chip>
                     )}
                     {onOverride && texts?.has(node.id) && editing !== node.id && (
                       <button
                         type="button"
                         className={styles['open']}
                         onClick={() => onOverride(node.id)}
-                        aria-label={`Overrides of ${nodeName(node, names)}`}
+                        aria-label={say('document.overrides-of', { value1: nodeName(node, names) })}
                       >
-                        Overrides
+                        {say('document.overrides')}
                       </button>
                     )}
                     <EditableState
@@ -730,16 +739,16 @@ export function DocumentText({
                     <a
                       className={styles['open']}
                       href={`#/components/${node.component}`}
-                      aria-label={`Open ${nodeName(node, names)}`}
+                      aria-label={say('document.open', { value1: nodeName(node, names) })}
                     >
-                      Open
+                      {say('document.open-2')}
                     </a>
                     <ThreadsSaid count={threadCounts?.get(node.id)} />
                     {(editable?.get(node.id)?.pendingSuggestions ?? 0) > 0 && (
                       <span className={styles['threads']}>
-                        {editable!.get(node.id)!.pendingSuggestions === 1
-                          ? '1 suggestion'
-                          : `${editable!.get(node.id)!.pendingSuggestions} suggestions`}
+                        {say('document.suggestions-2', {
+                          count: editable!.get(node.id)!.pendingSuggestions,
+                        })}
                       </span>
                     )}
                     {onSuggest &&
@@ -749,9 +758,11 @@ export function DocumentText({
                           type="button"
                           className={styles['open']}
                           onClick={() => onSuggest(node.id)}
-                          aria-label={`Suggest changes to ${nodeName(node, names)}`}
+                          aria-label={say('document.suggest-changes-to', {
+                            value1: nodeName(node, names),
+                          })}
                         >
-                          Suggest changes
+                          {say('document.suggest-changes')}
                         </button>
                       )}
                   </>
@@ -763,8 +774,7 @@ export function DocumentText({
             {titled(node, depth)}
             {editing === node.id && (overridesOf?.get(node.id) ?? []).length > 0 && (
               <p className={styles['cannot']} role="note">
-                This document overrides some of this component&apos;s paragraphs. You are editing
-                the component itself, as every document has it.
+                {say('document.this-document-overrides-some-of')}
               </p>
             )}
             {node.component !== null && editing !== node.id && newer?.byNode.has(node.id) && (
@@ -849,7 +859,7 @@ export function DocumentText({
       className={[styles['text'], canvas.className].filter(Boolean).join(' ')}
       style={canvas.style}
       data-boundaries={boundaries ? 'shown' : undefined}
-      aria-label="The document's text"
+      aria-label={say('document.the-document-s-text')}
     >
       {render(outline.nodes, 1)}
     </section>

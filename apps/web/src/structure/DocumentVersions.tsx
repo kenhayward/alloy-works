@@ -12,6 +12,7 @@ import {
 import { VersionList, type ListedVersion } from '../editor/VersionList.js';
 import { ApprovalsList } from '../lifecycle/Approvals.js';
 import styles from '../editor/VersionList.module.css';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -133,7 +134,7 @@ export function DocumentVersions({
     if (restored !== undefined) onRestored?.();
   };
 
-  const label = restoring && `Restore ${restoring.version.number}`;
+  const label = restoring && words('document.restore', { number: restoring.version.number });
   return (
     <div className={styles['panel']}>
       <VersionList
@@ -149,17 +150,23 @@ export function DocumentVersions({
         <section aria-label={label} className={styles['compared']}>
           <h3 className={styles['heading']}>{label}</h3>
           {restoring.preview === 'failed' && (
-            <p className={styles['muted']}>What restoring it would make could not be read.</p>
+            <p className={styles['muted']}>{words('document.what-restoring-it-would-make')}</p>
           )}
           {typeof restoring.preview === 'object' && (
             <>
               <p className={styles['muted']}>
-                {`A new version after ${restoring.preview.latest.number}, with the outline ${restoring.version.number} had. Its parameters stay as they are now, and ${restoring.version.number} itself stays as it is.`}
+                {words('document.a-new-version-after-with', {
+                  number: restoring.preview.latest.number,
+                  number2: restoring.version.number,
+                  number3: restoring.version.number,
+                })}
               </p>
               <Redline
                 changes={restoring.preview.structure}
                 texts={restoring.preview.texts}
-                label={`What restoring ${restoring.version.number} would change`}
+                label={words('document.what-restoring-would-change', {
+                  number: restoring.version.number,
+                })}
               />
               {restoring.preview.refusals.map((refusal) => (
                 <p
@@ -176,7 +183,7 @@ export function DocumentVersions({
                     disabled={restoring.answer === 'sending'}
                     onClick={() => void restore(restoring)}
                   >
-                    Restore this version
+                    {words('document.restore-this-version')}
                   </button>
                 )}
             </>

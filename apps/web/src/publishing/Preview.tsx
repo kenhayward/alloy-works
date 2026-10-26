@@ -8,6 +8,7 @@ import { FailureList } from './FailureList.js';
 import { failuresIn, isProductsOwn, type Failure } from './failures.js';
 import { FOLLOW_MS, refusedWords, useFollowing } from './following.js';
 import styles from './Preview.module.css';
+import { words as say } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -180,7 +181,7 @@ export function usePreview({
         if (!isRecord(answer)) {
           setAsking({
             state: 'refused',
-            words: 'The preview could not be followed. Preview it again.',
+            words: say('publishing.the-preview-could-not-be'),
           });
           return true;
         }
@@ -190,7 +191,7 @@ export function usePreview({
           if (links === null && answer.preview !== null) {
             setAsking({
               state: 'refused',
-              words: 'The preview could not be followed. Preview it again.',
+              words: say('publishing.the-preview-could-not-be'),
             });
             return true;
           }
@@ -236,7 +237,7 @@ export function usePreview({
         now?.state === 'shown' && now.request === request ? { ...now, ...change } : now,
       );
     update({ downloading: true, note: null });
-    const cannot = { downloading: false, note: 'The PDF could not be downloaded. Try again.' };
+    const cannot = { downloading: false, note: say('publishing.the-pdf-could-not-be') };
     try {
       const { data, response } = await client.GET('/v1/publication-requests/{id}', {
         params: { path: { id: request } },
@@ -278,7 +279,7 @@ export function PreviewButton({
       onClick={() => void preview.ask(undefined, language)}
     >
       <Icon name="Preview" size={14} />
-      Preview
+      {say('publishing.preview')}
     </button>
   );
 }
@@ -291,11 +292,9 @@ export function PreviewSaid({ preview }: { readonly preview: Previewing }) {
   const { asking } = preview;
   return (
     <div aria-live="polite">
-      {asking.state === 'working' && <Waiting>Making a preview...</Waiting>}
-      {asking.state === 'shown' && <p>The preview is shown beside the text.</p>}
-      {asking.state === 'failed' && (
-        <p>The preview could not be made. Why is said beside the text.</p>
-      )}
+      {asking.state === 'working' && <Waiting>{say('publishing.making-a-preview')}</Waiting>}
+      {asking.state === 'shown' && <p>{say('publishing.the-preview-is-shown-beside')}</p>}
+      {asking.state === 'failed' && <p>{say('publishing.the-preview-could-not-be-2')}</p>}
       {asking.state === 'refused' && <p>{asking.words}</p>}
     </div>
   );
@@ -303,10 +302,10 @@ export function PreviewSaid({ preview }: { readonly preview: Previewing }) {
 
 /** What introduces a failed preview's list: the product's own failure asks nothing of the author. */
 function failedIntro(failures: readonly Failure[]): string {
-  if (failures.length === 0) return 'The preview could not be made. Preview it again.';
+  if (failures.length === 0) return say('publishing.the-preview-could-not-be-3');
   return isProductsOwn(failures)
-    ? 'The preview could not be made, and nothing in the document caused it. Preview it again later.'
-    : 'The preview could not be made. Put these right and preview it again:';
+    ? say('publishing.the-preview-could-not-be-4')
+    : say('publishing.the-preview-could-not-be-5');
 }
 
 const clock = (at: Date) => at.toLocaleTimeString(undefined, { timeStyle: 'short' });
@@ -336,12 +335,12 @@ export function PreviewPane({
       className={className === undefined ? styles['pane'] : `${styles['pane']} ${className}`}
     >
       <div className={styles['head']}>
-        <h3 id={headingId}>Preview</h3>
+        <h3 id={headingId}>{say('publishing.preview')}</h3>
         <button
           type="button"
           className={styles['close']}
-          aria-label="Close the preview"
-          title="Close the preview"
+          aria-label={say('publishing.close-the-preview')}
+          title={say('publishing.close-the-preview')}
           onClick={preview.close}
         >
           <Icon name="Close" size={13} />
@@ -353,7 +352,7 @@ export function PreviewPane({
           <p>{failedIntro(pane.failures)}</p>
           {pane.failures.length > 0 && (
             <FailureList
-              label="Why the preview could not be made"
+              label={say('publishing.why-the-preview-could-not')}
               failures={pane.failures}
               placeOf={placeOf}
             />
@@ -362,14 +361,14 @@ export function PreviewPane({
       )}
       {pane.state === 'expired' && (
         <>
-          <p>This preview has expired. A preview is kept for an hour.</p>
+          <p>{say('publishing.this-preview-has-expired-a')}</p>
           <p>
             <button
               type="button"
               disabled={preview.asking.state === 'working'}
               onClick={() => void preview.ask()}
             >
-              Make a new preview
+              {say('publishing.make-a-new-preview')}
             </button>
           </p>
         </>
@@ -390,17 +389,25 @@ function Shown({
   return (
     <>
       <p className={styles['made']}>
-        Version {pane.version}, made at <time dateTime={made.toISOString()}>{clock(made)}</time>. It
-        is kept until <time dateTime={expires.toISOString()}>{clock(expires)}</time>.
+        {say('publishing.version-2')}
+        {pane.version}
+        {say('publishing.made-at')}
+        <time dateTime={made.toISOString()}>{clock(made)}</time>
+        {say('publishing.it-is-kept-until')}
+        <time dateTime={expires.toISOString()}>{clock(expires)}</time>.
       </p>
       <p>
         <button type="button" disabled={pane.downloading} onClick={() => void preview.download()}>
-          Download the PDF
+          {say('publishing.download-the-pdf')}
         </button>
       </p>
       <p aria-live="polite">{pane.note}</p>
       <div className={styles['canvas']}>
-        <iframe className={styles['viewer']} src={pane.view} title={`Preview of ${pane.title}`} />
+        <iframe
+          className={styles['viewer']}
+          src={pane.view}
+          title={say('publishing.preview-of', { title: pane.title })}
+        />
       </div>
     </>
   );

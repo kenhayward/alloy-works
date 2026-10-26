@@ -6,6 +6,7 @@ import styles from '../editor/MarkPrompt.module.css';
 import shell from '../layouts/Modal.module.css';
 import own from './GenerateDialog.module.css';
 import { rowsFrom, type ReadRows } from './rows.js';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -20,7 +21,11 @@ export interface GenerateDialogProps {
 /** What the dialog says of the rows read. */
 const rowsSaid = (read: ReadRows): string =>
   read.ok
-    ? `${read.rows.length} ${read.rows.length === 1 ? 'row' : 'rows'}, giving ${read.names.join(', ')}.`
+    ? words('document.giving', {
+        length: read.rows.length,
+        value2: read.rows.length === 1 ? 'row' : 'rows',
+        value3: read.names.join(', '),
+      })
     : read.problem;
 
 /**
@@ -68,9 +73,11 @@ export function GenerateDialog({ client, template, onGenerated, onCancel }: Gene
         return;
       }
       const message = (error as { message?: unknown } | undefined)?.message;
-      setRefusal(typeof message === 'string' ? message : 'The documents could not be asked for.');
+      setRefusal(
+        typeof message === 'string' ? message : words('document.the-documents-could-not-be-2'),
+      );
     } catch {
-      setRefusal('The documents could not be asked for. Try again.');
+      setRefusal(words('document.the-documents-could-not-be-3'));
     } finally {
       setAsking(false);
     }
@@ -107,10 +114,11 @@ export function GenerateDialog({ client, template, onGenerated, onCancel }: Gene
       >
         <div className={styles['form']}>
           <h2 id={`${id}-heading`} className={styles['heading']}>
-            Generate documents from {template.name}
+            {words('document.generate-documents-from')}
+            {template.name}
           </h2>
           <div className={styles['field']}>
-            <label htmlFor={`${id}-file`}>A CSV file of rows</label>
+            <label htmlFor={`${id}-file`}>{words('document.a-csv-file-of-rows')}</label>
             <input
               id={`${id}-file`}
               type="file"
@@ -122,7 +130,7 @@ export function GenerateDialog({ client, template, onGenerated, onCancel }: Gene
             />
           </div>
           <div className={styles['field']}>
-            <label htmlFor={`${id}-rows`}>Or paste the rows</label>
+            <label htmlFor={`${id}-rows`}>{words('document.or-paste-the-rows')}</label>
             <textarea
               id={`${id}-rows`}
               className={own['rows']}
@@ -132,13 +140,11 @@ export function GenerateDialog({ client, template, onGenerated, onCancel }: Gene
               onChange={(event) => setText(event.target.value)}
             />
             <p id={`${id}-said`} className={own['said']} role="status">
-              {read === null
-                ? 'The first line names the parameters; each line after it is a document.'
-                : rowsSaid(read)}
+              {read === null ? words('document.the-first-line-names-the') : rowsSaid(read)}
             </p>
           </div>
           <div className={styles['field']}>
-            <label htmlFor={`${id}-title`}>Each title</label>
+            <label htmlFor={`${id}-title`}>{words('document.each-title')}</label>
             <input
               id={`${id}-title`}
               value={pattern}
@@ -146,7 +152,7 @@ export function GenerateDialog({ client, template, onGenerated, onCancel }: Gene
             />
           </div>
           <div className={styles['field']}>
-            <label htmlFor={`${id}-language`}>Language</label>
+            <label htmlFor={`${id}-language`}>{words('document.language')}</label>
             <input
               id={`${id}-language`}
               value={language}
@@ -160,7 +166,7 @@ export function GenerateDialog({ client, template, onGenerated, onCancel }: Gene
                 checked={stop}
                 onChange={(event) => setStop(event.target.checked)}
               />{' '}
-              Stop at the first row that fails
+              {words('document.stop-at-the-first-row')}
             </label>
           </div>
           {refusal !== null && <p role="alert">{refusal}</p>}
@@ -170,15 +176,17 @@ export function GenerateDialog({ client, template, onGenerated, onCancel }: Gene
               disabled={!read?.ok || asking || pattern.trim() === ''}
               onClick={() => void generate()}
             >
-              {read?.ok ? `Generate ${read.rows.length} documents` : 'Generate documents'}
+              {read?.ok
+                ? words('document.generate-documents', { length: read.rows.length })
+                : words('document.generate-documents-2')}
             </button>
           </div>
         </div>
         <button
           type="button"
           className={shell['close']}
-          aria-label="Close"
-          title="Close"
+          aria-label={words('document.close')}
+          title={words('document.close')}
           onClick={onCancel}
         >
           <Icon name="Close" size={13} />

@@ -4,6 +4,7 @@ import { PLACE_MAX } from '@alloy-works/domain';
 import { Modal } from '../layouts/Modal.js';
 import styles from './PlaceSection.module.css';
 import { sectionTitle, titleText } from './tree.js';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 type Report =
@@ -34,9 +35,24 @@ function sectionsIn(nodes: unknown, depth = 0): Section[] {
 }
 
 const MODES: readonly { readonly mode: Mode; readonly label: string }[] = [
-  { mode: 'latest', label: 'Follow the latest version' },
-  { mode: 'approved', label: 'Follow approved revisions' },
-  { mode: 'pinned', label: 'Pin each to its version now' },
+  {
+    mode: 'latest',
+    get label() {
+      return words('document.follow-the-latest-version');
+    },
+  },
+  {
+    mode: 'approved',
+    get label() {
+      return words('document.follow-approved-revisions');
+    },
+  },
+  {
+    mode: 'pinned',
+    get label() {
+      return words('document.pin-each-to-its-version');
+    },
+  },
 ];
 
 const plural = (count: number, one: string, many: string) =>
@@ -67,11 +83,11 @@ export function PlaceSectionButton({
       <button
         type="button"
         className={className}
-        aria-label="Place from a document"
-        title="Place from a document"
+        aria-label={words('document.place-from-a-document')}
+        title={words('document.place-from-a-document')}
         onClick={() => setOpen(true)}
       >
-        Place from a document
+        {words('document.place-from-a-document')}
       </button>
       {open && (
         <PlaceDialog
@@ -112,7 +128,7 @@ export function PlaceIntoButton({
   return (
     <>
       <button type="button" className={className} onClick={() => setOpen(true)}>
-        Place in a document
+        {words('document.place-in-a-document')}
       </button>
       {open && (
         <PlaceDialog
@@ -234,7 +250,7 @@ function PlaceDialog({
       .then(({ data }) => {
         if (!current) return;
         setReport(data ?? null);
-        if (!data) setSaid('What the section places could not be read.');
+        if (!data) setSaid(words('document.what-the-section-places-could'));
       })
       .catch(() => undefined);
     return () => {
@@ -249,7 +265,7 @@ function PlaceDialog({
     event.preventDefault();
     if (!report || busy || opened === '') return;
     if (title.trim() === '') {
-      setSaid('The new section needs a title.');
+      setSaid(words('document.the-new-section-needs-a'));
       return;
     }
     setBusy(true);
@@ -274,11 +290,11 @@ function PlaceDialog({
       return;
     }
     if (response?.status === 409) {
-      setSaid('Something changed since the report. Check it again before placing.');
+      setSaid(words('document.something-changed-since-the-report'));
       setAsked((count) => count + 1);
       return;
     }
-    setSaid('The section could not be placed.');
+    setSaid(words('document.the-section-could-not-be'));
   };
 
   const tooMany = report !== null && report.occurrences > PLACE_MAX;
@@ -286,23 +302,19 @@ function PlaceDialog({
   return (
     <Modal labelledBy={headingId} size="narrow" onClose={onClose}>
       <form className={styles['form']} onSubmit={(event) => void place(event)}>
-        <h2 id={headingId}>{found ? 'Place in a document' : 'Place from a document'}</h2>
+        <h2 id={headingId}>
+          {found ? words('document.place-in-a-document') : words('document.place-from-a-document')}
+        </h2>
         {found ? (
-          <p className={styles['muted']}>
-            The components this section places are placed in the document chosen, as references
-            under a new section of its own. Nothing else is copied.
-          </p>
+          <p className={styles['muted']}>{words('document.the-components-this-section-places')}</p>
         ) : (
-          <p className={styles['muted']}>
-            The components a section of another document places are placed here, as references under
-            a new section of this document. Nothing else is copied.
-          </p>
+          <p className={styles['muted']}>{words('document.the-components-a-section-of')}</p>
         )}
         {found && (
           <label>
-            Into
+            {words('document.into')}
             <select value={into} onChange={(event) => setInto(event.target.value)}>
-              <option value="">Choose a document</option>
+              <option value="">{words('document.choose-a-document')}</option>
               {documents.map((each) => (
                 <option key={each.id} value={each.id}>
                   {each.title}
@@ -314,9 +326,9 @@ function PlaceDialog({
         {!found && (
           <>
             <label>
-              Document
+              {words('document.document')}
               <select value={from} onChange={(event) => setFrom(event.target.value)}>
-                <option value="">Choose a document</option>
+                <option value="">{words('document.choose-a-document')}</option>
                 {documents.map((each) => (
                   <option key={each.id} value={each.id}>
                     {each.title}
@@ -325,13 +337,13 @@ function PlaceDialog({
               </select>
             </label>
             <label>
-              Section
+              {words('document.section')}
               <select
                 value={section}
                 disabled={sections.length === 0}
                 onChange={(event) => setSection(event.target.value)}
               >
-                <option value="">Choose a section</option>
+                <option value="">{words('document.choose-a-section')}</option>
                 {sections.map((each) => (
                   <option key={each.id} value={each.id}>
                     {`${'  '.repeat(each.depth)}${each.title}`}
@@ -343,41 +355,45 @@ function PlaceDialog({
         )}
         {report && (
           <section aria-labelledby={`${headingId}report`} className={styles['report']}>
-            <h3 id={`${headingId}report`}>What it places</h3>
+            <h3 id={`${headingId}report`}>{words('document.what-it-places')}</h3>
             <p>
-              {`${plural(report.occurrences, 'reference', 'references')} to ${plural(
-                report.components.length + report.unreadable,
-                'component',
-                'components',
-              )}: ${plural(report.blocks, 'block', 'blocks')}, ${plural(
-                report.characters,
-                'character',
-                'characters',
-              )} of text.`}
+              {words('document.to-of-text', {
+                value1: plural(report.occurrences, 'reference', 'references'),
+                value2: plural(
+                  report.components.length + report.unreadable,
+                  'component',
+                  'components',
+                ),
+                value3: plural(report.blocks, 'block', 'blocks'),
+                value4: plural(report.characters, 'character', 'characters'),
+              })}
             </p>
             <ul>
               {report.components.map((each) => (
                 <li key={each.id}>
-                  {each.occurrences > 1 ? `${each.title}, ${each.occurrences} times` : each.title}
+                  {each.occurrences > 1
+                    ? words('document.times', { title: each.title, occurrences: each.occurrences })
+                    : each.title}
                 </li>
               ))}
             </ul>
             {report.unreadable > 0 && (
               <p role="alert">
-                {`It places ${plural(report.unreadable, 'component', 'components')} you may not read or that ${report.unreadable === 1 ? 'was' : 'were'} deleted, so it cannot be placed.`}
+                {words('document.it-places-you-may-not', {
+                  value1: plural(report.unreadable, 'component', 'components'),
+                  value2: report.unreadable === 1 ? 'was' : 'were',
+                })}
               </p>
             )}
             {tooMany && (
-              <p role="alert">
-                {`It places more than ${PLACE_MAX} references, so it cannot be placed in one go. Place its subsections one at a time.`}
-              </p>
+              <p role="alert">{words('document.it-places-more-than-references', { PLACE_MAX })}</p>
             )}
           </section>
         )}
         {report && !refused && (
           <>
             <fieldset>
-              <legend>Each reference</legend>
+              <legend>{words('document.each-reference')}</legend>
               {MODES.map((each) => (
                 <label key={each.mode} className={styles['choice']}>
                   <input
@@ -391,7 +407,7 @@ function PlaceDialog({
               ))}
             </fieldset>
             <label>
-              New section title
+              {words('document.new-section-title')}
               <input value={title} onChange={(event) => setTitle(event.target.value)} />
             </label>
           </>
@@ -399,14 +415,14 @@ function PlaceDialog({
         <p role="status">{said}</p>
         <div className={styles['buttons']}>
           <button type="button" onClick={onClose}>
-            Cancel
+            {words('document.cancel')}
           </button>
           <button
             type="submit"
             className="primary"
             disabled={!report || refused || busy || opened === ''}
           >
-            Place
+            {words('document.place')}
           </button>
         </div>
       </form>

@@ -1,14 +1,14 @@
+import { words } from '../words/words.js';
 /**
  * A person's own view (the D7 plan, D7-H; DAT-091): a result fetched as the person asking, on a
  * connection that runs as each person, which everybody who may read the document sees once it is held.
  */
 
 /** What is said before one's own view is held: DAT-091's warning. */
-export const OWN_VIEW_WARNING =
-  'This value runs as you, so it is your own view of the source. Once it is held, everybody who may read this document will see it, and it prints in the publications made of the document.';
+export const OWN_VIEW_WARNING = (): string => words('document.own-view.warning');
 
 /** What is said where the warning was declined. */
-export const NOT_HELD = 'Your own view was not held, so this value holds nothing new.';
+export const NOT_HELD = (): string => words('document.own-view.not-held');
 
 /**
  * The refusals a page says in the service's own words, where they arise: the person's identity at
@@ -45,6 +45,6 @@ export function whoseView(
 ): string | null {
   if (provenance.identity !== 'endUser') return null;
   return by !== null && by.id === provenance.principal && by.displayName !== null
-    ? `${by.displayName}'s own view`
-    : "A person's own view";
+    ? words('document.s-own-view', { displayName: by.displayName })
+    : words('document.a-person-s-own-view');
 }

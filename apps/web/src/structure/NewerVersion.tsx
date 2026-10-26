@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 import { Redline } from '../compare/Redline.js';
 import styles from './NewerVersion.module.css';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -65,21 +66,25 @@ export function NewerVersion({
     <>
       <p className={styles['newer']}>
         <span>
-          {said ?? `Version ${newer.number} is newer than the ${pinned.number} pinned here.`}
+          {said ??
+            words('document.version-is-newer-than-the', {
+              number: newer.number,
+              number2: pinned.number,
+            })}
         </span>
         {shown === null || shown === 'failed' ? (
           <button type="button" onClick={() => void compare()}>
-            {`Compare ${pinned.number} with ${newer.number}`}
+            {words('document.compare-with-2', { number: pinned.number, number2: newer.number })}
           </button>
         ) : (
           <button type="button" onClick={() => setShown(null)}>
-            Hide the comparison
+            {words('document.hide-the-comparison')}
           </button>
         )}
       </p>
       {shown === 'failed' && (
         <p role="alert" className={styles['newer']}>
-          The comparison could not be read.
+          {words('document.the-comparison-could-not-be')}
         </p>
       )}
       {shown !== null && shown !== 'failed' && shown !== 'reading' && (
@@ -87,7 +92,10 @@ export function NewerVersion({
           <Redline
             changes={shown.changes}
             texts={{ older: unitTexts(shown.older), newer: unitTexts(shown.newer) }}
-            label={`Changes from ${pinned.number} to ${newer.number}`}
+            label={words('document.changes-from-to', {
+              number: pinned.number,
+              number2: newer.number,
+            })}
           />
         </div>
       )}

@@ -1,4 +1,5 @@
 import styles from './Import.module.css';
+import { words } from '../words/words.js';
 
 /** The address of Help's page on what an import keeps (IMP-026). */
 export const IMPORT_HELP = '#/help/import';
@@ -9,8 +10,8 @@ export const IMPORT_HELP = '#/help/import';
  */
 export function keptBy(type: 'docx' | 'markdown' | 'html' | null): string {
   return type === 'docx'
-    ? 'An import keeps a Word document’s structure: its headings, lists, tables, footnotes, captions, figures, cross-references, tracked changes and comments. It does not keep its appearance, which a theme sets here, or its blank lines, which are layout, so exporting it again does not give back the same file.'
-    : 'An import keeps this file’s structure: its headings, lists, tables, quotations, links and emphasis. It does not keep its appearance or its styles, and keeps an image only where the file holds it: one at an address is never fetched.';
+    ? words('imports.an-import-keeps-a-word')
+    : words('imports.an-import-keeps-this-file');
 }
 
 /**
@@ -20,44 +21,33 @@ export function keptBy(type: 'docx' | 'markdown' | 'html' | null): string {
 export function ImportHelp() {
   return (
     <section aria-labelledby="import-help-heading" className={styles['page']}>
-      <h1 id="import-help-heading">What an import keeps</h1>
-      <p>
-        An import reads a file’s structure into sections and components. Its appearance comes from
-        this product’s theme instead, and blank lines are layout, so a document exported to Word
-        again is never the same file as the one imported.
-      </p>
-      <h2 id="import-help-arrives">What arrives from Word</h2>
+      <h1 id="import-help-heading">{words('imports.what-an-import-keeps')}</h1>
+      <p>{words('imports.an-import-reads-a-file')}</p>
+      <h2 id="import-help-arrives">{words('imports.what-arrives-from-word')}</h2>
       <ul aria-labelledby="import-help-arrives">
-        <li>Headings, as sections and components, and deeper ones inside them</li>
-        <li>Lists, with their numbering carried on or restarted</li>
-        <li>Tables</li>
-        <li>Footnotes</li>
-        <li>Captions, on their table or figure</li>
-        <li>Figures, PNG and JPEG images with their alternative text</li>
-        <li>Cross-references, to what they point at</li>
-        <li>Tracked changes, as suggestions attributed to their Word author</li>
-        <li>Comments, as threads with their replies</li>
+        <li>{words('imports.headings-as-sections-and-components')}</li>
+        <li>{words('imports.lists-with-their-numbering-carried')}</li>
+        <li>{words('imports.tables')}</li>
+        <li>{words('imports.footnotes')}</li>
+        <li>{words('imports.captions-on-their-table-or')}</li>
+        <li>{words('imports.figures-png-and-jpeg-images')}</li>
+        <li>{words('imports.cross-references-to-what-they')}</li>
+        <li>{words('imports.tracked-changes-as-suggestions-attributed')}</li>
+        <li>{words('imports.comments-as-threads-with-their')}</li>
       </ul>
-      <h2 id="import-help-not">What does not arrive</h2>
+      <h2 id="import-help-not">{words('imports.what-does-not-arrive')}</h2>
       <ul aria-labelledby="import-help-not">
-        <li>Text boxes, which are left out and said</li>
-        <li>Content controls, which are kept as their text</li>
-        <li>Equations, as yet: their text is shown beside the part they stood in</li>
-        <li>Endnotes</li>
-        <li>Page setup: margins, columns, headers and footers</li>
-        <li>Macros and embedded objects, which are never stored</li>
-        <li>
-          File properties, such as its author, which are discarded unless the Imports policy keeps
-          them
-        </li>
+        <li>{words('imports.text-boxes-which-are-left')}</li>
+        <li>{words('imports.content-controls-which-are-kept')}</li>
+        <li>{words('imports.equations-as-yet-their-text')}</li>
+        <li>{words('imports.endnotes')}</li>
+        <li>{words('imports.page-setup-margins-columns-headers')}</li>
+        <li>{words('imports.macros-and-embedded-objects-which')}</li>
+        <li>{words('imports.file-properties-such-as-its')}</li>
       </ul>
-      <h2>Markdown and HTML</h2>
-      <p>
-        Their headings, lists, tables, quotations, links and emphasis arrive as Word’s do. An image
-        arrives only where the file holds it; one at an address is never fetched, and is said to be
-        left out.
-      </p>
-      <p>What an import leaves out or keeps differently is always listed in its report.</p>
+      <h2>{words('imports.markdown-and-html')}</h2>
+      <p>{words('imports.their-headings-lists-tables-quotations')}</p>
+      <p>{words('imports.what-an-import-leaves-out')}</p>
     </section>
   );
 }

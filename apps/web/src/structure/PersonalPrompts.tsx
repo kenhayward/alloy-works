@@ -5,6 +5,7 @@ import { refusal } from '../account/TokenTable.js';
 import { useDefinitionPlaces } from '../data/places.js';
 import { promptLink } from '../prompts/links.js';
 import styles from './AssistantPanel.module.css';
+import { words as say } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -60,9 +61,9 @@ export function PersonalPrompts({
     });
     if (data) {
       setTitle('');
-      setSaid(`"${data.title}" is saved, for you alone.`);
+      setSaid(say('document.is-saved-for-you-alone', { title: data.title }));
       await read();
-    } else setSaid(refusal(error, 'The prompt could not be saved.'));
+    } else setSaid(refusal(error, say('document.the-prompt-could-not-be')));
   };
 
   const promote = async (event: FormEvent) => {
@@ -82,17 +83,22 @@ export function PersonalPrompts({
       },
     });
     if (data) {
-      setSaid(`"${promoting.title}" is a prompt in ${data.prompt.space.name} now, at draft.`);
+      setSaid(
+        say('document.is-a-prompt-in-now', {
+          title: promoting.title,
+          name: data.prompt.space.name,
+        }),
+      );
       setPromoting(null);
       await read();
-    } else setSaid(refusal(error, 'The prompt could not be promoted.'));
+    } else setSaid(refusal(error, say('document.the-prompt-could-not-be-2')));
   };
 
   return (
-    <section aria-label="Your prompts" className={styles['prompts']}>
-      <h3>Your prompts</h3>
+    <section aria-label={say('document.your-prompts')} className={styles['prompts']}>
+      <h3>{say('document.your-prompts')}</h3>
       {items.length === 0 ? (
-        <p className={styles['muted']}>None saved. Nobody else sees the ones you save.</p>
+        <p className={styles['muted']}>{say('document.none-saved-nobody-else-sees')}</p>
       ) : (
         <ul>
           {items.map((each) => (
@@ -100,21 +106,21 @@ export function PersonalPrompts({
               <span>{each.title}</span>{' '}
               <button
                 type="button"
-                aria-label={`Use ${each.title}`}
+                aria-label={say('document.use', { title: each.title })}
                 onClick={() => onUse(each.instructions)}
               >
-                Use
+                {say('document.use-2')}
               </button>{' '}
               {each.promotedTo === null ? (
                 <button
                   type="button"
-                  aria-label={`Promote ${each.title}`}
+                  aria-label={say('document.promote', { title: each.title })}
                   onClick={() => setPromoting(each)}
                 >
-                  Promote
+                  {say('document.promote-2')}
                 </button>
               ) : (
-                <a href={promptLink(each.promotedTo)}>Promoted</a>
+                <a href={promptLink(each.promotedTo)}>{say('document.promoted')}</a>
               )}
             </li>
           ))}
@@ -123,22 +129,22 @@ export function PersonalPrompts({
       {asking.trim() !== '' && (
         <form className={styles['actions']} onSubmit={(event) => void save(event)}>
           <label className={styles['ask']}>
-            Save what is asked as
+            {say('document.save-what-is-asked-as')}
             <input value={title} onChange={(change) => setTitle(change.target.value)} />
           </label>
           <button type="submit" disabled={title.trim() === ''}>
-            Save
+            {say('document.save')}
           </button>
         </form>
       )}
       {promoting && (
         <form
           className={styles['actions']}
-          aria-label={`Promote ${promoting.title}`}
+          aria-label={say('document.promote', { title: promoting.title })}
           onSubmit={(event) => void promote(event)}
         >
           <label className={styles['ask']}>
-            Space
+            {say('document.space')}
             <select value={space} onChange={(change) => setSpace(change.target.value)}>
               {(places?.spaces ?? []).map((each) => (
                 <option key={each.id} value={each.id}>
@@ -148,14 +154,14 @@ export function PersonalPrompts({
             </select>
           </label>
           <label className={styles['ask']}>
-            Models accepted
+            {say('document.models-accepted')}
             <input value={models} onChange={(change) => setModels(change.target.value)} />
           </label>
           <button type="submit" className="primary" disabled={space === '' || models.trim() === ''}>
-            Make it a prompt
+            {say('document.make-it-a-prompt')}
           </button>
           <button type="button" onClick={() => setPromoting(null)}>
-            Cancel
+            {say('document.cancel')}
           </button>
         </form>
       )}

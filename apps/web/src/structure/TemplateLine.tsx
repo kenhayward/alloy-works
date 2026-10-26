@@ -3,6 +3,7 @@ import { useEffect, useId, useState } from 'react';
 
 import { refusal } from '../account/TokenTable.js';
 import { Modal } from '../layouts/Modal.js';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -88,12 +89,15 @@ export function TemplateLine({
   return (
     <div className={className}>
       <p>
-        {`Made from ${template.name}, version ${template.version.number}`}
+        {words('document.made-from-version', {
+          name: template.name,
+          number: template.version.number,
+        })}
         {move && template.newest && (
           <>
             {' '}
             <button type="button" onClick={() => setMoving(true)}>
-              {`Move to version ${template.newest.number}`}
+              {words('document.move-to-version', { number: template.newest.number })}
             </button>
           </>
         )}
@@ -112,17 +116,22 @@ export function TemplateLine({
         />
       )}
       {added.length + missing.length > 0 && (
-        <ul aria-label={`Departures from ${template.name}`}>
+        <ul aria-label={words('document.departures-from', { name: template.name })}>
           {added.map((each) => (
-            <li key={each.node}>{`${each.title || 'A section'} is not in the template.`}</li>
+            <li key={each.node}>
+              {words('document.is-not-in-the-template', { value1: each.title || 'A section' })}
+            </li>
           ))}
           {missing.map((each) => (
             <li key={each.key}>
               {each.required
                 ? each.reason === null
-                  ? `${each.title}, which the template requires, is missing.`
-                  : `${each.title}, which the template requires, was removed: ${each.reason}`
-                : `${each.title} is not here.`}
+                  ? words('document.which-the-template-requires-is', { title: each.title })
+                  : words('document.which-the-template-requires-was', {
+                      title: each.title,
+                      reason: each.reason,
+                    })
+                : words('document.is-not-here', { title: each.title })}
             </li>
           ))}
         </ul>
@@ -153,28 +162,36 @@ interface Report {
 }
 
 const CHANGES: Readonly<Record<string, string>> = {
-  added: 'is now one of its fields',
-  removed: 'is no longer one of its fields',
-  required: 'is now required',
-  optional: 'is no longer required',
+  get added() {
+    return words('document.is-now-one-of-its');
+  },
+  get removed() {
+    return words('document.is-no-longer-one-of');
+  },
+  get required() {
+    return words('document.is-now-required');
+  },
+  get optional() {
+    return words('document.is-no-longer-required');
+  },
 };
 
 /** What a move changes, each in a sentence an author can act on (TPL-034, TPL-058). */
 function reportLines(report: Report): string[] {
   const lines: string[] = [];
-  if (report.theme !== null) lines.push('Its theme changes.');
-  if (report.layout !== null) lines.push('Its layout changes.');
+  if (report.theme !== null) lines.push(words('document.its-theme-changes'));
+  if (report.layout !== null) lines.push(words('document.its-layout-changes'));
   for (const each of report.fields) {
     lines.push(
-      `${each.name} ${CHANGES[each.change] ?? 'changes'}${each.level === 'section' ? ' for each section' : ''}.`,
+      `${each.name} ${CHANGES[each.change] ?? 'changes'}${each.level === 'section' ? words('document.for-each-section') : ''}.`,
     );
   }
   for (const each of report.notCarried) {
     const value = typeof each.value === 'string' ? each.value : JSON.stringify(each.value);
     lines.push(
       each.node === null
-        ? `Its value for ${each.name}, ${value}, is not carried forward.`
-        : `A section's value for ${each.name}, ${value}, is not carried forward.`,
+        ? words('document.its-value-for-is-not', { name: each.name, value })
+        : words('document.a-section-s-value-for', { name: each.name, value }),
     );
   }
   return lines;
@@ -216,9 +233,9 @@ function MoveDialog({
       .then(({ data, error }) => {
         if (!current) return;
         if (data) setPreview({ latest: data.latest, report: data.report });
-        else setSaid(refusal(error, 'What the move changes could not be read.'));
+        else setSaid(refusal(error, words('document.what-the-move-changes-could')));
       })
-      .catch(() => current && setSaid('What the move changes could not be read.'));
+      .catch(() => current && setSaid(words('document.what-the-move-changes-could')));
     return () => {
       current = false;
     };
@@ -243,20 +260,22 @@ function MoveDialog({
       .catch(() => ({ data: undefined, error: undefined }));
     setBusy(false);
     if (data) onMoved();
-    else setSaid(refusal(error, 'The document could not be moved.'));
+    else setSaid(refusal(error, words('document.the-document-could-not-be-3')));
   };
 
   const lines = preview ? reportLines(preview.report) : [];
   return (
     <Modal labelledBy={headingId} onClose={onClose}>
-      <h2 id={headingId}>{`Move to ${template.name}, version ${to.number}`}</h2>
+      <h2 id={headingId}>
+        {words('document.move-to-version-2', { name: template.name, number: to.number })}
+      </h2>
       {preview === null ? (
-        <p role="status">{said || 'Reading what the move changes...'}</p>
+        <p role="status">{said || words('document.reading-what-the-move-changes')}</p>
       ) : (
         <>
           {preview.report.adding.length > 0 && (
             <fieldset>
-              <legend>The template now requires these, which the move adds</legend>
+              <legend>{words('document.the-template-now-requires-these')}</legend>
               {preview.report.adding.map((each) => {
                 const out = leftOut.has(each.key);
                 return (
@@ -272,11 +291,15 @@ function MoveDialog({
                           setLeftOut(next);
                         }}
                       />
-                      {`Leave out ${each.kind === 'section' ? each.title : `the component ${each.key}`}`}
+                      {words('document.leave-out', {
+                        value1: each.kind === 'section' ? each.title : `the component ${each.key}`,
+                      })}
                     </label>
                     {out && (
                       <label>
-                        {`Why ${each.kind === 'section' ? each.title : each.key} is left out`}
+                        {words('document.why-is-left-out', {
+                          value1: each.kind === 'section' ? each.title : each.key,
+                        })}
                         <textarea
                           value={leftOut.get(each.key) ?? ''}
                           maxLength={2000}
@@ -292,9 +315,11 @@ function MoveDialog({
             </fieldset>
           )}
           {lines.length === 0 ? (
-            preview.report.adding.length === 0 && <p>Nothing the document holds changes.</p>
+            preview.report.adding.length === 0 && (
+              <p>{words('document.nothing-the-document-holds-changes')}</p>
+            )
           ) : (
-            <ul aria-label="What the move changes">
+            <ul aria-label={words('document.what-the-move-changes')}>
               {lines.map((line) => (
                 <li key={line}>{line}</li>
               ))}
@@ -305,7 +330,7 @@ function MoveDialog({
       )}
       <div>
         <button type="button" onClick={onClose}>
-          {`Keep version ${template.version.number}`}
+          {words('document.keep-version', { number: template.version.number })}
         </button>
         <button
           type="button"
@@ -313,7 +338,7 @@ function MoveDialog({
           disabled={preview === null || busy || waiting}
           onClick={() => void take()}
         >
-          Move
+          {words('document.move')}
         </button>
       </div>
     </Modal>

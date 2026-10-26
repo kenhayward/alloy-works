@@ -15,6 +15,7 @@ import {
   valuesToSend,
   type ParameterValue,
 } from './ParameterInput.js';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -147,9 +148,9 @@ export function NewDocument({ client, onCreated }: NewDocumentProps) {
   const missing = missingParameters(parameters, values);
   const reason =
     declared === null && template !== ''
-      ? "Wait for the template's parameters to load."
+      ? words('document.wait-for-the-template-s')
       : missing.length > 0
-        ? `Fill in ${listed(missing)} to create the document.`
+        ? words('document.fill-in-to-create-the', { value1: listed(missing) })
         : null;
   const [notice, setNotice] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
@@ -159,11 +160,11 @@ export function NewDocument({ client, onCreated }: NewDocumentProps) {
   const create = useCallback(async () => {
     if (pending.current || reason !== null) return;
     if (!hasText(title)) {
-      setNotice('A document needs a title.');
+      setNotice(words('document.a-document-needs-a-title'));
       return;
     }
     if (!language.safeParse(languageTag).success) {
-      setNotice('A language tag looks like en-GB.');
+      setNotice(words('document.a-language-tag-looks-like'));
       return;
     }
     const sent = valuesToSend(parameters, values);
@@ -185,17 +186,17 @@ export function NewDocument({ client, onCreated }: NewDocumentProps) {
       const id = typeof data === 'object' && data !== null && 'id' in data ? data.id : undefined;
       if (typeof id !== 'string') {
         if (response.status === 401) {
-          setNotice('You are signed out. Sign in again to create a document.');
+          setNotice(words('document.you-are-signed-out-sign-5'));
         } else if (response.status === 403) {
-          setNotice('You may not create a document here.');
+          setNotice(words('document.you-may-not-create-a'));
           // A withdrawn grant answers 403 while the space is still readable: read the spaces afresh,
           // so the chooser stops offering one that would only refuse again.
           void loadSpaces();
         } else if (response.status === 404) {
           setNotice(
             template === ''
-              ? 'This space is no longer open to you. Choose another.'
-              : 'This space or template is no longer open to you. Choose another.',
+              ? words('document.this-space-is-no-longer')
+              : words('document.this-space-or-template-is'),
           );
           void loadSpaces();
         } else if (response.status === 409 && error?.code === 'creation_failed') {
@@ -203,41 +204,37 @@ export function NewDocument({ client, onCreated }: NewDocumentProps) {
           setNotice(
             typeof error?.message === 'string'
               ? error.message
-              : 'A value the template fills in could not be read, so nothing was made. Try again.',
+              : words('document.a-value-the-template-fills'),
           );
         } else if (response.status === 409 && error?.code === 'space_archived') {
           // Archived since the spaces were read (the SP1 plan, SP-C): the re-read stops offering it.
-          setNotice('This space has been archived. Choose another.');
+          setNotice(words('document.this-space-has-been-archived'));
           void loadSpaces();
         } else if (response.status === 400 && error?.code === 'template_unresolved') {
-          setNotice(
-            'This template refers to something that no longer exists, so a document cannot be made from it. Choose another, or Blank.',
-          );
+          setNotice(words('document.this-template-refers-to-something'));
         } else if (
           response.status === 400 &&
           (error?.code === 'parameter_field' || error?.code === 'parameter_unused')
         ) {
-          setNotice(
-            "This template's parameters no longer fit its fields, so a document cannot be made from it. Choose another, or Blank.",
-          );
+          setNotice(words('document.this-template-s-parameters-no'));
         } else if (response.status === 400 && refusedParameters(error).size > 0) {
           // The service's own sentence, and its refusal of each parameter beside it (TPL-045).
           setRefused(refusedParameters(error));
           setNotice(
             typeof error?.message === 'string'
               ? error.message
-              : 'A parameter was not accepted. Check them and try again.',
+              : words('document.a-parameter-was-not-accepted'),
           );
         } else if (response.status === 400) {
-          setNotice('The title, language or direction was not accepted. Check them and try again.');
+          setNotice(words('document.the-title-language-or-direction'));
         } else {
-          setNotice('The document could not be created. Try again.');
+          setNotice(words('document.the-document-could-not-be-2'));
         }
         return;
       }
       onCreated(id);
     } catch {
-      setNotice('The document could not be created. Try again.');
+      setNotice(words('document.the-document-could-not-be-2'));
     } finally {
       pending.current = false;
       setSending(false);
@@ -261,14 +258,14 @@ export function NewDocument({ client, onCreated }: NewDocumentProps) {
   if (spacesProblem !== null) {
     return (
       <section aria-labelledby="new-document-heading">
-        <h2 id="new-document-heading">New document</h2>
+        <h2 id="new-document-heading">{words('document.new-document')}</h2>
         {spacesProblem === 'signedOut' ? (
-          <p>You are signed out. Sign in again to create a document.</p>
+          <p>{words('document.you-are-signed-out-sign-5')}</p>
         ) : (
           <>
-            <p>The spaces you may create in could not be loaded.</p>
+            <p>{words('document.the-spaces-you-may-create')}</p>
             <button type="button" onClick={() => void loadSpaces()}>
-              Try again
+              {words('document.try-again')}
             </button>
           </>
         )}
@@ -283,16 +280,16 @@ export function NewDocument({ client, onCreated }: NewDocumentProps) {
     if (notice === null) return null;
     return (
       <section aria-labelledby="new-document-heading">
-        <h2 id="new-document-heading">New document</h2>
-        <p role="status">There is nowhere left for you to create a document.</p>
+        <h2 id="new-document-heading">{words('document.new-document')}</h2>
+        <p role="status">{words('document.there-is-nowhere-left-for')}</p>
       </section>
     );
   }
   return (
     <section aria-labelledby="new-document-heading">
-      <h2 id="new-document-heading">New document</h2>
+      <h2 id="new-document-heading">{words('document.new-document')}</h2>
       <label>
-        Where
+        {words('document.where')}
         <select value={where} onChange={(event) => setWhere(event.target.value)}>
           {spaces.map((space) => (
             <option key={space.id} value={space.id}>
@@ -302,7 +299,7 @@ export function NewDocument({ client, onCreated }: NewDocumentProps) {
         </select>
       </label>
       <label>
-        Template
+        {words('document.template')}
         <select
           value={template}
           onChange={(event) => {
@@ -311,7 +308,7 @@ export function NewDocument({ client, onCreated }: NewDocumentProps) {
             setRefused(new Map());
           }}
         >
-          <option value="">Blank</option>
+          <option value="">{words('document.blank')}</option>
           {Array.isArray(templates) &&
             templates.map((each) => (
               <option key={each.id} value={each.id}>
@@ -320,15 +317,11 @@ export function NewDocument({ client, onCreated }: NewDocumentProps) {
             ))}
         </select>
       </label>
-      {templates === 'failed' && <p>The templates could not be loaded.</p>}
-      {declared === 'failed' && (
-        <p>
-          {"The template's parameters could not be loaded. The service will say if one is needed."}
-        </p>
-      )}
+      {templates === 'failed' && <p>{words('document.the-templates-could-not-be')}</p>}
+      {declared === 'failed' && <p>{words('document.the-template-s-parameters-could')}</p>}
       {parameters.length > 0 && (
         <fieldset>
-          <legend>Parameters</legend>
+          <legend>{words('document.parameters')}</legend>
           {parameters.map((parameter) => (
             <ParameterInput
               key={`${template}-${parameter.name}`}
@@ -342,15 +335,15 @@ export function NewDocument({ client, onCreated }: NewDocumentProps) {
         </fieldset>
       )}
       <label>
-        Title
+        {words('document.title')}
         <input value={title} onChange={(event) => setTitle(event.target.value)} />
       </label>
       <label>
-        Language
+        {words('document.language')}
         <input value={languageTag} onChange={(event) => setLanguageTag(event.target.value)} />
       </label>
       <label>
-        Direction
+        {words('document.direction')}
         <DirectionSelect value={direction} onChange={setDirection} />
       </label>
       {/* Unavailable rather than disabled, so the keyboard reaches it and hears why (TP1-I). */}
@@ -362,7 +355,7 @@ export function NewDocument({ client, onCreated }: NewDocumentProps) {
         aria-describedby={reason === null ? undefined : reasonId}
         onClick={() => void create()}
       >
-        Create
+        {words('document.create')}
       </button>
       {reason !== null && <p id={reasonId}>{reason}</p>}
       {status}

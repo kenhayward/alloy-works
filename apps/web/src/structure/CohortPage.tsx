@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Notice } from '../states/Notice.js';
 import styles from './CohortPage.module.css';
 import { documentLink } from './links.js';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 type Row = CohortView['rows'][number];
@@ -70,16 +71,16 @@ export function CohortPage({
   if (cohort === 'missing') {
     return (
       <Notice tone="failed">
-        <p>There is no such cohort, or none you may see.</p>
+        <p>{words('document.there-is-no-such-cohort')}</p>
       </Notice>
     );
   }
   if (cohort === 'unread') {
     return (
       <Notice tone="failed">
-        <p>The cohort could not be read.</p>
+        <p>{words('document.the-cohort-could-not-be')}</p>
         <button type="button" onClick={() => setAttempt((count) => count + 1)}>
-          Try again
+          {words('document.try-again')}
         </button>
       </Notice>
     );
@@ -107,27 +108,27 @@ export function CohortPage({
       return;
     }
     const message = (error as { message?: unknown } | undefined)?.message;
-    setSaid(typeof message === 'string' ? message : 'The failed rows could not be run again.');
+    setSaid(typeof message === 'string' ? message : words('document.the-failed-rows-could-not'));
   };
 
   return (
     <section aria-labelledby="cohort-heading" className={styles['page']}>
-      <h1 id="cohort-heading">Generated documents</h1>
+      <h1 id="cohort-heading">{words('document.generated-documents')}</h1>
       <p className={styles['summary']} role="status">
-        {`${made} of ${cohort.rows.length} made`}
-        {failed.length > 0 ? `, ${failed.length} failed` : ''}
+        {words('document.of-made', { made, length: cohort.rows.length })}
+        {failed.length > 0 ? words('document.failed-2', { length: failed.length }) : ''}
         {waiting
-          ? '. Still making the rest.'
+          ? words('document.still-making-the-rest')
           : stoppedAt !== null
-            ? `. Stopped at row ${stoppedAt}: the rows after it wait for Run the failed again.`
+            ? words('document.stopped-at-row-the-rows', { stoppedAt })
             : '.'}
       </p>
       <table className={styles['table']}>
         <thead>
           <tr>
-            <th scope="col">Row</th>
-            <th scope="col">Parameters</th>
-            <th scope="col">Outcome</th>
+            <th scope="col">{words('document.row')}</th>
+            <th scope="col">{words('document.parameters')}</th>
+            <th scope="col">{words('document.outcome')}</th>
           </tr>
         </thead>
         <tbody>
@@ -164,11 +165,14 @@ export function CohortPage({
               </td>
               <td>
                 {row.state === 'made' && row.document !== null && (
-                  <a href={documentLink(row.document)}>Open the document</a>
+                  <a href={documentLink(row.document)}>{words('document.open-the-document')}</a>
                 )}
-                {row.state === 'pending' && (stoppedAt === null ? 'Being made' : 'Waiting')}
+                {row.state === 'pending' &&
+                  (stoppedAt === null ? words('document.being-made') : words('document.waiting'))}
                 {row.state === 'failed' && (
-                  <span className={styles['failed']}>{row.failure?.message ?? 'It failed.'}</span>
+                  <span className={styles['failed']}>
+                    {row.failure?.message ?? words('document.it-failed')}
+                  </span>
                 )}
               </td>
             </tr>
@@ -178,9 +182,9 @@ export function CohortPage({
       {failed.length > 0 && !waiting && (
         <div className={styles['actions']}>
           <button type="button" onClick={() => void rerun()}>
-            Run the failed again
+            {words('document.run-the-failed-again')}
           </button>
-          <span className={styles['note']}>The rows already made are left as they are.</span>
+          <span className={styles['note']}>{words('document.the-rows-already-made-are')}</span>
         </div>
       )}
       {said !== null && <p role="alert">{said}</p>}

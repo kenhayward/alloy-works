@@ -1,3 +1,4 @@
+import { words } from '../words/words.js';
 /** Rows read from text, or why not: what the Generate dialog sends, or says. */
 export type ReadRows =
   | {
@@ -65,17 +66,17 @@ export function rowsFrom(text: string): ReadRows {
   const names = records[0] ?? [];
   const blank = (record: readonly string[]) => record.every((cell) => cell === '');
   if (names.length === 0 || blank(names)) {
-    return { ok: false, problem: 'There are no rows to read.' };
+    return { ok: false, problem: words('document.there-are-no-rows-to') };
   }
   if (names.some((name) => name === '') || new Set(names).size !== names.length) {
-    return { ok: false, problem: 'The first line names a parameter twice, or leaves one unnamed.' };
+    return { ok: false, problem: words('document.the-first-line-names-a') };
   }
   const rows: Record<string, string>[] = [];
   for (let at = 1; at < records.length; at += 1) {
     const cells = records[at]!;
     if (blank(cells)) continue;
     if (cells.length > names.length) {
-      return { ok: false, problem: `Line ${at + 1} has more cells than the first line names.` };
+      return { ok: false, problem: words('document.line-has-more-cells-than', { value1: at + 1 }) };
     }
     rows.push(
       Object.fromEntries(
@@ -83,6 +84,6 @@ export function rowsFrom(text: string): ReadRows {
       ),
     );
   }
-  if (rows.length === 0) return { ok: false, problem: 'There are no rows to read.' };
+  if (rows.length === 0) return { ok: false, problem: words('document.there-are-no-rows-to') };
   return { ok: true, names, rows };
 }

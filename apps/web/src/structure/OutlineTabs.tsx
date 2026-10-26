@@ -4,6 +4,7 @@ import { Icon } from '../editor/Icon.js';
 import { kept, keep, PaneToggle, type Pane } from '../layouts/PaneWidth.js';
 import { PanelTabs } from '../parts/PanelTabs.js';
 import styles from './OutlineTabs.module.css';
+import { words } from '../words/words.js';
 
 /** One tab of the outline pane: what it is called and the glyph beside its name. */
 export interface OutlineTab {
@@ -17,9 +18,33 @@ export interface OutlineTab {
  * BL plan).
  */
 export const OUTLINE_TABS: readonly OutlineTab[] = [
-  { key: 'contents', label: 'Contents', icon: 'Contents' },
-  { key: 'data', label: 'Data', icon: 'Value' },
-  { key: 'baselines', label: 'Baselines', icon: 'Keep' },
+  {
+    key: 'contents',
+    get label() {
+      return words('document.contents');
+    },
+    get icon() {
+      return words('document.contents');
+    },
+  },
+  {
+    key: 'data',
+    get label() {
+      return words('document.data');
+    },
+    get icon() {
+      return words('document.value');
+    },
+  },
+  {
+    key: 'baselines',
+    get label() {
+      return words('document.baselines');
+    },
+    get icon() {
+      return words('document.keep');
+    },
+  },
 ];
 
 /** The tabs offered: Data only where the document holds a binding. */
@@ -70,13 +95,13 @@ export function OutlineTabs({
       <a
         className={styles['back']}
         href="#/documents"
-        aria-label="Back to documents"
-        title="Back to documents"
+        aria-label={words('document.back-to-documents')}
+        title={words('document.back-to-documents')}
       >
         <Icon name="Back" size={15} />
       </a>
       <PanelTabs
-        label="Outline pane"
+        label={words('document.outline-pane')}
         tabs={offered.map((tab) => ({
           key: tab.key,
           label: tab.label,
@@ -89,7 +114,7 @@ export function OutlineTabs({
         tabClassName={styles['tab']}
       />
       <span className={styles['spacer']} />
-      <PaneToggle label="outline pane" pane={pane} />
+      <PaneToggle label={words('document.outline-pane-2')} pane={pane} />
     </div>
   );
 }
@@ -102,7 +127,7 @@ export function OutlineRail({
   pane,
   chosen,
   tabs: offered = OUTLINE_TABS,
-  label = 'outline pane',
+  label = words('document.outline-pane-2'),
   edge = 'start',
   className,
 }: {

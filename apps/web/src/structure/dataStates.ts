@@ -1,4 +1,5 @@
 import type { BindingState } from './bindingContexts.js';
+import { words } from '../words/words.js';
 
 /** A binding's state in the Data tab, one of the design's (bindings.md, "The Data tab"). */
 export type DataState =
@@ -6,14 +7,30 @@ export type DataState =
 
 /** Each state in words, in the design's order, which the filter offers them in. */
 export const DATA_STATE_WORDS = {
-  never: 'Never resolved',
-  stale: 'Changed since resolved',
-  failed: 'Failed',
-  waiting: 'Revision waiting',
-  definition: 'Definition changed',
-  revised: 'Revised by hand',
-  published: 'Changed since published',
-  holding: 'Holding',
+  get never() {
+    return words('document.never-resolved');
+  },
+  get stale() {
+    return words('document.changed-since-resolved');
+  },
+  get failed() {
+    return words('document.failed-3');
+  },
+  get waiting() {
+    return words('document.revision-waiting');
+  },
+  get definition() {
+    return words('document.definition-changed');
+  },
+  get revised() {
+    return words('document.revised-by-hand-2');
+  },
+  get published() {
+    return words('document.changed-since-published');
+  },
+  get holding() {
+    return words('document.holding');
+  },
 } as const satisfies Record<DataState, string>;
 
 /**

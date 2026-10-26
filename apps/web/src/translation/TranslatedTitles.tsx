@@ -2,6 +2,7 @@ import { useId, useState } from 'react';
 
 import { Modal } from '../layouts/Modal.js';
 import styles from '../lifecycle/Hold.module.css';
+import { words as say } from '../words/words.js';
 
 /** A title as the dialog edits it: its own words, and its words in the language, where given. */
 export interface TitleToTranslate {
@@ -52,10 +53,10 @@ export function TranslatedTitles({
   const given = titles.filter((each) => each.translated !== undefined).length;
   return (
     <div>
-      {`Titles in ${language}: ${given} of ${titles.length} given; the rest print in the document's own language.`}{' '}
+      {say('translation.titles-in-of-given-the', { language, given, length: titles.length })}{' '}
       {mayEdit && (
         <button type="button" onClick={() => setOpen(true)}>
-          Translate titles
+          {say('translation.translate-titles')}
         </button>
       )}
       {open && (
@@ -108,17 +109,17 @@ function TitlesDialog({
       }
     }
     setBusy(false);
-    if (refused) setSaid('Not every title was saved. Try again.');
+    if (refused) setSaid(say('translation.not-every-title-was-saved'));
     else onClose();
   };
 
   return (
     <Modal labelledBy={headingId} size="wide" onClose={onClose}>
       <form className={styles['form']} onSubmit={(event) => void save(event)}>
-        <h2 id={headingId}>{`Titles in ${language}`}</h2>
+        <h2 id={headingId}>{say('translation.titles-in', { language })}</h2>
         {titles.map((each) => (
           <label key={each.node ?? 'document'}>
-            {each.node === null ? `The document: ${each.own}` : each.own}
+            {each.node === null ? say('translation.the-document', { own: each.own }) : each.own}
             <input
               value={words.get(each.node ?? '') ?? ''}
               maxLength={500}
@@ -132,10 +133,10 @@ function TitlesDialog({
         {said !== '' && <p role="alert">{said}</p>}
         <div className={styles['buttons']}>
           <button type="button" onClick={onClose}>
-            Cancel
+            {say('translation.cancel')}
           </button>
           <button type="submit" className="primary" disabled={busy}>
-            Save
+            {say('translation.save')}
           </button>
         </div>
       </form>

@@ -1,5 +1,6 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import { useEffect, useState } from 'react';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -29,25 +30,41 @@ const who = (person: { readonly name: string | null } | null) => person?.name ??
 
 /** One generated item, said in a sentence. */
 function sentence(item: Report['placements'][number]['items'][number]): string {
-  const by = `Asked of ${item.run.model ?? 'a model'} on ${item.run.endpoint} by ${who(item.askedBy)}.`;
-  const on = item.actedAt === null ? '' : ` on ${day.format(new Date(item.actedAt))}`;
+  const by = words('publishing.asked-of-on-by', {
+    value1: item.run.model ?? 'a model',
+    endpoint: item.run.endpoint,
+    value3: who(item.askedBy),
+  });
+  const on =
+    item.actedAt === null
+      ? ''
+      : words('publishing.on', { value1: day.format(new Date(item.actedAt)) });
   // A part a model wrote whole, made as the person accepted it (G5-E).
   if (item.kind === 'creation') {
-    return `Made by ${who(item.actedBy)}${on} from a proposal to make it, as ${item.acceptedInto?.number ?? 'its first version'}. ${by}`;
+    return words('publishing.made-by-from-a-proposal', {
+      value1: who(item.actedBy),
+      on,
+      value3: item.acceptedInto?.number ?? 'its first version',
+      by,
+    });
   }
   switch (item.state) {
     case 'accepted':
-      return `Accepted by ${who(item.actedBy)}${on} into ${item.acceptedInto?.number ?? 'a version'}${
-        item.acceptedInto?.inPlaced === false ? ', a version this does not hold' : ''
-      }. ${by}`;
+      return words('publishing.accepted-by-into', {
+        value1: who(item.actedBy),
+        on,
+        value3: item.acceptedInto?.number ?? 'a version',
+        value4: item.acceptedInto?.inPlaced === false ? ', a version this does not hold' : '',
+        by,
+      });
     case 'open':
-      return `Waiting to be accepted or rejected in Review. ${by}`;
+      return words('publishing.waiting-to-be-accepted-or', { by });
     case 'rejected':
-      return `Rejected by ${who(item.actedBy)}${on}. ${by}`;
+      return words('publishing.rejected-by', { value1: who(item.actedBy), on, by });
     case 'withdrawn':
-      return `Withdrawn by ${who(item.actedBy)}${on}. ${by}`;
+      return words('publishing.withdrawn-by', { value1: who(item.actedBy), on, by });
     case 'discarded':
-      return `Discarded by ${who(item.actedBy)}${on} before it was suggested. ${by}`;
+      return words('publishing.discarded-by-before-it-was', { value1: who(item.actedBy), on, by });
   }
 }
 
@@ -58,7 +75,7 @@ function sentence(item: Report['placements'][number]['items'][number]): string {
 export function GeneratedContent({
   client,
   of,
-  placeOf = () => 'A part',
+  placeOf = () => words('publishing.a-part'),
 }: {
   client: Client;
   of: { readonly document: string } | { readonly publication: string };
@@ -96,18 +113,24 @@ export function GeneratedContent({
 
   // A report that cannot be read is left out: a publish still says by name what waits on it.
   if (report === null || report === 'none' || report === 'failed') return null;
-  const heading = document !== null ? 'Generated content' : 'Generated content it printed';
+  const heading =
+    document !== null
+      ? words('publishing.generated-content')
+      : words('publishing.generated-content-it-printed');
   return (
     <section aria-label={heading}>
       <h4>{heading}</h4>
       {report.placements.length === 0 ? (
-        <p>Nothing here came from a model.</p>
+        <p>{words('publishing.nothing-here-came-from-a')}</p>
       ) : (
         <ul>
           {report.placements.map((placement) => (
             <li key={placement.node}>
-              {placeOf(placement.node)}, version {placement.number}
-              {placement.restoredFrom !== null && `, restored from ${placement.restoredFrom}`}
+              {placeOf(placement.node)}
+              {words('publishing.version')}
+              {placement.number}
+              {placement.restoredFrom !== null &&
+                words('publishing.restored-from', { restoredFrom: placement.restoredFrom })}
               <ul>
                 {placement.items.map((item) => (
                   <li key={item.id}>{sentence(item)}</li>
@@ -118,11 +141,7 @@ export function GeneratedContent({
         </ul>
       )}
       {report.unreadable > 0 && (
-        <p>
-          {report.unreadable === 1
-            ? 'One part you may not read is not shown.'
-            : `${report.unreadable} parts you may not read are not shown.`}
-        </p>
+        <p>{words('publishing.parts-you-may-not-read', { count: report.unreadable })}</p>
       )}
     </section>
   );

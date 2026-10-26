@@ -8,6 +8,7 @@ import {
 
 import { PARAMETER_WORDS } from '../editor/ValueDialog.js';
 import styles from '../metadata/FieldsForm.module.css';
+import { words as say } from '../words/words.js';
 
 /** One value of a parameter as a form holds it: canonical text, or a boolean. */
 export type ParameterEntry = string | boolean;
@@ -25,14 +26,30 @@ export function declarationsIn(value: unknown): TemplateParameter[] {
 
 /** What a value refused by its seeded field broke (TP1-G), beside the parameter. */
 const FIELD_WORDS: Partial<Record<MetadataRule, string>> = {
-  minLength: 'is shorter than the field it fills allows',
-  maxLength: 'is longer than the field it fills allows',
-  min: 'is below what the field it fills allows',
-  max: 'is above what the field it fills allows',
-  maxValues: 'has more entries than the field it fills holds',
-  multiplicity: 'repeats an entry the field it fills holds once',
-  integer: 'is not a whole number, as the field it fills needs',
-  scale: 'has more places than the field it fills holds',
+  get minLength() {
+    return say('document.is-shorter-than-the-field');
+  },
+  get maxLength() {
+    return say('document.is-longer-than-the-field');
+  },
+  get min() {
+    return say('document.is-below-what-the-field');
+  },
+  get max() {
+    return say('document.is-above-what-the-field');
+  },
+  get maxValues() {
+    return say('document.has-more-entries-than-the');
+  },
+  get multiplicity() {
+    return say('document.repeats-an-entry-the-field');
+  },
+  get integer() {
+    return say('document.is-not-a-whole-number');
+  },
+  get scale() {
+    return say('document.has-more-places-than-the');
+  },
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -52,10 +69,11 @@ export function refusedParameters(refusal: unknown): Map<string, string> {
       const rule = typeof problem.rule === 'string' ? problem.rule : '';
       const words =
         typeof problem.field === 'string'
-          ? (FIELD_WORDS[rule as MetadataRule] ?? 'does not fit the field it fills')
+          ? (FIELD_WORDS[rule as MetadataRule] ?? say('document.does-not-fit-the-field'))
           : rule === 'duplicate'
-            ? 'holds an entry more than once'
-            : (PARAMETER_WORDS[rule as ParameterRule] ?? 'does not fit its parameter');
+            ? say('document.holds-an-entry-more-than')
+            : (PARAMETER_WORDS[rule as ParameterRule] ??
+              say('document.does-not-fit-its-parameter'));
       const value =
         typeof problem.value === 'string' && problem.value !== '' ? problem.value : null;
       said.set(
@@ -73,8 +91,8 @@ export function refusedParameters(refusal: unknown): Map<string, string> {
       said.set(
         each.parameter,
         refusal.code === 'parameter_fixed'
-          ? `${each.parameter} may not change after the document is made.`
-          : `${each.parameter} is not a parameter of this template.`,
+          ? say('document.may-not-change-after-the', { parameter: each.parameter })
+          : say('document.is-not-a-parameter-of', { parameter: each.parameter }),
       );
     }
   }
@@ -100,7 +118,7 @@ export function missingParameters(
 /** `a`, `a and b`, `a, b and c`. */
 export function listed(names: readonly string[]): string {
   if (names.length <= 1) return names.join('');
-  return `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
+  return say('document.and', { value1: names.slice(0, -1).join(', '), value2: names.at(-1) });
 }
 
 /**
@@ -146,11 +164,11 @@ export function startingValue(parameter: TemplateParameter): ParameterValue | un
 function hint(parameter: TemplateParameter): string | null {
   switch (parameter.type.base) {
     case 'integer':
-      return 'A whole number.';
+      return say('document.a-whole-number');
     case 'decimal':
-      return `A number, at most ${parameter.type.scale} places after the point.`;
+      return say('document.a-number-at-most-places', { scale: parameter.type.scale });
     case 'instant':
-      return 'A date and time, in UTC.';
+      return say('document.a-date-and-time-in');
     default:
       return null;
   }
@@ -202,7 +220,7 @@ function Entry({
           onChange(chosen ?? '');
         }}
       >
-        <option value="">Not chosen</option>
+        <option value="">{say('document.not-chosen')}</option>
         {permitted.map((each) => (
           <option key={String(each)} value={String(each)}>
             {String(each)}
@@ -360,7 +378,7 @@ export function ParameterInput({
               <Entry
                 parameter={parameter}
                 id={`${id}-${index + 1}`}
-                label={`${parameter.name}, entry ${index + 1}`}
+                label={say('document.entry', { name: parameter.name, value2: index + 1 })}
                 value={entry}
                 onChange={(next) =>
                   onChange(entries.map((each, at) => (at === index ? next : each)))
@@ -374,7 +392,7 @@ export function ParameterInput({
                   type="button"
                   onClick={() => onChange(entries.filter((_, at) => at !== index))}
                 >
-                  {`Remove entry ${index + 1} from ${parameter.name}`}
+                  {say('document.remove-entry-from', { value1: index + 1, name: parameter.name })}
                 </button>
               )}
             </li>
@@ -386,7 +404,7 @@ export function ParameterInput({
           type="button"
           onClick={() => onChange([...entries, parameter.type.base === 'boolean' ? false : ''])}
         >
-          {`Add an entry to ${parameter.name}`}
+          {say('document.add-an-entry-to', { name: parameter.name })}
         </button>
       )}
     </fieldset>

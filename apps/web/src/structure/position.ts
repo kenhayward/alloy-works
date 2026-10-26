@@ -1,4 +1,5 @@
 import { useEffect, type RefObject } from 'react';
+import { words } from '../words/words.js';
 
 /** Whether a change to the text added or removed a node's element, or anything holding one. */
 function movesNodes(mutation: MutationRecord): boolean {
@@ -225,7 +226,7 @@ export function useReadingPosition(
       return () => window.removeEventListener('scroll', update);
     }
     const crossing = new IntersectionObserver(update, {
-      rootMargin: `0px 0px -${(1 - READING_LINE) * 100}% 0px`,
+      rootMargin: words('document.0px-0px-0px', { value1: (1 - READING_LINE) * 100 }),
     });
     const watch = () => {
       crossing.disconnect();

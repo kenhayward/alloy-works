@@ -5,6 +5,7 @@ import {
   type OutlineOperation,
   type SectionViewNode,
 } from '@alloy-works/domain';
+import { words } from '../words/words.js';
 
 /**
  * The outline panel's arithmetic, kept apart from React so it can be tested without rendering
@@ -411,25 +412,32 @@ export type Names = ReadonlyMap<string, string> | null;
 
 /** What a node is called in a sentence: a section's title, or the component a reference points at. */
 export function nodeName(node: OutlineViewNode, names: Names): string {
-  if (node.type === 'section') return titleText(node.title).trim() || 'Untitled section';
+  if (node.type === 'section')
+    return titleText(node.title).trim() || words('document.untitled-section');
   // Neutral whenever the title is not known: the service withholds a component the caller may not
   // read (`component: null`), and access.md makes that indistinguishable from one that does not
   // exist, so nothing here says which it is. The same words while the listing is still being read.
-  if (names === null || node.component === null) return 'A component';
-  return names.get(node.component) ?? 'A component';
+  if (names === null || node.component === null) return words('document.a-component-2');
+  return names.get(node.component) ?? words('document.a-component-2');
 }
 
 const MODES = {
   latest: 'latest',
   pinned: 'pinned',
   // Its component's latest approved revision (REU-050; the WF4 plan, WF4-B).
-  approved: 'latest approved',
+  get approved() {
+    return words('document.latest-approved');
+  },
 } as const;
 
 const STARTS = {
   none: '',
-  page: ', starts on a new page',
-  recto: ', starts on a new right-hand page',
+  get page() {
+    return words('document.starts-on-a-new-page');
+  },
+  get recto() {
+    return words('document.starts-on-a-new-right');
+  },
 };
 
 /** A tree item's own label: its name, how a reference resolves, and where it starts. */

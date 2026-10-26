@@ -16,6 +16,7 @@ import { GeneratedContent } from './GeneratedContent.js';
 import styles from './Publishing.module.css';
 import { Waiting } from '../states/Waiting.js';
 import { everyPage } from '../paging.js';
+import { words as say } from '../words/words.js';
 
 export { FOLLOW_CAP_MS, FOLLOW_MS, nextFollow } from './following.js';
 
@@ -35,8 +36,18 @@ interface Listed {
  */
 const CHOICES = [
   { formats: ['pdf'], words: 'PDF' },
-  { formats: ['docx'], words: 'Word' },
-  { formats: ['pdf', 'docx'], words: 'PDF and Word' },
+  {
+    formats: ['docx'],
+    get words() {
+      return say('publishing.word');
+    },
+  },
+  {
+    formats: ['pdf', 'docx'],
+    get words() {
+      return say('publishing.pdf-and-word');
+    },
+  },
 ] as const;
 
 type Publish =
@@ -76,28 +87,33 @@ function warnedWords(warnings: unknown): string | null {
     warnings.filter((each) => isRecord(each) && each.code === code).length;
   const translation = (
     [
-      [byNode('component_untranslated'), 'in {its} own language, marked untranslated'],
-      [byNode('translation_out_of_date'), 'translated, but out of date with {its} source'],
-      [byNode('override_skipped'), 'translated, {its} overrides not applied'],
+      [byNode('component_untranslated'), say('publishing.in-own-language-marked-untranslated')],
+      [byNode('translation_out_of_date'), say('publishing.translated-but-out-of-date')],
+      [byNode('override_skipped'), say('publishing.translated-overrides-not-applied')],
     ] as const
   ).flatMap(([n, words]) =>
     n === 0
       ? []
       : [
-          `${n} ${n === 1 ? 'component' : 'components'} ${words.replace('{its}', n === 1 ? 'its' : 'their')}`,
+          `${n} ${say('publishing.components', { count: n })} ${words.replace('{its}', n === 1 ? 'its' : 'their')}`,
         ],
   );
   const said = [
     ...(sources.length === 0
       ? []
-      : [`Cited sources flagged by their source: ${sources.join(', ')}. Review lists them.`]),
-    ...(terms.length === 0 ? [] : [`Terms used: ${terms.join(', ')}.`]),
-    ...(translation.length === 0 ? [] : [`Published with ${translation.join(', ')}.`]),
+      : [say('publishing.cited-sources-flagged-by-their', { value1: sources.join(', ') })]),
+    ...(terms.length === 0 ? [] : [say('publishing.terms-used', { value1: terms.join(', ') })]),
+    ...(translation.length === 0
+      ? []
+      : [say('publishing.published-with', { value1: translation.join(', ') })]),
     // And each title with no words in the language (TR-L).
     ...(byNode('title_untranslated') === 0
       ? []
       : [
-          `${byNode('title_untranslated')} ${byNode('title_untranslated') === 1 ? 'title' : 'titles'} in the document’s own language.`,
+          say('publishing.in-the-document-s-own', {
+            value1: byNode('title_untranslated'),
+            value2: byNode('title_untranslated') === 1 ? 'title' : 'titles',
+          }),
         ]),
   ];
   return said.length === 0 ? null : said.join(' ');
@@ -105,9 +121,13 @@ function warnedWords(warnings: unknown): string | null {
 
 /** What each kind of term warning says of its uses. */
 const TERM_WORDS: Readonly<Record<string, string>> = {
-  unresolved: 'printed as written',
+  get unresolved() {
+    return say('publishing.printed-as-written');
+  },
   deprecated: 'deprecated',
-  fallback: 'in their base language',
+  get fallback() {
+    return say('publishing.in-their-base-language');
+  },
 };
 
 function listedIn(value: unknown): Listed[] | undefined {
@@ -146,10 +166,10 @@ const when = (iso: string) =>
  * document right (pre-flight finding 9).
  */
 function failedIntro(failures: readonly Failure[]): string {
-  if (failures.length === 0) return 'The document could not be published. Publish again.';
+  if (failures.length === 0) return say('publishing.the-document-could-not-be');
   return isProductsOwn(failures)
-    ? 'The publication could not be made, and nothing in the document caused it. Publish again later.'
-    : 'The document could not be published. Put these right and publish again:';
+    ? say('publishing.the-publication-could-not-be-2')
+    : say('publishing.the-document-could-not-be-2');
 }
 
 /**
@@ -300,7 +320,7 @@ export function Publishing({
     if (!isRecord(data)) {
       setPublish({
         state: 'refused',
-        words: 'The publish could not be followed. Look for it below later.',
+        words: say('publishing.the-publish-could-not-be'),
       });
       return true;
     }
@@ -346,10 +366,10 @@ export function Publishing({
 
   return (
     <section aria-labelledby="publications-title">
-      <h3 id="publications-title">Publications</h3>
+      <h3 id="publications-title">{say('publishing.publications')}</h3>
       {mayPublish && offersWord && (
         <div role="radiogroup" aria-labelledby={`${choiceId}-label`}>
-          <span id={`${choiceId}-label`}>Publish as</span>
+          <span id={`${choiceId}-label`}>{say('publishing.publish-as')}</span>
           {CHOICES.map((choice) => (
             <label key={choice.words}>
               {' '}
@@ -367,14 +387,18 @@ export function Publishing({
       )}
       {mayPublish && others.length > 0 && (
         <p>
-          <label htmlFor={languageId}>Publish in</label>{' '}
+          <label htmlFor={languageId}>{say('publishing.publish-in')}</label>{' '}
           <select
             id={languageId}
             value={publishIn}
             disabled={publish.state === 'working'}
             onChange={(event) => setPublishIn(event.target.value)}
           >
-            <option value="">{`Its own language${language === undefined ? '' : `, ${language}`}`}</option>
+            <option value="">
+              {say('publishing.its-own-language', {
+                value1: language === undefined ? '' : `, ${language}`,
+              })}
+            </option>
             {others.map((each) => (
               <option key={each} value={each}>
                 {each}
@@ -393,7 +417,7 @@ export function Publishing({
       )}
       {others.length > 0 && fallback !== undefined && (
         <p>
-          <label htmlFor={fallbackId}>Where a component has no translation</label>{' '}
+          <label htmlFor={fallbackId}>{say('publishing.where-a-component-has-no')}</label>{' '}
           <select
             id={fallbackId}
             value={fallback.own ?? ''}
@@ -404,18 +428,19 @@ export function Publishing({
               )
             }
           >
-            <option value="">As the environment says</option>
-            <option value="source">Publish it in its own language, marked</option>
-            <option value="refuse">Refuse the publish</option>
+            <option value="">{say('publishing.as-the-environment-says')}</option>
+            <option value="source">{say('publishing.publish-it-in-its-own')}</option>
+            <option value="refuse">{say('publishing.refuse-the-publish')}</option>
           </select>
         </p>
       )}
       {mayPublish && profile !== undefined && (
         <p>
-          Publishing under a profile chosen in place of the document’s: {profile.said}.{' '}
+          {say('publishing.publishing-under-a-profile-chosen')}
+          {profile.said}.{' '}
           {/* The request already sent keeps its profile: only the next publish is the document's. */}
           <button type="button" onClick={profile.onClear}>
-            Use the document’s profile
+            {say('publishing.use-the-document-s-profile')}
           </button>
         </p>
       )}
@@ -432,17 +457,21 @@ export function Publishing({
               disabled={publish.state === 'working'}
               onClick={() => void start()}
             >
-              Publish as {offersWord ? chosen.words : 'PDF'}
+              {say('publishing.publish-as-2')}
+              {offersWord ? chosen.words : 'PDF'}
             </button>
           )}
         </div>
       )}
       {preview !== undefined && <PreviewSaid preview={preview} />}
       <div aria-live="polite">
-        {publish.state === 'working' && <Waiting>Publishing...</Waiting>}
+        {publish.state === 'working' && <Waiting>{say('publishing.publishing')}</Waiting>}
         {publish.state === 'done' && (
           <p>
-            Published. <a href={`#/publications/${publish.publication}`}>Open the publication</a>
+            {say('publishing.published-2')}
+            <a href={`#/publications/${publish.publication}`}>
+              {say('publishing.open-the-publication')}
+            </a>
           </p>
         )}
         {publish.state === 'refused' && <p>{publish.words}</p>}
@@ -452,7 +481,7 @@ export function Publishing({
             <p>{failedIntro(publish.failures)}</p>
             {publish.failures.length > 0 && (
               <FailureList
-                label="Why it could not be published"
+                label={say('publishing.why-it-could-not-be')}
                 failures={publish.failures}
                 placeOf={placeOf}
                 wordOffered={offersWord}
@@ -461,27 +490,30 @@ export function Publishing({
           </>
         )}
       </div>
-      {listed === null && <p>Reading the publications...</p>}
+      {listed === null && <p>{say('publishing.reading-the-publications')}</p>}
       {listed === 'failed' && (
         <p>
-          The publications could not be read.{' '}
+          {say('publishing.the-publications-could-not-be-2')}{' '}
           <button type="button" onClick={() => setListAttempt((count) => count + 1)}>
-            Try again
+            {say('publishing.try-again')}
           </button>
         </p>
       )}
       {Array.isArray(listed) && listed.length === 0 && (
-        <p>Nothing has been published from this document.</p>
+        <p>{say('publishing.nothing-has-been-published-from')}</p>
       )}
       {Array.isArray(listed) && listed.length > 0 && (
         <ul>
           {listed.map((each) => (
             <li key={each.id}>
               <a href={`#/publications/${each.id}`}>
-                Version {each.version.number}, published by{' '}
-                {each.publisher.displayName ?? 'somebody'} on {when(each.publishedAt)}
+                {say('publishing.version-2')}
+                {each.version.number}
+                {say('publishing.published-by-3')} {each.publisher.displayName ?? 'somebody'} on{' '}
+                {when(each.publishedAt)}
               </a>{' '}
-              ({each.formats.length > 0 && `${formatsWords(each.formats)}, `}not approved)
+              ({each.formats.length > 0 && `${formatsWords(each.formats)}, `}
+              {say('publishing.not-approved-2')}
             </li>
           ))}
         </ul>

@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 
 import { Icon } from '../editor/Icon.js';
 import styles from './Preview.module.css';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -125,7 +126,7 @@ export function useRangePreview(options: {
             setFailed('');
             setRange({ id: data.id, node, session });
             setView(data);
-          } else setFailed('The pages could not be asked for. Save again to try.');
+          } else setFailed(words('publishing.the-pages-could-not-be'));
           return;
         }
         const { data } = await client.POST('/v1/documents/{id}/range-previews/{range}/refresh', {
@@ -136,7 +137,7 @@ export function useRangePreview(options: {
           setView(data);
         }
       } catch {
-        setFailed('The pages could not be asked for. Save again to try.');
+        setFailed(words('publishing.the-pages-could-not-be'));
       } finally {
         asking.current = false;
         setEnded((count) => count + 1);
@@ -155,7 +156,7 @@ export function useRangePreview(options: {
         .then(({ data }) => {
           if (isRangeView(data)) setView(data);
         })
-        .catch(() => setFailed('The pages could not be read.'));
+        .catch(() => setFailed(words('publishing.the-pages-could-not-be-2')));
     }, followMs);
     return () => clearTimeout(timer);
   }, [client, document, range, view, followMs]);
@@ -188,7 +189,7 @@ export function useRangePreview(options: {
       shown.current = key;
       setFailed('');
       setPages(read);
-    })().catch(() => setFailed('The pages could not be read.'));
+    })().catch(() => setFailed(words('publishing.the-pages-could-not-be-2')));
     return () => {
       current = false;
     };
@@ -200,14 +201,14 @@ export function useRangePreview(options: {
       : !on
         ? ''
         : session === null
-          ? 'The pages appear after your next save.'
+          ? words('publishing.the-pages-appear-after-your')
           : view === null || view.state === 'waiting'
             ? pages.length > 0
-              ? 'Drawing your latest save.'
-              : 'Drawing the pages.'
+              ? words('publishing.drawing-your-latest-save')
+              : words('publishing.drawing-the-pages')
             : view.state === 'failed'
-              ? 'The pages could not be drawn. Save again to try.'
-              : 'Showing your latest save.';
+              ? words('publishing.the-pages-could-not-be-3')
+              : words('publishing.showing-your-latest-save');
   return {
     on,
     toggle: () => {
@@ -230,7 +231,7 @@ export function RangePreviewButton({
 }) {
   return (
     <button type="button" className={className} aria-pressed={range.on} onClick={range.toggle}>
-      Pages as you edit
+      {words('publishing.pages-as-you-edit')}
     </button>
   );
 }
@@ -258,24 +259,21 @@ export function RangePreviewPane({
       className={className === undefined ? styles['pane'] : `${styles['pane']} ${className}`}
     >
       <div className={styles['head']}>
-        <h3 id={headingId}>Pages as you edit</h3>
+        <h3 id={headingId}>{words('publishing.pages-as-you-edit')}</h3>
         <button
           type="button"
           className={styles['close']}
-          aria-label="Close the pages as you edit"
-          title="Close the pages as you edit"
+          aria-label={words('publishing.close-the-pages-as-you')}
+          title={words('publishing.close-the-pages-as-you')}
           onClick={range.toggle}
         >
           <Icon name="Close" size={13} />
         </button>
       </div>
-      <p>
-        {range.untagged ??
-          'These pages are pictures drawn as you edit, untagged, so assistive technology cannot read them. For an accessible copy, choose Preview, which makes the tagged PDF.'}
-      </p>
+      <p>{range.untagged ?? words('publishing.these-pages-are-pictures-drawn')}</p>
       <p>
         <button type="button" onClick={onPreview}>
-          Preview
+          {words('publishing.preview')}
         </button>
       </p>
       <p aria-live="polite">{range.said}</p>

@@ -5,6 +5,7 @@ import { useCreatableSpaces } from '../spaces.js';
 import styles from './Import.module.css';
 import { IMPORT_HELP } from './ImportHelp.js';
 import { importLink } from './links.js';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -16,13 +17,18 @@ export function fileTypeOf(name: string): 'docx' | 'markdown' | 'html' | null {
   return null;
 }
 
-const NOT_PERMITTED = 'Choose a Word document (.docx), Markdown (.md) or HTML (.html) file.';
+const NOT_PERMITTED = (): string => words('imports.choose-a-word-document-docx');
 
 const SAID: Readonly<Record<string, string>> = {
-  import_file_not_permitted:
-    'This file is not a Word document, Markdown or HTML, read from what it holds.',
-  import_too_large: 'This file is larger than 25 MB, which is more than an import may be.',
-  forbidden: 'You may not import into this space.',
+  get import_file_not_permitted() {
+    return words('imports.this-file-is-not-a');
+  },
+  get import_too_large() {
+    return words('imports.this-file-is-larger-than');
+  },
+  get forbidden() {
+    return words('imports.you-may-not-import-into');
+  },
 };
 
 /**
@@ -49,7 +55,7 @@ export async function importFile(
       const code = (made.error as { code?: string } | undefined)?.code;
       return {
         ok: false,
-        said: (code && SAID[code]) ?? 'The file could not be imported. Try again.',
+        said: (code && SAID[code]) ?? words('imports.the-file-could-not-be'),
       };
     }
     const filled = await client.PUT('/v1/imports/{id}/file', {
@@ -61,11 +67,11 @@ export async function importFile(
     });
     if (!filled.data) {
       const code = (filled.error as { code?: string } | undefined)?.code;
-      return { ok: false, said: (code && SAID[code]) ?? 'The file could not be sent. Try again.' };
+      return { ok: false, said: (code && SAID[code]) ?? words('imports.the-file-could-not-be-2') };
     }
     return { ok: true, id: made.data.id };
   } catch {
-    return { ok: false, said: 'The file could not be imported. Try again.' };
+    return { ok: false, said: words('imports.the-file-could-not-be') };
   }
 }
 
@@ -86,7 +92,7 @@ export function ImportFile({ client }: { client: Client }) {
     if (file === null || where === '') return;
     const fileType = fileTypeOf(file.name);
     if (fileType === null) {
-      setNotice(NOT_PERMITTED);
+      setNotice(NOT_PERMITTED());
       return;
     }
     setBusy(true);
@@ -100,18 +106,17 @@ export function ImportFile({ client }: { client: Client }) {
 
   return (
     <section aria-labelledby="import-heading" className={styles['dialog']}>
-      <h2 id="import-heading">Import</h2>
+      <h2 id="import-heading">{words('imports.import')}</h2>
       <p className={styles['muted']}>
-        A Word document, Markdown or HTML file is read into a proposed outline of sections and
-        components. Nothing is made until you accept it.{' '}
-        <a href={IMPORT_HELP}>What arrives and what does not</a>
+        {words('imports.a-word-document-markdown-or')}{' '}
+        <a href={IMPORT_HELP}>{words('imports.what-arrives-and-what-does')}</a>
       </p>
       {problem !== null ? (
-        <p role="status">The spaces you may create in could not be loaded.</p>
+        <p role="status">{words('imports.the-spaces-you-may-create')}</p>
       ) : (
         <form onSubmit={(event) => void submit(event)} className={styles['dialog']}>
           <label>
-            Where
+            {words('imports.where')}
             <select value={where} onChange={(event) => setWhere(event.target.value)}>
               {(spaces ?? []).map((space) => (
                 <option key={space.id} value={space.id}>
@@ -120,7 +125,7 @@ export function ImportFile({ client }: { client: Client }) {
               ))}
             </select>
           </label>
-          <label htmlFor={`${ids}-file`}>File</label>
+          <label htmlFor={`${ids}-file`}>{words('imports.file')}</label>
           <input
             id={`${ids}-file`}
             type="file"
@@ -129,7 +134,7 @@ export function ImportFile({ client }: { client: Client }) {
           />
           <div className={styles['actions']}>
             <button type="submit" className="primary" disabled={busy || file === null}>
-              Import file
+              {words('imports.import-file')}
             </button>
           </div>
         </form>

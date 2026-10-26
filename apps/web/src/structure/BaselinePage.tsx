@@ -28,6 +28,7 @@ import styles from './BaselinePage.module.css';
 import { DocumentText } from './DocumentText.js';
 import { documentLink } from './links.js';
 import type { Names } from './tree.js';
+import { words as say } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -101,7 +102,7 @@ function shownIn(data: unknown, document: string): Shown | undefined {
     madeBy:
       isRecord(baseline.madeBy) && typeof baseline.madeBy.name === 'string'
         ? baseline.madeBy.name
-        : 'Somebody',
+        : say('document.somebody'),
     madeAt: String(baseline.madeAt),
     digest: String(baseline.digest),
     superseded: baseline.superseded !== null,
@@ -208,9 +209,11 @@ export function BaselinePage({
     [shown],
   );
 
-  if (shown === null) return <p className={styles['note']}>Opening...</p>;
-  if (shown === 'missing') return <p className={styles['note']}>There is no such baseline.</p>;
-  if (shown === 'failed') return <p className={styles['note']}>The baseline could not be read.</p>;
+  if (shown === null) return <p className={styles['note']}>{say('document.opening')}</p>;
+  if (shown === 'missing')
+    return <p className={styles['note']}>{say('document.there-is-no-such-baseline')}</p>;
+  if (shown === 'failed')
+    return <p className={styles['note']}>{say('document.the-baseline-could-not-be')}</p>;
   const placeOf = (at: string) => nodeTitle(shown, at);
   // What a thread may be started on here: the selected span, each pinned component the reader may
   // comment on, and each section where they may comment on the document - each at its pinned version.
@@ -222,8 +225,8 @@ export function BaselinePage({
         key: 'selection',
         label:
           proposed.anchor.kind === 'cell'
-            ? `The table cell in ${placeOf(proposed.node)}`
-            : `The selected text ${anchorWords(proposed.anchor)}`,
+            ? say('document.the-table-cell-in', { value1: placeOf(proposed.node) })
+            : say('document.the-selected-text', { value1: anchorWords(proposed.anchor) }),
         on: { kind: 'component', id: chosen.component },
         version: chosen.version,
         anchor: proposed.anchor,
@@ -235,7 +238,7 @@ export function BaselinePage({
         if (!pin.mayComment) return;
         targets.push({
           key: `component:${each.id}`,
-          label: `The whole of ${placeOf(each.id)}`,
+          label: say('document.the-whole-of', { value1: placeOf(each.id) }),
           on: { kind: 'component', id: pin.component },
           version: pin.version,
           anchor: { kind: 'component' },
@@ -243,7 +246,7 @@ export function BaselinePage({
       } else if (shown.mayComment && each.type !== 'reference') {
         targets.push({
           key: `node:${each.id}`,
-          label: `The section ${placeOf(each.id)}`,
+          label: say('document.the-section', { value1: placeOf(each.id) }),
           on: { kind: 'document', id: document },
           version: shown.versionId,
           anchor: { kind: 'node', node: each.id },
@@ -275,36 +278,39 @@ export function BaselinePage({
     <article className={styles['page']} aria-labelledby="baseline-heading">
       <header className={styles['head']}>
         <p className={styles['links']}>
-          <a href={documentLink(document)}>Open the document as it is now</a>
-          <a href={searchLink('', { versions: 'latest', baseline })}>Search this baseline</a>
+          <a href={documentLink(document)}>{say('document.open-the-document-as-it')}</a>
+          <a href={searchLink('', { versions: 'latest', baseline })}>
+            {say('document.search-this-baseline')}
+          </a>
         </p>
         <h1 id="baseline-heading" className={styles['title']}>
           {shown.name}
         </h1>
         <div className={styles['facts']}>
-          <Chip>{`Version ${shown.version}`}</Chip>
+          <Chip>{say('document.version', { version: shown.version })}</Chip>
           <Chip tone={shown.superseded ? 'warn' : 'neutral'}>
-            {shown.superseded ? 'Superseded' : 'Current'}
+            {shown.superseded ? say('document.superseded') : say('document.current')}
           </Chip>
-          <span className={styles['note']}>{`Made by ${shown.madeBy} on ${when}`}</span>
+          <span className={styles['note']}>
+            {say('document.made-by-on', { madeBy: shown.madeBy, when })}
+          </span>
           {/* The document's state now, the one thing here read at its latest (LIF-005). */}
           {shown.state && (
             <span className={styles['note']}>
-              The document now: <StateLozenge state={shown.state} />
+              {say('document.the-document-now')}
+              <StateLozenge state={shown.state} />
             </span>
           )}
         </div>
-        <p className={styles['note']}>
-          The document as this baseline holds it. Nothing here changes as the document does.
-        </p>
-        <p className={styles['digest']}>{`Digest ${shown.digest}`}</p>
+        <p className={styles['note']}>{say('document.the-document-as-this-baseline')}</p>
+        <p className={styles['digest']}>{say('document.digest', { digest: shown.digest })}</p>
         {shown.mayReview && (
-          <div role="group" aria-label="Mode">
+          <div role="group" aria-label={say('document.mode')}>
             <button type="button" aria-pressed={!reviewing} onClick={() => setReviewing(false)}>
-              Reading
+              {say('document.reading')}
             </button>{' '}
             <button type="button" aria-pressed={reviewing} onClick={() => setReviewing(true)}>
-              Review
+              {say('document.review')}
             </button>
           </div>
         )}
@@ -324,11 +330,11 @@ export function BaselinePage({
           />
         </div>
         {reviewing && (
-          <section aria-label="Threads on this baseline" className={styles['threads']}>
-            <p className={styles['note']}>
-              Comments here are on the text this baseline pins. A suggestion is made on the document
-              as it is now.
-            </p>
+          <section
+            aria-label={say('document.threads-on-this-baseline')}
+            className={styles['threads']}
+          >
+            <p className={styles['note']}>{say('document.comments-here-are-on-the')}</p>
             <ThreadsPanel
               client={client}
               document={document}
@@ -345,7 +351,7 @@ export function BaselinePage({
               placeOf={(thread) => {
                 const at =
                   thread.anchor.kind === 'node' ? thread.anchor.node : thread.places?.[0]?.node;
-                return at === undefined ? 'This document' : placeOf(at);
+                return at === undefined ? say('document.this-document') : placeOf(at);
               }}
               onThreads={setThreads}
             />

@@ -24,15 +24,31 @@ import styles from './DocumentList.module.css';
 import { documentLink } from './links.js';
 import { NewDocument } from './NewDocument.js';
 import { ImportFile } from '../imports/ImportFile.js';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
 type Publishing = 'published' | 'changedSince' | 'neverPublished';
 
 const PUBLISHING: readonly { readonly state: Publishing; readonly label: string }[] = [
-  { state: 'published', label: 'Published' },
-  { state: 'changedSince', label: 'Changed since' },
-  { state: 'neverPublished', label: 'Never published' },
+  {
+    state: 'published',
+    get label() {
+      return words('document.published');
+    },
+  },
+  {
+    state: 'changedSince',
+    get label() {
+      return words('document.changed-since');
+    },
+  },
+  {
+    state: 'neverPublished',
+    get label() {
+      return words('document.never-published');
+    },
+  },
 ];
 
 interface Listed {
@@ -119,10 +135,34 @@ export interface DocumentListProps {
 }
 
 const SORTS: readonly SortOption[] = [
-  { sort: 'title', order: 'asc', label: 'Title, A to Z' },
-  { sort: 'title', order: 'desc', label: 'Title, Z to A' },
-  { sort: 'changed', order: 'desc', label: 'Newest changed first' },
-  { sort: 'changed', order: 'asc', label: 'Oldest changed first' },
+  {
+    sort: 'title',
+    order: 'asc',
+    get label() {
+      return words('document.title-a-to-z');
+    },
+  },
+  {
+    sort: 'title',
+    order: 'desc',
+    get label() {
+      return words('document.title-z-to-a');
+    },
+  },
+  {
+    sort: 'changed',
+    order: 'desc',
+    get label() {
+      return words('document.newest-changed-first');
+    },
+  },
+  {
+    sort: 'changed',
+    order: 'asc',
+    get label() {
+      return words('document.oldest-changed-first');
+    },
+  },
 ];
 
 interface Facets {
@@ -223,20 +263,20 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
     if (listing.failed === undefined) return null;
     return (
       <section aria-labelledby="documents-heading">
-        <h1 id="documents-heading">Documents</h1>
+        <h1 id="documents-heading">{words('document.documents')}</h1>
         {listing.signedOut ? (
           <Notice tone="signedOut">
-            <p>You are signed out. Sign in again to see your documents.</p>
+            <p>{words('document.you-are-signed-out-sign')}</p>
           </Notice>
         ) : (
           <Notice tone="failed">
-            <p>The documents could not be loaded.</p>
+            <p>{words('document.the-documents-could-not-be')}</p>
             <button
               type="button"
               disabled={listing.loading}
               onClick={() => void listing.load(null)}
             >
-              Try again
+              {words('document.try-again')}
             </button>
           </Notice>
         )}
@@ -259,7 +299,7 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
   const filter = (
     <>
       <div className={styles['filterHead']}>
-        <span className={styles['overline']}>Filter</span>
+        <span className={styles['overline']}>{words('document.filter')}</span>
         {filtered && (
           <button
             type="button"
@@ -270,7 +310,7 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
               setArchived(false);
             }}
           >
-            Clear
+            {words('document.clear')}
           </button>
         )}
       </div>
@@ -297,14 +337,14 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
     <ListLayout filter={filter}>
       <section aria-labelledby="documents-heading">
         <div className={styles['titleRow']}>
-          <h1 id="documents-heading">Documents</h1>
+          <h1 id="documents-heading">{words('document.documents')}</h1>
           {mayCreate && (
             <span>
               <button type="button" onClick={() => setImporting(true)}>
-                Import
+                {words('document.import')}
               </button>{' '}
               <button type="button" className="primary" onClick={() => setCreating(true)}>
-                New document
+                {words('document.new-document')}
               </button>
             </span>
           )}
@@ -323,17 +363,25 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
         <p className={styles['summary']}>
           <span>
             {filtered
-              ? `${total} ${total === 1 ? 'document matches' : 'documents match'} the filter.`
-              : `${total} ${total === 1 ? 'document' : 'documents'} you may read.`}
+              ? words('document.the-filter', {
+                  total,
+                  value2: total === 1 ? 'document matches' : 'documents match',
+                })
+              : words('document.you-may-read', {
+                  total,
+                  value2: total === 1 ? 'document' : 'documents',
+                })}
           </span>
-          {items.length < total && <span>{`Showing 1 to ${items.length}.`}</span>}
+          {items.length < total && (
+            <span>{words('document.showing-1-to', { length: items.length })}</span>
+          )}
         </p>
         {items.length === 0 ? (
           <Empty>
             <p>
               {filtered
-                ? 'No document you may read matches the filter.'
-                : 'There are no documents you may read.'}
+                ? words('document.no-document-you-may-read')
+                : words('document.there-are-no-documents-you')}
             </p>
           </Empty>
         ) : (
@@ -341,18 +389,18 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
             <table>
               <thead>
                 <tr>
-                  <th scope="col">Title</th>
-                  <th scope="col">Space</th>
-                  <th scope="col">Version</th>
-                  <th scope="col">State</th>
+                  <th scope="col">{words('document.title')}</th>
+                  <th scope="col">{words('document.space')}</th>
+                  <th scope="col">{words('document.version-2')}</th>
+                  <th scope="col">{words('document.state')}</th>
                   <th scope="col" className={styles['number']}>
-                    Sections
+                    {words('document.sections')}
                   </th>
                   <th scope="col" className={styles['number']}>
-                    Components
+                    {words('document.components')}
                   </th>
-                  <th scope="col">Publishing</th>
-                  <th scope="col">Changed</th>
+                  <th scope="col">{words('document.publishing')}</th>
+                  <th scope="col">{words('document.changed')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -362,13 +410,13 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
                       <a className={styles['title']} href={documentLink(item.id)}>
                         {item.title}
                       </a>
-                      {archived && <Chip>Archived</Chip>}
+                      {archived && <Chip>{words('document.archived')}</Chip>}
                     </td>
                     <td className={styles['muted']}>{item.space.name}</td>
                     <td>{item.version}</td>
                     <td>
                       {item.state !== null && <StateLozenge state={item.state} />}
-                      {item.pastReview && <Chip tone="warn">Past review</Chip>}
+                      {item.pastReview && <Chip tone="warn">{words('document.past-review')}</Chip>}
                     </td>
                     <td className={styles['number']}>{item.sections ?? ''}</td>
                     <td className={styles['number']}>{item.components ?? ''}</td>
