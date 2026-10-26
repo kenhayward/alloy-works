@@ -3,6 +3,16 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.211.0 - 2026-10-26 (PR #{PR})
+
+Translation jobs and machine drafts (the XL plan).
+
+### Added
+
+- **Translation jobs.** A document's components needing a language can be sent as one job from the Publishing panel, its XLIFF 2.1 file downloaded for a vendor, and the job closed. Each component sent is shown as in translation until then.
+- **Returned translations.** A translation job's file comes back from the vendor through the Publishing panel, each component made a version of its translation. One whose source changed since it was sent is held for a person to review beside the changes, then accept or reject.
+- **Machine drafts.** A translation can be drafted by the environment's machine translation endpoint, with the space's terms, where Administration's Translation allows it (off by default). The draft is marked, and is not published, until a person who may approve the component accepts it.
+
 ## 0.210.0 - 2026-10-23 (PR #781)
 
 Translation (the TR plan).
