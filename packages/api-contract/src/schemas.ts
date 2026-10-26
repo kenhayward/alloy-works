@@ -1,3 +1,4 @@
+import { INTERFACE_LANGUAGES } from '@alloy-works/domain';
 import { parseLevel, permissions } from '@alloy-works/domain';
 import { z } from 'zod';
 
@@ -84,6 +85,10 @@ export const Me = z.object({
     .describe(
       'Whether they are from outside and may read no space: shared publications alone, never what they came from',
     ),
+  interfaceLanguage: z
+    .enum(INTERFACE_LANGUAGES)
+    .nullable()
+    .describe('The language they chose for the interface, or null for their browser’s; never the content’s'),
 });
 export type Me = z.infer<typeof Me>;
 

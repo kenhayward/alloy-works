@@ -1336,3 +1336,4 @@ export {
   type FlaggedCitation,
   type EntryStatus,
 } from './entry-status.js';
+export { interfaceLanguageOf, setInterfaceLanguage } from './preferences.js';

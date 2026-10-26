@@ -238,6 +238,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0163_translation_jobs',
       '0164_translation_returns',
       '0165_machine_drafts',
+      '0166_interface_language',
     ]);
 
     // The component and its version are as they were.
@@ -467,6 +468,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0163_translation_jobs',
       '0164_translation_returns',
       '0165_machine_drafts',
+      '0166_interface_language',
     ]);
 
     const { rows } = await queryAs(

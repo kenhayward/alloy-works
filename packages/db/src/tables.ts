@@ -103,6 +103,8 @@ export interface PrincipalTable {
   kind: Generated<PrincipalKind>;
   /** When they were erased (0087; the ER plan, ER-A): their name the fixed word, their address gone. */
   erased_at: ColumnType<Date | null, never, Date | null>;
+  /** Their interface language (0166; UI-E), null for their browser's; absent before 0166. */
+  interface_language: ColumnType<string | null, never, string | null>;
 }
 
 export interface ProfileTable {

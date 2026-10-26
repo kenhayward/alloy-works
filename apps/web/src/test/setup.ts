@@ -1,3 +1,5 @@
+// The bundled locale data first, as `main.tsx` loads it (the UI plan, UI-A).
+import '../words/polyfills.js';
 import '@testing-library/jest-dom/vitest';
 
 import { cleanup, configure } from '@testing-library/react';

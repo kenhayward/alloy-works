@@ -19,6 +19,7 @@ import { generatedRoutes } from './generated.js';
 import { promptRoutes } from './prompts.js';
 import { bibliographyRoutes } from './bibliography.js';
 import { termRoutes } from './terms.js';
+import { preferenceRoutes } from './preferences.js';
 import { translationRoutes } from './translations.js';
 import { importRoutes } from './imports.js';
 import { promptLibraryRoutes } from './prompt-libraries.js';
@@ -407,6 +408,7 @@ type Routes = typeof ownRoutes &
   typeof bibliographyRoutes &
   typeof termRoutes &
   typeof translationRoutes &
+  typeof preferenceRoutes &
   typeof importRoutes &
   typeof promptLibraryRoutes &
   typeof citationStyleRoutes &
@@ -482,6 +484,7 @@ export const routes: Routes = {
   ...bibliographyRoutes,
   ...termRoutes,
   ...translationRoutes,
+  ...preferenceRoutes,
   ...importRoutes,
   ...promptLibraryRoutes,
   ...citationStyleRoutes,

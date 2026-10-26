@@ -23,6 +23,7 @@ import {
   type SignInStartQuery,
   SIGN_IN_RETURN,
   type StreamQuery,
+  type MyPreferences,
 } from '@alloy-works/api-contract';
 import {
   claimInvitation,
@@ -42,6 +43,8 @@ import {
   type Tenant,
   type TenantDatabase,
   type TenantListener,
+  interfaceLanguageOf,
+  setInterfaceLanguage,
 } from '@alloy-works/db';
 import {
   decide,
@@ -890,15 +893,19 @@ export function buildApp(options: AppOptions): FastifyInstance {
 
     getMe: async (request) => {
       const principal = principalOf(request);
-      const { profile, kind, sharesOnly } = await db.withTenant(tenantOf(request), async (trx) => ({
-        profile: await trx.selectFrom('profile').select('display_name').executeTakeFirstOrThrow(),
-        kind: await trx
-          .selectFrom('principal')
-          .select('kind')
-          .where('id', '=', principal.principalId)
-          .executeTakeFirst(),
-        sharesOnly: await readsOnlyShares(trx, principal.principalId),
-      }));
+      const { profile, kind, sharesOnly, interfaceLanguage } = await db.withTenant(
+        tenantOf(request),
+        async (trx) => ({
+          profile: await trx.selectFrom('profile').select('display_name').executeTakeFirstOrThrow(),
+          kind: await trx
+            .selectFrom('principal')
+            .select('kind')
+            .where('id', '=', principal.principalId)
+            .executeTakeFirst(),
+          sharesOnly: await readsOnlyShares(trx, principal.principalId),
+          interfaceLanguage: await interfaceLanguageOf(trx, principal.principalId),
+        }),
+      );
       return {
         id: principal.principalId,
         displayName: principal.displayName,
@@ -906,7 +913,23 @@ export function buildApp(options: AppOptions): FastifyInstance {
         environment: profile.display_name,
         outside: kind?.kind === 'external',
         sharesOnly,
+        interfaceLanguage,
       };
+    },
+
+    // A person's interface language (the UI plan, UI-E; LOC-005): theirs alone, never content's.
+    getMyPreferences: async (request: FastifyRequest) =>
+      db.withTenant(tenantOf(request), async (trx) => ({
+        interfaceLanguage: await interfaceLanguageOf(trx, principalOf(request).principalId),
+      })),
+
+    setMyPreferences: async (request: FastifyRequest) => {
+      const { interfaceLanguage } = request.body as MyPreferences;
+      const principal = principalOf(request).principalId;
+      return db.withTenant(tenantOf(request), async (trx) => {
+        await setInterfaceLanguage(trx, principal, interfaceLanguage);
+        return { interfaceLanguage: await interfaceLanguageOf(trx, principal) };
+      });
     },
 
     requestSample: async (request, reply) => {

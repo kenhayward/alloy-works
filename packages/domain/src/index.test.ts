@@ -1030,6 +1030,8 @@ describe('the domain package', () => {
         'xliffUnits',
         // XLb: what a conflicted return is offered first.
         'TRANSLATION_CONFLICTS',
+        // UIa: the interface's declared languages.
+        'INTERFACE_LANGUAGES',
         // XLc: machine drafts and the policy that sends them.
         'TRANSLATE_INSTRUCTIONS',
         'TRANSLATE_INSTRUCTIONS_VERSION',
