@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from 'react';
 import { Icon } from '../editor/Icon.js';
 
 import styles from './PaneWidth.module.css';
+import { words as say } from '../words/words.js';
 
 export interface PaneBounds {
   /** Where this browser remembers the width, and beside it (with `.collapsed`) whether it is hidden. */
@@ -93,7 +94,7 @@ export function PaneSeparator({
       className={styles['separator']}
       role="separator"
       aria-orientation="vertical"
-      aria-label={`Resize the ${label}`}
+      aria-label={say('layouts.resize-the', { label })}
       aria-valuemin={pane.bounds.min}
       aria-valuemax={pane.bounds.max}
       aria-valuenow={pane.width}
@@ -141,7 +142,9 @@ export function PaneToggle({
   pane: Pane;
   edge?: 'start' | 'end';
 }) {
-  const words = pane.collapsed ? `Show the ${label}` : `Hide the ${label}`;
+  const words = pane.collapsed
+    ? say('layouts.show-the', { label })
+    : say('layouts.hide-the', { label });
   const towardsPage = pane.collapsed === (edge === 'start');
   return (
     <button
