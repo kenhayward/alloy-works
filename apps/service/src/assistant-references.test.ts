@@ -132,7 +132,11 @@ describe("the assistant's reference tools (the XR plan, XR-I)", () => {
       source: 'crossref',
       query: 'salt marsh',
     });
-    expect(result).toMatchObject({ ok: true, summary: '2 found' });
+    expect(result).toMatchObject({
+      ok: true,
+      summary: '2 found',
+      said: { code: 'found', count: 2 },
+    });
     expect(String(result.result)).toMatch(/^<content source="reference:crossref">/);
     expect(String(result.result)).toContain(
       'Salt Marsh Accretion Under Rising Tides. Marlow, Ada; Penhallow, Grace; Tidal Survey Group. 2021. Journal of Invented Estuaries. DOI 10.5555/marsh.2021.017',
@@ -165,7 +169,10 @@ describe("the assistant's reference tools (the XR plan, XR-I)", () => {
     expect(response.statusCode, response.body).toBe(200);
     const results = framesOf(response.body).filter((frame) => frame.event === 'tool_result');
     expect(results.map((frame) => frame.data.ok)).toEqual([true, true, true, true, true, false]);
-    expect(results[5]!.data).toMatchObject({ summary: 'reference_searches_spent' });
+    expect(results[5]!.data).toMatchObject({
+      summary: 'reference_searches_spent',
+      said: { code: 'reference_searches_spent' },
+    });
     expect(h.connector.asked.filter((each) => each.path === '/v1/reference').length - asked).toBe(
       5,
     );

@@ -64,7 +64,7 @@ describe('a restored outline against the latest (the RS plan, RS-F, RS-G)', () =
     expect(repointsBetween(before, moved)).toEqual([]);
   });
 
-  it("refuses, by the template's changes, a section the restore would add, remove or reorder", () => {
+  it("refuses, by the template's changes and by code, a section the restore would add, remove or reorder", () => {
     const latest = outline([section('a'), section('b'), section('c')]);
     const none = { add: false, remove: false, reorder: false };
     expect(outlineChangesRefused(latest, latest, none)).toEqual([]);
@@ -72,11 +72,20 @@ describe('a restored outline against the latest (the RS plan, RS-F, RS-G)', () =
     expect(
       outlineChangesRefused(latest, outline([section('a'), section('b'), section('d')]), none),
     ).toEqual([
-      "This document's template does not allow sections to be added",
-      "This document's template does not allow sections to be removed",
+      {
+        why: 'sections_added',
+        reason: "This document's template does not allow sections to be added",
+      },
+      {
+        why: 'sections_removed',
+        reason: "This document's template does not allow sections to be removed",
+      },
     ]);
     // b before a; and b under a.
-    const reordered = "This document's template does not allow sections to be reordered";
+    const reordered = {
+      why: 'sections_reordered',
+      reason: "This document's template does not allow sections to be reordered",
+    };
     expect(
       outlineChangesRefused(latest, outline([section('b'), section('a'), section('c')]), none),
     ).toEqual([reordered]);

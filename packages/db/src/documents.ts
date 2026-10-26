@@ -25,6 +25,7 @@ import {
   type EffectiveField,
   type MetadataFailure,
   type MetadataValues,
+  type OutlineChangeRefused,
   type OutlineDocument,
   type OutlineNode,
   type OutlineOperation,
@@ -861,7 +862,12 @@ export async function recordRepoints(
  * reference to a component since deleted, by its node and last title (VER-044; DL-F).
  */
 export type RestoredOutlineRefusal =
-  | { readonly answer: 'outline.invalid'; readonly reason: string }
+  | {
+      readonly answer: 'outline.invalid';
+      /** Which of the outline's guards, for the reader's language (the UI plan, UI-L). */
+      readonly why: OutlineChangeRefused['why'] | 'reference_refused' | 'required_removed';
+      readonly reason: string;
+    }
   | { readonly answer: 'reference.deleted'; readonly node: string; readonly title: string }
   | ValuesRefused;
 
@@ -921,22 +927,30 @@ export async function restoredOutline(
     const answer = await mayReference(trx, input.author, target);
     if (answer === 'refused' && !refused) {
       refused = true;
-      refusals.push({ answer: 'outline.invalid', reason: REFERENCE_REFUSED });
+      refusals.push({
+        answer: 'outline.invalid',
+        why: 'reference_refused',
+        reason: REFERENCE_REFUSED,
+      });
     } else if (typeof answer === 'object') {
       refusals.push({ answer: 'reference.deleted', node: target.node, title: answer.title });
     }
   }
   const rules = await documentRules(trx, input.documentId);
   if (rules.bound) {
-    for (const reason of outlineChangesRefused(latest.outline, restored.outline, rules.changes)) {
-      refusals.push({ answer: 'outline.invalid', reason });
+    for (const refused of outlineChangesRefused(latest.outline, restored.outline, rules.changes)) {
+      refusals.push({ answer: 'outline.invalid', ...refused });
     }
     // A restore gives no reason: a section the template requires is removed first, with one
     // (TPL-029; WF6-B).
     if (
       requiredRemoved(latest.outline, restored.outline, requiredKeys(rules.definition)).length > 0
     ) {
-      refusals.push({ answer: 'outline.invalid', reason: REQUIRED_RESTORE });
+      refusals.push({
+        answer: 'outline.invalid',
+        why: 'required_removed',
+        reason: REQUIRED_RESTORE,
+      });
     }
   }
   const valuesWritten = !same(latest.values, restored.values);

@@ -289,7 +289,7 @@ describe("a document's versions and its restore over HTTP (the RS plan, Task 2)"
     ]);
   });
 
-  it('refuses in words: a reference the restorer may not read, a restore changing nothing, and one previewed against an older latest', async () => {
+  it('refuses in words and by code: a reference the restorer may not read, a restore changing nothing, and one previewed against an older latest', async () => {
     const secret = await component('The secret procedure');
     const made = await document();
     const first = await act(made, reference(secret.artifactId, { kind: 'latest' }));
@@ -307,11 +307,16 @@ describe("a document's versions and its restore over HTTP (the RS plan, Task 2)"
     expect(refused.statusCode).toBe(400);
     expect(refused.json()).toMatchObject({
       code: 'outline_invalid',
+      why: 'reference_refused',
       reason: 'The component is not one this outline can reference',
     });
     expect((await preview(made.id, first.version, 'grace')).json()).toMatchObject({
       refusals: [
-        { code: 'outline_invalid', reason: 'The component is not one this outline can reference' },
+        {
+          code: 'outline_invalid',
+          why: 'reference_refused',
+          reason: 'The component is not one this outline can reference',
+        },
       ],
     });
     const unchanged = await restore(made.id, second.version, second.version);

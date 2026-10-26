@@ -446,6 +446,7 @@ describe("restoring a document's earlier version (storage-and-versioning.md; the
     );
     const refused = {
       answer: 'outline.invalid',
+      why: 'reference_refused',
       reason: 'The component is not one this outline can reference',
     };
     expect(await restore(first, second, grace)).toEqual(refused);
@@ -519,6 +520,7 @@ describe("restoring a document's earlier version (storage-and-versioning.md; the
     const shorter = await direct(made, { ...outline(made), nodes: [introduction!] });
     expect(await restore(made, shorter)).toEqual({
       answer: 'outline.invalid',
+      why: 'sections_added',
       reason: "This document's template does not allow sections to be added",
     });
     const reordered = await direct(shorter, { ...outline(made), nodes: [method!, introduction!] });
@@ -526,6 +528,7 @@ describe("restoring a document's earlier version (storage-and-versioning.md; the
       refusals: [
         {
           answer: 'outline.invalid',
+          why: 'sections_removed',
           reason: "This document's template does not allow sections to be removed",
         },
       ],
@@ -534,6 +537,7 @@ describe("restoring a document's earlier version (storage-and-versioning.md; the
       refusals: [
         {
           answer: 'outline.invalid',
+          why: 'sections_reordered',
           reason: "This document's template does not allow sections to be reordered",
         },
       ],

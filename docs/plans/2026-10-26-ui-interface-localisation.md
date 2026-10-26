@@ -45,3 +45,21 @@
 - **The walks** find by English. Those running in pseudo-locales move to `say()`, a rewrite costed in each PR.
 - **Bundle size**: measured at UIa against the 2.2 MB bundle and STR-073's cold open. Other locales' data is loaded lazily.
 - **Paging**: a cursor's language changes the listing contract. Old cursors are refused, not misread.
+
+## UIc2: the service's words
+
+Each field below is added, optional and beside the English it codes, which stays for integrators.
+
+- **The prompt's refusal**: `ended.refusal`, `nothing_written` or `edit_refused`, beside `refused`.
+- **The assistant's steps**: `tool_result.said`, a `code` with its `count`, `number` or `version`,
+  beside `summary`. A tool's own refusal passes its error code through. `result` is what the model was
+  told, shown as a transcript: data, never worded.
+- **A restore's outline reasons**: `why` beside `reason` on a document's restore refusals, one of five
+  fixed reasons: `reference_refused`, `sections_added`, `sections_removed`, `sections_reordered`,
+  `required_removed`.
+- **Worded already from what the answer holds**: the search summary (its outcome and counts), the
+  admission report (each `action` and `subject`, a test holding the catalogue to the domain's
+  table) and the range preview's words (fixed, by page).
+- **Left**: a refusal's `message` (each `code` worded as its folder moves, UId), and the reason an
+  automatic withdrawal of a revision records, which is kept in its history as words: coding it is a
+  stored shape, for when a history shows it.

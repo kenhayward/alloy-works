@@ -73,7 +73,7 @@ function refusalView(refusal: RestoreRefusal): RestorationView['refusals'][numbe
 function documentRefusalView(refusal: RestoreRefusal): DocumentRestorationView['refusals'][number] {
   switch (refusal.answer) {
     case 'outline.invalid':
-      return { code: 'outline_invalid', reason: refusal.reason };
+      return { code: 'outline_invalid', why: refusal.why, reason: refusal.reason };
     case 'reference.deleted':
       return { code: 'reference_deleted', node: refusal.node, title: refusal.title };
     case 'template.unresolved':
@@ -144,7 +144,7 @@ function refuse(refusal: RestoreRefusal): AppError {
         400,
         'outline.invalid',
         'This change does not apply to the outline as it stands.',
-        { reason: refusal.reason },
+        { why: refusal.why, reason: refusal.reason },
       );
     // VER-044: named, by its node and last title.
     case 'reference.deleted':

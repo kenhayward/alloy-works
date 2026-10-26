@@ -594,27 +594,37 @@ export function repointsBetween(before: OutlineDocument, after: OutlineDocument)
  * TPL-015 over a whole outline replacing another, as a restore does (the RS plan, RS-F): each change
  * to its sections the template's `changes` forbids, in `forbidden`'s words - a section only in the
  * restored outline is added, one only in the latest removed, and one in both under another parent or
- * in another order reordered. A component reference is never held.
+ * in another order reordered. A component reference is never held. Each by code, for its reader's
+ * language (the UI plan, UI-L), and in words, for an integrator.
  */
+export type OutlineChangeRefused = {
+  readonly why: 'sections_added' | 'sections_removed' | 'sections_reordered';
+  readonly reason: string;
+};
+
 export function outlineChangesRefused(
   latest: OutlineDocument,
   restored: OutlineDocument,
   changes: NonNullable<OutlineRules['changes']>,
-): string[] {
+): OutlineChangeRefused[] {
   const sections = (outline: OutlineDocument) =>
     [...placed(outline)].filter(([, { node }]) => node.type === 'section');
   const before = new Map(sections(latest));
   const after = new Map(sections(restored));
   const both = [...after.keys()].filter((key) => before.has(key));
-  const reasons: string[] = [];
-  if (!changes.add && [...after.keys()].some((key) => !before.has(key))) reasons.push(NOT_ADDED);
+  const reasons: OutlineChangeRefused[] = [];
+  if (!changes.add && [...after.keys()].some((key) => !before.has(key))) {
+    reasons.push({ why: 'sections_added', reason: NOT_ADDED });
+  }
   if (!changes.remove && [...before.keys()].some((key) => !after.has(key))) {
-    reasons.push(NOT_REMOVED);
+    reasons.push({ why: 'sections_removed', reason: NOT_REMOVED });
   }
   const order = [...before.keys()].filter((key) => after.has(key));
   const reordered =
     order.some((key, index) => key !== both[index]) ||
     both.some((key) => before.get(key)!.parent !== after.get(key)!.parent);
-  if (!changes.reorder && reordered) reasons.push(NOT_REORDERED);
+  if (!changes.reorder && reordered) {
+    reasons.push({ why: 'sections_reordered', reason: NOT_REORDERED });
+  }
   return reasons;
 }

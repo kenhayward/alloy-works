@@ -100,6 +100,18 @@ const DocumentRestoreRefusalView = z.object({
     .describe(
       "restore_unreadable: the version no longer reads. restore_unchanged: it would make what the latest already is. outline_invalid: the outline's own guards refuse it, `reason` saying which. values_invalid: a value its field no longer takes. values_unresolved: the template no longer resolves to check its values. reference_deleted: a reference to a component since deleted, one for each, `node` and `title` saying which",
     ),
+  why: z
+    .enum([
+      'reference_refused',
+      'sections_added',
+      'sections_removed',
+      'sections_reordered',
+      'required_removed',
+    ])
+    .optional()
+    .describe(
+      'outline_invalid: which guard, by code: a component the outline may not reference; sections the template does not allow added, removed or reordered; or a section it requires removed, which a restore cannot give a reason for',
+    ),
   reason: z.string().optional().describe('outline_invalid: why, in words'),
   node: z.string().optional().describe('reference_deleted: the reference, by its node'),
   title: z.string().optional().describe("reference_deleted: the component's last title"),
@@ -135,6 +147,18 @@ export type DocumentRestorationView = z.infer<typeof DocumentRestorationView>;
 
 /** A document's restore refused: `editOutline`'s members beside the version chain's. */
 const DocumentRestoreRefusal = EditingRefusal.extend({
+  why: z
+    .enum([
+      'reference_refused',
+      'sections_added',
+      'sections_removed',
+      'sections_reordered',
+      'required_removed',
+    ])
+    .optional()
+    .describe(
+      'outline_invalid: which guard, by code: a component the outline may not reference; sections the template does not allow added, removed or reordered; or a section it requires removed, which a restore cannot give a reason for',
+    ),
   reason: z.string().optional().describe('outline_invalid: why, in words'),
   node: z.string().optional().describe('reference_deleted: the reference, by its node'),
   title: z.string().optional().describe("reference_deleted: the component's last title"),
