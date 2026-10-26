@@ -4,6 +4,8 @@ import { join } from 'node:path';
 import { parse } from '@formatjs/icu-messageformat-parser';
 import { beforeAll, describe, expect, it } from 'vitest';
 
+import { EDITOR_WORDS, sayEditorWord } from '@alloy-works/editor';
+
 import enGB from './en-GB.json';
 import { loadLocaleData } from './polyfills.js';
 import { WordsProvider, makeWords, useWords } from './words.js';
@@ -40,6 +42,18 @@ describe('the interface’s words (the UI plan, UI-C)', () => {
     expect(screen.getByText(/^\[Îñţéŕƒåçé ļåñĝûåĝé/)).toBeInTheDocument();
   });
 
+  it('says the editor’s own words in the person’s language, from the same catalogue', () => {
+    const Footnote = () => <p>{sayEditorWord('bound-table.more-rows', { count: 2 })}</p>;
+    render(<Footnote />);
+    expect(screen.getByText('and 2 more rows')).toBeInTheDocument();
+    render(
+      <WordsProvider language="en-XA">
+        <Footnote />
+      </WordsProvider>,
+    );
+    expect(screen.getByText(/^\[åñð 2 ɱöŕé ŕöŵš/)).toBeInTheDocument();
+  });
+
   it('formats a date, a number and a list from the bundled locale data, in the person’s language', () => {
     const english = makeWords('en-GB');
     const day = new Date(Date.UTC(2026, 9, 26, 12));
@@ -58,7 +72,7 @@ describe('the interface’s words (the UI plan, UI-C)', () => {
   });
 
   it('holds every message as a whole ICU message, with no dash in it, and every key a screen uses', () => {
-    for (const [key, message] of Object.entries(enGB)) {
+    for (const [key, message] of Object.entries({ ...enGB, ...EDITOR_WORDS })) {
       expect(() => parse(message), key).not.toThrow();
       expect(message, key).not.toMatch(/[–—]/);
     }

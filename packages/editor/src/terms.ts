@@ -6,6 +6,7 @@ import { Decoration, DecorationSet, type EditorView } from 'prosemirror-view';
 
 import { positionedText } from './marks.js';
 import { editorSchema } from './schema.js';
+import { say } from './words.js';
 
 /*
  * Terms in the editor (the TM plan, TMc; terms.md): a term offered as its abbreviation or a label is
@@ -197,7 +198,7 @@ class OfferView {
     this.list.id = this.id;
     this.list.className = 'aw-term-suggestions';
     this.list.setAttribute('role', 'listbox');
-    this.list.setAttribute('aria-label', 'Suggested terms');
+    this.list.setAttribute('aria-label', say('term.suggested'));
     this.list.hidden = true;
     this.said = document.createElement('div');
     // Polite and no status role, so it is not taken for the page's own status line.
@@ -250,9 +251,7 @@ class OfferView {
     }
     const count = suggestion.offers.length;
     const active = suggestion.offers[suggestion.active]!.term;
-    this.said.textContent =
-      `${count === 1 ? 'Term' : `${count} terms`} offered: ${said(active)}. ` +
-      `Tab to apply, ${count === 1 ? '' : 'the arrows and Enter to choose, '}Escape to dismiss.`;
+    this.said.textContent = say('term.offered', { count, term: said(active) });
   }
 
   destroy() {
@@ -389,12 +388,19 @@ export function termsIn(doc: Node): string[] {
   return [...found];
 }
 
-/** What a flag says of a term's standing, or null for one that needs none. */
-function flagOf(standing: TermStanding | undefined): string | null {
-  if (standing?.standing === 'unavailable') return 'Term unavailable';
+/** What a flag says of a term's standing, and which it is, or null for one that needs none. */
+function flagOf(
+  standing: TermStanding | undefined,
+): { readonly unavailable: boolean; readonly said: string } | null {
+  if (standing?.standing === 'unavailable') {
+    return { unavailable: true, said: say('term.unavailable') };
+  }
   if (standing?.standing !== 'deprecated') return null;
   const instead = standing.replacedBy?.label;
-  return instead == null ? 'Deprecated' : `Deprecated: use ${instead}`;
+  return {
+    unavailable: false,
+    said: instead == null ? say('term.deprecated') : say('term.deprecated-use', { term: instead }),
+  };
 }
 
 /**
@@ -409,7 +415,7 @@ export function termDecorations(doc: Node, standings: TermStandings | null): Dec
     if (open === null) return;
     const flag = flagOf(standings.get(open.term));
     if (flag !== null) {
-      const text = flag;
+      const text = flag.said;
       decorations.push(
         Decoration.widget(
           open.to,
@@ -441,7 +447,7 @@ export function termDecorations(doc: Node, standings: TermStandings | null): Dec
     if (flag !== null) {
       decorations.push(
         Decoration.inline(pos, pos + node.nodeSize, {
-          class: flag === 'Term unavailable' ? 'aw-term-unavailable' : 'aw-term-deprecated',
+          class: flag.unavailable ? 'aw-term-unavailable' : 'aw-term-deprecated',
         }),
       );
     }

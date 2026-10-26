@@ -912,5 +912,6 @@
   "editor.discard.question": "Discard these changes?",
   "editor.discard.sentence": "These changes will no longer be offered for recovery. They stay in Saved text until they expire.",
   "editor.discard.keep": "Keep",
-  "editor.discard.act": "Discard"
+  "editor.discard.act": "Discard",
+  "editor.toolbar.tip": "{name} ({keys})"
 }

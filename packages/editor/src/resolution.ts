@@ -10,6 +10,7 @@ import {
 import { Decoration, DecorationSet } from 'prosemirror-view';
 
 import { paragraphPlaces } from './places.js';
+import { listOf, say } from './words.js';
 
 /** Why a style will not resolve where it stands: the theme holds none of that name, or not for here. */
 export type Unresolved = 'missing' | 'misplaced';
@@ -41,12 +42,15 @@ export interface TextWhere {
   readonly inlineCode: boolean;
 }
 
-const LABELS: Record<Unresolved, (kind: string, style: string) => string> = {
-  missing: (kind, style) => `${kind} ${style} is not in this theme`,
-  misplaced: (kind, style) => `${kind} ${style} does not apply here`,
+const LABELS: Record<Unresolved, (kind: StyleKind, style: string) => string> = {
+  missing: (kind, style) => say('style.missing', { kind, style }),
+  misplaced: (kind, style) => say('style.misplaced', { kind, style }),
 };
 
-const marker = (status: Unresolved, kind: string, style: string) => ({
+/** Which of a theme's styles a marker names. */
+type StyleKind = 'paragraph' | 'table' | 'image';
+
+const marker = (status: Unresolved, kind: StyleKind, style: string) => ({
   'data-unresolved': status,
   'data-unresolved-label': LABELS[status](kind, style),
   title: LABELS[status](kind, style),
@@ -93,7 +97,7 @@ export function unresolvedDecorations(
           decorations.push(
             Decoration.inline(at, at + character.length, {
               class: 'aw-glyph-missing',
-              title: `No glyph for U+${hex(codePoint)} in this typeface`,
+              title: say('glyph.missing', { codes: `U+${hex(codePoint)}` }),
             }),
           );
         }
@@ -116,7 +120,9 @@ export function unresolvedDecorations(
     if (node.type.name !== 'term' && style !== 'body') {
       const status = check.paragraph(style, place);
       if (status !== null) {
-        decorations.push(Decoration.node(pos, pos + node.nodeSize, marker(status, 'Style', style)));
+        decorations.push(
+          Decoration.node(pos, pos + node.nodeSize, marker(status, 'paragraph', style)),
+        );
       }
     }
     glyphs(node, pos, {
@@ -145,7 +151,12 @@ export function unresolvedDecorations(
           decorations.push(
             Decoration.node(pos, pos + node.nodeSize, {
               class: 'aw-label-glyph-missing',
-              title: `No glyph for ${[...missing].map((each) => `U+${hex(each)}`).join(', ')} in this typeface, in its label`,
+              title: say('glyph.missing-in-label', {
+                codes: listOf(
+                  [...missing].map((each) => `U+${hex(each)}`),
+                  'conjunction',
+                ),
+              }),
             }),
           );
         }
@@ -155,7 +166,7 @@ export function unresolvedDecorations(
         const status = check.table(style);
         if (status !== null) {
           decorations.push(
-            Decoration.node(pos, pos + node.nodeSize, marker(status, 'Table style', style)),
+            Decoration.node(pos, pos + node.nodeSize, marker(status, 'table', style)),
           );
         }
       }
@@ -164,7 +175,7 @@ export function unresolvedDecorations(
         const status = check.image(style, node.type.name === 'figure' ? 'figure' : 'inlineImage');
         if (status !== null) {
           decorations.push(
-            Decoration.node(pos, pos + node.nodeSize, marker(status, 'Image style', style)),
+            Decoration.node(pos, pos + node.nodeSize, marker(status, 'image', style)),
           );
         }
       }

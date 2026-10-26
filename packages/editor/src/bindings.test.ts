@@ -152,12 +152,12 @@ describe('bindingsShown, in a document (B1-J)', () => {
 
   it('says a binding the document holds nothing for was never resolved', () => {
     expect(words(docOf(), inDocument([]))[0]).toEqual({
-      text: NEVER_RESOLVED,
+      text: NEVER_RESOLVED(),
       hidden: ', bound value, failed',
       marker: null,
       failed: true,
     });
-    expect(NEVER_RESOLVED).toBe('No value - never resolved');
+    expect(NEVER_RESOLVED()).toBe('No value - never resolved');
   });
 
   it('says a binding the author has changed since it was resolved holds no value, though the view holds one', () => {
@@ -167,12 +167,12 @@ describe('bindingsShown, in a document (B1-J)', () => {
       ['k1', held(stored('k1', { column: 'width' }), { value: '1,234.5', waiting: false })],
     ]);
     expect(words(docOf(), context)[0]).toEqual({
-      text: CHANGED_SINCE_RESOLVED,
+      text: CHANGED_SINCE_RESOLVED(),
       hidden: ', bound value, failed',
       marker: null,
       failed: true,
     });
-    expect(CHANGED_SINCE_RESOLVED).toBe('No value - the binding changed since it was resolved');
+    expect(CHANGED_SINCE_RESOLVED()).toBe('No value - the binding changed since it was resolved');
   });
 
   it('words each failure the view answers, keyed by hand', () => {

@@ -713,6 +713,7 @@ describe('Equation in the registry (equations 1)', () => {
       kind: 'block',
       action: 'equation',
       label: 'Equation',
+      said: 'Equation',
       shortcut: 'Mod-Shift-e',
       shortcutSaid: 'Ctrl or Cmd, Shift and E',
       prompts: true,

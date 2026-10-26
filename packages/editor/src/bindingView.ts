@@ -201,7 +201,7 @@ export function fillBinding(
     icon.setAttribute('aria-hidden', 'true');
     // A pencil for a person's value (DAT-115), the arrows for a newer result waiting.
     icon.textContent = String.fromCodePoint(
-      shown.marker.startsWith(REVISED_BY_HAND) ? 0x270e : 0x21bb,
+      shown.marker.startsWith(REVISED_BY_HAND()) ? 0x270e : 0x21bb,
     );
     marker.append(icon, ` ${shown.marker}`);
     element.append(marker);
@@ -224,7 +224,7 @@ export function boundImageHolder(document: Document, image: BoundImage): HTMLEle
   element.setAttribute('data-image-style', 'inline');
   element.addEventListener('error', () => {
     holder.classList.add('aw-image-missing');
-    holder.setAttribute('data-missing', MISSING_IMAGE);
+    holder.setAttribute('data-missing', MISSING_IMAGE());
   });
   holder.append(element);
   return holder;

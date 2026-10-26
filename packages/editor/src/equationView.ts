@@ -1,14 +1,15 @@
 import { equationAlternative, inlineNodeSchema } from '@alloy-works/domain';
 import type { Node } from 'prosemirror-model';
 import type { NodeView } from 'prosemirror-view';
+import { say } from './words.js';
 
 const MATHML = 'http://www.w3.org/1998/Math/MathML';
 
 /** What an equation with no spoken alternative says beside itself (equations 1, ruling R5). */
-export const NO_DESCRIPTION = 'No description';
+export const NO_DESCRIPTION = (): string => say('equation.no-description');
 
 /** What stands in an equation's place where its MathML is not what the reader keeps. */
-export const UNSHOWN_EQUATION = 'An equation that cannot be shown';
+export const UNSHOWN_EQUATION = (): string => say('equation.unshown');
 
 /**
  * The equation's MathML as elements of `document`, or null where it is not the one form the MathML
@@ -66,7 +67,7 @@ export function drawEquation(
   const math = mathmlElement(attrs.mathml, document);
   if (math === null) {
     holder.classList.add('aw-equation-unshown');
-    holder.textContent = UNSHOWN_EQUATION;
+    holder.textContent = UNSHOWN_EQUATION();
     return;
   }
   if (display === 'block') math.setAttribute('display', 'block');
@@ -77,14 +78,14 @@ export function drawEquation(
     holder.classList.add('aw-equation-undescribed');
     const marker = document.createElement('span');
     marker.className = 'aw-equation-undescribed-marker';
-    marker.textContent = NO_DESCRIPTION;
+    marker.textContent = NO_DESCRIPTION();
     holder.appendChild(marker);
   }
   if (display === 'block' && attrs.numbered === true) {
     const number = document.createElement('span');
     number.className = 'aw-equation-number';
     number.setAttribute('role', 'img');
-    number.setAttribute('aria-label', 'Numbered');
+    number.setAttribute('aria-label', say('equation.numbered'));
     number.textContent = '(#)';
     holder.appendChild(number);
   }

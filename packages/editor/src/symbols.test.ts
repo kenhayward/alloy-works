@@ -188,6 +188,7 @@ describe('Symbols in the registry (W14.7)', () => {
       kind: 'block',
       action: 'symbol',
       label: 'Symbols',
+      said: 'Symbols',
       shortcut: 'Mod-Shift-m',
       shortcutSaid: 'Ctrl or Cmd, Shift and M',
       prompts: true,

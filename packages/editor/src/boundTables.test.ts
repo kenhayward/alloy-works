@@ -265,13 +265,13 @@ describe("what a bound table's body shows (TB2-D)", () => {
         documentOf(boundTable()),
         inDocument(heldTable({ columns: DECLARED, rowCount: 2, rows: null })),
       ).spanning,
-    ).toEqual({ text: TABLE_READING, failed: false });
+    ).toEqual({ text: TABLE_READING(), failed: false });
   });
 
   it('says why a binding holds nothing: never resolved, or changed since', () => {
     const document = documentOf(boundTable());
     expect(shownIn(document, inDocument()).spanning).toEqual({
-      text: TABLE_NEVER_RESOLVED,
+      text: TABLE_NEVER_RESOLVED(),
       failed: true,
     });
     const other = tableBinding('k1', { mode: 'pinned' });
@@ -280,7 +280,7 @@ describe("what a bound table's body shows (TB2-D)", () => {
         document,
         inDocument(heldTable({ columns: DECLARED, rowCount: 0, rows: null }, other)),
       ).spanning,
-    ).toEqual({ text: TABLE_CHANGED, failed: true });
+    ).toEqual({ text: TABLE_CHANGED(), failed: true });
   });
 
   it("shows a component's bound table by its headers and one row naming the definition that fills it", () => {
@@ -374,7 +374,7 @@ describe("what a bound table's body shows (TB2-D)", () => {
         documentOf(sorted),
         inDocument(heldTable({ columns: DECLARED, rowCount: 3, rows: sent })),
       ).spanning,
-    ).toEqual({ text: TABLE_READING, failed: false });
+    ).toEqual({ text: TABLE_READING(), failed: false });
   });
 });
 
@@ -425,7 +425,7 @@ describe("a bound table's groups on the page (TG2)", () => {
       documentOf(grouped),
       inDocument(heldTable({ columns: GROUPED, rowCount: 4, rows: without })),
     );
-    expect(shown.spanning).toEqual({ text: TABLE_READING, failed: false });
+    expect(shown.spanning).toEqual({ text: TABLE_READING(), failed: false });
   });
 
   it('shows a table not grouped with no headings and no subtotals, as before', () => {
@@ -642,9 +642,9 @@ describe("a bound table's notes on the page (TB3.3)", () => {
       ),
     );
     expect(keyless.notes).toEqual([
-      { id: 'f1', letter: null, said: NOTE_KEY_REQUIRED, failed: true },
+      { id: 'f1', letter: null, said: NOTE_KEY_REQUIRED(), failed: true },
       { id: 'f2', letter: 'a', said: null, failed: false },
-      { id: 'f3', letter: null, said: NOTE_KEY_REQUIRED, failed: true },
+      { id: 'f3', letter: null, said: NOTE_KEY_REQUIRED(), failed: true },
     ]);
     // Not yet answered for a note just added: no letter, nothing failed.
     const unread = shownIn(

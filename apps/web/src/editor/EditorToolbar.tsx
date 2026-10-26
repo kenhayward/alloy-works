@@ -253,13 +253,16 @@ export function EditorToolbar({
           <button
             type="button"
             className={styles['button']}
-            // The registry's label is the only name a screen reader gets: the face is an icon.
-            aria-label={command.label}
+            // The registry's name is the only one a screen reader gets: the face is an icon.
+            aria-label={command.said}
             aria-disabled={unavailable(command)}
             // The shortcut spelled out rather than drawn with symbols, for the reason the registry
             // gives: a screen reader says `Mod-,` as punctuation, and a keyboard without a Cmd key has
             // no glyph for it.
-            data-tip={`${command.label} (${command.shortcutSaid})`}
+            data-tip={words('editor.toolbar.tip', {
+              name: command.said,
+              keys: command.shortcutSaid,
+            })}
             {...announces(command)}
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => press(command)}

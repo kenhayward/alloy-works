@@ -17,7 +17,7 @@ export function imageView(node: Node, document: Document): NodeView {
   for (const [name, value] of Object.entries(attrs)) image.setAttribute(name, value);
   image.addEventListener('error', () => {
     holder.classList.add('aw-image-missing');
-    holder.setAttribute('data-missing', MISSING_IMAGE);
+    holder.setAttribute('data-missing', MISSING_IMAGE());
   });
   holder.appendChild(image);
   return {

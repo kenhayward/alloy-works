@@ -1,4 +1,5 @@
 import { sendLanguage } from '@alloy-works/api-client';
+import { sayWith } from '@alloy-works/editor';
 import { Fragment, useMemo, type ReactNode } from 'react';
 
 import { DEFAULT_LANGUAGE } from './locales.js';
@@ -19,6 +20,12 @@ let current: Words = english;
 
 // Every request says the language the interface is in, so what the service sorts is in it (UI-H).
 sendLanguage(() => current.language.tag);
+
+// The editor's own words, in the same language (the UI plan, UIb).
+sayWith({
+  words: (key, values) => current.words(`pm.${key}`, values),
+  list: (values, type) => current.list(values, { type }),
+});
 
 /** A message in the interface's language now, its placeholders filled. */
 export const words = (key: WordKey, values?: Values): string => current.words(key, values);

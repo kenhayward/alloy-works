@@ -290,7 +290,7 @@ describe('what a bound image shows (the B6 plan, B6-G)', () => {
     });
     // And one changed since it was resolved says so, as an inline binding does.
     const changed = inDocument([['k2', held(bound('k2', 'other'), pictured(OTHER, 'x'))]]);
-    expect(boundFiguresShown(doc, changed)[0]).toMatchObject({ text: CHANGED_SINCE_RESOLVED });
+    expect(boundFiguresShown(doc, changed)[0]).toMatchObject({ text: CHANGED_SINCE_RESOLVED() });
   });
 });
 

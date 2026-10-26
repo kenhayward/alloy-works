@@ -257,3 +257,11 @@ export {
   holdBoundTableColumn,
 } from './boundTableFocus.js';
 export { tableWidthsPlugin, widthDrawnTables } from './tableWidths.js';
+export {
+  EDITOR_WORDS,
+  listOf,
+  say as sayEditorWord,
+  sayWith,
+  type EditorSaying,
+  type EditorWordKey,
+} from './words.js';

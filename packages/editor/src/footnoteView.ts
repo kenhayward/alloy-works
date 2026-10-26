@@ -27,6 +27,7 @@ import { referenceContextOf, referenceDecorations, referenceView } from './refer
 import { copiedAsShown } from './render.js';
 import { styleCheckOf, unresolvedDecorations, type StyleCheck } from './resolution.js';
 import { footnotePluginsOf } from './state.js';
+import { say } from './words.js';
 
 /** A transaction the footnote's editor takes from the surface, which is not sent back to it. */
 const FROM_OUTSIDE = 'footnoteFromOutside';
@@ -71,7 +72,7 @@ export function footnoteView(
   const mark = document.createElement('sup');
   mark.className = 'aw-footnote-mark';
   mark.setAttribute('role', 'img');
-  mark.setAttribute('aria-label', 'Footnote');
+  mark.setAttribute('aria-label', say('footnote.mark'));
   dom.appendChild(mark);
 
   const forward = (tr: Transaction) => {
@@ -153,7 +154,7 @@ export function footnoteView(
       attributes: () => ({
         role: 'textbox',
         'aria-multiline': 'true',
-        'aria-label': 'Footnote text',
+        'aria-label': say('footnote.text'),
         spellcheck: 'true',
         lang: language(),
         dir: outer.state.doc.attrs.direction as string,

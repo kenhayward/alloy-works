@@ -9,6 +9,7 @@ import {
   type ReferenceTarget,
 } from '@alloy-works/domain';
 import type { Node } from 'prosemirror-model';
+import { say } from './words.js';
 
 /**
  * What the host tells a surface about the document a component is being edited in (cross-references
@@ -61,11 +62,11 @@ export const BROKEN_CLASS = 'aw-reference-broken';
  * target is in another component, whatever it is there; a `block` target's kind went with the block,
  * and the stored target names only an identifier, so it says no more than that it is broken.
  */
-export const BROKEN_REFERENCE = 'Broken reference';
+export const BROKEN_REFERENCE = (): string => say('reference.broken');
 
 /** A broken reference to a section, and one to another component: what each pointed at, named. */
-export const BROKEN_SECTION_REFERENCE = 'Broken reference to a section';
-export const BROKEN_COMPONENT_REFERENCE = 'Broken reference to another component';
+export const BROKEN_SECTION_REFERENCE = (): string => say('reference.broken-section');
+export const BROKEN_COMPONENT_REFERENCE = (): string => say('reference.broken-component');
 
 /**
  * What a reference shows where it asks its target for a form the target has not got, which the publish
@@ -82,22 +83,22 @@ export function unavailableReference(
   const word = kindWord(target.kind);
   const wantsNumber = display === 'number' || display === 'numberAndTitle';
   const wantsTitle = display === 'title' || display === 'numberAndTitle';
-  if (wantsNumber && target.unnumbered) return `${word} not numbered - choose another form`;
+  if (wantsNumber && target.unnumbered) return say('reference.not-numbered', { kind: word });
   if (wantsTitle && target.titleHoldsEquation) {
-    return `${word} title holds an equation - choose another form`;
+    return say('reference.title-holds-equation', { kind: word });
   }
   if (wantsNumber && !formsFor(target.kind).includes('number')) {
-    return `${word} has no number - choose another form`;
+    return say('reference.no-number', { kind: word });
   }
-  if (wantsTitle) return `${word} has no title - choose another form`;
-  return `${word} cannot be shown this way - choose another form`;
+  if (wantsTitle) return say('reference.no-title', { kind: word });
+  return say('reference.cannot-show', { kind: word });
 }
 
 /**
  * What a reference to another component says where there is no document to find that component in.
  * Not broken: whether it resolves is the document's question, and there is none to ask.
  */
-export const IN_ANOTHER_COMPONENT = 'In another component';
+export const IN_ANOTHER_COMPONENT = (): string => say('reference.in-another-component');
 
 /** A node of the component with an identifier, which a `block` target can name. */
 interface Held {
@@ -159,7 +160,7 @@ export function referencesShown(
     if (target.kind === 'block') {
       const own = held.get(target.block);
       if (own === undefined) {
-        shown.push({ pos, text: BROKEN_REFERENCE, broken: true });
+        shown.push({ pos, text: BROKEN_REFERENCE(), broken: true });
         return false;
       }
       const relative = own.pos < pos + offset ? 'above' : 'below';
@@ -187,7 +188,7 @@ export function referencesShown(
         shown.push({ pos, text: named(own.node), broken: false });
       }
     } else if (context === null) {
-      const text = target.kind === 'node' ? kindWord('section') : IN_ANOTHER_COMPONENT;
+      const text = target.kind === 'node' ? kindWord('section') : IN_ANOTHER_COMPONENT();
       shown.push({ pos, text, broken: false });
     } else if (found !== undefined && !targetForms(found).includes(display)) {
       // A section, or another component's block, asked for a form it has not got - a number of a
@@ -202,7 +203,8 @@ export function referencesShown(
         broken: false,
       });
     } else {
-      const text = target.kind === 'node' ? BROKEN_SECTION_REFERENCE : BROKEN_COMPONENT_REFERENCE;
+      const text =
+        target.kind === 'node' ? BROKEN_SECTION_REFERENCE() : BROKEN_COMPONENT_REFERENCE();
       shown.push({ pos, text, broken: true });
     }
     return false;
