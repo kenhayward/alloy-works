@@ -158,7 +158,7 @@ export function DeletedList({ client, kind }: { client: Client; kind: Kind }) {
           </table>
         </div>
       )}
-      <More listing={listing} what={words('lifecycle.deleted-3', { kind })} />
+      <More listing={listing} failed={words('lifecycle.more-deleted-failed', { kind })} />
     </section>
   );
 }

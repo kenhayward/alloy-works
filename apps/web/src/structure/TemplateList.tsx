@@ -191,7 +191,7 @@ export function TemplateList({ client }: { readonly client: Client }) {
             </table>
           </div>
         )}
-        <More listing={listing} what="templates" />
+        <More listing={listing} failed={words('document.more-templates-failed')} />
       </section>
       {generating !== null && (
         <GenerateDialog

@@ -377,7 +377,7 @@ export function Connections({ client }: { readonly client: Client }) {
             </table>
           </div>
         )}
-        <More listing={listing} what={words('data.connections-what')} />
+        <More listing={listing} failed={words('data.more-connections-failed')} />
       </section>
     </ListLayout>
   );

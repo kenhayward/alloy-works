@@ -142,7 +142,7 @@ export const toggled = <T,>(held: readonly T[], value: T): readonly T[] =>
 /** Show more, or Try again where the page after the last one shown did not arrive. */
 export function More({
   listing,
-  what,
+  failed,
 }: {
   readonly listing: {
     readonly next: string | null;
@@ -150,12 +150,13 @@ export function More({
     readonly loading: boolean;
     readonly load: (cursor: string | null) => Promise<void>;
   };
-  readonly what: string;
+  /** What is said where the next page did not arrive, a whole sentence. */
+  readonly failed: string;
 }) {
   if (listing.failed !== undefined) {
     return (
       <Notice tone="failed">
-        <p>{words('listing.the-could-not-be-loaded', { what })}</p>
+        <p>{failed}</p>
         <button
           type="button"
           disabled={listing.loading}

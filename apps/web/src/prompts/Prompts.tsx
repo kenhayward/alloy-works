@@ -213,7 +213,7 @@ export function Prompts({ client }: { readonly client: Client }) {
             </table>
           </div>
         )}
-        <More listing={listing} what={words('prompts.more-what')} />
+        <More listing={listing} failed={words('prompts.more-failed')} />
       </section>
     </ListLayout>
   );

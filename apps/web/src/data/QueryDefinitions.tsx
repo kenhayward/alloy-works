@@ -227,7 +227,7 @@ export function QueryDefinitions({ client }: { readonly client: Client }) {
             </table>
           </div>
         )}
-        <More listing={listing} what={words('data.query-definitions')} />
+        <More listing={listing} failed={words('data.more-definitions-failed')} />
       </section>
     </ListLayout>
   );
