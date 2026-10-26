@@ -5,6 +5,7 @@ import type {
   EditingSettingsBody,
   ImportSettings,
   TranslationSettings,
+  TranslationSettingsBody,
 } from '@alloy-works/api-contract';
 import {
   dataPolicy,
@@ -123,7 +124,7 @@ export function settingsHandlers(
       { trx }: Authorised,
     ): Promise<TranslationSettings> => {
       const before = await translationPolicy(trx);
-      const after = await setTranslationPolicy(trx, request.body as TranslationSettings);
+      const after = await setTranslationPolicy(trx, request.body as TranslationSettingsBody);
       // The words by language compared as a whole, so an unchanged note is no change.
       const compared = (policy: TranslationSettings) => ({
         ...policy,

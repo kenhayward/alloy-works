@@ -13,6 +13,7 @@ interface Policy {
   readonly outOfDate: 'publish' | 'refuse';
   readonly note: Readonly<Record<string, string>>;
   readonly conflict: 'review' | 'accept' | 'reject';
+  readonly machine: 'off' | 'inside' | 'any';
 }
 
 /** The note's words by language, as the form holds them: one `tag: words` a line. */
@@ -37,7 +38,8 @@ const noteOf = (text: string): Record<string, string> =>
  * **Administration's Translation** (the TR plan, TR-J; LOC-017, LOC-036, LOC-037): what publishing in
  * a language does with a component not translated into it, or translated out of date, and the words
  * that mark one published in its own language; and what a translation returned for a source that moved
- * since it was sent is offered first (XL-G; LOC-035). Read by anybody, changed by an administrator of the
+ * since it was sent is offered first (XL-G; LOC-035); and whether content goes to machine translation
+ * (XL-K; LOC-026). Read by anybody, changed by an administrator of the
  * environment; a document may set its own fallback.
  */
 export function TranslationPolicy({ client, mayChange }: { client: Client; mayChange: boolean }) {
@@ -45,6 +47,7 @@ export function TranslationPolicy({ client, mayChange }: { client: Client; mayCh
   const [fallback, setFallback] = useState<Policy['fallback']>('source');
   const [outOfDate, setOutOfDate] = useState<Policy['outOfDate']>('publish');
   const [conflict, setConflict] = useState<Policy['conflict']>('review');
+  const [machine, setMachine] = useState<Policy['machine']>('off');
   const [note, setNote] = useState('');
   const [said, setSaid] = useState('');
   const [busy, setBusy] = useState(false);
@@ -55,6 +58,7 @@ export function TranslationPolicy({ client, mayChange }: { client: Client; mayCh
     setFallback(policy.fallback);
     setOutOfDate(policy.outOfDate);
     setConflict(policy.conflict);
+    setMachine(policy.machine);
     setNote(noteText(policy.note));
   };
 
@@ -78,7 +82,7 @@ export function TranslationPolicy({ client, mayChange }: { client: Client; mayCh
     setBusy(true);
     try {
       const { data, error } = await client.PUT('/v1/settings/translation', {
-        body: { fallback, outOfDate, note: noteOf(note), conflict },
+        body: { fallback, outOfDate, note: noteOf(note), conflict, machine },
       });
       if (data) {
         show(data);
@@ -169,6 +173,35 @@ export function TranslationPolicy({ client, mayChange }: { client: Client; mayCh
                 checked={conflict === value}
                 disabled={!mayChange}
                 onChange={() => setConflict(value)}
+              />{' '}
+              {label}
+            </span>
+            <span className={styles['muted']}>{hint}</span>
+          </label>
+        ))}
+      </fieldset>
+      <fieldset>
+        <legend className={styles['strong']}>Machine translation</legend>
+        {(
+          [
+            ['off', 'Send nothing', 'No component is drafted by machine.'],
+            [
+              'inside',
+              'Only inside the data boundary',
+              'To a translate endpoint inside the boundary alone.',
+            ],
+            ['any', 'To any translate endpoint', 'Inside or outside the boundary.'],
+          ] as const
+        ).map(([value, label, hint]) => (
+          <label key={value} className={styles['setting']}>
+            <span>
+              <input
+                type="radio"
+                name="translation-machine"
+                value={value}
+                checked={machine === value}
+                disabled={!mayChange}
+                onChange={() => setMachine(value)}
               />{' '}
               {label}
             </span>

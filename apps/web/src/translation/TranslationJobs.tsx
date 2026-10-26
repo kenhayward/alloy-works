@@ -18,7 +18,7 @@ export interface JobNow {
   readonly items: readonly {
     readonly component: { readonly id: string; readonly title: string };
     readonly source: { readonly number: string } | null;
-    readonly notSent: 'needs_revision' | 'not_editable' | null;
+    readonly notSent: 'needs_revision' | 'not_editable' | 'other_source' | null;
     readonly outcome: 'returned' | 'held' | 'refused' | null;
   }[];
   readonly returns?: readonly {
@@ -82,10 +82,15 @@ export function returnWords(job: JobNow): string | undefined {
 }
 
 /** Why a component was listed and not sent, in words. */
-export function notSentWords(reason: 'needs_revision' | 'not_editable'): string {
-  return reason === 'needs_revision'
-    ? 'not sent: approve it first'
-    : 'not sent: you may not edit it';
+export function notSentWords(reason: 'needs_revision' | 'not_editable' | 'other_source'): string {
+  switch (reason) {
+    case 'needs_revision':
+      return 'not sent: approve it first';
+    case 'not_editable':
+      return 'not sent: you may not edit it';
+    case 'other_source':
+      return "not sent: its source is in another language than the job's first, so send it in a job of its own";
+  }
 }
 
 /** A job in a line: its language, vendor, how many were sent and whether it is closed. */

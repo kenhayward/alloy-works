@@ -1,4 +1,10 @@
-import { limitCeilings, runsAtOnce, translationPolicySchema } from '@alloy-works/domain';
+import {
+  TRANSLATION_CONFLICTS,
+  TRANSLATION_MACHINE,
+  limitCeilings,
+  runsAtOnce,
+  translationPolicySchema,
+} from '@alloy-works/domain';
 import { z } from 'zod';
 import type { RouteContract } from './contract.js';
 import { ErrorBody } from './schemas.js';
@@ -117,9 +123,19 @@ export type ImportSettings = z.infer<typeof ImportSettings>;
 
 /** The environment's translation policy (the TR plan, TR-J; LOC-017, LOC-036, LOC-037). */
 export const TranslationSettings = translationPolicySchema.describe(
-  '`fallback`: where a component has no translation into the language a document is published in, `source`, the default, publishes it in its own language, marked as untranslated, and `refuse` fails the publish; a document may say otherwise. `outOfDate`: a translation out of date with a change that needs retranslating, `publish`, the default, publishes it and reports it, and `refuse` fails the publish. `note`: the words the mark says, by language tag, else `Untranslated`. `conflict`: what a translation returned for a source or a translation that moved since it was sent is offered first - `review`, the default, leaves it held, `accept` offers accepting it as a translation of the version sent, `reject` offers rejecting it; a person always decides',
+  '`fallback`: where a component has no translation into the language a document is published in, `source`, the default, publishes it in its own language, marked as untranslated, and `refuse` fails the publish; a document may say otherwise. `outOfDate`: a translation out of date with a change that needs retranslating, `publish`, the default, publishes it and reports it, and `refuse` fails the publish. `note`: the words the mark says, by language tag, else `Untranslated`. `conflict`: what a translation returned for a source or a translation that moved since it was sent is offered first - `review`, the default, leaves it held, `accept` offers accepting it as a translation of the version sent, `reject` offers rejecting it; a person always decides. `machine`: whether content is sent to the `translate` model endpoint for a machine draft - `off`, the default, never; `inside`, only to an endpoint inside the data boundary; `any`, to any',
 );
 export type TranslationSettings = z.infer<typeof TranslationSettings>;
+
+/**
+ * The policy set: as read, but `conflict` and `machine` may be left out, and then stay as they are,
+ * so a body written before either existed changes neither (the XL final review).
+ */
+export const TranslationSettingsBody = translationPolicySchema.extend({
+  conflict: z.enum(TRANSLATION_CONFLICTS).optional().describe('Left out, it stays as it is'),
+  machine: z.enum(TRANSLATION_MACHINE).optional().describe('Left out, it stays as it is'),
+});
+export type TranslationSettingsBody = z.infer<typeof TranslationSettingsBody>;
 
 const unauthenticated = {
   description: 'No session, or not one this environment issued',
@@ -222,7 +238,7 @@ export const settingsRoutes = {
     summary: "Change the environment's policy for publishing in a language",
     tenantScoped: true,
     access: { check: 'permission', permission: 'administer', target: { tenant: true } },
-    body: TranslationSettings,
+    body: TranslationSettingsBody,
     responses: {
       200: { description: 'The translation settings, as changed', schema: TranslationSettings },
       400: {

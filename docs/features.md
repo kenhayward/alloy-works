@@ -1265,6 +1265,13 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   source or translation changed since, or that somebody is editing, is held for review: **Review**
   shows the source's changes beside the words returned, and a person accepts it, out of date, or
   rejects it. Administration's **Translation** says which is offered first.
+- **Machine drafts.** On a translation, **Draft by machine** sends its source to the environment's
+  machine translation endpoint, with the space's terms, and makes the reply a version of the
+  translation, refused whole if it changed a reference, a mark or code. The draft is marked as drafted
+  by machine, and so is every version after it, until a person who may approve the component accepts it
+  under Translations; a publish refuses it until then, and each term it did not translate by its labels
+  is named. Administration's **Translation** says whether anything is sent at all (off by default), or
+  only inside the data boundary, and Models routes **Machine translation** to an endpoint.
 - **Revisions effective by scope.** A component's or document's header offers **Effective for**: the
   markets or sites, condition axis values, its next revision is effective for, while another revision
   stays effective elsewhere; a document reads, publishes and baselines the revision effective under its

@@ -189,6 +189,14 @@ const WIRE_CODES = {
   // A translation job (the XL plan): one with nothing to send, and one closed already.
   'translation.nothing_to_send': 'translation_nothing_to_send',
   'translation.job_closed': 'translation_job_closed',
+  // A machine draft (the XL plan, XL-H to XL-K): the policy off, or inside where the endpoint is
+  // outside; a source with no text; and nothing drafted to accept.
+  'translation.machine_off': 'translation_machine_off',
+  'translation.machine_outside': 'translation_machine_outside',
+  'translation.nothing_to_translate': 'translation_nothing_to_translate',
+  'translation.nothing_drafted': 'translation_nothing_drafted',
+  // A held translation's words a cut refuses (the XL final review).
+  'translation.not_applied': 'translation_not_applied',
   'carry.invalid': 'carry_invalid',
   'share.member': 'share_member',
   'share.invitation_waiting': 'share_invitation_waiting',

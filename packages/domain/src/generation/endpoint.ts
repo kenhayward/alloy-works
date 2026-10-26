@@ -13,7 +13,14 @@ export const MODEL_PROTOCOLS = ['anthropic', 'openai'] as const;
 export type ModelProtocol = (typeof MODEL_PROTOCOLS)[number];
 
 /** What a route is for (GN-B, GEN-028); a test is a run's purpose and routes nothing. */
-export const ROUTED_PURPOSES = ['drafting', 'chat', 'summarising', 'embedding'] as const;
+// `translate` is a machine draft's (the XL plan, XL-H): routed as any other, never a prompt's.
+export const ROUTED_PURPOSES = [
+  'drafting',
+  'chat',
+  'summarising',
+  'embedding',
+  'translate',
+] as const;
 export type RoutedPurpose = (typeof ROUTED_PURPOSES)[number];
 export const RUN_PURPOSES = [...ROUTED_PURPOSES, 'test', 'trial'] as const;
 export type RunPurpose = (typeof RUN_PURPOSES)[number];

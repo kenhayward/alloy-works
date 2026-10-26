@@ -14,6 +14,7 @@ function service() {
     outOfDate: 'publish',
     note: {},
     conflict: 'review',
+    machine: 'off',
   };
   const put: unknown[] = [];
   const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
@@ -42,6 +43,8 @@ describe("Administration's Translation", () => {
     );
     expect(screen.getByRole('radio', { name: /Hold it for review/ })).toBeChecked();
     await userEvent.click(screen.getByRole('radio', { name: /Offer to accept it/ }));
+    expect(screen.getByRole('radio', { name: /Send nothing/ })).toBeChecked();
+    await userEvent.click(screen.getByRole('radio', { name: /Only inside the data boundary/ }));
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() =>
       expect(put).toEqual([
@@ -50,6 +53,7 @@ describe("Administration's Translation", () => {
           outOfDate: 'publish',
           note: { fr: 'Non traduit', de: 'Nicht übersetzt' },
           conflict: 'accept',
+          machine: 'inside',
         },
       ]),
     );

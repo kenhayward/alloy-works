@@ -148,6 +148,8 @@ describe('the audit kinds', () => {
       // The XL plan's (XL-F, XL-G): a file returned, and a held item decided.
       'translation.job_returned',
       'translation.job_decided',
+      // The XL plan's (XL-I): a machine draft accepted.
+      'translation.machine_accepted',
     ];
     expect([...auditKinds].sort()).toEqual([...listed].sort());
     for (const kind of auditKinds) {

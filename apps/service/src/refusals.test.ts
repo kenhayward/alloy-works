@@ -260,6 +260,13 @@ describe('the rule behind a refusal', () => {
       // The XL plan's (XL-D): a job with nothing to send, and one closed already.
       'translation.nothing_to_send',
       'translation.job_closed',
+      // The XL plan's (XL-H, XL-K): the policy off, or inside where the endpoint is outside; a source
+      // with no text; nothing drafted to accept.
+      'translation.machine_off',
+      'translation.machine_outside',
+      'translation.nothing_to_translate',
+      'translation.nothing_drafted',
+      'translation.not_applied',
       // The R17 plan's (R17-A, R17-B, R17-D): a share to one of the organisation's own, to an address
       // an administrator's invitation waits for, twice, to somebody erased, past now or past the cap;
       // the shared reader granted but as a share. Guards of the design's own.

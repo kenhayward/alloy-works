@@ -15,7 +15,7 @@ export const TRANSLATION_STATUSES = [
 ] as const;
 
 export type TranslationStatus =
-  | { readonly status: 'untranslated' | 'translated' | 'inTranslation' }
+  | { readonly status: 'untranslated' | 'translated' | 'inTranslation' | 'machineDrafted' }
   /** `retranslate` where any later source version was declared to need it (LOC-015, LOC-031). */
   | { readonly status: 'outOfDate'; readonly retranslate: boolean };
 
@@ -28,7 +28,10 @@ export function translationStatus(input: {
   readonly translates: string | null;
   readonly laterSource: readonly { readonly retranslate: boolean }[];
   readonly inTranslation?: boolean | undefined;
+  /** A machine draft on the line no person with approve has accepted (XL-I), over everything. */
+  readonly machineDrafted?: boolean | undefined;
 }): TranslationStatus {
+  if (input.machineDrafted === true) return { status: 'machineDrafted' };
   if (input.translates !== null && input.laterSource.length === 0) return { status: 'translated' };
   if (input.inTranslation === true) return { status: 'inTranslation' };
   if (input.translates === null) return { status: 'untranslated' };

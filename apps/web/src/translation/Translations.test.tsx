@@ -175,3 +175,87 @@ describe('translations on a component page (the TR plan, TRa)', () => {
     expect(sourceOf({})).toBeUndefined();
   });
 });
+
+describe('a machine draft on a translation (the XL plan, XLc)', () => {
+  it('LOC-023 LOC-024 drafts a translation by machine, says the terms it missed, and accepts it', async () => {
+    let drafted = false;
+    let accepted = false;
+    const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const url = new URL(request.url);
+      if (url.pathname === `/v1/components/${POND}/translations` && request.method === 'GET') {
+        return json(200, {
+          source: { language: 'en-GB', latest: SOURCE },
+          translations: [
+            {
+              line: FR,
+              language: 'fr-FR',
+              head: drafted ? { id: SOURCE.id, number: 'fr-FR 1.1' } : null,
+              translates: drafted ? SOURCE : null,
+              status: {
+                status:
+                  drafted && !accepted ? 'machineDrafted' : drafted ? 'translated' : 'untranslated',
+              },
+              machine:
+                drafted && !accepted
+                  ? {
+                      version: { id: SOURCE.id, number: 'fr-FR 1.1' },
+                      missedTerms: [
+                        { term: 'aaaaaaaa-0000-4000-8000-0000000000aa', label: 'pond' },
+                      ],
+                    }
+                  : null,
+            },
+          ],
+        });
+      }
+      if (url.pathname.endsWith('/machine-draft/accept')) {
+        accepted = true;
+        return json(200, {});
+      }
+      return json(404, {});
+    }) as unknown as typeof fetch;
+    const client = createApiClient({ baseUrl: 'http://translations.test', fetch: fetching });
+    const streamed: string[] = [];
+    const stream = vi.fn(
+      async (options: { url: string; onEvent: (event: string, data: unknown) => void }) => {
+        streamed.push(options.url);
+        options.onEvent('run', { run: 'r1' });
+        options.onEvent('drafted', {
+          version: { id: SOURCE.id, number: 'fr-FR 1.1' },
+          missedTerms: [],
+        });
+        options.onEvent('ended', { outcome: 'finished' });
+        drafted = true;
+        return { kind: 'streamed' as const };
+      },
+    );
+    render(
+      <TranslationsButton
+        client={client}
+        componentId={POND}
+        line={FR}
+        mayEdit
+        translatable
+        onGo={vi.fn()}
+        stream={stream}
+      />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Translations' }));
+    const machine = await screen.findByRole('region', { name: 'Machine draft' });
+    await userEvent.click(within(machine).getByRole('button', { name: 'Draft by machine' }));
+    expect(streamed).toEqual([`/v1/components/${POND}/translations/${FR}/machine-draft`]);
+    expect(
+      await within(machine).findByText(
+        'Drafted by machine as fr-FR 1.1. It is not published until a person accepts it.',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByText('Version fr-FR 1.1 was drafted by machine and waits to be accepted.'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Not translated by their labels: pond.')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Accept the machine draft' }));
+    expect(await screen.findByText('The machine draft is accepted.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Accept the machine draft' })).toBeNull();
+  });
+});

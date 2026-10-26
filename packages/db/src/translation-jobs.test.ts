@@ -495,6 +495,77 @@ describe('translation jobs (the XL plan, XL-D, XL-E)', () => {
     expect(again.items[0]!.outcome).toBe('returned');
   });
 
+  it('holds a return whose translation moved since it was sent, applies a file once, records which file, and sends nothing of a deleted component (the XL final review)', async () => {
+    const moved = await worded('Fens', 'Fens were crossed.');
+    const twice = await worded('Bogs', 'Bogs were sounded.');
+    const gone = await worded('Marsh', 'Marsh was mapped.');
+    const made = await job(
+      [moved, twice, gone].map((each) => ({ id: each.artifactId, editable: true })),
+    );
+    if (made.answer !== 'made') throw new Error(made.answer);
+    // A translator's own version on the line since it was sent.
+    await as(async (trx) => {
+      const line = made.job.items[0]!.line!;
+      const at = { artifactId: moved.artifactId, principal: ada, session: randomUUID(), line };
+      await claimLock(trx, { ...at, move: true });
+      const content = { ...parseContentDocument(moved.content), language: 'fr-FR' };
+      await saveIteration(trx, { ...at, sequence: 1, openedFrom: moved.id, content });
+      const cut = await releaseLock(trx, { ...at, openedFrom: moved.id, translates: moved.id });
+      if (cut.answer !== 'released') throw new Error(cut.answer);
+    });
+    await as((trx) =>
+      trx
+        .insertInto('artifact_deletion')
+        .values({ artifact_id: gone.artifactId, kind: 'component', act: 'deleted', by: ada })
+        .execute(),
+    );
+    const files = new Map([
+      [moved.artifactId, translatedUnits(moved)],
+      [twice.artifactId, translatedUnits(twice)],
+      [gone.artifactId, translatedUnits(gone)],
+    ]);
+    const after = await returned(made.job, files);
+    expect(after.items.map((item) => item.outcome)).toEqual(['held', 'returned', 'refused']);
+    const recorded = await as((trx) =>
+      trx
+        .selectFrom('translation_job_item')
+        .select('return_id')
+        .where('job_id', '=', made.job.id)
+        .execute(),
+    );
+    expect(new Set(recorded.map((row) => row.return_id))).toEqual(new Set([after.returns[0]!.id]));
+    // The same file again applies nothing it applied already.
+    const again = await returned(after, files);
+    expect(again.returns[0]).toMatchObject({ returned: 0, held: 0 });
+    expect(again.items[1]!.version).toBe(after.items[1]!.version);
+    // And a deleted component placed in a document is sent in no job.
+    expect(await job([{ id: gone.artifactId, editable: true }], 'de-DE')).toEqual({
+      answer: 'translation.nothing_to_send',
+    });
+  });
+
+  it('sends one source language in a job, listing a component in another as not sent', async () => {
+    const english = await worded('Moors', 'Moors were walked.');
+    const french = await as(async (trx) => {
+      const made = await createComponent(trx, {
+        spaceId: space,
+        title: 'Landes',
+        language: 'fr-FR',
+        direction: 'ltr',
+        author: ada,
+      });
+      if (made.answer !== 'created') throw new Error(made.answer);
+      return made.version;
+    });
+    await approve(await revise(french, 'Les landes.'));
+    const made = await job(
+      [english, french].map((each) => ({ id: each.artifactId, editable: true })),
+      'de-DE',
+    );
+    if (made.answer !== 'made') throw new Error(made.answer);
+    expect(made.job.items.map((item) => item.notSent)).toEqual([null, 'other_source']);
+  });
+
   it('refuses a file whole in another language, or naming a component the job did not send', async () => {
     const source = await worded('Moors', 'Moors were crossed.');
     const made = await job([{ id: source.artifactId, editable: true }]);

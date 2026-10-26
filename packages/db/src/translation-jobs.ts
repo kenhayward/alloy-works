@@ -7,6 +7,8 @@ import {
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { artifactPlace, recordEvent } from './audit.js';
+import { isDeleted } from './deletion.js';
+import { serialise } from './editing.js';
 import { cutReturned } from './promotion.js';
 import { enqueueJob } from './queue.js';
 import type { TenantTransaction } from './tables.js';
@@ -25,7 +27,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 export const JOBS_LISTED = 50;
 
 /** Why a component a job lists was not sent (XL-D). */
-export type NotSent = 'needs_revision' | 'not_editable';
+export type NotSent = 'needs_revision' | 'not_editable' | 'other_source';
 
 export interface JobItem {
   readonly component: string;
@@ -239,10 +241,23 @@ export async function makeTranslationJob(
     line_head: string | null;
     not_sent: NotSent | null;
   }[] = [];
+  // One file names one source language: the first sent's (the XL final review).
+  let sourceLanguage: string | undefined;
+  const listed = (id: string, notSent: NotSent) =>
+    items.push({
+      component_id: id,
+      line_id: null,
+      source_version: null,
+      line_head: null,
+      not_sent: notSent,
+    });
   for (const component of components) {
+    // A component deleted since it was placed is sent nothing (the XL final review).
+    if (await isDeleted(trx, component.id)) continue;
     const source = await translationSource(trx, component.id);
     if (!source || source.kind !== 'component') continue;
-    if (parseContentDocument(source.content).language === input.language) continue;
+    const language = parseContentDocument(source.content).language;
+    if (language === input.language) continue;
     const held = translations.get(component.id)?.find((each) => each.language === input.language);
     const needed =
       held === undefined ||
@@ -250,13 +265,11 @@ export async function makeTranslationJob(
       (held.status.status === 'outOfDate' && held.status.retranslate);
     if (!needed) continue;
     if (!component.editable) {
-      items.push({
-        component_id: component.id,
-        line_id: null,
-        source_version: null,
-        line_head: null,
-        not_sent: 'not_editable',
-      });
+      listed(component.id, 'not_editable');
+      continue;
+    }
+    if (sourceLanguage !== undefined && language !== sourceLanguage) {
+      listed(component.id, 'other_source');
       continue;
     }
     let line = held?.line;
@@ -267,13 +280,7 @@ export async function makeTranslationJob(
         by: input.by,
       });
       if (begun.answer === 'translation.needs_revision') {
-        items.push({
-          component_id: component.id,
-          line_id: null,
-          source_version: null,
-          line_head: null,
-          not_sent: 'needs_revision',
-        });
+        listed(component.id, 'needs_revision');
         continue;
       }
       if (begun.answer !== 'begun') continue;
@@ -293,6 +300,7 @@ export async function makeTranslationJob(
       line_head: head?.id ?? null,
       not_sent: null,
     });
+    sourceLanguage = language;
   }
   const sent = items.filter((item) => item.not_sent === null).length;
   if (sent === 0) return { answer: 'translation.nothing_to_send' };
@@ -559,8 +567,8 @@ export async function applyReturn(
     const item = sent.get(file);
     // Returned or held already: a second file does not overwrite it.
     if (!item) continue;
-    const outcome = await returnItem(trx, job, item, units, by, input.mayEdit);
-    counts[outcome] += 1;
+    const outcome = await returnItem(trx, job, item, units, by, input.mayEdit, found.return.id);
+    if (outcome) counts[outcome] += 1;
   }
   await finishReturn(trx, found, counts);
 }
@@ -572,7 +580,18 @@ async function returnItem(
   units: ReadonlyMap<string, readonly XliffPart[] | null>,
   by: string,
   mayEdit: (component: string) => Promise<boolean>,
-): Promise<'returned' | 'held' | 'refused'> {
+  returnId: string,
+): Promise<'returned' | 'held' | 'refused' | undefined> {
+  // Serialised on the component, and the item read again under it, so two returns at once, or a
+  // return beside a decision, never both write it (the XL final review).
+  await serialise(trx, item.component);
+  const now = await trx
+    .selectFrom('translation_job_item')
+    .select('outcome')
+    .where('job_id', '=', job.id)
+    .where('component_id', '=', item.component)
+    .executeTakeFirst();
+  if (now?.outcome !== null && now?.outcome !== 'refused') return undefined;
   const record = (
     outcome: 'returned' | 'held' | 'refused',
     extra: { version?: string; held?: ContentDocument } = {},
@@ -585,6 +604,7 @@ async function returnItem(
         decided_by: by,
         decided_at: new Date(),
         held_content: extra.held === undefined ? null : JSON.stringify(extra.held),
+        return_id: returnId,
       })
       .where('job_id', '=', job.id)
       .where('component_id', '=', item.component)
@@ -604,36 +624,25 @@ async function returnItem(
   }
   const read = xliffTarget(parseContentDocument(source.content), targets, job.language);
   if (!read.ok) return record('refused');
-  const now = await translationSource(trx, item.component);
-  const head = await lineNewest(trx, item.line!);
-  if (now?.id !== item.sourceVersion || head !== item.lineHead) {
-    return record('held', { held: read.content });
-  }
+  // The source and the line as they were sent, checked by the cut under its own serialisation.
   const cut = await cutReturned(trx, {
     artifactId: item.component,
     line: item.line!,
     content: read.content,
     translates: item.sourceVersion!,
     by,
+    expect: { head: item.lineHead, source: item.sourceVersion! },
   });
   if (cut.answer === 'recorded') return record('returned', { version: cut.version.id });
-  // Locked, or moved since it was read here: a person decides.
-  if (cut.answer === 'lock.held' || cut.answer === 'version.precondition') {
+  // Locked, or moved since it was sent: a person decides.
+  if (
+    cut.answer === 'lock.held' ||
+    cut.answer === 'translation.moved' ||
+    cut.answer === 'version.precondition'
+  ) {
     return record('held', { held: read.content });
   }
   return record('refused');
-}
-
-/** A language line's newest version, or null where it has none. */
-async function lineNewest(trx: TenantTransaction, line: string): Promise<string | null> {
-  const head = await trx
-    .selectFrom('artifact_version')
-    .select('id')
-    .where('line_id', '=', line)
-    .orderBy('version_no', 'desc')
-    .limit(1)
-    .executeTakeFirst();
-  return head?.id ?? null;
 }
 
 /** A held item as a person reviews it (XL-G): the words that came back, and the source versions. */
@@ -662,7 +671,14 @@ export async function readHeld(
 
 export type DecideAnswer =
   | { readonly answer: 'decided'; readonly job: TranslationJob }
-  | { readonly answer: 'item.missing' | 'translation.job_closed' | 'lock.held' };
+  | {
+      readonly answer:
+        | 'item.missing'
+        | 'translation.job_closed'
+        | 'lock.held'
+        /** The words could not be cut: a fixed value refuses them, or the line is gone. */
+        | 'translation.not_applied';
+    };
 
 /**
  * **A held item decided by a person** (XL-G; LOC-035): accepted, its words cut by `cutReturned` as a
@@ -680,6 +696,9 @@ export async function decideHeld(
     readonly by: string;
   },
 ): Promise<DecideAnswer> {
+  // Serialised on the component, so two decisions, or a decision beside a return, never both act.
+  if (!UUID.test(input.component)) return { answer: 'item.missing' };
+  await serialise(trx, input.component);
   const held = await readHeld(trx, input);
   if (!held) return { answer: 'item.missing' };
   const job = (await readTranslationJob(trx, input.documentId, input.job))!;
@@ -695,8 +714,8 @@ export async function decideHeld(
     });
     if (cut.answer === 'lock.held') return { answer: 'lock.held' };
     if (cut.answer === 'recorded') version = cut.version.id;
-    else if (cut.answer !== 'version.unchanged') return { answer: 'item.missing' };
-    else version = cut.current.id;
+    else if (cut.answer === 'version.unchanged') version = cut.current.id;
+    else return { answer: 'translation.not_applied' };
   }
   await trx
     .updateTable('translation_job_item')
@@ -709,6 +728,7 @@ export async function decideHeld(
     })
     .where('job_id', '=', job.id)
     .where('component_id', '=', input.component)
+    .where('outcome', '=', 'held')
     .execute();
   const place = await artifactPlace(trx, input.documentId);
   await recordEvent(

@@ -2,12 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_TRANSLATION_POLICY, translationPolicySchema, untranslatedNote } from './policy.js';
 
 describe('the translation policy', () => {
-  it('states its default: fall back to the source, publish what is out of date, place a conflicted return for review', () => {
+  it('states its default: fall back to the source, publish what is out of date, place a conflicted return for review, send nothing to a machine', () => {
     expect(DEFAULT_TRANSLATION_POLICY).toEqual({
       fallback: 'source',
       outOfDate: 'publish',
       note: {},
       conflict: 'review',
+      machine: 'off',
     });
   });
 

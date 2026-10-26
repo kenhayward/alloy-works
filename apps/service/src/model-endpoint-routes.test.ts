@@ -150,6 +150,7 @@ describe('model endpoints through the service (the G1 plan)', () => {
       ['chat', null],
       ['summarising', two.id],
       ['embedding', null],
+      ['translate', null],
     ]);
     expect((await set('chat', bare.id)).json()).toMatchObject({ code: 'endpoint_unusable' });
     expect((await set('test', one.id)).statusCode).toBe(400);

@@ -246,6 +246,9 @@ export const publishFailureCodes = [
   // translation is out of date with a change that needs retranslating, where the policy refuses that.
   'occurrence_untranslated',
   'translation_out_of_date',
+  // resolve, from XLc (LOC-024; translation.md): a translation drafted by machine and not yet accepted
+  // by a person with approve, at the version the publish reads.
+  'translation_machine_drafted',
 ] as const;
 
 export type PublishFailureCode = (typeof publishFailureCodes)[number];

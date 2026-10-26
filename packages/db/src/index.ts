@@ -699,6 +699,14 @@ export {
   type ReturnFailure,
 } from './translation-jobs.js';
 export {
+  acceptMachineDrafts,
+  machineDraftsStored,
+  machineMarked,
+  openMachineDraft,
+  recordMachineDraft,
+  type AcceptDraftsAnswer,
+} from './machine-drafts.js';
+export {
   listShares,
   readsOnlyShares,
   recordSharedAccess,

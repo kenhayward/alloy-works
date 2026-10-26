@@ -402,6 +402,14 @@ const OTHER_TENANT_IDS: Readonly<
     id: await componentIdIn(tenant, db),
     line: '00000000-0000-4000-8000-000000000001',
   }),
+  draftComponentTranslation: async (tenant, db) => ({
+    id: await componentIdIn(tenant, db),
+    line: '00000000-0000-4000-8000-000000000001',
+  }),
+  acceptComponentMachineDraft: async (tenant, db) => ({
+    id: await componentIdIn(tenant, db),
+    line: '00000000-0000-4000-8000-000000000001',
+  }),
   declareComponentSourceChange: async (tenant, db) => ({
     id: await componentIdIn(tenant, db),
     version: '00000000-0000-4000-8000-000000000001',

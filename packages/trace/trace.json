@@ -20332,6 +20332,30 @@
         {
           "id": "LOC-035",
           "howItIsMet": "A return whose source or translation moved is held; a person accepts it as the older version's or rejects it"
+        },
+        {
+          "id": "LOC-030",
+          "howItIsMet": "The declared set, untranslated, machine drafted, in translation, translated and out of date, approval apart"
+        },
+        {
+          "id": "LOC-023",
+          "howItIsMet": "A machine draft is a version of the variant's line, a draft until accepted"
+        },
+        {
+          "id": "LOC-024",
+          "howItIsMet": "A machine draft is marked, on every later version of its line, until a person accepts it"
+        },
+        {
+          "id": "LOC-025",
+          "howItIsMet": "The terms the source uses go with each piece, and the draft is checked against their labels"
+        },
+        {
+          "id": "LOC-026",
+          "howItIsMet": "Sending to machine translation is the tenant's policy, off by default, inside or any boundary"
+        },
+        {
+          "id": "LOC-041",
+          "howItIsMet": "Accepting needs approve on the component, and is audited naming who accepted"
         }
       ]
     },
@@ -21241,13 +21265,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 669,
+      "line": 672,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 682,
+      "line": 685,
       "kind": "title"
     },
     {
@@ -21721,7 +21745,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 2139,
+      "line": 2147,
       "kind": "title"
     },
     {
@@ -22403,6 +22427,30 @@
       "kind": "title"
     },
     {
+      "id": "LOC-023",
+      "file": "apps/service/src/machine-draft-routes.test.ts",
+      "line": 170,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-024",
+      "file": "apps/service/src/machine-draft-routes.test.ts",
+      "line": 170,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-026",
+      "file": "apps/service/src/machine-draft-routes.test.ts",
+      "line": 204,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-041",
+      "file": "apps/service/src/machine-draft-routes.test.ts",
+      "line": 170,
+      "kind": "title"
+    },
+    {
       "id": "API-019",
       "file": "apps/service/src/mcp-routes.test.ts",
       "line": 119,
@@ -22495,13 +22543,13 @@
     {
       "id": "GEN-032",
       "file": "apps/service/src/model-endpoint-routes.test.ts",
-      "line": 239,
+      "line": 240,
       "kind": "title"
     },
     {
       "id": "GEN-038",
       "file": "apps/service/src/model-endpoint-routes.test.ts",
-      "line": 172,
+      "line": 173,
       "kind": "title"
     },
     {
@@ -23539,7 +23587,7 @@
     {
       "id": "LOC-010",
       "file": "apps/service/src/translation-routes.test.ts",
-      "line": 235,
+      "line": 236,
       "kind": "title"
     },
     {
@@ -23551,37 +23599,37 @@
     {
       "id": "LOC-015",
       "file": "apps/service/src/translation-routes.test.ts",
-      "line": 167,
+      "line": 168,
       "kind": "title"
     },
     {
       "id": "LOC-031",
       "file": "apps/service/src/translation-routes.test.ts",
-      "line": 167,
+      "line": 168,
       "kind": "title"
     },
     {
       "id": "LOC-033",
       "file": "apps/service/src/translation-routes.test.ts",
-      "line": 446,
+      "line": 448,
       "kind": "title"
     },
     {
       "id": "LOC-035",
       "file": "apps/service/src/translation-routes.test.ts",
-      "line": 446,
+      "line": 448,
       "kind": "title"
     },
     {
       "id": "LOC-037",
       "file": "apps/service/src/translation-routes.test.ts",
-      "line": 235,
+      "line": 236,
       "kind": "title"
     },
     {
       "id": "LOC-040",
       "file": "apps/service/src/translation-routes.test.ts",
-      "line": 167,
+      "line": 168,
       "kind": "title"
     },
     {
@@ -26291,6 +26339,18 @@
       "kind": "title"
     },
     {
+      "id": "LOC-023",
+      "file": "apps/web/src/translation/Translations.test.tsx",
+      "line": 180,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-024",
+      "file": "apps/web/src/translation/Translations.test.tsx",
+      "line": 180,
+      "kind": "title"
+    },
+    {
       "id": "LOC-031",
       "file": "apps/web/src/translation/Translations.test.tsx",
       "line": 105,
@@ -28513,19 +28573,31 @@
     {
       "id": "LOC-010",
       "file": "packages/db/src/publish-language.test.ts",
-      "line": 233,
+      "line": 239,
       "kind": "title"
     },
     {
       "id": "LOC-017",
       "file": "packages/db/src/publish-language.test.ts",
-      "line": 352,
+      "line": 358,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-024",
+      "file": "packages/db/src/publish-language.test.ts",
+      "line": 505,
       "kind": "title"
     },
     {
       "id": "LOC-037",
       "file": "packages/db/src/publish-language.test.ts",
-      "line": 278,
+      "line": 284,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-041",
+      "file": "packages/db/src/publish-language.test.ts",
+      "line": 505,
       "kind": "title"
     },
     {
@@ -29767,13 +29839,13 @@
     {
       "id": "LIF-030",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 262,
+      "line": 264,
       "kind": "title"
     },
     {
       "id": "LIF-070",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 243,
+      "line": 245,
       "kind": "title"
     },
     {
@@ -30727,7 +30799,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1037,
+      "line": 1048,
       "kind": "title"
     },
     {
@@ -32315,15 +32387,33 @@
       "kind": "title"
     },
     {
+      "id": "LOC-023",
+      "file": "packages/domain/src/translation/machine.test.ts",
+      "line": 31,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-025",
+      "file": "packages/domain/src/translation/machine.test.ts",
+      "line": 75,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-026",
+      "file": "packages/domain/src/translation/machine.test.ts",
+      "line": 93,
+      "kind": "title"
+    },
+    {
       "id": "LOC-035",
       "file": "packages/domain/src/translation/policy.test.ts",
-      "line": 14,
+      "line": 15,
       "kind": "title"
     },
     {
       "id": "LOC-037",
       "file": "packages/domain/src/translation/policy.test.ts",
-      "line": 49,
+      "line": 50,
       "kind": "title"
     },
     {
@@ -32339,9 +32429,21 @@
       "kind": "title"
     },
     {
+      "id": "LOC-024",
+      "file": "packages/domain/src/translation/status.test.ts",
+      "line": 65,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-030",
+      "file": "packages/domain/src/translation/status.test.ts",
+      "line": 76,
+      "kind": "title"
+    },
+    {
       "id": "LOC-040",
       "file": "packages/domain/src/translation/status.test.ts",
-      "line": 104,
+      "line": 115,
       "kind": "title"
     },
     {

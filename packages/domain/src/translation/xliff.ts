@@ -100,7 +100,8 @@ export function xliffUnits(content: ContentDocument): XliffUnit[] {
   const inline = (id: string, path: Path, inlines: unknown) => {
     if (!Array.isArray(inlines) || inlines.length === 0) return;
     const encoded = encode(inlines as InlineNode[]);
-    units.push({ id, kind: 'inline', path, ...encoded });
+    // A text that is all a pending insertion sends nothing: nothing of it is the variant's.
+    if (encoded.parts.length > 0) units.push({ id, kind: 'inline', path, ...encoded });
     // A footnote's paragraphs and an image's own alternative text are units of their own, after
     // the text they stand in.
     (inlines as InlineNode[]).forEach((node, index) => {
@@ -199,7 +200,9 @@ export interface XliffProblem {
     | 'placeholder_unknown'
     | 'pair_unknown'
     | 'not_words'
-    | 'empty';
+    | 'empty'
+    /** Words the content model refuses where they stand: past a column header's length, say. */
+    | 'invalid';
 }
 
 const at = (root: unknown, path: Path): unknown =>
@@ -281,10 +284,19 @@ export function xliffTarget(
     if (!known.has(id)) problems.push({ unit: id, problem: 'unknown' });
   }
   const working = structuredClone(source) as unknown;
+  const applied: { readonly unit: string; readonly path: Path; readonly value: unknown }[] = [];
+  const apply = (unit: XliffUnit, value: unknown) => {
+    put(working, unit.path, value);
+    applied.push({ unit: unit.id, path: unit.path, value });
+  };
   // Deepest first, so a footnote's paragraphs are translated before the text it stands in reads it.
   const ordered = [...units].sort((a, b) => b.path.length - a.path.length);
   for (const unit of ordered) {
-    const target = targets.get(unit.id);
+    const given = targets.get(unit.id);
+    // Words as XML carries them may be decomposed; content holds them composed.
+    const target = given?.map((part) =>
+      part.kind === 'text' ? { ...part, text: part.text.normalize('NFC') } : part,
+    );
     if (target === undefined) {
       problems.push({ unit: unit.id, problem: 'missing' });
       continue;
@@ -296,19 +308,40 @@ export function xliffTarget(
       }
       const text = target.map((part) => (part.kind === 'text' ? part.text : '')).join('');
       if (text.trim() === '') problems.push({ unit: unit.id, problem: 'empty' });
-      else put(working, unit.path, text);
+      else apply(unit, text);
       continue;
     }
     const current = (at(working, unit.path) ?? []) as InlineNode[];
     const decoded = decode(unit, target, current);
     if (typeof decoded === 'string') problems.push({ unit: unit.id, problem: decoded });
-    else put(working, unit.path, decoded);
+    else apply(unit, decoded);
   }
   if (problems.length > 0) return { ok: false, problems };
-  return {
-    ok: true,
-    content: parseContentDocument({ ...(working as ContentDocument), language }),
-  };
+  try {
+    return {
+      ok: true,
+      content: parseContentDocument({ ...(working as ContentDocument), language }),
+    };
+  } catch {
+    // Refused, never thrown (the XL final review): each unit whose words alone the model refuses.
+    const refused = applied.filter(({ path, value }) => {
+      const alone = structuredClone(source) as unknown;
+      put(alone, path, value);
+      try {
+        parseContentDocument(alone);
+        return false;
+      } catch {
+        return true;
+      }
+    });
+    return {
+      ok: false,
+      problems: (refused.length > 0 ? refused : applied.slice(0, 1)).map(({ unit }) => ({
+        unit,
+        problem: 'invalid' as const,
+      })),
+    };
+  }
 }
 
 /** One component of a job's file: its identity, title and type, and its content as sent. */
@@ -317,6 +350,8 @@ export interface XliffFile {
   readonly title: string;
   readonly type: string;
   readonly content: ContentDocument;
+  /** Only these units, where a machine draft sends a component in pieces (XL-H); each still has its neighbours as context. */
+  readonly units?: ReadonlySet<string> | undefined;
 }
 
 /** A term's labels for a job's glossary: its source label and, where given, its target's (XL-B). */
@@ -404,7 +439,8 @@ export function writeXliff(input: {
 }): string {
   const files = input.files.map((file) => {
     const units = xliffUnits(file.content);
-    const body = units.map((unit, index) => {
+    const body = units.flatMap((unit, index) => {
+      if (file.units !== undefined && !file.units.has(unit.id)) return [];
       const glossary = unit.terms.flatMap((term) => {
         const labels = input.terms.get(term);
         if (labels === undefined) return [];
