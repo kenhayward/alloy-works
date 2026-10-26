@@ -829,6 +829,14 @@ describe('routes that check a permission', () => {
       status: 404,
       payload: { translates: MISSING },
     }),
+    draftComponentTranslation: () => ({
+      url: `/v1/components/${dosing}/translations/${MISSING}/machine-draft`,
+      status: 404,
+    }),
+    acceptComponentMachineDraft: () => ({
+      url: `/v1/components/${dosing}/translations/${MISSING}/machine-draft/accept`,
+      status: 404,
+    }),
     getComponentTranslationChanges: () => ({
       url: `/v1/components/${dosing}/translations/${MISSING}/source-changes`,
       status: 404,

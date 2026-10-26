@@ -349,6 +349,9 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   markComponentTranslationCurrent: writes('translation.marked_current'),
   getComponentTranslationChanges: read,
   declareComponentSourceChange: writes('translation.declared'),
+  // Each piece a run, and the draft cut on its line (the XL plan, XL-H).
+  draftComponentTranslation: writes('generation.run', 'content.version_cut'),
+  acceptComponentMachineDraft: writes('translation.machine_accepted'),
   listDocumentTranslationJobs: read,
   makeDocumentTranslationJob: writes('translation.job_sent', 'line.diverged'),
   downloadDocumentTranslationJob: writes('export.downloaded'),

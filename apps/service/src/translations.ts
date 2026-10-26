@@ -22,6 +22,8 @@ import type {
 } from '@alloy-works/api-contract';
 import {
   RETURN_MAX_BYTES,
+  acceptMachineDrafts,
+  openMachineDraft,
   artifactPlace,
   beginTranslation,
   closeTranslationJob,
@@ -125,6 +127,34 @@ async function translationView(
     head: await shown(trx, translation.head),
     translates: await shown(trx, translation.translates),
     status: { ...translation.status },
+  };
+}
+
+/** A line's machine draft waiting to be accepted, its missed terms by the source's labels (XL-J). */
+async function machineView(
+  trx: TenantTransaction,
+  principal: string,
+  component: string,
+  line: string,
+): Promise<TranslationView['machine']> {
+  const open = await openMachineDraft(trx, line);
+  if (!open) return null;
+  const space = await trx
+    .selectFrom('artifact')
+    .select('space_id')
+    .where('id', '=', component)
+    .executeTakeFirst();
+  const terms =
+    space?.space_id && open.missedTerms.length > 0
+      ? await termsInSpace(trx, principal, space.space_id, open.missedTerms)
+      : new Map();
+  return {
+    version: (await shown(trx, open.version))!,
+    missedTerms: open.missedTerms.flatMap((term) => {
+      const found = terms.get(term);
+      // A term the reader may no longer read is not named.
+      return found ? [{ term, label: termLabel(found.term, found.term.base).preferred }] : [];
+    }),
   };
 }
 
@@ -288,7 +318,7 @@ export function translationHandlers(
 
     listComponentTranslations: async (
       request: FastifyRequest,
-      { trx }: Authorised,
+      { trx, principalId }: Authorised,
     ): Promise<TranslationsView> => {
       const { id } = request.params as TransitionParams;
       const source = await latestVersion(trx, id);
@@ -303,8 +333,29 @@ export function translationHandlers(
             return { id: from.id, number: versionView(from).number };
           })(),
         },
-        translations: await Promise.all(translations.map((each) => translationView(trx, each))),
+        translations: await Promise.all(
+          translations.map(async (each) => ({
+            ...(await translationView(trx, each)),
+            machine: await machineView(trx, principalId, id, each.line),
+          })),
+        ),
       };
+    },
+
+    acceptComponentMachineDraft: async (
+      request: FastifyRequest,
+      { trx, principalId }: Authorised,
+    ): Promise<TranslationView> => {
+      const { id, line } = request.params as LineParams;
+      const answer = await acceptMachineDrafts(trx, { artifactId: id, line, by: principalId });
+      switch (answer.answer) {
+        case 'accepted':
+          return translationOn(trx, id, line);
+        case 'line.missing':
+          throw notFound();
+        case 'translation.nothing_drafted':
+          throw refused(409, answer.answer, 'No machine draft of this translation waits.');
+      }
     },
 
     beginComponentTranslation: async (

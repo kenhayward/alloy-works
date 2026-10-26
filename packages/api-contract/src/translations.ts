@@ -47,6 +47,18 @@ export const TranslationView = z.object({
     .nullable()
     .describe('The source version that head translates, or null'),
   status: TranslationStatusView,
+  machine: z
+    .object({
+      version: z.object({ id: z.uuid(), number: z.string() }),
+      missedTerms: z
+        .array(z.object({ term: z.uuid(), label: z.string() }))
+        .describe("Each of the space's terms the draft did not translate by one of its labels"),
+    })
+    .nullable()
+    .optional()
+    .describe(
+      "Its newest machine draft not yet accepted, which a publish refuses until a person with approve accepts it; null where there is none. Listed by a component's translations",
+    ),
 });
 export type TranslationView = z.infer<typeof TranslationView>;
 
@@ -535,6 +547,61 @@ export const translationRoutes = {
       409: {
         description:
           'translation_job_closed: the job is closed; lock_held: somebody is editing the translation',
+        schema: ErrorBody,
+      },
+    },
+  },
+  draftComponentTranslation: {
+    operationId: 'draftComponentTranslation',
+    method: 'POST',
+    path: '/v1/components/{id}/translations/{line}/machine-draft',
+    summary: "Draft a component's translation by machine, through the tenant's translate endpoint",
+    tenantScoped: true,
+    access: {
+      check: 'permission',
+      permission: 'edit',
+      target: { artifact: 'id' },
+      credential: 'session',
+    },
+    params: LineParams,
+    idempotencyKey: false,
+    responses: {
+      200: {
+        description:
+          'Server-sent events, as the AsyncAPI document’s `assistantRun` channel declares them: a `run` for each piece the component is sent in, `drafted` with the version cut, and `ended` or `failed`',
+        stream: true,
+      },
+      401: unauthenticated,
+      403: {
+        description: 'A personal token, or the caller may read the component but may not edit it',
+        schema: ErrorBody,
+      },
+      404: notFound,
+      409: {
+        description:
+          '`translation_machine_off`: the environment sends nothing to machine translation; `translation_machine_outside`: it sends only inside the data boundary, and the endpoint is outside; `model_unconfigured`: no endpoint is set up to translate; `endpoint_unusable`: it is retired or has no key; `translation_nothing_to_translate`: the source has no text; `context_too_large`: a piece is more than the endpoint takes; `guardrail_refused`: a guardrail refused what would be sent; `lock_held`: somebody is editing the translation; `model_rate_limited`: past the hourly limit. Each before any call',
+        schema: ErrorBody,
+      },
+    },
+  },
+  acceptComponentMachineDraft: {
+    operationId: 'acceptComponentMachineDraft',
+    method: 'POST',
+    path: '/v1/components/{id}/translations/{line}/machine-draft/accept',
+    summary: "Accept a translation's machine drafts, so it may be published",
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'approve', target: { artifact: 'id' } },
+    params: LineParams,
+    responses: {
+      200: { description: 'Accepted, and its status now', schema: TranslationView },
+      401: unauthenticated,
+      403: {
+        description: 'The caller may read the component but may not approve it',
+        schema: ErrorBody,
+      },
+      404: notFound,
+      409: {
+        description: '`translation_nothing_drafted`: no machine draft of it waits to be accepted',
         schema: ErrorBody,
       },
     },

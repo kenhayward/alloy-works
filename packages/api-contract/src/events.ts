@@ -216,6 +216,14 @@ export const assistantEvents = {
       instruction: z.string().max(500).describe('What it asked, in the model’s words'),
     }),
   },
+  drafted: {
+    summary:
+      'A machine draft cut on its translation line (XL-H): its version, marked until accepted, and the terms it did not translate by their labels',
+    schema: z.object({
+      version: z.object({ id: Id, number: z.string() }),
+      missedTerms: z.array(z.object({ term: Id, label: z.string() })),
+    }),
+  },
   ended: {
     summary: 'The run ended: the model, its tokens and cost, and the citations kept and dropped',
     schema: z.object({

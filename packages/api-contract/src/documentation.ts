@@ -516,6 +516,8 @@ const operationTags = {
     'returnDocumentTranslationJob',
     'getDocumentTranslationJobHeld',
     'decideDocumentTranslationJobItem',
+    'draftComponentTranslation',
+    'acceptComponentMachineDraft',
   ],
   Prompts: [
     'listPrompts',
@@ -1121,6 +1123,10 @@ const descriptions: Readonly<Record<string, string>> = {
     "Shows a held translation: the source version sent and the one a translation is made against now, each source block changed between them, and the words returned, block by block, with the decision the environment's policy offers first. It needs edit on the document.",
   decideDocumentTranslationJobItem:
     'Decides a held translation: accepted, its words cut as a translation of the source version sent, so out of date at once where the source moved since; or rejected, its words dropped. Refused while somebody is editing the translation. It needs edit on the document and on the component.',
+  draftComponentTranslation:
+    "Drafts a component's translation by machine: its source, as a translator is shown it, sent in pieces as XLIFF 2.1 to the endpoint the environment routes translation to, each piece a run, with the space's terms it uses and their translations, and each reply read back as strictly as a vendor's file, so a code missing, repeated or invented refuses the whole draft. The draft is cut on the translation's line, marked as drafted by machine, and a publish refuses it until a person with approve accepts it. Each term it did not translate by one of its labels is named. Nothing is sent while the environment's translation policy is off, or outside the data boundary where it says inside. Guardrails, the hourly limit and the endpoint's size are held as a prompt run's are. It needs edit on the component, and a session.",
+  acceptComponentMachineDraft:
+    "Accepts a translation's machine drafts, every one not yet accepted, so its versions are no longer marked and may be published. An edit after a draft does not accept it. It needs approve on the component.",
   unarchiveBibliographyEntry:
     "Unarchives an entry, returning it to the space's listing. It needs retire on the entry.",
   recordPromptVersion:

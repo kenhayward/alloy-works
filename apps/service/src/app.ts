@@ -96,6 +96,7 @@ import { termEditingHandlers } from './terms/editing.js';
 import { referenceSourceHandlers } from './bibliography/sources.js';
 import { citationStyleHandlers } from './bibliography/styles.js';
 import { citingHandlers } from './bibliography/citing.js';
+import { machineDraftHandlers } from './generation/machine-drafts.js';
 import { promptRunHandlers } from './generation/prompt-runs.js';
 import { guardrailHandlers } from './generation/guardrails.js';
 import { modelLimitHandlers } from './generation/limits.js';
@@ -615,6 +616,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...embeddingHandlers(db, tenantOf, options.connector),
     ...personalPromptHandlers(db, tenantOf, principalOf),
     ...promptRunHandlers(db, tenantOf, options.connector, options.events),
+    ...machineDraftHandlers(db, tenantOf, options.connector, options.events),
     ...generatedHandlers(),
     ...assistantHandlers(
       db,
