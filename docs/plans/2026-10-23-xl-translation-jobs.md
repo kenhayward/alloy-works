@@ -42,3 +42,38 @@ accepts it.
   but this job's units, structure never taken from them.
 - **Storage across the slice**: 0163 (jobs, items, outcomes), XLb's policy column and held content,
   XLc's purpose checks, `machine_draft` and audit kinds - each with 0159's grant pattern.
+
+## Built
+
+XL in three PRs: XLa #782, XLb #783 and the close {PR}, which holds XLc. Departures:
+
+- Downloading a job's file needs edit on the document, not read: it is what goes to the vendor.
+- A job lists its components in the document's order (`position`), and one whose source is in another
+  language than the job's first is listed and not sent, since one file names one source language.
+- XL-G's third choice, applying against the changed source block by block, is not a decision of its
+  own: LOC-035's "placed for review" is the held state, shown beside the source changes, and an
+  accepted, out-of-date translation opens beside the changed blocks (LOC-040).
+- A machine draft streams on the assistant run channel, a `run` a piece and a `drafted` event, and is
+  read back by `readXliff` and `xliffTarget` as a vendor's file is.
+- Accepting a machine draft accepts every mark on its line.
+
+The final review found no cross-tenant read and no injection. It fixed:
+
+- a returned or drafted word the content model refuses aborting the whole file, now that unit refused;
+- a `<cp>` no content can store;
+- a return or a draft cutting over a line or source that moved between its check and its cut, now
+  checked again under the component's serialisation;
+- a deleted component sent, or written by a late return;
+- two decisions, or a decision beside a return, both acting;
+- a settings body written before `conflict` and `machine` resetting them;
+- a text that is all a pending insertion refusing every return;
+- one file claiming one source language for components in several;
+- `return_id` never written.
+
+Left, named:
+
+- LOC-036's versioning of policies;
+- LOC-043's lookup at resolution;
+- LOC-016;
+- an out-of-date translation whose head is an unaccepted draft opening on the draft, not the newest
+  version a person wrote.
