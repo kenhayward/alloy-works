@@ -49,7 +49,7 @@ import { Icon } from './Icon.js';
 import { FormatDialog } from './FormatDialog.js';
 import { TableStyle } from '../theme/StyleChoice.js';
 import { usePresentation } from '../theme/presentation.js';
-import { words as say } from '../words/words.js';
+import { formats, words as say } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -309,11 +309,14 @@ const ALIGN_ICONS: Readonly<Record<ColumnAlignment, string>> = {
 /** A note as the panel lists it: what it stands on, in words. */
 export function noteOnWords(anchor: BoundNoteAnchor, header: (column: string) => string): string {
   if (anchor.kind === 'column')
-    return say('editor.on-the-column', { value1: header(anchor.column) });
-  const key = Object.entries(anchor.key)
-    .map(([column, value]) => say('editor.is', { column, value2: String(value) }))
-    .join(' and ');
-  return say('editor.on-where', { value1: header(anchor.column), key });
+    return say('editor.on-the-column', { column: header(anchor.column) });
+  const key = Object.entries(anchor.key).map(([column, value]) =>
+    say('editor.is', { column, value: String(value) }),
+  );
+  return say('editor.on-where', {
+    column: header(anchor.column),
+    key: formats().list(key, { type: 'conjunction' }),
+  });
 }
 
 /** A column shown twice under one header, in the walk's words (TAB-048, `column_repeated`). */
@@ -392,7 +395,7 @@ export function BoundTablePanel({
       ? BOUND_TABLE_WORDS.table
       : say('editor.column-of', {
           table: BOUND_TABLE_WORDS.table,
-          value2: focused + 1,
+          number: focused + 1,
           length: table.columns.length,
         });
   useEffect(() => {

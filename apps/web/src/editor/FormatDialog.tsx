@@ -146,14 +146,15 @@ export function memberSaid(member: keyof FieldFormat, format: FieldFormat): stri
       return FORMAT_WORDS.negativeColour[String(value) as 'true' | 'false'];
     case 'currency': {
       const currency = value as NonNullable<FieldFormat['currency']>;
-      return `${currency.symbol}, ${FORMAT_WORDS.position[currency.position].toLowerCase()}${currency.space ? say('editor.spaced') : ''}`;
+      return say('editor.format.currency', {
+        symbol: currency.symbol,
+        position: currency.position,
+        spaced: String(currency.space),
+      });
     }
     case 'duration': {
       const duration = value as NonNullable<FieldFormat['duration']>;
-      return say('editor.as', {
-        value1: FORMAT_WORDS.from[duration.from],
-        value2: FORMAT_WORDS.show[duration.show].toLowerCase(),
-      });
+      return say('editor.format.duration', { from: duration.from, show: duration.show });
     }
     default:
       return String(value);
@@ -350,7 +351,7 @@ export function FormatDialog({ header, type, style, format, onDone, onCancel }: 
       member,
       name,
       set,
-      set ? unset(member) : say('editor.left-unset', { value1: unset(member) }),
+      set ? unset(member) : say('editor.left-unset', { fallback: unset(member) }),
       <input
         id={`${id}-${name}`}
         type={kind}
@@ -453,7 +454,8 @@ export function FormatDialog({ header, type, style, format, onDone, onCancel }: 
                 member === 'null'
                   ? say('editor.where-there-is-no-value-2')
                   : say('editor.is-not-one-a-column', {
-                      value1: member === undefined ? 'The format' : FORMAT_MEMBERS[member],
+                      value1:
+                        member === undefined ? say('editor.the-format') : FORMAT_MEMBERS[member],
                     }),
               );
               return;

@@ -146,7 +146,7 @@ const SHAPES: Record<string, Shape> = {
  * was by the time the author pressed a button. One sentence for both marks, because it is one thing
  * that happened, and it names the remedy: select some text again.
  */
-const GONE = 'That text is not there any more. Press Cancel, select some text, and try again.';
+const GONE = (): string => words('editor.that-text-is-not-there');
 
 /**
  * Why a press came back with nothing done: the value the author typed, the text it was to go on, or
@@ -255,7 +255,7 @@ export function MarkPrompt({
     refused === null
       ? null
       : refused === 'gone'
-        ? GONE
+        ? GONE()
         : refused === 'noMark'
           ? shape.absent
           : nothingTyped

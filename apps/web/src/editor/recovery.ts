@@ -1,4 +1,4 @@
-import { words } from '../words/words.js';
+import { formats, words } from '../words/words.js';
 /**
  * The words Recovery says (component-editor.md, "Recovery, as W11 builds it"), in the reader's own
  * time and in en-GB, as `heldSentence` says when a holder is expected back: the time alone where it is
@@ -9,15 +9,16 @@ import { words } from '../words/words.js';
 export function savedTime(at: string, now: Date = new Date(), seconds = false): string {
   const when = new Date(at);
   if (Number.isNaN(when.getTime())) return words('editor.an-unknown-time');
-  const time = when.toLocaleTimeString('en-GB', {
+  const time = formats().time(when, {
     hour: '2-digit',
     minute: '2-digit',
+    hourCycle: 'h23',
     ...(seconds ? { second: '2-digit' } : {}),
   });
   if (when.toDateString() === now.toDateString()) return time;
-  return words('editor.on-3', {
+  return words('editor.recovery.time-on-day', {
     time,
-    value2: when.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' }),
+    day: formats().date(when, { day: 'numeric', month: 'long' }),
   });
 }
 

@@ -9,7 +9,6 @@ import { heldSentence } from '../held.js';
 import { ComponentEditor } from '../ComponentEditor.js';
 import { designTiming } from '../session.js';
 import { PresentationProvider } from '../../theme/presentation.js';
-import { words } from '../../words/words.js';
 
 export const COMPONENT = '6a0c1b8e-6f3e-4d2a-9d36-2a4f1c9e7b10';
 export const SESSION = '1b2c3d4e-5f60-4718-8a9b-0c1d2e3f4a5b';
@@ -17,7 +16,7 @@ export const ADA = '0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d';
 
 export const content = (...texts: string[]) => ({
   schemaVersion: 1,
-  title: words('editor.install-the-printer'),
+  title: 'Install the printer',
   language: 'en-GB',
   direction: 'ltr',
   content: texts.map((text, index) => ({
@@ -30,7 +29,7 @@ export const content = (...texts: string[]) => ({
 
 export const opened = (overrides: Record<string, unknown> = {}) => ({
   id: COMPONENT,
-  space: { id: 's1', name: words('editor.general') },
+  space: { id: 's1', name: 'General' },
   version: {
     id: 'v1',
     number: '0.1',
@@ -38,11 +37,11 @@ export const opened = (overrides: Record<string, unknown> = {}) => ({
     createdAt: '2026-09-16T09:00:00.000Z',
     note: null,
   },
-  content: content(words('editor.unbox-the-printer')),
+  content: content('Unbox the printer.'),
   mayEdit: true,
   lock: null,
   // The starter type, which gives a component no fields.
-  type: { id: 'type-topic', name: words('editor.topic') },
+  type: { id: 'type-topic', name: 'Topic' },
   fields: [],
   schemas: [],
   values: {},
@@ -124,14 +123,14 @@ export function open(
     );
   render(strict ? <StrictMode>{placed}</StrictMode> : placed);
   const surface = async () => {
-    await screen.findByRole('textbox', { name: words('editor.content-of-install-the-printer') });
+    await screen.findByRole('textbox', { name: 'Content of Install the printer' });
     // ProseMirror puts the surface into the page itself, outside React, so the surface is there
     // before the render it asks for in the same breath - the header, which is state - has been
     // committed. Waiting only for the surface therefore lands inside that window often enough to
     // fail a slow machine: the article shows its fallback heading and no header fields at all, and
     // every `getByLabelText` a test runs next finds nothing. Waiting for a field the header renders
     // waits for that commit, and it is a field every component opened here has, editable or not.
-    await screen.findByLabelText(words('editor.title'));
+    await screen.findByLabelText('Title');
     return view!;
   };
   return { asked, surface };
@@ -139,19 +138,12 @@ export function open(
 
 /** What a reader is told of Grace holding a component until the lock fixture's release. */
 export const GRACE_EDITING = heldSentence({
-  get name() {
-    return words('editor.grace');
-  },
+  name: 'Grace',
   expectedRelease: '2026-09-16T09:15:00.000Z',
 });
 
 export const lock = {
-  holder: {
-    id: ADA,
-    get name() {
-      return words('editor.ada');
-    },
-  },
+  holder: { id: ADA, name: 'Ada' },
   expectedRelease: '2026-09-16T09:15:00.000Z',
   yours: true,
   session: SESSION,
@@ -182,15 +174,15 @@ export function selectText(view: EditorView, anchor: number, head: number): void
  * Found as an input, because the Formatting toolbar's Language mark is a button of the same name.
  */
 export async function languageField(): Promise<HTMLElement> {
-  const open = screen.queryByLabelText(words('editor.language'), { selector: 'input' });
+  const open = screen.queryByLabelText('Language', { selector: 'input' });
   if (open) return open;
   await userEvent.click(screen.getByRole('button', { name: /^Base language/ }));
-  return screen.getByLabelText(words('editor.language'), { selector: 'input' });
+  return screen.getByLabelText('Language', { selector: 'input' });
 }
 
 /** The base direction select, in the direction chip's popover, opened first if it is not. */
 export async function directionField(): Promise<HTMLElement> {
-  const open = screen.queryByLabelText(words('editor.direction'));
+  const open = screen.queryByLabelText('Direction');
   if (open) return open;
   await userEvent.click(screen.getByRole('button', { name: /^Base direction/ }));
   return await directionField();
@@ -234,7 +226,7 @@ export const inside = (view: EditorView, id: string) => {
     if (node.attrs.id === id) at = pos + 1;
     return true;
   });
-  if (at === -1) throw new Error(words('editor.no-in-this-document', { id }));
+  if (at === -1) throw new Error(`no ${id} in this document`);
   return at;
 };
 
@@ -252,7 +244,7 @@ export const shown = (box: HTMLElement) => (box as HTMLInputElement).value;
 /** A stored document of whole blocks, where `content` above makes one paragraph per text. */
 export const blocksOf = (...blocks: unknown[]) => ({
   schemaVersion: 1,
-  title: words('editor.install-the-printer'),
+  title: 'Install the printer',
   language: 'en-GB',
   direction: 'ltr',
   content: blocks,

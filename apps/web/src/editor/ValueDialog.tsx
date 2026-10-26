@@ -20,7 +20,7 @@ import shell from '../layouts/Modal.module.css';
 import { Icon } from './Icon.js';
 import styles from './MarkPrompt.module.css';
 import own from './ReferenceDialog.module.css';
-import { words } from '../words/words.js';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 type Identity = 'service' | 'endUser';
@@ -100,11 +100,10 @@ const NONE_OFFERED = {
   },
 } as const;
 
-const TYPE_A_NAME = 'Type the name of the one this value takes.';
+const TYPE_A_NAME = (): string => words('editor.type-the-name-of-the');
 
 /** A document parameter's name typed that no parameter could have (D2's pattern). */
-const NOT_A_NAME =
-  'takes a name of lower-case letters, digits and underscores, beginning with a letter';
+const NOT_A_NAME = (): string => words('editor.takes-a-name-of-lower');
 
 const MODES = {
   get checked() {
@@ -199,9 +198,7 @@ function typedOf(binding: AnyBinding | null): Record<string, string> {
 function holdersSaid({ readable, others }: Holders): string {
   const names = [...readable.map((each) => each.title)];
   if (others > 0) names.push(words('editor.you-cannot-read', { others }));
-  return names.length === 1
-    ? names[0]!
-    : words('editor.and', { value1: names.slice(0, -1).join(', '), value2: names.at(-1) });
+  return names.length === 1 ? names[0]! : formats().list(names, { type: 'conjunction' });
 }
 
 /**
@@ -551,7 +548,7 @@ export function ValueDialog({
   const warning =
     current !== null && holders !== null && holding > 0 && !sameQuestion
       ? words('editor.will-hold-no-value-for', {
-          value1: holding === 1 ? 'One document' : `${holding} documents`,
+          value1: words('editor.documents', { count: holding }),
           value2: holdersSaid(holders),
         })
       : null;
@@ -677,9 +674,12 @@ export function ValueDialog({
                   {each.title}
                   <span className={styles['hint']}>
                     {' '}
-                    - {each.space}
-                    {each.identity !== null &&
-                      words('editor.runs-as', { value1: RUNS_AS[each.identity] })}
+                    {each.identity === null
+                      ? words('editor.query.in-space', { space: each.space })
+                      : words('editor.query.in-space-runs-as', {
+                          space: each.space,
+                          identity: RUNS_AS[each.identity],
+                        })}
                   </span>
                 </label>
               ))}
@@ -781,7 +781,7 @@ export function ValueDialog({
                         {fromDocument && !choosing && !reading && (
                           <>
                             <p id={`${field}-why`} className={styles['note']}>
-                              {noneOffered} {TYPE_A_NAME}
+                              {noneOffered} {TYPE_A_NAME()}
                             </p>
                             <label htmlFor={`${field}-document`}>
                               {words('editor.name-of-the-document-parameter')}
@@ -800,7 +800,7 @@ export function ValueDialog({
                             />
                             {complaint && (
                               <p id={`${field}-unnamed`} className={styles['complaint']}>
-                                {parameter.name} {NOT_A_NAME}.
+                                {parameter.name} {NOT_A_NAME()}.
                               </p>
                             )}
                           </>

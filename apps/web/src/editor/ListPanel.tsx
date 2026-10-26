@@ -50,8 +50,8 @@ const REFUSAL = 'list-panel-refused';
  * can start at 0 answers a question they did not ask. Neither is reachable without the model having
  * refused the value, so neither can stand over a list that took it.
  */
-const SHAPE = 'A start is a whole number, 0 or more.';
-const PAIR = 'Only a 1, 2, 3 list can start at 0. Try 1 or more.';
+const SHAPE = (): string => words('editor.a-start-is-a-whole');
+const PAIR = (): string => words('editor.only-a-1-2-3');
 
 /**
  * A refusal, and **which control asked for it**.
@@ -212,10 +212,10 @@ export function ListPanel({ view, list, enabled, newIdentifier, ref }: ListPanel
                     !event.target.validity.stepMismatch &&
                     !event.target.validity.rangeUnderflow);
                 if (!wellFormed) {
-                  setRefused({ sentence: SHAPE, from: 'start' });
+                  setRefused({ sentence: SHAPE(), from: 'start' });
                   return;
                 }
-                setRefused(ask({ start: value }) ? null : { sentence: PAIR, from: 'start' });
+                setRefused(ask({ start: value }) ? null : { sentence: PAIR(), from: 'start' });
               }}
             />
           </label>
@@ -241,7 +241,7 @@ export function ListPanel({ view, list, enabled, newIdentifier, ref }: ListPanel
                 setRefused(
                   ask({ format: event.target.value })
                     ? null
-                    : { sentence: PAIR, from: 'numbering' },
+                    : { sentence: PAIR(), from: 'numbering' },
                 )
               }
             >

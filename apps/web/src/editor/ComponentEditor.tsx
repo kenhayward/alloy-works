@@ -417,9 +417,8 @@ const repeatOf = (stored: StoredSession, sentLater: Sent | null): Repeat | null 
  * Said where what a window kept before this page opened is offered as text to copy rather than brought
  * back, or cannot be read at all, rather than dropping it unsaid (final review of W11.3, D5).
  */
-const KEPT_OFFERED =
-  'What you typed before this page opened could not be brought back, so it is below for you to copy.';
-const KEPT_UNREADABLE = 'What you typed before this page opened could not be brought back.';
+const KEPT_OFFERED = (): string => say('editor.what-you-typed-before-this');
+const KEPT_UNREADABLE = (): string => say('editor.what-you-typed-before-this-2');
 
 /**
  * Whether the surface takes changes in this phase - the one predicate, shared by the view's own
@@ -447,22 +446,19 @@ function tableResolved(state: EditorState, binding: AnyBinding): boolean {
 /** What placing a bound table says where it left a declared column out (TB2-E). */
 export const columnsLeftOut = (left: number): string =>
   say('editor.left-out-a-table-shows', {
-    value1: left === 1 ? 'One column was' : `${left} columns were`,
+    value1: say('editor.columns-were', { count: left }),
   });
 
 /** What the status bar says after a paste: the report's own last sentence says why one was refused. */
-const PASTED = 'Pasted.';
-const PASTED_WITH_REPORT =
-  'Pasted. Some of it was changed or left out: the paste report says what.';
-const NOT_DROPPED = 'Dragging content in is not available yet. Copy and paste it instead.';
+const PASTED = (): string => say('editor.pasted');
+const PASTED_WITH_REPORT = (): string => say('editor.pasted-some-of-it-was');
+const NOT_DROPPED = (): string => say('editor.dragging-content-in-is-not');
 
 /** A link names a block the newest version no longer holds (SCH-057): the page says so. */
 export const LINKED_PART_GONE =
   'The part the link names is no longer in this component. This is its latest version.';
-const PASTE_HELD =
-  'This paste holds headings. Keep it as one component or break it out: the paste report offers both.';
-const CLIPBOARD_UNREADABLE =
-  'The clipboard could not be read, so nothing was pasted. Allow this page to see the clipboard and try again.';
+const PASTE_HELD = (): string => say('editor.this-paste-holds-headings-keep-2');
+const CLIPBOARD_UNREADABLE = (): string => say('editor.the-clipboard-could-not-be');
 
 /**
  * What a paste says: the report's entries worth an author's attention, beside the sentence for the
@@ -477,8 +473,8 @@ function pasteSentence(
   const beside = ok ? shown : shown.slice(0, -1);
   const said = ok
     ? beside.length > 0
-      ? PASTED_WITH_REPORT
-      : PASTED
+      ? PASTED_WITH_REPORT()
+      : PASTED()
     : (report.at(-1)?.message ?? '');
   return { beside, said };
 }
@@ -1568,8 +1564,8 @@ export function ComponentEditor({
     if (offeredNow !== null && offeredNow !== offeredKept) {
       keepOffered(component.id, principalId, offeredNow);
     }
-    if (differs(offering) !== null) setNotice(KEPT_OFFERED);
-    else if (unreadable) setNotice(KEPT_UNREADABLE);
+    if (differs(offering) !== null) setNotice(KEPT_OFFERED());
+    else if (unreadable) setNotice(KEPT_UNREADABLE());
     /** Offers `text` beside whatever is offered already, once the page is open: a repeat refused. */
     const offerAlso = (text: string) => {
       const shownNow =
@@ -1787,7 +1783,7 @@ export function ComponentEditor({
       heldForBreakout: (held) => {
         setHeldPaste(held);
         setPasteReport(shownOfPaste(held.reading.ok ? held.reading.input.report : []));
-        setNotice(PASTE_HELD);
+        setNotice(PASTE_HELD());
       },
       pasted: ({ ok, report }) => {
         setHeldPaste(null);
@@ -1796,7 +1792,7 @@ export function ComponentEditor({
         setNotice(said);
         if (ok && phase !== 'editing') pasteSaid.current = said;
       },
-      refused: () => setNotice(NOT_DROPPED),
+      refused: () => setNotice(NOT_DROPPED()),
     });
     setSurface(view);
     setHeader(headerOf(view.state.doc));
@@ -2433,7 +2429,7 @@ export function ComponentEditor({
       text = await navigator.clipboard.readText();
     } catch {
       // Refused, or no clipboard to ask at all outside a secure page.
-      setNotice(CLIPBOARD_UNREADABLE);
+      setNotice(CLIPBOARD_UNREADABLE());
       return;
     }
     const into = view.state.selection.$from.parent.type.spec.code ? 'preformatted' : 'blocks';
@@ -2985,7 +2981,7 @@ export function ComponentEditor({
                 <Notice tone="editing">
                   <p role="alert">
                     {say('editor.has-asked-to-take-over', {
-                      value1: heard.taking.by.name ?? 'Somebody',
+                      value1: heard.taking.by.name ?? say('editor.somebody'),
                       value2: new Date(heard.taking.until).toLocaleTimeString('en-GB', {
                         hour: '2-digit',
                         minute: '2-digit',
@@ -2999,7 +2995,7 @@ export function ComponentEditor({
               <Notice tone="editing">
                 <p role="alert">
                   {say('editor.has-taken-over-this-component', {
-                    value1: heard.holder.name ?? 'Somebody',
+                    value1: heard.holder.name ?? say('editor.somebody'),
                   })}
                 </p>
               </Notice>

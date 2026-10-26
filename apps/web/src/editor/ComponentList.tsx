@@ -297,11 +297,9 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
         )}
         <SortChooser options={SORTS} chosen={sort} onChoose={setSort} />
         <p className={styles['summary']}>
-          {words('editor.you-may-read-showing-1', {
+          {words(archived ? 'editor.list.summary-archived' : 'editor.list.summary', {
             total,
-            value2: archived ? 'archived ' : '',
-            value3: total === 1 ? 'component' : 'components',
-            length: items.length,
+            shown: items.length,
           })}
         </p>
         {filters.length > 0 && (

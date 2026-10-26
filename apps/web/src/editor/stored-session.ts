@@ -14,7 +14,6 @@ import {
 
 import { mayKeepEditing } from './editing-storage.js';
 import type { Clock } from './session.js';
-import { words } from '../words/words.js';
 
 /**
  * What a window keeps of one component's editing session so that a reload loses nothing and undo
@@ -615,11 +614,7 @@ export function createRecorder(
       `{"format":${format},"schema":${JSON.stringify(schema)},` +
       `"principal":${JSON.stringify(principal)},"session":${JSON.stringify(session)},` +
       `"version":${JSON.stringify(version)},"values":${JSON.stringify(values)},` +
-      words('editor.revision-sent-sentas', {
-        revision,
-        value2: JSON.stringify(sent),
-        value3: JSON.stringify(sentAs),
-      }) +
+      `"revision":${revision},"sent":${JSON.stringify(sent)},"sentAs":${JSON.stringify(sentAs)},` +
       `"doc":${docJson},"changes":[${changeJson.join(',')}]}`;
     try {
       storeOf(storage).setItem(key, text);

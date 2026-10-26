@@ -358,8 +358,7 @@ const NEWER_TEXT =
   'It is kept. Continuing starts a new session from what is on screen.';
 
 /** Recovery, announced as it opens (component-editor.md, "Accessibility"). */
-const RECOVERY_OPENED =
-  'Your saved text is listed. Choose some to see what recovering it changes, or cancel to go on.';
+const RECOVERY_OPENED = (): string => words('editor.your-saved-text-is-listed');
 
 /**
  * The editing session, as a state machine over a service and a clock (component-editor.md, "The
@@ -814,7 +813,7 @@ export function createSession(options: SessionOptions): Session {
       if (pendingRepeat !== null && !(await sendAgain(pendingRepeat))) return;
       phase = into;
       notice =
-        into === 'recovery' ? RECOVERY_OPENED : words('editor.you-are-editing-this-component-2');
+        into === 'recovery' ? RECOVERY_OPENED() : words('editor.you-are-editing-this-component-2');
       // A successful claim is the real state, told plainly (fix round 2, finding 3): the previous
       // value could be `stopped`, left over from a refusal this claim has now resolved, which would
       // otherwise say "not saved" while there was nothing left unsaved. Whatever was kept as text
@@ -1043,7 +1042,7 @@ export function createSession(options: SessionOptions): Session {
           if (disposed || (phase as Phase) !== 'editing' || (save as SaveState) === 'stopped')
             return;
           phase = 'recovery';
-          notice = RECOVERY_OPENED;
+          notice = RECOVERY_OPENED();
           publish();
         });
         return;

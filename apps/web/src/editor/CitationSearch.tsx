@@ -186,10 +186,12 @@ export function CitationSearch({
                       />
                       {entryName({ id: each.identifier, key: '', csl: each.csl })}
                       {each.match &&
-                        words('editor.in-the-bibliography-as', {
-                          key: each.match.key,
-                          value2: each.match.flag ? `, ${flagSaid(each.match.flag)}` : '',
-                        })}
+                        (each.match.flag
+                          ? words('editor.citation.in-bibliography-flagged', {
+                              key: each.match.key,
+                              flag: flagSaid(each.match.flag),
+                            })
+                          : words('editor.citation.in-bibliography', { key: each.match.key }))}
                     </label>
                   );
                 })}

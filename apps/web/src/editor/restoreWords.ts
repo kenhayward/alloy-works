@@ -27,7 +27,7 @@ export function restoreRefusalWords(refusal: RestoreRefusal): string {
   switch (refusal.code) {
     case 'restore_locked':
       return words('editor.is-editing-this-component-it', {
-        value1: refusal.holder?.name ?? 'Somebody',
+        value1: refusal.holder?.name ?? words('editor.somebody'),
       });
     case 'restore_unchanged':
       return words('editor.the-latest-version-already-holds');
@@ -48,7 +48,7 @@ export function restoreRefusalWords(refusal: RestoreRefusal): string {
     // VER-044: a component since deleted, by its last title.
     case 'reference_deleted':
       return words('editor.has-been-deleted-so-this', {
-        value1: refusal.title || 'A component it references',
+        value1: refusal.title || words('editor.a-component-it-references'),
       });
     case 'values_unresolved':
       return words('editor.this-document-s-template-names');

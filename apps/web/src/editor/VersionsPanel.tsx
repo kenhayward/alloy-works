@@ -233,9 +233,9 @@ export function VersionsPanel({
                     {restoring.preview.changed.map((each, index) => (
                       <li key={index}>
                         {words('editor.now', {
-                          value1: each.name ?? 'A field no longer held',
-                          value2: valueText(each.restored),
-                          value3: valueText(each.latest),
+                          name: each.name ?? words('editor.a-field-no-longer-held'),
+                          restored: valueText(each.restored),
+                          latest: valueText(each.latest),
                         })}
                       </li>
                     ))}

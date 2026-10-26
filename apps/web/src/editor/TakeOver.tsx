@@ -75,7 +75,9 @@ export function TakeOver({
       answer.code === 'lock_active'
         ? words('editor.is-working-on-it-again', { name })
         : answer.code === 'lock_taking'
-          ? words('editor.has-asked-for-it-already', { value1: answer.by ?? 'Somebody else' })
+          ? words('editor.has-asked-for-it-already', {
+              value1: answer.by ?? words('editor.somebody-else'),
+            })
           : answer.code === 'lock_free'
             ? words('editor.nobody-holds-it-now-begin')
             : words('editor.it-could-not-be-asked'),

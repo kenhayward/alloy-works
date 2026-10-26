@@ -9,10 +9,9 @@ const HINT = 'preformatted-panel-label-hint';
 const REFUSAL = 'preformatted-panel-label-refused';
 
 /** Said under the field, always, so the rule is known before it is broken. */
-const HINT_TEXT =
-  'Letters, digits and + # . _ - only, up to 32 characters. Leave it empty for none.';
+const HINT_TEXT = (): string => words('editor.letters-digits-and-only-up');
 /** Said instead of applying a label the content model would refuse. */
-const REFUSED_TEXT = 'A language label is letters, digits and + # . _ - only, up to 32 characters.';
+const REFUSED_TEXT = (): string => words('editor.a-language-label-is-letters');
 
 /** What the panel is about: the preformatted block the cursor stands in, as `preformattedAt` reads it. */
 export interface PreformattedPanelBlock {
@@ -76,7 +75,7 @@ export function PreformattedPanel({ view, block, enabled, ref }: PreformattedPan
         <input
           type="text"
           value={label.typed}
-          title={HINT_TEXT}
+          title={HINT_TEXT()}
           disabled={!enabled}
           aria-invalid={refused}
           aria-describedby={refused ? `${HINT} ${REFUSAL}` : HINT}
@@ -93,11 +92,11 @@ export function PreformattedPanel({ view, block, enabled, ref }: PreformattedPan
       {/* Said to a screen reader as the field's description; on the toolbar's second line, its title
           (ADR-0053), so the line keeps its height. */}
       <p id={HINT} className={line['hint']}>
-        {HINT_TEXT}
+        {HINT_TEXT()}
       </p>
       {refused && (
         <p id={REFUSAL} role="alert">
-          {REFUSED_TEXT}
+          {REFUSED_TEXT()}
         </p>
       )}
     </div>

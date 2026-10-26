@@ -8,7 +8,7 @@ import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
-const NOT_COPIED = 'The link could not be copied. Select it and copy it instead.';
+const NOT_COPIED = (): string => words('editor.the-link-could-not-be');
 
 /**
  * What can be done to one component from the list: open it, copy its link and - only for somebody
@@ -74,12 +74,12 @@ export function RowMenu({
     const address = `${window.location.origin}${window.location.pathname}#/components/${id}`;
     const copying = navigator.clipboard?.writeText(address);
     if (!copying) {
-      onNotice(NOT_COPIED);
+      onNotice(NOT_COPIED());
       return;
     }
     copying.then(
       () => onNotice(words('editor.copied-the-link-to', { title })),
-      () => onNotice(NOT_COPIED),
+      () => onNotice(NOT_COPIED()),
     );
   };
 
