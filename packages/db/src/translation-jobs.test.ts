@@ -1,13 +1,14 @@
 import { randomUUID } from 'node:crypto';
-import { parseContentDocument } from '@alloy-works/domain';
+import { parseContentDocument, xliffUnits, type XliffPart } from '@alloy-works/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import { createComponent } from './creation.js';
 import { createDocument } from './documents.js';
 import { claimLock, saveIteration } from './editing.js';
+
 import { grant } from './grants.js';
 import { migrate } from './migrate.js';
-import { cutVersion } from './promotion.js';
+import { cutVersion, releaseLock } from './promotion.js';
 import { createTenant, type Tenant } from './provision.js';
 import { findRole } from './roles.js';
 import { createSpace } from './spaces.js';
@@ -21,10 +22,16 @@ import {
 } from './testing/database.js';
 import { beginTranslation, translationsOf } from './translation.js';
 import {
+  applyReturn,
   closeTranslationJob,
+  decideHeld,
   jobFileParts,
   makeTranslationJob,
+  readHeld,
+  readTranslationJob,
+  receiveReturn,
   translationJobsOf,
+  type TranslationJob,
 } from './translation-jobs.js';
 import type { StoredVersion } from './versions.js';
 import { moveArtifact } from './workflow.js';
@@ -103,6 +110,74 @@ describe('translation jobs (the XL plan, XL-D, XL-E)', () => {
       const made = await cutVersion(trx, { ...at, openedFrom: source.id, translates: source.id });
       if (made.answer !== 'recorded') throw new Error(made.answer);
     });
+
+  /** One editing session on the main line, claimed, saved, cut and let go. */
+  const revise = (version: StoredVersion, words: string) =>
+    as(async (trx) => {
+      const at = { artifactId: version.artifactId, principal: ada, session: randomUUID() };
+      const claimed = await claimLock(trx, { ...at, move: true });
+      if (claimed.answer !== 'claimed') throw new Error(claimed.answer);
+      const content = {
+        ...parseContentDocument(version.content),
+        content: [
+          {
+            type: 'paragraph' as const,
+            id: 'p1',
+            style: 'body',
+            content: [{ type: 'text' as const, value: words, marks: [] }],
+          },
+        ],
+      };
+      await saveIteration(trx, { ...at, sequence: 1, openedFrom: version.id, content });
+      const made = await releaseLock(trx, { ...at, openedFrom: version.id });
+      if (made.answer !== 'released' || made.version === null) throw new Error(made.answer);
+      return made.version;
+    });
+
+  /** A component with words, approved: what a job sends. */
+  const worded = async (title: string, words: string) =>
+    approve(await revise(await component(title), words));
+
+  /** Each unit of a version's content, its words put in brackets: a vendor's translation. */
+  const translatedUnits = (version: StoredVersion) =>
+    new Map(
+      xliffUnits(parseContentDocument(version.content)).map((unit) => [
+        unit.id,
+        unit.parts.map((part): XliffPart =>
+          part.kind === 'text' ? { kind: 'text', text: `[${part.text}]` } : part,
+        ),
+      ]),
+    );
+
+  /** A file returned to `sent` and read, `files` by each component sent. */
+  const returned = async (
+    sent: TranslationJob,
+    files: Map<string, Map<string, XliffPart[] | null>>,
+    target: string | null = 'fr-FR',
+    mayEdit: (component: string) => Promise<boolean> = async () => true,
+  ) => {
+    const received = await as((trx) =>
+      receiveReturn(trx, {
+        documentId: document.id,
+        job: sent.id,
+        key: `returns/${randomUUID()}`,
+        sha256: 'a'.repeat(64),
+        bytes: 10,
+        by: ada,
+      }),
+    );
+    if (received.answer !== 'received') throw new Error(received.answer);
+    const id = received.job.returns[0]!.id;
+    await as((trx) =>
+      applyReturn(trx, {
+        id,
+        target,
+        files: new Map([...files].map(([component, units]) => [`f.${component}`, units])),
+        mayEdit,
+      }),
+    );
+    return (await as((trx) => readTranslationJob(trx, document.id, sent.id)))!;
+  };
 
   const job = (components: { id: string; editable: boolean }[], language = 'fr-FR') =>
     as((trx) =>
@@ -258,6 +333,181 @@ describe('translation jobs (the XL plan, XL-D, XL-E)', () => {
     );
     expect(event.detail).toEqual({ job: made.job.id, outstanding: 1 });
     expect((await as((trx) => translationJobsOf(trx, document.id)))[0]!.id).toBe(made.job.id);
+  });
+
+  it('LOC-018 LOC-033 makes each component a returned file translates a version of its line, translating the source version sent, and records what came back', async () => {
+    const source = await worded('Ponds', 'Twelve ponds were sampled.');
+    const made = await job([{ id: source.artifactId, editable: true }]);
+    if (made.answer !== 'made') throw new Error(made.answer);
+
+    const after = await returned(made.job, new Map([[source.artifactId, translatedUnits(source)]]));
+    const item = after.items[0]!;
+    expect(item).toMatchObject({ outcome: 'returned', decided: { by: ada } });
+    expect(after.returns[0]).toMatchObject({ state: 'read', returned: 1, held: 0, refused: 0 });
+    expect(await statusOf(source.artifactId)).toEqual({ status: 'translated' });
+    const variant = await as((trx) =>
+      trx
+        .selectFrom('artifact_version')
+        .select(['content', 'line_id'])
+        .where('id', '=', item.version!)
+        .executeTakeFirstOrThrow(),
+    );
+    expect(variant.line_id).toBe(item.line);
+    expect(parseContentDocument(variant.content)).toMatchObject({
+      language: 'fr-FR',
+      content: [{ id: 'p1', content: [{ value: '[Twelve ponds were sampled.]' }] }],
+    });
+    const event = await as((trx) =>
+      trx
+        .selectFrom('audit_event')
+        .select('detail')
+        .where('kind', '=', 'translation.job_returned')
+        .executeTakeFirstOrThrow(),
+    );
+    expect(event.detail).toEqual({
+      job: made.job.id,
+      return: after.returns[0]!.id,
+      returned: 1,
+      held: 0,
+      refused: 0,
+      failure: null,
+    });
+  });
+
+  it('LOC-035 never applies a return whose source moved since it was sent: it is held for a person, who accepts it as a translation of the version sent, out of date, or rejects it', async () => {
+    const first = await worded('Streams', 'Streams were walked.');
+    const second = await worded('Wells', 'Wells were dipped.');
+    const made = await job([
+      { id: first.artifactId, editable: true },
+      { id: second.artifactId, editable: true },
+    ]);
+    if (made.answer !== 'made') throw new Error(made.answer);
+    // Both sources approved again since.
+    await approve(await revise(first, 'Streams were walked twice.'));
+    await approve(await revise(second, 'Wells were dipped twice.'));
+
+    const after = await returned(
+      made.job,
+      new Map([
+        [first.artifactId, translatedUnits(first)],
+        [second.artifactId, translatedUnits(second)],
+      ]),
+    );
+    expect(after.items.map((item) => item.outcome)).toEqual(['held', 'held']);
+    expect(after.returns[0]).toMatchObject({ returned: 0, held: 2 });
+    // Held, and so still out.
+    expect(await statusOf(first.artifactId)).toEqual({ status: 'inTranslation' });
+    const held = await as((trx) =>
+      readHeld(trx, { documentId: document.id, job: made.job.id, component: first.artifactId }),
+    );
+    expect(held?.content.content).toMatchObject([
+      { content: [{ value: '[Streams were walked.]' }] },
+    ]);
+
+    const decide = (component: string, decision: 'accept' | 'reject') =>
+      as((trx) =>
+        decideHeld(trx, {
+          documentId: document.id,
+          job: made.job.id,
+          component,
+          decision,
+          by: grace,
+        }),
+      );
+    const accepted = await decide(first.artifactId, 'accept');
+    expect(accepted).toMatchObject({ answer: 'decided' });
+    expect(await statusOf(first.artifactId)).toEqual({ status: 'outOfDate', retranslate: true });
+    const translates = await as((trx) =>
+      trx
+        .selectFrom('translation_state')
+        .select('translates')
+        .orderBy('id', 'desc')
+        .limit(1)
+        .executeTakeFirstOrThrow(),
+    );
+    expect(translates.translates).toBe(first.id);
+
+    expect(await decide(second.artifactId, 'reject')).toMatchObject({ answer: 'decided' });
+    const decided = (await as((trx) => readTranslationJob(trx, document.id, made.job.id)))!;
+    expect(decided.items.map((item) => [item.outcome, item.decided?.by])).toEqual([
+      ['returned', grace],
+      ['refused', grace],
+    ]);
+    expect(await statusOf(second.artifactId)).toEqual({ status: 'untranslated' });
+    expect(await decide(second.artifactId, 'accept')).toEqual({ answer: 'item.missing' });
+    const events = await as((trx) =>
+      trx
+        .selectFrom('audit_event')
+        .select('detail')
+        .where('kind', '=', 'translation.job_decided')
+        .execute(),
+    );
+    expect(events.map((each) => each.detail)).toEqual([
+      {
+        job: made.job.id,
+        component: first.artifactId,
+        decision: 'accept',
+        version: decided.items[0]!.version,
+      },
+      { job: made.job.id, component: second.artifactId, decision: 'reject', version: null },
+    ]);
+  });
+
+  it('holds a return for a line somebody is editing, rather than cut over their session', async () => {
+    const source = await worded('Lakes', 'Lakes were rowed.');
+    const made = await job([{ id: source.artifactId, editable: true }]);
+    if (made.answer !== 'made') throw new Error(made.answer);
+    const claimed = await as((trx) =>
+      claimLock(trx, {
+        artifactId: source.artifactId,
+        principal: grace,
+        session: randomUUID(),
+        line: made.job.items[0]!.line!,
+        move: true,
+      }),
+    );
+    expect(claimed.answer).toBe('claimed');
+    const after = await returned(made.job, new Map([[source.artifactId, translatedUnits(source)]]));
+    expect(after.items[0]!.outcome).toBe('held');
+  });
+
+  it('refuses a component that does not read back, or that the uploader may no longer edit, and leaves one the file leaves out', async () => {
+    const broken = await worded('Rivers', 'Rivers were forded.');
+    const theirs = await worded('Canals', 'Canals were dredged.');
+    const later = await worded('Ditches', 'Ditches were cleared.');
+    const made = await job(
+      [broken, theirs, later].map((each) => ({ id: each.artifactId, editable: true })),
+    );
+    if (made.answer !== 'made') throw new Error(made.answer);
+    const after = await returned(
+      made.job,
+      new Map<string, Map<string, XliffPart[] | null>>([
+        [broken.artifactId, new Map([['b.p1', null]])],
+        [theirs.artifactId, translatedUnits(theirs)],
+      ]),
+      'fr-FR',
+      async (component) => component !== theirs.artifactId,
+    );
+    expect(after.items.map((item) => item.outcome)).toEqual(['refused', 'refused', null]);
+    expect(after.returns[0]).toMatchObject({ returned: 0, held: 0, refused: 2 });
+    // A refused item takes a later return.
+    const again = await returned(after, new Map([[broken.artifactId, translatedUnits(broken)]]));
+    expect(again.items[0]!.outcome).toBe('returned');
+  });
+
+  it('refuses a file whole in another language, or naming a component the job did not send', async () => {
+    const source = await worded('Moors', 'Moors were crossed.');
+    const made = await job([{ id: source.artifactId, editable: true }]);
+    if (made.answer !== 'made') throw new Error(made.answer);
+    const units = new Map([[source.artifactId, translatedUnits(source)]]);
+    const other = await returned(made.job, units, 'de-DE');
+    expect(other.returns[0]).toMatchObject({ state: 'failed', failure: 'language_mismatch' });
+    const stranger = await returned(
+      made.job,
+      new Map([...units, ['00000000-0000-4000-8000-0000000000aa', new Map()]]),
+    );
+    expect(stranger.returns[0]).toMatchObject({ state: 'failed', failure: 'unknown_file' });
+    expect(stranger.items[0]!.outcome).toBeNull();
   });
 
   it('refuses a language that is no tag, and a job of another document', async () => {

@@ -337,6 +337,18 @@ export async function objectInUse(
       await sql`select 1 from import_asset where object_key = ${key} limit 1`.execute(trx);
     if (held.length > 0) return true;
   }
+  // A translation job's returned file (0164), kept as what came back.
+  const { rows: returns } = await sql<{ stored: boolean }>`
+    select to_regclass(current_schema() || '.translation_job_return') is not null as stored`.execute(
+    trx,
+  );
+  if (returns[0]?.stored === true) {
+    const { rows: kept } =
+      await sql`select 1 from translation_job_return where object_key = ${key} limit 1`.execute(
+        trx,
+      );
+    if (kept.length > 0) return true;
+  }
   const upload = await trx
     .selectFrom('asset_upload')
     .select('id')

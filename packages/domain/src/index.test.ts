@@ -1028,6 +1028,8 @@ describe('the domain package', () => {
         'writeXliff',
         'xliffTarget',
         'xliffUnits',
+        // XLb: what a conflicted return is offered first.
+        'TRANSLATION_CONFLICTS',
       ].sort(),
     );
   });

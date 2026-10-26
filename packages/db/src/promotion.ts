@@ -4,12 +4,14 @@ import {
   definitionsFor,
   parseContentDocument,
   validate,
+  type ContentDocument,
   type MetadataFailure,
 } from '@alloy-works/domain';
 import { componentFieldsNow } from './component-values.js';
 import {
   holding,
   isComponent,
+  readLock,
   onIterationLine,
   lockLinesStored,
   isRefusal,
@@ -165,4 +167,70 @@ export async function releaseLock(trx: TenantTransaction, input: Cut): Promise<R
     )
     .execute();
   return { answer: 'released', version: cut.answer === 'recorded' ? cut.version : null };
+}
+
+export type ReturnedAnswer =
+  | { readonly answer: 'recorded'; readonly version: StoredVersion }
+  | { readonly answer: 'version.unchanged'; readonly current: StoredVersion }
+  /** Another write moved the line between its head read here and the record: tried again. */
+  | { readonly answer: 'version.precondition'; readonly current: StoredVersion }
+  /** Somebody holds the line's lock: their session is not overwritten (XL-F). */
+  | { readonly answer: 'lock.held' }
+  | { readonly answer: 'values.invalid'; readonly failures: readonly MetadataFailure[] }
+  | { readonly answer: 'artifact.missing' }
+  | TranslatesRefusal;
+
+/**
+ * **A returned translation cut** (the XL plan, XL-F, XL-G): the one write path for words that come back
+ * from a vendor, a version on a language line from content given whole rather than a session's
+ * iteration - on the line's head, refused while anybody holds the line's lock, `translates` the source
+ * version sent, the root in the line's language and the head's values carried forward as a cut's are.
+ * Whether the caller may edit the component, and whether the source and the line are as they were
+ * sent, are theirs to have decided.
+ */
+export async function cutReturned(
+  trx: TenantTransaction,
+  input: {
+    readonly artifactId: string;
+    readonly line: string;
+    readonly content: ContentDocument;
+    readonly translates: string;
+    readonly by: string;
+  },
+): Promise<ReturnedAnswer> {
+  if (!(await isComponent(trx, input.artifactId))) return { answer: 'artifact.missing' };
+  await serialise(trx, input.artifactId);
+  const line = await readLine(trx, input.artifactId, input.line);
+  if (!line || line.closed || line.language === null) return { answer: 'artifact.missing' };
+  if (await readLock(trx, input.artifactId, input.line)) return { answer: 'lock.held' };
+  const refused = await checkTranslates(trx, input.artifactId, input.translates);
+  if (refused) return refused;
+  const current = await headVersion(trx, input.artifactId, input.line);
+  if (!current) return { answer: 'artifact.missing' };
+  const { definitions, effective } = await componentFieldsNow(trx, current);
+  const { type, schemas, fields } = definitions;
+  const carried = carryForward(current.values, effective);
+  const fixed = validate(effective, carried.values).filter((each) => each.rule === 'fixed');
+  if (fixed.length > 0) return { answer: 'values.invalid', failures: fixed };
+  const recorded = await recordVersion(trx, {
+    artifactId: input.artifactId,
+    openedFrom: current.id,
+    author: input.by,
+    line: input.line,
+    substance: {
+      kind: 'component',
+      content: asVariant(input.content, line.language),
+      values: carried.values,
+      notCarried: carried.notCarried,
+      definitions: definitionsFor(type, schemas, fields),
+    },
+  });
+  if (recorded.answer !== 'recorded') return recorded;
+  await recordTranslates(trx, {
+    line: input.line,
+    version: recorded.version.id,
+    translates: input.translates,
+    by: input.by,
+  });
+  return { answer: 'recorded', version: recorded.version };
 }

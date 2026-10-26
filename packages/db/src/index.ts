@@ -516,6 +516,8 @@ export {
   type Cut,
   type CutAnswer,
   type ReleaseAnswer,
+  cutReturned,
+  type ReturnedAnswer,
 } from './promotion.js';
 export {
   previewRestore,
@@ -682,6 +684,19 @@ export {
   type MakeTranslationJobAnswer,
   type NotSent,
   type TranslationJob,
+  RETURN_MAX_BYTES,
+  applyReturn,
+  decideHeld,
+  failReturn,
+  readHeld,
+  readReturn,
+  receiveReturn,
+  type DecideAnswer,
+  type HeldItem,
+  type JobReturn,
+  type ReceiveReturnAnswer,
+  type ReturnedFiles,
+  type ReturnFailure,
 } from './translation-jobs.js';
 export {
   listShares,

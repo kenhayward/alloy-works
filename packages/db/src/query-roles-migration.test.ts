@@ -231,6 +231,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0161_default_layout_languages',
       '0162_untranslated_note',
       '0163_translation_jobs',
+      '0164_translation_returns',
     ]);
     expect(applied[own.id]).toEqual([
       '0058_query_roles',
@@ -339,6 +340,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0161_default_layout_languages',
       '0162_untranslated_note',
       '0163_translation_jobs',
+      '0164_translation_returns',
     ]);
 
     expect(await queryRoles(development)).toEqual([
