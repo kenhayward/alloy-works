@@ -329,14 +329,14 @@ export function Header({
           width={18}
           height={18}
         />
-        Alloy Works
+        {words('shell.product')}
       </a>
       {environment !== undefined && <span className={styles['environment']}>{environment}</span>}
       <span className={styles['spacer']} />
       <button
         type="button"
         className={styles['search']}
-        aria-label="Search components, documents, or run a command"
+        aria-label={words('shell.search')}
         aria-keyshortcuts="Control+K"
         onClick={onSearch}
       >

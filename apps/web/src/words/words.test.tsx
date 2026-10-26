@@ -60,7 +60,7 @@ describe('the interface’s words (the UI plan, UI-C)', () => {
     const used = new Set<string>();
     for (const file of sources(SOURCE)) {
       const text = readFileSync(file, 'utf8');
-      for (const match of text.matchAll(/\bwords\(\s*'([a-zA-Z0-9.\-]+)'/g)) used.add(match[1]!);
+      for (const match of text.matchAll(/\bwords\(\s*'([a-zA-Z0-9.-]+)'/g)) used.add(match[1]!);
     }
     const known = new Set(Object.keys(enGB));
     expect([...used].filter((key) => !known.has(key))).toEqual([]);
