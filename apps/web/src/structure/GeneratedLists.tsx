@@ -136,7 +136,9 @@ export function GeneratedLists({
                     >
                       {shown}
                     </a>
-                    {holder && <> in {nodeName(holder, names)}</>}
+                    {holder && (
+                      <> {words('document.in-holder', { holder: nodeName(holder, names) })}</>
+                    )}
                   </li>
                 );
               })}

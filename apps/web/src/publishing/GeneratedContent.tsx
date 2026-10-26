@@ -28,7 +28,7 @@ const day = (iso: string) =>
   formats().date(new Date(iso), { day: 'numeric', month: 'short', year: 'numeric' });
 
 const who = (person: { readonly name: string | null } | null) =>
-  person?.name ?? words('publishing.somebody');
+  person?.name ?? words('publishing.somebody-in-sentence');
 
 /** One generated item, said in a sentence. */
 function sentence(item: Report['placements'][number]['items'][number]): string {

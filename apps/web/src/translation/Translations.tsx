@@ -5,7 +5,7 @@ import { refusal } from '../account/TokenTable.js';
 import { Modal } from '../layouts/Modal.js';
 import { lineAddress } from '../lifecycle/Lines.js';
 import styles from '../lifecycle/Hold.module.css';
-import { words } from '../words/words.js';
+import { words, wordsWith } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -227,18 +227,25 @@ function TranslationsDialog({
               <ul aria-label={words('translation.translations')}>
                 {now.translations.map((each) => (
                   <li key={each.line}>
-                    <a
-                      href={lineAddress(componentId, each.line)}
-                      onClick={(event) => {
-                        event.preventDefault();
-                        onGo(lineAddress(componentId, each.line));
-                      }}
-                    >
-                      {each.language}
-                    </a>
-                    {`: ${statusWords(each.status)}`}
-                    {each.translates !== null &&
-                      words('translation.translates', { number: each.translates.number })}
+                    {wordsWith(
+                      each.translates === null
+                        ? 'translation.line-status'
+                        : 'translation.line-status-translates',
+                      { status: statusWords(each.status), number: each.translates?.number ?? 0 },
+                      {
+                        language: (
+                          <a
+                            href={lineAddress(componentId, each.line)}
+                            onClick={(event) => {
+                              event.preventDefault();
+                              onGo(lineAddress(componentId, each.line));
+                            }}
+                          >
+                            {each.language}
+                          </a>
+                        ),
+                      },
+                    )}
                   </li>
                 ))}
               </ul>
@@ -267,7 +274,7 @@ function TranslationsDialog({
               <p>
                 {words('translation.does-version-need-retranslating', {
                   number: now.source.latest.number,
-                })}
+                })}{' '}
                 <button
                   type="button"
                   disabled={busy}

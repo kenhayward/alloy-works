@@ -516,7 +516,7 @@ export function Publishing({
               <a href={`#/publications/${each.id}`}>
                 {say('publishing.version-published-by-on-short', {
                   version: each.version.number,
-                  who: each.publisher.displayName ?? say('publishing.somebody'),
+                  who: each.publisher.displayName ?? say('publishing.somebody-in-sentence'),
                   when: when(each.publishedAt),
                 })}
               </a>{' '}

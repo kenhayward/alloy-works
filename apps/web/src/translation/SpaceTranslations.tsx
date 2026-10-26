@@ -117,9 +117,7 @@ export function SpaceTranslations({ client }: { readonly client: Client }) {
       {report !== null && report !== 'failed' && report.items.length > 0 && (
         <table className={styles['table']}>
           <caption>
-            {words('translation.translated-components', {
-              value1: report.capped ? ', the first 500' : '',
-            })}
+            {words('translation.translated-components', { capped: report.capped ? 'yes' : 'no' })}
           </caption>
           <thead>
             <tr>

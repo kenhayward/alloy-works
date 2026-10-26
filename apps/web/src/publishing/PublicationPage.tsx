@@ -320,7 +320,7 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
           )}
           <span className={styles['published']}>
             {words('publishing.published-by-on', {
-              who: shown.publisher ?? words('publishing.somebody'),
+              who: shown.publisher ?? words('publishing.somebody-in-sentence'),
               when: published(shown.publishedAt),
             })}
           </span>
@@ -360,7 +360,7 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
         <p>
           {words('publishing.version-published-by-on', {
             version: shown.version,
-            who: shown.publisher ?? words('publishing.somebody'),
+            who: shown.publisher ?? words('publishing.somebody-in-sentence'),
             when: published(shown.publishedAt),
           })}
         </p>

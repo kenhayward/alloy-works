@@ -49,13 +49,13 @@ interface HeldNow {
 export function outcomeWords(outcome: JobNow['items'][number]['outcome']): string {
   switch (outcome) {
     case 'returned':
-      return 'translated';
+      return say('translation.outcome-translated');
     case 'held':
       return say('translation.held-for-review');
     case 'refused':
-      return 'refused';
+      return say('translation.outcome-refused');
     default:
-      return 'out';
+      return say('translation.outcome-out');
   }
 }
 
@@ -119,9 +119,10 @@ export function notSentWords(reason: 'needs_revision' | 'not_editable' | 'other_
 /** A job in a line: its language, vendor, how many were sent and whether it is closed. */
 export function jobWords(job: JobNow): string {
   const sent = job.items.filter((item) => item.notSent === null).length;
-  const to = job.vendor === null ? '' : say('translation.to', { vendor: job.vendor });
   const state = job.closed === null ? 'open' : 'closed';
-  return say('translation.sent', { language: job.language, to, sent, state });
+  return job.vendor === null
+    ? say('translation.sent', { language: job.language, sent, state })
+    : say('translation.sent-to', { language: job.language, vendor: job.vendor, sent, state });
 }
 
 /**
@@ -263,10 +264,21 @@ function JobsDialog({
                 <ul>
                   {job.items.map((item) => (
                     <li key={item.component.id}>
-                      {item.component.title}
-                      {item.notSent === null
-                        ? `: ${item.source === null ? '' : say('translation.version', { number: item.source.number })}${outcomeWords(item.outcome)}`
-                        : `: ${notSentWords(item.notSent)}`}
+                      {item.notSent !== null
+                        ? say('translation.item-said', {
+                            title: item.component.title,
+                            said: notSentWords(item.notSent),
+                          })
+                        : item.source === null
+                          ? say('translation.item-said', {
+                              title: item.component.title,
+                              said: outcomeWords(item.outcome),
+                            })
+                          : say('translation.item-version-said', {
+                              title: item.component.title,
+                              number: item.source.number,
+                              said: outcomeWords(item.outcome),
+                            })}
                       {mayEdit && item.outcome === 'held' && job.closed === null && (
                         <HeldReview
                           client={client}

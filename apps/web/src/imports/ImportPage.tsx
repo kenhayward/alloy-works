@@ -6,7 +6,7 @@ import { Waiting } from '../states/Waiting.js';
 import styles from './Import.module.css';
 import { fileTypeOf } from './ImportFile.js';
 import { IMPORT_HELP, keptBy } from './ImportHelp.js';
-import { words as say } from '../words/words.js';
+import { formats, words as say, wordsWith } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -951,18 +951,22 @@ export function ImportPage({
         <section aria-label={say('imports.imported-before')} className={styles['review']}>
           <h2>{say('imports.imported-before')}</h2>
           <p>
-            {say('imports.was-imported-into-this-space', {
-              value1:
-                view.recognised.match === 'hash'
-                  ? `This same file, as ${view.recognised.fileName},`
-                  : `A file named ${view.recognised.fileName}`,
-              value2: view.recognised.importerName ?? 'someone',
-              value3: new Date(view.recognised.at).toLocaleDateString(),
-            })}
-            <a href={`#/documents/${view.recognised.document}`}>
-              {view.recognised.documentTitle ?? say('imports.a-document')}
-            </a>
-            .
+            {wordsWith(
+              'imports.was-imported-into-this-space',
+              {
+                same: view.recognised.match === 'hash' ? 'yes' : 'no',
+                file: view.recognised.fileName,
+                who: view.recognised.importerName ?? say('imports.someone'),
+                when: formats().date(new Date(view.recognised.at)),
+              },
+              {
+                document: (
+                  <a href={`#/documents/${view.recognised.document}`}>
+                    {view.recognised.documentTitle ?? say('imports.a-document')}
+                  </a>
+                ),
+              },
+            )}
           </p>
           <p className={styles['muted']}>
             {updating

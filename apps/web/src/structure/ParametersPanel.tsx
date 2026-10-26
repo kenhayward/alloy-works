@@ -325,7 +325,7 @@ export function ParametersPanel(props: ParametersPanelProps) {
                   'document.parameters-changed',
                   {
                     number: change.number,
-                    who: change.author ?? words('document.somebody'),
+                    who: change.author ?? words('document.somebody-in-sentence'),
                     changes: formats().list(
                       change.changed.map((name) =>
                         words('document.parameter-is', {

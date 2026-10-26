@@ -78,10 +78,10 @@ function revisedTaken(state: BindingState): NonNullable<BindingState['held']>['t
 
 /** A value revised by hand, in words: its value, a cell's place, who and why, and how it stands. */
 function revisionWords(each: RevisionShown): string {
-  const who = each.by.displayName ?? say('document.somebody');
+  const who = each.by.displayName ?? say('document.somebody-in-sentence');
   const what =
     each.cell === null
-      ? say('document.revision', { value: String(each.value), who, reason: each.reason })
+      ? say('document.revision-said', { value: String(each.value), who, reason: each.reason })
       : say('document.revision-in-cell', {
           value: String(each.value),
           column: each.cell.column,
