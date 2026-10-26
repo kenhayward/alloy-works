@@ -5,6 +5,8 @@ export type { paths } from './generated/schema.js';
 export { followStream } from './stream.js';
 export type { FollowOptions, StreamSample, StreamSnapshot } from './stream.js';
 export { streamPost } from './stream-post.js';
+export { sendLanguage } from './language.js';
+import { saidLanguage } from './language.js';
 export type { StreamPostOptions, StreamPostOutcome } from './stream-post.js';
 
 /** What the service answers with, named from the document rather than written out again. */
@@ -39,9 +41,17 @@ export type PresentationView =
 export function createApiClient(
   options: { readonly baseUrl?: string; readonly fetch?: typeof fetch } = {},
 ): Client<paths> {
-  return createOpenApiClient<paths>({
+  const client = createOpenApiClient<paths>({
     baseUrl: options.baseUrl ?? '',
     credentials: 'include',
     ...(options.fetch ? { fetch: options.fetch } : {}),
   });
+  client.use({
+    onRequest({ request }) {
+      const said = saidLanguage();
+      if (said !== undefined) request.headers.set('accept-language', said);
+      return request;
+    },
+  });
+  return client;
 }

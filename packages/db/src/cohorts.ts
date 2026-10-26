@@ -494,7 +494,7 @@ export async function listReadableCohorts(
     made: number;
     failed: number;
     pending: number;
-  }>(trx, inner, types, request.order ?? byDefault, limit, request.after);
+  }>(trx, inner, types, request.order ?? byDefault, limit, request.after, request.language);
   return {
     items: rows.map((row) => ({
       id: row.id,

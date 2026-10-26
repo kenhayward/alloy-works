@@ -96,6 +96,7 @@ export async function listComponentTypes(
     request.order ?? order,
     limit,
     request.after,
+    request.language,
   );
   // A type that does not read is left out; the page's end is still where the rows ended.
   const items = rows.flatMap((row): ComponentTypeSummary[] => {

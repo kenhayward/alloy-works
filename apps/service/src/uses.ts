@@ -8,6 +8,7 @@ import { componentUses, styleUses, type Tenant, type TenantDatabase } from '@all
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
 import type { SessionPrincipal } from './sessions.js';
+import { languageOf } from './listing.js';
 
 /** Where a component is used (relationships.md; the R1 plan, R1-B), to a reader of it. */
 export function usesHandlers(
@@ -39,7 +40,7 @@ export function usesHandlers(
         .where('id', '=', id)
         .executeTakeFirst();
       if (row?.kind !== 'component') throw notFound();
-      const uses = await componentUses(trx, principalId, id);
+      const uses = await componentUses(trx, principalId, id, languageOf(request));
       return {
         documents: uses.documents.map((each) => ({
           id: each.id,

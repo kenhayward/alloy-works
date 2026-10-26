@@ -23,6 +23,7 @@ import { notFound, type Authorised } from './access.js';
 import { versionView } from './components.js';
 import type { SessionPrincipal } from './sessions.js';
 import { refused } from './wire-codes.js';
+import { languageOf } from './listing.js';
 
 /** What a person is told of each parameter refusal (templates.md, "Failures"), beside its code. */
 export const PARAMETER_WORDS = {
@@ -113,7 +114,7 @@ export function templateHandlers(
   return {
     listTemplates: async (request: FastifyRequest) => {
       const query = request.query as TemplateListQuery;
-      const asked = pageAsked('templates', query);
+      const asked = pageAsked('templates', query, languageOf(request));
       const listed = await db.withTenant(tenantOf(request), (trx) =>
         listReadableTemplates(
           trx,
@@ -134,7 +135,14 @@ export function templateHandlers(
           },
           changedAt: item.changedAt.toISOString(),
         })),
-        next: cursorFor('templates', asked.sort, asked.order, listed.snapshot, listed.next),
+        next: cursorFor(
+          'templates',
+          asked.sort,
+          asked.order,
+          listed.snapshot,
+          listed.next,
+          asked.language,
+        ),
         total: listed.total,
         facets: {
           spaces: listed.facets.spaces.map(

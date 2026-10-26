@@ -44,6 +44,7 @@ import { definitionReader } from './data/bindings.js';
 import { storageUnavailable } from './errors.js';
 import type { SessionPrincipal } from './sessions.js';
 import { refused } from './wire-codes.js';
+import { languageOf } from './listing.js';
 
 /** Five minutes: long enough to follow a link, short enough that a copy is worth little. */
 export const DOWNLOAD_SECONDS = 300;
@@ -402,7 +403,7 @@ export function publishingHandlers(
       const { id } = request.params as DocumentParams;
       if (!(await readDocument(trx, id))) throw notFound();
       const query = request.query as PublicationListQuery;
-      const asked = pageAsked('publications', query);
+      const asked = pageAsked('publications', query, languageOf(request));
       const filter = {
         ...(query.spaces === undefined ? {} : { spaces: query.spaces.split(',') }),
         ...(query.documents === undefined ? {} : { documents: query.documents.split(',') }),
@@ -411,7 +412,14 @@ export function publishingHandlers(
       if (!listed) throw new Error('A signed-in principal is not in its own tenant');
       return {
         items: listed.items.map(summaryView),
-        next: cursorFor('publications', asked.sort, asked.order, listed.snapshot, listed.next),
+        next: cursorFor(
+          'publications',
+          asked.sort,
+          asked.order,
+          listed.snapshot,
+          listed.next,
+          asked.language,
+        ),
         total: listed.total,
         facets: {
           spaces: listed.facets.spaces.map(
@@ -427,7 +435,7 @@ export function publishingHandlers(
     /** Every publication the caller may read, of every document (interface slice 10). */
     listPublicationsEverywhere: async (request: FastifyRequest): Promise<PublicationList> => {
       const query = request.query as PublicationListQuery;
-      const asked = pageAsked('publications', query);
+      const asked = pageAsked('publications', query, languageOf(request));
       const filter = {
         ...(query.spaces === undefined ? {} : { spaces: query.spaces.split(',') }),
         ...(query.documents === undefined ? {} : { documents: query.documents.split(',') }),
@@ -438,7 +446,14 @@ export function publishingHandlers(
       if (!listed) throw new Error('A signed-in principal is not in its own tenant');
       return {
         items: listed.items.map(summaryView),
-        next: cursorFor('publications', asked.sort, asked.order, listed.snapshot, listed.next),
+        next: cursorFor(
+          'publications',
+          asked.sort,
+          asked.order,
+          listed.snapshot,
+          listed.next,
+          asked.language,
+        ),
         total: listed.total,
         facets: {
           spaces: listed.facets.spaces.map(

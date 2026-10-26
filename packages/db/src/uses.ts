@@ -6,6 +6,8 @@ import { mayReadArtifact } from './queryDefinitions.js';
 import { referencesStored } from './reference-index.js';
 import type { TenantTransaction } from './tables.js';
 import { workflowStates } from './workflow.js';
+import { collated } from './listing.js';
+import type { InterfaceLanguage } from '@alloy-works/domain';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -67,6 +69,8 @@ export async function componentUses(
   trx: TenantTransaction,
   by: string,
   componentId: string,
+  /** The reader's language, whose collation the names sort in (UI-H; LOC-003). */
+  language?: InterfaceLanguage,
 ): Promise<ComponentUses> {
   if (!UUID.test(componentId) || !(await referencesStored(trx))) return NONE;
   const readable = await loadReadableSet(trx, by);
@@ -136,7 +140,7 @@ export async function componentUses(
     select b.id, b.name, b.document_id as document, a.space_id
       from baseline b join artifact a on a.id = b.document_id
      where b.id in (select baseline_id from baseline_pin where artifact_id = ${componentId})
-     order by b.name collate "C", b.id`.execute(trx);
+     order by b.name ${await collated(trx, language)}, b.id`.execute(trx);
   const seenBaselines = await readableAmong(
     trx,
     readable,

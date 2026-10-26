@@ -142,7 +142,7 @@ export async function listReadableComponents(
     author_id: string | null;
     display_name: string | null;
     email: string | null;
-  }>(trx, base(), types, request.order ?? byDefault, limit, request.after);
+  }>(trx, base(), types, request.order ?? byDefault, limit, request.after, request.language);
 
   return {
     items: rows.map((row) => ({

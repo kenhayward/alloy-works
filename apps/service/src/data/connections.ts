@@ -120,6 +120,7 @@ import {
   maySqlWith,
   requireSqlPermitted,
 } from './sql-access.js';
+import { languageOf } from '../listing.js';
 
 /** Where the connector answers, the key the service presents, and, in a test, a fetch of its own. */
 export interface ConnectorOptions {
@@ -789,7 +790,7 @@ export function connectionHandlers(
   return {
     listConnections: async (request: FastifyRequest) => {
       const query = request.query as ConnectionListQuery;
-      const asked = pageAsked('connections', query);
+      const asked = pageAsked('connections', query, languageOf(request));
       const listed = await db.withTenant(tenantOf(request), (trx) =>
         listReadableConnections(
           trx,
@@ -819,7 +820,14 @@ export function connectionHandlers(
           },
           changedAt: item.changedAt.toISOString(),
         })),
-        next: cursorFor('connections', asked.sort, asked.order, listed.snapshot, listed.next),
+        next: cursorFor(
+          'connections',
+          asked.sort,
+          asked.order,
+          listed.snapshot,
+          listed.next,
+          asked.language,
+        ),
         total: listed.total,
         facets: { spaces: listed.facets.spaces.map((each) => ({ ...each })) },
       };
@@ -1174,7 +1182,7 @@ export function connectionHandlers(
 
     /** The stored results the caller may read, to query as sources (DAT-094; R21-A). */
     listDatasetSources: async (request: FastifyRequest): Promise<DatasetSourceList> => {
-      const asked = pageAsked('datasets', request.query as DatasetSourceQuery);
+      const asked = pageAsked('datasets', request.query as DatasetSourceQuery, languageOf(request));
       const listed = await db.withTenant(tenantOf(request), (trx) =>
         listDatasetSources(trx, principalOf(request).principalId, asked),
       );
@@ -1187,7 +1195,14 @@ export function connectionHandlers(
           latest: { ...each.latest, at: each.latest.at.toISOString() },
           columns: each.columns.map((column) => ({ ...column })),
         })),
-        next: cursorFor('datasets', asked.sort, asked.order, listed.snapshot, listed.next),
+        next: cursorFor(
+          'datasets',
+          asked.sort,
+          asked.order,
+          listed.snapshot,
+          listed.next,
+          asked.language,
+        ),
       };
     },
 

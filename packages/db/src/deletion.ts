@@ -524,7 +524,7 @@ export async function listDeleted(
     by: string;
     by_name: string | null;
     at: Date;
-  }>(trx, query, types, request.order ?? order, limit, request.after);
+  }>(trx, query, types, request.order ?? order, limit, request.after, request.language);
   return {
     items: rows.map((row) => ({
       id: row.id,

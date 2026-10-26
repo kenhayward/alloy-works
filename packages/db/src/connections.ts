@@ -643,7 +643,7 @@ export async function listReadableConnections(
     revision_no: number;
     version_no: number;
     created_at: Date;
-  }>(trx, base(), types, request.order ?? byDefault, limit, request.after);
+  }>(trx, base(), types, request.order ?? byDefault, limit, request.after, request.language);
   // Whether each has a credential, and its last test: read for the page's rows alone.
   const ids = rows.map((row) => row.id);
   const credentials =

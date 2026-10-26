@@ -67,6 +67,7 @@ import { administerOrAbove, authoriseAt, callerOf, notFound, type Authorised } f
 import { contextOf } from './audit.js';
 import { cursorFor, pageAsked } from './listing.js';
 import { AppError, storageUnavailable } from './errors.js';
+import { languageOf } from './listing.js';
 
 /** The name each kind of file ends with (IM-B), checked before its bytes are. */
 const ENDINGS: Readonly<Record<CreateImportBody['fileType'], RegExp>> = {
@@ -418,11 +419,18 @@ export function importHandlers(
     ): Promise<ImportList> => {
       const { space } = request.params as SpaceParams;
       const all = administerOrAbove(facts).allowed;
-      const asked = pageAsked('imports', request.query as ImportListQuery);
+      const asked = pageAsked('imports', request.query as ImportListQuery, languageOf(request));
       const listed = await listImports(trx, { spaceId: space, principal: principalId, all }, asked);
       return {
         items: listed.items.map(summaryOf),
-        next: cursorFor('imports', asked.sort, asked.order, listed.snapshot, listed.next),
+        next: cursorFor(
+          'imports',
+          asked.sort,
+          asked.order,
+          listed.snapshot,
+          listed.next,
+          asked.language,
+        ),
       };
     },
 

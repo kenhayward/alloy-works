@@ -30,6 +30,7 @@ import { versionView } from './components.js';
 import { AppError } from './errors.js';
 import type { SessionPrincipal } from './sessions.js';
 import { refused } from './wire-codes.js';
+import { languageOf } from './listing.js';
 
 const PLACEHOLDER = '00000000-0000-4000-8000-000000000000';
 const parsers = {
@@ -123,10 +124,21 @@ export function definitionHandlers(
   void tenantOf;
   return {
     listDefinitions: async (request: FastifyRequest, { trx }: Authorised) => {
-      const asked = pageAsked('definitions', request.query as DefinitionListQuery);
+      const asked = pageAsked(
+        'definitions',
+        request.query as DefinitionListQuery,
+        languageOf(request),
+      );
       const listed = await listDefinitions(trx, asked);
       return {
-        next: cursorFor('definitions', asked.sort, asked.order, listed.snapshot, listed.next),
+        next: cursorFor(
+          'definitions',
+          asked.sort,
+          asked.order,
+          listed.snapshot,
+          listed.next,
+          asked.language,
+        ),
         items: listed.items.map((each) => ({
           id: each.id,
           kind: each.kind,

@@ -207,7 +207,7 @@ export async function listDefinitions(
     version_no: number;
     name: string;
     key: string | null;
-  }>(trx, inner, types, request.order ?? order, limit, request.after);
+  }>(trx, inner, types, request.order ?? order, limit, request.after, request.language);
   return {
     items: rows.map((row) => ({
       id: row.id,

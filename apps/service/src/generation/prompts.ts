@@ -36,6 +36,7 @@ import { workflowView } from '../workflows.js';
 import { cursorFor, pageAsked } from '../listing.js';
 import type { SessionPrincipal } from '../sessions.js';
 import { refused } from '../wire-codes.js';
+import { languageOf } from '../listing.js';
 
 /** The prompt routes (generation.md, "Prompts"; the G4 plan, G4-A). None reaches a model. */
 
@@ -89,7 +90,7 @@ export function promptHandlers(
   return {
     listPrompts: async (request: FastifyRequest) => {
       const query = request.query as PromptListQuery;
-      const asked = pageAsked('prompts', query);
+      const asked = pageAsked('prompts', query, languageOf(request));
       const listed = await db.withTenant(tenantOf(request), (trx) =>
         listReadablePrompts(trx, principalOf(request).principalId, asked, {
           ...(query.spaces === undefined ? {} : { spaces: query.spaces.split(',') }),
@@ -108,7 +109,14 @@ export function promptHandlers(
           },
           changedAt: item.changedAt.toISOString(),
         })),
-        next: cursorFor('prompts', asked.sort, asked.order, listed.snapshot, listed.next),
+        next: cursorFor(
+          'prompts',
+          asked.sort,
+          asked.order,
+          listed.snapshot,
+          listed.next,
+          asked.language,
+        ),
         total: listed.total,
         facets: { spaces: listed.facets.spaces.map((each) => ({ ...each })) },
       };

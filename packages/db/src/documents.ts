@@ -566,7 +566,7 @@ export async function listReadableDocuments(
     sections: number;
     components: number;
     publishing: PublishingState;
-  }>(trx, base(), types, request.order ?? byDefault, limit, request.after);
+  }>(trx, base(), types, request.order ?? byDefault, limit, request.after, request.language);
 
   return {
     items: rows.map((row) => ({

@@ -42,6 +42,7 @@ import {
   mayRunFetch,
   requireSqlPermitted,
 } from './sql-access.js';
+import { languageOf } from '../listing.js';
 
 /**
  * The query definition routes (data.md, "Routes"; the D2 plan, task 4). None reaches the connector:
@@ -217,7 +218,7 @@ export function queryDefinitionHandlers(
   return {
     listQueryDefinitions: async (request: FastifyRequest) => {
       const query = request.query as QueryDefinitionListQuery;
-      const asked = pageAsked('queryDefinitions', query);
+      const asked = pageAsked('queryDefinitions', query, languageOf(request));
       const listed = await db.withTenant(tenantOf(request), (trx) =>
         listReadableQueryDefinitions(trx, principalOf(request).principalId, asked, {
           ...(query.spaces === undefined ? {} : { spaces: query.spaces.split(',') }),
@@ -238,7 +239,14 @@ export function queryDefinitionHandlers(
           },
           changedAt: item.changedAt.toISOString(),
         })),
-        next: cursorFor('queryDefinitions', asked.sort, asked.order, listed.snapshot, listed.next),
+        next: cursorFor(
+          'queryDefinitions',
+          asked.sort,
+          asked.order,
+          listed.snapshot,
+          listed.next,
+          asked.language,
+        ),
         total: listed.total,
         facets: { spaces: listed.facets.spaces.map((each) => ({ ...each })) },
       };

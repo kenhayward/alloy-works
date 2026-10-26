@@ -17,6 +17,8 @@ import { mayReadArtifact } from './queryDefinitions.js';
 import { isPlainName } from './plain-name.js';
 import type { TenantTransaction } from './tables.js';
 import { createArtifact, latestVersion, recordVersion, type StoredVersion } from './versions.js';
+import { collated } from './listing.js';
+import type { InterfaceLanguage } from '@alloy-works/domain';
 
 /**
  * Datasets and resolutions (data.md, "The dataset" and "The resolution, owned by the document"; the D3
@@ -602,6 +604,8 @@ export async function documentsResolving(
   trx: TenantTransaction,
   principalId: string,
   target: { readonly definition: string } | { readonly connection: string },
+  /** The reader's language, whose collation the titles sort in (UI-H; LOC-003). */
+  language?: InterfaceLanguage,
 ): Promise<Uses> {
   const id = 'definition' in target ? target.definition : target.connection;
   if (!UUID.test(id)) return { readable: [], others: 0 };
@@ -632,7 +636,7 @@ export async function documentsResolving(
            join artifact_version held on held.id = latest.dataset_version
           where ${matches}
        )
-     order by outline.content ->> 'title' collate "C", a.id`.execute(trx);
+     order by outline.content ->> 'title' ${await collated(trx, language)}, a.id`.execute(trx);
   return splitByReading(trx, principalId, rows);
 }
 
@@ -647,6 +651,8 @@ export async function documentsHolding(
   principalId: string,
   componentId: string,
   bindingId: string,
+  /** The reader's language, whose collation the titles sort in (UI-H; LOC-003). */
+  language?: InterfaceLanguage,
 ): Promise<Uses> {
   if (!UUID.test(componentId)) return { readable: [], others: 0 };
   const { rows } = await sql<{ id: string; space_id: string; title: string }>`
@@ -672,7 +678,7 @@ export async function documentsHolding(
             and r.node_id = placed.node #>> '{}'
             and r.binding_id = ${bindingId}
        )
-     order by outline.content ->> 'title' collate "C", a.id`.execute(trx);
+     order by outline.content ->> 'title' ${await collated(trx, language)}, a.id`.execute(trx);
   return splitByReading(trx, principalId, rows);
 }
 

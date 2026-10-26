@@ -305,7 +305,7 @@ export async function listReadableQueryDefinitions(
     revision_no: number;
     version_no: number;
     created_at: Date;
-  }>(trx, base(), types, request.order ?? byDefault, limit, request.after);
+  }>(trx, base(), types, request.order ?? byDefault, limit, request.after, request.language);
   // Each connection's latest name, read for the page's rows alone, and told only where the principal
   // may read the connection: reading a definition is not reading what it names.
   const connectionIds = [...new Set(rows.map((row) => row.connection))].filter((id) =>
