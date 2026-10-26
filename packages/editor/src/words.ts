@@ -145,7 +145,10 @@ export type EditorWordValues = Readonly<Record<string, string | number>>;
 /** What the renderer gives: its words by key, and a list joined in the person's language. */
 export interface EditorSaying {
   readonly words: (key: EditorWordKey, values?: EditorWordValues) => string;
-  readonly list: (values: readonly string[], type: 'conjunction' | 'disjunction' | 'unit') => string;
+  readonly list: (
+    values: readonly string[],
+    type: 'conjunction' | 'disjunction' | 'unit',
+  ) => string;
 }
 
 /**
@@ -208,5 +211,7 @@ export const say = (key: EditorWordKey, values?: EditorWordValues): string =>
   saying.words(key, values);
 
 /** A list joined as the person's language joins one. */
-export const listOf = (values: readonly string[], type: 'conjunction' | 'disjunction' | 'unit'): string =>
-  saying.list(values, type);
+export const listOf = (
+  values: readonly string[],
+  type: 'conjunction' | 'disjunction' | 'unit',
+): string => saying.list(values, type);
