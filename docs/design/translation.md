@@ -35,6 +35,9 @@ line holds its own editing lock, so translators and the author edit at once.
 | **LOC-017** | A translation out of date with a change needing retranslation refuses a publish where the policy says           |
 | **LOC-037** | A missing variant falls back to the source, marked and reported, or refuses, as the document or the tenant says |
 | **LOC-019** | A job's file carries the text either side, the component's title and type, and the terms it uses                |
+| **LOC-018** | A job's file goes out as XLIFF 2.1 and comes back, read by the same mapping into each translation               |
+| **LOC-033** | A job records what was sent, from which source version, when, to whom, and what came back                       |
+| **LOC-035** | A return whose source or translation moved is held; a person accepts it as the older version's or rejects it    |
 
 LOC-016 asks for status wherever a component is used: a document's references say it, and a space
 reports it, but a search result and the components listing do not yet, so it is not claimed.
@@ -129,6 +132,25 @@ not sent. A vendor's file leaves by a person's act, so no policy governs it.
 
 `GET` and `POST /v1/documents/{id}/translation-jobs` list and make; `GET .../{job}/file` downloads;
 `POST .../{job}/close` closes. **Translation jobs** in the Publishing panel does each.
+
+## Returned files
+
+`PUT .../{job}/return` keeps the file by its hash as it came (`translation_job_return`, 0164) and
+queues `translation_return`. The worker reads it in a thread within an import's budget, by
+`readXliff` (`packages/readers`): `readXml`'s guard, UTF-8 or UTF-16, segments and ignorables joined,
+`<pc>` as a pair, `<cp>` as its character. A file in another language, or naming a component the job
+did not send, is refused whole. Acting for the uploader, who must still edit each component, each
+component's units are read back against the source version sent. One write path, `cutReturned`,
+makes a version on its line, `translates` that version, where the source a translator is shown and
+the line's head are as they were sent and nobody holds the line's lock. Anything else is **held**,
+its words kept on the item. One that does not read back is **refused**, and a later file may return
+it. Audited `translation.job_returned`.
+
+A held item is still in translation. `GET .../items/{component}/held` shows it beside the source
+blocks changed since. `POST .../decision` lets a person with edit on the component accept it, as a
+translation of the version sent and so out of date at once, or reject it; audited
+`translation.job_decided`. `translation_policy.conflict` (`review`, the default; `accept`; `reject`)
+chooses the decision offered first and never decides.
 
 ## The page
 

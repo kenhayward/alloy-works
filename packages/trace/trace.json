@@ -20320,6 +20320,18 @@
         {
           "id": "LOC-019",
           "howItIsMet": "A job's file carries the text either side, the component's title and type, and the terms it uses"
+        },
+        {
+          "id": "LOC-018",
+          "howItIsMet": "A job's file goes out as XLIFF 2.1 and comes back, read by the same mapping into each translation"
+        },
+        {
+          "id": "LOC-033",
+          "howItIsMet": "A job records what was sent, from which source version, when, to whom, and what came back"
+        },
+        {
+          "id": "LOC-035",
+          "howItIsMet": "A return whose source or translation moved is held; a person accepts it as the older version's or rejects it"
         }
       ]
     },
@@ -21229,13 +21241,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 662,
+      "line": 669,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 675,
+      "line": 682,
       "kind": "title"
     },
     {
@@ -21709,7 +21721,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 2124,
+      "line": 2139,
       "kind": "title"
     },
     {
@@ -23546,6 +23558,18 @@
       "id": "LOC-031",
       "file": "apps/service/src/translation-routes.test.ts",
       "line": 167,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-033",
+      "file": "apps/service/src/translation-routes.test.ts",
+      "line": 445,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-035",
+      "file": "apps/service/src/translation-routes.test.ts",
+      "line": 445,
       "kind": "title"
     },
     {
@@ -26255,6 +26279,18 @@
       "kind": "title"
     },
     {
+      "id": "LOC-018",
+      "file": "apps/web/src/translation/TranslationJobs.test.tsx",
+      "line": 116,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-035",
+      "file": "apps/web/src/translation/TranslationJobs.test.tsx",
+      "line": 116,
+      "kind": "title"
+    },
+    {
       "id": "LOC-031",
       "file": "apps/web/src/translation/Translations.test.tsx",
       "line": 105,
@@ -27038,6 +27074,12 @@
       "id": "STY-074",
       "file": "apps/worker/src/themes.test.ts",
       "line": 1032,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-018",
+      "file": "apps/worker/src/translation-return.test.ts",
+      "line": 230,
       "kind": "title"
     },
     {
@@ -29267,6 +29309,24 @@
       "kind": "title"
     },
     {
+      "id": "LOC-018",
+      "file": "packages/db/src/translation-jobs.test.ts",
+      "line": 338,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-033",
+      "file": "packages/db/src/translation-jobs.test.ts",
+      "line": 338,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-035",
+      "file": "packages/db/src/translation-jobs.test.ts",
+      "line": 377,
+      "kind": "title"
+    },
+    {
       "id": "LOC-007",
       "file": "packages/db/src/translation.test.ts",
       "line": 174,
@@ -29707,13 +29767,13 @@
     {
       "id": "LIF-030",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 259,
+      "line": 262,
       "kind": "title"
     },
     {
       "id": "LIF-070",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 240,
+      "line": 243,
       "kind": "title"
     },
     {
@@ -30667,7 +30727,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1035,
+      "line": 1037,
       "kind": "title"
     },
     {
@@ -32255,9 +32315,15 @@
       "kind": "title"
     },
     {
+      "id": "LOC-035",
+      "file": "packages/domain/src/translation/policy.test.ts",
+      "line": 14,
+      "kind": "title"
+    },
+    {
       "id": "LOC-037",
       "file": "packages/domain/src/translation/policy.test.ts",
-      "line": 38,
+      "line": 49,
       "kind": "title"
     },
     {
@@ -32900,6 +32966,12 @@
       "id": "CNT-171",
       "file": "packages/readers/src/markdown.test.ts",
       "line": 189,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-018",
+      "file": "packages/readers/src/xliff.test.ts",
+      "line": 38,
       "kind": "title"
     },
     {
