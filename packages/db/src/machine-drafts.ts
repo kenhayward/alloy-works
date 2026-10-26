@@ -34,6 +34,8 @@ export async function recordMachineDraft(
     readonly runs: readonly string[];
     readonly missedTerms: readonly string[];
     readonly by: string;
+    /** The line's head and the source as the draft read them: a cut on anything else is refused. */
+    readonly expect?: { readonly head: string | null; readonly source: string };
   },
 ): Promise<ReturnedAnswer> {
   const cut = await cutReturned(trx, input);

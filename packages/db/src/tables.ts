@@ -789,7 +789,11 @@ export interface TranslationJobItemTable {
   line_id: ColumnType<string | null, string | null, never>;
   source_version: ColumnType<string | null, string | null, never>;
   line_head: ColumnType<string | null, string | null, never>;
-  not_sent: ColumnType<'needs_revision' | 'not_editable' | null, string | null, never>;
+  not_sent: ColumnType<
+    'needs_revision' | 'not_editable' | 'other_source' | null,
+    string | null,
+    never
+  >;
   outcome: ColumnType<'returned' | 'held' | 'refused' | null, never, string | null>;
   version_id: ColumnType<string | null, never, string | null>;
   decided_by: ColumnType<string | null, never, string | null>;

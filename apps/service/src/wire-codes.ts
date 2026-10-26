@@ -195,6 +195,8 @@ const WIRE_CODES = {
   'translation.machine_outside': 'translation_machine_outside',
   'translation.nothing_to_translate': 'translation_nothing_to_translate',
   'translation.nothing_drafted': 'translation_nothing_drafted',
+  // A held translation's words a cut refuses (the XL final review).
+  'translation.not_applied': 'translation_not_applied',
   'carry.invalid': 'carry_invalid',
   'share.member': 'share_member',
   'share.invitation_waiting': 'share_invitation_waiting',

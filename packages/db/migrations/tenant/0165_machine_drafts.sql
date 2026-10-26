@@ -27,6 +27,12 @@ create table machine_draft (
 );
 create index machine_draft_open on machine_draft (line_id) where accepted_at is null;
 
+-- A job's file names one source language, so a component in another is listed and not sent (the XL
+-- final review).
+alter table translation_job_item drop constraint translation_job_item_not_sent_check;
+alter table translation_job_item add constraint translation_job_item_not_sent_check
+  check (not_sent in ('needs_revision', 'not_editable', 'other_source'));
+
 -- Whether content goes to machine translation, and to which endpoints (LOC-026): off by default.
 alter table translation_policy add column machine text not null default 'off'
   check (machine in ('off', 'inside', 'any'));

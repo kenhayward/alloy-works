@@ -181,10 +181,10 @@ export const TranslationJobView = z.object({
           .nullable()
           .describe('The source version sent, which what comes back translates'),
         notSent: z
-          .enum(['needs_revision', 'not_editable'])
+          .enum(['needs_revision', 'not_editable', 'other_source'])
           .nullable()
           .describe(
-            'Why it was listed and not sent: the source has no designated revision to translate from, or the maker may not edit it',
+            'Why it was listed and not sent: the source has no designated revision to translate from, the maker may not edit it, or its source is in another language than the job’s first, which one file cannot say',
           ),
         outcome: z
           .enum(['returned', 'held', 'refused'])
@@ -546,7 +546,7 @@ export const translationRoutes = {
       404: itemMissing,
       409: {
         description:
-          'translation_job_closed: the job is closed; lock_held: somebody is editing the translation',
+          'translation_job_closed: the job is closed; lock_held: somebody is editing the translation; translation_not_applied: a fixed value refuses the words',
         schema: ErrorBody,
       },
     },

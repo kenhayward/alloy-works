@@ -124,6 +124,17 @@ export function machineDraftHandlers(
     if (await readLock(trx, input.artifactId, line.id)) {
       throw refused(409, 'lock.held', 'Somebody is editing this translation. Try again later.');
     }
+    // The line's head as the draft starts: a cut on anything newer is refused, never overwritten.
+    const head =
+      (
+        await trx
+          .selectFrom('artifact_version')
+          .select('id')
+          .where('line_id', '=', line.id)
+          .orderBy('version_no', 'desc')
+          .limit(1)
+          .executeTakeFirst()
+      )?.id ?? null;
     const source = await translationSource(trx, input.artifactId);
     if (!source || source.kind !== 'component') throw notFound();
     const content = parseContentDocument(source.content);
@@ -196,6 +207,7 @@ export function machineDraftHandlers(
     await refuseOverLimit(trx, input.principalId);
     return {
       line,
+      head,
       language,
       endpoint,
       sealed,
@@ -372,6 +384,7 @@ export function machineDraftHandlers(
                     runs,
                     missedTerms: missed,
                     by: principalId,
+                    expect: { head: prepared.head, source: source.id },
                   });
                   return made.answer === 'recorded'
                     ? {
@@ -392,6 +405,12 @@ export function machineDraftHandlers(
                     label: prepared.sourceLabels.get(term) ?? term,
                   })),
                 });
+              } else if (cut.answer === 'translation.moved') {
+                failure = {
+                  code: 'translation_moved',
+                  message:
+                    'The translation or its source changed while it was drafted, so nothing is drafted. Draft it again.',
+                };
               } else if (cut.answer === 'lock.held') {
                 failure = {
                   code: 'lock_held',

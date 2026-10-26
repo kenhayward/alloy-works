@@ -188169,14 +188169,15 @@
                                       "type": "string",
                                       "enum": [
                                         "needs_revision",
-                                        "not_editable"
+                                        "not_editable",
+                                        "other_source"
                                       ]
                                     },
                                     {
                                       "type": "null"
                                     }
                                   ],
-                                  "description": "Why it was listed and not sent: the source has no designated revision to translate from, or the maker may not edit it"
+                                  "description": "Why it was listed and not sent: the source has no designated revision to translate from, the maker may not edit it, or its source is in another language than the job’s first, which one file cannot say"
                                 },
                                 "outcome": {
                                   "anyOf": [
@@ -188700,14 +188701,15 @@
                                 "type": "string",
                                 "enum": [
                                   "needs_revision",
-                                  "not_editable"
+                                  "not_editable",
+                                  "other_source"
                                 ]
                               },
                               {
                                 "type": "null"
                               }
                             ],
-                            "description": "Why it was listed and not sent: the source has no designated revision to translate from, or the maker may not edit it"
+                            "description": "Why it was listed and not sent: the source has no designated revision to translate from, the maker may not edit it, or its source is in another language than the job’s first, which one file cannot say"
                           },
                           "outcome": {
                             "anyOf": [
@@ -189300,14 +189302,15 @@
                                 "type": "string",
                                 "enum": [
                                   "needs_revision",
-                                  "not_editable"
+                                  "not_editable",
+                                  "other_source"
                                 ]
                               },
                               {
                                 "type": "null"
                               }
                             ],
-                            "description": "Why it was listed and not sent: the source has no designated revision to translate from, or the maker may not edit it"
+                            "description": "Why it was listed and not sent: the source has no designated revision to translate from, the maker may not edit it, or its source is in another language than the job’s first, which one file cannot say"
                           },
                           "outcome": {
                             "anyOf": [
@@ -190133,14 +190136,15 @@
                                 "type": "string",
                                 "enum": [
                                   "needs_revision",
-                                  "not_editable"
+                                  "not_editable",
+                                  "other_source"
                                 ]
                               },
                               {
                                 "type": "null"
                               }
                             ],
-                            "description": "Why it was listed and not sent: the source has no designated revision to translate from, or the maker may not edit it"
+                            "description": "Why it was listed and not sent: the source has no designated revision to translate from, the maker may not edit it, or its source is in another language than the job’s first, which one file cannot say"
                           },
                           "outcome": {
                             "anyOf": [
@@ -190424,7 +190428,7 @@
             }
           },
           "409": {
-            "description": "translation_job_closed: the job is closed; lock_held: somebody is editing the translation",
+            "description": "translation_job_closed: the job is closed; lock_held: somebody is editing the translation; translation_not_applied: a fixed value refuses the words",
             "content": {
               "application/json": {
                 "schema": {
@@ -191086,14 +191090,15 @@
                                 "type": "string",
                                 "enum": [
                                   "needs_revision",
-                                  "not_editable"
+                                  "not_editable",
+                                  "other_source"
                                 ]
                               },
                               {
                                 "type": "null"
                               }
                             ],
-                            "description": "Why it was listed and not sent: the source has no designated revision to translate from, or the maker may not edit it"
+                            "description": "Why it was listed and not sent: the source has no designated revision to translate from, the maker may not edit it, or its source is in another language than the job’s first, which one file cannot say"
                           },
                           "outcome": {
                             "anyOf": [
@@ -276605,7 +276610,7 @@
                     }
                   },
                   "conflict": {
-                    "default": "review",
+                    "description": "Left out, it stays as it is",
                     "type": "string",
                     "enum": [
                       "review",
@@ -276614,7 +276619,7 @@
                     ]
                   },
                   "machine": {
-                    "default": "off",
+                    "description": "Left out, it stays as it is",
                     "type": "string",
                     "enum": [
                       "off",
@@ -276628,8 +276633,7 @@
                   "outOfDate",
                   "note"
                 ],
-                "additionalProperties": false,
-                "description": "`fallback`: where a component has no translation into the language a document is published in, `source`, the default, publishes it in its own language, marked as untranslated, and `refuse` fails the publish; a document may say otherwise. `outOfDate`: a translation out of date with a change that needs retranslating, `publish`, the default, publishes it and reports it, and `refuse` fails the publish. `note`: the words the mark says, by language tag, else `Untranslated`. `conflict`: what a translation returned for a source or a translation that moved since it was sent is offered first - `review`, the default, leaves it held, `accept` offers accepting it as a translation of the version sent, `reject` offers rejecting it; a person always decides. `machine`: whether content is sent to the `translate` model endpoint for a machine draft - `off`, the default, never; `inside`, only to an endpoint inside the data boundary; `any`, to any"
+                "additionalProperties": false
               },
               "example": {
                 "fallback": "source",

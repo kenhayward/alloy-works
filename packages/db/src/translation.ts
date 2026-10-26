@@ -431,17 +431,23 @@ export async function translationPolicy(trx: TenantTransaction): Promise<Transla
 export async function setTranslationPolicy(
   trx: TenantTransaction,
   policy: Omit<TranslationPolicy, 'conflict' | 'machine'> & {
-    readonly conflict?: TranslationPolicy['conflict'];
-    readonly machine?: TranslationPolicy['machine'];
+    readonly conflict?: TranslationPolicy['conflict'] | undefined;
+    readonly machine?: TranslationPolicy['machine'] | undefined;
   },
 ): Promise<TranslationPolicy> {
   await sql`update translation_policy
                set fallback = ${policy.fallback}, out_of_date = ${policy.outOfDate},
                    note = ${JSON.stringify(policy.note)}::jsonb`.execute(trx);
-  if (policy.conflict !== undefined) {
+  // Each only where its migration has run (0164, 0165), as the readers read them (the XL final review).
+  const { rows: columns } = await sql<{ column_name: string }>`
+    select column_name from information_schema.columns
+     where table_schema = current_schema() and table_name = 'translation_policy'
+       and column_name in ('conflict', 'machine')`.execute(trx);
+  const has = new Set(columns.map((row) => row.column_name));
+  if (policy.conflict !== undefined && has.has('conflict')) {
     await sql`update translation_policy set conflict = ${policy.conflict}`.execute(trx);
   }
-  if (policy.machine !== undefined) {
+  if (policy.machine !== undefined && has.has('machine')) {
     await sql`update translation_policy set machine = ${policy.machine}`.execute(trx);
   }
   return translationPolicy(trx);

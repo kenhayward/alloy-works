@@ -1,4 +1,10 @@
-import { limitCeilings, runsAtOnce, translationPolicySchema } from '@alloy-works/domain';
+import {
+  TRANSLATION_CONFLICTS,
+  TRANSLATION_MACHINE,
+  limitCeilings,
+  runsAtOnce,
+  translationPolicySchema,
+} from '@alloy-works/domain';
 import { z } from 'zod';
 import type { RouteContract } from './contract.js';
 import { ErrorBody } from './schemas.js';
@@ -121,6 +127,16 @@ export const TranslationSettings = translationPolicySchema.describe(
 );
 export type TranslationSettings = z.infer<typeof TranslationSettings>;
 
+/**
+ * The policy set: as read, but `conflict` and `machine` may be left out, and then stay as they are,
+ * so a body written before either existed changes neither (the XL final review).
+ */
+export const TranslationSettingsBody = translationPolicySchema.extend({
+  conflict: z.enum(TRANSLATION_CONFLICTS).optional().describe('Left out, it stays as it is'),
+  machine: z.enum(TRANSLATION_MACHINE).optional().describe('Left out, it stays as it is'),
+});
+export type TranslationSettingsBody = z.infer<typeof TranslationSettingsBody>;
+
 const unauthenticated = {
   description: 'No session, or not one this environment issued',
   schema: ErrorBody,
@@ -222,7 +238,7 @@ export const settingsRoutes = {
     summary: "Change the environment's policy for publishing in a language",
     tenantScoped: true,
     access: { check: 'permission', permission: 'administer', target: { tenant: true } },
-    body: TranslationSettings,
+    body: TranslationSettingsBody,
     responses: {
       200: { description: 'The translation settings, as changed', schema: TranslationSettings },
       400: {

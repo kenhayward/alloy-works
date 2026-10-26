@@ -150,6 +150,7 @@ describe('translation (the TR plan, TRa)', () => {
           head: { id: expect.any(String), number: 'fr-FR 1.1' },
           translates: { id: component.version.id, number: component.version.number },
           status: { status: 'translated' },
+          machine: null,
         },
       ],
     });
@@ -325,6 +326,7 @@ describe('translation (the TR plan, TRa)', () => {
       outOfDate: 'publish',
       note: {},
       conflict: 'review',
+      machine: 'off',
     });
     expect(
       (

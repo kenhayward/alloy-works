@@ -313,3 +313,38 @@ describe('a job file', () => {
     );
   });
 });
+
+describe('a target the content model would refuse (the XL final review)', () => {
+  it('refuses a returned text the content model refuses, rather than throwing, and keeps words in NFC', () => {
+    const targets = allTranslated(source);
+    const over = xliffTarget(
+      source,
+      new Map([
+        ...targets,
+        ['b.T1.column.0', [{ kind: 'text', text: 'x'.repeat(201) }] as XliffPart[]],
+      ]),
+      'fr',
+    );
+    expect(over).toEqual({ ok: false, problems: [{ unit: 'b.T1.column.0', problem: 'invalid' }] });
+    const decomposed = xliffTarget(
+      source,
+      new Map([
+        ...targets,
+        ['b.T1.column.0', [{ kind: 'text', text: 'Pe\u0301riode' }] as XliffPart[]],
+      ]),
+      'fr',
+    );
+    expect(decomposed.ok && JSON.stringify(decomposed.content)).toContain('"header":"Période"');
+  });
+
+  it('sends no unit for a text that is all a pending insertion, so it never blocks a return', () => {
+    const pending = document([
+      paragraph('p1', [
+        text('added', [{ type: 'suggestion', id: 's1', operation: 'insert', author: 'Ada' }]),
+      ]),
+      paragraph('p2', [text('Kept.')]),
+    ]);
+    expect(xliffUnits(pending).map((unit) => unit.id)).toEqual(['b.p2']);
+    expect(xliffTarget(pending, allTranslated(pending), 'fr').ok).toBe(true);
+  });
+});

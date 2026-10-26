@@ -216,6 +216,13 @@ describe('a machine draft of a translation (the XL plan, XLc)', () => {
     });
     expect(asked.length).toBe(sent);
     await route('inside');
+    // A body written before the policy said anything of machines leaves it as it is (the XL final review).
+    const older = await h.call('ada', 'PUT', '/v1/settings/translation', {
+      fallback: 'source',
+      outOfDate: 'publish',
+      note: {},
+    });
+    expect(older.json()).toMatchObject({ machine: 'inside', conflict: 'review' });
   });
 
   it('refuses the whole draft where the model invents a code, and drafts nothing', async () => {

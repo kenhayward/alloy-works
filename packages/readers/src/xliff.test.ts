@@ -109,6 +109,20 @@ describe('a returned XLIFF file', () => {
     expect(readXliff(big).ok).toBe(true);
   });
 
+  it('refuses a code point no content can store: NUL, or half a surrogate pair', () => {
+    for (const hex of ['0000', 'D800']) {
+      expect(
+        readXliff(
+          bytes(
+            xliff(
+              `<file id="f"><unit id="u"><segment><source>a</source><target>b<cp hex="${hex}"/></target></segment></unit></file>`,
+            ),
+          ),
+        ),
+      ).toMatchObject({ ok: false, refusal: 'unsupported' });
+    }
+  });
+
   it('says a unit with a segment untranslated has no target', () => {
     const read = readXliff(
       bytes(

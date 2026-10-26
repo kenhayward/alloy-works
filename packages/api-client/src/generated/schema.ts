@@ -63206,8 +63206,8 @@ export interface operations {
                                     id: string;
                                     number: string;
                                 } | null;
-                                /** @description Why it was listed and not sent: the source has no designated revision to translate from, or the maker may not edit it */
-                                notSent: ("needs_revision" | "not_editable") | null;
+                                /** @description Why it was listed and not sent: the source has no designated revision to translate from, the maker may not edit it, or its source is in another language than the job’s first, which one file cannot say */
+                                notSent: ("needs_revision" | "not_editable" | "other_source") | null;
                                 /** @description What came back of it: made a version of its translation, held for a person because the source or the translation moved since it was sent, or refused because it did not read back, the uploader may not edit it or a person rejected it; null while it is out */
                                 outcome: ("returned" | "held" | "refused") | null;
                             }[];
@@ -63402,8 +63402,8 @@ export interface operations {
                                 id: string;
                                 number: string;
                             } | null;
-                            /** @description Why it was listed and not sent: the source has no designated revision to translate from, or the maker may not edit it */
-                            notSent: ("needs_revision" | "not_editable") | null;
+                            /** @description Why it was listed and not sent: the source has no designated revision to translate from, the maker may not edit it, or its source is in another language than the job’s first, which one file cannot say */
+                            notSent: ("needs_revision" | "not_editable" | "other_source") | null;
                             /** @description What came back of it: made a version of its translation, held for a person because the source or the translation moved since it was sent, or refused because it did not read back, the uploader may not edit it or a person rejected it; null while it is out */
                             outcome: ("returned" | "held" | "refused") | null;
                         }[];
@@ -63624,8 +63624,8 @@ export interface operations {
                                 id: string;
                                 number: string;
                             } | null;
-                            /** @description Why it was listed and not sent: the source has no designated revision to translate from, or the maker may not edit it */
-                            notSent: ("needs_revision" | "not_editable") | null;
+                            /** @description Why it was listed and not sent: the source has no designated revision to translate from, the maker may not edit it, or its source is in another language than the job’s first, which one file cannot say */
+                            notSent: ("needs_revision" | "not_editable" | "other_source") | null;
                             /** @description What came back of it: made a version of its translation, held for a person because the source or the translation moved since it was sent, or refused because it did not read back, the uploader may not edit it or a person rejected it; null while it is out */
                             outcome: ("returned" | "held" | "refused") | null;
                         }[];
@@ -63950,8 +63950,8 @@ export interface operations {
                                 id: string;
                                 number: string;
                             } | null;
-                            /** @description Why it was listed and not sent: the source has no designated revision to translate from, or the maker may not edit it */
-                            notSent: ("needs_revision" | "not_editable") | null;
+                            /** @description Why it was listed and not sent: the source has no designated revision to translate from, the maker may not edit it, or its source is in another language than the job’s first, which one file cannot say */
+                            notSent: ("needs_revision" | "not_editable" | "other_source") | null;
                             /** @description What came back of it: made a version of its translation, held for a person because the source or the translation moved since it was sent, or refused because it did not read back, the uploader may not edit it or a person rejected it; null while it is out */
                             outcome: ("returned" | "held" | "refused") | null;
                         }[];
@@ -64037,7 +64037,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description translation_job_closed: the job is closed; lock_held: somebody is editing the translation */
+            /** @description translation_job_closed: the job is closed; lock_held: somebody is editing the translation; translation_not_applied: a fixed value refuses the words */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -64319,8 +64319,8 @@ export interface operations {
                                 id: string;
                                 number: string;
                             } | null;
-                            /** @description Why it was listed and not sent: the source has no designated revision to translate from, or the maker may not edit it */
-                            notSent: ("needs_revision" | "not_editable") | null;
+                            /** @description Why it was listed and not sent: the source has no designated revision to translate from, the maker may not edit it, or its source is in another language than the job’s first, which one file cannot say */
+                            notSent: ("needs_revision" | "not_editable" | "other_source") | null;
                             /** @description What came back of it: made a version of its translation, held for a person because the source or the translation moved since it was sent, or refused because it did not read back, the uploader may not edit it or a person rejected it; null while it is out */
                             outcome: ("returned" | "held" | "refused") | null;
                         }[];
@@ -95683,12 +95683,12 @@ export interface operations {
                         [key: string]: string;
                     };
                     /**
-                     * @default review
+                     * @description Left out, it stays as it is
                      * @enum {string}
                      */
                     conflict?: "review" | "accept" | "reject";
                     /**
-                     * @default off
+                     * @description Left out, it stays as it is
                      * @enum {string}
                      */
                     machine?: "off" | "inside" | "any";

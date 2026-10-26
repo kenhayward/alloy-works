@@ -457,6 +457,7 @@ export {
   EditingSettingsBody,
   ImportSettings,
   TranslationSettings,
+  TranslationSettingsBody,
 } from './settings.js';
 export {
   InvitationBody,

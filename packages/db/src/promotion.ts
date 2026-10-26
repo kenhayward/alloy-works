@@ -23,10 +23,12 @@ import type { TenantTransaction } from './tables.js';
 import { recordVersion, type StoredVersion } from './versions.js';
 import { headVersion, readLine } from './lines.js';
 import { iterationLinesStored } from './retention.js';
+import { isDeleted } from './deletion.js';
 import {
   checkTranslates,
   declareSourceChange,
   recordTranslates,
+  translationSource,
   type TranslatesRefusal,
 } from './translation.js';
 
@@ -176,6 +178,8 @@ export type ReturnedAnswer =
   | { readonly answer: 'version.precondition'; readonly current: StoredVersion }
   /** Somebody holds the line's lock: their session is not overwritten (XL-F). */
   | { readonly answer: 'lock.held' }
+  /** The line's head or the source a translator is shown is no longer what the caller expected. */
+  | { readonly answer: 'translation.moved' }
   | { readonly answer: 'values.invalid'; readonly failures: readonly MetadataFailure[] }
   | { readonly answer: 'artifact.missing' }
   | TranslatesRefusal;
@@ -196,13 +200,34 @@ export async function cutReturned(
     readonly content: ContentDocument;
     readonly translates: string;
     readonly by: string;
+    /**
+     * The line's newest version (null for none) and the source a translator is shown, as the caller
+     * read them: checked again here, after the component is serialised, so nothing written between
+     * the caller's read and this cut is overwritten (the XL final review).
+     */
+    readonly expect?: { readonly head: string | null; readonly source: string };
   },
 ): Promise<ReturnedAnswer> {
   if (!(await isComponent(trx, input.artifactId))) return { answer: 'artifact.missing' };
   await serialise(trx, input.artifactId);
+  // A component deleted since it was sent takes nothing (the XL final review).
+  if (await isDeleted(trx, input.artifactId)) return { answer: 'artifact.missing' };
   const line = await readLine(trx, input.artifactId, input.line);
   if (!line || line.closed || line.language === null) return { answer: 'artifact.missing' };
   if (await readLock(trx, input.artifactId, input.line)) return { answer: 'lock.held' };
+  if (input.expect) {
+    const newest = await trx
+      .selectFrom('artifact_version')
+      .select('id')
+      .where('line_id', '=', input.line)
+      .orderBy('version_no', 'desc')
+      .limit(1)
+      .executeTakeFirst();
+    const shown = await translationSource(trx, input.artifactId);
+    if ((newest?.id ?? null) !== input.expect.head || shown?.id !== input.expect.source) {
+      return { answer: 'translation.moved' };
+    }
+  }
   const refused = await checkTranslates(trx, input.artifactId, input.translates);
   if (refused) return refused;
   const current = await headVersion(trx, input.artifactId, input.line);

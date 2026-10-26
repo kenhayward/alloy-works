@@ -662,6 +662,12 @@ export function translationHandlers(
             answer.answer,
             'Somebody is editing this translation. Try again later.',
           );
+        case 'translation.not_applied':
+          throw refused(
+            409,
+            answer.answer,
+            'The words could not be made a version of the translation: a fixed value refuses them.',
+          );
       }
     },
   };

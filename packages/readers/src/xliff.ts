@@ -71,8 +71,14 @@ function partsOf(node: XmlNode): XliffPart[] {
         break;
       case 'x:cp': {
         const code = Number.parseInt(child.attributes['hex'] ?? '', 16);
-        if (!Number.isInteger(code) || code < 0 || code > 0x10ffff) {
-          throw new Unsupported('A code point that is none');
+        // None content cannot store, as admission refuses it (the XL final review).
+        if (
+          !Number.isInteger(code) ||
+          code <= 0 ||
+          code > 0x10ffff ||
+          (code >= 0xd800 && code <= 0xdfff)
+        ) {
+          throw new Unsupported('A code point no content can hold');
         }
         parts.push({ kind: 'text', text: String.fromCodePoint(code) });
         break;
