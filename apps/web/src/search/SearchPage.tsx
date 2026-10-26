@@ -8,7 +8,7 @@ import { PlaceIntoButton } from '../structure/PlaceSection.js';
 import { resultLink, whereFound, type SearchScope } from './links.js';
 import { searchSaid, type SearchSaid } from './said.js';
 import styles from './SearchPage.module.css';
-import { words } from '../words/words.js';
+import { formats, words, wordsWith } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -197,11 +197,6 @@ const RANGES: Record<string, string> = {
   },
 };
 
-/** A count as a reader is told it: exact, or at least the cap where there are more (SCH-073). */
-const countOf = (facet: { readonly count: number; readonly capped: boolean }) =>
-  facet.capped
-    ? words('search.at-least', { value1: facet.count.toLocaleString('en-GB') })
-    : facet.count.toLocaleString('en-GB');
 
 /** A field's value as a reader reads it: a boolean as yes or no, anything else as its label. */
 const valueLabel = (dataType: string, facet: FacetValue) =>
@@ -250,7 +245,12 @@ function FacetGroup({
             checked={chosen.includes(facet.value)}
             onChange={() => onToggle(facet.value)}
           />
-          {`${label(facet)} (${countOf(facet)})`}
+          {/* Its count exact, or at least the cap where there are more (SCH-073). */}
+          {words('search.facet-value', {
+            label: label(facet),
+            count: facet.count,
+            capped: facet.capped ? 'yes' : 'no',
+          })}
         </label>
       ))}
     </fieldset>
@@ -282,8 +282,17 @@ function SectionMembers({
   return (
     <div className={styles['members']}>
       <p className={styles['about']}>
-        {words('search.in-2')}
-        <a href={`#/documents/${section.document.id}`}>{section.document.title}</a>
+        {wordsWith(
+          'search.in-document',
+          {},
+          {
+            document: (
+              <a href={`#/documents/${section.document.id}`} data-content>
+                {section.document.title}
+              </a>
+            ),
+          },
+        )}
       </p>
       {section.components.length > 0 && (
         <>
@@ -293,7 +302,9 @@ function SectionMembers({
           <ul aria-labelledby={label} className={styles['placed']}>
             {section.components.map((each) => (
               <li key={each.id}>
-                <a href={`#/components/${each.id}`}>{each.title}</a>
+                <a href={`#/components/${each.id}`} data-content>
+                  {each.title}
+                </a>
               </li>
             ))}
           </ul>
@@ -588,7 +599,10 @@ export function SearchPage({
             {(results.facets.relations ?? []).map((relation) => (
               <FacetGroup
                 key={`relation:${relation.type}:${relation.field}`}
-                legend={`${relation.typeName}: ${relation.name}`}
+                legend={words('search.relation-field', {
+                  type: relation.typeName,
+                  field: relation.name,
+                })}
                 values={relation.values.map((facet) => ({
                   ...facet,
                   value: `${relation.type}:${relation.field}:${facet.value}`,
@@ -611,13 +625,22 @@ export function SearchPage({
                 <li key={`${item.artifactId}:${item.node ?? ''}:${item.thread?.id ?? ''}`}>
                   <article className={styles['result']}>
                     <p className={styles['about']}>
-                      {KINDS[item.kind] ?? item.kind}
-                      {item.space === null ? '' : words('search.in-3', { name: item.space.name })}
+                      {words('search.result-kind', {
+                        kind: item.kind,
+                        inSpace: item.space === null ? 'no' : 'yes',
+                        name: item.space?.name ?? '',
+                      })}
                     </p>
-                    <h2>{link === null ? item.title : <a href={link}>{item.title}</a>}</h2>
+                    <h2 data-content>
+                      {link === null ? item.title : <a href={link}>{item.title}</a>}
+                    </h2>
                     {item.state && <StateLozenge state={item.state} />}
                     {(item.lines?.length ?? 0) > 0 && (
-                      <Chip>{words('search.diverged', { value1: item.lines!.join(', ') })}</Chip>
+                      <Chip>
+                        {words('search.diverged', {
+                          lines: formats().list(item.lines!, { type: 'unit', style: 'short' }),
+                        })}
+                      </Chip>
                     )}
                     {/* Found by meaning answers another question than by words (SCH-014). */}
                     {item.found === 'meaning' && <Chip>{words('search.found-by-meaning')}</Chip>}
@@ -627,7 +650,7 @@ export function SearchPage({
                     {found !== null && <p className={styles['about']}>{found}</p>}
                     {where !== null && <p className={styles['about']}>{where}</p>}
                     {item.passage.length > 0 && (
-                      <p className={styles['passage']}>
+                      <p className={styles['passage']} data-content>
                         {item.passage.map((piece, index) =>
                           piece.matched ? <mark key={index}>{piece.text}</mark> : piece.text,
                         )}
