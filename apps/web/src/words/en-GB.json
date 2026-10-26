@@ -8,7 +8,6 @@
   "shell.theme.light": "Light",
   "shell.theme.dark": "Dark",
   "shell.theme.auto": "Auto",
-  "shell.language": "Language",
   "shell.search": "Search components, documents, or run a command",
   "shell.search.key": "Ctrl K",
   "shell.signIn": "Sign in",

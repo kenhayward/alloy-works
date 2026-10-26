@@ -48,7 +48,7 @@ describe('the interface’s language (the UI plan, UI-E)', () => {
       </InterfaceLanguage>,
     );
     await waitFor(() => expect(document.documentElement.lang).toBe('en-GB'));
-    await userEvent.click(await screen.findByRole('button', { name: 'Language' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Interface language' }));
     expect(screen.getByRole('button', { name: 'As my browser says' })).toHaveAttribute(
       'aria-pressed',
       'true',

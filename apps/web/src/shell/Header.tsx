@@ -159,8 +159,8 @@ function LanguageMenu() {
   ];
   return (
     <Menu
-      label={words('shell.language')}
-      named={words('shell.language')}
+      label={words('language.label')}
+      named={words('language.label')}
       button={
         <svg
           className={styles['icon']}
