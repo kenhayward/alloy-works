@@ -9,7 +9,7 @@ import { Notice } from '../states/Notice.js';
 import styles from '../structure/DocumentList.module.css';
 import { termLink } from './links.js';
 import { isSummary, said, saveText, type Summary } from './shape.js';
-import { words } from '../words/words.js';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -50,12 +50,13 @@ const FORMATS = [
 /** What one concept of an import came to, as a sentence. */
 function importedLine(each: Imported): string {
   if (each.outcome === 'refused')
-    return words('terms.refused', { key: each.key, value2: each.message ?? '' });
+    // The refusal's message is the service's, in English for integrators.
+    return words('terms.refused', { key: each.key, message: each.message ?? '' });
   const label = each.term?.label ?? each.key;
   if (each.outcome === 'created') return words('terms.made', { label });
   return each.merged.length === 0
     ? words('terms.already-here-nothing-new', { label })
-    : words('terms.merged-and-given', { label, value2: each.merged.join(', ') });
+    : words('terms.merged-and-given', { label, merged: formats().list(each.merged) });
 }
 
 /**
@@ -164,7 +165,7 @@ export function Terms({ client }: { readonly client: Client }) {
           {words('terms.space')}{' '}
           <select value={space ?? ''} onChange={(event) => setSpace(event.target.value)}>
             {spaces.map((each) => (
-              <option key={each.id} value={each.id}>
+              <option key={each.id} value={each.id} data-content>
                 {each.name}
               </option>
             ))}
@@ -188,7 +189,7 @@ export function Terms({ client }: { readonly client: Client }) {
         <>
           <p className={styles['summary']}>
             <span>
-              {words('terms.you-may-read', { total, value2: total === 1 ? 'term' : 'terms' })}
+              {words('terms.you-may-read', { total })}
             </span>
             {terms.length < total && (
               <span>{words('terms.showing-1-to', { length: terms.length })}</span>
@@ -207,9 +208,11 @@ export function Terms({ client }: { readonly client: Client }) {
                 {terms.map((each) => (
                   <tr key={each.id}>
                     <td className={styles['title']}>
-                      <a href={termLink(each.id)}>{each.label}</a>
+                      <a href={termLink(each.id)} data-content>
+                        {each.label}
+                      </a>
                     </td>
-                    <td>{each.abbreviation ?? ''}</td>
+                    <td data-content>{each.abbreviation ?? ''}</td>
                     <td>{each.state && <StateLozenge state={each.state} />}</td>
                   </tr>
                 ))}
@@ -337,7 +340,8 @@ function ImportTerms({
         </select>
       </label>
       <label>
-        SKOS <textarea value={text} rows={8} onChange={(event) => setText(event.target.value)} />
+        {words('terms.skos')}{' '}
+        <textarea value={text} rows={8} onChange={(event) => setText(event.target.value)} />
       </label>
       <button type="submit" className="primary" disabled={busy || text.trim() === ''}>
         {words('terms.import-terms')}
@@ -358,8 +362,10 @@ function ImportTerms({
             <ul aria-label={words('terms.not-represented')}>
               {done.unrepresented.map((each, at) => (
                 <li key={at}>
+                  {/* The concept and what of it, as the service names them. */}
                   {words('terms.not-represented-2', {
-                    value1: each.concept === null ? '' : `${each.concept}, `,
+                    named: each.concept === null ? 'no' : 'yes',
+                    concept: each.concept ?? '',
                     detail: each.detail,
                   })}
                 </li>
@@ -369,7 +375,7 @@ function ImportTerms({
           {done.total > done.unrepresented.length && (
             <p>
               {words('terms.and-more-not-represented', {
-                value1: done.total - done.unrepresented.length,
+                count: done.total - done.unrepresented.length,
               })}
             </p>
           )}
