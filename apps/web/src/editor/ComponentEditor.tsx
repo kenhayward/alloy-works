@@ -2785,13 +2785,13 @@ export function ComponentEditor({
               ? [
                   {
                     label: say('editor.send-suggestion'),
-                    icon: say('editor.review'),
+                    icon: 'Review',
                     disabled: sending,
                     onPress: () => void sendDraft(),
                   },
                   {
                     label: say('editor.discard-suggestion'),
-                    icon: say('editor.close'),
+                    icon: 'Close',
                     disabled: sending,
                     onPress: () => {
                       forgetDraft(componentId, principalId);
@@ -2802,7 +2802,7 @@ export function ComponentEditor({
               : [
                   {
                     label: say('editor.done-editing'),
-                    icon: say('editor.done-editing'),
+                    icon: 'Done editing',
                     disabled: doneDisabled,
                     // Done cuts a version where anything changed (CNT-070), so it asks first too.
                     onPress: () =>
@@ -2812,7 +2812,7 @@ export function ComponentEditor({
                   },
                   {
                     label: say('editor.save-version'),
-                    icon: say('editor.save-version'),
+                    icon: 'Save version',
                     disabled: !mayCut || phase !== 'editing',
                     onPress: () =>
                       askFirst(
@@ -2822,7 +2822,7 @@ export function ComponentEditor({
                   },
                   {
                     label: say('editor.saved-text'),
-                    icon: say('editor.saved-text'),
+                    icon: 'Saved text',
                     disabled: !mayCut || phase !== 'editing',
                     onPress: recover,
                   },

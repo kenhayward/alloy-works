@@ -848,12 +848,12 @@ export function BoundTablePanel({
                   {
                     value: 'ascending',
                     name: BOUND_TABLE_WORDS.directions.ascending,
-                    icon: say('editor.move-up'),
+                    icon: 'Move up',
                   },
                   {
                     value: 'descending',
                     name: BOUND_TABLE_WORDS.directions.descending,
-                    icon: say('editor.move-down'),
+                    icon: 'Move down',
                   },
                 ]}
               />
